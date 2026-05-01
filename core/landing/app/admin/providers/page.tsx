@@ -348,7 +348,7 @@ export default function ProvidersPage() {
                       title="Phase K — Settings sayfasından API key ekle"
                     >
                       <Settings2 className="mr-2 h-3 w-3" />
-                      Configure
+                      Yapılandır
                     </Button>
                   </CardContent>
                 </Card>

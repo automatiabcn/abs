@@ -205,7 +205,7 @@ function ToolDetailSheet({
 
             <section className="mt-6">
               <h4 className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <span>Try it</span>
+                <span>Dene</span>
                 <Badge variant="outline" className="text-[10px]">
                   cascade router
                 </Badge>
