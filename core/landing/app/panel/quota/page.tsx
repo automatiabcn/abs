@@ -1,14 +1,41 @@
-// S20.7 — /panel/quota: monthly usage bars + 80%/95% markers + 5dk auto-refresh
+// S20.7 — `/panel/quota` monthly usage bars + 80%/95% markers + 5dk
+// auto-refresh.
+// Q8 / QT1+QT2+QT5+QT6 — Tremor visualisation, Configure CTA per
+// provider, Total Cost summary tile, terminology unified to "Kota".
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  AlertTriangle,
+  BarChart3,
+  CircleDollarSign,
+  Layers,
+  Settings,
+  Zap,
+} from "lucide-react";
+import { ProgressBar } from "@tremor/react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface Slice {
   used: number;
   limit: number;
   percent: number;
   label: string;
-  configured?: boolean;  // Q3 P11 — false → gray-disabled row
+  configured?: boolean;
+  cost_usd?: number;
 }
 
 interface QuotaPayload {
@@ -19,7 +46,7 @@ interface QuotaPayload {
   period_end: string;
 }
 
-const REFRESH_MS = 5 * 60 * 1000; // S20.8 — 5dk polling, brief 30s yerine
+const REFRESH_MS = 5 * 60 * 1000;
 
 function fmtNumber(n: number): string {
   return n.toLocaleString("tr-TR");
@@ -33,157 +60,258 @@ function fmtDate(iso: string): string {
   }
 }
 
-function barColor(percent: number): string {
-  if (percent >= 0.95) return "#dc2626"; // rose-600
-  if (percent >= 0.8) return "#f59e0b";  // amber-500
-  return "#10b981";                       // emerald-500
+function tone(percent: number): "emerald" | "amber" | "rose" {
+  if (percent >= 0.95) return "rose";
+  if (percent >= 0.8) return "amber";
+  return "emerald";
 }
 
-function Bar({ percent }: { percent: number }) {
-  const pct = Math.min(100, percent * 100);
+function ProviderRow({ slice, name }: { slice: Slice; name: string }) {
+  const pct = Math.min(100, slice.percent * 100);
+  const t = tone(slice.percent);
   return (
-    <div
-      role="progressbar"
-      aria-valuenow={Math.round(pct)}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      className="relative h-2 overflow-hidden rounded bg-zinc-200 dark:bg-zinc-800"
+    <li
+      data-test="quota-row"
+      data-provider={name}
+      data-configured={slice.configured ?? true}
+      className={cn(
+        "rounded-md border border-border bg-card/50 p-3",
+        slice.configured === false && "opacity-70",
+      )}
     >
-      <div
-        className="absolute inset-y-0 left-0 transition-[width] duration-500"
-        style={{ width: `${pct}%`, background: barColor(percent) }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-y-0 w-px bg-amber-500/60"
-        style={{ left: "80%" }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-y-0 w-px bg-rose-500/70"
-        style={{ left: "95%" }}
-      />
-    </div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="font-mono text-sm">{slice.label || name}</span>
+          {slice.configured === false && (
+            <Badge variant="outline" className="text-[10px]">
+              yapılandırılmadı
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          {slice.configured === false ? (
+            <Link href="/admin/settings" passHref>
+              <Button
+                variant="outline"
+                size="sm"
+                data-test="configure-cta"
+                className="h-7 text-[11px]"
+              >
+                <Settings className="mr-1 h-3 w-3" />
+                Configure
+              </Button>
+            </Link>
+          ) : (
+            <span className="font-mono">
+              {fmtNumber(slice.used)} / {fmtNumber(slice.limit)}
+            </span>
+          )}
+        </div>
+      </div>
+      {slice.configured !== false && (
+        <ProgressBar
+          value={pct}
+          color={t}
+          showAnimation
+          className="mt-1"
+        />
+      )}
+      {slice.percent >= 0.8 && (
+        <div className="mt-1 flex items-center gap-1 text-[11px] text-amber-300">
+          <AlertTriangle className="h-3 w-3" />
+          {Math.round(slice.percent * 100)}% — eşik {slice.percent >= 0.95 ? "kritik" : "uyarı"}
+        </div>
+      )}
+    </li>
   );
 }
 
-export default function QuotaPanel() {
+export default function QuotaPage() {
   const [data, setData] = useState<QuotaPayload | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    const fetchOnce = async () => {
+    let active = true;
+    async function load() {
       try {
         const res = await fetch("/v1/system/quota_status", {
           credentials: "include",
           cache: "no-store",
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const payload = (await res.json()) as QuotaPayload;
-        if (!cancelled) {
-          setData(payload);
-          setUpdatedAt(new Date());
+        const json = (await res.json()) as QuotaPayload;
+        if (active) {
+          setData(json);
+          setLoading(false);
           setError(null);
         }
       } catch (exc) {
-        if (!cancelled) setError((exc as Error).message);
+        if (active) {
+          setError(exc instanceof Error ? exc.message : "unknown");
+          setLoading(false);
+        }
       }
-    };
-    fetchOnce();
-    const handle = setInterval(fetchOnce, REFRESH_MS);
+    }
+    void load();
+    const t = window.setInterval(load, REFRESH_MS);
     return () => {
-      cancelled = true;
-      clearInterval(handle);
+      active = false;
+      window.clearInterval(t);
     };
   }, []);
 
-  if (error && !data) {
-    return (
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <p role="alert" className="text-rose-700 dark:text-rose-300">
-          Kota okunamadı: {error}
-        </p>
-      </main>
-    );
-  }
+  const allSlices = data
+    ? [["claude_plus", data.claude_plus] as const, ...Object.entries(data.free_providers)]
+    : [];
 
-  if (!data) {
-    return (
-      <main className="mx-auto max-w-3xl px-6 py-12 text-zinc-500">
-        Yükleniyor…
-      </main>
-    );
-  }
-
-  const items: Array<{ key: string; slice: Slice }> = [
-    { key: "claude_plus", slice: data.claude_plus },
-    ...Object.entries(data.free_providers).map(([key, slice]) => ({ key, slice })),
-  ];
+  const totalCalls = allSlices.reduce(
+    (sum, [, s]) => sum + (s?.used ?? 0),
+    0,
+  );
+  const totalCost = allSlices.reduce(
+    (sum, [, s]) => sum + (s?.cost_usd ?? 0),
+    0,
+  );
+  const configuredCount = allSlices.filter(([, s]) => s?.configured !== false).length;
+  const freePathPct =
+    allSlices.length > 0
+      ? Math.round(
+          (allSlices.filter(
+            ([n, s]) => n !== "claude_plus" && s?.configured !== false,
+          ).length /
+            allSlices.length) *
+            100,
+        )
+      : 0;
 
   return (
     <main
       data-page="panel-quota"
-      className="mx-auto max-w-3xl px-6 py-12 text-zinc-900 dark:text-zinc-100"
+      className="mx-auto w-full max-w-7xl px-6 py-8"
     >
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold">Aylık Kullanım</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Periyot {fmtDate(data.period_start)} → {fmtDate(data.period_end)}.
-          {updatedAt && ` Son güncelleme: ${updatedAt.toLocaleTimeString("tr-TR")}.`}
-        </p>
-      </header>
+      <motion.header
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="mb-6 flex items-start justify-between"
+      >
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            Kota
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {data
+              ? `${fmtDate(data.period_start)} – ${fmtDate(data.period_end)} dönemi`
+              : "Sağlayıcı kullanımı, eşik uyarıları, free-path oranı."}
+          </p>
+        </div>
+        <Link href="/admin/settings" passHref>
+          <Button variant="outline" size="sm">
+            <Settings className="mr-2 h-3.5 w-3.5" />
+            Sağlayıcı ayarları
+          </Button>
+        </Link>
+      </motion.header>
 
-      <section className="space-y-4">
-        {items.map(({ key, slice }) => {
-          const configured = slice.configured !== false; // Q3 P11
+      {/* ─── 4 stat tile (QT5 fix) ──────────────────────── */}
+      <section
+        data-test="quota-stats"
+        className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4"
+      >
+        {[
+          {
+            label: "Toplam çağrı",
+            value: fmtNumber(totalCalls),
+            icon: Layers,
+            tone: "indigo",
+          },
+          {
+            label: "Tahmini maliyet",
+            value: `$${totalCost.toFixed(2)}`,
+            icon: CircleDollarSign,
+            tone: "emerald",
+          },
+          {
+            label: "Aktif sağlayıcı",
+            value: `${configuredCount}/${allSlices.length}`,
+            icon: Zap,
+            tone: "amber",
+          },
+          {
+            label: "Free-path",
+            value: `${freePathPct}%`,
+            icon: BarChart3,
+            tone: "violet",
+          },
+        ].map((s) => {
+          const Icon = s.icon;
           return (
-            <div
-              key={key}
-              data-provider={key}
-              data-configured={configured}
-              className={
-                "rounded border border-zinc-200 p-3 dark:border-zinc-800 " +
-                (configured ? "" : "opacity-50")
-              }
-            >
-              <div className="mb-2 flex items-baseline justify-between text-sm">
-                <span className="font-medium">
-                  {slice.label}
-                  {!configured && (
-                    <span className="ml-2 text-xs font-normal text-zinc-500">
-                      (yapılandırılmadı)
-                    </span>
-                  )}
-                </span>
-                <span className="font-mono text-xs text-zinc-500">
-                  {configured
-                    ? `${fmtNumber(slice.used)} / ${fmtNumber(slice.limit)} (${Math.round(slice.percent * 100)}%)`
-                    : "—"}
-                </span>
-              </div>
-              {configured && <Bar percent={slice.percent} />}
-            </div>
+            <Card key={s.label} className="bg-card/60">
+              <CardContent className="flex items-center gap-3 py-3">
+                <Icon className="h-4 w-4 text-primary" />
+                <div>
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    {s.label}
+                  </div>
+                  <div className="font-mono text-base">{s.value}</div>
+                </div>
+              </CardContent>
+            </Card>
           );
         })}
       </section>
 
-      {data.warnings.length > 0 && (
-        <section
-          aria-live="polite"
-          className="mt-6 rounded border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-700 dark:bg-amber-950"
-        >
-          <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
-            Uyarılar
-          </h2>
-          <ul className="space-y-1 font-mono text-xs">
-            {data.warnings.map((w) => (
-              <li key={w}>{w}</li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <Card className="bg-card/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Sağlayıcı kullanımı</CardTitle>
+          <CardDescription>
+            80% sarı, 95% kırmızı eşik. Yapılandırılmamış sağlayıcılar Configure CTA gösterir.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">
+              Kota bilgisi yüklenemedi: {error}
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {data && (
+                <>
+                  <ProviderRow slice={data.claude_plus} name="claude_plus" />
+                  {Object.entries(data.free_providers).map(([name, slice]) => (
+                    <ProviderRow key={name} slice={slice} name={name} />
+                  ))}
+                </>
+              )}
+            </ul>
+          )}
+          {data?.warnings.length ? (
+            <div
+              data-test="quota-warnings"
+              className="mt-4 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200"
+            >
+              <div className="mb-1 flex items-center gap-1 font-semibold">
+                <AlertTriangle className="h-3 w-3" />
+                Uyarılar
+              </div>
+              <ul className="list-disc space-y-1 pl-4">
+                {data.warnings.map((w, i) => (
+                  <li key={i}>{w}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
     </main>
   );
 }
