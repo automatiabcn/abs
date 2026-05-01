@@ -1,4 +1,5 @@
 // Q7 Phase C — premium /panel shell: theme + query + sidebar + header.
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { CommandPalette } from "@/components/panel/CommandPalette";
@@ -7,6 +8,12 @@ import { PanelSidebar } from "@/components/panel/PanelSidebar";
 import { PanelThemeProvider } from "@/components/panel/PanelThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/query-client";
+
+export const metadata: Metadata = {
+  description:
+    "ABS Server admin paneli — cascade sağlayıcılar, MCP araçları, RAG ingest ve kota izleme tek bir self-hosted yüzeyde.",
+  robots: { index: false, follow: false },
+};
 
 export default function PanelLayout({ children }: { children: ReactNode }) {
   return (
