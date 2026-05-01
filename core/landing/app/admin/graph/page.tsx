@@ -245,6 +245,7 @@ export default function GraphPage() {
                 onChange={(e) => setCypher(e.target.value)}
                 spellCheck={false}
                 data-test="graph-cypher-input"
+                aria-label="Cypher sorgusu"
                 className="w-full rounded-md border border-border bg-background p-3 font-mono text-xs leading-relaxed outline-none focus:border-primary/50"
               />
               <div className="mt-3 flex items-center gap-2">

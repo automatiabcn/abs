@@ -256,6 +256,7 @@ export default function MeetingsPanel() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
             data-test="meetings-filter-status"
+            aria-label="Durum filtresi"
             className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
           >
             <option value="all">Tüm durumlar</option>
@@ -279,6 +280,7 @@ export default function MeetingsPanel() {
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
             data-test="meetings-filter-from"
+            aria-label="Başlangıç tarihi"
             className="text-xs"
           />
           <Input
@@ -286,6 +288,7 @@ export default function MeetingsPanel() {
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
             data-test="meetings-filter-to"
+            aria-label="Bitiş tarihi"
             className="text-xs"
           />
           {filtersActive && (
