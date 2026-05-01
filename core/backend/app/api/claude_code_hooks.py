@@ -25,17 +25,48 @@ from collections import defaultdict, deque
 from datetime import datetime, timezone
 from typing import Deque, Dict, Optional
 
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.api.mcp_tokens import verify_token
 
 
-router = APIRouter(prefix="/v1/hooks", tags=["claude-code-hooks"])
+def _auth_dependency(
+    authorization: Optional[str] = Header(None),
+) -> Dict:
+    """Q11-L15-001: enforce auth at the dependency layer so the 401
+    fires BEFORE pydantic body validation. Previously the routes took
+    `authorization: Header(None)` as a regular parameter; FastAPI
+    parses the body first, returning 422 to unauthed callers and
+    leaking the request schema. Declared as `dependencies=[...]` on
+    the router so every hook endpoint inherits the gate."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "missing_bearer_token"
+        )
+    token = authorization.split(" ", 1)[1].strip()
+    payload = verify_token(token)
+    scope = payload.get("scope")
+    if scope not in ("hooks", "all"):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            f"insufficient_scope: have={scope}, need=hooks|all",
+        )
+    return payload
+
+
+router = APIRouter(
+    prefix="/v1/hooks",
+    tags=["claude-code-hooks"],
+    dependencies=[Depends(_auth_dependency)],
+)
 logger = logging.getLogger(__name__)
 
 
 def _auth_from_header(authorization: Optional[str]) -> Dict:
+    """Retained for the per-route handlers that need the decoded
+    payload. Same logic as the router-level dependency; both are safe
+    to call (idempotent verify)."""
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED, "missing_bearer_token"
