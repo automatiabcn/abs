@@ -118,7 +118,8 @@ export default function Header() {
       <div className="container mx-auto flex h-14 items-center justify-between px-4">
         <Link
           href="/"
-          className="flex items-center gap-2 font-semibold tracking-tight"
+          aria-label="Automatia ABS — anasayfa"
+          className="flex min-h-[44px] items-center gap-2 py-2 font-semibold tracking-tight"
           style={{ color: "var(--abs-foreground)" }}
         >
           <AbsLogo size={22} style={{ color: "var(--abs-brand-base)" }} />
