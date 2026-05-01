@@ -224,7 +224,27 @@ export function useChat({
           signal: controller.signal,
         });
         if (!res.ok) {
-          throw new Error(`Backend ${res.status}`);
+          // Q10-L9-002 — surface the backend detail (e.g. "no_providers_configured")
+          // instead of a bare HTTP status so the user knows whether to
+          // configure a provider or retry. Falls back to status when the
+          // body isn't JSON (FastAPI HTTPException is JSON by default).
+          let detail: string | null = null;
+          try {
+            const body = await res.clone().json();
+            if (typeof body?.detail === "string") detail = body.detail;
+          } catch {
+            try {
+              detail = (await res.text()).slice(0, 200) || null;
+            } catch {
+              detail = null;
+            }
+          }
+          if (detail && /no_providers_configured/i.test(detail)) {
+            throw new Error(
+              "Henüz sağlayıcı yapılandırılmadı. Sağlayıcı yapılandır bağlantısını kullanın.",
+            );
+          }
+          throw new Error(detail ? `${res.status} · ${detail}` : `Backend ${res.status}`);
         }
         const reader = res.body?.getReader();
         if (!reader) throw new Error("Yanıt akışı boş");
