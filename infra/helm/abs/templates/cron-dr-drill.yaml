@@ -1,0 +1,40 @@
+{{- if .Values.dr.drill.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "abs.fullname" . }}-dr-drill
+  labels:
+    {{- include "abs.labels" . | nindent 4 }}
+spec:
+  # 1st of every month, 03:00 UTC.
+  schedule: "0 3 1 * *"
+  successfulJobsHistoryLimit: 6
+  failedJobsHistoryLimit: 6
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          serviceAccountName: {{ include "abs.serviceAccountName" . }}
+          restartPolicy: Never
+          containers:
+            - name: dr-drill
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  scripts/dr/dr_drill.sh
+              env:
+                - name: ABS_ENV
+                  value: "staging"
+                - name: ABS_PG_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "abs.fullname" . }}-backend-secrets
+                      key: ABS_STATE_POSTGRES_URL
+                - name: ABS_DR_S3_BUCKET
+                  value: "{{ .Values.dr.s3Bucket }}"
+                - name: QDRANT_URL
+                  value: "{{ .Values.dr.qdrantUrl }}"
+{{- end }}

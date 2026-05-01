@@ -1,0 +1,10 @@
+{
+	# dev: tls internal (self-signed). prod'da abs.local'i public domain ile değiştirince
+	# Caddy otomatik ACME'ye geçer — ekstra config gerekmez.
+	admin off
+}
+
+abs.local {
+	tls internal
+	reverse_proxy backend:8000
+}

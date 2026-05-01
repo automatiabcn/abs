@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Expiry Warning — Automatia ABS</title>
+<!-- subject: ⏰ {{ days_left }} days left — renew your ABS license -->
+</head>
+<body style="font-family:'Inter',Arial,sans-serif;line-height:1.6;color:#1f2937;margin:0;padding:20px;background-color:#f4f4f6;">
+<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;">
+<div style="background:linear-gradient(135deg,#ea580c,#f97316);padding:28px 32px;color:#fff;"><h1 style="margin:0;font-size:22px;">{{ days_left }} days left</h1><p style="margin:8px 0 0 0;opacity:0.95;">Don't lose access — keep going seamlessly.</p></div>
+<div style="padding:28px 32px;"><p>Your ABS license for {{ customer_email }} expires in <strong>{{ days_left }} days</strong>. After expiry, MCP tool calls will be blocked (if license gate is enabled).</p>
+<div style="margin-top:20px;padding:14px 16px;background:#fff7ed;border-left:4px solid #ea580c;border-radius:6px;font-size:14px;"><strong>Valid until:</strong> {{ expires_at }}<br><strong>License JTI:</strong> <code style="font-family:Menlo,monospace;font-size:12px;">{{ license_jti }}</code></div>
+<h3 style="color:#9a3412;margin-top:24px;">What to do?</h3>
+<ol style="padding-left:20px;"><li>Go to the customer portal and renew your subscription.</li><li>If you don't have Maintenance, you can add it now ($49/year).</li><li>After renewal the license activates automatically — no setup needed.</li></ol>
+<div style="margin-top:28px;text-align:center;"><a href="{{ portal_url }}" style="display:inline-block;background:#ea580c;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Renew Subscription</a></div>
+<p style="margin-top:24px;font-size:13px;color:#64748b;">Questions? <a href="mailto:support@automatiabcn.com" style="color:#1e57ac;">support@automatiabcn.com</a>.</p></div>
+<div style="padding:16px 32px;background:#f8fafc;font-size:12px;color:#64748b;text-align:center;">Automatia BCN · Barcelona · <a href="{{ unsubscribe_url }}" style="color:#64748b;">Unsubscribe</a></div>
+</div></body></html>

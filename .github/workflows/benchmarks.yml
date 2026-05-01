@@ -1,0 +1,38 @@
+name: weekly-benchmarks
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install backend deps
+        working-directory: core/backend
+        run: pip install -e .
+      - name: Install benchmark deps
+        run: pip install psutil pytest-benchmark
+      - name: Run vault overhead benchmark
+        run: python benchmarks/vault_overhead.py
+      - name: Run symbol indexing benchmark
+        run: python benchmarks/symbol_indexing.py
+      - name: Run watchdog resources benchmark (60s)
+        run: python -c "from benchmarks.watchdog_resources import main; import json; print(json.dumps(main(60, 5), indent=2))" | tee benchmarks/results/04_watchdog_resources.json
+      - name: Run cascade scenario summary
+        run: python benchmarks/cascade_load.py | tee benchmarks/results/01_cascade_load.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmarks/results/
+          retention-days: 90

@@ -1,0 +1,11 @@
+{
+  "id": "co-abc123def456ghi789jkl",
+  "message": {
+    "role": "assistant",
+    "content": [
+      {"type": "text", "text": "Inception follows Dom Cobb, a skilled thief who enters people's dreams to steal secrets, as he is hired to plant an idea in a target's mind. The mission blurs reality and dreams, leading to a mind-bending climax."}
+    ]
+  },
+  "finish_reason": "COMPLETE",
+  "usage": {"tokens": {"input_tokens": 34, "output_tokens": 56}}
+}

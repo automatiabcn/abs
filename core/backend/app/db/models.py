@@ -1,0 +1,325 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Optional
+
+from sqlmodel import Field, SQLModel
+
+
+class License(SQLModel, table=True):
+    """Üretilen lisansların kalıcı kaydı."""
+
+    __tablename__ = "licenses"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    jti: str = Field(index=True, unique=True, description="JWT benzersiz id")
+    customer_email: str = Field(default="", index=True)
+    customer_id_stripe: str = Field(default="", index=True)
+    tier: str = Field(default="self-host")
+    seat_count: int = Field(default=1)
+
+    issued_at: datetime
+    expires_at: datetime
+
+    revoked_at: Optional[datetime] = Field(default=None)
+    revoked_reason: Optional[str] = Field(default=None)
+
+    # 019 — first_success trigger
+    first_tool_call_at: Optional[datetime] = Field(default=None)
+
+    # 023 — preferred email language (en|tr|es) — Stripe customer locale'inden parse
+    preferred_lang: str = Field(default="en", max_length=8)
+
+    # 029 — GDPR Article 17 (right to erasure)
+    scheduled_delete_at: Optional[datetime] = Field(default=None)
+    purged_at: Optional[datetime] = Field(default=None)
+
+
+class EmailQueue(SQLModel, table=True):
+    """019 — Onboarding email serisi için kuyruk.
+
+    `kind`: welcome|walkthrough|first_success|expiry_warning|recovery
+    Scheduler her 5dk tick eder, scheduled_at <= now AND sent_at IS NULL row'lari
+    gönderir. Idempotent: sent_at NOT NULL satirlari atlanir.
+    """
+
+    __tablename__ = "email_queue"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    license_jti: str = Field(index=True, max_length=64)
+    customer_email: str = Field(max_length=256)
+    kind: str = Field(max_length=32, index=True)
+    scheduled_at: datetime = Field(index=True)
+    sent_at: Optional[datetime] = Field(default=None)
+    attempts: int = Field(default=0)
+    error: Optional[str] = Field(default=None, max_length=512)
+    unsubscribed: bool = Field(default=False)
+
+
+class OAuthState(SQLModel, table=True):
+    """026 — OAuth state CSRF token cache (10-min TTL)."""
+
+    __tablename__ = "oauth_states"
+
+    state: str = Field(primary_key=True, max_length=64)
+    provider: str = Field(max_length=32, index=True)
+    redirect_url: str = Field(max_length=512)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+
+class ConnectedSecret(SQLModel, table=True):
+    """026 — Encrypted API keys / OAuth tokens for smart link integrations."""
+
+    __tablename__ = "connected_secrets"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    key_name: str = Field(index=True, unique=True, max_length=64)
+    provider: str = Field(max_length=32, index=True)
+    encrypted_value: str = Field(max_length=8192)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    last_validated_at: Optional[datetime] = Field(default=None)
+    last_validated_ok: Optional[bool] = Field(default=None)
+    last_validated_error: Optional[str] = Field(default=None, max_length=512)
+    # 028 — OAuth refresh tracking
+    expires_at: Optional[datetime] = Field(default=None)
+    refresh_token_encrypted: Optional[str] = Field(default=None, max_length=8192)
+
+
+class VaultAuditEntry(SQLModel, table=True):
+    """027 — Vault audit log with HMAC chain (tamper-evident).
+
+    Each row has hmac = HMAC-SHA256(secret, canonical_entry + prev_hmac).
+    `verify_chain()` re-computes and detects any modification.
+    """
+
+    __tablename__ = "vault_audit_entries"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    ts: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+    action: str = Field(max_length=32, index=True)
+    actor: str = Field(default="system", max_length=64)
+    target_key: Optional[str] = Field(default=None, max_length=128)
+    detail: Optional[str] = Field(default=None, max_length=512)
+    hmac: str = Field(max_length=64)
+    prev_hmac: str = Field(default="", max_length=64)
+
+
+class CustomerAuditEntry(SQLModel, table=True):
+    """029 — Per-customer audit log (GDPR Article 15 right of access)."""
+
+    __tablename__ = "customer_audit_entries"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    license_jti: str = Field(index=True, max_length=64)
+    action: str = Field(max_length=64, index=True)
+    resource: Optional[str] = Field(default=None, max_length=128)
+    detail: Optional[str] = Field(default=None, max_length=512)
+    ip_hash: Optional[str] = Field(default=None, max_length=32)
+    user_agent_short: Optional[str] = Field(default=None, max_length=128)
+    ts: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+
+
+class Consent(SQLModel, table=True):
+    """029 — User consent tracking (GDPR Article 7)."""
+
+    __tablename__ = "consents"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    license_jti: str = Field(index=True, max_length=64)
+    consent_type: str = Field(max_length=64, index=True)
+    version: str = Field(default="1.0", max_length=16)
+    granted_at: Optional[datetime] = Field(default=None)
+    withdrawn_at: Optional[datetime] = Field(default=None)
+    source: str = Field(default="setup_wizard", max_length=32)
+
+
+class DataExportJob(SQLModel, table=True):
+    """029 — GDPR data export async job tracker."""
+
+    __tablename__ = "data_export_jobs"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    job_id: str = Field(unique=True, index=True, max_length=48)
+    license_jti: str = Field(index=True, max_length=64)
+    customer_email: str = Field(max_length=256)
+    status: str = Field(default="queued", max_length=16)
+    output_path: Optional[str] = Field(default=None, max_length=512)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    completed_at: Optional[datetime] = Field(default=None)
+    expires_at: Optional[datetime] = Field(default=None)
+
+
+class BetaRequest(SQLModel, table=True):
+    """031 — Beta access waitlist + auto/manual approval queue."""
+
+    __tablename__ = "beta_requests"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email: str = Field(index=True, max_length=256)
+    name: str = Field(default="", max_length=128)
+    company: str = Field(default="", max_length=128)
+    use_case: str = Field(default="", max_length=1024)
+    lang: str = Field(default="en", max_length=8)
+    status: str = Field(default="pending", index=True, max_length=16)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+    approved_at: Optional[datetime] = Field(default=None)
+    rejected_at: Optional[datetime] = Field(default=None)
+    rejected_reason: Optional[str] = Field(default=None, max_length=512)
+    license_jti: Optional[str] = Field(default=None, max_length=64)
+
+
+class WizardEvent(SQLModel, table=True):
+    """022 — Setup wizard adım bazlı drop-off metrik.
+
+    Her adım transitionunda 1 row insert. Aynı session_id × step_num kombinasyonu
+    ikinci kez gelirse `completed_at` güncellenir (idempotent upsert).
+    """
+
+    __tablename__ = "wizard_events"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    session_id: str = Field(index=True, max_length=64)
+    step_num: int = Field(index=True)
+    started_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    completed_at: Optional[datetime] = Field(default=None)
+
+
+class WebhookEvent(SQLModel, table=True):
+    """017 — Stripe webhook idempotency: event_id bir kez işlenir.
+
+    Stripe aynı event'i retry'larda tekrar gönderebilir. Bu tablo
+    'tam-kez-işle' garantisi sağlar: handler önce INSERT dener,
+    UNIQUE constraint patlarsa duplicate olarak 200 döner.
+    """
+
+    __tablename__ = "webhook_events"
+
+    event_id: str = Field(primary_key=True, max_length=64)
+    event_type: str = Field(max_length=64, index=True)
+    received_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    processed_at: Optional[datetime] = Field(default=None)
+    license_jti: Optional[str] = Field(default=None, max_length=64, index=True)
+    error: Optional[str] = Field(default=None, max_length=512)
+
+
+# ───── Sprint 20 — feature_usage + meetings ─────────────────────────────
+
+
+class FeatureUsageLog(SQLModel, table=True):
+    """S20.3 — append-only feature usage events.
+
+    Aggregation done at query time via GROUP BY (SQLite has no materialized
+    views; rows expected to stay under 1M for a self-host single-tenant
+    deployment, which is well within SQLite's comfort zone).
+    """
+
+    __tablename__ = "feature_usage_log"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
+    feature_id: str = Field(max_length=64, index=True)
+    actor_email: Optional[str] = Field(default=None, max_length=254)
+    ts: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+
+
+class Meeting(SQLModel, table=True):
+    """S20.4 — uploaded meeting recording metadata + WhisperX result."""
+
+    __tablename__ = "meetings"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
+    uploader_email: str = Field(max_length=254, index=True)
+    filename: str = Field(max_length=256)
+    duration_sec: float = Field(default=0.0)
+    speaker_count: int = Field(default=0)
+    status: str = Field(max_length=32, default="pending")  # pending|done|error
+    summary: str = Field(default="", max_length=4096)
+    error_message: Optional[str] = Field(default=None, max_length=512)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+    completed_at: Optional[datetime] = Field(default=None)
+
+
+class MeetingSegment(SQLModel, table=True):
+    """S20.4 — single transcript segment for a meeting (1:N to Meeting)."""
+
+    __tablename__ = "meeting_segments"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    meeting_id: int = Field(index=True)
+    speaker_id: str = Field(max_length=32)
+    start_sec: float
+    end_sec: float
+    text: str
+
+
+class UsageLog(SQLModel, table=True):
+    """Phase 4 / Q2.CO1 — append-only provider usage log.
+
+    One row per cascade provider call. Aggregated at query time by
+    `quota_monitor._query_usage_sum` to drive 80%/95% threshold warnings.
+    """
+
+    __tablename__ = "usage_log"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    provider: str = Field(max_length=32, index=True)
+    tenant_slug: str = Field(max_length=64, default="default", index=True)
+    tokens: int = Field(default=0)
+    cost_usd: float = Field(default=0.0)
+    request_id: Optional[str] = Field(default=None, max_length=64)
+    ts: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+
+
+class User(SQLModel, table=True):
+    """Phase 2 / Q3 / Q2.CO5 — multi-admin user table.
+
+    Replaces the single-row `admin_credentials.json` long-term. For
+    backward-compat the magic-link claim flow ALSO writes
+    `admin_credentials.json` so the existing `/auth/login` panel session
+    code path keeps working without coupled changes.
+
+    `status`:
+      pending  — signup recorded, magic-link not yet claimed
+      active   — claim completed, can log in
+      revoked  — admin disabled the account
+    """
+
+    __tablename__ = "users"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email: str = Field(max_length=254, index=True, unique=True)
+    password_hash: str = Field(max_length=128)
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
+    role: str = Field(max_length=32, default="admin")
+    status: str = Field(max_length=32, default="pending", index=True)
+    magic_token: Optional[str] = Field(
+        default=None, max_length=128, index=True
+    )
+    magic_expires_at: Optional[datetime] = Field(default=None)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    claimed_at: Optional[datetime] = Field(default=None)

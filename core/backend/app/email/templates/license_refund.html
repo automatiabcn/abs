@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İade onayı — Automatia ABS</title>
+    <!-- subject: Automatia ABS satın alımınız iade edildi -->
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #f9f9f9;">
+    <div style="max-width: 600px; margin: 20px auto; padding: 24px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.06);">
+        <h2 style="color: #222; margin-top: 0;">İade onayınız</h2>
+
+        <p>Merhaba {{ customer_email }},</p>
+
+        <p><strong>{{ refund_date }}</strong> tarihinde işlenen iade talebiniz tamamlandı. Stripe tarafından kart hesabınıza geri ödeme talimatı verildi; bankanıza göre 5–10 iş günü içinde görünür.</p>
+
+        <h3 style="color: #222;">Lisans durumu</h3>
+        <p>Aşağıdaki lisans iptal edildi:</p>
+        <pre style="font-family: Menlo, Consolas, monospace; background-color: #f4f4f4; padding: 12px; border: 1px solid #e3e3e3; border-radius: 4px; font-size: 12px;">JTI: {{ license_jti }}</pre>
+        <p>ABS sunucunuz şu andan itibaren demo moduna döndü. Demo süresi 14 gün kalmış olarak çalışmaya devam eder.</p>
+
+        <h3 style="color: #222;">Bize ne oldu söyler misiniz?</h3>
+        <p>Geri bildiriminiz ürünü çok iyileştirir. 1–2 satır da olsa <a href="mailto:hi@automatiabcn.com" style="color: #2b6cb0; text-decoration: none;">hi@automatiabcn.com</a> adresine yazarsanız çok mutlu oluruz.</p>
+
+        <p style="margin-top: 28px;">İyi çalışmalar,<br><strong>Automatia BCN</strong></p>
+
+        <hr style="border: 0; border-top: 1px solid #eee; margin-top: 20px;">
+        <p style="font-size: 0.8em; color: #888; text-align: center;">Bu e-posta otomatik olarak gönderilmiştir.</p>
+    </div>
+</body>
+</html>

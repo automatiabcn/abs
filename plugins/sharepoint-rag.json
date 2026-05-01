@@ -1,0 +1,30 @@
+{
+  "id": "sharepoint-rag",
+  "name": "SharePoint RAG",
+  "version": "1.0.0",
+  "type": "rag-source",
+  "entry_point": "ghcr.io/abs-plugins/sharepoint-rag:1.0.0",
+  "description": "Microsoft SharePoint connector — index document libraries into ABS RAG with delta sync",
+  "author": "Automatia BCN",
+  "homepage": "https://github.com/abs-plugins/sharepoint-rag",
+  "license": "Apache-2.0",
+  "dependencies": ["msal@^1.28", "httpx@^0.27"],
+  "permissions": {
+    "network_egress": ["graph.microsoft.com", "login.microsoftonline.com"],
+    "filesystem_read": ["/app/config"],
+    "filesystem_write": ["/tmp"],
+    "secrets": ["SP_CLIENT_ID", "SP_CLIENT_SECRET", "SP_TENANT_ID"],
+    "tenant_scoped": true,
+    "cpu_quota": 1.0,
+    "memory_mb": 1024
+  },
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "site_url": {"type": "string", "format": "uri"},
+      "library_name": {"type": "string"},
+      "sync_interval_min": {"type": "integer", "minimum": 5}
+    },
+    "required": ["site_url", "library_name", "sync_interval_min"]
+  }
+}

@@ -1,0 +1,42 @@
+# T-012 — Cerbos RAG resource policy.
+# Defense-in-depth on top of Qdrant payload-filter (T-009). Every /v1/rag/* call
+# resolves to a `rag_collection` (one per tenant) before the Qdrant wrapper runs.
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  resource: rag_collection
+  version: default
+  importDerivedRoles:
+    - common_roles
+  rules:
+    # Suspended principals are denied first, regardless of role.
+    - actions: ["*"]
+      effect: EFFECT_DENY
+      roles: ["*"]
+      condition:
+        match:
+          expr: has(request.principal.attr.suspended) && request.principal.attr.suspended == true
+
+    # Read paths (RAG query, listing) — any tenant member.
+    - actions: ["query", "list"]
+      effect: EFFECT_ALLOW
+      derivedRoles: ["tenant_member", "tenant_admin"]
+
+    # Ingest — any tenant member can write into their own tenant collection.
+    - actions: ["ingest"]
+      effect: EFFECT_ALLOW
+      derivedRoles: ["tenant_member", "tenant_admin"]
+
+    # Delete is admin-only.
+    - actions: ["delete"]
+      effect: EFFECT_ALLOW
+      derivedRoles: ["tenant_admin"]
+
+    # Cross-tenant access is implicitly denied because no derived role matches;
+    # this rule exists for explicit audit-trail evidence.
+    - actions: ["*"]
+      effect: EFFECT_DENY
+      roles: ["*"]
+      condition:
+        match:
+          expr: request.resource.attr.tenant_id != request.principal.attr.tenant_id

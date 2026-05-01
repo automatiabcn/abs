@@ -1,0 +1,18 @@
+{
+  "name": "cascade_load",
+  "users": 100,
+  "spawn_rate": 10,
+  "wait_time_range": [
+    0.1,
+    0.5
+  ],
+  "endpoint": "/v1/cascade/ask",
+  "method": "POST",
+  "payload_template": {
+    "prompt": "test",
+    "model": "gptoss"
+  },
+  "duration_minutes": 5,
+  "expected_p99_ms": 1000,
+  "note": "locust scenario JSON (live benchmark requires running uvicorn)."
+}

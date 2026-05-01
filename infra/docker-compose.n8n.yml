@@ -1,0 +1,63 @@
+# T-033 — n8n dev compose overlay (queue mode + Postgres + Redis).
+# docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml \
+#                -f infra/docker-compose.n8n.yml up -d n8n n8n-worker
+
+services:
+  n8n-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: n8n
+      POSTGRES_PASSWORD: n8n
+      POSTGRES_DB: n8n
+    volumes:
+      - abs-n8n-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U n8n"]
+      interval: 5s
+      retries: 10
+
+  n8n-redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--requirepass", "n8n"]
+    volumes:
+      - abs-n8n-redis:/data
+
+  n8n:
+    image: n8nio/n8n:1.74.0
+    ports:
+      - "5678:5678"
+    environment:
+      EXECUTIONS_MODE: queue
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: n8n-postgres
+      DB_POSTGRESDB_USER: n8n
+      DB_POSTGRESDB_PASSWORD: n8n
+      DB_POSTGRESDB_DATABASE: n8n
+      QUEUE_BULL_REDIS_HOST: n8n-redis
+      QUEUE_BULL_REDIS_PASSWORD: n8n
+      N8N_HOST: localhost
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: "http://localhost:5678/"
+    depends_on:
+      n8n-postgres: { condition: service_healthy }
+      n8n-redis:    { condition: service_started }
+
+  n8n-worker:
+    image: n8nio/n8n:1.74.0
+    command: ["worker"]
+    environment:
+      EXECUTIONS_MODE: queue
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: n8n-postgres
+      DB_POSTGRESDB_USER: n8n
+      DB_POSTGRESDB_PASSWORD: n8n
+      DB_POSTGRESDB_DATABASE: n8n
+      QUEUE_BULL_REDIS_HOST: n8n-redis
+      QUEUE_BULL_REDIS_PASSWORD: n8n
+    depends_on:
+      n8n: { condition: service_started }
+
+volumes:
+  abs-n8n-pg:
+  abs-n8n-redis:

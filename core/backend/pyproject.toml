@@ -1,0 +1,50 @@
+[project]
+name = "abs-backend"
+version = "0.1.0"
+description = "Automatia ABS backend (FastAPI)"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic[email]>=2.8",
+    "pydantic-settings>=2.4",
+    "sqlmodel>=0.0.22",
+    "stripe>=10",
+    "PyJWT[crypto]>=2.9",
+    "cryptography>=43",
+    "jinja2>=3.1",
+    "bcrypt>=4.2",
+    "python-jose[cryptography]>=3.3",
+    "mcp>=1.2",
+    "httpx>=0.27",
+    "anthropic>=0.40",
+    "cohere>=5.13",          # 008'de venv'e kuruldu, pyproject.toml'a 010'da yazıldı
+    "chromadb>=0.4.22",      # 009'da venv'e kuruldu, pyproject.toml'a 010'da yazıldı
+    "PyYAML>=6.0",           # 013 — sops decrypt çıktısı YAML parse
+    "nats-py>=2.6",          # T-001 — NATS JetStream event bus
+    "inngest>=0.4",          # T-002 — durable workflow engine
+    "alembic>=1.13",         # T-003/T-007 — DB migration tooling
+    "cerbos>=0.10",          # T-004 — Cerbos PDP SDK
+    "qdrant-client>=1.13",   # T-009 — Qdrant vector DB SDK
+    "slowapi>=0.1.9",        # T-Q01 sweep — /v1/* rate limit middleware
+    "neo4j>=5.18",           # Q7 Phase A — graph DB Bolt async driver
+    "docker>=7.1",           # Q7 Phase B — real Docker plugin sandbox launcher
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.27",
+    "respx>=0.21",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

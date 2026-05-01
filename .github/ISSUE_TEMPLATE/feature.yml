@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest a new feature or improvement.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: User stories welcome.
+      placeholder: As a [role], I want [capability], because [reason].
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      placeholder: I'd like ABS to do X when Y, by adding Z.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: Existing tool W almost solves this but...
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Backend (Python / FastAPI / MCP)
+        - Landing (Next.js / React)
+        - Docs
+        - DevOps / deploy
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      options:
+        - label: I agree to follow this project's [Code of Conduct](../CODE_OF_CONDUCT.md)
+          required: true

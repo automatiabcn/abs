@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Tu licencia Automatia ABS</title>
+<!-- subject: Tu licencia Automatia ABS está lista -->
+</head>
+<body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;margin:0;padding:20px;background-color:#f9f9f9;">
+<div style="max-width:600px;margin:20px auto;padding:24px;background:#fff;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,0.06);">
+<h2 style="color:#222;margin-top:0;">Gracias por tu compra de Automatia ABS</h2>
+<p>Hola,</p>
+<p>El pago de {{ customer_email }} se recibió correctamente. Aquí tienes tu clave de licencia y los pasos de instalación.</p>
+<h3 style="color:#222;">Clave de licencia</h3>
+<pre style="font-family:Menlo,Consolas,monospace;background:#f4f4f4;padding:14px;border:1px solid #e3e3e3;border-radius:4px;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word;font-size:12px;">{{ license_key }}</pre>
+<h3 style="color:#222;">Instalación</h3>
+<ol style="padding-left:20px;"><li style="margin-bottom:8px;">Asegúrate de que Docker Desktop o Docker Engine está corriendo.</li><li style="margin-bottom:8px;">Ejecuta el script <code>install.sh</code> del paquete descargado.</li><li style="margin-bottom:8px;">Cuando se abra el panel, pega la clave de arriba.</li></ol>
+<p>Guía detallada: <a href="https://abs.automatiabcn.com/docs/install" style="color:#2b6cb0;text-decoration:none;">abs.automatiabcn.com/docs/install</a></p>
+<h3 style="color:#222;">Reembolso</h3>
+<p>Puedes solicitar reembolso sin preguntas en 14 días: <a href="{{ refund_url }}" style="color:#2b6cb0;text-decoration:none;">{{ refund_url }}</a></p>
+<p style="font-size:12px;color:#888;margin-top:24px;">Automatia BCN · Barcelona · support@automatiabcn.com</p>
+</div></body></html>

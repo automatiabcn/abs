@@ -1,0 +1,119 @@
+name: provider-regression
+
+# Sprint 19 T-S02.3 — nightly drift detection across the 5 ABS providers.
+# Compares live sandbox calls against golden fixtures in
+# core/backend/app/providers/<provider>/contracts/. On drift, fails the job
+# and opens a GitHub issue + posts a Slack #ops alert.
+
+on:
+  schedule:
+    - cron: "30 3 * * *"  # 03:30 UTC, after nightly-rag-e2e (02:00 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  contract-regression:
+    name: Provider contract regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: core/backend
+
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [anthropic, groq, gemini, cohere, openrouter]
+
+    env:
+      PROVIDER: ${{ matrix.provider }}
+      ABS_DATABASE_URL: sqlite:///${{ runner.temp }}/abs.db
+      # Sandbox API keys — only the keys present in repo secrets are used.
+      # Cohere + OpenRouter are validated against fixtures only (no live call)
+      # until sandbox keys exist.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_TEST_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_FREE_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_TEST_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Static contract regression (golden fixtures)
+        run: pytest -q tests/test_provider_contracts.py -k "$PROVIDER or test_request_drift or test_fingerprint"
+
+      - name: Live sandbox probe (best-effort)
+        id: probe
+        continue-on-error: true
+        run: python -m scripts.provider_drift_probe --provider "$PROVIDER" --out drift.json
+
+      - name: Diff fingerprint vs golden
+        if: steps.probe.outcome == 'success'
+        run: python -m scripts.provider_drift_check --provider "$PROVIDER" --probe drift.json
+
+      - name: Open issue on drift
+        if: failure()
+        uses: actions/github-script@v7
+        env:
+          PROVIDER: ${{ matrix.provider }}
+          RUN_ID: ${{ github.run_id }}
+        with:
+          script: |
+            const provider = process.env.PROVIDER;
+            const runId = process.env.RUN_ID;
+            const title = `[provider-regression] ${provider} contract drift detected`;
+            const body = [
+              `Nightly drift detected on \`${provider}\`.`,
+              ``,
+              `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`,
+              ``,
+              `Compare \`core/backend/app/providers/${provider}/contracts/response_v1.json\``,
+              `against the latest probe artifact and update the fixture if intentional.`,
+            ].join("\n");
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "provider-drift",
+              per_page: 50,
+            });
+            const dupe = existing.data.find(i => i.title === title);
+            if (dupe) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: dupe.number,
+                body: `Drift seen again on run ${runId}.`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ["provider-drift", "ops"],
+              });
+            }
+
+      - name: Slack #ops alert on drift
+        if: failure() && env.SLACK_OPS_WEBHOOK != ''
+        env:
+          SLACK_OPS_WEBHOOK: ${{ secrets.SLACK_OPS_WEBHOOK }}
+          PROVIDER: ${{ matrix.provider }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          MSG=$(printf '{"text":":rotating_light: provider-regression: %s contract drift on run %s"}' "$PROVIDER" "$RUN_ID")
+          curl -fsSL -X POST -H 'Content-Type: application/json' --data "$MSG" "$SLACK_OPS_WEBHOOK"

@@ -1,0 +1,127 @@
+site_name: Automatia ABS Documentation
+site_url: https://docs.automatiabcn.com/
+site_description: Self-host AI orchestration for Claude Code — 100+ MCP tools, 6 provider cascade, RAG hybrid, Türkçe quality pipeline.
+site_author: Automatia BCN
+repo_url: https://github.com/automatiabcn/abs
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: tr
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Karanlık moda geç
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Aydınlık moda geç
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+nav:
+  - Ana Sayfa: index.md
+  - Setup Guide: setup-guide.md
+  - Quickstart (30 min): quickstart-30min.md
+  - Architecture: architecture.md
+  - API Reference: api-reference.md
+  - Operations:
+      - Billing Runbook: billing-runbook.md
+      - First Customer Playbook: first-customer-playbook.md
+      - Operations: operations.md
+      - Troubleshooting: troubleshooting.md
+      - Disaster Recovery: dr-runbook.md
+      - Vault Recovery: vault-recovery-runbook.md
+      - Webhook Rotation: webhook-rotation-runbook.md
+      - Performance: performance.md
+  - Security:
+      - Scope: security/scope.md
+      - OWASP + RAG Checklist: security/owasp_rag_checklist.md
+      - OAuth Pen-Test: security/oauth_pentest.md
+      - HackerOne Program: security/hackerone_program.md
+      - Index: security/README.md
+  - Launch:
+      - Index: launch/README.md
+      - GA Checklist: launch/ga-launch-checklist.md
+      - Press Kit: launch/press-kit.md
+      - Launch Copy: launch/launch-copy.md
+      - Landing A/B: launch/landing-ab-test.md
+      - Crisis Comm: launch/crisis-comm-playbook.md
+  - QA & Policy:
+      - Bundle Reports: qa/bundle-reports/2026-04-29-summary.md
+      - Perf Budget: qa/perf-budget-policy.md
+      - i18n Policy: qa/i18n-policy.md
+      - fs-scan Allowlist Policy: qa/fs-scan-allowlist-policy.md
+      - Docs Publishing Policy: qa/docs-publishing-policy.md
+      - Beta E2E Policy: qa/beta-e2e-policy.md
+      - Bug Reports: qa/bug_report_2026-04-28.md
+  - API Reference:
+      - Scalar (interactive): api-reference.md
+  - Design:
+      - Decisions: design-decisions.md
+      - Vision: vision.md
+      - Open Questions: open-questions.md
+  - FAQ: faq.md
+  - CHANGELOG: CHANGELOG.md
+  - Research:
+      - Market: research/market.md
+      - Competitive: research/competitive-analysis.md
+      - Dual Distribution: research/dual-distribution.md
+      - Free Tier Limits: research/free-tier-limits.md
+      - Landing Onboarding: research/landing-onboarding.md
+      - One-Time License: research/one-time-license.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+  # T-R07 — version selector (mike) + Algolia DocSearch.
+  # Both plugins ship config docs; install with:
+  #   pip install mike mkdocs-material[imaging] mkdocs-algolia-docsearch
+  - mike:
+      alias_type: copy
+      canonical_version: latest
+  # Algolia DocSearch (managed) — uses the `mkdocs-algolia-docsearch` plugin.
+  # Crawler config + apiKey live in the dashboard; we only ship the index name.
+  - algolia_docsearch:
+      app_id: !ENV [ALGOLIA_APP_ID, "DOCSEARCH_APP_ID_PLACEHOLDER"]
+      api_key: !ENV [ALGOLIA_SEARCH_KEY, "DOCSEARCH_PUBLIC_API_KEY_PLACEHOLDER"]
+      index_name: abs-docs
+
+docs_dir: docs
+site_dir: site
+strict: false
+
+exclude_docs: |
+  README.md

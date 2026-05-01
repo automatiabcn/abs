@@ -1,0 +1,11 @@
+{
+  "id": "msg_01AbCdEfGhIjKlMnOpQrStUv",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-4-5-20251001",
+  "content": [
+    {"type": "text", "text": "Quantum entanglement is a phenomenon where two particles become linked so that the state of one instantly influences the state of the other, no matter how far apart they are."}
+  ],
+  "stop_reason": "end_turn",
+  "usage": {"input_tokens": 45, "output_tokens": 78}
+}

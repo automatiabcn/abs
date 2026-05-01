@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Süre uyarısı — Automatia ABS</title>
+    <!-- subject: ⏰ {{ days_left }} gün kaldı — ABS lisansını yenile -->
+</head>
+<body style="font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 20px; background-color: #f4f4f6;">
+<div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(15,23,42,0.08);">
+    <div style="background: linear-gradient(135deg,#ea580c,#f97316); padding: 28px 32px; color: #ffffff;">
+        <h1 style="margin:0; font-size:22px;">{{ days_left }} gün kaldı</h1>
+        <p style="margin:8px 0 0 0; opacity:0.95;">Süreyi kaçırma — kesintisiz devam et.</p>
+    </div>
+    <div style="padding: 28px 32px;">
+        <p>{{ customer_email }} adına ABS lisansının süresi <strong>{{ days_left }} gün</strong> içinde dolacak. Süre dolduğunda MCP tool çağrıları engellenecek (lisans gate açıksa).</p>
+
+        <div style="margin-top:20px; padding:14px 16px; background:#fff7ed; border-left:4px solid #ea580c; border-radius:6px; font-size:14px;">
+            <strong>Geçerlilik:</strong> {{ expires_at }}<br>
+            <strong>Lisans JTI:</strong> <code style="font-family:Menlo,monospace; font-size:12px;">{{ license_jti }}</code>
+        </div>
+
+        <h3 style="color:#9a3412; margin-top:24px;">Ne yapmalısın?</h3>
+        <ol style="padding-left:20px;">
+            <li>Müşteri portal'a giderek aboneliğini yenile.</li>
+            <li>Maintenance paketin yoksa şimdi ekleyebilirsin ($49/yıl).</li>
+            <li>Yenileme sonrası lisans otomatik aktif olur — hiçbir kurulum gerekmez.</li>
+        </ol>
+
+        <div style="margin-top:28px; text-align:center;">
+            <a href="{{ portal_url }}" style="display:inline-block; background:#ea580c; color:#ffffff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:600;">Aboneliği Yenile</a>
+        </div>
+        <p style="margin-top:24px; font-size:13px; color:#64748b;">Sorun varsa <a href="mailto:support@automatiabcn.com" style="color:#1e57ac;">support@automatiabcn.com</a>.</p>
+    </div>
+    <div style="padding: 16px 32px; background:#f8fafc; font-size:12px; color:#64748b; text-align:center;">
+        Automatia BCN · Barcelona · <a href="{{ unsubscribe_url }}" style="color:#64748b;">Bu seriden çık</a>
+    </div>
+</div>
+</body>
+</html>

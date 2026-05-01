@@ -1,0 +1,131 @@
+# T-017 — LangFuse self-host Helm values (production overlay).
+#
+# Use:
+#   helm repo add langfuse https://langfuse.github.io/langfuse-k8s
+#   helm install langfuse langfuse/langfuse \
+#     --namespace abs-observability --create-namespace \
+#     -f infra/helm/langfuse-values.yaml
+#
+# Components: web (UI :3000), worker (trace ingest), Postgres (metadata),
+# ClickHouse (traces, ≥16Gi), Redis (cache+queue), MinIO (S3 blobs).
+#
+# ⚠ Cost guard: ClickHouse memory <16Gi → ingest backpressure. Bump
+# `clickhouse.resources.requests.memory` BEFORE production cutover (T-058).
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+langfuse:
+  image:
+    repository: langfuse/langfuse
+    tag: 3.31.0
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: langfuse.abs.local
+        paths: [{ path: /, pathType: Prefix }]
+    tls:
+      - hosts: [langfuse.abs.local]
+        secretName: langfuse-abs-tls
+  service:
+    type: ClusterIP
+    port: 3000
+  replicaCount: 2
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits:   { cpu: 2,    memory: 4Gi }
+  env:
+    - { name: NEXTAUTH_URL,         value: "https://langfuse.abs.local" }
+    - { name: TELEMETRY_ENABLED,    value: "false" }
+    - { name: LANGFUSE_DEFAULT_ORG, value: "automatia" }
+    - { name: SALT,                 valueFrom: { secretKeyRef: { name: langfuse-secrets, key: salt } } }
+    - { name: NEXTAUTH_SECRET,      valueFrom: { secretKeyRef: { name: langfuse-secrets, key: nextauth-secret } } }
+
+worker:
+  enabled: true
+  replicaCount: 2
+  resources:
+    requests: { cpu: 1,   memory: 2Gi }
+    limits:   { cpu: 4,   memory: 8Gi }
+
+postgresql:
+  enabled: true
+  auth:
+    username: langfuse
+    database: langfuse
+    existingSecret: langfuse-postgres-secret
+    secretKeys: { adminPasswordKey: postgres-password, userPasswordKey: password }
+  primary:
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: fast-ssd
+    resources:
+      requests: { cpu: 500m, memory: 1Gi }
+      limits:   { cpu: 2,    memory: 4Gi }
+
+clickhouse:
+  enabled: true
+  image: { repository: clickhouse/clickhouse-server, tag: "24.3" }
+  shards: 1
+  replicaCount: 2
+  persistence:
+    enabled: true
+    size: 200Gi
+    storageClass: fast-ssd
+  resources:
+    requests: { cpu: 2,  memory: 16Gi }   # MIN 16Gi — see top-of-file warning
+    limits:   { cpu: 8,  memory: 32Gi }
+  zookeeper:
+    enabled: true
+    replicaCount: 3
+
+redis:
+  enabled: true
+  architecture: replication
+  auth:
+    enabled: true
+    existingSecret: langfuse-redis-secret
+    existingSecretPasswordKey: redis-password
+  master:
+    persistence: { enabled: true, size: 8Gi }
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits:   { cpu: 1,    memory: 1Gi }
+
+minio:
+  enabled: true
+  mode: distributed
+  statefulset: { replicaCount: 4 }
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClass: fast-ssd
+  buckets:
+    - { name: langfuse-events, policy: none }
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits:   { cpu: 1,    memory: 2Gi }
+
+backup:
+  enabled: true
+  schedule: "0 3 * * *"   # 03:00 UTC nightly
+  retentionDays: 30
+  destination:
+    s3:
+      bucket: abs-langfuse-backups
+      region: eu-west-1
+      pathPrefix: langfuse/
+
+networkPolicy:
+  enabled: true
+  ingressFromNamespaces:
+    - abs-backend
+    - abs-rag
+
+# T-046 caveat — when SOC2 audit policy lands, swap MinIO for S3 cold tier
+# with 7-year object-lock and a parallel pipeline.

@@ -1,0 +1,121 @@
+"""Provider base class + OpenAI-uyumlu chat completions yardımcısı."""
+
+from __future__ import annotations
+
+import time
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional
+
+import httpx
+
+from .schemas import ProviderError, ProviderResponse
+
+
+class BaseProvider(ABC):
+    """Tüm provider client'larının türediği abstract base."""
+
+    name: str = "base"
+    default_model: str = ""
+    default_timeout: float = 30.0
+
+    @abstractmethod
+    async def call(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        **kwargs: Any,
+    ) -> ProviderResponse:
+        """Prompt'u modele gönder, normalized ProviderResponse döndür."""
+        raise NotImplementedError
+
+
+async def openai_compatible_chat(
+    *,
+    url: str,
+    api_key: str,
+    model: str,
+    prompt: str,
+    provider_name: str,
+    max_tokens: int = 1024,
+    temperature: float = 0.3,
+    timeout: float = 30.0,
+    extra_headers: Optional[Dict[str, str]] = None,
+) -> ProviderResponse:
+    """OpenAI uyumlu /chat/completions endpoint'i için ortak çağrı.
+
+    Groq, Cerebras, OpenRouter, CloudFlare hepsi aynı şemayı konuşur.
+    """
+    if not api_key:
+        raise ProviderError(
+            f"{provider_name} API key tanımlı değil", provider=provider_name, transient=False
+        )
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    if extra_headers:
+        headers.update(extra_headers)
+
+    body = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+    }
+
+    start = time.monotonic()
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            r = await client.post(url, headers=headers, json=body)
+    except httpx.TimeoutException as exc:
+        raise ProviderError(
+            f"{provider_name} timeout ({timeout}s)", provider=provider_name, transient=True
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise ProviderError(
+            f"{provider_name} connection error: {exc}", provider=provider_name, transient=True
+        ) from exc
+
+    elapsed_ms = int((time.monotonic() - start) * 1000)
+
+    if r.status_code >= 500:
+        raise ProviderError(
+            f"{provider_name} 5xx: {r.status_code}", provider=provider_name, transient=True
+        )
+    if r.status_code == 429:
+        raise ProviderError(
+            f"{provider_name} rate limit", provider=provider_name, transient=True
+        )
+    if r.status_code >= 400:
+        raise ProviderError(
+            f"{provider_name} {r.status_code}: {r.text[:200]}",
+            provider=provider_name,
+            transient=False,
+        )
+
+    try:
+        data = r.json()
+    except ValueError as exc:
+        raise ProviderError(
+            f"{provider_name} JSON parse error", provider=provider_name, transient=True
+        ) from exc
+
+    try:
+        text = data["choices"][0]["message"]["content"] or ""
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ProviderError(
+            f"{provider_name} beklenmeyen yanıt: {str(data)[:200]}",
+            provider=provider_name,
+            transient=False,
+        ) from exc
+
+    usage = data.get("usage") or {}
+    return ProviderResponse(
+        text=text,
+        model=model,
+        provider=provider_name,
+        elapsed_ms=elapsed_ms,
+        tokens_in=usage.get("prompt_tokens"),
+        tokens_out=usage.get("completion_tokens"),
+    )

@@ -1,0 +1,20 @@
+"""016 — Symbol indexing orchestrator."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Dict
+
+from .parser import parse_directory
+from .store import bulk_insert, reset, stats as store_stats
+
+
+def index_path(path: str, replace: bool = False) -> Dict[str, Any]:
+    p = Path(path)
+    if not p.exists():
+        return {"error": f"yol yok: {path}", "indexed": 0}
+    if replace:
+        reset()
+    syms = parse_directory(p)
+    inserted = bulk_insert(syms)
+    return {"path": str(p), "indexed": inserted, "stats": store_stats()}

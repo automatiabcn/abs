@@ -1,0 +1,41 @@
+services:
+  backend:
+    build: ../core/backend
+    env_file: .env
+    expose:
+      - "8000"
+    volumes:
+      - abs-data:/app/data
+      - abs-vault-key:/app/vault-key:ro    # 013 — master key ayrı volume, read-only
+    restart: unless-stopped
+
+  email-cron:
+    build: ../core/backend
+    env_file: .env
+    command: ["sh", "-c", "while true; do python infra/scripts/email_tick.py; sleep 300; done"]
+    volumes:
+      - abs-data:/app/data
+      - abs-vault-key:/app/vault-key:ro
+      - ../infra/scripts:/app/infra/scripts:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+volumes:
+  abs-data:
+  abs-vault-key:           # 013 — master age key (asla secrets ile aynı volume'da olmaz)
+  caddy-data:
+  caddy-config:

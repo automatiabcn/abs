@@ -1,0 +1,10 @@
+{
+  "target": "/Users/eneseserkan/Main/abs-server-product/core/backend/app",
+  "files_count": 156,
+  "loc_total": 12521,
+  "symbols_total": 1932,
+  "elapsed_s": 0.263,
+  "memory_peak_mb": 1.78,
+  "ms_per_file": 1.69,
+  "expected_threshold_s_for_10k_loc": 60
+}

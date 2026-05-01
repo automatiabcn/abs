@@ -1,0 +1,30 @@
+{
+  "id": "slack-thread-rag",
+  "name": "Slack Thread RAG",
+  "version": "1.0.0",
+  "type": "rag-source",
+  "entry_point": "ghcr.io/abs-plugins/slack-thread-rag:1.0.0",
+  "description": "Slack thread/channel ingestion for searchable conversation memory",
+  "author": "Automatia BCN",
+  "homepage": "https://github.com/abs-plugins/slack-thread-rag",
+  "license": "Apache-2.0",
+  "dependencies": ["slack-sdk@^3.27", "httpx@^0.27"],
+  "permissions": {
+    "network_egress": ["slack.com", "*.slack.com"],
+    "filesystem_read": ["/app/config"],
+    "filesystem_write": ["/tmp"],
+    "secrets": ["SLACK_BOT_TOKEN", "SLACK_SIGNING_SECRET"],
+    "tenant_scoped": true,
+    "cpu_quota": 0.5,
+    "memory_mb": 512
+  },
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "channels": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+      "include_archived": {"type": "boolean"},
+      "thread_depth": {"type": "integer", "maximum": 200}
+    },
+    "required": ["channels", "include_archived", "thread_depth"]
+  }
+}

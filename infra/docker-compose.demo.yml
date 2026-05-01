@@ -1,0 +1,27 @@
+# 033 Modul C — Docker Compose override for demo / customer-meeting mode.
+#
+#   docker compose -f docker-compose.yml -f infra/docker-compose.demo.yml up -d
+#
+# Disables live external calls (Anthropic / Stripe / OAuth / Cohere) so a
+# screen recording can run safely without rate-limit risk or accidental
+# real-money charges.
+
+version: "3.9"
+
+services:
+  abs-backend:
+    environment:
+      ABS_DEMO_MODE: "true"
+      ABS_PROVIDER_MOCK: "true"
+      ABS_DEMO_SEED_VERSION: "v1"
+      # Bypass live providers — anything calling them returns the mock layer.
+      ABS_RATE_LIMIT_ENABLED: "false"
+      # Keep Stripe webhook handler running but in dummy-mode (no real Stripe round-trip).
+      # Values come from .env so the compose file ships clean of secret-looking strings.
+      ABS_STRIPE_WEBHOOK_SECRET: "${ABS_STRIPE_WEBHOOK_SECRET:-whsec_demo_dummy}"
+      ABS_STRIPE_SECRET_KEY: "${ABS_STRIPE_SECRET_KEY:-sk_test_demo_dummy}"
+    command: >
+      sh -c "
+        python infra/scripts/seed_demo_data.py --reset || true
+        && uvicorn app.main:app --host 0.0.0.0 --port 8000
+      "

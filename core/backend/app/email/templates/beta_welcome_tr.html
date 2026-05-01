@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABS Beta'ya Hoşgeldiniz</title>
+    <!-- subject: ABS Beta'ya hoşgeldiniz — lisansınız aktif -->
+</head>
+<body style="font-family:'Inter',Arial,sans-serif;line-height:1.6;color:#1f2937;margin:0;padding:20px;background-color:#f4f4f6;">
+<div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,0.08);">
+    <div style="background:linear-gradient(135deg,#1e57ac,#3b82f6);padding:28px 32px;color:#ffffff;">
+        <h1 style="margin:0;font-size:22px;">Hoşgeldiniz, {{ customer_email }}</h1>
+        <p style="margin:8px 0 0 0;opacity:0.9;">Lisansınız aktif. Kuruluma hazırsınız.</p>
+    </div>
+    <div style="padding:28px 32px;">
+        <p>ABS beta testine katıldığınız için teşekkürler. Lisansınız başarıyla aktive edildi ve iyileştirmemize yardımcı olmaya hazırsınız.</p>
+
+        <h3 style="color:#0f3a78;margin-top:24px;">Bugün şunu yapın</h3>
+        <ol style="padding-left:20px;color:#374151;">
+            <li style="margin-bottom:12px;">Kurulum sihirbazını çalıştırın: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;">docker compose up -d</code></li>
+            <li style="margin-bottom:12px;">Panel'de lisans anahtarınızı girin: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;">http://localhost:8888/</code></li>
+            <li>İlk MCP aracını çalıştırın: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;">system_status</code> tüm 22 core aracın mevcut olduğunu doğrulayın</li>
+        </ol>
+
+        <p style="margin-top:24px;color:#374151;">Bu yaklaşık 3 dakika sürer. Gerçek araç zincirlerini test etmeye hazır, çalışan bir AI orkestrasyonu platformunuz olacak.</p>
+
+        <div style="margin-top:28px;text-align:center;">
+            <a href="https://abs.automatiabcn.com/docs/quickstart" style="display:inline-block;background:#1e57ac;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Hızlı Başlangıç Kılavuzu</a>
+        </div>
+
+        <p style="margin-top:32px;font-size:13px;color:#64748b;">Sorularınız mı var? <a href="mailto:support@automatiabcn.com" style="color:#1e57ac;text-decoration:none;">support@automatiabcn.com</a> adresine yazın — 48 saat içinde yanıt veririz.</p>
+    </div>
+    <div style="padding:16px 32px;background:#f8fafc;font-size:12px;color:#64748b;text-align:center;">
+        Automatia BCN · Barcelona · <a href="{{ unsubscribe_url }}" style="color:#64748b;text-decoration:none;">Abonelik İptal Et</a>
+    </div>
+</div>
+</body>
+</html>

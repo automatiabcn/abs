@@ -1,0 +1,365 @@
+# T-057 — full ABS CI/CD pipeline (lint → test → migration → build → helm → staging → prod manual approve).
+# Security: every interpolation is from controlled sources (github.actor, github.sha, github.ref_name,
+# workflow_dispatch.inputs.target_env [choice], or `needs.*.outputs.*`). No untrusted PR/issue/commit text
+# is ever expanded into a `run:` block.
+name: ABS CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Target environment'
+        required: false
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: cicd-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  PYTHON_VERSION: "3.13"
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-backend
+
+defaults:
+  run:
+    working-directory: core/backend
+
+jobs:
+  lint:
+    timeout-minutes: 8
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - name: Install dev dependencies
+        run: pip install -e ".[dev]" ruff black mypy
+      - name: Ruff lint & format
+        run: ruff check . && ruff format --check .
+
+  typecheck:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    needs: lint
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - run: pip install -e ".[dev]" mypy
+      - name: MyPy strict on critical modules
+        run: |
+          mypy --strict --explicit-package-bases \
+            app/event_bus \
+            app/worker \
+            app/auth/oauth \
+            app/auth/cerbos_client.py \
+            app/api/v1
+
+  test:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - run: pip install -e ".[dev]" pytest-cov
+      - name: Pytest with coverage
+        run: pytest -q --ignore=tests/integration --cov=app --cov-report=term-missing --cov-report=xml
+      - name: Coverage gate (warn <70%, fail <50%)
+        run: |
+          python -c "
+          import sys, xml.etree.ElementTree as ET
+          rate = float(ET.parse('coverage.xml').getroot().attrib['line-rate']) * 100
+          print(f'coverage={rate:.2f}%')
+          if rate < 50: sys.exit('FAIL: coverage <50%')
+          if rate < 70: print('::warning::coverage <70%')
+          "
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.sha }}
+          path: core/backend/coverage.xml
+
+  migrations:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    needs: lint
+    env:
+      ABS_DATABASE_URL: sqlite:///${{ runner.temp }}/abs.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - run: pip install -e ".[dev]"
+      - name: Alembic upgrade head
+        run: alembic -c alembic.ini upgrade head
+      - name: Alembic downgrade base
+        run: alembic -c alembic.ini downgrade base
+      - name: Alembic round-trip upgrade head
+        run: alembic -c alembic.ini upgrade head
+
+  security-scan:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    needs: lint
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - run: pip install pip-audit bandit
+      - run: pip-audit || true
+      - run: bandit -r app/ -ll || true
+
+  helm-lint:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    needs: lint
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+      - name: Helm lint all charts
+        run: |
+          set -e
+          charts=$(find infra/helm -name Chart.yaml | xargs -I {} dirname {} || true)
+          if [ -z "$charts" ]; then
+            echo "::warning::No helm chart found yet (T-058 umbrella will land it)."
+            exit 0
+          fi
+          for d in $charts; do
+            echo "==> helm lint $d"
+            helm lint "$d" || exit 1
+          done
+
+  docker-build:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    needs: [test, migrations]
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))) ||
+      github.event_name == 'workflow_dispatch'
+    defaults:
+      run:
+        working-directory: .
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: GHCR login
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Build & push
+        uses: docker/build-push-action@v5
+        with:
+          context: core/backend
+          file: core/backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+      - name: SBOM
+        uses: anchore/sbom-action@v0
+        continue-on-error: true
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+
+  deploy-staging:
+    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    needs: [docker-build, helm-lint]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.target_env == 'staging')
+    environment:
+      name: staging
+      url: https://staging.abs-server.example.com
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.30.0'
+      - name: Configure kubeconfig
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_STAGING }}
+        run: |
+          mkdir -p "$HOME/.kube"
+          if [ -z "$KUBECONFIG_DATA" ]; then
+            echo "::warning::KUBECONFIG_STAGING not set — recording dry-run."
+            echo "DEPLOY_DRY_RUN=1" >> "$GITHUB_ENV"
+          else
+            printf '%s' "$KUBECONFIG_DATA" | base64 -d > "$HOME/.kube/config"
+            chmod 600 "$HOME/.kube/config"
+          fi
+      - name: Helm upgrade (umbrella, dry-run if missing)
+        env:
+          IMAGE_TAG: ${{ needs.docker-build.outputs.image_tag }}
+        run: |
+          set -e
+          if [ ! -f "infra/helm/abs/Chart.yaml" ]; then
+            echo "::warning::Umbrella chart at infra/helm/abs/ pending T-058 — dry-run only."
+            exit 0
+          fi
+          if [ "${DEPLOY_DRY_RUN:-0}" = "1" ]; then
+            helm template abs ./infra/helm/abs \
+              --namespace abs-staging \
+              --set image.tag="$IMAGE_TAG" \
+              --set env=staging > /tmp/render.yaml
+            wc -l /tmp/render.yaml
+          else
+            helm upgrade --install abs ./infra/helm/abs \
+              --namespace abs-staging \
+              --create-namespace \
+              --set image.tag="$IMAGE_TAG" \
+              --set env=staging \
+              --wait --timeout 15m
+          fi
+      - name: Health check
+        if: env.DEPLOY_DRY_RUN != '1'
+        continue-on-error: true
+        run: |
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -fsS https://staging.abs-server.example.com/healthz; then exit 0; fi
+            sleep 15
+          done
+          exit 1
+
+  deploy-production:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.target_env == 'production')
+    environment:
+      name: production
+      url: https://app.abs-server.example.com
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.30.0'
+      - name: Configure kubeconfig
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_PROD }}
+        run: |
+          mkdir -p "$HOME/.kube"
+          if [ -z "$KUBECONFIG_DATA" ]; then
+            echo "::error::KUBECONFIG_PROD missing — production deploys require approval+secret."
+            exit 1
+          fi
+          printf '%s' "$KUBECONFIG_DATA" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+      - name: Helm upgrade (production)
+        env:
+          IMAGE_TAG: ${{ needs.docker-build.outputs.image_tag }}
+        run: |
+          if [ ! -f "infra/helm/abs/Chart.yaml" ]; then
+            echo "::error::Umbrella chart not present (T-058 prerequisite)."
+            exit 1
+          fi
+          helm upgrade --install abs ./infra/helm/abs \
+            --namespace abs-prod \
+            --create-namespace \
+            --set image.tag="$IMAGE_TAG" \
+            --set env=production \
+            --wait --timeout 15m
+      - name: Slack notify
+        if: always()
+        continue-on-error: true
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          if [ -n "$SLACK_WEBHOOK_URL" ]; then
+            curl -fsS -H 'Content-Type: application/json' \
+              -d "{\"text\":\"ABS production deploy $COMMIT_SHA done.\"}" \
+              "$SLACK_WEBHOOK_URL" || true
+          fi
+
+  release-notes:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}

@@ -1,0 +1,60 @@
+# Secrets & env
+.env
+.env.local
+.env.*.local
+secrets/
+*.pem
+*.key
+# 015 — manifest signing private key NEVER in repo
+manifest-keys/
+
+# 015 — exception: manifest_pubkey.pem GOMULU olmali (musterinin verify icin gerekli)
+!core/backend/app/update/manifest_pubkey.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Data
+*.sqlite
+*.sqlite3
+*.db
+core/backend/data/
+infra/data/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Docker (local only)
+infra/caddy-data/
+infra/caddy-config/
+site/
+
+# Node / Next
+node_modules/
+.next/
+out/
+.turbo/
+.swc/
+*.tsbuildinfo
+playwright-report/
+test-results/
+playwright/.cache/
+
+# Q8 worker artifacts (kept locally only)
+.playwright-mcp/
+.audit/
+.fs-scan-allowlist.snapshot
