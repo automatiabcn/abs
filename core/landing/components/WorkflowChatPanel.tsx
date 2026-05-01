@@ -9,9 +9,11 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 
-import WorkflowCanvas from "@/components/WorkflowCanvas";
+import WorkflowCanvasFlow from "@/components/WorkflowCanvasFlow";
 import {
   estimateCostCents,
+  isValidWorkflow,
+  SAMPLE_WORKFLOW,
   type WorkflowDefinition,
 } from "@/lib/workflow";
 
@@ -72,12 +74,26 @@ export default function WorkflowChatPanel({
     setError(null);
     try {
       const next = await synth(text, workflow);
+      // Q8 / W2 fix — guard against empty/partial cascade responses so the
+      // canvas never gets a workflow without `nodes`/`edges` arrays. When
+      // the schema fails, keep the previous workflow on screen and surface
+      // a retry-friendly error.
+      if (!isValidWorkflow(next)) {
+        throw new Error(
+          "Sentezleyici eksik bir iş akışı döndürdü. Tekrar deneyin veya örnek şablonu yükleyin.",
+        );
+      }
       setWorkflow(next);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setSynthesising(false);
     }
+  }
+
+  function loadSample() {
+    setError(null);
+    setWorkflow(SAMPLE_WORKFLOW);
   }
 
   async function handleDryRun() {
@@ -102,10 +118,11 @@ export default function WorkflowChatPanel({
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2">
-        <WorkflowCanvas
+        <WorkflowCanvasFlow
           workflow={workflow}
           selectedNodeId={selectedNodeId}
-          onSelectNode={setSelectedNodeId}
+          onSelectNode={(id) => setSelectedNodeId(id)}
+          onWorkflowChange={(next) => setWorkflow(next)}
         />
       </div>
 
@@ -142,10 +159,30 @@ export default function WorkflowChatPanel({
         {error && (
           <div
             data-testid="synthesize-error"
-            className="flex items-start gap-2 rounded-xl bg-red-50 p-3 text-xs text-red-900 ring-1 ring-red-200 dark:bg-red-900/30 dark:text-red-200 dark:ring-red-800"
+            className="flex flex-col gap-2 rounded-xl bg-red-50 p-3 text-xs text-red-900 ring-1 ring-red-200 dark:bg-red-900/30 dark:text-red-200 dark:ring-red-800"
           >
-            <WarningCircle className="mt-0.5 size-4 shrink-0" />
-            <span>{error}</span>
+            <div className="flex items-start gap-2">
+              <WarningCircle className="mt-0.5 size-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                data-testid="synthesize-retry"
+                onClick={() => runSynthesize(intent || refineText)}
+                className="rounded-md border border-red-300 px-2 py-1 text-[11px] font-medium hover:bg-red-100 dark:border-red-700 dark:hover:bg-red-900/50"
+              >
+                Tekrar dene
+              </button>
+              <button
+                type="button"
+                data-testid="synthesize-load-sample"
+                onClick={loadSample}
+                className="rounded-md border border-red-300 px-2 py-1 text-[11px] font-medium hover:bg-red-100 dark:border-red-700 dark:hover:bg-red-900/50"
+              >
+                Örnek şablonu yükle
+              </button>
+            </div>
           </div>
         )}
 
