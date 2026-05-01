@@ -363,3 +363,31 @@ class User(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc)
     )
     claimed_at: Optional[datetime] = Field(default=None)
+
+
+class MintedTokenBlacklist(SQLModel, table=True):
+    """Q10-L6-002 — revoked MCP integration tokens.
+
+    Issued tokens are HMAC-only (no DB row at mint), so revocation is
+    handled by adding the token's payload digest here. `verify_token`
+    consults this table on every call; if the digest is present, auth
+    fails before downstream tool/hook routing.
+
+    Stored digest (not the raw token) so leaking the table itself does
+    not disclose live bearer credentials. `expires_at` mirrors the
+    token's `exp` claim — rows can be GC'd after that point because an
+    expired token is already rejected on its own.
+    """
+
+    __tablename__ = "minted_token_blacklist"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    token_digest: str = Field(max_length=64, index=True, unique=True)
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
+    label: str = Field(max_length=64, default="")
+    revoked_by: str = Field(max_length=254, default="")
+    revoked_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+    expires_at: Optional[datetime] = Field(default=None, index=True)
+    reason: Optional[str] = Field(default=None, max_length=256)
