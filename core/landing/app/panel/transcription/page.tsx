@@ -207,8 +207,23 @@ export default function TranscriptionPanel() {
         )}
         <span
           aria-live="polite"
-          className="text-xs text-zinc-600 dark:text-zinc-400"
+          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${
+            recording
+              ? "border-rose-500/40 bg-rose-500/10 text-rose-300"
+              : error
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+          }`}
         >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              recording
+                ? "animate-pulse bg-rose-400"
+                : error
+                  ? "bg-amber-400"
+                  : "bg-emerald-400"
+            }`}
+          />
           {statusMessage}
         </span>
         <label className="ml-auto flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">

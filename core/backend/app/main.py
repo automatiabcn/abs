@@ -18,6 +18,7 @@ from app.api.admin import auth as admin_auth_router
 from app.api.admin import churn as admin_churn_router
 from app.api.admin import dashboard as admin_dashboard_router
 from app.api.admin import errors_recent as admin_errors_router
+from app.api.admin import users as admin_users_router  # Q8.5 finalize — /v1/admin/users
 from app.api import demo_mode as demo_mode_router
 from app.api.demo_panel import cascade as panel_cascade_router
 from app.api.demo_panel import pipeline as panel_pipeline_router
@@ -209,6 +210,7 @@ app.include_router(admin_analytics_router.router)
 app.include_router(admin_churn_router.router)
 app.include_router(admin_errors_router.router)
 app.include_router(admin_audit_router.router)
+app.include_router(admin_users_router.router)  # Q8.5 finalize — /v1/admin/users
 app.include_router(beta_portal_router.router)
 app.include_router(beta_admin_router.router)
 app.include_router(demo_mode_router.router)
