@@ -1,8 +1,12 @@
 import type { FC } from "react";
 
 const Demo: FC = () => {
-  const loomUrl =
-    process.env.NEXT_PUBLIC_DEMO_LOOM_URL ?? "https://www.loom.com/embed/PLACEHOLDER";
+  // Q11-L11-001: only render the iframe when NEXT_PUBLIC_DEMO_LOOM_URL
+  // is configured. Previously fell back to a literal "PLACEHOLDER" URL
+  // that Loom rejects with X-Frame-Options:deny — Chromium dropped the
+  // error silently but Firefox + WebKit logged it to the console,
+  // tripping the cross-browser smoke test.
+  const loomUrl = process.env.NEXT_PUBLIC_DEMO_LOOM_URL;
   return (
     <section
       id="demo"
@@ -26,14 +30,24 @@ const Demo: FC = () => {
           className="relative aspect-video w-full bg-muted"
           data-testid="demo-iframe-wrapper"
         >
-          <iframe
-            title="ABS demo screencast"
-            src={loomUrl}
-            loading="lazy"
-            allow="fullscreen"
-            allowFullScreen
-            className="absolute inset-0 h-full w-full"
-          />
+          {loomUrl ? (
+            <iframe
+              title="ABS demo screencast"
+              src={loomUrl}
+              loading="lazy"
+              allow="fullscreen"
+              allowFullScreen
+              className="absolute inset-0 h-full w-full"
+            />
+          ) : (
+            <div
+              role="img"
+              aria-label="Demo videosu yakında yüklenecek"
+              className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground"
+            >
+              Demo videosu yakında.
+            </div>
+          )}
         </div>
       </div>
     </section>
