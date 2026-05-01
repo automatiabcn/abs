@@ -293,6 +293,46 @@ class UsageLog(SQLModel, table=True):
     )
 
 
+# ───── Sprint Q8 / Phase A — chat sessions + messages ───────────────────
+
+
+class ChatSession(SQLModel, table=True):
+    """Q8 / Phase A — multi-tenant chat session header."""
+
+    __tablename__ = "chat_sessions"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(
+        max_length=64, index=True, default="default"
+    )
+    user_email: str = Field(max_length=254, index=True)
+    title: str = Field(max_length=200, default="Yeni sohbet")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+
+class ChatMessage(SQLModel, table=True):
+    """Q8 / Phase A — single chat message (1:N to ChatSession)."""
+
+    __tablename__ = "chat_messages"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    session_id: int = Field(foreign_key="chat_sessions.id", index=True)
+    role: str = Field(max_length=16)  # user|assistant|system|tool
+    content: str = Field(max_length=16384)
+    provider: Optional[str] = Field(default=None, max_length=64)
+    tool_calls: Optional[str] = Field(default=None, max_length=8192)
+    tokens_used: Optional[int] = Field(default=None)
+    latency_ms: Optional[int] = Field(default=None)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+
+
 class User(SQLModel, table=True):
     """Phase 2 / Q3 / Q2.CO5 — multi-admin user table.
 
