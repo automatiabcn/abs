@@ -294,9 +294,13 @@ export default function ToolsPage() {
           <button
             type="button"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+            aria-label="Tool sütununu sırala"
+            // Q11-L12-002: bumped to min-h-6 (24px) so the column-header
+            // sort button clears the WCAG 2.5.8 touch baseline on
+            // mobile/tablet without breaking the desktop table density.
+            className="inline-flex min-h-6 items-center gap-1 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
           >
-            Tool <ArrowUpDown className="h-3 w-3" />
+            Tool <ArrowUpDown className="h-3 w-3" aria-hidden="true" />
           </button>
         ),
         cell: ({ row }) => (
