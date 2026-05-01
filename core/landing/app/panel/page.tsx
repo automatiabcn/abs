@@ -19,6 +19,7 @@ import {
   Flex,
 } from "@tremor/react";
 
+import { NeuralGraph } from "@/components/panel/NeuralGraph";
 import { StatCard } from "@/components/panel/StatCard";
 import {
   Card,
@@ -247,6 +248,25 @@ export default function PanelHome() {
             </CardContent>
           </Card>
         </motion.div>
+      </section>
+
+      {/* Q8 Phase L — neural graph (replaces cosmos parallax) */}
+      <section className="mt-8">
+        <Card className="bg-card/60 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" />
+              Sistem haritası
+            </CardTitle>
+            <CardDescription>
+              Sağlayıcılar, MCP tool kümeleri, workflow'lar ve RAG dokümanları
+              — force-directed canlı graph (Phase L).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <NeuralGraph height={460} />
+          </CardContent>
+        </Card>
       </section>
 
       {(tools.isError || quota.isError || cascade.isError) && (

@@ -2,6 +2,7 @@
 // landing nav doesn't double up on auth'd pages (UX_BUGS MT1 + MP1).
 import type { ReactNode } from "react";
 
+import { CommandPalette } from "@/components/panel/CommandPalette";
 import { PanelHeader } from "@/components/panel/PanelHeader";
 import { PanelSidebar } from "@/components/panel/PanelSidebar";
 import { PanelThemeProvider } from "@/components/panel/PanelThemeProvider";
@@ -19,6 +20,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <div className="flex-1 overflow-x-hidden">{children}</div>
           </div>
         </div>
+        <CommandPalette />
         <Toaster richColors position="top-right" />
       </QueryProvider>
     </PanelThemeProvider>
