@@ -150,10 +150,17 @@ async def _run_cascade(
 def _create_session(
     db: Session, tenant_slug: str, user_email: str, first_user_msg: Optional[str]
 ) -> ChatSession:
+    # Q11-L13-003: a whitespace-only message ("   ") .strip() to "",
+    # whose .splitlines() returns [] — indexing [0] raised IndexError
+    # and the request 500'd before the cascade ran. Coerce to the
+    # default title in that case.
+    title = "Yeni sohbet"
     if first_user_msg:
-        title = first_user_msg.strip().splitlines()[0][:60] or "Yeni sohbet"
-    else:
-        title = "Yeni sohbet"
+        first_line = next(
+            iter(first_user_msg.strip().splitlines()), ""
+        )
+        if first_line:
+            title = first_line[:60]
     sess = ChatSession(
         tenant_slug=tenant_slug,
         user_email=user_email,
