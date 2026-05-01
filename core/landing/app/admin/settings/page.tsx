@@ -72,15 +72,25 @@ function GeneralTab() {
   return (
     <div className="space-y-4">
       <FormRow label="Tenant adı" hint="Müşteri görünür ad">
-        <Input defaultValue="Acme Corp" data-test="settings-tenant-name" />
+        <Input
+          defaultValue="Acme Corp"
+          data-test="settings-tenant-name"
+          aria-label="Tenant adı"
+        />
       </FormRow>
       <FormRow label="Slug" hint="URL ön eki — değiştirilemez">
-        <Input value="acme" disabled className="font-mono" />
+        <Input
+          value="acme"
+          disabled
+          className="font-mono"
+          aria-label="Slug"
+        />
       </FormRow>
       <FormRow label="Domain" hint="Caddy reverse proxy hedefi">
         <Input
           defaultValue="abs.acme.com"
           data-test="settings-domain"
+          aria-label="Domain"
         />
       </FormRow>
       <FormRow label="SSL durumu">
