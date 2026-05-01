@@ -138,7 +138,7 @@ export default function PanelHome() {
           delay={0.05}
         />
         <StatCard
-          title="Claude Quota"
+          title="Claude Kotası"
           value={`${claudePct}%`}
           delta={
             claudeLimit > 0
