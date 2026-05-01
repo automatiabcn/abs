@@ -45,8 +45,11 @@ ChatRole = Literal["user", "assistant", "system", "tool"]
 
 
 class ChatMessageIn(BaseModel):
+    # Q11-L13-001/002: cascade prompt allows 1..8000 chars. Mirror those
+    # bounds at the chat input so empty / oversized payloads surface as
+    # 422 validation errors instead of 500ing on the cascade layer.
     role: ChatRole
-    content: str = Field(..., max_length=16384)
+    content: str = Field(..., min_length=1, max_length=8000)
 
 
 class ChatCompletionsRequest(BaseModel):
