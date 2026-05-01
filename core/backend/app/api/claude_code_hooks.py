@@ -9,13 +9,21 @@ point at so their Claude Code session is gated by ABS:
 
 All three accept the integration token issued by `/v1/mcp/tokens`
 (scope=hooks or all). Token is HMAC-signed; no DB lookup needed.
+
+Q10-L6-001 — quota-check now enforces a soft per-tenant rolling-hour
+counter on risky tools (Bash/Write/Edit/NotebookEdit) instead of
+unconditionally returning "allow". Production deployments should swap
+the in-process counter for Redis (cluster-safe).
 """
 
 from __future__ import annotations
 
 import logging
+import threading
+import time
+from collections import defaultdict, deque
 from datetime import datetime, timezone
-from typing import Dict, Optional
+from typing import Deque, Dict, Optional
 
 from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel, Field
@@ -52,6 +60,27 @@ class QuotaCheckRequest(BaseModel):
     session_id: Optional[str] = None
 
 
+RISKY_TOOLS = {"Bash", "Write", "Edit", "NotebookEdit"}
+RISKY_HOURLY_LIMIT = 100
+
+# Tenant → deque of UNIX timestamps for risky-tool invocations within the
+# last 3600 s. Lock prevents lost updates under uvicorn workers > 1; for
+# multi-replica deployments swap with Redis (cluster-safe rolling window).
+_risky_window: Dict[str, Deque[float]] = defaultdict(deque)
+_risky_lock = threading.Lock()
+
+
+def _record_and_count(tenant: str) -> int:
+    """Insert a now-timestamp, drop entries older than 1h, return count."""
+    cutoff = time.time() - 3600
+    with _risky_lock:
+        bucket = _risky_window[tenant]
+        while bucket and bucket[0] < cutoff:
+            bucket.popleft()
+        bucket.append(time.time())
+        return len(bucket)
+
+
 @router.post("/quota-check")
 def quota_check(
     body: QuotaCheckRequest,
@@ -60,23 +89,40 @@ def quota_check(
     auth = _auth_from_header(authorization)
     tenant = auth["tenant"]
 
-    # Cheap heuristic — Bash and Write get a stricter look. A full quota
-    # implementation queries `/v1/system/quota_status`; for the
-    # bootstrap path we always allow with an audit hint so the customer
-    # can see the gate firing in their session log.
-    risky = body.tool_name in {"Bash", "Write", "Edit", "NotebookEdit"}
-    decision = "allow"
-    reason = (
-        f"ABS quota OK ({tenant}) — {body.tool_name} permitted"
-        if not risky
-        else f"ABS quota OK ({tenant}) — risky tool '{body.tool_name}' logged"
-    )
+    if body.tool_name not in RISKY_TOOLS:
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "allow",
+                "permissionDecisionReason": (
+                    f"ABS quota OK ({tenant}) — {body.tool_name} non-risky"
+                ),
+            }
+        }
 
+    used = _record_and_count(tenant)
+    if used > RISKY_HOURLY_LIMIT:
+        # Q10-L6-001 — hard gate so a runaway Claude Code session can't
+        # burn unbounded risky operations against a single tenant.
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": (
+                    f"ABS quota exceeded ({tenant}): {used} risky calls in "
+                    f"last hour > {RISKY_HOURLY_LIMIT}. Wait or contact "
+                    "operator."
+                ),
+            }
+        }
     return {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "permissionDecision": decision,
-            "permissionDecisionReason": reason,
+            "permissionDecision": "allow",
+            "permissionDecisionReason": (
+                f"ABS quota OK ({tenant}) — risky tool '{body.tool_name}'"
+                f" accepted ({used}/{RISKY_HOURLY_LIMIT} this hour)"
+            ),
         }
     }
 
