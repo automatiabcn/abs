@@ -12,7 +12,7 @@ temiz round = FULL CLEAN.
 | # | Layer | Round'lar | Clean counter | Açıklama |
 |---|-------|-----------|---------------|----------|
 | L1 | unit test coverage gap (pytest --cov, vitest --coverage) | Round 2, 11 | 2/3 | Round 2: 15 test, Round 11: 37 PASS regression |
-| L2 | integration test (cascade chain, RAG ingest+query, marketplace install→sandbox) | Round 6 | 1/3 | 7 yeni integration test PASS, 0 bug |
+| L2 | integration test (cascade chain, RAG ingest+query, marketplace install→sandbox) | Round 6, 18 | 2/3 | Round 6: 7 contract test · Round 18: +3 enrichment (RAG roundtrip + cross-tenant + marketplace lifecycle); 10/10 PASS |
 | L3 | e2e Playwright (15 sayfa × 3 senaryo × 2 tema) | Round 7, 17 | 2/3 | Round 7: spec · Round 17: live 30/30 PASS dark+light + Q10-L3-001 standalone harness fix |
 | L4 | a11y axe-core (WCAG 2.2 AA) | Round 3, 12 | 1/3 (live blocked: dev mode HMR thrash, prod build gerek) | |
 | L5 | perf Lighthouse (≥90 4 metrik per panel sayfa) | Round 8, 16 | 2/3 | Round 8: config · Round 16: live run prod :3458 (4 sayfa ≥90 4 metrik) + Q10-L5-002/003/004 fix |
@@ -44,6 +44,7 @@ temiz round = FULL CLEAN.
 | 15 | L7 baseline + diff | Q10-L7-001 prod build break fix + 10 baseline PNG + diff 10/10 PASS | c24b450 | ✅ ship |
 | 16 | L5 Lighthouse | Q10-L5-002 button-name + L5-003 meta-description + L5-004 console errors uplift; 4/4 sayfa 4/4 metrik ≥90 | bda943c | ✅ ship |
 | 17 | L3 theme matrix live | Q10-L3-001 standalone harness fix (/tmp izolasyon) + 30/30 dark+light PASS | docs only | ✅ ship |
+| 18 | L2 enrich | +3 test (RAG ingest+query roundtrip + cross-tenant zero-leak + marketplace install→list→uninstall lifecycle); 10/10 PASS | 15fce5a | ✅ ship |
 
 ---
 
@@ -104,6 +105,6 @@ Hedef: backend %85+, frontend %75+ coverage; en az 3 yeni unit test.
 
 ---
 
-**Loop status:** Round 17 closed. L3+L5+L6+L7+L8 all 2/3 — **5
-layer one round from FULL CLEAN**. Sonraki: Round 18 = L2
-integration enrich (RAG ingest+query, marketplace install→sandbox).
+**Loop status:** Round 18 closed. L2+L3+L5+L6+L7+L8 all 2/3 — **6
+layer one round from FULL CLEAN**. Sonraki: Round 19 = L1 re-scan
+(2/3 → 3/3, FULL CLEAN ilk layer hedefi). Backend Q10 total: 44 PASS.
