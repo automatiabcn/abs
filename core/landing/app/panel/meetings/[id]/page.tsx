@@ -50,7 +50,9 @@ export default function MeetingDetailPage() {
         return (await res.json()) as MeetingDetail;
       })
       .then(setData)
-      .catch((exc: Error) => setError(exc.message));
+      // Q11-L16-002: prefix raw error with TR context so the user
+      // sees a full sentence instead of a bare HTTP code.
+      .catch((exc: Error) => setError(`Toplantı yüklenemedi: ${exc.message}`));
   }, [params?.id]);
 
   if (error) {
