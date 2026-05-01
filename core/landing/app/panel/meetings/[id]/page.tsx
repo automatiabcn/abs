@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 interface Segment {
   speaker_id: string;
@@ -77,12 +78,12 @@ export default function MeetingDetailPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12 text-zinc-900 dark:text-zinc-100">
-      <a
+      <Link
         href="/panel/meetings"
         className="text-xs text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
       >
         ← Toplantılar
-      </a>
+      </Link>
       <h1 className="mt-2 text-2xl font-semibold">{data.filename}</h1>
       <dl className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
         <div>
