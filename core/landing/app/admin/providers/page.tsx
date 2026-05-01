@@ -226,7 +226,7 @@ export default function ProvidersPage() {
           data-test="cascade-test-now"
         >
           <PlayCircle className="mr-2 h-4 w-4" />
-          {test.isPending ? "Çağrı yapılıyor…" : "Test Now"}
+          {test.isPending ? "Çağrı yapılıyor…" : "Şimdi Test Et"}
         </Button>
       </motion.header>
 
@@ -235,7 +235,7 @@ export default function ProvidersPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Cascade zinciri</CardTitle>
           <CardDescription>
-            Sol → sağ deneme sırası. Test Now çağrısı sırasında seçilen
+            Sol → sağ deneme sırası. Şimdi Test Et çağrısı sırasında seçilen
             sağlayıcı ışıldar.
           </CardDescription>
         </CardHeader>
@@ -331,7 +331,7 @@ export default function ProvidersPage() {
                   </CardHeader>
                   <CardContent className="space-y-2 text-xs">
                     <div className="flex items-center justify-between text-muted-foreground">
-                      <span>Cascade rank</span>
+                      <span>Cascade sırası</span>
                       <span className={cn("rounded px-1.5 py-0.5 text-[10px]", tone)}>
                         {CASCADE_ORDER.indexOf(c.name as (typeof CASCADE_ORDER)[number]) + 1}
                       </span>
@@ -364,13 +364,13 @@ export default function ProvidersPage() {
             Son cascade çağrıları
           </CardTitle>
           <CardDescription>
-            Test Now butonu çağrıları + ileride canlı SSE feed.
+            Şimdi Test Et butonu çağrıları + ileride canlı SSE feed.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {history.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Henüz çağrı yok. <kbd>Test Now</kbd> ile başla.
+              Henüz çağrı yok. <kbd>Şimdi Test Et</kbd> ile başla.
             </p>
           ) : (
             <ul className="space-y-2">
