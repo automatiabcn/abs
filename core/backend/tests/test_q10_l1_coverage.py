@@ -143,6 +143,60 @@ class TestClaudeCodeHookScope:
         # workspace it's connected to.
         assert "tenant" in ctx.lower() or "default" in ctx.lower()
 
+    def test_quota_check_allows_under_hourly_limit(self, admin_client):
+        # Q10-L6-001 regression — risky tool first call must allow, after
+        # 100 hits in a tenant window the gate flips to deny.
+        from app.api.claude_code_hooks import _risky_window
+
+        _risky_window.clear()  # isolate from other tests
+        token = self._mint(admin_client, scope="all")
+        headers = {"Authorization": f"Bearer {token}"}
+        for i in range(99):
+            r = admin_client.post(
+                "/v1/hooks/quota-check",
+                json={"tool_name": "Bash"},
+                headers=headers,
+            )
+            assert r.status_code == 200, f"req {i} failed: {r.text}"
+            assert r.json()["hookSpecificOutput"]["permissionDecision"] == "allow"
+
+    def test_quota_check_denies_after_hourly_limit(self, admin_client):
+        from app.api.claude_code_hooks import _risky_window
+
+        _risky_window.clear()
+        token = self._mint(admin_client, scope="all")
+        headers = {"Authorization": f"Bearer {token}"}
+        last_response = None
+        for _ in range(101):
+            last_response = admin_client.post(
+                "/v1/hooks/quota-check",
+                json={"tool_name": "Write"},
+                headers=headers,
+            )
+        assert last_response is not None
+        body = last_response.json()["hookSpecificOutput"]
+        assert body["permissionDecision"] == "deny"
+        assert "quota exceeded" in body["permissionDecisionReason"].lower()
+
+    def test_quota_check_non_risky_tool_unconditional_allow(self, admin_client):
+        from app.api.claude_code_hooks import _risky_window
+
+        _risky_window.clear()
+        token = self._mint(admin_client, scope="all")
+        headers = {"Authorization": f"Bearer {token}"}
+        last_response = None
+        for _ in range(150):
+            last_response = admin_client.post(
+                "/v1/hooks/quota-check",
+                json={"tool_name": "Read"},  # not in RISKY_TOOLS
+                headers=headers,
+            )
+        assert last_response is not None
+        assert (
+            last_response.json()["hookSpecificOutput"]["permissionDecision"]
+            == "allow"
+        )
+
     def test_audit_log_returns_received_at_marker(self, admin_client):
         token = self._mint(admin_client, scope="all")
         r = admin_client.post(
