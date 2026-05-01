@@ -37,6 +37,22 @@ class TestQ11L13ChatCompletionsFuzz:
             settings, "anthropic_mock_mode", "ok", raising=False
         )
 
+    @pytest.fixture(autouse=True)
+    def _cleanup_chat_sessions(self):
+        """Fuzz tests POST many /v1/chat/completions calls that each
+        create a new session. Without cleanup the global sessions table
+        balloons and Q8's empty-list check fails when these tests run
+        earlier in the suite ordering."""
+        yield
+        from sqlmodel import Session, delete
+        from app.db.models import ChatMessage, ChatSession
+        from app.db.session import get_engine
+
+        with Session(get_engine()) as db:
+            db.execute(delete(ChatMessage))
+            db.execute(delete(ChatSession))
+            db.commit()
+
     # ─── 1. Boundary lengths ────────────────────────────────────────────
 
     def test_content_exact_max_length_accepted(self, admin_client):
@@ -178,5 +194,58 @@ class TestQ11L13ChatCompletionsFuzz:
         msgs.append({"role": "user", "content": "final"})
         r = admin_client.post(
             "/v1/chat/completions", json={"messages": msgs}
+        )
+        assert r.status_code == 200, r.text
+
+    # ─── Q11 Round 15 — additional boundary fuzz ────────────────────────
+
+    def test_session_id_huge_int_rejected_or_404(self, admin_client):
+        """Pydantic Optional[int] accepts arbitrary signed ints; backend
+        must 4xx (not 500) for an unrealistic session_id."""
+        r = admin_client.post(
+            "/v1/chat/completions",
+            json={
+                "session_id": 2**63 - 1,
+                "messages": [{"role": "user", "content": "hi"}],
+            },
+        )
+        assert r.status_code in {404, 422}
+
+    def test_role_as_array_rejected_422(self, admin_client):
+        r = admin_client.post(
+            "/v1/chat/completions",
+            json={
+                "messages": [{"role": ["user", "system"], "content": "hi"}]
+            },
+        )
+        assert r.status_code == 422
+
+    def test_content_only_whitespace_accepted_or_422(self, admin_client):
+        """Pydantic min_length counts whitespace as length, so "   " (3
+        chars) passes — but the contract is "no 500"."""
+        r = admin_client.post(
+            "/v1/chat/completions",
+            json={"messages": [{"role": "user", "content": "   "}]},
+        )
+        assert r.status_code < 500
+
+    def test_content_single_emoji_accepted(self, admin_client):
+        """Single emoji = 1+ pydantic chars (depending on surrogate
+        handling). Must not 500 on tokenizer surprise."""
+        r = admin_client.post(
+            "/v1/chat/completions",
+            json={"messages": [{"role": "user", "content": "🤖"}]},
+        )
+        assert r.status_code < 500
+
+    def test_content_unicode_escape_sequences(self, admin_client):
+        """Pre-encoded unicode escape stays as-is (no JSON re-parse risk)."""
+        r = admin_client.post(
+            "/v1/chat/completions",
+            json={
+                "messages": [
+                    {"role": "user", "content": "\\u0041\\u0042\\u0043"}
+                ]
+            },
         )
         assert r.status_code == 200, r.text
