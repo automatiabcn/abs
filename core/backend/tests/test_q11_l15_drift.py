@@ -99,3 +99,15 @@ class TestQ11L15RfcShape:
         assert "detail" in body, (
             f"401 response shape drifted: {body}"
         )
+
+    def test_unauthed_hooks_post_with_invalid_body_still_401(self, client):
+        """Q11-L15-001 regression guard: an unauthed POST that ALSO has
+        an invalid body must 401 (auth check first), never 422 (schema
+        leak)."""
+        r = client.post("/v1/hooks/quota-check", json={"garbage": True})
+        assert r.status_code == 401
+        assert r.json()["detail"] == "missing_bearer_token"
+
+        r2 = client.post("/v1/hooks/audit-log", json={})
+        assert r2.status_code == 401
+        assert r2.json()["detail"] == "missing_bearer_token"
