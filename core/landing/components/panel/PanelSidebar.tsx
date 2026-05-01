@@ -9,17 +9,24 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Boxes,
+  Brain,
+  Database,
   LayoutDashboard,
+  Layers,
   MessageSquare,
   Mic,
+  Settings,
+  ShieldCheck,
+  Sliders,
   Store,
+  Users,
   Workflow,
   Wrench,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-type NavGroup = "Üretim" | "Operasyon" | "Toplantılar";
+type NavGroup = "Üretim" | "Operasyon" | "Toplantılar" | "Yönetim";
 
 interface NavItem {
   href: string;
@@ -29,17 +36,28 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
+  // ── Üretim ─────────────────────────────────────
   { href: "/panel", label: "Genel Bakış", icon: LayoutDashboard, group: "Üretim" },
   { href: "/panel/chat", label: "Sohbet", icon: MessageSquare, group: "Üretim" },
   { href: "/admin/workflow-builder", label: "Workflow", icon: Workflow, group: "Üretim" },
   { href: "/panel/tools", label: "MCP Tools", icon: Wrench, group: "Üretim" },
+  { href: "/admin/rag", label: "RAG Bilgi Tabanı", icon: Database, group: "Üretim" },
+  { href: "/admin/pipelines", label: "Quality Pipelines", icon: Sliders, group: "Üretim" },
+  // ── Operasyon ──────────────────────────────────
+  { href: "/admin/providers", label: "Cascade", icon: Layers, group: "Operasyon" },
   { href: "/admin/marketplace", label: "Marketplace", icon: Store, group: "Operasyon" },
   { href: "/panel/quota", label: "Kota", icon: BarChart3, group: "Operasyon" },
+  { href: "/admin/graph", label: "Knowledge Graph", icon: Brain, group: "Operasyon" },
+  // ── Toplantılar ────────────────────────────────
   { href: "/panel/meetings", label: "Toplantılar", icon: Mic, group: "Toplantılar" },
   { href: "/panel/transcription", label: "Transcription", icon: Boxes, group: "Toplantılar" },
+  // ── Yönetim ────────────────────────────────────
+  { href: "/admin/settings", label: "Ayarlar", icon: Settings, group: "Yönetim" },
+  { href: "/admin/users", label: "Kullanıcılar", icon: Users, group: "Yönetim" },
+  { href: "/admin/audit", label: "Denetim", icon: ShieldCheck, group: "Yönetim" },
 ];
 
-const GROUP_ORDER: NavGroup[] = ["Üretim", "Operasyon", "Toplantılar"];
+const GROUP_ORDER: NavGroup[] = ["Üretim", "Operasyon", "Toplantılar", "Yönetim"];
 
 export function PanelSidebar() {
   const pathname = usePathname() ?? "";
