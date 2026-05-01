@@ -37,6 +37,8 @@ from app.api import me_data_export as me_data_export_router
 from app.api import panel as panel_router
 from app.api import cascade as cascade_router            # Q4 P10 — /v1/cascade/*
 from app.api import chat as chat_router                  # Q8 Phase A — /v1/chat/*
+from app.api import mcp_tokens as mcp_tokens_router      # Q8 Phase N — /v1/mcp/tokens
+from app.api import claude_code_hooks as cc_hooks_router # Q8 Phase P — /v1/hooks/*
 from app.api import marketplace as marketplace_router  # CJ-008 — /v1/marketplace/*
 from app.api import meetings as meetings_router          # S20.4 — /v1/meetings
 from app.api import workflows as workflows_router        # P1 S19 — /v1/workflows
@@ -238,6 +240,8 @@ app.include_router(meetings_router.router)      # S20.4
 app.include_router(workflows_router.router)     # P1 S19 close
 app.include_router(cascade_router.router)       # Q4 P10 — /v1/cascade/*
 app.include_router(chat_router.router)          # Q8 Phase A — /v1/chat/*
+app.include_router(mcp_tokens_router.router)    # Q8 Phase N — /v1/mcp/tokens
+app.include_router(cc_hooks_router.router)      # Q8 Phase P — /v1/hooks/*
 app.include_router(transcribe_router.router)    # S20.2
 app.include_router(tts_router.router)           # S20.1
 app.include_router(disagreement_router.router)
