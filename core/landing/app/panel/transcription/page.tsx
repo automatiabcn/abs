@@ -1,8 +1,20 @@
 // S20.6 — /panel/transcription: WebRTC mic → 5s chunked POST /v1/transcribe/stream → segments
+// Q9 Phase C — TR2 mic permission Modal + TR3 real-time waveform + TR6 empty state.
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Mic, ShieldCheck } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Waveform } from "@/components/panel/Waveform";
 import { DEFAULT_VOICE_ID } from "@/lib/tts";
 
 interface Segment {
@@ -52,12 +64,34 @@ export default function TranscriptionPanel() {
   const cumulativeOffset = useRef<number>(0);
   const reducedMotion = useRef<boolean>(false);
 
+  // Q9 / TR2 — pre-explanation gate before getUserMedia
+  const [permissionOpen, setPermissionOpen] = useState(false);
+  const [permissionAcknowledged, setPermissionAcknowledged] = useState(false);
+  // Q9 / TR3 — keep a ref-mirror of the active stream so Waveform can subscribe
+  const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     reducedMotion.current = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
   }, []);
+
+  // TR2 — first run shows the data-handling modal; once acknowledged we go
+  // straight to capture on subsequent sessions in the same tab.
+  const requestStart = () => {
+    if (!permissionAcknowledged) {
+      setPermissionOpen(true);
+      return;
+    }
+    void start();
+  };
+
+  const acknowledgeAndStart = () => {
+    setPermissionAcknowledged(true);
+    setPermissionOpen(false);
+    void start();
+  };
 
   const start = async () => {
     setError(null);
@@ -70,6 +104,7 @@ export default function TranscriptionPanel() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
+      setActiveStream(stream);
       const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
       recorder.ondataavailable = async (event) => {
         if (!event.data || event.data.size === 0) return;
@@ -117,6 +152,7 @@ export default function TranscriptionPanel() {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     recorderRef.current = null;
     streamRef.current = null;
+    setActiveStream(null);
     setRecording(false);
     setStatusMessage("Hazır");
   };
@@ -199,7 +235,8 @@ export default function TranscriptionPanel() {
         ) : (
           <button
             type="button"
-            onClick={start}
+            onClick={requestStart}
+            data-test="transcription-start"
             className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
           >
             Başlat
@@ -249,12 +286,44 @@ export default function TranscriptionPanel() {
         </p>
       )}
 
+      {/* Q9 / TR3 — real-time waveform */}
+      <div
+        data-test="transcription-waveform-wrap"
+        className="mb-6 rounded-md border border-border bg-card/40 p-3"
+      >
+        <Waveform stream={activeStream} active={recording} height={80} />
+        <div className="mt-1 text-center text-[11px] text-muted-foreground">
+          {recording
+            ? "Mikrofon canlı — 5 saniyelik dilimler WhisperX'e akıyor"
+            : "Başlat'a basın, dalga formu burada görünür"}
+        </div>
+      </div>
+
       <section className="mb-6 space-y-2">
         {segments.length === 0 ? (
-          <p className="text-sm text-zinc-500">
-            Henüz segment yok. Kayıt başlatıldığında 5 saniyede bir transkript
-            buraya akar.
-          </p>
+          // Q9 / TR6 — 3-step illustration empty state
+          <div
+            data-test="transcription-empty"
+            className="rounded-md border border-dashed border-border bg-card/30 p-6"
+          >
+            <p className="mb-3 text-center text-sm font-medium">
+              3 adımda canlı transkripsiyon
+            </p>
+            <ol className="mx-auto grid max-w-lg grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+              <li className="rounded-md border border-border bg-background/40 p-3">
+                <span className="font-mono text-primary">1.</span>{" "}
+                Mikrofon ve TTS sesini sağ üstten seç
+              </li>
+              <li className="rounded-md border border-border bg-background/40 p-3">
+                <span className="font-mono text-primary">2.</span>{" "}
+                <strong>Başlat</strong> butonuna bas, izin ekranını kabul et
+              </li>
+              <li className="rounded-md border border-border bg-background/40 p-3">
+                <span className="font-mono text-primary">3.</span>{" "}
+                Konuşmaya başla, segmentler 5 saniyede bir buraya akar
+              </li>
+            </ol>
+          </div>
         ) : (
           segments.map((seg, idx) => (
             <article
@@ -319,6 +388,55 @@ export default function TranscriptionPanel() {
           </button>
         </div>
       </section>
+
+      {/* Q9 / TR2 — mic permission pre-explanation */}
+      <Dialog open={permissionOpen} onOpenChange={setPermissionOpen}>
+        <DialogContent data-test="mic-permission-dialog">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mic className="h-5 w-5 text-primary" />
+              Mikrofon erişimi
+            </DialogTitle>
+            <DialogDescription>
+              Devam etmeden önce ne olacağını bilmenizi istiyoruz.
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-start gap-2">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+              Ses 5 saniyelik dilimlere bölünür ve sunucudaki WhisperX
+              large-v3'e gönderilir.
+            </li>
+            <li className="flex items-start gap-2">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+              Transkriptler tenant'ınıza ait yerel SQLite'a yazılır — dış
+              sağlayıcıya gitmez.
+            </li>
+            <li className="flex items-start gap-2">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+              <strong>Durdur</strong> butonuna basana kadar mikrofon dinlemeye
+              devam eder. Kapatınca akış kesilir.
+            </li>
+          </ul>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setPermissionOpen(false)}
+              data-test="mic-permission-cancel"
+            >
+              İptal
+            </Button>
+            <Button
+              type="button"
+              onClick={acknowledgeAndStart}
+              data-test="mic-permission-accept"
+            >
+              Anladım, başlat
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
