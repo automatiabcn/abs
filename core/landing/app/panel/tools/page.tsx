@@ -482,7 +482,7 @@ export default function ToolsPage() {
                       colSpan={columns.length}
                       className="px-3 py-12 text-center text-sm text-muted-foreground"
                     >
-                      Eşleşen araç bulunamadı.
+                      Filtreyle eşleşen araç yok.
                     </td>
                   </tr>
                 ) : (
