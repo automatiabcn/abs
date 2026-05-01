@@ -33,7 +33,13 @@ export default function MarketplacePanel({
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterValue>("all");
   const [selected, setSelected] = useState<PluginManifest | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
   const searchId = useId();
+
+  // Q9 / MP4 — reset acknowledgement whenever the modal target changes.
+  useEffect(() => {
+    setAcknowledged(false);
+  }, [selected?.id]);
 
   const filtered = useMemo(() => {
     let list = initialPlugins;
@@ -162,6 +168,30 @@ export default function MarketplacePanel({
             <p className="mt-3 line-clamp-3 text-sm text-zinc-600 dark:text-zinc-300">
               {plugin.description}
             </p>
+            {/* Q9 / MP4 — permission preview chips on the card */}
+            <div
+              data-testid={`permission-preview-${plugin.id}`}
+              className="mt-3 flex flex-wrap gap-1.5 text-[10px]"
+            >
+              {plugin.permissions.network_egress.length > 0 && (
+                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-800 ring-1 ring-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:ring-blue-800">
+                  network · {plugin.permissions.network_egress.length}
+                </span>
+              )}
+              {plugin.permissions.secrets.length > 0 && (
+                <span className="rounded-full bg-yellow-50 px-2 py-0.5 text-yellow-900 ring-1 ring-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-200 dark:ring-yellow-800">
+                  secret · {plugin.permissions.secrets.length}
+                </span>
+              )}
+              {plugin.permissions.filesystem_write.length > 0 && (
+                <span className="rounded-full bg-orange-50 px-2 py-0.5 text-orange-900 ring-1 ring-orange-200 dark:bg-orange-900/30 dark:text-orange-200 dark:ring-orange-800">
+                  fs-write · {plugin.permissions.filesystem_write.length}
+                </span>
+              )}
+              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800">
+                cosign · imzalı
+              </span>
+            </div>
             <button
               type="button"
               data-testid={`install-button-${plugin.id}`}
@@ -232,6 +262,22 @@ export default function MarketplacePanel({
               </PermissionRow>
             </dl>
 
+            {/* Q9 / MP4 — explicit warning + acknowledgement gate */}
+            <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
+              Bu eklenti yukarıdaki ağ uçlarına ve secret'lara erişim
+              isteyecek. Sandbox cgroup içinde çalışır, ama yetkileri
+              onayladığınızda bu erişimler sürekli açılır.
+            </div>
+            <label className="mt-3 flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={acknowledged}
+                onChange={(e) => setAcknowledged(e.target.checked)}
+                data-testid="permission-acknowledge"
+              />
+              <span>İzinleri okudum, kurulumu onaylıyorum.</span>
+            </label>
+
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
@@ -239,15 +285,16 @@ export default function MarketplacePanel({
                 onClick={() => setSelected(null)}
                 className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
-                Cancel
+                İptal
               </button>
               <button
                 type="button"
                 data-testid="permission-approve"
                 onClick={handleApprove}
-                className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                disabled={!acknowledged}
+                className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
-                Approve &amp; Install
+                Onayla &amp; Kur
               </button>
             </div>
           </div>

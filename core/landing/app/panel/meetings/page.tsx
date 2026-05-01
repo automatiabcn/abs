@@ -1,8 +1,9 @@
 // Q7 Phase C — premium /panel/meetings refactor (S20.5 behaviour preserved).
+// Q9 Phase B — MT8 fix: filter bar (search + status + speaker count + date range).
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Mic, RefreshCw, Upload } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { FilterX, Mic, RefreshCw, Search, Upload } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface MeetingRow {
@@ -55,12 +57,60 @@ function statusVariant(
   return "secondary";
 }
 
+type StatusFilter = "all" | MeetingRow["status"];
+
 export default function MeetingsPanel() {
   const [meetings, setMeetings] = useState<MeetingRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // Q9 / MT8 — filter state
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [minSpeakers, setMinSpeakers] = useState<number | "">("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const filtered = useMemo(() => {
+    let list = meetings;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((m) => m.filename.toLowerCase().includes(q));
+    }
+    if (statusFilter !== "all") {
+      list = list.filter((m) => m.status === statusFilter);
+    }
+    if (typeof minSpeakers === "number" && minSpeakers > 0) {
+      list = list.filter((m) => m.speaker_count >= minSpeakers);
+    }
+    if (dateFrom) {
+      const fromTs = new Date(dateFrom).getTime();
+      list = list.filter((m) => new Date(m.created_at).getTime() >= fromTs);
+    }
+    if (dateTo) {
+      // dateTo inclusive — push to end-of-day so 'today' captures all rows.
+      const toTs = new Date(dateTo + "T23:59:59").getTime();
+      list = list.filter((m) => new Date(m.created_at).getTime() <= toTs);
+    }
+    return list;
+  }, [meetings, search, statusFilter, minSpeakers, dateFrom, dateTo]);
+
+  const filtersActive =
+    search !== "" ||
+    statusFilter !== "all" ||
+    minSpeakers !== "" ||
+    dateFrom !== "" ||
+    dateTo !== "";
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setMinSpeakers("");
+    setDateFrom("");
+    setDateTo("");
+  };
 
   const fetchMeetings = async () => {
     setLoading(true);
@@ -164,7 +214,16 @@ export default function MeetingsPanel() {
           <div className="space-y-1">
             <CardTitle>Geçmiş</CardTitle>
             <CardDescription>
-              Toplam {meetings.length} kayıt — son güncelleme şimdi.
+              Toplam {meetings.length} kayıt
+              {filtersActive && (
+                <>
+                  {" · "}
+                  <span className="text-primary">{filtered.length}</span>{" "}
+                  filtreli
+                </>
+              )}
+              {" · "}
+              son güncelleme şimdi.
             </CardDescription>
           </div>
           <Button
@@ -179,6 +238,70 @@ export default function MeetingsPanel() {
             Yenile
           </Button>
         </CardHeader>
+        <div
+          data-test="meetings-filter-bar"
+          className="grid grid-cols-2 gap-2 border-b border-border px-6 pb-4 sm:grid-cols-5"
+        >
+          <div className="relative col-span-2 sm:col-span-1">
+            <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Dosya adında ara…"
+              data-test="meetings-filter-search"
+              className="pl-7 text-xs"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            data-test="meetings-filter-status"
+            className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+          >
+            <option value="all">Tüm durumlar</option>
+            <option value="pending">Beklemede</option>
+            <option value="done">Tamamlandı</option>
+            <option value="error">Hata</option>
+          </select>
+          <Input
+            type="number"
+            min={0}
+            value={minSpeakers}
+            onChange={(e) =>
+              setMinSpeakers(e.target.value ? Number(e.target.value) : "")
+            }
+            placeholder="Min. konuşmacı"
+            data-test="meetings-filter-speakers"
+            className="text-xs"
+          />
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            data-test="meetings-filter-from"
+            className="text-xs"
+          />
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            data-test="meetings-filter-to"
+            className="text-xs"
+          />
+          {filtersActive && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              data-test="meetings-filter-clear"
+              className="col-span-2 sm:col-span-5"
+            >
+              <FilterX className="mr-2 h-3.5 w-3.5" />
+              Filtreleri temizle
+            </Button>
+          )}
+        </div>
         <CardContent>
           {error && (
             <p
@@ -215,18 +338,20 @@ export default function MeetingsPanel() {
                     ))}
                   </>
                 )}
-                {!loading && meetings.length === 0 && (
+                {!loading && filtered.length === 0 && (
                   <tr>
                     <td
                       colSpan={6}
-                      className="py-6 text-center text-muted-foreground"
+                      className="py-6 text-center text-sm text-muted-foreground"
                     >
-                      Henüz toplantı yok.
+                      {meetings.length === 0
+                        ? "Henüz toplantı yok. Yukarıdan ilk kaydı yükleyin."
+                        : "Filtre ile eşleşen kayıt yok."}
                     </td>
                   </tr>
                 )}
                 {!loading &&
-                  meetings.map((m) => (
+                  filtered.map((m) => (
                     <tr
                       key={m.id}
                       className="border-b border-border/50 transition-colors hover:bg-accent/40"

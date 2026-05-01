@@ -15,7 +15,7 @@ import {
   Settings,
   Zap,
 } from "lucide-react";
-import { ProgressBar } from "@tremor/react";
+import { DateRangePicker, type DateRangePickerValue, ProgressBar } from "@tremor/react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -127,16 +127,31 @@ function ProviderRow({ slice, name }: { slice: Slice; name: string }) {
   );
 }
 
+function defaultRange(): DateRangePickerValue {
+  // Last 30 days, both ends inclusive.
+  const to = new Date();
+  const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
+  return { from, to };
+}
+
 export default function QuotaPage() {
   const [data, setData] = useState<QuotaPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Q9 / QT3 — date range filter (presets via Tremor)
+  const [range, setRange] = useState<DateRangePickerValue>(defaultRange());
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
-        const res = await fetch("/v1/system/quota_status", {
+        const params = new URLSearchParams();
+        if (range.from) params.set("from", range.from.toISOString().slice(0, 10));
+        if (range.to) params.set("to", range.to.toISOString().slice(0, 10));
+        const url =
+          "/v1/system/quota_status" +
+          (params.toString() ? `?${params.toString()}` : "");
+        const res = await fetch(url, {
           credentials: "include",
           cache: "no-store",
         });
@@ -160,7 +175,7 @@ export default function QuotaPage() {
       active = false;
       window.clearInterval(t);
     };
-  }, []);
+  }, [range.from, range.to]);
 
   const allSlices = data
     ? [["claude_plus", data.claude_plus] as const, ...Object.entries(data.free_providers)]
@@ -208,12 +223,21 @@ export default function QuotaPage() {
               : "Sağlayıcı kullanımı, eşik uyarıları, free-path oranı."}
           </p>
         </div>
-        <Link href="/admin/settings" passHref>
-          <Button variant="outline" size="sm">
-            <Settings className="mr-2 h-3.5 w-3.5" />
-            Sağlayıcı ayarları
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <DateRangePicker
+            value={range}
+            onValueChange={setRange}
+            data-test="quota-date-range"
+            enableSelect
+            className="w-72"
+          />
+          <Link href="/admin/settings" passHref>
+            <Button variant="outline" size="sm">
+              <Settings className="mr-2 h-3.5 w-3.5" />
+              Sağlayıcı ayarları
+            </Button>
+          </Link>
+        </div>
       </motion.header>
 
       {/* ─── 4 stat tile (QT5 fix) ──────────────────────── */}
