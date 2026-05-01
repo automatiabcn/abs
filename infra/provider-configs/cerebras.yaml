@@ -1,0 +1,25 @@
+provider: cerebras
+display_name: Cerebras Inference
+homepage: https://cerebras.ai/
+docs: https://inference-docs.cerebras.ai/
+free_tier: true
+rate_limit: 30 RPM (free)
+models:
+  - alias: llama-3.3-70b
+    id: llama-3.3-70b
+    context: 8192
+    pricing_per_mtok_input: 0.85
+    pricing_per_mtok_output: 1.20
+    deprecated: false
+  - alias: qwen-3-32b
+    id: qwen-3-32b
+    context: 16384
+    pricing_per_mtok_input: 0.40
+    pricing_per_mtok_output: 0.80
+    deprecated: false
+  - alias: llama-3.1-8b
+    id: llama3.1-8b
+    context: 8192
+    pricing_per_mtok_input: 0.10
+    pricing_per_mtok_output: 0.10
+    deprecated: false

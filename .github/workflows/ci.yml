@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: core/backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - name: Install dependencies
+        run: pip install -e ".[dev]" ruff
+      - name: Run ruff check
+        run: ruff check .
+      - name: Run ruff format check
+        run: ruff format --check .
+
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: core/backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - name: Install dependencies
+        run: pip install -e ".[dev]" mypy
+      - name: Run mypy on T-001..T-005 modules
+        run: |
+          mypy --strict --explicit-package-bases \
+            app/event_bus \
+            app/worker \
+            app/auth/oauth \
+            app/auth/cerbos_client.py \
+            app/api/v1
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: core/backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - name: Install dependencies
+        run: pip install -e ".[dev]" pytest-cov
+      - name: Run tests with coverage
+        run: pytest -q --ignore=tests/integration --cov=app --cov-report=term-missing --cov-report=xml
+      - name: Coverage threshold (warn-only at <70%)
+        run: |
+          total=$(python -c "import xml.etree.ElementTree as ET; r=ET.parse('coverage.xml').getroot(); print(int(float(r.attrib['line-rate'])*100))")
+          echo "coverage=${total}%"
+          if [ "$total" -lt 70 ]; then
+            echo "::warning::Coverage ${total}% is below 70%"
+          fi
+
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ABS_DATABASE_URL: sqlite:///${{ runner.temp }}/abs.db
+    defaults:
+      run:
+        working-directory: core/backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+      - name: Alembic upgrade head + downgrade base
+        run: |
+          alembic -c alembic.ini upgrade head
+          alembic -c alembic.ini downgrade base

@@ -1,0 +1,53 @@
+{
+  "duration_s": 20,
+  "interval_s": 4,
+  "sample_count": 5,
+  "rss_mb_mean": 18.38,
+  "rss_mb_max": 19.06,
+  "cpu_percent_mean": 18.96,
+  "cpu_percent_max": 94.8,
+  "expected_rss_mb_threshold": 200,
+  "expected_cpu_pct_threshold": 5,
+  "samples": [
+    {
+      "t_offset_s": 0.0,
+      "rss_mb": 19.06,
+      "vms_mb": 431811.59,
+      "cpu_percent": 94.8,
+      "num_threads": 1,
+      "open_fds": 3
+    },
+    {
+      "t_offset_s": 4.0,
+      "rss_mb": 19.06,
+      "vms_mb": 431811.59,
+      "cpu_percent": 0.0,
+      "num_threads": 1,
+      "open_fds": 3
+    },
+    {
+      "t_offset_s": 8.0,
+      "rss_mb": 19.06,
+      "vms_mb": 431811.59,
+      "cpu_percent": 0.0,
+      "num_threads": 1,
+      "open_fds": 3
+    },
+    {
+      "t_offset_s": 12.01,
+      "rss_mb": 19.06,
+      "vms_mb": 431811.59,
+      "cpu_percent": 0.0,
+      "num_threads": 1,
+      "open_fds": 3
+    },
+    {
+      "t_offset_s": 16.01,
+      "rss_mb": 15.66,
+      "vms_mb": 431811.59,
+      "cpu_percent": 0.0,
+      "num_threads": 1,
+      "open_fds": 3
+    }
+  ]
+}

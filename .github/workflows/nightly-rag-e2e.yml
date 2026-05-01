@@ -1,0 +1,51 @@
+name: nightly-rag-e2e
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rag-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      qdrant:
+        image: qdrant/qdrant:v1.17.1
+        ports:
+          - 6333:6333
+        options: >-
+          --health-cmd "wget -qO- http://127.0.0.1:6333/readyz || exit 1"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 5
+      cerbos:
+        image: ghcr.io/cerbos/cerbos:0.39.0
+        ports:
+          - 3592:3592
+          - 3593:3593
+
+    defaults:
+      run:
+        working-directory: core/backend
+
+    env:
+      ABS_QDRANT_URL: http://localhost:6333
+      ABS_CERBOS_HOST: http://localhost:3592
+      ABS_DATABASE_URL: sqlite:///${{ runner.temp }}/abs.db
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+      - name: Run RAG multi-tenancy E2E
+        run: pytest -q tests/e2e/test_rag_multitenancy.py

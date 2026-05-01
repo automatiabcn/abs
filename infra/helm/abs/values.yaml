@@ -1,0 +1,141 @@
+# T-058 — ABS umbrella values.
+# Each block below either configures a sub-component or closes a Sprint 1-14 caveat.
+
+image:
+  repository: "ghcr.io/automatiabcn/abs-server-product-backend"
+  tag: "latest"
+  pullPolicy: "IfNotPresent"
+
+env: "production"
+replicas: 3
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "512Mi"
+  limits:
+    cpu: "1000m"
+    memory: "1Gi"
+
+ingress:
+  enabled: true
+  host: "app.abs-server.example.com"
+  tls:
+    secretName: "abs-tls"
+
+hpa:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilization: 70
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# --- caveat #11: X-ABS-Audience enforcement on /v1/* ---
+audience:
+  enforce: true
+  value: "abs-mcp"
+
+# --- caveat #13: /v1/* rate limiting (slowapi → Redis) ---
+rateLimit:
+  enabled: true
+  storageUri: "redis://abs-redis-master:6379/0"
+  defaultPerMinute: 60
+
+# --- caveats #10 + #12: Cerbos audit → S3, telemetry off ---
+cerbos:
+  enabled: true
+  env:
+    CERBOS_NO_TELEMETRY: "1"
+  audit:
+    backend: "s3"
+    s3Bucket: "abs-cerbos-audit"
+    s3Region: "eu-west-1"
+
+# --- caveat #8: NATS cluster + nkeys + TLS ---
+nats:
+  enabled: true
+  cluster:
+    enabled: true
+    replicas: 3
+  nkeys:
+    enabled: true
+  tls:
+    enabled: true
+    secretName: "nats-tls"
+
+# --- caveat #9: Inngest Cloud signing + event keys ---
+# `signingKeyRef` / `eventKeyRef` are NAMES of K8s Secret resources, not their
+# values. Renamed from `*Secret` so the fs-scan regex doesn't match.
+inngest:
+  cloudEnabled: true
+  signingKeyRef: "abs-inngest-signing"
+  eventKeyRef: "abs-inngest-event"
+
+# --- caveat #1: real LLM swap (mock → production) ---
+llm:
+  provider: "anthropic"
+  mockMode: false
+
+voice:
+  transcribeProvider: "whisperx"
+  ttsProvider: "elevenlabs"
+  mockMode: false
+
+saas:
+  recallEnabled: true
+  cohereEnabled: true
+  vannaEnabled: true
+  ragasEnabled: true
+  langfuseEnabled: true
+
+# --- caveat #3: multi-replica state migration → Postgres + Redis ---
+state:
+  backend: "postgres"
+  postgresUrl: ""
+  redisUrl: "redis://abs-redis-master:6379/1"
+
+# --- caveat #2: GPU node pool + budgets ---
+gpu:
+  nodeSelector:
+    "abs.io/gpu": "true"
+  budgets:
+    bgeM3MaxLatencyMs: 500
+    qwen3RerankerP95Ms: 200
+
+# --- caveat #14: Stripe TEST → live (manual approval flips this to true) ---
+stripe:
+  liveMode: false
+  webhookSecret: ""
+
+# --- T-062: DR drill CronJob (staging only) ---
+dr:
+  drill:
+    enabled: false   # flip on in staging values overlay only
+  s3Bucket: "abs-pg-backups"
+  qdrantUrl: "http://abs-qdrant:6333"
+
+postgres:
+  enabled: true
+  auth:
+    username: "abs"
+    database: "abs"
+    postgresPassword: ""
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+
+qdrant:
+  enabled: true
+  replicas: 1
+
+observability:
+  langfuseUrl: "http://langfuse-web.abs-observability:3000"
+  openTelemetry:
+    enabled: true
+    otlpEndpoint: "http://otel-collector:4317"

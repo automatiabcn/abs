@@ -1,0 +1,65 @@
+"""012 — First-run redirect middleware.
+
+Setup tamamlanmadiysa whitelist disindaki tum istekler /setup'a yonlendirilir.
+Whitelist:
+  /healthz
+  /v1/setup/*       (setup wizard API)
+  /setup            (UI sayfasi)
+  /setup/*          (setup assets)
+  /setup/assets/*
+  /panel/assets/*   (logo + CSS gibi static)
+  /static/*
+  /_internal/*
+
+Setup tamamlandiktan sonra middleware no-op.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import RedirectResponse
+
+logger = logging.getLogger(__name__)
+
+
+_WHITELIST_PREFIXES = (
+    "/healthz",
+    "/v1/setup",
+    "/setup",
+    "/panel/assets/",
+    "/static/",
+    "/_internal/",
+    "/mcp",  # Claude Code kurulum oncesi setup_status'u sorgulayabilsin
+)
+
+
+def _setup_completed() -> bool:
+    """Setup state file'i her istekte oku — file-stat hizli (<0.1ms)."""
+    try:
+        from app.api.setup import setup_state_path
+
+        p = setup_state_path()
+    except Exception:
+        return False
+    if not p.is_file():
+        return False
+    try:
+        return bool(json.loads(p.read_text(encoding="utf-8")).get("completed"))
+    except Exception:
+        return False
+
+
+class FirstRunMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        if _setup_completed():
+            return await call_next(request)
+        path = request.url.path
+        if any(path.startswith(prefix) for prefix in _WHITELIST_PREFIXES):
+            return await call_next(request)
+        accept = request.headers.get("accept", "")
+        if "text/html" in accept:
+            return RedirectResponse(url="/setup", status_code=302)
+        return RedirectResponse(url="/setup", status_code=307)

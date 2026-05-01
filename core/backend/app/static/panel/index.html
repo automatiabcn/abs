@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Automatia ABS · Panel</title>
+  <link rel="stylesheet" href="/panel/assets/panel.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">◆</span>
+        <span class="brand-name">Automatia ABS</span>
+      </div>
+      <nav aria-label="Hızlı bağlantılar" class="topbar-nav">
+        <a href="#sec-cosmos">Cosmos</a>
+        <a href="#sec-delegation">Delegation</a>
+        <a href="#sec-judge">Judge</a>
+        <a href="#sec-workflow">Workflow</a>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="kv">
+        <span class="k">Görevler</span>
+        <span class="v" id="h-tasks">0</span>
+      </div>
+      <div class="kv">
+        <span class="k">Tasarruf</span>
+        <span class="v" id="h-savings">0%</span>
+      </div>
+      <div class="kv">
+        <span class="k">Token</span>
+        <span class="v" id="h-tokens">0</span>
+      </div>
+      <div class="kv status">
+        <span class="live-dot" id="h-live-dot" aria-hidden="true"></span>
+        <span id="h-last-update">CANLI</span>
+      </div>
+      <div class="clock" id="clock" role="timer" aria-live="off" aria-label="Canlı saat">--:--:--</div>
+      <button id="logout-btn" class="logout" type="button" aria-label="Oturumu kapat">Çıkış</button>
+    </div>
+  </header>
+
+  <div id="alert-bar" class="alert-bar" role="status" hidden></div>
+
+  <!-- 014 — Update available banner (update-available SSE event ile guncellenir) -->
+  <div id="update-banner" class="update-banner" role="status" hidden>
+    <span class="update-banner-icon" aria-hidden="true">⬆</span>
+    <span class="update-banner-text">
+      <strong>Yeni sürüm mevcut: <span id="update-version">—</span></strong>
+      <span id="update-summary">—</span>
+    </span>
+    <button class="update-banner-action" type="button" onclick="applyUpdate()">Güncelle</button>
+    <button class="update-banner-dismiss" type="button" onclick="dismissUpdateBanner()" aria-label="Kapat">×</button>
+  </div>
+
+  <!-- 012 — Demo countdown banner (license-status SSE event ile guncellenir) -->
+  <div id="demo-banner" class="demo-banner" role="status" hidden>
+    <span class="demo-banner-icon" aria-hidden="true">⏳</span>
+    <span class="demo-banner-text">
+      Demo modu: <strong id="demo-days">14</strong> gün kaldı.
+      <a href="https://abs.automatiabcn.com/" target="_blank" rel="noopener">Lisans satın al</a>
+    </span>
+    <button class="demo-banner-dismiss" type="button" onclick="dismissDemoBanner()" aria-label="Banner'i kapat">×</button>
+  </div>
+
+  <!-- Widget: Theme toggle (floating, top-right) -->
+  <div id="theme-toggle" role="button" tabindex="0" aria-label="Tema değiştir">
+    <span id="theme-icon">🌙</span>
+  </div>
+
+  <!-- Widget: Notification bell (floating, top-right, left of theme) -->
+  <div id="notif-bell" role="button" tabindex="0" aria-label="Bildirimler" title="Bildirimler">
+    🔔
+    <span id="notif-badge" hidden>0</span>
+  </div>
+  <div id="notif-panel" role="region" aria-label="Bildirim listesi" hidden>
+    <div class="notif-header">
+      <span class="notif-title">Bildirimler</span>
+      <button id="notif-clear" type="button" class="notif-btn">Temizle</button>
+      <button id="notif-close" type="button" class="notif-btn" aria-label="Kapat">✕</button>
+    </div>
+    <div id="notif-list" class="notif-list" aria-live="polite"></div>
+  </div>
+
+  <!-- Widget: Anchor nav (in-page quick jumps) -->
+  <nav id="anchor-nav" aria-label="Bölüm navigasyonu">
+    <a href="#sec-cosmos"><span class="nav-dot" style="background:#a5b4fc"></span>Cosmos</a>
+    <a href="#sec-vital"><span class="nav-dot" style="background:#22d3ee"></span>Vital</a>
+    <a href="#sec-providers"><span class="nav-dot" style="background:#10b981"></span>Sağlayıcı</a>
+    <a href="#sec-quota"><span class="nav-dot" style="background:#f97316"></span>Kota</a>
+    <a href="#sec-delegation"><span class="nav-dot" style="background:#eab308"></span>Delegation</a>
+    <a href="#sec-judge"><span class="nav-dot" style="background:#c084fc"></span>Judge</a>
+    <a href="#sec-disagreement"><span class="nav-dot" style="background:#f472b6"></span>Anlaşmazlık</a>
+    <a href="#sec-symbol"><span class="nav-dot" style="background:#14b8a6"></span>Sembol</a>
+    <a href="#sec-workflow"><span class="nav-dot" style="background:#fbbf24"></span>Workflow</a>
+    <a href="#sec-budget"><span class="nav-dot" style="background:#10b981"></span>Bütçe</a>
+    <a href="#sec-detail"><span class="nav-dot" style="background:#3a9dff"></span>Detay (Tool/Cascade/Pipeline)</a>
+  </nav>
+
+  <main class="page">
+    <!-- Widget 1 — Cosmos Neural Graph -->
+    <section class="card">
+      <h2 class="section-title" id="sec-cosmos">
+        <span class="sec-glyph" style="background:#a855f7"></span>
+        Cosmos Neural Graph
+      </h2>
+      <div class="cosmos-wrap">
+        <div class="cosmos-frame">
+          <iframe
+            id="brain-iframe"
+            src="/static/panel/brain_graph.html"
+            loading="lazy"
+            title="ABS Neural Cosmos"
+          ></iframe>
+        </div>
+        <div class="cosmos-strip" aria-label="Cosmos özet metrikleri">
+          <div class="cs-card" data-cs="deleg">
+            <div class="cs-label">Delegation</div>
+            <div class="cs-metric"><span id="cs-deleg">–</span><span class="cs-unit">%</span></div>
+            <canvas class="cs-spark" id="spark-deleg" width="160" height="22" aria-label="Delegation sparkline"></canvas>
+            <div class="cs-sub" id="cs-deleg-sub">–</div>
+          </div>
+
+          <div class="cs-card" data-cs="gpu">
+            <div class="cs-label">Yerel GPU</div>
+            <div class="cs-metric"><span id="cs-gpu-temp">–</span><span class="cs-unit">°C</span></div>
+            <canvas class="cs-spark" id="spark-gpu" width="160" height="22" aria-label="GPU sıcaklık sparkline"></canvas>
+            <div class="cs-sub" id="cs-gpu-vram">VRAM –</div>
+          </div>
+
+          <div class="cs-card" data-cs="providers">
+            <div class="cs-label">Sağlayıcılar</div>
+            <div class="cs-dots" id="cs-provider-dots" role="list" aria-label="Sağlayıcı durumları"></div>
+            <div class="cs-sub" id="cs-provider-sub">–</div>
+          </div>
+
+          <div class="cs-card" data-cs="cohere">
+            <div class="cs-label">Cohere</div>
+            <div class="cs-metric"><span id="cs-cohere-count">0</span><span class="cs-unit">/1000</span></div>
+            <div class="cs-bar"><div id="cs-cohere-fill" class="cs-bar-fill"></div></div>
+          </div>
+
+          <div class="cs-card" data-cs="cache">
+            <div class="cs-label">Cache Hit</div>
+            <div class="cs-metric"><span id="cs-cache-hr">0</span><span class="cs-unit">%</span></div>
+            <canvas class="cs-spark" id="spark-cache" width="160" height="22" aria-label="Cache hit sparkline"></canvas>
+            <div class="cs-sub" id="cs-cache-sub">–</div>
+          </div>
+
+          <div class="cs-card" data-cs="budget">
+            <div class="cs-label">Bütçe (bugün)</div>
+            <div class="cs-metric">$<span id="cs-budget-usd">0.00</span></div>
+            <div class="cs-sub" id="cs-budget-sub">–</div>
+          </div>
+        </div>
+        <div class="cs-log" id="cs-log" aria-live="polite" aria-label="Son olaylar"></div>
+      </div>
+    </section>
+
+    <!-- Widget — Vital Signs Strip (cosmos özet, 8 vital-item) -->
+    <section class="card">
+      <h2 class="section-title" id="sec-vital">
+        <span class="sec-glyph" style="background:#22d3ee"></span>
+        Vital Signs — Tüm Sistem Tek Bakışta
+      </h2>
+      <div id="vital-strip">
+        <div class="vital-overall">
+          <div id="vital-overall-dot" aria-hidden="true"></div>
+          <div>
+            <div id="vital-overall-label">Hesaplanıyor…</div>
+            <div id="vital-overall-sub">0/8 OK</div>
+          </div>
+        </div>
+        <div id="vital-dots">
+          <div class="vital-item" data-key="backend" title="Backend API"><span class="v-dot"></span><span class="v-lbl">Backend</span></div>
+          <div class="vital-item" data-key="stream" title="SSE Stream"><span class="v-dot"></span><span class="v-lbl">Stream</span></div>
+          <div class="vital-item" data-key="anthropic" title="Anthropic"><span class="v-dot"></span><span class="v-lbl">Anthropic</span></div>
+          <div class="vital-item" data-key="groq" title="Groq"><span class="v-dot"></span><span class="v-lbl">Groq</span></div>
+          <div class="vital-item" data-key="cerebras" title="Cerebras"><span class="v-dot"></span><span class="v-lbl">Cerebras</span></div>
+          <div class="vital-item" data-key="gemini" title="Gemini"><span class="v-dot"></span><span class="v-lbl">Gemini</span></div>
+          <div class="vital-item" data-key="cloudflare" title="CloudFlare"><span class="v-dot"></span><span class="v-lbl">CloudFlare</span></div>
+          <div class="vital-item" data-key="cohere" title="Cohere"><span class="v-dot"></span><span class="v-lbl">Cohere</span></div>
+        </div>
+        <div id="vital-updated" class="premium-mono micro">güncel</div>
+      </div>
+    </section>
+
+    <!-- Widget 5 — Cohere Alert Banner -->
+    <section class="card alert-card" hidden id="cohere-alert-banner">
+      <div class="alert-icon" aria-hidden="true">⚠</div>
+      <div class="alert-body">
+        <strong>Cohere trial limitine yaklaşıldı.</strong>
+        <span id="cohere-alert-detail">—</span>
+      </div>
+    </section>
+
+    <!-- Widget 6 — Provider Status -->
+    <section class="card">
+      <h2 class="section-title" id="sec-providers">
+        <span class="sec-glyph" style="background:#22d3ee"></span>
+        Sağlayıcı Durumu
+      </h2>
+      <div class="provider-grid" id="provider-grid" role="list">
+        <!-- JS doldurur: Anthropic, Groq, Cerebras, Gemini, CloudFlare, Cohere -->
+      </div>
+    </section>
+
+    <!-- Widget 7 — MCP Tool Kullanımı -->
+    <section class="card">
+      <h2 class="section-title" id="sec-delegation">
+        <span class="sec-glyph" style="background:#eab308"></span>
+        Delegation &amp; MCP Tool Kullanımı
+      </h2>
+      <div class="two-col">
+        <div class="subcard">
+          <div class="subcard-header">
+            <span class="chip-dot" id="deleg-dot" style="color:#22c55e"></span>
+            <span class="chip-label">Delegation oranı</span>
+            <span class="chip-meta premium-mono" id="deleg-rate">%0</span>
+          </div>
+          <div class="premium-mono" id="deleg-stats">— / — aksiyon</div>
+          <div class="premium-mono muted" id="deleg-budget">Bütçe: —</div>
+          <div class="premium-mono micro" id="deleg-target">Hedef: %8–20 (optimal)</div>
+        </div>
+
+        <div class="subcard">
+          <div class="subcard-header">
+            <span class="chip-dot" id="feat-dot" style="color:#f97316"></span>
+            <span class="chip-label">MCP tool kullanımı</span>
+            <span class="chip-meta premium-mono" id="feat-summary">—</span>
+          </div>
+          <div class="feat-grid" id="feat-grid" role="list"></div>
+          <div class="feat-trend">
+            <span class="premium-mono micro" id="feat-trend-total">0 aksiyon/24s</span>
+            <div class="premium-mono micro" id="feat-trend-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Widget — Quota Radar (6 provider) -->
+    <section class="card">
+      <h2 class="section-title" id="sec-quota">
+        <span class="sec-glyph" style="background:#f97316"></span>
+        Kota Radarı
+        <span id="quota-radar-day" class="premium-mono premium-muted" style="margin-left:auto;font-size:var(--fs-micro);">—</span>
+      </h2>
+      <div id="quota-radar-grid" class="premium-grid-6 premium-grid-tight"></div>
+    </section>
+
+    <!-- Widget 3 — Senior Judge -->
+    <section class="card">
+      <h2 class="section-title" id="sec-judge">
+        <span class="sec-glyph" style="background:#c084fc"></span>
+        Senior Judge
+      </h2>
+      <div class="subcard">
+        <div class="subcard-header">
+          <span class="chip-label">Son değerlendirme</span>
+          <span class="chip-meta premium-mono" id="judge-summary">—</span>
+        </div>
+        <div class="premium-mono" id="judge-body"></div>
+      </div>
+    </section>
+
+    <!-- Widget — Disagreement Panel -->
+    <section class="card">
+      <h2 class="section-title" id="sec-disagreement">
+        <span class="sec-glyph" style="background:#f472b6"></span>
+        Model Anlaşmazlığı
+        <span id="disagree-summary" class="premium-mono premium-muted" style="margin-left:auto;font-size:var(--fs-tiny);">—</span>
+      </h2>
+      <div class="subcard">
+        <div class="premium-mono muted" style="font-size:var(--fs-tiny);margin-bottom:8px;">
+          N-model cosine similarity · son ask_disagree çağrısının sonucu
+        </div>
+        <div id="disagree-body" class="premium-mono" style="font-size:var(--fs-tiny);"></div>
+      </div>
+    </section>
+
+    <!-- Widget — Symbol Explorer -->
+    <section class="card">
+      <h2 class="section-title" id="sec-symbol">
+        <span class="sec-glyph" style="background:#14b8a6"></span>
+        Sembol Gezgini
+        <span id="sym-explorer-summary" class="premium-mono premium-muted" style="margin-left:auto;font-size:var(--fs-tiny);">—</span>
+      </h2>
+      <div class="subcard">
+        <div class="sym-search">
+          <input id="sym-explorer-input" type="text" placeholder="Örn: fetch, ask_groq, fullstack" aria-label="Sembol ara" />
+          <button id="sym-explorer-btn" type="button">ARA</button>
+        </div>
+        <div id="sym-explorer-results" class="premium-mono" style="font-size:var(--fs-tiny);color:var(--text2);min-height:20px;margin-top:10px;"></div>
+      </div>
+    </section>
+
+    <!-- Widget 4 — Workflow Durability -->
+    <section class="card">
+      <h2 class="section-title" id="sec-workflow">
+        <span class="sec-glyph" style="background:#fbbf24"></span>
+        Workflow Durability
+      </h2>
+      <div class="subcard" id="workflow-card">
+        <div class="subcard-header">
+          <span class="chip-label">Son 5 workflow</span>
+          <span class="chip-meta premium-mono" id="wf-detail-summary">—</span>
+        </div>
+        <div class="premium-mono" id="wf-detail-list"></div>
+      </div>
+    </section>
+
+    <!-- Widget 8 — Budget Tracker -->
+    <section class="card">
+      <h2 class="section-title" id="sec-budget">
+        <span class="sec-glyph" style="background:#10b981"></span>
+        Bütçe &amp; Maliyet İzleme
+      </h2>
+      <div class="two-col">
+        <div class="subcard">
+          <div class="subcard-header">
+            <span class="chip-label">Günlük</span>
+          </div>
+          <div class="big-metric">$<span id="v8-budget-stat">0.00</span></div>
+          <div class="premium-mono muted" id="v8-budget-proj">Tahmini ay sonu: —</div>
+        </div>
+        <div class="subcard">
+          <div class="subcard-header">
+            <span class="chip-label">Öğrenilen dersler</span>
+          </div>
+          <div class="big-metric"><span id="v8-learnings-stat">0</span></div>
+          <div class="premium-mono muted">Kümülatif</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detay Görünümler (sekmeli iframe) -->
+    <section class="section">
+      <h2 class="section-title" id="sec-detail">
+        <span class="sec-glyph" style="background:#3a9dff"></span>
+        Detay Görünümler
+      </h2>
+      <div class="detail-tabs" role="tablist" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <button type="button" class="detail-tab premium-btn premium-btn--primary" data-target="detail-tools" aria-selected="true">🛠 Tool Browser <span class="premium-mono muted">(122)</span></button>
+        <button type="button" class="detail-tab premium-btn premium-btn--ghost" data-target="detail-cascade">🔀 Provider Cascade</button>
+        <button type="button" class="detail-tab premium-btn premium-btn--ghost" data-target="detail-pipeline">⚗️ Quality Pipeline</button>
+      </div>
+      <div class="detail-frame" style="position:relative;width:100%;height:720px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg2)">
+        <iframe id="detail-tools"    src="/static/panel/tools.html"    style="position:absolute;inset:0;width:100%;height:100%;border:0;display:block" loading="lazy" title="MCP Tool Browser"></iframe>
+        <iframe id="detail-cascade"  src="/static/panel/cascade.html"  style="position:absolute;inset:0;width:100%;height:100%;border:0;display:none"  loading="lazy" title="Cascade Visualizer"></iframe>
+        <iframe id="detail-pipeline" src="/static/panel/pipeline.html" style="position:absolute;inset:0;width:100%;height:100%;border:0;display:none"  loading="lazy" title="Pipeline Viewer"></iframe>
+      </div>
+    </section>
+
+    <!-- Meta / footer -->
+    <footer class="page-footer">
+      <span class="premium-mono micro">Automatia ABS · <span id="footer-version">0.1.0</span></span>
+      <span class="premium-mono micro">Akış: <span id="footer-stream-state">bağlanıyor…</span></span>
+    </footer>
+  </main>
+
+  <script>
+    // Detay Görünümler — sekmeli iframe (vanilla JS, panel.js'e ek değil bağımsız)
+    (function () {
+      const tabs = document.querySelectorAll('.detail-tab');
+      tabs.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const target = btn.getAttribute('data-target');
+          tabs.forEach(function (b) {
+            b.setAttribute('aria-selected', String(b === btn));
+            b.classList.toggle('premium-btn--primary', b === btn);
+            b.classList.toggle('premium-btn--ghost', b !== btn);
+          });
+          ['detail-tools', 'detail-cascade', 'detail-pipeline'].forEach(function (id) {
+            const f = document.getElementById(id);
+            if (f) f.style.display = id === target ? 'block' : 'none';
+          });
+        });
+      });
+    })();
+  </script>
+
+  <!-- T-R02 — ES-module entry point. The shim panel.js still re-exports for
+       legacy bookmarks; new code lives under panel/. -->
+  <script type="module" src="/panel/assets/panel/main.js"></script>
+</body>
+</html>

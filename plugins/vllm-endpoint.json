@@ -1,0 +1,31 @@
+{
+  "id": "vllm-endpoint",
+  "name": "vLLM Endpoint",
+  "version": "1.0.0",
+  "type": "llm-provider",
+  "entry_point": "ghcr.io/abs-plugins/vllm-endpoint:1.0.0",
+  "description": "bring-your-own vLLM HTTP endpoint (OpenAI-compatible) for on-prem GPU inference",
+  "author": "Automatia BCN",
+  "homepage": "https://github.com/abs-plugins/vllm-endpoint",
+  "license": "Apache-2.0",
+  "dependencies": ["httpx@^0.27"],
+  "permissions": {
+    "network_egress": ["*.internal", "vllm.local"],
+    "filesystem_read": ["/app/config"],
+    "filesystem_write": ["/tmp"],
+    "secrets": ["VLLM_API_KEY"],
+    "tenant_scoped": true,
+    "cpu_quota": 0.5,
+    "memory_mb": 256
+  },
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "base_url": {"type": "string", "format": "uri"},
+      "model": {"type": "string"},
+      "api_key_secret": {"type": "string"},
+      "context_window": {"type": "integer", "minimum": 1024}
+    },
+    "required": ["base_url", "model", "api_key_secret", "context_window"]
+  }
+}

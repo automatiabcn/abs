@@ -1,0 +1,4 @@
+# Q7 Phase A — Neo4j async driver (Bolt protocol).
+# Runtime deps live in pyproject.toml; this file exists for legacy/CI tooling
+# that pip-installs from requirements.txt.
+neo4j>=5.18

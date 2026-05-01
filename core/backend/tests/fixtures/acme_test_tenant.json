@@ -1,0 +1,43 @@
+{
+  "tenant_id": "acme-test",
+  "tenant_name": "Acme Test (T-R08 beta E2E)",
+  "roles": ["admin", "pm"],
+  "rag_corpus": [
+    {
+      "doc_id": "acme-handbook-001",
+      "title": "Acme Q3 OKR Handbook",
+      "text": "Acme's Q3 OKR is to ship the multi-tenant beta program by 2026-05-15. The CEO Esra Ünal owns the launch. Pricing tiers: Self-host (free), Maintenance ($49/mo), Managed ($499/mo). Only EUR billing is supported in 2026."
+    },
+    {
+      "doc_id": "acme-handbook-002",
+      "title": "Acme Customer Onboarding Playbook",
+      "text": "Step 1 — warm intro email. Step 2 — schedule 30-min discovery on Google Meet. Step 3 — send the agreement letter via DocuSign. Step 4 — start trial in self-host mode. Step 5 — weekly check-in for first 30 days."
+    }
+  ],
+  "gmail": {
+    "oauth_refresh_token": "1//0sandbox-refresh-token-acme-test",
+    "scope": "https://www.googleapis.com/auth/gmail.modify",
+    "seed_inbox": [
+      {
+        "sender": "lead@acme-prospect.com",
+        "subject": "Re: ABS demo follow-up",
+        "body": "Merhaba, demo'dan sonra fiyat tablosunu paylaşır mısınız? Ekipte 4 kişiyiz, self-host paket ilgi çekiyor."
+      },
+      {
+        "sender": "billing@vendor.acme.com",
+        "subject": "Invoice INV-2026-0418",
+        "body": "Attached invoice for April. Net-30 terms apply."
+      }
+    ]
+  },
+  "recall": {
+    "meeting_url": "https://meet.google.com/sandbox-acme-roomid",
+    "duration_minutes": 30,
+    "transcript_seed": "[Esra] Ekibe Q3 OKR'yi hatırlatmalıyım.\n[Mert] Pricing sayfası canlıya çıkacak mı?\n[Esra] Evet, 15 Mayıs hedef.\n[Mert] Sözleşmeyi bu hafta gönder.\n"
+  },
+  "expected": {
+    "rag_query": "Acme'nin Q3 hedefi nedir?",
+    "rag_answer_must_contain": ["multi-tenant", "2026-05-15"],
+    "action_item_assignees_subset": ["Esra", "Mert"]
+  }
+}

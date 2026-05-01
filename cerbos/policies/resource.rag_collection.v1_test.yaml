@@ -1,0 +1,103 @@
+# T-012 — Cerbos RAG resource policy test cases.
+---
+name: rag_collection_policy_tests
+description: "Coverage for resource.rag_collection.v1."
+principals:
+  alice_member_t1:
+    id: alice
+    roles: ["member"]
+    attr:
+      tenant_id: "tenant-1"
+  bob_admin_t1:
+    id: bob
+    roles: ["admin"]
+    attr:
+      tenant_id: "tenant-1"
+  carol_member_t2:
+    id: carol
+    roles: ["member"]
+    attr:
+      tenant_id: "tenant-2"
+  dan_suspended:
+    id: dan
+    roles: ["admin"]
+    attr:
+      tenant_id: "tenant-1"
+      suspended: true
+
+resources:
+  rag_t1_corpus:
+    id: tenant-1-rag
+    kind: rag_collection
+    attr:
+      tenant_id: "tenant-1"
+  rag_t2_corpus:
+    id: tenant-2-rag
+    kind: rag_collection
+    attr:
+      tenant_id: "tenant-2"
+
+tests:
+  - name: tenant_member_can_query_and_ingest
+    input:
+      principals: [alice_member_t1]
+      resources: [rag_t1_corpus]
+      actions: [query, list, ingest]
+    expected:
+      - principal: alice_member_t1
+        resource: rag_t1_corpus
+        actions:
+          query: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+          ingest: EFFECT_ALLOW
+
+  - name: tenant_admin_can_delete
+    input:
+      principals: [bob_admin_t1]
+      resources: [rag_t1_corpus]
+      actions: [delete, query, ingest]
+    expected:
+      - principal: bob_admin_t1
+        resource: rag_t1_corpus
+        actions:
+          delete: EFFECT_ALLOW
+          query: EFFECT_ALLOW
+          ingest: EFFECT_ALLOW
+
+  - name: tenant_member_cannot_delete
+    input:
+      principals: [alice_member_t1]
+      resources: [rag_t1_corpus]
+      actions: [delete]
+    expected:
+      - principal: alice_member_t1
+        resource: rag_t1_corpus
+        actions:
+          delete: EFFECT_DENY
+
+  - name: cross_tenant_query_denied
+    input:
+      principals: [carol_member_t2]
+      resources: [rag_t1_corpus]
+      actions: [query, list, ingest, delete]
+    expected:
+      - principal: carol_member_t2
+        resource: rag_t1_corpus
+        actions:
+          query: EFFECT_DENY
+          list: EFFECT_DENY
+          ingest: EFFECT_DENY
+          delete: EFFECT_DENY
+
+  - name: suspended_user_blocked_everywhere
+    input:
+      principals: [dan_suspended]
+      resources: [rag_t1_corpus]
+      actions: [query, ingest, delete]
+    expected:
+      - principal: dan_suspended
+        resource: rag_t1_corpus
+        actions:
+          query: EFFECT_DENY
+          ingest: EFFECT_DENY
+          delete: EFFECT_DENY

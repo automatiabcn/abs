@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Automatia ABS — Kurulum</title>
+  <link rel="stylesheet" href="/setup/assets/setup.css">
+</head>
+<body>
+  <main class="setup-shell">
+    <header class="setup-header">
+      <div class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="48" height="48">
+          <defs>
+            <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#a5b4fc"/>
+              <stop offset="1" stop-color="#4f46e5"/>
+            </linearGradient>
+          </defs>
+          <path d="M32 6 L58 20 L58 44 L32 58 L6 44 L6 20 Z" fill="url(#g)"/>
+        </svg>
+      </div>
+      <h1>Automatia ABS</h1>
+      <p class="setup-tagline">Automate the Chaos</p>
+    </header>
+
+    <nav class="setup-progress" aria-label="Adimlar">
+      <ol>
+        <li data-step-indicator="1" class="active">1. Yonetici</li>
+        <li data-step-indicator="2">2. Lisans</li>
+        <li data-step-indicator="3">3. Domain</li>
+        <li data-step-indicator="4">4. Anthropic</li>
+        <li data-step-indicator="5">5. Provider'lar</li>
+        <li data-step-indicator="6">6. Test</li>
+      </ol>
+    </nav>
+
+    <div id="setup-error" class="setup-error" hidden></div>
+
+    <section class="setup-step" data-step="1">
+      <h2>1. Yonetici Hesabi</h2>
+      <p class="setup-help">Panel girisini bu hesap kullanacak.</p>
+      <form data-step-key="admin">
+        <label>Email <input name="email" type="email" required autocomplete="email"></label>
+        <label>Sifre <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+        <div class="setup-actions">
+          <button type="submit" class="setup-next">Ileri</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="setup-step" data-step="2" hidden>
+      <h2>2. Lisans Anahtari</h2>
+      <p class="setup-help">Email ile aldiginiz JWT lisansi yapistirin. Lisans olmadan demo modu 14 gun aktif kalir.</p>
+      <form data-step-key="license">
+        <label>Lisans <textarea name="license_key" rows="4" required></textarea></label>
+        <div class="setup-actions">
+          <button type="button" class="setup-back">Geri</button>
+          <button type="submit" class="setup-next">Ileri</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="setup-step" data-step="3" hidden>
+      <h2>3. Domain</h2>
+      <form data-step-key="domain">
+        <label>Mod
+          <select name="mode">
+            <option value="ip">IP (gelistirme)</option>
+            <option value="domain">Domain</option>
+          </select>
+        </label>
+        <label>Domain (opsiyonel) <input name="domain" type="text" placeholder="abs.example.com"></label>
+        <label>SSL
+          <select name="ssl_mode">
+            <option value="internal">Internal CA</option>
+            <option value="acme">ACME / Let's Encrypt</option>
+          </select>
+        </label>
+        <div class="setup-actions">
+          <button type="button" class="setup-back">Geri</button>
+          <button type="submit" class="setup-next">Ileri</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="setup-step" data-step="4" hidden>
+      <h2>4. Anthropic API Key</h2>
+      <p class="setup-help">Claude API erisimi icin (sk-ant-... formati). Sadece Claude Plus abonelik kullanacaksaniz <strong>atlayabilirsiniz</strong>.</p>
+      <form data-step-key="anthropic">
+        <label class="setup-skip-row">
+          <input type="checkbox" id="setup-skip-paid" name="skip_paid_providers_ui">
+          Ucretsiz tier — Anthropic API anahtarim yok (Claude Plus + free saglayicilar)
+        </label>
+        <label id="setup-anthropic-row">Anthropic Key <input id="setup-anthropic-key" name="anthropic_api_key" type="password" required minlength="8" placeholder="sk-ant-..."></label>
+        <input type="hidden" name="skip_paid_providers" value="false">
+        <div class="setup-actions">
+          <button type="button" class="setup-back">Geri</button>
+          <button type="submit" class="setup-next">Ileri</button>
+        </div>
+      </form>
+      <script>
+        (function () {
+          var skip = document.getElementById('setup-skip-paid');
+          if (!skip) return;
+          var hidden = document.querySelector('input[name="skip_paid_providers"]');
+          var keyInput = document.getElementById('setup-anthropic-key');
+          var keyRow = document.getElementById('setup-anthropic-row');
+          skip.addEventListener('change', function (e) {
+            var checked = e.target.checked;
+            if (hidden) hidden.value = checked ? 'true' : 'false';
+            if (keyInput) {
+              keyInput.required = !checked;
+              if (checked) keyInput.value = '';
+            }
+            if (keyRow) keyRow.style.display = checked ? 'none' : '';
+          });
+        })();
+      </script>
+    </section>
+
+    <section class="setup-step" data-step="5" hidden>
+      <h2>5. Provider Anahtarlari</h2>
+      <p class="setup-help">Hepsi opsiyonel. Sonra panel'den de eklenebilir.</p>
+      <form data-step-key="providers">
+        <label>Groq <input name="groq_api_key" type="password" autocomplete="off"></label>
+        <label>Gemini <input name="gemini_api_key" type="password" autocomplete="off"></label>
+        <label>Cerebras <input name="cerebras_api_key" type="password" autocomplete="off"></label>
+        <label>Cohere <input name="cohere_api_key" type="password" autocomplete="off"></label>
+        <label>CloudFlare Account ID <input name="cf_account_id" type="text" autocomplete="off"></label>
+        <label>CloudFlare API Token <input name="cf_api_token" type="password" autocomplete="off"></label>
+        <div class="setup-actions">
+          <button type="button" class="setup-back">Geri</button>
+          <button type="submit" class="setup-next">Ileri</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="setup-step" data-step="6" hidden>
+      <h2>6. Provider Testi</h2>
+      <p class="setup-help">Yapilandirilmis provider'lara hizli ping atilir.</p>
+      <div id="setup-test-results"></div>
+      <div class="setup-actions">
+        <button type="button" class="setup-back">Geri</button>
+        <button type="button" class="setup-finish" data-step-key="test">Kuruluma Bitir</button>
+      </div>
+    </section>
+  </main>
+  <script src="/setup/assets/setup.js" defer></script>
+</body>
+</html>

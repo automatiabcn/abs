@@ -1,0 +1,56 @@
+{
+  "name": "ABS Lighthouse Nightly 04:00",
+  "nodes": [
+    {
+      "id": "c4a1b2c3-d4e5-f6a7-b8c9-d0e1f2a3b4c5",
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 4 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "h4a1b2c3-d4e5-f6a7-b8c9-d0e1f2a3b4c5",
+      "name": "Trigger ABS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [520, 300],
+      "parameters": {
+        "url": "https://app.abs-server.example.com/v1/internal/lighthouse-nightly",
+        "requestMethod": "POST",
+        "options": {},
+        "headerParametersUi": {
+          "parameter": [
+            {"name": "X-ABS-Service-Token", "value": "={{ $credentials.absServiceToken }}"},
+            {"name": "X-ABS-Audience", "value": "abs-mcp"},
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "bodyParametersUi": {
+          "parameter": [
+            {"name": "trigger", "value": "cron"}
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron": {
+      "main": [[{"node": "Trigger ABS", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "v1-lighthouse",
+  "id": "abs-lighthouse-nightly",
+  "meta": {"templateCredsSetupCompleted": true}
+}

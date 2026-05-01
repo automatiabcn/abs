@@ -1,0 +1,79 @@
+"""029 Modul A — Customer-facing audit log API.
+
+GET /v1/me/audit-log?limit=50&offset=0  (Bearer license_key)
+"""
+
+from __future__ import annotations
+
+import logging
+from datetime import datetime, timedelta, timezone
+from typing import Optional
+
+from fastapi import APIRouter, Header, HTTPException, Query
+from sqlmodel import Session, select
+
+from app.config import settings
+from app.db.models import CustomerAuditEntry
+from app.db.session import get_engine
+from app.licensing import verify_license
+
+router = APIRouter(prefix="/v1/me", tags=["me"])
+logger = logging.getLogger(__name__)
+
+
+def _verify_bearer_license(authorization: Optional[str]) -> str:
+    """Bearer = license JWT. Returns jti or raises 401."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(401, "Authorization Bearer license required")
+    token = authorization.split(None, 1)[1].strip()
+    try:
+        payload = verify_license(token)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(401, f"License verify failed: {exc}") from exc
+    jti = payload.get("jti")
+    if not jti:
+        raise HTTPException(401, "Token missing jti")
+    return jti
+
+
+@router.get("/audit-log")
+async def audit_log(
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    action: Optional[str] = None,
+    authorization: Optional[str] = Header(default=None),
+) -> dict:
+    """Last 90 days of audit entries for the requesting license."""
+    jti = _verify_bearer_license(authorization)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=90)
+    with Session(get_engine()) as db:
+        stmt = (
+            select(CustomerAuditEntry)
+            .where(CustomerAuditEntry.license_jti == jti)
+            .where(CustomerAuditEntry.ts >= cutoff)
+            .order_by(CustomerAuditEntry.ts.desc())  # type: ignore[union-attr]
+            .offset(offset)
+            .limit(limit)
+        )
+        if action:
+            stmt = stmt.where(CustomerAuditEntry.action == action)
+        rows = list(db.scalars(stmt).all())
+    out = []
+    for r in rows:
+        ts = r.ts
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        out.append(
+            {
+                "id": r.id,
+                "ts": ts.isoformat(),
+                "action": r.action,
+                "resource": r.resource,
+                "detail": r.detail,
+                "ip_hash": r.ip_hash,
+                "user_agent_short": r.user_agent_short,
+            }
+        )
+    return {"license_jti": jti, "count": len(out), "entries": out}

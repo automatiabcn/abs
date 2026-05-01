@@ -1,0 +1,8 @@
+{
+  "model": "qwen/qwen3-coder:free",
+  "messages": [
+    {"role": "user", "content": "Write a Python function to reverse a string."}
+  ],
+  "max_tokens": 1024,
+  "temperature": 0.3
+}

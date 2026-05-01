@@ -1,0 +1,121 @@
+# T-060 — nightly security scans (SAST + SCA + secrets + container + SBOM).
+# Soft-fail philosophy: flag findings as artifacts; only break the build on
+# explicit critical-severity exit codes.
+# Security: every interpolation routes through `env:` blocks or is internal
+# (github.run_id, github.ref) — no untrusted PR/issue text in run blocks.
+name: Security Nightly
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: security-nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install Semgrep
+        run: pip install semgrep
+      - name: Run Semgrep SAST
+        run: |
+          semgrep --config=auto core/backend/app/ \
+            --sarif --output semgrep.sarif || true
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+        continue-on-error: true
+
+  sca:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: pip-audit
+        working-directory: core/backend
+        run: |
+          pip install pip-audit
+          pip-audit -f json -o ../../pip-audit.json || true
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: fs
+          scan-ref: ./core/backend
+          format: json
+          output: trivy-fs.json
+          severity: HIGH,CRITICAL
+        continue-on-error: true
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sca-reports-${{ github.run_id }}
+          path: |
+            pip-audit.json
+            trivy-fs.json
+          retention-days: 30
+
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -fsSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz \
+            | tar -xzC /tmp
+          sudo mv /tmp/gitleaks /usr/local/bin/
+      - name: Run gitleaks
+        run: |
+          gitleaks detect --source . --redact --report-path gitleaks.json --report-format json || true
+      - name: Upload gitleaks report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-${{ github.run_id }}
+          path: gitleaks.json
+          retention-days: 30
+
+  sbom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+            | sudo sh -s -- -b /usr/local/bin v1.13.0
+      - name: Generate SBOM (CycloneDX JSON)
+        run: |
+          syft scan dir:./core/backend \
+            -o cyclonedx-json=sbom.cdx.json
+      - name: Upload SBOM
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.run_id }}
+          path: sbom.cdx.json
+          retention-days: 90

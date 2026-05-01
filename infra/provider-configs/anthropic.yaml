@@ -1,0 +1,25 @@
+provider: anthropic
+display_name: Anthropic Claude
+homepage: https://www.anthropic.com/
+docs: https://docs.claude.com/
+free_tier: false
+rate_limit: tier-based
+models:
+  - alias: claude-haiku
+    id: claude-haiku-4-5-20251001
+    context: 200000
+    pricing_per_mtok_input: 1.0
+    pricing_per_mtok_output: 5.0
+    deprecated: false
+  - alias: claude-sonnet
+    id: claude-sonnet-4-6
+    context: 200000
+    pricing_per_mtok_input: 3.0
+    pricing_per_mtok_output: 15.0
+    deprecated: false
+  - alias: claude-opus
+    id: claude-opus-4-7
+    context: 200000
+    pricing_per_mtok_input: 15.0
+    pricing_per_mtok_output: 75.0
+    deprecated: false

@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "abs.fullname" . }}-lighthouse
+  labels:
+    {{- include "abs.labels" . | nindent 4 }}
+spec:
+  schedule: "0 4 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ include "abs.serviceAccountName" . }}
+          containers:
+            - name: lighthouse
+              image: "curlimages/curl:8.6.0"
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  curl -fsS -X POST \
+                    -H "Authorization: Bearer $(cat /secrets/service-token)" \
+                    -H "X-ABS-Audience: {{ .Values.audience.value }}" \
+                    "http://{{ include "abs.fullname" . }}-backend:8000/v1/internal/lighthouse-nightly"
+              volumeMounts:
+                - name: service-token
+                  mountPath: /secrets
+                  readOnly: true
+          restartPolicy: OnFailure
+          volumes:
+            - name: service-token
+              secret:
+                secretName: {{ include "abs.fullname" . }}-service-token

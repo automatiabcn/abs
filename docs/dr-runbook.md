@@ -1,0 +1,97 @@
+# Disaster Recovery Runbook
+
+> Targets: **RTO < 1 hour, RPO < 15 minutes**. Last drilled: pending T-062 first run.
+
+## Scope
+
+This runbook covers full or partial loss of:
+
+- PostgreSQL (tenant data, OAuth, audit chain).
+- Qdrant (vector embeddings).
+- ClickHouse (LangFuse trace store).
+- NATS JetStream (event durability).
+- Object storage (Cerbos audit, RAG document blobs).
+
+It does **not** cover code-level rollbacks (use `helm rollback abs <prev-rev>`).
+
+## Backup Strategy
+
+| Layer | Mechanism | Frequency | Retention | Owner |
+|---|---|---|---|---|
+| PostgreSQL | `pg_basebackup` + WAL streaming to S3 | continuous | 30 days | DB on-call |
+| Qdrant | snapshot via `/collections/<name>/snapshots` | hourly | 7 days | RAG on-call |
+| ClickHouse | `BACKUP DATABASE … TO Disk('s3', …)` | hourly | 14 days | Observability |
+| NATS JetStream | replicated stream (R=3) + S3 jetstream object store | continuous | 7 days | Platform |
+| Object storage | versioned bucket + cross-region replication | continuous | 90 days | Platform |
+| Cerbos audit log | append-only S3 + HMAC chain | continuous | 7 years (SOC2) | Security |
+
+## Restore Procedures
+
+### Postgres point-in-time
+
+```bash
+# Identify last good base backup.
+aws s3 ls s3://abs-pg-backups/base/ | tail -5
+
+# Stop backend pods to avoid writes during restore.
+kubectl -n abs-prod scale deploy/abs-abs-backend --replicas=0
+
+# Restore base + replay WAL up to incident timestamp.
+pg_basebackup -D /var/lib/postgresql/restore -F t -X stream -P
+recovery_target_time = '2026-04-28 10:30:00 UTC'
+
+# Promote, point ABS at the restored cluster (helm value), scale back up.
+helm upgrade abs ./infra/helm/abs --reuse-values \
+  --set state.postgresUrl="postgres://…/restored"
+kubectl -n abs-prod scale deploy/abs-abs-backend --replicas=3
+```
+
+### Qdrant collection
+
+```bash
+# From the most recent hourly snapshot.
+curl -fsS -X PUT "http://qdrant:6333/collections/abs_documents/snapshots/upload?priority=replica" \
+  -H 'api-key: $QDRANT_KEY' \
+  -F snapshot=@./abs_documents_2026-04-28T10:00:00.snapshot
+```
+
+### NATS JetStream
+
+NATS R=3 should self-heal. If the entire cluster is lost, recover from the S3 object store:
+
+```bash
+nats stream restore ABS-EVENTS s3://abs-nats-backups/abs-events/latest.tar.zst
+```
+
+## Drill Procedure (Monthly)
+
+The drill is automated by a CronJob (`infra/helm/abs/templates/cron-dr-drill.yaml`)
+running on the 1st of every month at 03:00 UTC, but humans must observe and
+sign off:
+
+1. Snapshot all 5 layers in **staging**.
+2. Drop the staging Postgres + Qdrant data.
+3. Restore from latest snapshots.
+4. Run the smoke suite (`pytest tests/smoke -k dr_drill`).
+5. Record durations in `benchmarks/results/dr-YYYY-MM.json`.
+6. Update this runbook if any step diverged.
+
+## RTO / RPO Validation
+
+| Layer | RTO target | RPO target | Last measured |
+|---|---|---|---|
+| Postgres | 30 min | 5 min | TBD (T-062) |
+| Qdrant | 20 min | 1 hour | TBD |
+| ClickHouse | 30 min | 1 hour | TBD |
+| NATS | 5 min | 0 (replicated) | TBD |
+| Cerbos audit | 60 min | 15 min | TBD |
+
+Filing the first measured numbers and any breach analysis is the close-out
+artifact for T-062.
+
+## Contacts
+
+- DB on-call: PagerDuty `abs-db`
+- RAG on-call: PagerDuty `abs-rag`
+- Platform on-call: PagerDuty `abs-platform`
+- Security: `security@abs-server.example.com` (PGP key on the public security page)

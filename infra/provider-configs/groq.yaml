@@ -1,0 +1,49 @@
+provider: groq
+display_name: Groq Cloud
+homepage: https://groq.com/
+docs: https://console.groq.com/docs
+free_tier: true
+rate_limit: 30 RPM (free)
+models:
+  - alias: llama-3.3-70b
+    id: llama-3.3-70b-versatile
+    context: 131072
+    pricing_per_mtok_input: 0.0
+    pricing_per_mtok_output: 0.0
+    deprecated: false
+  - alias: llama-3.1-8b
+    id: llama-3.1-8b-instant
+    context: 131072
+    pricing_per_mtok_input: 0.0
+    pricing_per_mtok_output: 0.0
+    deprecated: false
+  - alias: gpt-oss-120b
+    id: openai/gpt-oss-120b
+    context: 131072
+    pricing_per_mtok_input: 0.0
+    pricing_per_mtok_output: 0.0
+    deprecated: false
+  - alias: gpt-oss-20b
+    id: openai/gpt-oss-20b
+    context: 131072
+    pricing_per_mtok_input: 0.0
+    pricing_per_mtok_output: 0.0
+    deprecated: false
+  - alias: kimi-k2
+    id: moonshotai/kimi-k2-instruct
+    context: 131072
+    pricing_per_mtok_input: 0.0
+    pricing_per_mtok_output: 0.0
+    deprecated: false
+  - alias: qwen-3-32b
+    id: qwen/qwen3-32b
+    context: 131072
+    pricing_per_mtok_input: 0.0
+    pricing_per_mtok_output: 0.0
+    deprecated: false
+  - alias: llama-4-scout
+    id: meta-llama/llama-4-scout-17b-16e-instruct
+    context: 131072
+    pricing_per_mtok_input: 0.0
+    pricing_per_mtok_output: 0.0
+    deprecated: false

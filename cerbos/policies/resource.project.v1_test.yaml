@@ -1,0 +1,123 @@
+# T-004 — Cerbos policy test cases. Validate via `cerbos compile cerbos/policies`.
+---
+name: project_policy_tests
+description: "Coverage for resource.project.v1 + derived_roles.common."
+principals:
+  alice_member_t1:
+    id: alice
+    roles: ["member"]
+    attr:
+      tenant_id: "tenant-1"
+  bob_admin_t1:
+    id: bob
+    roles: ["admin"]
+    attr:
+      tenant_id: "tenant-1"
+  carol_member_t2:
+    id: carol
+    roles: ["member"]
+    attr:
+      tenant_id: "tenant-2"
+  dan_suspended:
+    id: dan
+    roles: ["admin"]
+    attr:
+      tenant_id: "tenant-1"
+      suspended: true
+
+resources:
+  project_t1_alice:
+    id: proj-t1-alice
+    kind: project
+    attr:
+      tenant_id: "tenant-1"
+      owner_id: "alice"
+  project_t1_other:
+    id: proj-t1-other
+    kind: project
+    attr:
+      tenant_id: "tenant-1"
+      owner_id: "someone"
+  project_t2:
+    id: proj-t2
+    kind: project
+    attr:
+      tenant_id: "tenant-2"
+      owner_id: "carol"
+
+tests:
+  - name: tenant_member_can_read_own_tenant
+    input:
+      principals: [alice_member_t1]
+      resources: [project_t1_other]
+      actions: [read, list]
+    expected:
+      - principal: alice_member_t1
+        resource: project_t1_other
+        actions:
+          read: EFFECT_ALLOW
+          list: EFFECT_ALLOW
+
+  - name: project_owner_can_update_and_archive
+    input:
+      principals: [alice_member_t1]
+      resources: [project_t1_alice]
+      actions: [update, archive]
+    expected:
+      - principal: alice_member_t1
+        resource: project_t1_alice
+        actions:
+          update: EFFECT_ALLOW
+          archive: EFFECT_ALLOW
+
+  - name: tenant_member_cannot_update_other_users_project
+    input:
+      principals: [alice_member_t1]
+      resources: [project_t1_other]
+      actions: [update, delete]
+    expected:
+      - principal: alice_member_t1
+        resource: project_t1_other
+        actions:
+          update: EFFECT_DENY
+          delete: EFFECT_DENY
+
+  - name: tenant_admin_can_delete
+    input:
+      principals: [bob_admin_t1]
+      resources: [project_t1_alice]
+      actions: [delete, update, read]
+    expected:
+      - principal: bob_admin_t1
+        resource: project_t1_alice
+        actions:
+          delete: EFFECT_ALLOW
+          update: EFFECT_ALLOW
+          read: EFFECT_ALLOW
+
+  - name: cross_tenant_read_denied
+    input:
+      principals: [carol_member_t2]
+      resources: [project_t1_alice]
+      actions: [read, list, update, delete]
+    expected:
+      - principal: carol_member_t2
+        resource: project_t1_alice
+        actions:
+          read: EFFECT_DENY
+          list: EFFECT_DENY
+          update: EFFECT_DENY
+          delete: EFFECT_DENY
+
+  - name: suspended_user_blocked_everywhere
+    input:
+      principals: [dan_suspended]
+      resources: [project_t1_alice]
+      actions: [read, update, delete]
+    expected:
+      - principal: dan_suspended
+        resource: project_t1_alice
+        actions:
+          read: EFFECT_DENY
+          update: EFFECT_DENY
+          delete: EFFECT_DENY

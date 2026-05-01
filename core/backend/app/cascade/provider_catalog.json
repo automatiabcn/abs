@@ -1,0 +1,45 @@
+{
+  "version": "2026-04-27",
+  "providers": [
+    {
+      "id": "groq-compound",
+      "model": "groq/compound",
+      "tier": "agentic",
+      "context": 131072,
+      "free_quota": 14400,
+      "added": "2026-04-27"
+    },
+    {
+      "id": "groq-compound-mini",
+      "model": "groq/compound-mini",
+      "tier": "agentic",
+      "context": 131072,
+      "free_quota": 14400,
+      "added": "2026-04-27"
+    },
+    {
+      "id": "cerebras-qwen-235b",
+      "model": "qwen-3-235b-a22b-instruct-2507",
+      "tier": "upper",
+      "context": 32768,
+      "free_quota": null,
+      "added": "2026-04-27"
+    },
+    {
+      "id": "gemini-flash-latest",
+      "model": "gemini-flash-latest",
+      "tier": "auto-upgrade",
+      "context": 1048576,
+      "free_quota": 1500,
+      "added": "2026-04-27"
+    },
+    {
+      "id": "gemini-pro-latest",
+      "model": "gemini-pro-latest",
+      "tier": "auto-upgrade",
+      "context": 1048576,
+      "free_quota": 1500,
+      "added": "2026-04-27"
+    }
+  ]
+}

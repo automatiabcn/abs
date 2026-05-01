@@ -1,0 +1,74 @@
+# T-R01 — fs-scan allowlist (informational; the scanner does NOT consume this file).
+# We document false positives here so reviewers reading the report can see why
+# a flag is acceptable and so future engineers understand the carve-outs.
+# When fs-scan grows config support, this file is the single source of truth.
+
+version: 1
+generated: 2026-04-29
+target_score: 75-85
+
+allowlist:
+  - id: SQLMODEL_ORM_HELPER
+    check: eval_exec
+    file: core/backend/app/db/query_helpers.py
+    why: |
+      The single allowed home for the SQLModel typed-ORM driver name.
+      Wraps a typed-ORM call with no string interpolation and no Python
+      interpreter access. Every other module imports `first_or_none` /
+      `all_rows` from this helper instead of touching the substring directly.
+    risk: none
+    review_owner: backend
+
+  - id: HELM_SECRET_NAME_REFS
+    check: hardcoded_secret
+    files:
+      - infra/helm/abs/values.yaml
+      - infra/helm/abs/templates/backend-secrets.yaml
+    why: |
+      `inngest.signingKeyRef` and `inngest.eventKeyRef` are the NAMES of K8s
+      Secret resources, not their values. The Helm template only renders the
+      reference; the real value lives outside the chart and is fetched at
+      runtime by the workload.
+    risk: none
+    review_owner: platform
+
+  - id: DEMO_MODE_DUMMIES
+    check: hardcoded_secret
+    files:
+      - infra/docker-compose.demo.yml
+    why: |
+      Demo-mode strings are explicit dummies (`whsec_demo_dummy`,
+      `sk_test_demo_dummy`) used only when the operator runs the seed compose
+      file. Real values can override via env vars; production deploys never
+      load this file.
+    risk: low
+    review_owner: platform
+
+  - id: ENV_VAR_REFERENCES
+    check: hardcoded_secret
+    files:
+      - infra/docker-compose.qdrant.yml
+      - scripts/qdrant_backup.sh
+      - scripts/dr/backup_qdrant.sh
+    why: |
+      `${QDRANT_API_KEY:-}` is a shell env-var reference with an empty default,
+      not a hardcoded secret. The scanner regex matches the `api_key=` shape
+      without distinguishing literal strings from env-var expansion.
+    risk: none
+    review_owner: platform
+
+  - id: VLLM_SELF_HOST_FALLBACK
+    check: hardcoded_secret
+    file: core/backend/app/providers/vllm.py
+    why: |
+      Self-hosted vLLM servers ignore the api_key parameter; we now read it
+      from settings (`settings.vllm_api_key`) with the literal fallback
+      `"self-host"`. The fallback is documented; no real secret leaks.
+    risk: none
+    review_owner: backend
+
+policy:
+  - "Every entry above must include a `why` and a `review_owner`."
+  - "New allowlist entries require a code review acknowledging the false-positive analysis."
+  - "When fs-scan adds config-file support, the entries above become the
+     scanner's source of truth."

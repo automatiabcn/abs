@@ -1,0 +1,12 @@
+{
+  "entities": [
+    {"label": "Person", "props": {"id": "p1", "name": "Ali Yılmaz", "role": "CTO"}},
+    {"label": "Person", "props": {"id": "p2", "name": "Ayşe Demir", "role": "Developer"}},
+    {"label": "Company", "props": {"id": "c1", "name": "DemoCo", "industry": "SaaS"}}
+  ],
+  "relations": [
+    {"src_id": "p1", "type": "WORKS_AT", "dst_id": "c1", "props": {"since": "2020"}},
+    {"src_id": "p2", "type": "WORKS_AT", "dst_id": "c1", "props": {"since": "2022"}},
+    {"src_id": "p1", "type": "MANAGES", "dst_id": "p2", "props": {}}
+  ]
+}

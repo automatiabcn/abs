@@ -1,0 +1,8 @@
+{
+  "model": "command-r-plus-08-2024",
+  "messages": [
+    {"role": "user", "content": "Summarize the plot of 'Inception' in two sentences."}
+  ],
+  "max_tokens": 1024,
+  "temperature": 0.3
+}

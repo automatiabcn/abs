@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "currency": "USD",
+  "tiers": [
+    {
+      "id": "self-host",
+      "name_key": "pricing.tier.self_host",
+      "monthly_price_usd": 299,
+      "seat_cap": 1,
+      "stripe_price_setting": "abs_price_self_host",
+      "highlights": [
+        "pricing.feature.self_hosted",
+        "pricing.feature.full_rag",
+        "pricing.feature.community_support"
+      ]
+    },
+    {
+      "id": "team-5",
+      "name_key": "pricing.tier.team_5",
+      "monthly_price_usd": 1196,
+      "seat_cap": 5,
+      "stripe_price_setting": "abs_price_team_5",
+      "highlights": [
+        "pricing.feature.5_seats",
+        "pricing.feature.tenant_isolation",
+        "pricing.feature.priority_support"
+      ]
+    },
+    {
+      "id": "team-10",
+      "name_key": "pricing.tier.team_10",
+      "monthly_price_usd": 2093,
+      "seat_cap": 10,
+      "stripe_price_setting": "abs_price_team_10",
+      "highlights": [
+        "pricing.feature.10_seats",
+        "pricing.feature.dedicated_slack",
+        "pricing.feature.custom_sla"
+      ]
+    }
+  ],
+  "i18n": {
+    "en": {
+      "pricing.tier.self_host": "Self-host",
+      "pricing.tier.team_5": "Team 5",
+      "pricing.tier.team_10": "Team 10",
+      "pricing.feature.self_hosted": "Run on your own infra",
+      "pricing.feature.full_rag": "Multi-tenant RAG with Cerbos",
+      "pricing.feature.community_support": "Community support",
+      "pricing.feature.5_seats": "Up to 5 seats",
+      "pricing.feature.tenant_isolation": "Cerbos pre-filter + Qdrant payload isolation",
+      "pricing.feature.priority_support": "Priority email support",
+      "pricing.feature.10_seats": "Up to 10 seats",
+      "pricing.feature.dedicated_slack": "Dedicated Slack channel",
+      "pricing.feature.custom_sla": "Custom SLA",
+      "pricing.cta.checkout": "Start checkout",
+      "pricing.cta.contact": "Contact sales"
+    },
+    "tr": {
+      "pricing.tier.self_host": "Kendi sunucum",
+      "pricing.tier.team_5": "Ekip 5",
+      "pricing.tier.team_10": "Ekip 10",
+      "pricing.feature.self_hosted": "Kendi altyapınızda çalıştırın",
+      "pricing.feature.full_rag": "Cerbos ile çoklu kiracı RAG",
+      "pricing.feature.community_support": "Topluluk desteği",
+      "pricing.feature.5_seats": "5 koltuğa kadar",
+      "pricing.feature.tenant_isolation": "Cerbos ön-filtre + Qdrant izolasyon",
+      "pricing.feature.priority_support": "Öncelikli e-posta desteği",
+      "pricing.feature.10_seats": "10 koltuğa kadar",
+      "pricing.feature.dedicated_slack": "Özel Slack kanalı",
+      "pricing.feature.custom_sla": "Özel SLA",
+      "pricing.cta.checkout": "Ödeme başlat",
+      "pricing.cta.contact": "Satışa ulaşın"
+    },
+    "es": {
+      "pricing.tier.self_host": "Auto-hospedado",
+      "pricing.tier.team_5": "Equipo 5",
+      "pricing.tier.team_10": "Equipo 10",
+      "pricing.feature.self_hosted": "Ejecuta en tu infra",
+      "pricing.feature.full_rag": "RAG multi-tenant con Cerbos",
+      "pricing.feature.community_support": "Soporte comunitario",
+      "pricing.feature.5_seats": "Hasta 5 puestos",
+      "pricing.feature.tenant_isolation": "Pre-filtro Cerbos + aislamiento Qdrant",
+      "pricing.feature.priority_support": "Soporte prioritario por email",
+      "pricing.feature.10_seats": "Hasta 10 puestos",
+      "pricing.feature.dedicated_slack": "Canal Slack dedicado",
+      "pricing.feature.custom_sla": "SLA personalizado",
+      "pricing.cta.checkout": "Iniciar pago",
+      "pricing.cta.contact": "Contacto comercial"
+    }
+  }
+}

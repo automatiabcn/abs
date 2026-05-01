@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "abs.fullname" . }}-backend-config
+  labels:
+    {{- include "abs.labels" . | nindent 4 }}
+data:
+  ABS_AUDIENCE_ENFORCE: "{{ .Values.audience.enforce }}"
+  ABS_AUDIENCE_VALUE: "{{ .Values.audience.value }}"
+  ABS_RATE_LIMIT_ENABLED: "{{ .Values.rateLimit.enabled }}"
+  ABS_RATE_LIMIT_STORAGE_URI: "{{ .Values.rateLimit.storageUri }}"
+  ABS_RATE_LIMIT_DEFAULT_PER_MINUTE: "{{ .Values.rateLimit.defaultPerMinute }}"
+  ABS_LLM_PROVIDER: "{{ .Values.llm.provider }}"
+  ABS_LLM_MOCK_MODE: "{{ .Values.llm.mockMode }}"
+  ABS_VOICE_TRANSCRIBE_PROVIDER: "{{ .Values.voice.transcribeProvider }}"
+  ABS_VOICE_TTS_PROVIDER: "{{ .Values.voice.ttsProvider }}"
+  ABS_VOICE_MOCK_MODE: "{{ .Values.voice.mockMode }}"
+  ABS_STATE_BACKEND: "{{ .Values.state.backend }}"
+  ABS_STATE_REDIS_URL: "{{ .Values.state.redisUrl }}"
+  ABS_STRIPE_LIVE_MODE: "{{ .Values.stripe.liveMode }}"
+  ABS_LANGFUSE_URL: "{{ .Values.observability.langfuseUrl }}"
+  ABS_OTLP_ENDPOINT: "{{ .Values.observability.openTelemetry.otlpEndpoint }}"
+  CERBOS_NO_TELEMETRY: "{{ .Values.cerbos.env.CERBOS_NO_TELEMETRY }}"

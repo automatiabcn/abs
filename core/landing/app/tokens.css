@@ -1,0 +1,118 @@
+/* T-R03 — OKLCH brand color tokens.
+ *
+ * 12 tokens covering the ABS palette: brand blue, electric cyan, success,
+ * warning, danger, neutral surfaces. Defined in OKLCH for perceptual
+ * uniformity; the `color-mix()` calls let consumers tune density without
+ * re-defining the palette.
+ *
+ * Usage:
+ *   background: var(--abs-brand-base);
+ *   color: oklch(from var(--abs-brand-base) calc(l + 0.1) c h);
+ */
+
+:root {
+  /* Brand */
+  --abs-brand-base: oklch(48% 0.16 252);     /* deep ABS blue (#1e57ac equiv) */
+  --abs-brand-soft: oklch(72% 0.12 252);     /* hover / accent surface */
+  --abs-accent-cyan: oklch(78% 0.16 220);    /* electric cyan */
+  --abs-accent-cyan-soft: oklch(92% 0.07 220);
+
+  /* Status */
+  --abs-success: oklch(70% 0.18 145);
+  --abs-warning: oklch(82% 0.17 88);
+  --abs-danger: oklch(62% 0.22 24);
+  --abs-info: oklch(78% 0.13 252);
+
+  /* Surfaces (light + dark) */
+  --abs-surface-base: oklch(99% 0.005 252);
+  --abs-surface-raised: oklch(96% 0.01 252);
+  --abs-surface-sunken: oklch(92% 0.015 252);
+  --abs-foreground: oklch(22% 0.02 252);
+}
+
+/* T-R03 fix #2 — dark mode is class-based so the manual ThemeToggle in
+ * Header.tsx flips it instantly. We still honour the system preference for
+ * first-paint when no user choice has been recorded (the `:not(.light)`
+ * media-query guard lets a user explicit "light" choice override the OS). */
+:root.dark {
+  --abs-surface-base: oklch(15% 0.02 252);
+  --abs-surface-raised: oklch(20% 0.025 252);
+  --abs-surface-sunken: oklch(10% 0.015 252);
+  --abs-foreground: oklch(95% 0.01 252);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --abs-surface-base: oklch(15% 0.02 252);
+    --abs-surface-raised: oklch(20% 0.025 252);
+    --abs-surface-sunken: oklch(10% 0.015 252);
+    --abs-foreground: oklch(95% 0.01 252);
+  }
+}
+
+/* T-R03 revise — typography + elevation tokens. */
+:root {
+  /* Font stacks fed by next/font/google CSS variables in layout.tsx. */
+  --abs-font-display:
+    var(--font-display, "Geist Variable"), ui-sans-serif, system-ui, sans-serif;
+  --abs-font-mono:
+    var(--font-mono, "JetBrains Mono"), ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* 3D depth shadow stack (used by MetricCard + glassmorphism cards). */
+  --abs-shadow-rest:
+    0 1px 2px oklch(from var(--abs-foreground) l c h / 0.08),
+    0 8px 24px oklch(from var(--abs-brand-base) l c h / 0.12);
+  --abs-shadow-hover:
+    0 2px 4px oklch(from var(--abs-foreground) l c h / 0.10),
+    0 14px 36px oklch(from var(--abs-brand-base) l c h / 0.20);
+
+  /* Glassmorphism surface (frosted). */
+  --abs-glass-bg:
+    color-mix(in oklch, var(--abs-surface-base) 60%, transparent);
+  --abs-glass-bg-soft:
+    color-mix(in oklch, var(--abs-brand-soft) 12%, var(--abs-surface-base));
+}
+
+/* Typography hierarchy (plain CSS — `@layer base` would need to be next to
+ * `@tailwind base`; tokens.css is imported separately so we keep this flat). */
+html {
+  font-family: var(--abs-font-display);
+}
+
+h1 {
+  font-family: var(--abs-font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-family: var(--abs-font-display);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+body {
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+caption,
+.caption {
+  font-size: 0.875rem;
+  color: oklch(from var(--abs-foreground) l c h / 0.6);
+}
+
+code,
+kbd,
+samp,
+pre,
+.mono {
+  font-family: var(--abs-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.num-mono {
+  font-family: var(--abs-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "ss01" on, "cv01" on;
+}

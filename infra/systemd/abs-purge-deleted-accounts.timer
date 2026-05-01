@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily run of ABS account purge
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=abs-purge-deleted-accounts.service
+
+[Install]
+WantedBy=timers.target

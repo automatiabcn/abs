@@ -1,0 +1,28 @@
+ABS umbrella chart installed.
+
+1. URL:
+{{- if .Values.ingress.enabled }}
+   https://{{ .Values.ingress.host }}
+{{- else }}
+   kubectl port-forward svc/{{ include "abs.fullname" . }}-backend 8000:8000
+{{- end }}
+
+2. Verify pods:
+   kubectl get pods -l app.kubernetes.io/name={{ include "abs.name" . }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+3. Caveats closed by this chart (Sprint 15-16 / T-058):
+   #1  Real LLM/voice/SaaS swaps  → mockMode=false, anthropic + whisperx + elevenlabs
+   #2  GPU node pool + budgets    → gpu.nodeSelector + gpu.budgets
+   #3  Multi-replica state        → state.backend=postgres + state.redisUrl
+   #5  n8n cron wiring            → infra/n8n/cron-workflows/*.json
+   #8  NATS hardening             → cluster + nkeys + TLS via subchart
+   #9  Inngest Cloud signing      → inngest.signingKeySecret + eventKeySecret
+   #10 Cerbos audit → S3          → cerbos.audit.backend=s3
+   #11 X-ABS-Audience enforcement → audience.enforce=true
+   #12 CERBOS_NO_TELEMETRY=1      → cerbos.env.CERBOS_NO_TELEMETRY="1"
+   #13 /v1/* rate limit           → rateLimit.enabled=true (Redis)
+   #14 Stripe live mode           → stripe.liveMode=true (manual approval gate)
+
+   Open caveats remaining for later tasks:
+   #4  PricingPage React          → T-061
+   #6  External OAuth pen-test    → T-060

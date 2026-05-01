@@ -1,0 +1,44 @@
+[
+  {
+    "name": "all_configured",
+    "missing": [],
+    "expected_chain_length": 6,
+    "expected_primary": "anthropic"
+  },
+  {
+    "name": "no_anthropic_paid_skip",
+    "missing": ["anthropic"],
+    "expected_chain_length": 5,
+    "expected_primary": "groq"
+  },
+  {
+    "name": "free_only_full",
+    "missing": ["anthropic"],
+    "expected_chain_length": 5,
+    "expected_primary": "groq"
+  },
+  {
+    "name": "minimal_two_provider",
+    "missing": ["anthropic", "cohere", "cloudflare", "gemini"],
+    "expected_chain_length": 2,
+    "expected_primary": "groq"
+  },
+  {
+    "name": "single_provider_groq",
+    "missing": ["anthropic", "cohere", "cloudflare", "gemini", "cerebras"],
+    "expected_chain_length": 1,
+    "expected_primary": "groq"
+  },
+  {
+    "name": "single_provider_gemini",
+    "missing": ["anthropic", "cohere", "cloudflare", "groq", "cerebras"],
+    "expected_chain_length": 1,
+    "expected_primary": "gemini"
+  },
+  {
+    "name": "no_providers_configured",
+    "missing": ["anthropic", "groq", "cerebras", "gemini", "cloudflare", "cohere"],
+    "expected_chain_length": 0,
+    "expected_error": "no_providers_configured"
+  }
+]

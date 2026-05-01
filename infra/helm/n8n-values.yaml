@@ -1,0 +1,62 @@
+# T-033 — n8n self-host Helm values (queue mode for horizontal scaling).
+# helm install n8n community-charts/n8n -n abs-workflow --create-namespace -f infra/helm/n8n-values.yaml
+
+global:
+  imagePullSecrets: []
+
+main:
+  replicaCount: 2
+  image:
+    repository: n8nio/n8n
+    tag: 1.74.0
+  service:
+    type: ClusterIP
+    port: 5678
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: n8n.abs.local
+        paths: [{ path: /, pathType: Prefix }]
+    tls:
+      - { hosts: [n8n.abs.local], secretName: n8n-abs-tls }
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits:   { cpu: 2,    memory: 4Gi }
+  config:
+    executionsMode: queue
+    queueBullRedisHost: n8n-redis-master
+    queueBullRedisDB: 0
+
+worker:
+  enabled: true
+  replicaCount: 4
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits:   { cpu: 2,    memory: 4Gi }
+
+postgresql:
+  enabled: true
+  auth:
+    existingSecret: n8n-postgres-secret
+  primary:
+    persistence: { enabled: true, size: 50Gi, storageClass: fast-ssd }
+
+redis:
+  enabled: true
+  architecture: replication
+  auth:
+    enabled: true
+    existingSecret: n8n-redis-secret
+
+backup:
+  enabled: true
+  schedule: "0 4 * * *"
+  retentionDays: 30
+
+networkPolicy:
+  enabled: true
+  ingressFromNamespaces:
+    - abs-backend

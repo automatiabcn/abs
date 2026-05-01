@@ -1,0 +1,29 @@
+name: lighthouse-nightly
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Lighthouse CI
+        run: npm i -g @lhci/cli@0.14.x
+      - name: Run Lighthouse against landing
+        run: |
+          lhci autorun \
+            --upload.target=temporary-public-storage \
+            --collect.url=https://abs.local/ \
+            --collect.url=https://abs.local/pricing \
+            --assert.preset=lighthouse:recommended \
+            --assert.assertions.minScore=0.95

@@ -1,0 +1,79 @@
+# T-R07 — docs.automatiabcn.com build + deploy with mike versioning + Algolia.
+# Security: every interpolation routes through `env:` blocks. Sources used:
+# secrets.ALGOLIA_APP_ID, secrets.ALGOLIA_SEARCH_KEY, inputs.version (a
+# workflow_dispatch input with a default value), github.event_name. None are
+# untrusted PR/issue text.
+name: docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "scripts/gen_api_reference.py"
+      - "scripts/build_docs.sh"
+      - ".github/workflows/docs.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version label (mike alias). Defaults to `latest`.'
+        required: false
+        default: 'latest'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # mike needs full history to push to gh-pages
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install backend deps (for api-reference gen)
+        working-directory: core/backend
+        run: pip install -e .
+      - name: Install docs deps
+        run: |
+          pip install \
+            "mkdocs-material[imaging]>=9.5" \
+            "mike>=2.1" \
+            "mkdocs-algolia-docsearch>=0.4"
+      - name: Configure git author for mike
+        run: |
+          git config --global user.name "abs-docs-bot"
+          git config --global user.email "docs@automatiabcn.com"
+      - name: Generate static api-reference.md
+        run: bash scripts/build_docs.sh
+      - name: Deploy with mike (versioned)
+        if: github.event_name != 'pull_request'
+        env:
+          ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+          ALGOLIA_SEARCH_KEY: ${{ secrets.ALGOLIA_SEARCH_KEY }}
+          MIKE_VERSION: ${{ inputs.version || 'latest' }}
+        run: |
+          mike deploy --push --update-aliases "$MIKE_VERSION" latest
+          mike set-default --push latest
+      - name: Build site (PR preview only)
+        if: github.event_name == 'pull_request'
+        env:
+          ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+          ALGOLIA_SEARCH_KEY: ${{ secrets.ALGOLIA_SEARCH_KEY }}
+        run: mkdocs build --strict
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name == 'pull_request'
+        with:
+          path: ./site

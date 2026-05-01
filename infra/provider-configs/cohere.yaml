@@ -1,0 +1,25 @@
+provider: cohere
+display_name: Cohere
+homepage: https://cohere.com/
+docs: https://docs.cohere.com/
+free_tier: true
+rate_limit: 1000/month free trial
+models:
+  - alias: command-r-plus
+    id: command-r-plus-08-2024
+    context: 128000
+    pricing_per_mtok_input: 2.50
+    pricing_per_mtok_output: 10.0
+    deprecated: false
+  - alias: command-r
+    id: command-r-08-2024
+    context: 128000
+    pricing_per_mtok_input: 0.15
+    pricing_per_mtok_output: 0.60
+    deprecated: false
+  - alias: embed-multilingual-v3
+    id: embed-multilingual-v3.0
+    context: 512
+    pricing_per_mtok_input: 0.10
+    pricing_per_mtok_output: 0.0
+    deprecated: false

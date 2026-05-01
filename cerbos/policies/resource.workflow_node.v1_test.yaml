@@ -1,0 +1,251 @@
+# G3 — Cerbos workflow_node policy test cases.
+---
+name: workflow_node_policy_tests
+description: "Coverage for resource.workflow_node.v1 (Sprint 19 G3)."
+principals:
+  alice_member_t1:
+    id: alice
+    roles: ["member"]
+    attr:
+      tenant_id: "tenant-1"
+  bob_admin_t1:
+    id: bob
+    roles: ["admin"]
+    attr:
+      tenant_id: "tenant-1"
+  carol_member_t2:
+    id: carol
+    roles: ["member"]
+    attr:
+      tenant_id: "tenant-2"
+  dan_suspended_admin_t1:
+    id: dan
+    roles: ["admin"]
+    attr:
+      tenant_id: "tenant-1"
+      suspended: true
+  eve_account_manager_t1:
+    id: eve
+    roles: ["member"]
+    attr:
+      tenant_id: "tenant-1"
+      account_manager: true
+  frank_owner_t1:
+    id: frank
+    roles: ["member", "admin"]
+    attr:
+      tenant_id: "tenant-1"
+
+resources:
+  node_t1_with_consent:
+    id: node-1
+    kind: workflow_node
+    attr:
+      tenant_id: "tenant-1"
+      gdpr_consent: true
+  node_t1_no_consent:
+    id: node-1-noc
+    kind: workflow_node
+    attr:
+      tenant_id: "tenant-1"
+      gdpr_consent: false
+  node_t1_owner_attached:
+    id: node-1-owner
+    kind: workflow_node
+    attr:
+      tenant_id: "tenant-1"
+      owner_id: frank
+  node_t2:
+    id: node-2
+    kind: workflow_node
+    attr:
+      tenant_id: "tenant-2"
+      gdpr_consent: true
+
+tests:
+  - name: tenant_member_can_call_quality_and_rag_query
+    input:
+      principals: [alice_member_t1]
+      resources: [node_t1_with_consent]
+      actions:
+        - "abs.qual_code"
+        - "abs.qual_tr"
+        - "abs.qual_translate"
+        - "abs.qual_analysis"
+        - "abs.rag_query"
+        - "abs.langfuse_trace"
+        - "abs.cerbos_check"
+    expected:
+      - principal: alice_member_t1
+        resource: node_t1_with_consent
+        actions:
+          "abs.qual_code": EFFECT_ALLOW
+          "abs.qual_tr": EFFECT_ALLOW
+          "abs.qual_translate": EFFECT_ALLOW
+          "abs.qual_analysis": EFFECT_ALLOW
+          "abs.rag_query": EFFECT_ALLOW
+          "abs.langfuse_trace": EFFECT_ALLOW
+          "abs.cerbos_check": EFFECT_ALLOW
+
+  - name: tenant_member_can_call_communication_tools
+    input:
+      principals: [alice_member_t1]
+      resources: [node_t1_with_consent]
+      actions:
+        - "abs.gmail_classify"
+        - "abs.gmail_draft"
+        - "abs.action_extract"
+        - "abs.notion_log"
+    expected:
+      - principal: alice_member_t1
+        resource: node_t1_with_consent
+        actions:
+          "abs.gmail_classify": EFFECT_ALLOW
+          "abs.gmail_draft": EFFECT_ALLOW
+          "abs.action_extract": EFFECT_ALLOW
+          "abs.notion_log": EFFECT_ALLOW
+
+  - name: tenant_member_cannot_send_email_without_account_manager_flag
+    input:
+      principals: [alice_member_t1]
+      resources: [node_t1_with_consent]
+      actions: ["abs.gmail_send"]
+    expected:
+      - principal: alice_member_t1
+        resource: node_t1_with_consent
+        actions:
+          "abs.gmail_send": EFFECT_DENY
+
+  - name: account_manager_can_send_email
+    input:
+      principals: [eve_account_manager_t1]
+      resources: [node_t1_with_consent]
+      actions: ["abs.gmail_send"]
+    expected:
+      - principal: eve_account_manager_t1
+        resource: node_t1_with_consent
+        actions:
+          "abs.gmail_send": EFFECT_ALLOW
+
+  - name: tenant_admin_can_send_email
+    input:
+      principals: [bob_admin_t1]
+      resources: [node_t1_with_consent]
+      actions: ["abs.gmail_send"]
+    expected:
+      - principal: bob_admin_t1
+        resource: node_t1_with_consent
+        actions:
+          "abs.gmail_send": EFFECT_ALLOW
+
+  - name: tenant_member_cannot_rag_ingest
+    input:
+      principals: [alice_member_t1]
+      resources: [node_t1_with_consent]
+      actions: ["abs.rag_ingest"]
+    expected:
+      - principal: alice_member_t1
+        resource: node_t1_with_consent
+        actions:
+          "abs.rag_ingest": EFFECT_DENY
+
+  - name: tenant_admin_can_rag_ingest
+    input:
+      principals: [bob_admin_t1]
+      resources: [node_t1_with_consent]
+      actions: ["abs.rag_ingest"]
+    expected:
+      - principal: bob_admin_t1
+        resource: node_t1_with_consent
+        actions:
+          "abs.rag_ingest": EFFECT_ALLOW
+
+  - name: project_owner_can_create_linear_ticket
+    input:
+      principals: [frank_owner_t1]
+      resources: [node_t1_owner_attached]
+      actions: ["abs.linear_create_ticket"]
+    expected:
+      - principal: frank_owner_t1
+        resource: node_t1_owner_attached
+        actions:
+          "abs.linear_create_ticket": EFFECT_ALLOW
+
+  - name: tenant_admin_can_create_linear_ticket
+    input:
+      principals: [bob_admin_t1]
+      resources: [node_t1_with_consent]
+      actions: ["abs.linear_create_ticket"]
+    expected:
+      - principal: bob_admin_t1
+        resource: node_t1_with_consent
+        actions:
+          "abs.linear_create_ticket": EFFECT_ALLOW
+
+  - name: meeting_transcribe_blocked_without_consent
+    input:
+      principals: [alice_member_t1]
+      resources: [node_t1_no_consent]
+      actions: ["abs.meeting_transcribe"]
+    expected:
+      - principal: alice_member_t1
+        resource: node_t1_no_consent
+        actions:
+          "abs.meeting_transcribe": EFFECT_DENY
+
+  - name: meeting_transcribe_allowed_with_consent
+    input:
+      principals: [alice_member_t1]
+      resources: [node_t1_with_consent]
+      actions: ["abs.meeting_transcribe"]
+    expected:
+      - principal: alice_member_t1
+        resource: node_t1_with_consent
+        actions:
+          "abs.meeting_transcribe": EFFECT_ALLOW
+
+  - name: cross_tenant_member_denied_for_all_actions
+    input:
+      principals: [carol_member_t2]
+      resources: [node_t1_with_consent]
+      actions:
+        - "abs.qual_code"
+        - "abs.rag_query"
+        - "abs.rag_ingest"
+        - "abs.gmail_send"
+        - "abs.linear_create_ticket"
+        - "abs.meeting_transcribe"
+    expected:
+      - principal: carol_member_t2
+        resource: node_t1_with_consent
+        actions:
+          "abs.qual_code": EFFECT_DENY
+          "abs.rag_query": EFFECT_DENY
+          "abs.rag_ingest": EFFECT_DENY
+          "abs.gmail_send": EFFECT_DENY
+          "abs.linear_create_ticket": EFFECT_DENY
+          "abs.meeting_transcribe": EFFECT_DENY
+
+  - name: suspended_admin_blocked_everywhere
+    input:
+      principals: [dan_suspended_admin_t1]
+      resources: [node_t1_with_consent]
+      actions:
+        - "abs.qual_code"
+        - "abs.rag_query"
+        - "abs.rag_ingest"
+        - "abs.gmail_send"
+        - "abs.linear_create_ticket"
+        - "abs.meeting_transcribe"
+        - "abs.cerbos_check"
+    expected:
+      - principal: dan_suspended_admin_t1
+        resource: node_t1_with_consent
+        actions:
+          "abs.qual_code": EFFECT_DENY
+          "abs.rag_query": EFFECT_DENY
+          "abs.rag_ingest": EFFECT_DENY
+          "abs.gmail_send": EFFECT_DENY
+          "abs.linear_create_ticket": EFFECT_DENY
+          "abs.meeting_transcribe": EFFECT_DENY
+          "abs.cerbos_check": EFFECT_DENY

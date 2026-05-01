@@ -1,0 +1,115 @@
+"""Anthropic provider — Claude Haiku/Sonnet/Opus.
+
+Modern mcp paketi httpx'e dayanır; Anthropic SDK (`anthropic>=0.40`) async client.
+Eğer SDK kurulu değilse ImportError yerine ProviderError ile yakalanır.
+"""
+
+from __future__ import annotations
+
+import time
+from typing import Any, Optional
+
+from app.config import settings
+
+from ..base import BaseProvider
+from ..schemas import ProviderError, ProviderResponse
+
+
+class AnthropicProvider(BaseProvider):
+    name = "anthropic"
+    default_model = "claude-haiku-4-5-20251001"
+
+    async def call(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        **kwargs: Any,
+    ) -> ProviderResponse:
+        # T-F03 — Anthropic is opt-in. Free tier never reaches this method.
+        if not bool(getattr(settings, "anthropic_enabled", False)):
+            raise ProviderError(
+                "Anthropic provider is opt-in; set ABS_ANTHROPIC_ENABLED=true to enable",
+                provider=self.name,
+                transient=False,
+            )
+        if not settings.anthropic_api_key:
+            raise ProviderError(
+                "Anthropic API key tanımlı değil", provider=self.name, transient=False
+            )
+
+        # T-F03 — quota gate before the network call.
+        from app.observability import quota_monitor as _qm
+
+        try:
+            _qm.gate(requested_tokens=int(kwargs.get("max_tokens", 1024)))
+        except _qm.QuotaExceeded as exc:
+            raise ProviderError(
+                f"Anthropic blocked by quota gate: {exc}",
+                provider=self.name,
+                transient=True,
+            ) from exc
+
+        try:
+            from anthropic import AsyncAnthropic
+        except ImportError as exc:
+            raise ProviderError(
+                "anthropic paketi kurulu değil",
+                provider=self.name,
+                transient=False,
+            ) from exc
+
+        client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+        model = model or self.default_model
+        max_tokens = kwargs.get("max_tokens", 1024)
+        timeout = kwargs.get("timeout", 60.0)
+
+        start = time.monotonic()
+        try:
+            msg = await client.messages.create(
+                model=model,
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=timeout,
+            )
+        except Exception as exc:
+            name = type(exc).__name__
+            transient = name in {"RateLimitError", "APITimeoutError", "APIConnectionError"} or "500" in str(exc)
+            raise ProviderError(
+                f"Anthropic {name}: {str(exc)[:200]}",
+                provider=self.name,
+                transient=transient,
+            ) from exc
+
+        elapsed_ms = int((time.monotonic() - start) * 1000)
+
+        text_parts = []
+        for block in getattr(msg, "content", []) or []:
+            t = getattr(block, "text", None)
+            if t:
+                text_parts.append(t)
+        text = "".join(text_parts)
+
+        usage = getattr(msg, "usage", None)
+        tokens_in = getattr(usage, "input_tokens", None) if usage else None
+        tokens_out = getattr(usage, "output_tokens", None) if usage else None
+
+        # T-F03 — record token usage for the monthly Claude budget tracker.
+        from app.observability import quota_monitor as _qm
+
+        try:
+            _qm.record(
+                tokens_in=int(tokens_in or 0),
+                tokens_out=int(tokens_out or 0),
+                model=model,
+            )
+        except Exception:  # pragma: no cover — never fail the call on ledger error
+            pass
+
+        return ProviderResponse(
+            text=text,
+            model=model,
+            provider=self.name,
+            elapsed_ms=elapsed_ms,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
+        )

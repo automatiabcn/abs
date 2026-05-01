@@ -1,0 +1,29 @@
+{
+  "id": "notion-sync",
+  "name": "Notion Sync",
+  "version": "1.0.0",
+  "type": "mcp-tool",
+  "entry_point": "ghcr.io/abs-plugins/notion-sync:1.0.0",
+  "description": "Notion bidirectional sync — pages, databases, and inline attachments mirrored to ABS RAG + writable via MCP tool",
+  "author": "Automatia BCN",
+  "homepage": "https://github.com/abs-plugins/notion-sync",
+  "license": "Apache-2.0",
+  "dependencies": ["notion-client@^2.2", "httpx@^0.27"],
+  "permissions": {
+    "network_egress": ["api.notion.com"],
+    "filesystem_read": ["/app/config"],
+    "filesystem_write": ["/tmp"],
+    "secrets": ["NOTION_TOKEN"],
+    "tenant_scoped": true,
+    "cpu_quota": 0.5,
+    "memory_mb": 512
+  },
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "workspace_id": {"type": "string"},
+      "root_page_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+    },
+    "required": ["workspace_id", "root_page_ids"]
+  }
+}

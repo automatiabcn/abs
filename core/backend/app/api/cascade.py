@@ -1,0 +1,141 @@
+"""Phase 10 / Q4 — `/v1/cascade/run` HTTP route.
+
+Wraps the `providers.cascade` library + `anthropic_mock` adapter so a
+client can issue a completion request and see the cascade chain in action.
+
+Auth: panel session cookie (`current_admin`).
+
+Modes:
+* `anthropic_mock_mode` set (Q3 P3) — uses the deterministic mock so tests
+  can exercise rate-limit / timeout / 500 fallback paths without a key.
+* No mock + provider keys configured — *would* call the real provider
+  cascade. Live cascade (Groq + Cerebras + Gemini real calls) is gated on
+  Q4 Phase 7-live (operator vault key); for now the route returns a clear
+  503 if no mock is set and the operator hasn't supplied a primary key.
+
+Response shape mirrors the brief: `{completion, provider, fallback_chain,
+tokens_used}`.
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+
+from app.api.auth import current_admin
+from app.config import settings
+from app.providers.anthropic_mock import (
+    AnthropicMockProvider,
+    RateLimitError,
+    get_mock_provider,
+)
+from app.providers.cascade import (
+    PROVIDER_ORDER,
+    configured_map,
+    get_active_providers,
+)
+from app.providers.schemas import ProviderError
+from app.services import feature_usage as feature_usage_service
+from app.services import usage_log
+
+router = APIRouter(prefix="/v1/cascade", tags=["cascade"])
+logger = logging.getLogger(__name__)
+
+
+class CascadeRequest(BaseModel):
+    prompt: str = Field(..., min_length=1, max_length=8000)
+    prefer: Optional[str] = None
+    max_tokens: int = Field(default=1024, ge=1, le=8192)
+
+
+class CascadeResponse(BaseModel):
+    completion: str
+    provider: str
+    fallback_chain: List[str]
+    tokens_used: int
+    mock: bool = False
+
+
+@router.get("/providers")
+async def list_providers(_admin: dict = Depends(current_admin)) -> dict:
+    """Configured / missing breakdown — lets the panel show the cascade
+    chain without polling /quota_status."""
+    cfg = configured_map()
+    active = get_active_providers()
+    missing = [p for p in PROVIDER_ORDER if not cfg.get(p, False)]
+    return {
+        "active": active,
+        "missing": missing,
+        "configured_count": len(active),
+        "total": len(PROVIDER_ORDER),
+        "anthropic_mock_mode": getattr(settings, "anthropic_mock_mode", "off"),
+    }
+
+
+async def _try_mock(
+    request: CascadeRequest, fallback_chain: List[str]
+) -> Optional[CascadeResponse]:
+    """If anthropic_mock_mode is on, prefer it as the primary. On failure,
+    record the attempt in fallback_chain and return None so the caller
+    knows to continue to the next provider."""
+    mock = get_mock_provider()
+    if mock is None:
+        return None
+    fallback_chain.append("anthropic-mock")
+    try:
+        resp = await mock.complete(request.prompt)
+        usage_log.append("anthropic", tokens=resp.tokens, tenant_slug="default")
+        return CascadeResponse(
+            completion=resp.completion,
+            provider="anthropic-mock",
+            fallback_chain=fallback_chain,
+            tokens_used=resp.tokens,
+            mock=True,
+        )
+    except (RateLimitError, TimeoutError, ProviderError) as exc:
+        logger.info("cascade mock fell through: %s", exc)
+        return None
+
+
+@router.post("/run", response_model=CascadeResponse)
+async def run(
+    body: CascadeRequest, admin: dict = Depends(current_admin)
+) -> CascadeResponse:
+    fallback_chain: List[str] = []
+
+    # 1. Try mock if enabled (test-only happy path).
+    mock_result = await _try_mock(body, fallback_chain)
+    if mock_result is not None:
+        try:
+            feature_usage_service.increment(
+                "cascade_provider_call", actor_email=admin.get("sub")
+            )
+        except Exception:
+            pass
+        return mock_result
+
+    # 2. Real cascade gate — needs at least one configured provider.
+    active = get_active_providers(prefer=body.prefer)
+    if not active:
+        raise HTTPException(
+            503,
+            "no_providers_configured: configure at least one API key "
+            "or enable ABS_ANTHROPIC_MOCK_MODE for test runs",
+        )
+
+    # 3. Real provider cascade — Q4 Phase 7-live ships the live HTTP wiring
+    #    against Groq/Cerebras/Gemini. For now signal the gap clearly so
+    #    operators know what they need to provision.
+    raise HTTPException(
+        503,
+        "live_cascade_pending: providers configured but live cascade "
+        "wiring lands in Q4 Phase 7-live (operator vault key + judge tests). "
+        f"Detected chain: {','.join(active)}",
+    )
+
+
+# Re-export for tests/util that want to bypass the route.
+__all__ = ["CascadeRequest", "CascadeResponse", "router"]

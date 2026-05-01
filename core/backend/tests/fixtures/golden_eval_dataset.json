@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "description": "T-015 — Golden eval dataset for ABS RAG multi-tenancy E2E. Each row defines a tenant, a corpus document, and a query/expected-doc-id pair the retriever should hit at top-K.",
+  "entries": [
+    {
+      "tenant_id": "tenant-acme",
+      "doc_id": "acme-billing-faq",
+      "text": "Acme charges customers monthly. Invoices arrive on the first business day. Late payments incur a 2% fee per 30 days.",
+      "queries": [
+        {"q": "When does Acme send invoices?", "expected_in_top_k": true},
+        {"q": "What's the late-payment fee at Acme?", "expected_in_top_k": true}
+      ]
+    },
+    {
+      "tenant_id": "tenant-acme",
+      "doc_id": "acme-onboarding",
+      "text": "New Acme staff complete a two-day onboarding programme. Day one covers ABS RAG, day two focuses on customer escalation playbooks.",
+      "queries": [
+        {"q": "How long is Acme onboarding?", "expected_in_top_k": true}
+      ]
+    },
+    {
+      "tenant_id": "tenant-globex",
+      "doc_id": "globex-roadmap-q3",
+      "text": "Globex Q3 roadmap targets the EU expansion: Madrid in July, Paris in August, Berlin in September. Each launch needs a localised privacy notice.",
+      "queries": [
+        {"q": "What cities does Globex Q3 cover?", "expected_in_top_k": true},
+        {"q": "Globex EU launch order", "expected_in_top_k": true}
+      ]
+    },
+    {
+      "tenant_id": "tenant-globex",
+      "doc_id": "globex-vendor-list",
+      "text": "Globex vendors of record: Cohere for reranking, Qdrant for vectors, Stripe for billing, AWS for hosting.",
+      "queries": [
+        {"q": "Who handles Globex billing?", "expected_in_top_k": true}
+      ]
+    }
+  ],
+  "cross_tenant_probe": {
+    "description": "Probes that MUST never surface cross-tenant content.",
+    "items": [
+      {"as_tenant": "tenant-acme", "query": "Globex EU expansion", "must_not_contain": ["Madrid", "Paris", "Berlin"]},
+      {"as_tenant": "tenant-globex", "query": "Acme late payment fee", "must_not_contain": ["2%", "Acme"]}
+    ]
+  }
+}

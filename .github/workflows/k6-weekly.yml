@@ -1,0 +1,65 @@
+# T-059 — weekly load test against staging using k6.
+# Off-hours window: Sunday 02:00 UTC. Manual dispatch supported.
+# Security: every run-block interpolation routes through `env:` block (no inline expansion of
+# untrusted text). inputs.base_url is a workflow_dispatch input (controlled), ABS_LOAD_TEST_TOKEN
+# is a repo secret, github.run_id is numeric.
+name: k6 Weekly Load Test
+
+on:
+  schedule:
+    - cron: "0 2 * * 0"
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'ABS base URL'
+        required: false
+        default: 'https://staging.abs-server.example.com'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: k6-weekly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install k6
+        run: |
+          curl -fsSL https://github.com/grafana/k6/releases/download/v0.51.0/k6-v0.51.0-linux-amd64.tar.gz \
+            | tar -xzC /tmp
+          sudo mv /tmp/k6-v0.51.0-linux-amd64/k6 /usr/local/bin/k6
+          k6 version
+      - name: Prepare results directory
+        run: mkdir -p benchmarks/results
+      - name: Run load test
+        env:
+          ABS_BASE_URL: ${{ inputs.base_url || 'https://staging.abs-server.example.com' }}
+          ABS_TOKEN: ${{ secrets.ABS_LOAD_TEST_TOKEN }}
+          ABS_AUDIENCE: 'abs-mcp'
+        run: |
+          if [ -z "$ABS_TOKEN" ]; then
+            echo "::warning::ABS_LOAD_TEST_TOKEN secret missing — running smoke scenario only."
+            k6 run --quiet \
+              --env ABS_BASE_URL="$ABS_BASE_URL" \
+              --env ABS_AUDIENCE="$ABS_AUDIENCE" \
+              --no-thresholds \
+              benchmarks/k6/abs_load.js || true
+          else
+            k6 run \
+              --env ABS_BASE_URL="$ABS_BASE_URL" \
+              --env ABS_TOKEN="$ABS_TOKEN" \
+              --env ABS_AUDIENCE="$ABS_AUDIENCE" \
+              benchmarks/k6/abs_load.js
+          fi
+      - name: Upload k6 summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-summary-${{ github.run_id }}
+          path: benchmarks/results/k6_summary.json
+          retention-days: 90

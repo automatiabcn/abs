@@ -1,0 +1,14 @@
+{
+  "id": "gen-xyz7890abc123def456ghi",
+  "object": "chat.completion",
+  "created": 1735005678,
+  "model": "qwen/qwen3-coder:free",
+  "choices": [
+    {
+      "index": 0,
+      "message": {"role": "assistant", "content": "```python\ndef reverse_string(s: str) -> str:\n    return s[::-1]\n```"},
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {"prompt_tokens": 15, "completion_tokens": 20, "total_tokens": 35}
+}

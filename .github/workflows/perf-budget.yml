@@ -1,0 +1,85 @@
+# T-R05 — perf budget gate (Lighthouse CI + bundlewatch + web-vitals).
+# Security: every interpolation routes through `env:` blocks. Sources used:
+# secrets.BUNDLEWATCH_GITHUB_TOKEN, github.repository_owner, github.sha,
+# github.ref_name, github.event.repository.name. None are untrusted PR/issue
+# text expanded into a run: block.
+name: Perf Budget
+
+on:
+  pull_request:
+    paths:
+      - 'core/landing/**'
+      - '.github/workflows/perf-budget.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'core/landing/**'
+      - '.github/workflows/perf-budget.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: perf-budget-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: core/landing
+
+jobs:
+  lighthouse:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: core/landing/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: core/landing/lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+  bundlewatch:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: core/landing/package-lock.json
+      - run: npm ci
+      - run: ANALYZE=false npm run build
+      - name: Bundlewatch
+        env:
+          BUNDLEWATCH_GITHUB_TOKEN: ${{ secrets.BUNDLEWATCH_GITHUB_TOKEN }}
+          CI_REPO_OWNER: ${{ github.repository_owner }}
+          CI_REPO_NAME: ${{ github.event.repository.name }}
+          CI_COMMIT_SHA: ${{ github.sha }}
+          CI_BRANCH: ${{ github.ref_name }}
+        run: npx bundlewatch --config bundlewatch.config.json
+
+  web-vitals:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: core/landing/package-lock.json
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - run: npx playwright test __tests__/playwright/web-vitals.spec.ts --project=chromium-desktop

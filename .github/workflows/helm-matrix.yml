@@ -1,0 +1,81 @@
+# T-058 — Helm umbrella chart matrix test (Kubernetes 1.27 / 1.28 / 1.29).
+# Spins up a kind cluster per K8s version, helm install (dry-run), validates rendered manifests.
+# Security: every interpolation in `run:` blocks is from a controlled source — github.sha (hex),
+# matrix.k8s_version (hardcoded enum: v1.27.16 / v1.28.13 / v1.29.8). No untrusted PR/issue text.
+name: Helm Matrix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/helm/abs/**'
+      - '.github/workflows/helm-matrix.yml'
+  pull_request:
+    paths:
+      - 'infra/helm/abs/**'
+      - '.github/workflows/helm-matrix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: helm-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  helm-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        k8s_version: [v1.27.16, v1.28.13, v1.29.8]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+      - name: Set up kind (Kubernetes ${{ matrix.k8s_version }})
+        uses: helm/kind-action@v1.10.0
+        with:
+          version: v0.23.0
+          node_image: kindest/node:${{ matrix.k8s_version }}
+          cluster_name: abs-test
+      - name: Helm dependencies update
+        run: helm dependency update infra/helm/abs/
+        continue-on-error: true
+      - name: Helm lint
+        run: helm lint infra/helm/abs/ --strict
+      - name: Helm template (render-only sanity)
+        env:
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          helm template abs ./infra/helm/abs \
+            --namespace abs-staging \
+            --set image.tag="ci-${GIT_SHA}" \
+            --set postgres.enabled=false \
+            --set redis.enabled=false \
+            --set nats.enabled=false \
+            --set qdrant.enabled=false \
+            --set cerbos.enabled=false \
+            > /tmp/render.yaml
+          wc -l /tmp/render.yaml
+          grep -q "kind: Deployment" /tmp/render.yaml
+          grep -q "kind: Service" /tmp/render.yaml
+          grep -q "kind: ConfigMap" /tmp/render.yaml
+          grep -q "kind: HorizontalPodAutoscaler" /tmp/render.yaml
+          grep -q "ABS_AUDIENCE_ENFORCE" /tmp/render.yaml
+          grep -q "kind: CronJob" /tmp/render.yaml
+      - name: Install kubeconform
+        run: |
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | tar -xzC /tmp
+          sudo mv /tmp/kubeconform /usr/local/bin/
+      - name: Validate rendered manifests
+        env:
+          K8S_VERSION: ${{ matrix.k8s_version }}
+        run: |
+          kubeconform -strict -summary \
+            -kubernetes-version "${K8S_VERSION#v}" \
+            -ignore-missing-schemas /tmp/render.yaml
