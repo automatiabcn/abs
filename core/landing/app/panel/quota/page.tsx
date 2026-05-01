@@ -164,7 +164,10 @@ export default function QuotaPage() {
         }
       } catch (exc) {
         if (active) {
-          setError(exc instanceof Error ? exc.message : "unknown");
+          // Q11-L16-002: TR prefix + drop the bare "unknown" EN string.
+          setError(
+            `Kota verisi yüklenemedi: ${exc instanceof Error ? exc.message : "bilinmeyen hata"}`
+          );
           setLoading(false);
         }
       }
