@@ -11,7 +11,7 @@ temiz round = FULL CLEAN.
 
 | # | Layer | Round'lar | Clean counter | Açıklama |
 |---|-------|-----------|---------------|----------|
-| L1 | unit test coverage gap (pytest --cov, vitest --coverage) | Round 2, 11 | 2/3 | Round 2: 15 test, Round 11: 37 PASS regression |
+| L1 | unit test coverage gap (pytest --cov, vitest --coverage) | Round 2, 11, 19 | **3/3 ⭐ FULL CLEAN** | Round 2: 15 test · Round 11: 37 PASS · Round 19: 44/44 PASS post Round 13-18 |
 | L2 | integration test (cascade chain, RAG ingest+query, marketplace install→sandbox) | Round 6, 18 | 2/3 | Round 6: 7 contract test · Round 18: +3 enrichment (RAG roundtrip + cross-tenant + marketplace lifecycle); 10/10 PASS |
 | L3 | e2e Playwright (15 sayfa × 3 senaryo × 2 tema) | Round 7, 17 | 2/3 | Round 7: spec · Round 17: live 30/30 PASS dark+light + Q10-L3-001 standalone harness fix |
 | L4 | a11y axe-core (WCAG 2.2 AA) | Round 3, 12 | 1/3 (live blocked: dev mode HMR thrash, prod build gerek) | |
@@ -45,6 +45,7 @@ temiz round = FULL CLEAN.
 | 16 | L5 Lighthouse | Q10-L5-002 button-name + L5-003 meta-description + L5-004 console errors uplift; 4/4 sayfa 4/4 metrik ≥90 | bda943c | ✅ ship |
 | 17 | L3 theme matrix live | Q10-L3-001 standalone harness fix (/tmp izolasyon) + 30/30 dark+light PASS | docs only | ✅ ship |
 | 18 | L2 enrich | +3 test (RAG ingest+query roundtrip + cross-tenant zero-leak + marketplace install→list→uninstall lifecycle); 10/10 PASS | 15fce5a | ✅ ship |
+| 19 | L1 re-scan | 44/44 PASS Q8+Q10 (Round 13-18 dokunmuş yüzeyler regression-safe) — **L1 FULL CLEAN ⭐ ilk 3/3 layer** | docs only | ✅ ship |
 
 ---
 
@@ -105,6 +106,7 @@ Hedef: backend %85+, frontend %75+ coverage; en az 3 yeni unit test.
 
 ---
 
-**Loop status:** Round 18 closed. L2+L3+L5+L6+L7+L8 all 2/3 — **6
-layer one round from FULL CLEAN**. Sonraki: Round 19 = L1 re-scan
-(2/3 → 3/3, FULL CLEAN ilk layer hedefi). Backend Q10 total: 44 PASS.
+**Loop status:** Round 19 closed. **L1 = 3/3 FULL CLEAN ⭐** (1/9
+layers complete). L2+L3+L5+L6+L7+L8 all 2/3 — bir round'a kalmış
+6 layer daha. Sonraki: Round 20 = L9 re-scan (sayaç 0/3,
+regression koruma kritik).
