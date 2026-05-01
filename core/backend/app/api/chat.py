@@ -360,6 +360,13 @@ async def completions(
                 }
                 yield f'data: {json.dumps(stub)}\n\n'
 
+        # Q11-L10-002: emit a "thinking" frame before the cascade call
+        # so the client (and any intermediate proxy / load balancer) sees
+        # SSE traffic well within the 30s idle-timeout window. Live
+        # provider calls can run 5-30s; without this beat a slow
+        # provider would silently disconnect mid-request.
+        yield f'data: {json.dumps({"type": "thinking"})}\n\n'
+
         t0 = time.perf_counter()
         try:
             cascade_resp = await _run_cascade(last_user_content)
