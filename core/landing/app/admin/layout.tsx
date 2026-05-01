@@ -1,5 +1,6 @@
 // Q8 / MP1 fix — admin routes get the same chrome as /panel/* so the
 // landing nav doesn't double up on auth'd pages (UX_BUGS MT1 + MP1).
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { CommandPalette } from "@/components/panel/CommandPalette";
@@ -8,6 +9,12 @@ import { PanelSidebar } from "@/components/panel/PanelSidebar";
 import { PanelThemeProvider } from "@/components/panel/PanelThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/query-client";
+
+export const metadata: Metadata = {
+  description:
+    "ABS Server yönetici konsolu — cascade sağlayıcı, pipeline, RAG, marketplace, kullanıcı ve denetim kayıtları yönetimi.",
+  robots: { index: false, follow: false },
+};
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
