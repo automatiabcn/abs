@@ -19,7 +19,7 @@ temiz round = FULL CLEAN.
 | L6 | security (semgrep, bandit, npm audit, OWASP) | Round 5, 14, 26 | **3/3 ⭐ FULL CLEAN** | Round 5: HIGH fix · Round 14: 2 backlog fix + 4 test · Round 26: 4 test PASS + audit moderate=2 parity |
 | L7 | visual regression (Playwright screenshot diff) | Round 9, 15, 22 | **3/3 ⭐ FULL CLEAN** | Round 9: spec · Round 15: baseline + Q10-L7-001 fix · Round 22: Q10-L7-002 refresh + diff 10/10 PASS |
 | L8 | i18n (TR/EN/ES kapsam, hardcoded string scan) | Round 4, 13, 21 | **3/3 ⭐ FULL CLEAN** | Round 4: 3 fix · Round 13: 5 fix · Round 21: 0 EN hit (Round 14-20 yüzeyleri TR-uyumlu) |
-| L9 | graceful degradation (API yok / provider down / network slow) | Round 1, 10, 20, 27 | 2/3 | Round 1+10 fix · Round 20+27: 17/17 PASS regression-safe ×2 |
+| L9 | graceful degradation (API yok / provider down / network slow) | Round 1, 10, 20, 27, 28 | **3/3 ⭐ FULL CLEAN** | Round 1+10 fix · Round 20+27+28: 17/17 PASS ×3 consecutive |
 
 ---
 
@@ -54,6 +54,7 @@ temiz round = FULL CLEAN.
 | 25 | L5 re-run | 4/4 sayfa ≥90 parity Round 16'la — **L5 FULL CLEAN ⭐ altıncı 3/3 layer** | docs only | ✅ ship |
 | 26 | L6 re-run | 4/4 token revoke + npm audit moderate=2 parity — **L6 FULL CLEAN ⭐ yedinci 3/3 layer** | docs only | ✅ ship |
 | 27 | L9 re-scan | 17/17 PASS q10-no-api-degradation 2nd consecutive | docs only | ✅ ship |
+| 28 | L9 final | 17/17 PASS 3rd consecutive — **L9 FULL CLEAN ⭐ sekizinci 3/3 layer** | docs only | ✅ ship |
 
 ---
 
@@ -114,6 +115,7 @@ Hedef: backend %85+, frontend %75+ coverage; en az 3 yeni unit test.
 
 ---
 
-**Loop status:** Round 27 closed. 7/9 FULL CLEAN. L9 → 2/3 (one
-round to FULL CLEAN). L4 dev-blocked 1/3. Sonraki: Round 28 = L9
-final re-run (2/3 → 3/3, sekizinci FULL CLEAN).
+**Loop status:** Round 28 closed. **8/9 FULL CLEAN ⭐⭐⭐⭐⭐⭐⭐⭐**
+(L1+L2+L3+L5+L6+L7+L8+L9 all 3/3). %88. **Tek kalan L4 axe** —
+1/3, dev-mode-blocked. Founder makinasında prod build axe run
+gerekli (Round 12 brief'inde belirtilmişti).
