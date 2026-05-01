@@ -11,7 +11,7 @@ temiz round = FULL CLEAN.
 
 | # | Layer | Round'lar | Clean counter | Açıklama |
 |---|-------|-----------|---------------|----------|
-| L1 | unit test coverage gap (pytest --cov, vitest --coverage) | Round 2 | 1/3 | 15 yeni test PASS, 0 bug |
+| L1 | unit test coverage gap (pytest --cov, vitest --coverage) | Round 2, 11 | 2/3 | Round 2: 15 test, Round 11: 37 PASS regression |
 | L2 | integration test (cascade chain, RAG ingest+query, marketplace install→sandbox) | Round 6 | 1/3 | 7 yeni integration test PASS, 0 bug |
 | L3 | e2e Playwright (15 sayfa × 3 senaryo × 2 tema) | Round 7 | 1/3 (spec ship 30 senaryo) | |
 | L4 | a11y axe-core (WCAG 2.2 AA) | Round 3 | 1/3 (spec ship — live run founder) | |
@@ -37,6 +37,7 @@ temiz round = FULL CLEAN.
 | 8 | L5 | TBD (config ship, run pending) | bu round atomic | ✅ config |
 | 9 | L7 | TBD (spec ship, baseline pending) | bu round atomic | ✅ spec |
 | 10 | L9 (live) | Q10-L9-003 HARMLESS allowlist + Q10-L9-004 dev retry helper | bu round atomic | ✅ live |
+| 11 | L1 re-scan | 0 (37/37 PASS regression-safe) | bu round atomic | ✅ regression |
 
 ---
 
