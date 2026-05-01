@@ -42,10 +42,11 @@ function consoleSink(page: Page, sink: string[]) {
 }
 
 async function loginIfNeeded(page: Page) {
+  const email = process.env.ABS_PANEL_EMAIL ?? "admin@local";
   const password = process.env.ABS_PANEL_PASSWORD ?? "CHANGEME";
   await page.request
     .post("/auth/login", {
-      data: { email: "admin@local", password },
+      data: { email, password },
     })
     .catch(() => null);
 }
