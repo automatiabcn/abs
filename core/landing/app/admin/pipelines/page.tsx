@@ -320,8 +320,33 @@ export default function PipelinesPage() {
             {run.isPending ? "Çalıştırılıyor…" : "Çalıştır"}
           </Button>
           {error && (
-            <div className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200">
-              Hata: {error}
+            <div
+              role="alert"
+              data-test="pipeline-error-tile"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200"
+            >
+              <span>Hata: {error}</span>
+              {/* Q11-L16-001 — match the chat panel error UX: pair the
+                  raw error string with a configure path + retry CTA so
+                  the user knows where to go and how to recover. */}
+              <div className="flex items-center gap-2">
+                <a
+                  href="/admin/settings"
+                  data-test="pipeline-configure-cta"
+                  className="rounded border border-rose-500/40 px-2 py-0.5 hover:bg-rose-500/20"
+                >
+                  Sağlayıcı yapılandır
+                </a>
+                <button
+                  type="button"
+                  data-test="pipeline-retry-cta"
+                  onClick={() => run.mutate()}
+                  disabled={run.isPending || !prompt.trim()}
+                  className="rounded border border-rose-500/40 px-2 py-0.5 hover:bg-rose-500/20 disabled:opacity-40"
+                >
+                  Tekrar dene
+                </button>
+              </div>
             </div>
           )}
           {output && (
