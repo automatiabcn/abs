@@ -517,16 +517,18 @@ export default function ToolsPage() {
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
+              aria-label="Önceki sayfa"
             >
-              <ArrowLeft className="h-3 w-3" />
+              <ArrowLeft className="h-3 w-3" aria-hidden="true" />
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
+              aria-label="Sonraki sayfa"
             >
-              <ArrowRight className="h-3 w-3" />
+              <ArrowRight className="h-3 w-3" aria-hidden="true" />
             </Button>
           </div>
         </div>
