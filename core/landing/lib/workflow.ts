@@ -78,8 +78,32 @@ export const NODE_COST_CENTS: Partial<Record<NodeKind, number>> = {
   output: 0,
 };
 
-export function estimateCostCents(wf: WorkflowDefinition): number {
-  return wf.nodes.reduce((sum, n) => sum + (NODE_COST_CENTS[n.kind] ?? 0), 0);
+export function estimateCostCents(wf: WorkflowDefinition | null | undefined): number {
+  // Q8 / W1 fix — synthesize cascade can return empty/partial bodies;
+  // estimateCostCents must never crash the workflow-builder page on
+  // missing `wf.nodes`. Returns 0 when the workflow shape is invalid.
+  if (!wf || !Array.isArray(wf.nodes)) return 0;
+  return wf.nodes.reduce(
+    (sum, n) => sum + (NODE_COST_CENTS[n?.kind as NodeKind] ?? 0),
+    0,
+  );
+}
+
+export function isValidWorkflow(wf: unknown): wf is WorkflowDefinition {
+  // Q8 / W1+W2 fix — canonical schema check used after `/v1/workflows/synthesize`
+  // returns. Cascade providers occasionally drop required fields; treat any
+  // missing piece as a synthesize failure so the UI can fall back to the
+  // sample workflow + show the operator a retry CTA.
+  if (!wf || typeof wf !== "object") return false;
+  const w = wf as Partial<WorkflowDefinition>;
+  return (
+    typeof w.id === "string" &&
+    typeof w.name === "string" &&
+    !!w.trigger &&
+    typeof w.trigger.kind === "string" &&
+    Array.isArray(w.nodes) &&
+    Array.isArray(w.edges)
+  );
 }
 
 export const SAMPLE_WORKFLOW: WorkflowDefinition = {
