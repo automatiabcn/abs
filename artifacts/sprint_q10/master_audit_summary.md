@@ -14,7 +14,7 @@ temiz round = FULL CLEAN.
 | L1 | unit test coverage gap (pytest --cov, vitest --coverage) | Round 2, 11, 19 | **3/3 ⭐ FULL CLEAN** | Round 2: 15 test · Round 11: 37 PASS · Round 19: 44/44 PASS post Round 13-18 |
 | L2 | integration test (cascade chain, RAG ingest+query, marketplace install→sandbox) | Round 6, 18, 24 | **3/3 ⭐ FULL CLEAN** | Round 6: 7 contract · Round 18: +3 enrichment · Round 24: re-run 10/10 PASS |
 | L3 | e2e Playwright (15 sayfa × 3 senaryo × 2 tema) | Round 7, 17, 23 | **3/3 ⭐ FULL CLEAN** | Round 7: spec · Round 17: live + Q10-L3-001 harness · Round 23: re-run 30/30 PASS |
-| L4 | a11y axe-core (WCAG 2.2 AA) | Round 3, 12 | 1/3 (live blocked: dev mode HMR thrash, prod build gerek) | |
+| L4 | a11y axe-core (WCAG 2.2 AA) | Round 3, 12, 29 | 2/3 | Round 3: spec · Round 12: dev-blocked · Round 29: live prod /tmp/q10-standalone, 3 fix (Q10-L4-002 graph cypher + L4-003 settings inputs + L4-004 meetings filter) — Tremor BarList Q10-L4-001 deferred third-party |
 | L5 | perf Lighthouse (≥90 4 metrik per panel sayfa) | Round 8, 16, 25 | **3/3 ⭐ FULL CLEAN** | Round 8: config · Round 16: live + 3 fix · Round 25: re-run 4/4 ≥90 parity |
 | L6 | security (semgrep, bandit, npm audit, OWASP) | Round 5, 14, 26 | **3/3 ⭐ FULL CLEAN** | Round 5: HIGH fix · Round 14: 2 backlog fix + 4 test · Round 26: 4 test PASS + audit moderate=2 parity |
 | L7 | visual regression (Playwright screenshot diff) | Round 9, 15, 22 | **3/3 ⭐ FULL CLEAN** | Round 9: spec · Round 15: baseline + Q10-L7-001 fix · Round 22: Q10-L7-002 refresh + diff 10/10 PASS |
@@ -55,6 +55,7 @@ temiz round = FULL CLEAN.
 | 26 | L6 re-run | 4/4 token revoke + npm audit moderate=2 parity — **L6 FULL CLEAN ⭐ yedinci 3/3 layer** | docs only | ✅ ship |
 | 27 | L9 re-scan | 17/17 PASS q10-no-api-degradation 2nd consecutive | docs only | ✅ ship |
 | 28 | L9 final | 17/17 PASS 3rd consecutive — **L9 FULL CLEAN ⭐ sekizinci 3/3 layer** | docs only | ✅ ship |
+| 29 | L4 axe live | 5 violation found, 3 source fix (Q10-L4-002/003/004) + 2 Tremor BarList Q10-L4-001 backlog | 86c3538 | ✅ ship |
 
 ---
 
@@ -115,7 +116,7 @@ Hedef: backend %85+, frontend %75+ coverage; en az 3 yeni unit test.
 
 ---
 
-**Loop status:** Round 28 closed. **8/9 FULL CLEAN ⭐⭐⭐⭐⭐⭐⭐⭐**
-(L1+L2+L3+L5+L6+L7+L8+L9 all 3/3). %88. **Tek kalan L4 axe** —
-1/3, dev-mode-blocked. Founder makinasında prod build axe run
-gerekli (Round 12 brief'inde belirtilmişti).
+**Loop status:** Round 29 closed. 8/9 FULL CLEAN. **L4 = 2/3** —
+3 real Q10 source a11y bug fixed; 2 Tremor BarList Q10-L4-001
+deferred. Sonraki: Round 30 = L4 final re-run (2/3 → 3/3, dokuzuncu
+ve son FULL CLEAN — third-party backlog şartıyla).
