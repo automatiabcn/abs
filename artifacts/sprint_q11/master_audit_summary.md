@@ -20,7 +20,7 @@
 | L8 | Q10 ⭐ | 0/3 | Plural form + tense consistency |
 | L9 | Q10 ⭐ | 0/3 | Network throttle + DB locked |
 | L10 | Q11 NEW | 1/3 | Round 1: 200 parallel quota gate split 100/100, lock atomic |
-| L11 | Q11 NEW | 1/3 | Round 3: FF+WebKit smoke 10/10 + Q11-L11-001 Demo iframe placeholder fix |
+| L11 | Q11 NEW | 2/3 | Round 3: FF+WebKit smoke + Q11-L11-001 fix · Round 8: cross-browser axe 30/30 PASS (Q10 L4 fixes regression-safe) |
 | L12 | Q11 NEW | 1/3 | Round 4: Q11-L12-001 header link <24px touch target fix; 16/16 PASS 4×4 viewport |
 | L13 | Q11 NEW | 1/3 | Round 2: Q11-L13-001/002 chat input contract drift fix; 11 fuzz PASS |
 | L14 | Q11 NEW | 1/3 | Round 5: Q11-L14-001 (HIGH missing Alembic 0008 migration) fix + revoke persistence + replay attack tests |
@@ -40,13 +40,14 @@
 | 5 | L14 | Q11-L14-001 (HIGH missing Alembic 0008 blacklist migration) | 71bd030 | ✅ ship |
 | 6 | L15 | 0 (10 OpenAPI contract pin tests) | 586a860 | ✅ ship |
 | 7 | L16 | Q11-L16-001 pipeline error tile CTA parity | 7af3e49 | ✅ ship |
+| 8 | L11 | 0 (Firefox+WebKit axe 30/30 PASS) | docs only | ✅ ship |
 
 ---
 
 ## Loop status
 
-Round 7 closed. **7/7 yeni Q11 layer (L10-L16) hepsi 1/3 — Q10
-fix'leri stres test fazı tamamlandı.** Toplam 5 prod-kalite bug
-shipped (Q11-L11/L12/L13×2/L14/L16). Backend Q8+Q10+Q11 = 73 PASS
-(önceki 44 + 16 yeni Q11). Sonraki: Round 8 = Q10 layer derin
-sweep (mutation + concurrent + screen reader vb.).
+Round 8 closed. L11 → 2/3 (first Q11 layer to advance past 1/3).
+Other 6 Q11 layers (L10/L12/L13/L14/L15/L16) at 1/3. **5
+prod-kalite bug shipped:** Q11-L11/L12/L13×2/L14/L16. Backend
+Q8+Q10+Q11 = 73 PASS. Frontend Q10+Q11 e2e = 134 PASS post-build.
+Sonraki: Round 9+ = devamı (16 layer × 3 hedefi).
