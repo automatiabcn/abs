@@ -39,6 +39,16 @@ async function loginIfNeeded(page: Page) {
     .catch(() => null);
 }
 
+/** Q10-L9-004 — Next dev compile lag retry (shared helper). */
+async function gotoWithDevRetry(page: Page, path: string) {
+  for (const wait of [0, 1200, 2400]) {
+    if (wait) await page.waitForTimeout(wait);
+    const resp = await page.goto(path, { waitUntil: "domcontentloaded" });
+    if (resp && resp.status() !== 404) return resp;
+  }
+  return null;
+}
+
 test.describe("Q10/L4 — axe-core WCAG 2.2 AA sweep", () => {
   test.beforeEach(async ({ page }) => {
     await loginIfNeeded(page);
@@ -46,8 +56,12 @@ test.describe("Q10/L4 — axe-core WCAG 2.2 AA sweep", () => {
 
   for (const s of SURFACES) {
     test(`q10-l4 ${s.slug} a11y`, async ({ page }) => {
-      const resp = await page.goto(s.path, { waitUntil: "networkidle" });
+      const resp = await gotoWithDevRetry(page, s.path);
       expect(resp).not.toBeNull();
+      // Settle network for axe scan without enforcing networkidle (which
+      // dev mode can't always reach within 30s due to HMR sockets).
+      await page.waitForLoadState("domcontentloaded");
+      await page.waitForTimeout(600);
       // Auth-redirected pages get scanned in their login form state — that
       // is still a valid a11y target.
       const builder = new AxeBuilder({ page })
