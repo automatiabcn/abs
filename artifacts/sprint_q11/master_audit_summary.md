@@ -23,7 +23,7 @@
 | L11 | Q11 NEW | **3/3 ⭐ FULL CLEAN** | Round 3: smoke + fix · Round 8: cross-browser axe 30/30 · Round 9: theme matrix dark+light FF+WK 60/60 PASS |
 | L12 | Q11 NEW | 1/3 | Round 4: Q11-L12-001 header link <24px touch target fix; 16/16 PASS 4×4 viewport |
 | L13 | Q11 NEW | 1/3 | Round 2: Q11-L13-001/002 chat input contract drift fix; 11 fuzz PASS |
-| L14 | Q11 NEW | 1/3 | Round 5: Q11-L14-001 (HIGH missing Alembic 0008 migration) fix + revoke persistence + replay attack tests |
+| L14 | Q11 NEW | 2/3 | Round 5: Q11-L14-001 fix + tests · Round 10: cold start (standalone kill + restart) /panel/meetings/[id] 200 + Link href intact |
 | L15 | Q11 NEW | 1/3 | Round 6: 10 OpenAPI contract pin (revoke/revoked + chat content bounds + hooks + RAG) |
 | L16 | Q11 NEW | 1/3 | Round 7: Q11-L16-001 pipeline error tile CTA parity (chat'le aynı pattern) |
 
@@ -42,6 +42,7 @@
 | 7 | L16 | Q11-L16-001 pipeline error tile CTA parity | 7af3e49 | ✅ ship |
 | 8 | L11 | 0 (Firefox+WebKit axe 30/30 PASS) | docs only | ✅ ship |
 | 9 | L11 | 0 (FF+WK theme matrix 60/60) — **L11 FULL CLEAN ⭐ ilk Q11 layer** | docs only | ✅ ship |
+| 10 | L14 | 0 (standalone cold start: /panel/meetings/[id] 200 + Link intact) | docs only | ✅ ship |
 
 ---
 
