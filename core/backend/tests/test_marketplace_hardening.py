@@ -30,6 +30,11 @@ from app.config import settings
 
 
 def _login(client) -> None:
+    # Q12-L19 Round 11 — TestClient `/auth/login` POST 307→/setup unless
+    # setup_state.json `completed:true` is seeded by the autouse
+    # `_autocomplete_setup_state` fixture in conftest. With that fixture,
+    # bootstrap admin (admin@local/CHANGEME) authenticates via source 1
+    # (DB) or source 2 (admin_credentials.json).
     r = client.post(
         "/auth/login",
         json={"email": "admin@local", "password": "CHANGEME"},
@@ -46,8 +51,39 @@ def _ensure_cosign_skip(monkeypatch) -> Iterator[None]:
 
 @pytest.fixture(autouse=True)
 def _isolated_install_store(tmp_path, monkeypatch) -> Iterator[None]:
-    """Per-test isolated marketplace_installs.json under tmp_path."""
+    """Per-test isolated marketplace_installs.json under tmp_path.
+
+    Q12-L19 Round 11 — also re-seed `setup_state.json` so the FirstRun
+    middleware doesn't redirect /auth/login to /setup. The autouse
+    `_autocomplete_setup_state` conftest fixture writes to the
+    *session* data_dir; this fixture monkeypatches data_dir per-test,
+    so the seed is missing in the new dir without an explicit re-write.
+    """
+    import json
+    import time
+
     monkeypatch.setattr(settings, "data_dir", str(tmp_path))
+    state_path = tmp_path / "setup_state.json"
+    state_path.write_text(
+        json.dumps(
+            {
+                "completed": True,
+                "current_step": 6,
+                "completed_steps": [
+                    "admin",
+                    "license",
+                    "domain",
+                    "anthropic",
+                    "providers",
+                    "test",
+                ],
+                "started_at": time.time(),
+                "completed_at": time.time(),
+                "data": {},
+            }
+        ),
+        encoding="utf-8",
+    )
     yield
 
 
