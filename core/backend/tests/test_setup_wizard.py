@@ -103,7 +103,10 @@ def test_anthropic_step_validates_format(isolated_setup, client):
     r_bad = client.post(
         "/v1/setup/step/anthropic", json={"anthropic_api_key": "invalidkey"}
     )
-    assert r_bad.status_code == 400
+    # Pydantic v2 model_validator ValueError → FastAPI 422 (default).
+    # Q12-L19 Round 11: test expected 400 (pre-Pydantic-v2); current
+    # endpoint correctly returns 422 with the validator detail.
+    assert r_bad.status_code == 422, r_bad.text
 
     r_ok = client.post(
         "/v1/setup/step/anthropic", json={"anthropic_api_key": "sk-ant-test12345"}
