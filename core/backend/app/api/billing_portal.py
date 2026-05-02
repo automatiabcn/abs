@@ -69,10 +69,14 @@ async def create_portal(
             return_url=body.return_url,
         )
     except stripe.error.StripeError as exc:
+        # Q12-L24-002 — internal-only str(exc); client-facing detail is
+        # the Stripe-curated user_message or the i18n generic message.
+        # Prevents leakage of account-internal IDs / API key prefixes.
         logger.exception("portal session create failed: %s", exc)
+        safe_detail = getattr(exc, "user_message", None) or "stripe_unavailable"
         raise HTTPException(
             status_code=502,
-            detail=t("errors.portal_create_failed", lang, detail=str(exc)[:200]),
+            detail=t("errors.portal_create_failed", lang, detail=safe_detail),
         ) from exc
 
     expires = datetime.now(timezone.utc) + timedelta(hours=1)
