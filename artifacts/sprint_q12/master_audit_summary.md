@@ -26,10 +26,10 @@
 | L14 | Q11 ⭐ | 0/3 | data integrity 3rd sweep |
 | L15 | Q11 ⭐ | 0/3 | API contract 3rd sweep |
 | L16 | Q11 ⭐ | 0/3 | error UX 3rd sweep |
-| **L17** | **Q12 NEW** | **1/3** | bundle break-even validator (Round 1 ✅ Q12-L17-001 policy gap) |
-| **L18** | **Q12 NEW** | **1/3** | cold-cache first-visit (Round 3 ✅ 13/13 PASS + Q12-L18-001 throttle gap MED) |
-| **L19** | **Q12 NEW** | **1/3** | backwards compat — 9/11 guard PASS + Q12-L19-001 (HIGH) Sprint 21 close pytest scope gap |
-| **L20** | **Q12 NEW** | **1/3** | chaos — 4 PASS + Q12-L20-001 (MED) chat redirect-loop guard via `test.fail()` |
+| **L17** | **Q12 NEW** | **2/3** | bundle break-even validator (R1 + R6 rerun) |
+| **L18** | **Q12 NEW** | **2/3** | cold-cache first-visit (R3 + R6 rerun, 13/13 PASS) |
+| **L19** | **Q12 NEW** | **2/3** | backwards compat (R4 + R6 rerun, 9/11 PASS, 2 SKIP) |
+| **L20** | **Q12 NEW** | **2/3** | chaos engineering (R5 + R6 rerun, 4 PASS + 1 test.fail()) |
 | **L21** | **Q12 NEW** | 0/3 | production deploy drill |
 
 ---
@@ -41,15 +41,16 @@
 | 1 | L17 | Q12-L17-001 (MED policy gap) — bundle decision missing LCP-position guard | bd540cf | ✅ ship |
 | 3 | L18 | Q12-L18-001 (MED) — cold-cache + warm-network = throttle fidelity gap; spec 13/13 PASS warm | bf31610 | ✅ ship |
 | 4 | L19 | Q12-L19-001 (HIGH) — Sprint 21 close pytest scope gap (8 fail saklı); 9/11 backwards-compat guard PASS | abdd4a3 | ✅ ship |
-| 5 | L20 | Q12-L20-001 (MED) — chat client redirect-loop guard yok; 4/5 chaos PASS + 1 documented `test.fail()` | _pending atomic_ | 🚧 |
+| 5 | L20 | Q12-L20-001 (MED) — chat client redirect-loop guard yok; 4/5 chaos PASS + 1 documented `test.fail()` | a7fe004 | ✅ ship |
+| 6 | L17+L18+L19+L20 | Consolidation rerun — 18 Playwright + 9 pytest + bundle validator unchanged; 4 layer 1/3→2/3 | _pending atomic_ | 🚧 |
 
 ---
 
 ## Loop status
 
-🚧 **Q12 IN PROGRESS** — Round 1 L17 + Round 3 L18 ship.
-Round 2 (L21) **founder approval bekliyor** (destructive volume wipe; isolated namespace alternatif önerildi).
-Sıradaki: Round 4 = L19 backwards compat regression.
+🚧 **Q12 IN PROGRESS** — 6 round shipped. 4 Q12 layer (L17/L18/L19/L20) **2/3** seviyesinde — her birine 1 round daha (3rd sweep) FULL CLEAN için.
+Round 2 (L21) **founder approval bekliyor** (destructive volume wipe; `scripts/chaos/q12_l20_isolated.sh` pattern ile isolated namespace alternatif önerildi).
+Sıradaki: 3rd sweep round'ları (L17/L18/L19/L20 birinden seç) veya inherited Q10/Q11 layer deep stress.
 
 **Beklenen:** L17/L20/L21'den 5–15 yeni gerçek bulgu.
 
