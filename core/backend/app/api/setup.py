@@ -90,6 +90,49 @@ def _atomic_write_state(state: Dict[str, Any]) -> None:
     tmp.replace(target)
 
 
+# Q12-L22-001 — TOCTOU guard for setup wizard step endpoints.
+#
+# Pre-fix: each step handler did `read_state → mutate → _atomic_write_state`
+# without serialization. Two concurrent admins (multi-worker uvicorn or
+# event-loop interleaving on slow I/O) both read `current_step=N`, both
+# pass `_ensure_step(state, N)`, both write to disk, last-writer-wins on
+# `admin_credentials.json` and on the state file — silent overwrite.
+#
+# Post-fix: every step handler wraps `read_state ... _atomic_write_state`
+# in `with _state_lock():`. fcntl.LOCK_EX on a companion .lock file
+# serializes across threads AND processes (multi-worker safe). The
+# losing concurrent call observes the already-advanced state on its read
+# and returns 409 from `_ensure_step`.
+import contextlib
+import fcntl
+
+
+def _state_lock_path() -> Path:
+    return setup_state_path().with_suffix(".json.lock")
+
+
+@contextlib.contextmanager
+def _state_lock():
+    """Acquire an exclusive cross-process lock on the setup state file.
+
+    The lock file is auto-created on first use. fcntl.LOCK_EX blocks
+    until the previous holder releases (no busy-wait, no deadlock as
+    long as the holder doesn't fork mid-critical-section). Released
+    automatically on file close.
+    """
+    p = _state_lock_path()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    fh = open(p, "a+")
+    try:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+    finally:
+        fh.close()
+
+
 def _persist_encrypted_secret(vault_key: str, value: str) -> bool:
     """013 — Önce sops vault'a yaz; vault yoksa fallback olarak .env (dev/test).
 
@@ -280,94 +323,99 @@ class SetupLangBody(BaseModel):
 async def set_setup_lang(body: SetupLangBody) -> Dict[str, Any]:
     if body.lang not in ("en", "tr", "es"):
         raise HTTPException(status_code=400, detail="Unsupported language")
-    state = read_state()
-    state["lang"] = body.lang
-    _atomic_write_state(state)
+    with _state_lock():  # Q12-L22-001
+        state = read_state()
+        state["lang"] = body.lang
+        _atomic_write_state(state)
     return {"ok": True, "lang": body.lang}
 
 
 @router.post("/step/admin", status_code=status.HTTP_200_OK)
 async def step_admin(body: AdminBody) -> Dict[str, Any]:
-    state = read_state()
-    _ensure_step(state, 1)
-    pwd_hash = bcrypt.hashpw(body.password.encode("utf-8"), bcrypt.gensalt()).decode(
-        "utf-8"
-    )
-    admin_credentials_path().write_text(
-        json.dumps(
-            {"email": body.email, "password_hash": pwd_hash, "created_at": time.time()},
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
-    )
-    state["data"]["admin"] = {"email": body.email}
-    _persist_env_var("ABS_ADMIN_EMAIL", body.email)
-    _advance(state, "admin")
-    _atomic_write_state(state)
+    with _state_lock():  # Q12-L22-001
+        state = read_state()
+        _ensure_step(state, 1)
+        pwd_hash = bcrypt.hashpw(body.password.encode("utf-8"), bcrypt.gensalt()).decode(
+            "utf-8"
+        )
+        admin_credentials_path().write_text(
+            json.dumps(
+                {"email": body.email, "password_hash": pwd_hash, "created_at": time.time()},
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        state["data"]["admin"] = {"email": body.email}
+        _persist_env_var("ABS_ADMIN_EMAIL", body.email)
+        _advance(state, "admin")
+        _atomic_write_state(state)
     return {"ok": True, "current_step": state["current_step"]}
 
 
 @router.post("/step/license", status_code=status.HTTP_200_OK)
 async def step_license(body: LicenseBody) -> Dict[str, Any]:
-    state = read_state()
-    _ensure_step(state, 2)
-    try:
-        payload = verify_license(body.license_key)
-    except HTTPException as exc:
-        raise HTTPException(
-            status_code=400, detail=f"Lisans gecersiz: {exc.detail}"
-        ) from exc
+    with _state_lock():  # Q12-L22-001
+        state = read_state()
+        _ensure_step(state, 2)
+        try:
+            payload = verify_license(body.license_key)
+        except HTTPException as exc:
+            raise HTTPException(
+                status_code=400, detail=f"Lisans gecersiz: {exc.detail}"
+            ) from exc
 
-    settings.license_key = body.license_key
-    _persist_encrypted_secret("license_key", body.license_key)
-    state["data"]["license"] = {
-        "jti": payload.get("jti"),
-        "tier": payload.get("tier"),
-        "seat_count": payload.get("seat_count"),
-    }
-    _advance(state, "license")
-    _atomic_write_state(state)
+        settings.license_key = body.license_key
+        _persist_encrypted_secret("license_key", body.license_key)
+        state["data"]["license"] = {
+            "jti": payload.get("jti"),
+            "tier": payload.get("tier"),
+            "seat_count": payload.get("seat_count"),
+        }
+        _advance(state, "license")
+        _atomic_write_state(state)
     return {"ok": True, "current_step": state["current_step"], "tier": payload.get("tier")}
 
 
 @router.post("/step/domain", status_code=status.HTTP_200_OK)
 async def step_domain(body: DomainBody) -> Dict[str, Any]:
-    state = read_state()
-    _ensure_step(state, 3)
-    if body.mode == "domain":
-        if not body.domain or not _DOMAIN_RE.match(body.domain):
-            raise HTTPException(status_code=400, detail="Domain formati gecersiz")
-        settings.domain = body.domain
-        _persist_env_var("ABS_DOMAIN", body.domain)
-    settings.ssl_mode = body.ssl_mode
-    _persist_env_var("ABS_SSL_MODE", body.ssl_mode)
-    state["data"]["domain"] = {
-        "mode": body.mode,
-        "domain": body.domain,
-        "ssl_mode": body.ssl_mode,
-    }
-    _advance(state, "domain")
-    _atomic_write_state(state)
+    with _state_lock():  # Q12-L22-001
+        state = read_state()
+        _ensure_step(state, 3)
+        if body.mode == "domain":
+            if not body.domain or not _DOMAIN_RE.match(body.domain):
+                raise HTTPException(status_code=400, detail="Domain formati gecersiz")
+            settings.domain = body.domain
+            _persist_env_var("ABS_DOMAIN", body.domain)
+        settings.ssl_mode = body.ssl_mode
+        _persist_env_var("ABS_SSL_MODE", body.ssl_mode)
+        state["data"]["domain"] = {
+            "mode": body.mode,
+            "domain": body.domain,
+            "ssl_mode": body.ssl_mode,
+        }
+        _advance(state, "domain")
+        _atomic_write_state(state)
     return {"ok": True, "current_step": state["current_step"]}
 
 
 @router.post("/step/anthropic", status_code=status.HTTP_200_OK)
 async def step_anthropic(body: AnthropicBody) -> Dict[str, Any]:
-    state = read_state()
-    _ensure_step(state, 4)
-    if body.skip_paid_providers:
-        # CJ-004 — free-tier akis: Anthropic atla, paid_skipped flag set.
-        state["data"]["anthropic_configured"] = False
-        state["data"]["paid_skipped"] = True
-    else:
-        # model_validator zaten format/zorunluluk dogruladi; burada sadece persist.
-        assert body.anthropic_api_key is not None  # for type-checker
-        settings.anthropic_api_key = body.anthropic_api_key
-        _persist_encrypted_secret("anthropic_api_key", body.anthropic_api_key)
-        state["data"]["anthropic_configured"] = True
-        state["data"]["paid_skipped"] = False
-    _advance(state, "anthropic")
-    _atomic_write_state(state)
+    with _state_lock():  # Q12-L22-001
+        state = read_state()
+        _ensure_step(state, 4)
+        if body.skip_paid_providers:
+            # CJ-004 — free-tier akis: Anthropic atla, paid_skipped flag set.
+            state["data"]["anthropic_configured"] = False
+            state["data"]["paid_skipped"] = True
+        else:
+            # model_validator zaten format/zorunluluk dogruladi; burada sadece persist.
+            assert body.anthropic_api_key is not None  # for type-checker
+            settings.anthropic_api_key = body.anthropic_api_key
+            _persist_encrypted_secret("anthropic_api_key", body.anthropic_api_key)
+            state["data"]["anthropic_configured"] = True
+            state["data"]["paid_skipped"] = False
+        _advance(state, "anthropic")
+        _atomic_write_state(state)
     return {
         "ok": True,
         "current_step": state["current_step"],
@@ -377,26 +425,27 @@ async def step_anthropic(body: AnthropicBody) -> Dict[str, Any]:
 
 @router.post("/step/providers", status_code=status.HTTP_200_OK)
 async def step_providers(body: ProvidersBody) -> Dict[str, Any]:
-    state = read_state()
-    _ensure_step(state, 5)
-    configured: list[str] = []
-    provider_fields = (
-        "groq_api_key",
-        "gemini_api_key",
-        "cerebras_api_key",
-        "cohere_api_key",
-        "cf_account_id",
-        "cf_api_token",
-    )
-    for field_name in provider_fields:
-        value = getattr(body, field_name)
-        if value:
-            setattr(settings, field_name, value)
-            _persist_encrypted_secret(field_name, value)
-            configured.append(field_name)
-    state["data"]["providers_configured"] = configured
-    _advance(state, "providers")
-    _atomic_write_state(state)
+    with _state_lock():  # Q12-L22-001
+        state = read_state()
+        _ensure_step(state, 5)
+        configured: list[str] = []
+        provider_fields = (
+            "groq_api_key",
+            "gemini_api_key",
+            "cerebras_api_key",
+            "cohere_api_key",
+            "cf_account_id",
+            "cf_api_token",
+        )
+        for field_name in provider_fields:
+            value = getattr(body, field_name)
+            if value:
+                setattr(settings, field_name, value)
+                _persist_encrypted_secret(field_name, value)
+                configured.append(field_name)
+        state["data"]["providers_configured"] = configured
+        _advance(state, "providers")
+        _atomic_write_state(state)
     return {"ok": True, "current_step": state["current_step"], "configured": configured}
 
 
@@ -418,15 +467,16 @@ async def _run_provider_tests() -> Dict[str, Any]:
 
 @router.post("/step/test", status_code=status.HTTP_200_OK)
 async def step_test() -> Dict[str, Any]:
-    state = read_state()
-    _ensure_step(state, 6)
-    test_results = await _run_provider_tests()
-    state["data"]["test_results"] = test_results
-    if "test" not in state["completed_steps"]:
-        state["completed_steps"].append("test")
-    state["completed"] = True
-    state["completed_at"] = time.time()
-    _atomic_write_state(state)
+    with _state_lock():  # Q12-L22-001
+        state = read_state()
+        _ensure_step(state, 6)
+        test_results = await _run_provider_tests()
+        state["data"]["test_results"] = test_results
+        if "test" not in state["completed_steps"]:
+            state["completed_steps"].append("test")
+        state["completed"] = True
+        state["completed_at"] = time.time()
+        _atomic_write_state(state)
     return {
         "ok": True,
         "completed": True,
