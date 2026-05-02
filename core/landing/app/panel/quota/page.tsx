@@ -15,7 +15,56 @@ import {
   Settings,
   Zap,
 } from "lucide-react";
-import { DateRangePicker, type DateRangePickerValue, ProgressBar } from "@tremor/react";
+import dynamic from "next/dynamic";
+
+// Sprint 21 / Faz B — Tremor was the panel/quota route's largest
+// dependency (~600KB across recharts + tremor chunks). Swap the
+// ProgressBar for a 4-line CSS bar (no semantic loss, the original
+// only renders a colored width%) and lazy-load DateRangePicker via
+// next/dynamic so Tremor only ships when the date picker actually
+// mounts.
+const QuotaDateRangePicker = dynamic(
+  () => import("@/components/panel/charts/QuotaDateRangePicker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-9 w-72 animate-pulse rounded-md bg-muted" />
+    ),
+  },
+);
+
+// Mirror Tremor's optional shape so the wrapper component types align.
+type DateRangePickerValue = { from?: Date; to?: Date };
+
+function LightProgressBar({
+  value,
+  tone,
+  className,
+}: {
+  value: number;
+  tone: "emerald" | "amber" | "rose";
+  className?: string;
+}) {
+  const palette = {
+    emerald: "bg-emerald-500",
+    amber: "bg-amber-500",
+    rose: "bg-rose-500",
+  } as const;
+  return (
+    <div
+      role="progressbar"
+      aria-valuenow={Math.round(value)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      className={`h-2 w-full overflow-hidden rounded-full bg-muted ${className ?? ""}`}
+    >
+      <div
+        className={`h-full transition-[width] duration-500 ${palette[tone]}`}
+        style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
+      />
+    </div>
+  );
+}
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -110,12 +159,7 @@ function ProviderRow({ slice, name }: { slice: Slice; name: string }) {
         </div>
       </div>
       {slice.configured !== false && (
-        <ProgressBar
-          value={pct}
-          color={t}
-          showAnimation
-          className="mt-1"
-        />
+        <LightProgressBar value={pct} tone={t} className="mt-1" />
       )}
       {slice.percent >= 0.8 && (
         <div className="mt-1 flex items-center gap-1 text-[11px] text-amber-300">
@@ -227,7 +271,7 @@ export default function QuotaPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <DateRangePicker
+          <QuotaDateRangePicker
             value={range}
             onValueChange={setRange}
             data-test="quota-date-range"
