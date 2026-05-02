@@ -46,7 +46,8 @@
 | 7 | L19 | Sweep 3 — TestClient bootstrap creds + cascade endpoint refit → **11/11 PASS L19 FULL CLEAN ⭐** | a7f2257 | ✅ ship |
 | 8 | L17 | Sweep 3 — 9 node:test unit + CI gate (REVERT verdict block) → **L17 FULL CLEAN ⭐** | 8786962 | ✅ ship |
 | 9 | L18 | Sweep 3 — CDP slow 3G + CPU 4× throttle 12/12 PASS + Q12-L18-002 (LOW) Lighthouse vs CDP gap → **L18 FULL CLEAN ⭐** | 7b2e50b | ✅ ship |
-| 10 | L20 | Sweep 3 — chat client `redirect:"error"` production fix → 5/5 chaos PASS → **L20 FULL CLEAN ⭐** + Q12-L20-002 (LOW) standalone build issue | _pending atomic_ | 🚧 |
+| 10 | L20 | Sweep 3 — chat client `redirect:"error"` production fix → 5/5 chaos PASS → **L20 FULL CLEAN ⭐** + Q12-L20-002 (LOW) standalone build issue | cbc8ba5 | ✅ ship |
+| 11 | L19 | Q12-L19-001 follow-up fix — setup_wizard 400→422 + marketplace _isolated_install_store re-seed setup_state → **1473/1473 PASS** (was 1463+8fail) | _pending atomic_ | 🚧 |
 
 ---
 
