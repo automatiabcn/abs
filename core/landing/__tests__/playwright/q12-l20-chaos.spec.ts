@@ -154,13 +154,11 @@ test.describe("Q12-L20 chaos — chat resilience under network failure", () => {
     expect(["error", "still-pending"]).toContain(result);
   });
 
-  // Q12-L20-001 (MED) — chat client does not surface an error tile when
-  // the upstream returns a 307 redirect loop ending in a 5xx. The UI
-  // remains in pending state indefinitely. `test.fail()` annotation
-  // documents the known regression; remove it once the chat client gains
-  // a max-redirect / abort-on-loop guard.
+  // Q12-L20-001 — Round 10 fix: `redirect: "error"` on the SSE fetch
+  // makes the chat client surface 307 immediately as an error tile,
+  // instead of silently following the redirect chain until the
+  // browser's hard 20-redirect ceiling.
   test("scenario 5: 307 redirect loop — does not hang the UI", async ({ page }) => {
-    test.fail(true, "Q12-L20-001 chat client lacks redirect-loop guard (Sprint 22 backlog)");
     if (!(await ensureAuthed(page))) test.skip(true, "abs_session cookie missing");
 
     let redirectCount = 0;

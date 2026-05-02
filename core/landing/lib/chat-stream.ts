@@ -211,6 +211,12 @@ export function useChat({
       const controller = new AbortController();
       abortRef.current = controller;
 
+      // Q12-L20-001 — chat completions is a POST + SSE; the backend never
+      // legitimately returns a 3xx, so `redirect: "error"` makes a
+      // misconfigured proxy (e.g. Caddy redir loop) surface as a fetch
+      // rejection rather than silently following until the browser's
+      // hard 20-redirect ceiling. Combined with the existing AbortController
+      // for user-initiated cancel, this keeps the UI honest under failure.
       try {
         const res = await fetch("/v1/chat/completions", {
           method: "POST",
@@ -221,6 +227,7 @@ export function useChat({
             messages: [{ role: "user", content }],
             stream: true,
           }),
+          redirect: "error",
           signal: controller.signal,
         });
         if (!res.ok) {
