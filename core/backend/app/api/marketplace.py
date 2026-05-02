@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.auth import current_admin
 from app.config import settings
@@ -144,8 +144,20 @@ def _write_installs(state: Dict[str, List[Dict[str, Any]]]) -> None:
 
 
 class InstallBody(BaseModel):
-    plugin_id: str
-    tenant: str = "default"
+    # Q12-L25-001 — boundary hardening: pre-fix accepted unbounded
+    # plugin_id and tenant strings, allowing 1MB+ payloads (DoS) and
+    # filesystem traversal (`tenant="../../etc"` → install path
+    # escape) since `tenant` lands in a directory path. Pattern caps
+    # to a safe charset; max_length caps memory.
+    plugin_id: str = Field(
+        ..., min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9._-]+$"
+    )
+    tenant: str = Field(
+        default="default",
+        min_length=1,
+        max_length=64,
+        pattern=r"^[a-zA-Z0-9._-]+$",
+    )
 
 
 # ---------- endpoints ------------------------------------------------------
