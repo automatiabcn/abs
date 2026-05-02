@@ -43,11 +43,20 @@ run_frontend_smoke() {
   cd "$REPO_ROOT"
 }
 
+run_round4() {
+  echo "==> Q12 Round 4 — L19 backwards-compat regression"
+  source core/backend/.venv/bin/activate
+  cd core/backend
+  python -m pytest tests/test_q12_l19_backwards_compat.py -v --tb=short
+  cd "$REPO_ROOT"
+}
+
 case "$phase" in
   round1)   run_round1 ;;
   round3)   run_round3 ;;
+  round4)   run_round4 ;;
   backend)  run_backend_smoke ;;
   frontend) run_frontend_smoke ;;
-  all)      run_round1; run_round3; run_backend_smoke; run_frontend_smoke ;;
+  all)      run_round1; run_round3; run_round4; run_backend_smoke; run_frontend_smoke ;;
   *)        echo "unknown phase: $phase"; exit 2 ;;
 esac

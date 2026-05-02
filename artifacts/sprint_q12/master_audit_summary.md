@@ -28,7 +28,7 @@
 | L16 | Q11 ⭐ | 0/3 | error UX 3rd sweep |
 | **L17** | **Q12 NEW** | **1/3** | bundle break-even validator (Round 1 ✅ Q12-L17-001 policy gap) |
 | **L18** | **Q12 NEW** | **1/3** | cold-cache first-visit (Round 3 ✅ 13/13 PASS + Q12-L18-001 throttle gap MED) |
-| **L19** | **Q12 NEW** | 0/3 | backwards compatibility (9 historical HIGH bug regression) |
+| **L19** | **Q12 NEW** | **1/3** | backwards compat — 9/11 guard PASS + Q12-L19-001 (HIGH) Sprint 21 close pytest scope gap |
 | **L20** | **Q12 NEW** | 0/3 | chaos engineering |
 | **L21** | **Q12 NEW** | 0/3 | production deploy drill |
 
@@ -39,7 +39,8 @@
 | Round | Layer | Bulgu | Commit | Status |
 |-------|-------|-------|--------|--------|
 | 1 | L17 | Q12-L17-001 (MED policy gap) — bundle decision missing LCP-position guard | bd540cf | ✅ ship |
-| 3 | L18 | Q12-L18-001 (MED) — cold-cache + warm-network = throttle fidelity gap; spec 13/13 PASS warm | _pending atomic_ | 🚧 |
+| 3 | L18 | Q12-L18-001 (MED) — cold-cache + warm-network = throttle fidelity gap; spec 13/13 PASS warm | bf31610 | ✅ ship |
+| 4 | L19 | Q12-L19-001 (HIGH) — Sprint 21 close pytest scope gap (8 fail saklı); 9/11 backwards-compat guard PASS | _pending atomic_ | 🚧 |
 
 ---
 
