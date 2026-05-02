@@ -425,11 +425,16 @@ def signup(body: SignupRequest) -> Dict:
     )
     _write_pending_signups(rows)
     _persist_user_pending(body.email, body.tenant_slug, body.password, token)
+    # Q12-L24-001 fix — never log the full magic token. It grants admin
+    # session within 24h to anyone with log read access (ops, log
+    # aggregator, accidental disclosure). Only a 6-char hint is logged so
+    # ops can correlate signup → claim attempts without compromising the
+    # claim flow.
     logger.info(
-        "signup_pending email=%s slug=%s magic=/auth/magic?token=%s",
+        "signup_pending email=%s slug=%s token_hint=%s***",
         body.email,
         body.tenant_slug,
-        token,
+        token[:6],
     )
     return {
         "status": "pending",

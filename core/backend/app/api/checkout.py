@@ -86,8 +86,12 @@ async def create_session(
             },
         )
     except stripe.error.StripeError as exc:
+        # Q12-L24-002 — log full exception internally; return only the
+        # Stripe-curated user_message (or a generic fallback) to the
+        # client. str(exc) can leak account-internal IDs (cus_*, sub_*,
+        # acct_*) that adversaries can fingerprint.
         logger.exception("checkout session create failed: %s", exc)
-        msg = getattr(exc, "user_message", None) or str(exc)
+        msg = getattr(exc, "user_message", None) or "stripe_unavailable"
         raise HTTPException(status_code=502, detail=f"Stripe error: {msg}") from exc
 
     url = getattr(session, "url", None) or (session.get("url") if isinstance(session, dict) else None)
