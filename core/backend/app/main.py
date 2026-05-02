@@ -66,6 +66,7 @@ from app.middleware.demo_mode import DemoModeMiddleware
 from app.middleware.first_run import FirstRunMiddleware
 from app.middleware.i18n import I18nMiddleware
 from app.middleware.rate_limit import install_rate_limit, limiter
+from app.middleware.request_id import RequestIDMiddleware  # Q12-L23
 
 PANEL_STATIC_DIR = Path(__file__).resolve().parent / "static" / "panel"
 SETUP_STATIC_DIR = Path(__file__).resolve().parent / "static" / "setup"
@@ -199,6 +200,9 @@ install_audience_enforcer(app, _abs_settings_for_audience)
 app.add_middleware(FirstRunMiddleware)
 app.add_middleware(I18nMiddleware)
 app.add_middleware(DemoModeMiddleware)
+# Q12-L23 — outermost so request_id is set before all other middleware run.
+# Starlette wraps LIFO: the last add_middleware call is the outermost.
+app.add_middleware(RequestIDMiddleware)
 
 app.include_router(auth_router.router)
 app.include_router(oauth_router)  # T-003 — OAuth 2.1 + PKCE + JWKS
