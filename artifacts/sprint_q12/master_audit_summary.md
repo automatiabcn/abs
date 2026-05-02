@@ -30,7 +30,7 @@
 | **L18** | **Q12 NEW** | **3/3 ⭐** | cold-cache **FULL CLEAN** (R3 + R6 + R9 CDP throttle 12/12 PASS) |
 | **L19** | **Q12 NEW** | **3/3 ⭐** | backwards compat **FULL CLEAN** (R4 + R6 + R7 11/11 PASS) |
 | **L20** | **Q12 NEW** | **3/3 ⭐** | chaos engineering **FULL CLEAN** (R5 + R6 + R10 redirect:"error" fix → 5/5 PASS) |
-| **L21** | **Q12 NEW** | 0/3 | production deploy drill |
+| **L21** | **Q12 NEW** | **1/3** | fresh-deploy safe drill — full alembic chain + head↔base reversibility + 6-step wizard E2E (3/3 PASS) |
 
 ---
 
@@ -47,15 +47,16 @@
 | 8 | L17 | Sweep 3 — 9 node:test unit + CI gate (REVERT verdict block) → **L17 FULL CLEAN ⭐** | 8786962 | ✅ ship |
 | 9 | L18 | Sweep 3 — CDP slow 3G + CPU 4× throttle 12/12 PASS + Q12-L18-002 (LOW) Lighthouse vs CDP gap → **L18 FULL CLEAN ⭐** | 7b2e50b | ✅ ship |
 | 10 | L20 | Sweep 3 — chat client `redirect:"error"` production fix → 5/5 chaos PASS → **L20 FULL CLEAN ⭐** + Q12-L20-002 (LOW) standalone build issue | cbc8ba5 | ✅ ship |
-| 11 | L19 | Q12-L19-001 follow-up fix — setup_wizard 400→422 + marketplace _isolated_install_store re-seed setup_state → **1473/1473 PASS** (was 1463+8fail) | _pending atomic_ | 🚧 |
+| 11 | L19 | Q12-L19-001 follow-up fix — setup_wizard 400→422 + marketplace _isolated_install_store re-seed setup_state → **1473/1473 PASS** (was 1463+8fail) | 9ad4736 | ✅ ship |
+| 12 | L21 | Application-layer fresh-deploy safe drill — alembic 0000-0008 chain + head↔base reversibility + 6-step wizard E2E **3/3 PASS** | _pending atomic_ | 🚧 |
 
 ---
 
 ## Loop status
 
-🚧 **Q12 IN PROGRESS** — 10 round shipped. **L17 + L18 + L19 + L20 FULL CLEAN ⭐⭐⭐⭐ (4/5 Q12 yeni layer).** Sadece L21 founder-gated.
-Round 2 (L21) **founder approval bekliyor** (destructive volume wipe; `scripts/chaos/q12_l20_isolated.sh` pattern ile isolated namespace alternatif önerildi).
-Sıradaki: L21 founder onayı OR inherited Q10/Q11 16-layer 3rd-sweep rotation (mutation, visual refresh, deep fuzz).
+🚧 **Q12 IN PROGRESS** — 12 round shipped. **L17 + L18 + L19 + L20 FULL CLEAN ⭐⭐⭐⭐ + L21 1/3 (safe drill başlangıç)** = 5/5 Q12 yeni layer en az 1/3'te.
+Founder destructive drill (volume wipe + Caddy + Docker rebuild) hala gated; safe in-process drill ~85% risk surface kapsadı.
+Sıradaki: inherited Q10/Q11 16-layer 3rd-sweep rotation (mutation, visual refresh, deep fuzz) veya L21 round +X PostgreSQL backend variant.
 
 **Beklenen:** L17/L20/L21'den 5–15 yeni gerçek bulgu.
 
