@@ -128,17 +128,38 @@ def _create_token(email: str) -> str:
     return jwt.encode(payload, settings.session_secret, algorithm="HS256")
 
 
+class _SessionExpired(HTTPException):
+    """Q12-L26 — typed exception so audit emission can read the reason
+    without inspecting the (potentially i18n-translated) detail string.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Oturum süresi doldu",
+        )
+
+
+class _SessionInvalid(HTTPException):
+    """Q12-L26 — typed exception (signature mismatch, malformed JWT,
+    tampered payload). Distinct from _SessionExpired so the audit
+    `reason` stays accurate even if the i18n string drifts.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session invalid",
+        )
+
+
 def _decode_token(token: str) -> Dict:
     try:
         return jwt.decode(token, settings.session_secret, algorithms=["HS256"])
     except ExpiredSignatureError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Oturum süresi doldu"
-        ) from exc
+        raise _SessionExpired() from exc
     except JWTError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Session invalid"
-        ) from exc
+        raise _SessionInvalid() from exc
 
 
 def _set_cookie(response: Response, token: str) -> None:
@@ -172,13 +193,22 @@ def current_admin(request: Request) -> Dict:
         )
     try:
         return _decode_token(token)
-    except HTTPException as http_exc:
+    except _SessionExpired:
         emit_event(
             request,
             action="auth.session.decode",
             outcome="denied",
-            reason="expired" if http_exc.status_code == 401 and "süresi" in str(http_exc.detail) else "invalid",
-            status_code=http_exc.status_code,
+            reason="expired",
+            status_code=401,
+        )
+        raise
+    except _SessionInvalid:
+        emit_event(
+            request,
+            action="auth.session.decode",
+            outcome="denied",
+            reason="invalid",
+            status_code=401,
         )
         raise
 
@@ -504,7 +534,27 @@ def me(request: Request) -> Dict:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Oturum yok"
         )
-    payload = _decode_token(token)
+    # Q12-L26 — emit audit on decode failure (expired vs invalid).
+    try:
+        payload = _decode_token(token)
+    except _SessionExpired:
+        emit_event(
+            request,
+            action="auth.session.decode",
+            outcome="denied",
+            reason="expired",
+            status_code=401,
+        )
+        raise
+    except _SessionInvalid:
+        emit_event(
+            request,
+            action="auth.session.decode",
+            outcome="denied",
+            reason="invalid",
+            status_code=401,
+        )
+        raise
     exp = payload.get("exp")
     exp_iso = (
         datetime.fromtimestamp(exp, tz=timezone.utc).isoformat() if exp else ""
