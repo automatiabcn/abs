@@ -32,7 +32,7 @@
 | **L20** | **Q12 NEW** | **3/3 ⭐** | chaos engineering **FULL CLEAN** (R5 + R6 + R10 redirect:"error" fix → 5/5 PASS) |
 | **L21** | **Q12 NEW** | **1/3** | fresh-deploy safe drill — full alembic chain + head↔base reversibility + 6-step wizard E2E (3/3 PASS) |
 | **L22** | **Q12 NEW S2** | **1/3** | race condition deep — Q12-L22-001 (HIGH setup wizard TOCTOU) shipped (4/4 PASS, pre-fix race proven via git stash) |
-| **L23** | **Q12 NEW S2** | **1/3** | observability gap — RequestIDMiddleware + emit_event + auth.py audit trail (9/9 PASS) |
+| **L23** | **Q12 NEW S2** | **3/3 ⭐** | observability — auth.py (9/9) + me_account.py 11 paths (6/6) + me_data_export.py 10 paths (4/4) = 19/19 across 3 sweeps. FULL CLEAN |
 | **L24** | **Q12 NEW S2** | **1/3** | secret/sensitive leakage — Q12-L24-001 (HIGH magic_token log leak) + Q12-L24-002 (MED Stripe str(exc) leak) shipped (5/5 PASS) |
 | **L25** | **Q12 NEW S2** | **1/3** | boundary payload — Q12-L25-001 (HIGH marketplace InstallBody DoS + path traversal + shell metachar) shipped (14/14 PASS, 3/4 fail pre-fix proven) |
 | **L26** | **Q12 NEW S2** | **1/3** | JWT lifecycle hardening — typed exceptions + /me audit + 9 tests (1503 full suite PASS) |
@@ -59,7 +59,8 @@
 | 15 | L22 | Q12-L22-001 (HIGH) — setup wizard 7 step endpoint TOCTOU; pre-fix [200,200] silent overwrite proven via git stash. Fix: fcntl.LOCK_EX `_state_lock` + 7 endpoints + 4 tests. **1494 full suite PASS** | 68b6724 | ✅ ship |
 | 16 | L26 | Q12-L26-001 (LOW observability fragility) — Round 13 used `"süresi" in detail` i18n string check for audit reason; locale drift would silently misroute. Fix: typed `_SessionExpired`/`_SessionInvalid` exceptions + /me audit emission + 9 tests (5 parametrize past-exp + tampered + garbled + missing-cookie hygiene + OAuth refresh single-use). **1503 full suite PASS** | 02c7a80 | ✅ ship |
 | 17 | L25 | Q12-L25-001 (HIGH security + DoS) — marketplace InstallBody plugin_id + tenant UNBOUNDED (1 MB+ DoS, path traversal, shell metachar). Fix: Pydantic Field max_length + alphanum pattern + 14 tests (4 marketplace HTTP + 5 RAG Pydantic-direct + 3 workflow synth + 2 workflow execute graceful). 3/4 marketplace test FAIL pre-fix (proven via git stash). **1517 full suite PASS** | d02665d | ✅ ship |
-| 18 | L23 sweep 2 | me_account.py 11/11 silent paths → emit_event coverage (auth + delete_token + delete_confirm + delete_cancel). Side-fix: Q12-L24 follow-up `f"License verify failed: {exc}"` → generic `license_verify_failed` to prevent PyJWT internals leakage. 6/6 new tests + 4 GDPR pre-existing tests preserved. **1523 full suite PASS** | _pending atomic_ | 🚧 |
+| 18 | L23 sweep 2 | me_account.py 11/11 silent paths → emit_event coverage (auth + delete_token + delete_confirm + delete_cancel). Side-fix: Q12-L24 follow-up `f"License verify failed: {exc}"` → generic `license_verify_failed` to prevent PyJWT internals leakage. 6/6 new tests + 4 GDPR pre-existing tests preserved. **1523 full suite PASS** | fdecc8e | ✅ ship |
+| 19 | L23 sweep 3 → ⭐ | me_data_export.py 10/10 silent paths → emit_event (auth + status + download). Same str(exc) leak fix. 4/4 new tests + 7 GDPR pre-existing tests preserved. **L23 → 3/3 FULL CLEAN ⭐** (5 Q12 layers FULL CLEAN total). **1527 full suite PASS** | _pending atomic_ | 🚧 |
 
 ---
 
