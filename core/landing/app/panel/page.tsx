@@ -1,6 +1,7 @@
 // Q7 Phase C — premium /panel "Genel Bakış" home with Tremor charts.
 "use client";
 
+import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -10,14 +11,31 @@ import {
   Package,
   ShieldCheck,
 } from "lucide-react";
-import {
-  AreaChart,
-  BarList,
-  Card as TremorCard,
-  Title,
-  Subtitle,
-  Flex,
-} from "@tremor/react";
+
+// Sprint 21 / Faz B — Tremor (recharts under the hood) was the
+// /panel route's heaviest dependency (~600KB across the recharts +
+// tremor chunks). Lazy-load both chart wrappers via next/dynamic so
+// the initial /panel render only ships the chrome + StatCards.
+const CascadeAreaChart = dynamic(
+  () => import("@/components/panel/charts/CascadeAreaChart"),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-64 w-full" />,
+  },
+);
+const CategoryBarList = dynamic(
+  () => import("@/components/panel/charts/CategoryBarList"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-6 w-full" />
+        ))}
+      </div>
+    ),
+  },
+);
 
 import { NeuralGraph } from "@/components/panel/NeuralGraph";
 import { StatCard } from "@/components/panel/StatCard";
@@ -189,18 +207,7 @@ export default function PanelHome() {
                   Veri yok
                 </div>
               ) : (
-                <AreaChart
-                  className="h-64"
-                  data={cascadeSeries}
-                  index="date"
-                  categories={["Calls"]}
-                  colors={["indigo"]}
-                  showAnimation
-                  showLegend={false}
-                  showGridLines={false}
-                  curveType="monotone"
-                  yAxisWidth={40}
-                />
+                <CascadeAreaChart data={cascadeSeries} />
               )}
             </CardContent>
           </Card>
@@ -233,17 +240,7 @@ export default function PanelHome() {
                   Veri yok
                 </div>
               ) : (
-                <TremorCard className="border-0 bg-transparent p-0 shadow-none">
-                  <Flex className="mb-2">
-                    <Title className="text-xs uppercase tracking-wider text-muted-foreground">
-                      Kategori
-                    </Title>
-                    <Subtitle className="text-xs uppercase tracking-wider text-muted-foreground">
-                      Adet
-                    </Subtitle>
-                  </Flex>
-                  <BarList data={categoryBars} color="indigo" />
-                </TremorCard>
+                <CategoryBarList data={categoryBars} />
               )}
             </CardContent>
           </Card>
