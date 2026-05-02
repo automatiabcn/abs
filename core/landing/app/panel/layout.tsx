@@ -2,7 +2,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
-import { CommandPalette } from "@/components/panel/CommandPalette";
+// Sprint 21 / Faz D — cmdk palette deferred via a client-only shim
+// (Server Components can't pass ssr:false to next/dynamic).
+import CommandPalette from "@/components/panel/CommandPaletteLazy";
 import { PanelHeader } from "@/components/panel/PanelHeader";
 import { PanelSidebar } from "@/components/panel/PanelSidebar";
 import { PanelThemeProvider } from "@/components/panel/PanelThemeProvider";

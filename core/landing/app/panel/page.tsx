@@ -37,7 +37,24 @@ const CategoryBarList = dynamic(
   },
 );
 
-import { NeuralGraph } from "@/components/panel/NeuralGraph";
+// Sprint 21 / Faz D — react-force-graph-3d (Three.js) is ~1.5MB
+// across 3 chunks. NeuralGraph already lazy-loads ForceGraph3D
+// internally, but the wrapper itself was statically imported and
+// still pulled the Three.js bridge into /panel's initial bundle.
+// Dynamic-import the wrapper so the whole graph (including the
+// Three.js renderer) only fetches when the panel actually mounts it.
+const NeuralGraph = dynamic(
+  () =>
+    import("@/components/panel/NeuralGraph").then((m) => ({
+      default: m.NeuralGraph,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[460px] w-full animate-pulse rounded-md bg-muted/40" />
+    ),
+  },
+);
 import { StatCard } from "@/components/panel/StatCard";
 import {
   Card,

@@ -3,7 +3,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
-import { CommandPalette } from "@/components/panel/CommandPalette";
+// Sprint 21 / Faz D — cmdk palette deferred via the same client shim
+// used by /panel/layout.tsx.
+import CommandPalette from "@/components/panel/CommandPaletteLazy";
 import { PanelHeader } from "@/components/panel/PanelHeader";
 import { PanelSidebar } from "@/components/panel/PanelSidebar";
 import { PanelThemeProvider } from "@/components/panel/PanelThemeProvider";
