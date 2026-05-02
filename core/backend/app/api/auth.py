@@ -23,6 +23,7 @@ from jose import ExpiredSignatureError, JWTError, jwt
 from pydantic import BaseModel, Field
 
 from app.config import settings
+from app.observability.audit import emit_event  # Q12-L23
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
@@ -160,14 +161,30 @@ def current_admin(request: Request) -> Dict:
     """FastAPI dependency — protected route'larda kullanın."""
     token = request.cookies.get(COOKIE_NAME)
     if not token:
+        emit_event(
+            request,
+            action="auth.session.check",
+            outcome="denied",
+            reason="missing_cookie",
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Oturum yok"
         )
-    return _decode_token(token)
+    try:
+        return _decode_token(token)
+    except HTTPException as http_exc:
+        emit_event(
+            request,
+            action="auth.session.decode",
+            outcome="denied",
+            reason="expired" if http_exc.status_code == 401 and "süresi" in str(http_exc.detail) else "invalid",
+            status_code=http_exc.status_code,
+        )
+        raise
 
 
 @router.post("/login")
-def login(payload: LoginRequest, response: Response) -> Dict:
+def login(payload: LoginRequest, request: Request, response: Response) -> Dict:
     """E-posta + parola ile oturum aç; JWT cookie set edilir.
 
     Q5.CO1 — multi-source verification: gather every (email, hash, source)
@@ -199,12 +216,26 @@ def login(payload: LoginRequest, response: Response) -> Dict:
         logger.info(
             "login_failed reason=email_no_source email=%s", payload.email
         )
+        emit_event(
+            request,
+            action="auth.login",
+            outcome="denied",
+            reason="email_no_source",
+            email_hint=(payload.email[:3] + "***") if payload.email else None,
+        )
         raise bad
 
     for admin_email, admin_hash, source in candidates:
         if _verify_password(payload.password, admin_hash):
             token = _create_token(admin_email)
             _set_cookie(response, token)
+            emit_event(
+                request,
+                action="auth.login",
+                outcome="success",
+                provider=source,
+                email_hint=(admin_email[:3] + "***") if admin_email else None,
+            )
             return {
                 "status": "logged_in",
                 "email": admin_email,
@@ -214,6 +245,14 @@ def login(payload: LoginRequest, response: Response) -> Dict:
     logger.info(
         "login_failed reason=password_mismatch sources=%s",
         [c[2] for c in candidates],
+    )
+    emit_event(
+        request,
+        action="auth.login",
+        outcome="denied",
+        reason="password_mismatch",
+        count=len(candidates),
+        email_hint=(payload.email[:3] + "***") if payload.email else None,
     )
     raise bad
 
@@ -401,18 +440,36 @@ def signup(body: SignupRequest) -> Dict:
 
 
 @router.get("/magic")
-def magic_claim(token: str, response: Response) -> Dict:
+def magic_claim(token: str, request: Request, response: Response) -> Dict:
     """Q3 P2 — claim a pending signup. Sets the panel session cookie so the
     next /auth/login is unnecessary; user lands authenticated.
 
     Returns 200 with claim payload (frontend renders confirmation +
     optional redirect). Invalid token → 404; expired → 410."""
     if not token or len(token) < 16:
+        emit_event(
+            request,
+            action="auth.magic.claim",
+            outcome="denied",
+            reason="invalid_token",
+        )
         raise HTTPException(400, "invalid_token")
     result = _claim_user_by_token(token)
     if result is None:
+        emit_event(
+            request,
+            action="auth.magic.claim",
+            outcome="denied",
+            reason="token_not_found",
+        )
         raise HTTPException(404, "token_not_found")
     if result.get("error") == "expired":
+        emit_event(
+            request,
+            action="auth.magic.claim",
+            outcome="denied",
+            reason="token_expired",
+        )
         raise HTTPException(410, "token_expired")
     # Promote pending JSON row too (clean up).
     rows = _read_pending_signups()
@@ -433,6 +490,12 @@ def magic_claim(token: str, response: Response) -> Dict:
 def me(request: Request) -> Dict:
     token = request.cookies.get(COOKIE_NAME)
     if not token:
+        emit_event(
+            request,
+            action="auth.me.check",
+            outcome="denied",
+            reason="missing_cookie",
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Oturum yok"
         )
