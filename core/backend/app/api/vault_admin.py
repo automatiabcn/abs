@@ -13,8 +13,9 @@ from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel
 
 from app.config import settings
+from app.observability.audit import emit_event  # Q12-L22 sweep 2
 from app.vault.audit_chain import stats as audit_stats
-from app.vault.rotation import RotationError, rotate_age_key
+from app.vault.rotation import RotationBusyError, RotationError, rotate_age_key
 
 router = APIRouter(prefix="/v1/admin/vault", tags=["admin-vault"])
 logger = logging.getLogger(__name__)
@@ -62,8 +63,38 @@ async def rotate_key(
     _check_admin(authorization, request)
     try:
         result = rotate_age_key(reason=body.reason, actor="admin-api")
+    except RotationBusyError as exc:
+        # Q12-L22-002 — concurrent rotate guard. Distinct status (409)
+        # so ops can alert separately from genuine rotation failures.
+        emit_event(
+            request,
+            action="admin.vault.rotate",
+            outcome="denied",
+            reason="rotation_in_progress",
+            status_code=409,
+            provider="vault",
+        )
+        raise HTTPException(409, "rotation_in_progress") from exc
     except RotationError as exc:
-        raise HTTPException(500, f"Rotation failed: {exc}") from exc
+        emit_event(
+            request,
+            action="admin.vault.rotate",
+            outcome="error",
+            reason="rotation_failed",
+            status_code=500,
+            provider="vault",
+            error_class=type(exc).__name__,
+        )
+        # Keep response generic — exc message can carry sops/age cli stderr.
+        raise HTTPException(500, "rotation_failed") from exc
+    emit_event(
+        request,
+        action="admin.vault.rotate",
+        outcome="success",
+        provider="vault",
+        count=int(result.get("secrets_re_encrypted") or 0),
+        duration_ms=float(result.get("elapsed_ms") or 0),
+    )
     return result
 
 
