@@ -200,6 +200,10 @@ install_audience_enforcer(app, _abs_settings_for_audience)
 app.add_middleware(FirstRunMiddleware)
 app.add_middleware(I18nMiddleware)
 app.add_middleware(DemoModeMiddleware)
+# Q12-L25 sweep 3 — Content-Length cap before any body parse (DoS mitigation).
+from app.middleware.body_size_limit import install_body_size_limit
+
+install_body_size_limit(app)
 # Q12-L23 — outermost so request_id is set before all other middleware run.
 # Starlette wraps LIFO: the last add_middleware call is the outermost.
 app.add_middleware(RequestIDMiddleware)
