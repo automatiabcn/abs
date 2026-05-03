@@ -16,6 +16,7 @@ from typing import Any
 
 import bcrypt
 import jwt
+from sqlalchemy import update as sa_update
 from sqlmodel import Session, select
 
 from app.auth.oauth.jwks import (
@@ -67,6 +68,36 @@ def _hash_token(token: str) -> str:
 
 def _issuer() -> str:
     return getattr(settings, "oauth_issuer", DEFAULT_ISSUER)
+
+
+def _revoke_refresh_family(db: Session, start_hash: str) -> int:
+    """OAuth 2.1 §6.1 — on detected refresh-token replay, revoke the entire
+    rotation chain (forward from `start_hash`). Returns count revoked."""
+    from app.db.query_helpers import first_or_none
+
+    chain: list[str] = []
+    cursor: str | None = start_hash
+    while cursor and cursor not in chain:
+        chain.append(cursor)
+        nxt = first_or_none(
+            db,
+            select(OAuthRefreshToken).where(
+                OAuthRefreshToken.token_hash == cursor
+            ),
+        )
+        cursor = nxt.rotated_to_hash if nxt is not None else None
+    if not chain:
+        return 0
+    now = _now()
+    revoke_stmt = (
+        sa_update(OAuthRefreshToken)
+        .where(OAuthRefreshToken.token_hash.in_(chain))
+        .where(OAuthRefreshToken.revoked_at.is_(None))
+        .values(revoked_at=now)
+    )
+    res = db.execute(revoke_stmt)
+    db.commit()
+    return int(res.rowcount or 0)
 
 
 def _client_or_raise(db: Session, client_id: str) -> OAuthClient:
@@ -238,15 +269,30 @@ def exchange_code_for_tokens(
     if record.redirect_uri != redirect_uri:
         raise OAuthError("invalid_grant", "redirect_uri mismatch")
     if record.used_at is not None:
+        logger.warning("oauth_code_replay_attempt client_id=%s", client_id)
         raise OAuthError("invalid_grant", "code already used")
     if record.expires_at <= _now():
         raise OAuthError("invalid_grant", "code expired")
     if not verify_s256(code_verifier, record.code_challenge):
         raise OAuthError("invalid_grant", "PKCE verification failed")
 
-    record.used_at = _now()
-    db.add(record)
+    claim_now = _now()
+    db.expire(record, ["used_at"])
+    claim_stmt = (
+        sa_update(OAuthAuthCode)
+        .where(OAuthAuthCode.code == code)
+        .where(OAuthAuthCode.used_at.is_(None))
+        .values(used_at=claim_now)
+    )
+    claim_result = db.execute(claim_stmt)
     db.commit()
+    if (claim_result.rowcount or 0) != 1:
+        logger.warning(
+            "oauth_code_replay_blocked client_id=%s — concurrent claim lost race",
+            client_id,
+        )
+        raise OAuthError("invalid_grant", "code already used")
+    db.refresh(record)
 
     extra = json.loads(record.extra_claims_json or "{}")
     access, ttl = _mint_access_token(
@@ -283,10 +329,11 @@ def refresh_access_token(
 
     from app.db.query_helpers import first_or_none
 
+    presented_hash = _hash_token(refresh_token)
     rt = first_or_none(
         db,
         select(OAuthRefreshToken).where(
-            OAuthRefreshToken.token_hash == _hash_token(refresh_token)
+            OAuthRefreshToken.token_hash == presented_hash
         ),
     )
     if rt is None:
@@ -294,14 +341,38 @@ def refresh_access_token(
     if rt.client_id != client_id:
         raise OAuthError("invalid_grant", "client mismatch")
     if rt.revoked_at is not None or rt.rotated_to_hash is not None:
+        # Q12-L22-006 — OAuth 2.1 §6.1: replayed refresh token MUST trigger
+        # family revocation. Walk forward chain + bulk-revoke.
+        _revoke_refresh_family(db, presented_hash)
+        logger.warning(
+            "oauth_refresh_replay_blocked client_id=%s — family revoked", client_id
+        )
         raise OAuthError("invalid_grant", "refresh token already used")
     if rt.expires_at <= _now():
         raise OAuthError("invalid_grant", "refresh token expired")
 
     new_raw = secrets.token_urlsafe(48)
     new_hash = _hash_token(new_raw)
-    rt.rotated_to_hash = new_hash
-    db.add(rt)
+
+    # Q12-L22-006 — atomic rotation claim. Two concurrent refreshes with the
+    # same token race on read-then-write of rotated_to_hash; only one wins.
+    db.expire(rt, ["rotated_to_hash", "revoked_at"])
+    rotate_stmt = (
+        sa_update(OAuthRefreshToken)
+        .where(OAuthRefreshToken.token_hash == presented_hash)
+        .where(OAuthRefreshToken.rotated_to_hash.is_(None))
+        .where(OAuthRefreshToken.revoked_at.is_(None))
+        .values(rotated_to_hash=new_hash)
+    )
+    rotate_result = db.execute(rotate_stmt)
+    if (rotate_result.rowcount or 0) != 1:
+        db.rollback()
+        # Lost the race: treat as replay → revoke family.
+        _revoke_refresh_family(db, presented_hash)
+        logger.warning(
+            "oauth_refresh_race_blocked client_id=%s — family revoked", client_id
+        )
+        raise OAuthError("invalid_grant", "refresh token already used")
     db.add(
         OAuthRefreshToken(
             token_hash=new_hash,
@@ -314,6 +385,7 @@ def refresh_access_token(
         )
     )
     db.commit()
+    db.refresh(rt)
 
     extra = json.loads(rt.extra_claims_json or "{}")
     access, ttl = _mint_access_token(
