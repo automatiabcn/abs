@@ -76,12 +76,13 @@
 
 ## Loop status
 
-🚧 **Q12 Session 4 IN PROGRESS** — 29 round shipped (R26+R27+R28+R29 this session).
+✅ **Q12 Session 4 CLOSING CHECKPOINT** — 29 round shipped (R26+R27+R28+R29 this session, 5 atomic commits).
 **8 Q12 layers FULL CLEAN ⭐ (L17, L18, L19, L20, L22, L23, L24, L25)**.
 **L23 + L24 are 4/3 deep** (defense-in-depth beyond FULL CLEAN). L21 at 2/3, L26 at 1/3.
-Session 4 cumulative so far: 5 real bugs + 1 non-bug pin (Q12-L22-005/006 HIGH replay + Q12-L25-004 HIGH DoS + Q12-L25-005 MED DoS + Q12-L24-007 LOW PyJWT leak + Q12-L21-003 LOW exp-cap pin).
+Session 4 cumulative: 5 real bugs + 1 non-bug pin (Q12-L22-005/006 HIGH replay + Q12-L25-004 HIGH DoS + Q12-L25-005 MED DoS + Q12-L24-007 LOW PyJWT leak + Q12-L21-003 LOW exp-cap pin).
+**Backend pytest: 1611 PASS, 14 skipped** (Δ +32 from S3 1579, +84 from S2 1527).
 
-**Beklenen:** L21 destructive drill founder-gated; L26 sweep 2 (30dk Playwright + heap snapshot); mutmut L1 (app/cascade + app/api/auth).
+**Defer (Session 5 gündemi):** L26 sweep 2 (30dk Playwright + heap snapshot); mutmut L1 (app/cascade + app/api/auth); L21 destructive sweep 3 (founder-gated).
 
 **Test inventory baseline (Sprint 21'den devralındı):**
 - Backend pytest: 89 PASS
