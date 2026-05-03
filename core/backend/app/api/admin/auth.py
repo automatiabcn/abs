@@ -26,6 +26,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from app.config import settings
+from app.observability.audit import emit_event  # Q12-L23 sweep 4
 
 router = APIRouter(prefix="/v1/admin", tags=["admin"])
 logger = logging.getLogger(__name__)
@@ -156,6 +157,14 @@ def admin_required(
     """
     ip = _client_ip(request)
     if not _ip_allowed(ip):
+        emit_event(
+            request,
+            action="admin.auth.gate",
+            outcome="denied",
+            reason="ip_not_whitelisted",
+            status_code=403,
+            ip=ip,
+        )
         raise HTTPException(403, "admin_ip_not_whitelisted")
 
     token = ""
@@ -165,13 +174,40 @@ def admin_required(
         token = request.cookies.get(ADMIN_COOKIE, "")
 
     if token:
-        return verify_admin_jwt(token)
+        # Q12-L23 sweep 4 — wrap so JWT exp/invalid/scope denials emit audit.
+        try:
+            return verify_admin_jwt(token)
+        except HTTPException as exc:
+            emit_event(
+                request,
+                action="admin.auth.gate",
+                outcome="denied",
+                reason=str(exc.detail or "admin_jwt_rejected"),
+                status_code=exc.status_code,
+                ip=ip,
+            )
+            raise
 
     # CJ-010 — panel session fallback (single-admin self-host)
     panel = _try_panel_session(request)
     if panel:
+        emit_event(
+            request,
+            action="admin.auth.gate",
+            outcome="success",
+            reason="panel_session_fallback",
+            ip=ip,
+        )
         return panel
 
+    emit_event(
+        request,
+        action="admin.auth.gate",
+        outcome="denied",
+        reason="missing_bearer_and_cookie",
+        status_code=401,
+        ip=ip,
+    )
     raise HTTPException(401, "admin_bearer_or_cookie_required")
 
 
@@ -183,18 +219,50 @@ class LoginBody(BaseModel):
 async def admin_login(
     body: LoginBody, request: Request, response: Response
 ) -> dict:
-    if not settings.admin_password_hash:
-        raise HTTPException(503, "admin_login_disabled")
     ip = _client_ip(request)
+    if not settings.admin_password_hash:
+        emit_event(
+            request,
+            action="admin.login",
+            outcome="denied",
+            reason="login_disabled_no_password_hash",
+            status_code=503,
+            ip=ip,
+        )
+        raise HTTPException(503, "admin_login_disabled")
     if not _ip_allowed(ip):
+        emit_event(
+            request,
+            action="admin.login",
+            outcome="denied",
+            reason="ip_not_whitelisted",
+            status_code=403,
+            ip=ip,
+        )
         raise HTTPException(403, "admin_ip_not_whitelisted")
     if _too_many_failures(ip):
+        emit_event(
+            request,
+            action="admin.login",
+            outcome="denied",
+            reason="rate_limited",
+            status_code=429,
+            ip=ip,
+        )
         raise HTTPException(429, "admin_login_rate_limited")
 
     if not _verify_password(body.password, settings.admin_password_hash):
         _record_failure(ip)
         # CRITICAL: never log the submitted password
         logger.warning("admin login failed ip=%s", ip)
+        emit_event(
+            request,
+            action="admin.login",
+            outcome="failure",
+            reason="password_invalid",
+            status_code=401,
+            ip=ip,
+        )
         raise HTTPException(401, "admin_password_invalid")
 
     token, exp = _issue_jwt()
@@ -206,6 +274,12 @@ async def admin_login(
         samesite="strict",
         secure=(settings.env == "prod"),
         path="/",
+    )
+    emit_event(
+        request,
+        action="admin.login",
+        outcome="success",
+        ip=ip,
     )
     return {
         "token": token,

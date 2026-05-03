@@ -25,11 +25,12 @@ from pathlib import Path
 from typing import Any, Dict, Literal, Optional
 
 import bcrypt
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from app.config import settings
 from app.licensing import verify_license
+from app.observability.audit import emit_event  # Q12-L23 sweep 4
 
 router = APIRouter(prefix="/v1/setup", tags=["setup"])
 logger = logging.getLogger(__name__)
@@ -187,10 +188,40 @@ def _persist_env_var(key: str, value: str, env_path: Optional[str] = None) -> bo
     return True
 
 
-def _ensure_step(state: Dict[str, Any], expected: int) -> None:
+def _ensure_step(
+    state: Dict[str, Any],
+    expected: int,
+    request: Optional[Request] = None,
+    step_key: Optional[str] = None,
+) -> None:
+    """Q12-L23 sweep 4 — emit audit event before raising 409.
+
+    Operators need to know which wizard step a stalled install hung on
+    *before* they look at logs. Pre-fix, both branches raised silently
+    and the only signal was a 409 in the access log with no step
+    context, no current_step value, no actor (these endpoints have no
+    auth yet — the fix-onset moment of the system).
+    """
     if state.get("completed"):
+        emit_event(
+            request,
+            action="setup.step.gate",
+            outcome="denied",
+            reason="setup_already_completed",
+            resource_type=step_key or f"step_{expected}",
+            status_code=409,
+        )
         raise HTTPException(status_code=409, detail="Setup already completed")
     if state.get("current_step") != expected:
+        emit_event(
+            request,
+            action="setup.step.gate",
+            outcome="denied",
+            reason="step_not_active",
+            resource_type=step_key or f"step_{expected}",
+            status_code=409,
+            count=int(state.get("current_step") or 0),
+        )
         raise HTTPException(
             status_code=409,
             detail=f"This step is not active (current_step={state.get('current_step')})",
@@ -320,21 +351,34 @@ class SetupLangBody(BaseModel):
 
 
 @router.post("/lang", status_code=status.HTTP_200_OK)
-async def set_setup_lang(body: SetupLangBody) -> Dict[str, Any]:
+async def set_setup_lang(body: SetupLangBody, request: Request) -> Dict[str, Any]:
     if body.lang not in ("en", "tr", "es"):
+        emit_event(
+            request,
+            action="setup.lang.set",
+            outcome="denied",
+            reason="unsupported_language",
+            status_code=400,
+        )
         raise HTTPException(status_code=400, detail="Unsupported language")
     with _state_lock():  # Q12-L22-001
         state = read_state()
         state["lang"] = body.lang
         _atomic_write_state(state)
+    emit_event(
+        request,
+        action="setup.lang.set",
+        outcome="success",
+        resource_type=body.lang,
+    )
     return {"ok": True, "lang": body.lang}
 
 
 @router.post("/step/admin", status_code=status.HTTP_200_OK)
-async def step_admin(body: AdminBody) -> Dict[str, Any]:
+async def step_admin(body: AdminBody, request: Request) -> Dict[str, Any]:
     with _state_lock():  # Q12-L22-001
         state = read_state()
-        _ensure_step(state, 1)
+        _ensure_step(state, 1, request, "admin")
         pwd_hash = bcrypt.hashpw(body.password.encode("utf-8"), bcrypt.gensalt()).decode(
             "utf-8"
         )
@@ -349,17 +393,32 @@ async def step_admin(body: AdminBody) -> Dict[str, Any]:
         _persist_env_var("ABS_ADMIN_EMAIL", body.email)
         _advance(state, "admin")
         _atomic_write_state(state)
+    emit_event(
+        request,
+        action="setup.step.complete",
+        outcome="success",
+        resource_type="admin",
+        email_hint=(body.email or "")[:3],
+    )
     return {"ok": True, "current_step": state["current_step"]}
 
 
 @router.post("/step/license", status_code=status.HTTP_200_OK)
-async def step_license(body: LicenseBody) -> Dict[str, Any]:
+async def step_license(body: LicenseBody, request: Request) -> Dict[str, Any]:
     with _state_lock():  # Q12-L22-001
         state = read_state()
-        _ensure_step(state, 2)
+        _ensure_step(state, 2, request, "license")
         try:
             payload = verify_license(body.license_key)
         except HTTPException as exc:
+            emit_event(
+                request,
+                action="setup.step.license",
+                outcome="denied",
+                reason="license_invalid",
+                status_code=400,
+                error_class="HTTPException",
+            )
             raise HTTPException(
                 status_code=400, detail=f"Lisans gecersiz: {exc.detail}"
             ) from exc
@@ -373,16 +432,30 @@ async def step_license(body: LicenseBody) -> Dict[str, Any]:
         }
         _advance(state, "license")
         _atomic_write_state(state)
+    emit_event(
+        request,
+        action="setup.step.complete",
+        outcome="success",
+        resource_type="license",
+        provider=str(payload.get("tier") or ""),
+    )
     return {"ok": True, "current_step": state["current_step"], "tier": payload.get("tier")}
 
 
 @router.post("/step/domain", status_code=status.HTTP_200_OK)
-async def step_domain(body: DomainBody) -> Dict[str, Any]:
+async def step_domain(body: DomainBody, request: Request) -> Dict[str, Any]:
     with _state_lock():  # Q12-L22-001
         state = read_state()
-        _ensure_step(state, 3)
+        _ensure_step(state, 3, request, "domain")
         if body.mode == "domain":
             if not body.domain or not _DOMAIN_RE.match(body.domain):
+                emit_event(
+                    request,
+                    action="setup.step.domain",
+                    outcome="denied",
+                    reason="domain_invalid",
+                    status_code=400,
+                )
                 raise HTTPException(status_code=400, detail="Domain formati gecersiz")
             settings.domain = body.domain
             _persist_env_var("ABS_DOMAIN", body.domain)
@@ -395,14 +468,21 @@ async def step_domain(body: DomainBody) -> Dict[str, Any]:
         }
         _advance(state, "domain")
         _atomic_write_state(state)
+    emit_event(
+        request,
+        action="setup.step.complete",
+        outcome="success",
+        resource_type="domain",
+        provider=body.ssl_mode,
+    )
     return {"ok": True, "current_step": state["current_step"]}
 
 
 @router.post("/step/anthropic", status_code=status.HTTP_200_OK)
-async def step_anthropic(body: AnthropicBody) -> Dict[str, Any]:
+async def step_anthropic(body: AnthropicBody, request: Request) -> Dict[str, Any]:
     with _state_lock():  # Q12-L22-001
         state = read_state()
-        _ensure_step(state, 4)
+        _ensure_step(state, 4, request, "anthropic")
         if body.skip_paid_providers:
             # CJ-004 — free-tier akis: Anthropic atla, paid_skipped flag set.
             state["data"]["anthropic_configured"] = False
@@ -416,6 +496,13 @@ async def step_anthropic(body: AnthropicBody) -> Dict[str, Any]:
             state["data"]["paid_skipped"] = False
         _advance(state, "anthropic")
         _atomic_write_state(state)
+    emit_event(
+        request,
+        action="setup.step.complete",
+        outcome="success",
+        resource_type="anthropic",
+        provider="skipped" if body.skip_paid_providers else "configured",
+    )
     return {
         "ok": True,
         "current_step": state["current_step"],
@@ -424,10 +511,10 @@ async def step_anthropic(body: AnthropicBody) -> Dict[str, Any]:
 
 
 @router.post("/step/providers", status_code=status.HTTP_200_OK)
-async def step_providers(body: ProvidersBody) -> Dict[str, Any]:
+async def step_providers(body: ProvidersBody, request: Request) -> Dict[str, Any]:
     with _state_lock():  # Q12-L22-001
         state = read_state()
-        _ensure_step(state, 5)
+        _ensure_step(state, 5, request, "providers")
         configured: list[str] = []
         provider_fields = (
             "groq_api_key",
@@ -446,6 +533,13 @@ async def step_providers(body: ProvidersBody) -> Dict[str, Any]:
         state["data"]["providers_configured"] = configured
         _advance(state, "providers")
         _atomic_write_state(state)
+    emit_event(
+        request,
+        action="setup.step.complete",
+        outcome="success",
+        resource_type="providers",
+        count=len(configured),
+    )
     return {"ok": True, "current_step": state["current_step"], "configured": configured}
 
 
@@ -466,10 +560,10 @@ async def _run_provider_tests() -> Dict[str, Any]:
 
 
 @router.post("/step/test", status_code=status.HTTP_200_OK)
-async def step_test() -> Dict[str, Any]:
+async def step_test(request: Request) -> Dict[str, Any]:
     with _state_lock():  # Q12-L22-001
         state = read_state()
-        _ensure_step(state, 6)
+        _ensure_step(state, 6, request, "test")
         test_results = await _run_provider_tests()
         state["data"]["test_results"] = test_results
         if "test" not in state["completed_steps"]:
@@ -477,6 +571,13 @@ async def step_test() -> Dict[str, Any]:
         state["completed"] = True
         state["completed_at"] = time.time()
         _atomic_write_state(state)
+    emit_event(
+        request,
+        action="setup.wizard.completed",
+        outcome="success",
+        resource_type="setup_wizard",
+        count=len(test_results),
+    )
     return {
         "ok": True,
         "completed": True,
@@ -486,9 +587,17 @@ async def step_test() -> Dict[str, Any]:
 
 
 @router.post("/reset", status_code=status.HTTP_200_OK)
-async def reset_setup() -> Dict[str, Any]:
+async def reset_setup(request: Request) -> Dict[str, Any]:
     """Dev-only — `settings.env=='dev'` ise state sil + admin credentials sil."""
     if settings.env != "dev":
+        emit_event(
+            request,
+            action="setup.reset",
+            outcome="denied",
+            reason="non_dev_env",
+            status_code=403,
+            provider=settings.env or "unknown",
+        )
         raise HTTPException(status_code=403, detail="Reset sadece dev ortaminda mumkun")
     p = setup_state_path()
     cred = admin_credentials_path()
@@ -496,4 +605,10 @@ async def reset_setup() -> Dict[str, Any]:
         p.unlink()
     if cred.is_file():
         cred.unlink()
+    emit_event(
+        request,
+        action="setup.reset",
+        outcome="success",
+        resource_type="setup_state",
+    )
     return {"ok": True, "reset": True}
