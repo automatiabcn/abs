@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import FileResponse
 from pathlib import Path
 from pydantic import BaseModel
@@ -27,6 +27,7 @@ from sqlmodel import Session, select
 from app.config import settings
 from app.db.models import OAuthState
 from app.db.session import get_engine
+from app.observability.audit import emit_event  # Q12-L23 sweep 4
 from app.smart_link.provider_validators import VALIDATORS, validate as validate_provider
 from app.smart_link.vault_secrets import (
     decrypt_secret,
@@ -95,11 +96,27 @@ _SUPPORTED_PROVIDERS = [
 _STATE_TTL = timedelta(minutes=10)
 
 
-def _check_admin(authorization: Optional[str]) -> None:
+def _check_admin(
+    authorization: Optional[str], request: Optional[Request] = None
+) -> None:
     if not authorization or not authorization.lower().startswith("bearer "):
+        emit_event(
+            request,
+            action="smart_link.admin.gate",
+            outcome="denied",
+            reason="missing_bearer",
+            status_code=401,
+        )
         raise HTTPException(401, "Authorization header missing")
     token = authorization.split(None, 1)[1].strip()
     if not settings.admin_token or token != settings.admin_token:
+        emit_event(
+            request,
+            action="smart_link.admin.gate",
+            outcome="denied",
+            reason="admin_token_invalid",
+            status_code=403,
+        )
         raise HTTPException(403, "Invalid admin token")
 
 
@@ -193,9 +210,19 @@ async def github_authorize(body: GithubAuthorizeRequest) -> GithubAuthorizeRespo
 
 
 @router.get("/github/callback")
-async def github_callback(code: str, state: str) -> dict:
+async def github_callback(code: str, state: str, request: Request) -> dict:
     redirect = _consume_state(state, "github")
     if redirect is None:
+        # Q12-L23 sweep 4 — emit BEFORE raising. Replayed/forged/expired
+        # OAuth state is *exactly* the kind of probe ops needs to see.
+        emit_event(
+            request,
+            action="smart_link.github.callback",
+            outcome="denied",
+            reason="state_invalid_or_expired",
+            status_code=400,
+            provider="github",
+        )
         raise HTTPException(400, "Invalid or expired state")
 
     # Real flow POSTs to GitHub /login/oauth/access_token. Tests monkeypatch httpx.
@@ -230,6 +257,20 @@ async def github_callback(code: str, state: str) -> dict:
         update_validation_status(
             key_name="github_oauth_token", ok=True, error=None
         )
+        emit_event(
+            request,
+            action="smart_link.github.callback",
+            outcome="success",
+            provider="github",
+        )
+    else:
+        emit_event(
+            request,
+            action="smart_link.github.callback",
+            outcome="failure",
+            reason="token_exchange_failed",
+            provider="github",
+        )
 
     return {
         "ok": token is not None,
@@ -242,35 +283,84 @@ async def github_callback(code: str, state: str) -> dict:
 
 
 @router.post("/github/refresh")
-async def github_refresh(authorization: Optional[str] = Header(default=None)) -> dict:
-    _check_admin(authorization)
+async def github_refresh(
+    request: Request, authorization: Optional[str] = Header(default=None)
+) -> dict:
+    _check_admin(authorization, request)
     current = decrypt_secret("github_oauth_token")
     if current is None:
+        emit_event(
+            request,
+            action="smart_link.github.refresh",
+            outcome="denied",
+            reason="no_token_stored",
+            status_code=404,
+            provider="github",
+        )
         raise HTTPException(404, "No GitHub token stored")
     rotate_secret(
         key_name="github_oauth_token", provider="github", new_value=current
+    )
+    emit_event(
+        request,
+        action="smart_link.github.refresh",
+        outcome="success",
+        provider="github",
     )
     return {"ok": True, "provider": "github", "rotated": True}
 
 
 @router.delete("/github")
-async def github_revoke(authorization: Optional[str] = Header(default=None)) -> dict:
-    _check_admin(authorization)
+async def github_revoke(
+    request: Request, authorization: Optional[str] = Header(default=None)
+) -> dict:
+    _check_admin(authorization, request)
     deleted = delete_secret("github_oauth_token")
+    emit_event(
+        request,
+        action="smart_link.github.revoke",
+        outcome="success",
+        provider="github",
+        count=int(bool(deleted)),
+    )
     return {"ok": True, "deleted": deleted}
 
 
 @router.post("/api-key", response_model=ApiKeyStoreResponse)
-async def store_api_key(body: ApiKeyStoreRequest) -> ApiKeyStoreResponse:
+async def store_api_key(body: ApiKeyStoreRequest, request: Request) -> ApiKeyStoreResponse:
     valid_ids = {p["id"] for p in _SUPPORTED_PROVIDERS}
     if body.provider not in valid_ids:
+        emit_event(
+            request,
+            action="smart_link.api_key.store",
+            outcome="denied",
+            reason="unsupported_provider",
+            status_code=400,
+            provider=str(body.provider)[:32],
+        )
         raise HTTPException(400, f"Unsupported provider: {body.provider}")
     if not body.api_key or len(body.api_key) < 8:
+        emit_event(
+            request,
+            action="smart_link.api_key.store",
+            outcome="denied",
+            reason="api_key_too_short",
+            status_code=400,
+            provider=body.provider,
+        )
         raise HTTPException(400, "API key too short")
 
     if body.provider in VALIDATORS:
         result = validate_provider(body.provider, body.api_key)
         if not result["ok"]:
+            emit_event(
+                request,
+                action="smart_link.api_key.store",
+                outcome="denied",
+                reason="provider_validation_failed",
+                status_code=422,
+                provider=body.provider,
+            )
             raise HTTPException(
                 422, f"Provider validation failed: {result.get('error')}"
             )
@@ -283,6 +373,13 @@ async def store_api_key(body: ApiKeyStoreRequest) -> ApiKeyStoreResponse:
     key_name = f"{body.provider}_api_key"
     encrypt_secret(key_name=key_name, provider=body.provider, value=body.api_key)
     update_validation_status(key_name=key_name, ok=True, error=None)
+    emit_event(
+        request,
+        action="smart_link.api_key.store",
+        outcome="success",
+        provider=body.provider,
+        duration_ms=latency,
+    )
     return ApiKeyStoreResponse(
         ok=True,
         provider=body.provider,
@@ -293,8 +390,10 @@ async def store_api_key(body: ApiKeyStoreRequest) -> ApiKeyStoreResponse:
 
 
 @router.get("/connected-services")
-async def connected_services(authorization: Optional[str] = Header(default=None)) -> dict:
-    _check_admin(authorization)
+async def connected_services(
+    request: Request, authorization: Optional[str] = Header(default=None)
+) -> dict:
+    _check_admin(authorization, request)
     secrets_list = list_secrets()
     return {
         "providers": _SUPPORTED_PROVIDERS,
