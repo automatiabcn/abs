@@ -31,10 +31,10 @@
 | **L19** | **Q12 NEW** | **3/3 ⭐** | backwards compat **FULL CLEAN** (R4 + R6 + R7 11/11 PASS) |
 | **L20** | **Q12 NEW** | **3/3 ⭐** | chaos engineering **FULL CLEAN** (R5 + R6 + R10 redirect:"error" fix → 5/5 PASS) |
 | **L21** | **Q12 NEW** | **1/3** | fresh-deploy safe drill — full alembic chain + head↔base reversibility + 6-step wizard E2E (3/3 PASS) |
-| **L22** | **Q12 NEW S2** | **1/3** | race condition deep — Q12-L22-001 (HIGH setup wizard TOCTOU) shipped (4/4 PASS, pre-fix race proven via git stash) |
-| **L23** | **Q12 NEW S2** | **3/3 ⭐** | observability — auth.py (9/9) + me_account.py 11 paths (6/6) + me_data_export.py 10 paths (4/4) = 19/19 across 3 sweeps. FULL CLEAN |
-| **L24** | **Q12 NEW S2** | **1/3** | secret/sensitive leakage — Q12-L24-001 (HIGH magic_token log leak) + Q12-L24-002 (MED Stripe str(exc) leak) shipped (5/5 PASS) |
-| **L25** | **Q12 NEW S2** | **1/3** | boundary payload — Q12-L25-001 (HIGH marketplace InstallBody DoS + path traversal + shell metachar) shipped (14/14 PASS, 3/4 fail pre-fix proven) |
+| **L22** | **Q12 NEW S2** | **2/3** | race condition deep — sweep 1 (R15) setup wizard TOCTOU + sweep 2 (R23) vault rotate concurrent-race + Q12-L22-003 leak fix + audit (14/14 PASS) |
+| **L23** | **Q12 NEW S3** | **4/3 ⭐ deep** | observability — sweep 1+2+3 = FULL CLEAN; sweep 4 (R20+R21) closes Founder-verified 31 silent raise sites with 46 emit_event across setup/admin/auth/smart_link/beta_admin (41/41 PASS) |
+| **L24** | **Q12 NEW S3** | **3/3 ⭐** | secret/sensitive leakage FULL CLEAN — sweep 1 (R14) + sweep 2 (R22) + sweep 3 (R25) me_consent + me_audit + secrets/rotate (Q12-L24-005/006 MED). 6 Q12 layers FULL CLEAN total. |
+| **L25** | **Q12 NEW S3** | **2/3** | boundary payload — sweep 1 (R17) marketplace InstallBody; sweep 2 (R24) workflow execute UNBOUNDED nodes/edges (Q12-L25-002) + chat completions UNBOUNDED messages (Q12-L25-003), both HIGH DoS (23/23 PASS) |
 | **L26** | **Q12 NEW S2** | **1/3** | JWT lifecycle hardening — typed exceptions + /me audit + 9 tests (1503 full suite PASS) |
 
 ---
@@ -60,17 +60,24 @@
 | 16 | L26 | Q12-L26-001 (LOW observability fragility) — Round 13 used `"süresi" in detail` i18n string check for audit reason; locale drift would silently misroute. Fix: typed `_SessionExpired`/`_SessionInvalid` exceptions + /me audit emission + 9 tests (5 parametrize past-exp + tampered + garbled + missing-cookie hygiene + OAuth refresh single-use). **1503 full suite PASS** | 02c7a80 | ✅ ship |
 | 17 | L25 | Q12-L25-001 (HIGH security + DoS) — marketplace InstallBody plugin_id + tenant UNBOUNDED (1 MB+ DoS, path traversal, shell metachar). Fix: Pydantic Field max_length + alphanum pattern + 14 tests (4 marketplace HTTP + 5 RAG Pydantic-direct + 3 workflow synth + 2 workflow execute graceful). 3/4 marketplace test FAIL pre-fix (proven via git stash). **1517 full suite PASS** | d02665d | ✅ ship |
 | 18 | L23 sweep 2 | me_account.py 11/11 silent paths → emit_event coverage (auth + delete_token + delete_confirm + delete_cancel). Side-fix: Q12-L24 follow-up `f"License verify failed: {exc}"` → generic `license_verify_failed` to prevent PyJWT internals leakage. 6/6 new tests + 4 GDPR pre-existing tests preserved. **1523 full suite PASS** | fdecc8e | ✅ ship |
-| 19 | L23 sweep 3 → ⭐ | me_data_export.py 10/10 silent paths → emit_event (auth + status + download). Same str(exc) leak fix. 4/4 new tests + 7 GDPR pre-existing tests preserved. **L23 → 3/3 FULL CLEAN ⭐** (5 Q12 layers FULL CLEAN total). **1527 full suite PASS** | _pending atomic_ | 🚧 |
+| 19 | L23 sweep 3 → ⭐ | me_data_export.py 10/10 silent paths → emit_event (auth + status + download). Same str(exc) leak fix. 4/4 new tests + 7 GDPR pre-existing tests preserved. **L23 → 3/3 FULL CLEAN ⭐** (5 Q12 layers FULL CLEAN total). **1527 full suite PASS** | 66610b0 | ✅ ship |
+| 20 | L23 sweep 4a | setup.py + admin/auth.py 17 raise sites → 23 emit_event (gate denial taxonomy + success-side audits). admin login submit-password redacted from audit ctx. **13/13 new + 1540 full suite PASS (Δ +13)** | eae43b8 | ✅ ship |
+| 21 | L23 sweep 4b → 4/3 deep | smart_link.py + beta_admin.py 14 raise sites → 23 emit_event. Surfaced + fixed Q12-L22-detach (DetachedInstanceError on row.email post-commit; pre-existing latent bug also affecting beta email sequence + Discord). **28/28 new + 1550 full suite PASS (Δ +10)** | e5e6613 | ✅ ship |
+| 22 | L24 sweep 2 | Q12-L24-003 (MED) Slack webhook leaks reason taxonomy to client; Q12-L24-004 (LOW) all 3 webhook receivers silent in audit. Fix: emit_event + generic responses + error_class taxonomy. **13/13 PASS** | 6d6a82a | ✅ ship |
+| 23 | L22 sweep 2 | Q12-L22-002 (HIGH data corruption) Vault rotate has no concurrent guard → audit-vs-disk divergence; Q12-L22-003 (MED) RotationError str(exc) leak; Q12-L22-004 (LOW) audit silence. Fix: fcntl.LOCK_EX + RotationBusyError 409. **14/14 PASS** | ed8316f | ✅ ship |
+| 24 | L25 sweep 2 | Q12-L25-002 (HIGH DoS) workflow execute UNBOUNDED nodes/edges; Q12-L25-003 (HIGH DoS) chat completions UNBOUNDED messages list. Fix: model_validator caps + Field max_length=200. **23/23 PASS** (broke Q10-L1 contract, fixed in R25). | a44a8a0 | ✅ ship |
+| 25 | L24 sweep 3 → ⭐ | Q12-L24-005 (MED) me_consent + me_audit duplicate License-verify leak; Q12-L24-006 (MED) secrets/rotate sops stderr leak. Fix: generic responses + emit_event taxonomy. **L24 → 3/3 FULL CLEAN ⭐** (6 Q12 layers FULL CLEAN). Plus Q12-L25-003 R24 contract regression-fix (drop `min_length=1`). **53/53 PASS** | f415b76 | ✅ ship |
 
 ---
 
 ## Loop status
 
-🚧 **Q12 IN PROGRESS** — 12 round shipped. **L17 + L18 + L19 + L20 FULL CLEAN ⭐⭐⭐⭐ + L21 1/3 (safe drill başlangıç)** = 5/5 Q12 yeni layer en az 1/3'te.
-Founder destructive drill (volume wipe + Caddy + Docker rebuild) hala gated; safe in-process drill ~85% risk surface kapsadı.
-Sıradaki: inherited Q10/Q11 16-layer 3rd-sweep rotation (mutation, visual refresh, deep fuzz) veya L21 round +X PostgreSQL backend variant.
+🚧 **Q12 Session 3 IN PROGRESS** — 25 round shipped (R20-R25 = 6 atomic commits this session).
+**6 Q12 layers FULL CLEAN ⭐ (L17, L18, L19, L20, L23, L24)**.
+L22 / L25 each at 2/3, L21 / L26 at 1/3.
+Session 3 cumulative: 9 new real bugs surfaced + fixed (L23-002/003 advancements, L22-002/003/004, L24-003/004/005/006, L25-002/003) + 1 latent DetachedInstance bug + 1 R24 contract regression fixed inline.
 
-**Beklenen:** L17/L20/L21'den 5–15 yeni gerçek bulgu.
+**Beklenen:** L21 destructive drill founder-gated; L22 sweep 3 (OAuth client_id race + Inngest worker idempotency); L25 sweep 3 (RAG ingest batch DoS); L26 sweep 2 (30dk Playwright); inherited mutation testing.
 
 **Test inventory baseline (Sprint 21'den devralındı):**
 - Backend pytest: 89 PASS
