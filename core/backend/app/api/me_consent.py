@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel
 
 from app.customer_audit.consent import (
@@ -21,23 +21,58 @@ from app.customer_audit.consent import (
 )
 from app.customer_audit.logger import log_customer_action
 from app.licensing import verify_license
+from app.observability.audit import emit_event  # Q12-L24 sweep 3
 
 router = APIRouter(prefix="/v1/me", tags=["me"])
 logger = logging.getLogger(__name__)
 
 
-def _verify_bearer_license(authorization: Optional[str]) -> str:
+def _verify_bearer_license(
+    authorization: Optional[str], request: Optional[Request] = None
+) -> str:
     if not authorization or not authorization.lower().startswith("bearer "):
+        emit_event(
+            request,
+            action="me.consent.auth",
+            outcome="denied",
+            reason="missing_bearer",
+            status_code=401,
+        )
         raise HTTPException(401, "Authorization Bearer license required")
     token = authorization.split(None, 1)[1].strip()
     try:
         payload = verify_license(token)
     except HTTPException:
+        emit_event(
+            request,
+            action="me.consent.auth",
+            outcome="denied",
+            reason="license_invalid",
+            status_code=401,
+        )
         raise
     except Exception as exc:
-        raise HTTPException(401, f"License verify failed: {exc}") from exc
+        # Q12-L24 sweep 3 — pre-fix the response body included the
+        # PyJWT exc text (matches R18/R19 me_account / me_data_export
+        # leak family). Generic detail; error_class to audit only.
+        emit_event(
+            request,
+            action="me.consent.auth",
+            outcome="error",
+            reason="license_verify_exception",
+            status_code=401,
+            error_class=type(exc).__name__,
+        )
+        raise HTTPException(401, "license_verify_failed") from exc
     jti = payload.get("jti")
     if not jti:
+        emit_event(
+            request,
+            action="me.consent.auth",
+            outcome="denied",
+            reason="missing_jti",
+            status_code=401,
+        )
         raise HTTPException(401, "Token missing jti")
     return jti
 
@@ -50,18 +85,20 @@ class GrantBody(BaseModel):
 
 @router.get("/consents")
 async def get_consents(
+    request: Request,
     authorization: Optional[str] = Header(default=None),
 ) -> dict:
-    jti = _verify_bearer_license(authorization)
+    jti = _verify_bearer_license(authorization, request)
     return {"license_jti": jti, "consents": list_consents(license_jti=jti)}
 
 
 @router.post("/consents")
 async def post_consent(
     body: GrantBody,
+    request: Request,
     authorization: Optional[str] = Header(default=None),
 ) -> dict:
-    jti = _verify_bearer_license(authorization)
+    jti = _verify_bearer_license(authorization, request)
     if body.consent_type not in CONSENT_TYPES:
         raise HTTPException(400, f"unknown consent_type: {body.consent_type}")
     row = grant_consent(
@@ -87,9 +124,10 @@ async def post_consent(
 @router.delete("/consents/{consent_type}")
 async def delete_consent(
     consent_type: str,
+    request: Request,
     authorization: Optional[str] = Header(default=None),
 ) -> dict:
-    jti = _verify_bearer_license(authorization)
+    jti = _verify_bearer_license(authorization, request)
     if consent_type not in CONSENT_TYPES:
         raise HTTPException(400, f"unknown consent_type: {consent_type}")
     row = withdraw_consent(license_jti=jti, consent_type=consent_type)
