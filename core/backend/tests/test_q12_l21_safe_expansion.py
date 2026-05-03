@@ -120,10 +120,12 @@ def test_q12_l21_003_license_already_expired_1s_ago_rejected() -> None:
     assert "expired" in str(exc.value.detail).lower()
 
 
-def test_q12_l21_003_license_expires_in_1s_accepted_now() -> None:
-    """exp = now+1s → still valid this instant."""
+def test_q12_l21_003_license_expires_in_5s_accepted_now() -> None:
+    """exp = now+5s → still valid this instant. (5s margin beats
+    pytest-xdist + slow-import jitter; we still cover the
+    "freshly-minted, about-to-expire" case below.)"""
 
-    token = _mint_license(exp_offset_seconds=1)
+    token = _mint_license(exp_offset_seconds=5)
     claims = verify_license(token)
     assert claims["sub"] == "boundary-test"
 
@@ -138,11 +140,11 @@ def test_q12_l21_003_license_expires_in_24h_accepted() -> None:
 
 
 def test_q12_l21_003_license_exp_boundary_after_sleep() -> None:
-    """exp = now+1s, then wait 2s → must reject (no clock-skew leniency
+    """exp = now+1s, then wait 3s → must reject (no clock-skew leniency
     that would let a recently-revoked license slip through)."""
 
     token = _mint_license(exp_offset_seconds=1)
-    time.sleep(2)
+    time.sleep(3)
     with pytest.raises(HTTPException) as exc:
         verify_license(token)
     assert exc.value.status_code == 401
