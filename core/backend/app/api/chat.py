@@ -58,8 +58,13 @@ class ChatCompletionsRequest(BaseModel):
     # before any handler logic ran. Cap mirrors the OpenAI/Anthropic
     # message-window practical max (claude.ai persists ≈100 turns + system
     # before compaction); 200 leaves room for tool-augmented chains.
+    #
+    # NOTE: no `min_length` — the empty-list rejection is owned by the
+    # handler (`if not body.messages: raise 400 messages_required`) so
+    # the Q10-L1 contract ("400 messages_required") stays intact rather
+    # than becoming a 422 Pydantic error.
     session_id: Optional[int] = None
-    messages: List[ChatMessageIn] = Field(..., min_length=1, max_length=200)
+    messages: List[ChatMessageIn] = Field(..., max_length=200)
     stream: bool = True
 
 

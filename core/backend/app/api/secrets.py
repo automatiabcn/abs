@@ -9,10 +9,11 @@ from __future__ import annotations
 import time
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.api.auth import current_admin
+from app.observability.audit import emit_event  # Q12-L24 sweep 3
 
 router = APIRouter(prefix="/v1/secrets", tags=["secrets"])
 
@@ -24,7 +25,9 @@ class RotateRequest(BaseModel):
 
 @router.post("/rotate")
 async def rotate_secret(
-    body: RotateRequest, _admin: dict = Depends(current_admin)
+    body: RotateRequest,
+    request: Request,
+    _admin: dict = Depends(current_admin),
 ) -> Dict[str, Any]:
     from app.vault.audit import log_event
     from app.vault.cache import invalidate, known_keys
@@ -36,15 +39,49 @@ async def rotate_secret(
     )
 
     if not sops_available() or not master_key_exists():
+        emit_event(
+            request,
+            action="secrets.rotate",
+            outcome="denied",
+            reason="vault_not_configured",
+            status_code=503,
+            provider="vault",
+        )
         raise HTTPException(status_code=503, detail="Vault yapilandirilmadi")
     if body.key not in known_keys():
+        emit_event(
+            request,
+            action="secrets.rotate",
+            outcome="denied",
+            reason="unknown_key",
+            status_code=400,
+            provider="vault",
+        )
         raise HTTPException(status_code=400, detail=f"Bilinmeyen key: {body.key}")
     try:
         write_secret(body.key, body.new_value)
     except VaultError as exc:
-        raise HTTPException(status_code=500, detail=f"Vault yazma hatasi: {exc}") from exc
+        # Q12-L24 sweep 3 — pre-fix `f"Vault yazma hatasi: {exc}"`
+        # leaked sops/age stderr (file paths, key fingerprints,
+        # subprocess details). Generic detail; error_class to audit only.
+        emit_event(
+            request,
+            action="secrets.rotate",
+            outcome="error",
+            reason="vault_write_failed",
+            status_code=500,
+            provider="vault",
+            error_class=type(exc).__name__,
+        )
+        raise HTTPException(status_code=500, detail="vault_write_failed") from exc
     log_event("rotate", body.key, source="panel_api")
     invalidate()
+    emit_event(
+        request,
+        action="secrets.rotate",
+        outcome="success",
+        provider="vault",
+    )
     return {"status": "ok", "key": body.key, "rotated_at": time.time()}
 
 

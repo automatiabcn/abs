@@ -176,14 +176,12 @@ class TestQ12L25Sweep2ChatMessages:
         # Pydantic V2 phrasing: "List should have at most 200 items"
         assert "at most 200" in msg or "max_length" in msg
 
-    def test_messages_empty_rejected(self) -> None:
-        from pydantic import ValidationError
-
-        with pytest.raises(ValidationError) as exc_info:
-            chat_mod.ChatCompletionsRequest(messages=[])
-        assert "at least 1" in str(exc_info.value) or "min_length" in str(
-            exc_info.value
-        )
+    def test_messages_empty_passes_pydantic_handler_owns_400(self) -> None:
+        """Empty list passes Pydantic — the handler returns 400
+        messages_required (preserves the inherited Q10-L1 contract).
+        Pydantic only protects against the upper-bound DoS."""
+        body = chat_mod.ChatCompletionsRequest(messages=[])
+        assert body.messages == []
 
     def test_chat_completions_201_message_returns_422_at_api(
         self, auth_client: TestClient
