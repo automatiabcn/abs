@@ -30,7 +30,7 @@
 | **L18** | **Q12 NEW** | **3/3 ⭐** | cold-cache **FULL CLEAN** (R3 + R6 + R9 CDP throttle 12/12 PASS) |
 | **L19** | **Q12 NEW** | **3/3 ⭐** | backwards compat **FULL CLEAN** (R4 + R6 + R7 11/11 PASS) |
 | **L20** | **Q12 NEW** | **3/3 ⭐** | chaos engineering **FULL CLEAN** (R5 + R6 + R10 redirect:"error" fix → 5/5 PASS) |
-| **L21** | **Q12 NEW S4** | **2/3** | fresh-deploy safe drill — sweep 1 (R12) full alembic chain + 6-step wizard; sweep 2 (R28) **10× roundtrip + JWT boundary edges + tamper matrix** (11/11 PASS); sweep 3 destructive founder-gated |
+| **L21** | **Q12 NEW S5** | **3/3 ⭐ spec** | fresh-deploy safe drill — sweep 1 (R12) alembic chain + 6-step wizard; sweep 2 (R28) 10× roundtrip + JWT boundary + tamper matrix; sweep 3 (R34) **destructive drill spec** `scripts/chaos/destructive_drill.sh` (founder-gated `ABS_DESTRUCTIVE_DRILL=1`, default-SKIP, live-namespace refusal, 7-step bootstrap incl. R27 BodySizeLimit live proof). 7/7 spec tests PASS. |
 | **L22** | **Q12 NEW S4** | **3/3 ⭐** | race condition deep FULL CLEAN — sweep 1 (R15) setup wizard TOCTOU + sweep 2 (R23) vault rotate + sweep 3 (R26) OAuth atomic single-use + §6.1 family revoke (Q12-L22-005/006 HIGH replay) (10/10 PASS) |
 | **L23** | **Q12 NEW S3** | **4/3 ⭐ deep** | observability — sweep 1+2+3 = FULL CLEAN; sweep 4 (R20+R21) closes Founder-verified 31 silent raise sites with 46 emit_event across setup/admin/auth/smart_link/beta_admin (41/41 PASS) |
 | **L24** | **Q12 NEW S4** | **4/3 ⭐ deep** | secret/sensitive leakage FULL CLEAN + deep — sweeps 1–3 (R14/R22/R25) all fixed; sweep 4 (R29) closes verifier.py PyJWTError catch-all str(exc) (Q12-L24-007 LOW, last passive sibling). |
@@ -74,18 +74,19 @@
 | 30 | L26 sweep 2 | Long-running session regression guard. Ship `q12-l26-long-running.spec.ts` (Playwright): 90s idle heap-drift smoke (drift < 25 MB, post-idle endpoint ≠ 5xx) + 30-min gated long (`LONG_RUNNING_PLAYWRIGHT=1`, 5 intermediate snapshots, drift < 50 MB) + cookie persistence across navigations. Smoke catches the same leak class at 1/20 the runtime. **L26 → 2/3**. **2 passed, 1 skipped (gated)** in 1.6 min. Heap drift over 90s = 0.00 MB; post_idle_status=401 (auth path, no 5xx). | 7ff6d3a | ✅ ship |
 | 31 | R26 mutation-floor pinning | Pivot from full mutmut runtime (estimated 16–24 min/pass on oauth/server.py): ship 6 focused boundary tests that explicitly kill the high-yield mutation classes — `values(used_at=None)` silent re-allow, drop `is_(None)` predicate (re-claim), flip `cursor not in chain` cycle guard (no-op walk), drop `revoked_at IS NULL` filter (over-revoke), OAuthError code swap, mid-chain replay walking direction. Plus negative-control test that proves IS-NULL predicate is load-bearing. Hygiene lesson learned: mutmut partial-kill leaves source file in mutated state (`XXinvalid_grantXX` artifact). **16/16 PASS** (6 new + 10 R26 regression). | db2f187 | ✅ ship |
 | 32 | L20 round 4 deep | Multi-failure simultaneous chaos via Playwright `page.route()` triple-injection. **Q12-L20-003 (MED UX)** — chat page hangs at "Yükleniyor…" under multi-503 cascade (sessions list 503 blocks chat-error-tile mount); page snapshot captured. 3 scenarios shipped: scenario 6 (3× 503 cascade) `test.fail()`, scenario 7 (429+503+abort mix) `test.fail()`, scenario 8 (total /v1/* outage → still navigable to /panel) ✅ PASS. R5 documented-fail precedent. L20 stays 3/3 ⭐ (round 4 is deep, not counter bump). Fix tracked for Sprint 22 frontend resilience pass. **3 passed (25.4s)** in Chromium. | 870b3b4 | ✅ ship |
-| 33 | L19 deep — S4 regression pin | Append 3 new test classes to `test_q12_l19_backwards_compat.py` pinning R26/R27/R29 fixes: (a) Q12-L22-005/006 OAuth atomic predicates + replay 4xx live, (b) Q12-L25-004 BodySizeLimitMiddleware install + 6MB → 413 live, (c) Q12-L24-007 verifier `license_verify_failed` generic detail + `license_verify_pyjwt_error` taxonomy + reverse pin (the pre-fix f-string MUST NOT come back). Source-grep + live-HTTP tests in tandem (a present predicate that never runs is as bad as an absent one — R32 lesson). L19 stays 3/3 ⭐ (deep). **17/17 PASS** (8 prior + 9 new assertions across 6 methods). | (this round) | ✅ ship |
+| 33 | L19 deep — S4 regression pin | Append 3 new test classes to `test_q12_l19_backwards_compat.py` pinning R26/R27/R29 fixes: (a) Q12-L22-005/006 OAuth atomic predicates + replay 4xx live, (b) Q12-L25-004 BodySizeLimitMiddleware install + 6MB → 413 live, (c) Q12-L24-007 verifier `license_verify_failed` generic detail + `license_verify_pyjwt_error` taxonomy + reverse pin (the pre-fix f-string MUST NOT come back). Source-grep + live-HTTP tests in tandem (a present predicate that never runs is as bad as an absent one — R32 lesson). L19 stays 3/3 ⭐ (deep). **17/17 PASS** (8 prior + 9 new assertions across 6 methods). | 264b49c | ✅ ship |
+| 34 | L21 sweep 3 spec | Ship `scripts/chaos/destructive_drill.sh` (founder-gated, `ABS_DESTRUCTIVE_DRILL=1` default-SKIP) — 7-step destructive fresh-deploy drill against isolated compose namespace (default `q12-l21-drill` on port 28000). Safety guards: default-skip with informative message, `ABS_DRILL_PROJECT` live-namespace refusal (exit 3 for `infra`/`abs-cj`), drill-namespaced data dir, knobs for project name + port + iteration count. Step 7 exercises live R27 BodySizeLimit (60 MB → 413). 7/7 spec tests PASS without invoking the destructive path. **L21 → 3/3 ⭐ spec** (live execution stays a founder-run gate). | (this round) | ✅ ship |
 
 ---
 
 ## Loop status
 
-🚧 **Q12 Session 5 IN PROGRESS** — 33 round shipped (R30+R31+R32+R33 this session).
-**8 Q12 layers FULL CLEAN ⭐ (L17, L18, L19, L20, L22, L23, L24, L25)**.
-**L19 + L20 + L23 + L24 are deep** (R32 + R33 added defense-in-depth this session). L21 + **L26** at 2/3.
-Session 5 cumulative so far: L26 sweep 2 (3 tests, 0.00 MB drift) + R31 mutation pinning (6 boundary tests) + L20 round 4 (3 scenarios + **Q12-L20-003 MED UX**) + L19 deep (9 S4-bug regression assertions).
+🚧 **Q12 Session 5 IN PROGRESS** — 34 round shipped (R30+R31+R32+R33+R34 this session).
+**9 Q12 layers FULL CLEAN ⭐ (L17, L18, L19, L20, L21, L22, L23, L24, L25)** — L21 reached 3/3 spec this session.
+**L19 + L20 + L23 + L24 are deep**; L26 at 2/3.
+Session 5 cumulative so far: 5 atomic rounds shipped, 1 new bug (Q12-L20-003 MED UX), 1 reusable destructive drill spec, mutmut hygiene lesson.
 
-**Beklenen:** L21 destructive drill spec (founder-gated, default-skip).
+**Beklenen:** Session 5 closing summary + final pytest count.
 
 **Test inventory baseline (Sprint 21'den devralındı):**
 - Backend pytest: 89 PASS
