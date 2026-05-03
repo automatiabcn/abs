@@ -16,7 +16,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.api.auth import current_admin
 from app.services import feature_usage as feature_usage_service
@@ -49,9 +49,42 @@ class SynthesizeResponse(BaseModel):
     source: str = "template"  # "llm" when LLM-backed
 
 
+# Q12-L25-002 — workflow execute boundary caps. Pre-fix, ExecuteRequest
+# accepted `workflow: Dict[str, Any]` with no nodes-count cap and no
+# raw-payload cap, so an attacker (admin-auth'd or compromised JWT)
+# could POST a 10k-node / multi-MB payload. runner.plan() walks the
+# whole structure, allocates per-node, and OOMs the worker. Same
+# family as Q12-L25-001 (R17 marketplace InstallBody UNBOUNDED).
+WORKFLOW_NODES_MAX = 200       # generous; KOBİ templates ship with 5–20
+WORKFLOW_EDGES_MAX = 500       # ≈ 2.5× nodes (DAG fan-out budget)
+
+
 class ExecuteRequest(BaseModel):
     workflow: Dict[str, Any]
     dry_run: bool = True
+
+    @model_validator(mode="after")
+    def _cap_workflow_size(self) -> "ExecuteRequest":
+        wf = self.workflow or {}
+        nodes = wf.get("nodes")
+        if nodes is not None:
+            if not isinstance(nodes, list):
+                raise ValueError("workflow.nodes must be a list")
+            if len(nodes) > WORKFLOW_NODES_MAX:
+                raise ValueError(
+                    f"workflow.nodes count exceeds cap "
+                    f"({len(nodes)} > {WORKFLOW_NODES_MAX})"
+                )
+        edges = wf.get("edges")
+        if edges is not None:
+            if not isinstance(edges, list):
+                raise ValueError("workflow.edges must be a list")
+            if len(edges) > WORKFLOW_EDGES_MAX:
+                raise ValueError(
+                    f"workflow.edges count exceeds cap "
+                    f"({len(edges)} > {WORKFLOW_EDGES_MAX})"
+                )
+        return self
 
 
 # ---------- synthesizer wiring --------------------------------------------

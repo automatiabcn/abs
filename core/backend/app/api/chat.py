@@ -53,8 +53,13 @@ class ChatMessageIn(BaseModel):
 
 
 class ChatCompletionsRequest(BaseModel):
+    # Q12-L25-003 — pre-fix `messages` was unbounded. Attacker could POST
+    # 10k messages × 8000 chars (= 80 MB) and OOM the JSON+Pydantic parse
+    # before any handler logic ran. Cap mirrors the OpenAI/Anthropic
+    # message-window practical max (claude.ai persists ≈100 turns + system
+    # before compaction); 200 leaves room for tool-augmented chains.
     session_id: Optional[int] = None
-    messages: List[ChatMessageIn]
+    messages: List[ChatMessageIn] = Field(..., min_length=1, max_length=200)
     stream: bool = True
 
 
