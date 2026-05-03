@@ -24,6 +24,7 @@ from app.db.session import get_session
 from app.email.sender import send_license_email
 from app.i18n import t
 from app.licensing import generate_license, verify_license
+from app.observability.audit import emit_event  # Q12-L24 sweep 2
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 logger = logging.getLogger(__name__)
@@ -52,6 +53,14 @@ async def stripe_webhook(
     lang = getattr(request.state, "lang", "en")
     sig_header = request.headers.get("stripe-signature")
     if sig_header is None:
+        emit_event(
+            request,
+            action="webhooks.stripe.signature",
+            outcome="denied",
+            reason="signature_missing",
+            status_code=400,
+            provider="stripe",
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=t("errors.signature_missing", lang),
@@ -62,11 +71,32 @@ async def stripe_webhook(
             payload, sig_header, settings.stripe_webhook_secret
         )
     except ValueError as exc:
+        # Q12-L24 sweep 2 — exc carries Stripe SDK internals (`Could
+        # not deserialize key data...`). Keep response generic via i18n
+        # and route taxonomy + error_class to the audit channel.
+        emit_event(
+            request,
+            action="webhooks.stripe.payload",
+            outcome="denied",
+            reason="payload_invalid",
+            status_code=400,
+            provider="stripe",
+            error_class=type(exc).__name__,
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=t("errors.payload_invalid", lang),
         ) from exc
     except stripe.error.SignatureVerificationError as exc:
+        emit_event(
+            request,
+            action="webhooks.stripe.signature",
+            outcome="denied",
+            reason="signature_invalid",
+            status_code=400,
+            provider="stripe",
+            error_class=type(exc).__name__,
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=t("errors.signature_invalid", lang),

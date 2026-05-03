@@ -25,6 +25,7 @@ from app.api.smart_link import (
 )
 from app.config import settings
 from app.integrations.slack_signing import verify_slack_signature
+from app.observability.audit import emit_event  # Q12-L24 sweep 2
 from app.smart_link.vault_secrets import decrypt_secret, encrypt_secret
 
 router = APIRouter(prefix="/v1/smart-link/slack", tags=["smart-link-slack"])
@@ -50,14 +51,37 @@ async def slack_events_webhook(request: _Request) -> dict:
         signature=signature,
     )
     if not ok:
+        # Q12-L24-003 — pre-fix the response body included `reason`
+        # (signing_secret_empty | header_missing | timestamp_invalid |
+        # timestamp_expired | signature_mismatch). That lets a caller
+        # iterate and learn (a) whether the secret is provisioned at all
+        # and (b) which check failed — useful for replay tuning. Move the
+        # taxonomy into the audit channel and return a generic 401.
+        emit_event(
+            request,
+            action="integrations.slack.webhook.signature",
+            outcome="denied",
+            reason=reason or "signature_invalid",
+            status_code=401,
+            provider="slack",
+        )
         logger.warning("[slack] webhook rejected: %s", reason)
-        raise HTTPException(401, f"Slack signature verify failed: {reason}")
+        raise HTTPException(401, "slack_signature_invalid")
 
     try:
         import json as _json
 
         payload = _json.loads(body or b"{}")
-    except Exception:
+    except Exception as exc:
+        emit_event(
+            request,
+            action="integrations.slack.webhook.payload",
+            outcome="denied",
+            reason="invalid_json",
+            status_code=400,
+            provider="slack",
+            error_class=type(exc).__name__,
+        )
         raise HTTPException(400, "Invalid JSON")
 
     # URL verification handshake

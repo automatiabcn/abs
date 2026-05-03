@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 from app.config import settings
 from app.integrations.github_app import verify_webhook_signature
+from app.observability.audit import emit_event  # Q12-L24 sweep 2
 
 router = APIRouter(prefix="/v1/integrations/github", tags=["github-app"])
 logger = logging.getLogger(__name__)
@@ -24,11 +25,28 @@ async def github_app_webhook(request: Request) -> dict:
         body=body,
         signature_header=sig,
     ):
+        emit_event(
+            request,
+            action="integrations.github.webhook.signature",
+            outcome="denied",
+            reason="signature_invalid",
+            status_code=401,
+            provider="github",
+        )
         raise HTTPException(401, "GitHub signature verification failed")
 
     try:
         payload = json.loads(body or b"{}")
-    except Exception:
+    except Exception as exc:
+        emit_event(
+            request,
+            action="integrations.github.webhook.payload",
+            outcome="denied",
+            reason="invalid_json",
+            status_code=400,
+            provider="github",
+            error_class=type(exc).__name__,
+        )
         raise HTTPException(400, "Invalid JSON")
     event = request.headers.get("X-GitHub-Event", "unknown")
     return {
