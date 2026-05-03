@@ -15,7 +15,7 @@
 | L22 / L24 / L25 / L26 her biri 2/3 | 4 layer 2/3+ | L22:2/3, L24:**3/3 ⭐**, L25:2/3, L26:1/3 (defer) | ✅ 3/4 |
 | En az birini 3/3 FULL CLEAN | 1 layer | **L24 → 3/3 ⭐** | ✅ |
 | L23 sweep 4 → 4/3 deep | sweep 4 | **L23 → 4/3 deep** (R20+R21, 31 silent sites kapatıldı) | ✅ |
-| Backend pytest ≥1560 | 1560 | **1573+ PASS** (R25 ekledi 8 yeni; suite-final pending) | ✅ |
+| Backend pytest ≥1560 | 1560 | **1579 PASS, 14 skipped** (Δ +52 from S2 1527) | ✅ |
 | 5+ yeni real bug | 5 | **9 yeni bug** (L22-002/003/004 + L24-003/004/005/006 + L25-002/003) + 1 latent detach + 1 R24 regression | ✅ aşıldı |
 | Image rebuild gate her round | per round | 6/6 commit'te image rebuild + container exec evidence | ✅ |
 | Pilot/market gündem dışı | 0 | 0 (sadece teknik kalite) | ✅ |
@@ -94,17 +94,13 @@ f415b76  R25  L24 sweep 3   → 3/3 FULL CLEAN ⭐ — me_consent + me_audit +
 Session 2 close baseline:    1527
 Session 3 R20:               1540  (+13)
 Session 3 R21:               1550  (+10)
-Session 3 R22 (selective):   ~1563
-Session 3 R23 (selective):   ~1577
-Session 3 R24 (selective):   1570  (introduced 1 fail, fixed in R25)
-Session 3 R25 (selective):   1583+ (8 new R25 + R24 contract fix
-                                    restored)
-Final full-suite:           1583+ PASS, 14 skipped (running at session
-                                    close)
+Session 3 R24:               1570  (introduced 1 Q10-L1 contract fail)
+Session 3 R25 final full:    1579 PASS, 14 skipped (Δ +52)
 ```
 
-**Δ Session 3 katkı: ≥+56** (R20:+13, R21:+10, R22:+13, R23:+14,
-R24:+23, R25:+8, less ~25 overlap from non-selective runs).
+**Δ Session 3 katkı: +52 PASS** across 6 rounds. R22/R23 contributions
+were verified via selective subset runs (28+14 PASS) since the full
+suite was only run after R20, R21, R24, and R25.
 
 ---
 
