@@ -72,18 +72,19 @@
 | 28 | L21 sweep 2 | Non-destructive expansion: alembic upgrade↔downgrade **10× idempotent** (set-equality of inspect().table_names() per cycle); license JWT **boundary edges** now-1s/now+1s/now+24h/now+100y; **tamper matrix** signature flip + payload byte mutation + missing-jti + garbled + rogue-RSA-key. Q12-L21-003 (LOW non-bug) verifier accepts 100-year exp — pinned for conscious future cap decision. **L21 → 2/3** (sweep 3 destructive founder-gated). **11/11 PASS**, no src touched. | 819a57d | ✅ ship |
 | 29 | L24 sweep 4 deep | Q12-L24-007 (LOW security info-leak) — `verifier.py:51` catch-all `except PyJWTError` branch leaked `f"License verification error: {exc}"` to clients (passive vuln; future PyJWT subclass additions would silently fall through). Earlier sweeps (R14/R18/R19/R22/R25) grep'd `app/api/**` and `app/me_*` only; verifier in `app/licensing/` was outside those globs. Fix: generic `license_verify_failed` detail + `license_verify_pyjwt_error error_class=%s` ops audit warning (taxonomy only). **L24 → 4/3 deep** (defense-in-depth beyond FULL CLEAN). **2/2 new + 43 sibling regression PASS**. | 84b4152 | ✅ ship |
 | 30 | L26 sweep 2 | Long-running session regression guard. Ship `q12-l26-long-running.spec.ts` (Playwright): 90s idle heap-drift smoke (drift < 25 MB, post-idle endpoint ≠ 5xx) + 30-min gated long (`LONG_RUNNING_PLAYWRIGHT=1`, 5 intermediate snapshots, drift < 50 MB) + cookie persistence across navigations. Smoke catches the same leak class at 1/20 the runtime. **L26 → 2/3**. **2 passed, 1 skipped (gated)** in 1.6 min. Heap drift over 90s = 0.00 MB; post_idle_status=401 (auth path, no 5xx). | 7ff6d3a | ✅ ship |
-| 31 | R26 mutation-floor pinning | Pivot from full mutmut runtime (estimated 16–24 min/pass on oauth/server.py): ship 6 focused boundary tests that explicitly kill the high-yield mutation classes — `values(used_at=None)` silent re-allow, drop `is_(None)` predicate (re-claim), flip `cursor not in chain` cycle guard (no-op walk), drop `revoked_at IS NULL` filter (over-revoke), OAuthError code swap, mid-chain replay walking direction. Plus negative-control test that proves IS-NULL predicate is load-bearing. Hygiene lesson learned: mutmut partial-kill leaves source file in mutated state (`XXinvalid_grantXX` artifact). **16/16 PASS** (6 new + 10 R26 regression). | (this round) | ✅ ship |
+| 31 | R26 mutation-floor pinning | Pivot from full mutmut runtime (estimated 16–24 min/pass on oauth/server.py): ship 6 focused boundary tests that explicitly kill the high-yield mutation classes — `values(used_at=None)` silent re-allow, drop `is_(None)` predicate (re-claim), flip `cursor not in chain` cycle guard (no-op walk), drop `revoked_at IS NULL` filter (over-revoke), OAuthError code swap, mid-chain replay walking direction. Plus negative-control test that proves IS-NULL predicate is load-bearing. Hygiene lesson learned: mutmut partial-kill leaves source file in mutated state (`XXinvalid_grantXX` artifact). **16/16 PASS** (6 new + 10 R26 regression). | db2f187 | ✅ ship |
+| 32 | L20 round 4 deep | Multi-failure simultaneous chaos via Playwright `page.route()` triple-injection. **Q12-L20-003 (MED UX)** — chat page hangs at "Yükleniyor…" under multi-503 cascade (sessions list 503 blocks chat-error-tile mount); page snapshot captured. 3 scenarios shipped: scenario 6 (3× 503 cascade) `test.fail()`, scenario 7 (429+503+abort mix) `test.fail()`, scenario 8 (total /v1/* outage → still navigable to /panel) ✅ PASS. R5 documented-fail precedent. L20 stays 3/3 ⭐ (round 4 is deep, not counter bump). Fix tracked for Sprint 22 frontend resilience pass. **3 passed (25.4s)** in Chromium. | (this round) | ✅ ship |
 
 ---
 
 ## Loop status
 
-🚧 **Q12 Session 5 IN PROGRESS** — 31 round shipped (R30+R31 this session).
+🚧 **Q12 Session 5 IN PROGRESS** — 32 round shipped (R30+R31+R32 this session).
 **8 Q12 layers FULL CLEAN ⭐ (L17, L18, L19, L20, L22, L23, L24, L25)**.
 **L23 + L24 are 4/3 deep**. L21 + **L26** at 2/3.
-Session 5 cumulative so far: L26 sweep 2 Playwright (3 tests, 90s heap drift = 0.00 MB) + R31 R26 mutation-floor pinning (6 boundary tests; mutmut hygiene lesson — partial-kill mutates source file).
+Session 5 cumulative so far: L26 sweep 2 (Playwright 3 tests, 0.00 MB drift) + R31 mutation-floor pinning (6 boundary tests + mutmut hygiene lesson) + L20 round 4 deep (3 multi-failure scenarios + **Q12-L20-003 MED UX**: chat hangs at "Yükleniyor…" under sessions-list 503).
 
-**Beklenen:** L20 multi-failure chaos round 4; L19 S4-bug regression pin; L21 destructive drill spec (founder-gated).
+**Beklenen:** L19 S4-bug regression pin; L21 destructive drill spec (founder-gated).
 
 **Test inventory baseline (Sprint 21'den devralındı):**
 - Backend pytest: 89 PASS
