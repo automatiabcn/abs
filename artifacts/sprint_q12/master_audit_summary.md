@@ -31,7 +31,7 @@
 | **L19** | **Q12 NEW** | **3/3 ⭐** | backwards compat **FULL CLEAN** (R4 + R6 + R7 11/11 PASS) |
 | **L20** | **Q12 NEW** | **3/3 ⭐** | chaos engineering **FULL CLEAN** (R5 + R6 + R10 redirect:"error" fix → 5/5 PASS) |
 | **L21** | **Q12 NEW** | **1/3** | fresh-deploy safe drill — full alembic chain + head↔base reversibility + 6-step wizard E2E (3/3 PASS) |
-| **L22** | **Q12 NEW S2** | **2/3** | race condition deep — sweep 1 (R15) setup wizard TOCTOU + sweep 2 (R23) vault rotate concurrent-race + Q12-L22-003 leak fix + audit (14/14 PASS) |
+| **L22** | **Q12 NEW S4** | **3/3 ⭐** | race condition deep FULL CLEAN — sweep 1 (R15) setup wizard TOCTOU + sweep 2 (R23) vault rotate + sweep 3 (R26) OAuth atomic single-use + §6.1 family revoke (Q12-L22-005/006 HIGH replay) (10/10 PASS) |
 | **L23** | **Q12 NEW S3** | **4/3 ⭐ deep** | observability — sweep 1+2+3 = FULL CLEAN; sweep 4 (R20+R21) closes Founder-verified 31 silent raise sites with 46 emit_event across setup/admin/auth/smart_link/beta_admin (41/41 PASS) |
 | **L24** | **Q12 NEW S3** | **3/3 ⭐** | secret/sensitive leakage FULL CLEAN — sweep 1 (R14) + sweep 2 (R22) + sweep 3 (R25) me_consent + me_audit + secrets/rotate (Q12-L24-005/006 MED). 6 Q12 layers FULL CLEAN total. |
 | **L25** | **Q12 NEW S3** | **2/3** | boundary payload — sweep 1 (R17) marketplace InstallBody; sweep 2 (R24) workflow execute UNBOUNDED nodes/edges (Q12-L25-002) + chat completions UNBOUNDED messages (Q12-L25-003), both HIGH DoS (23/23 PASS) |
@@ -67,17 +67,18 @@
 | 23 | L22 sweep 2 | Q12-L22-002 (HIGH data corruption) Vault rotate has no concurrent guard → audit-vs-disk divergence; Q12-L22-003 (MED) RotationError str(exc) leak; Q12-L22-004 (LOW) audit silence. Fix: fcntl.LOCK_EX + RotationBusyError 409. **14/14 PASS** | ed8316f | ✅ ship |
 | 24 | L25 sweep 2 | Q12-L25-002 (HIGH DoS) workflow execute UNBOUNDED nodes/edges; Q12-L25-003 (HIGH DoS) chat completions UNBOUNDED messages list. Fix: model_validator caps + Field max_length=200. **23/23 PASS** (broke Q10-L1 contract, fixed in R25). | a44a8a0 | ✅ ship |
 | 25 | L24 sweep 3 → ⭐ | Q12-L24-005 (MED) me_consent + me_audit duplicate License-verify leak; Q12-L24-006 (MED) secrets/rotate sops stderr leak. Fix: generic responses + emit_event taxonomy. **L24 → 3/3 FULL CLEAN ⭐** (6 Q12 layers FULL CLEAN). Plus Q12-L25-003 R24 contract regression-fix (drop `min_length=1`). **53/53 PASS** | f415b76 | ✅ ship |
+| 26 | L22 sweep 3 → ⭐ | Q12-L22-005 (HIGH security — token replay) `exchange_code_for_tokens` non-atomic read-then-write on `used_at` → 2 concurrent → 2× tokens minted (OAuth 2.1 §4.1.3 violation, **proven pre-fix via git stash**); Q12-L22-006 (HIGH) same on `refresh_access_token` rotated_to_hash + missing §6.1 family revocation. Fix: atomic UPDATE-WHERE-IS-NULL claim + `_revoke_refresh_family` cycle-safe chain walk + 4 emit_event labels. **L22 → 3/3 FULL CLEAN ⭐** (7 Q12 layers FULL CLEAN). **10/10 new + 34/34 oauth+auth regression PASS** | (this round) | ✅ ship |
 
 ---
 
 ## Loop status
 
-🚧 **Q12 Session 3 IN PROGRESS** — 25 round shipped (R20-R25 = 6 atomic commits this session).
-**6 Q12 layers FULL CLEAN ⭐ (L17, L18, L19, L20, L23, L24)**.
-L22 / L25 each at 2/3, L21 / L26 at 1/3.
-Session 3 cumulative: 9 new real bugs surfaced + fixed (L23-002/003 advancements, L22-002/003/004, L24-003/004/005/006, L25-002/003) + 1 latent DetachedInstance bug + 1 R24 contract regression fixed inline.
+🚧 **Q12 Session 4 IN PROGRESS** — 26 round shipped (R26 = first commit this session).
+**7 Q12 layers FULL CLEAN ⭐ (L17, L18, L19, L20, L22, L23, L24)**.
+L25 at 2/3, L21 / L26 at 1/3.
+Session 4 cumulative so far: 2 new HIGH-severity OAuth replay bugs surfaced + fixed (Q12-L22-005/006), pre-fix proven via git stash.
 
-**Beklenen:** L21 destructive drill founder-gated; L22 sweep 3 (OAuth client_id race + Inngest worker idempotency); L25 sweep 3 (RAG ingest batch DoS); L26 sweep 2 (30dk Playwright); inherited mutation testing.
+**Beklenen:** L21 destructive drill founder-gated; L25 sweep 3 (RAG ingest batch DoS + plugin install cap); L26 sweep 2 (30dk Playwright); inherited mutation testing (mutmut on app/cascade + app/api/auth).
 
 **Test inventory baseline (Sprint 21'den devralındı):**
 - Backend pytest: 89 PASS
