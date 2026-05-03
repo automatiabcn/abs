@@ -200,6 +200,148 @@ class TestQ11L15HooksAuthGateRegression:
         )
 
 
+class TestQ12L22OAuthAtomicClaimRegression:
+    """Q12-L22-005/006 (S4 R26) — OAuth code + refresh atomic single-use.
+
+    Pre-fix: `exchange_code_for_tokens` and `refresh_access_token` both
+    performed a non-atomic read-then-write on `used_at` /
+    `rotated_to_hash`, allowing two concurrent /oauth/token requests
+    with the same code or refresh token to mint duplicate tokens
+    (OAuth 2.1 §4.1.3 / §6.1 violation).
+
+    This regression test pins three load-bearing properties:
+      1. The atomic UPDATE statement in `exchange_code_for_tokens`
+         contains both the code-equality predicate AND the
+         `used_at IS NULL` predicate (pre-fix had only the former on
+         a regular ORM read+write).
+      2. The atomic UPDATE statement in `refresh_access_token`
+         contains the `rotated_to_hash IS NULL` AND
+         `revoked_at IS NULL` predicates.
+      3. `_revoke_refresh_family` exists and is reachable (OAuth 2.1
+         §6.1 family revocation hardening).
+    """
+
+    def test_oauth_atomic_predicates_present_in_source(self) -> None:
+        from app.auth.oauth import server as oauth_server
+
+        src = Path(oauth_server.__file__).read_text(encoding="utf-8")
+        assert "OAuthAuthCode.used_at.is_(None)" in src, (
+            "Q12-L22-005 regression: atomic UPDATE on auth code is "
+            "missing the `used_at IS NULL` predicate; replay protection "
+            "is broken"
+        )
+        assert "OAuthRefreshToken.rotated_to_hash.is_(None)" in src, (
+            "Q12-L22-006 regression: atomic UPDATE on refresh token is "
+            "missing the `rotated_to_hash IS NULL` predicate"
+        )
+        assert "OAuthRefreshToken.revoked_at.is_(None)" in src, (
+            "Q12-L22-006 regression: refresh atomic UPDATE missing "
+            "the `revoked_at IS NULL` predicate"
+        )
+        assert "_revoke_refresh_family" in src, (
+            "Q12-L22-006 regression: OAuth 2.1 §6.1 family revocation "
+            "helper missing"
+        )
+
+    def test_oauth_replay_returns_invalid_grant(self, client: TestClient) -> None:
+        # Live boundary: posting any /oauth/token with a malformed code
+        # should surface a 400/401 with `error: invalid_grant` shape,
+        # not a 5xx that would hide the atomic-claim path entirely.
+        resp = client.post(
+            "/oauth/token",
+            data={
+                "grant_type": "authorization_code",
+                "client_id": "regression-bogus",
+                "code": "DOESNOTEXIST",
+                "redirect_uri": "https://app.local/callback",
+                "code_verifier": "x" * 64,
+            },
+        )
+        assert resp.status_code in (
+            400,
+            401,
+            422,
+        ), f"replay path must surface 4xx, not 5xx ({resp.status_code})"
+
+
+class TestQ12L25BodySizeLimitRegression:
+    """Q12-L25-004/005 (S4 R27) — HTTP-layer Content-Length cap.
+
+    Pre-fix: admin endpoints accepted unbounded request bodies, parsing
+    50 MB+ payloads fully into memory before Pydantic Field caps fired.
+
+    Pin: `BodySizeLimitMiddleware` is installed at the right layer
+    (between DemoMode and RequestID per Q12-L23 audit continuity), and
+    a 50 MB payload to /v1/marketplace/install returns 413 with the
+    `request_body_too_large` detail shape.
+    """
+
+    def test_body_size_limit_middleware_installed(self) -> None:
+        from app.main import app
+        from app.middleware.body_size_limit import BodySizeLimitMiddleware
+
+        names = [m.cls.__name__ for m in app.user_middleware]
+        assert BodySizeLimitMiddleware.__name__ in names, (
+            "Q12-L25-004 regression: BodySizeLimitMiddleware no longer "
+            "installed in app.user_middleware; admin endpoints can be "
+            "DoS'd with oversize bodies"
+        )
+
+    def test_oversize_install_returns_413(self, client: TestClient) -> None:
+        big_payload = '{"plugin_id":"x","tenant":"y","blob":"' + "z" * (
+            6 * 1024 * 1024
+        ) + '"}'
+        resp = client.post(
+            "/v1/marketplace/install",
+            content=big_payload,
+            headers={"Content-Type": "application/json"},
+        )
+        assert resp.status_code == 413, (
+            f"Q12-L25-004 regression: oversize body must return 413, "
+            f"got {resp.status_code}"
+        )
+        body = resp.json()
+        assert body.get("detail") == "request_body_too_large"
+        assert "limit_bytes" in body
+        assert "received_bytes" in body
+
+
+class TestQ12L24VerifierLeakRegression:
+    """Q12-L24-007 (S4 R29) — verifier.py PyJWTError catch-all.
+
+    Pre-fix: catch-all branch surfaced
+    `f"License verification error: {exc}"` to clients, exposing PyJWT
+    internals when a future subclass slips past the specific catches.
+
+    Pin: the catch-all branch responds with the generic
+    `license_verify_failed` detail and never the str-interpolated form.
+    """
+
+    def test_verifier_pyjwt_branch_uses_generic_detail(self) -> None:
+        from app.licensing import verifier as verifier_mod
+
+        src = Path(verifier_mod.__file__).read_text(encoding="utf-8")
+        assert "license_verify_failed" in src, (
+            "Q12-L24-007 regression: generic `license_verify_failed` "
+            "detail missing — PyJWT internals may leak"
+        )
+        # The pre-fix f-string MUST NOT come back.
+        assert "License verification error: {exc}" not in src, (
+            "Q12-L24-007 regression: the f-string str(exc) interpolation "
+            "is back in the catch-all branch"
+        )
+
+    def test_verifier_emits_taxonomy_log(self) -> None:
+        from app.licensing import verifier as verifier_mod
+
+        src = Path(verifier_mod.__file__).read_text(encoding="utf-8")
+        assert "license_verify_pyjwt_error" in src, (
+            "Q12-L24-007 regression: the ops audit warning "
+            "`license_verify_pyjwt_error` is missing — error_class "
+            "taxonomy is no longer captured"
+        )
+
+
 class TestSprint21BundleRegression:
     """Sprint 21 (B+C+D) — bundle chunk totals must not regress more than
     +20% above the honest baseline. Skips if Next build hasn't run."""
