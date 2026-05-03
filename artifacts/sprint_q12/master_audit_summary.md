@@ -81,12 +81,13 @@
 
 ## Loop status
 
-🚧 **Q12 Session 5 IN PROGRESS** — 34 round shipped (R30+R31+R32+R33+R34 this session).
+✅ **Q12 Session 5 CLOSING CHECKPOINT** — 34 round shipped (R30+R31+R32+R33+R34 this session, 5 atomic commits).
 **9 Q12 layers FULL CLEAN ⭐ (L17, L18, L19, L20, L21, L22, L23, L24, L25)** — L21 reached 3/3 spec this session.
-**L19 + L20 + L23 + L24 are deep**; L26 at 2/3.
-Session 5 cumulative so far: 5 atomic rounds shipped, 1 new bug (Q12-L20-003 MED UX), 1 reusable destructive drill spec, mutmut hygiene lesson.
+**L19 + L20 + L23 + L24 are deep**; L26 at 2/3 (sweep 3 = 30dk empirical confirm gated for prod-rollout cuts).
+Session 5 cumulative: 5 atomic rounds shipped, 1 new bug (Q12-L20-003 MED UX), 1 reusable destructive drill spec, mutmut hygiene lesson.
+**Backend pytest: 1630 PASS, 14 skipped** (Δ +19 from S4 1611, +51 from S3 1579, +103 from S2 1527). +6 new Playwright tests.
 
-**Beklenen:** Session 5 closing summary + final pytest count.
+**Defer (Session 6 gündemi):** L18 SW cache (Sprint 22 frontend); L26 sweep 3 30dk empirical (founder pre-rollout); mutmut weekend CI (founder-approved); Q12-L20-003 SessionsList fallback fix (Sprint 22); L21 destructive drill ACTUAL run (founder approval).
 
 **Test inventory baseline (Sprint 21'den devralındı):**
 - Backend pytest: 89 PASS
