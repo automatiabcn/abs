@@ -56,6 +56,19 @@ const BUDGETS: PageBudget[] = [
   { path: "/panel/chat",  authed: true,  slow3GBudgetMs: 14000, lte4gBudgetMs: 6000 }, // Sprint 21 honest 11105
   { path: "/panel/tools", authed: true,  slow3GBudgetMs: 11000, lte4gBudgetMs: 5000 }, // Sprint 21 honest 8660
   { path: "/panel/quota", authed: true,  slow3GBudgetMs: 4500,  lte4gBudgetMs: 3500 },
+  // Q12 R66 — Sprint 22 RSC Phase B targets. Pre-R64/R65 these
+  // routes were "use client" whole-page components that did a
+  // post-hydration XHR for the initial slice. Post-split-shell the
+  // server prefetches the slice and seeds React Query initialData,
+  // so the SSR HTML carries rendered rows (provable: see R66
+  // artifact + commit 2b196ed/2c1bb91). Slow-3G LCP is dominated by
+  // the dev-mode panel JS bundle (sidebar + header + theme + query
+  // client + cmdk), not the data fetch — so the split-shell win
+  // shows up in TTFB / SSR-HTML readiness rather than LCP at this
+  // throttle. Budgets matched to the `/panel/tools` ceiling (same
+  // panel chrome shape); production-build LCP will be lower.
+  { path: "/admin/audit", authed: true,  slow3GBudgetMs: 11000, lte4gBudgetMs: 5000 },
+  { path: "/admin/users", authed: true,  slow3GBudgetMs: 11000, lte4gBudgetMs: 5000 },
 ];
 
 interface ColdSample { lcp: number; fcp: number; ttfb: number; }

@@ -36,6 +36,15 @@ const PANEL_BUDGETS: PageBudget[] = [
   { path: "/admin/marketplace",  authed: true,  budgetMs: 4500 },
   { path: "/admin/providers",    authed: true,  budgetMs: 4500 },
   { path: "/admin/workflow-builder", authed: true, budgetMs: 5500 },
+  // Q12 R66 — Sprint 22 RSC Phase B targets. Pre-R64/R65 these
+  // routes were "use client" whole-page components that did a post-
+  // hydration XHR to /v1/admin/audit/recent and /v1/admin/users
+  // respectively. Now they're split-shells (server fetch → client
+  // island via initialData), so the first-XHR round-trip is gone.
+  // Budget 4500 ms matches the other admin routes; once the LCP
+  // delta is captured (R66 artifact) we can tighten it further.
+  { path: "/admin/audit",        authed: true,  budgetMs: 4500 },
+  { path: "/admin/users",        authed: true,  budgetMs: 4500 },
 ];
 
 const ALL_BUDGETS: PageBudget[] = [...PUBLIC_BUDGETS, ...PANEL_BUDGETS];
