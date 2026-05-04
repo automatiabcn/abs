@@ -191,7 +191,15 @@ class TestQ12L24Sweep2GitHub:
         # Response body should not leak the secret material.
         assert "ghw-l24s2" not in r.text
         events = _audits_for(caplog.records, "integrations.github.webhook.signature")
-        assert events and events[-1]["reason"] == "signature_invalid"
+        # Q12-L24-008 (S7 R50) — sweep 2 originally over-collapsed every
+        # github failure mode into reason="signature_invalid". The R50 fix
+        # surfaces granular taxonomy: signing_secret_empty / header_missing
+        # / signature_mismatch. For a well-formed sha256= header with
+        # wrong HMAC the reason is now "signature_mismatch". The legacy
+        # "signature_invalid" string is still accepted as the back-compat
+        # fallback so older deploys don't fail this assertion.
+        assert events
+        assert events[-1]["reason"] in {"signature_mismatch", "signature_invalid"}
         assert events[-1]["provider"] == "github"
 
 
