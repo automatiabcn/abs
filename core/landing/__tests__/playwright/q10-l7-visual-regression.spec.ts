@@ -27,6 +27,11 @@ const SURFACES: Surface[] = [
   { slug: "quota",         path: "/panel/quota",           marker: '[data-page="panel-quota"]' },
   { slug: "settings",      path: "/admin/settings",        marker: '[data-page="admin-settings"]' },
   { slug: "users",         path: "/admin/users",           marker: '[data-page="admin-users"]' },
+  // R67 (S8) — /admin/audit was missing from the L7 baseline. R64
+  // migrated it to a server `page.tsx` + `<AuditClient>` island; the
+  // rendered DOM is identical to the pre-R64 client-only shape but
+  // the route now warrants a permanent visual guard.
+  { slug: "audit",         path: "/admin/audit",           marker: '[data-page="admin-audit"]' },
 ];
 
 async function loginIfNeeded(page: Page) {
