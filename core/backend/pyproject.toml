@@ -49,3 +49,7 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+markers = [
+    "fuzz: opt-in heavy property-based fuzz (10K+ Hypothesis examples; default-skip)",
+]
+addopts = "-m 'not fuzz'"
