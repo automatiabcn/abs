@@ -87,36 +87,41 @@
 | 57 | L11 cross-browser firefox | chaos-multi.spec.ts firefox-desktop **3/3 PASS** in 15.9s — first cross-browser confirmation of S6 R35 sessions-error-tile fix is engine-agnostic. long-running.spec.ts firefox 0/2 fail at page.goto: spec lacked auth cookie load. Q12-L11-FF-001 (LOW portability) fix shipped — ports loadAuthCookie + seedSessionCookie helpers from chaos-multi sibling. Validation deferred (dev-server hung from playwright churn; cannot kill `next dev` without founder authorization). | 23b3c06 | ✅ ship |
 | 58 | L8 i18n scope drift guard | Audit found ABS i18n is bifurcated by surface but scope was implicit: landing surface (full EN/TR/ES) vs panel/admin/components/chat (TR-first by design). R35 sessions-error-tile + R48 SW status + ZAP fix all panel-side, no locale gap. Shipped: `__tests__/i18n-scope.test.ts` (3 vitest, 3/3 PASS — no BCP-47 hardcodes on landing, dict size [70,200] band, no panel.* keys in en.json) + `docs/qa/i18n-scope-policy.md`. | 3d16fa1 | ✅ ship |
 | 59 | Sprint 22 RSC Phase A audit | /pricing /privacy /terms already RSC (no work). /admin/audit + /admin/users heavy `"use client"` + useState + useQuery — pure RSC conversion would break interactivity. Right pattern: split-shell (server fetch initial data → render `<AuditClient initialEntries={...}>`). Updated R60+R61 plan: split-shell each shaves ~400ms LCP slow 3G; total target -800ms covers Sprint 21 +1230ms regress. Phase B blocked on dev-server recovery for Lighthouse before/after. Read-only artifact. | f06e6a0 | ✅ ship Phase A |
+| 60 | L8 i18n middleware deep | Pre-R60 gap: `app.middleware.i18n.I18nMiddleware` + `app.i18n.set_lang_cookie` active in production (`app/main.py:67,201`) but no direct test coverage beyond a `/healthz` smoke. A regression flipping cookie-over-header precedence would silently break the panel language switcher. Ship: `tests/test_q12_l8_i18n_middleware_deep.py` — 15 tests covering `set_lang_cookie` writer contract (3), middleware request.state.lang resolution incl. cookie-wins-over-header precedence (6), `detect_lang` edge cases (4 parametrize: q-weighting left-to-right scan locked, whitespace-only chunks, uppercase prefix, garbage), and SUPPORTED_LANGS/DEFAULT_LANG defensive lock (1). **15/15 PASS in 0.57s; 27/27 PASS combined with `test_i18n_basic.py` sibling.** | 97f184b | ✅ ship |
+| 61 | L25 body_size_limit boundary edges | Pre-R61 coverage hit headline DoS but missed the boundary — one-off-error (`<` vs `<=`) would silently shift the 413 gate by 1 byte. Ship `tests/test_q12_l25_body_size_limit_edges.py` (10 pytest): `_cap_for` pure-unit (5: exact prefix, extension still longest-prefix, unknown→default, hardcap clamps high default, reserved-key-not-prefix) + integration boundary (4: CL==cap → 200, CL==cap+1 → 413 with limit_bytes/received_bytes detail, CL==0 → not-413, CL=-1 → not-200) + custom-caps override propagation (1). **10/10 PASS; 19/19 PASS combined with the original `test_q12_l25_body_size_limit.py` sibling.** | 4e4c439 | ✅ ship |
 
 ---
 
 ## Loop status
 
-🔄 **Q12 Session 8 IN-FLIGHT** — 4 atomic rounds shipped (R56–R59).
+🔄 **Q12 Session 8 IN-FLIGHT** — 6 atomic rounds shipped (R56–R61).
 
 **S8 atomic commits so far:**
 ```
 a51bc3c  R56  fs-scan honest gap close 1   — 5 closes (P3 1→0, P2 3→2), allowlist v3
-23b3c06  R57  L11 cross-browser firefox   — chaos-multi 3/3 PASS, long-running portability fix
-3d16fa1  R58  L8 i18n scope drift guard   — 3 vitest 3/3 PASS, scope policy doc
-f06e6a0  R59  Sprint 22 RSC Phase A audit — pricing/privacy/terms already RSC, admin needs split-shell
+23b3c06  R57  L11 cross-browser firefox    — chaos-multi 3/3 PASS, long-running portability fix
+3d16fa1  R58  L8 i18n scope drift guard    — 3 vitest 3/3 PASS, scope policy doc
+f06e6a0  R59  Sprint 22 RSC Phase A audit  — pricing/privacy/terms already RSC, admin needs split-shell
+97f184b  R60  L8 i18n middleware deep      — 15 pytest 15/15 PASS, cookie-precedence locked
+4e4c439  R61  L25 body_size boundary edges — 10 pytest 10/10 PASS, off-by-one 413 gate guard
 ```
 
 **Layers extended in S8:**
-- **Q11-L8 i18n** → 0/3 + R58 ⭐ deep scope drift guard
+- **Q11-L8 i18n** → 0/3 + R58 ⭐ scope drift guard + R60 ⭐⭐ middleware/cookie deep (cookie-precedence locked, set_lang_cookie writer contract)
 - **Q11-L11 cross-browser** → 0/3 + R57 firefox-desktop chaos-multi 3/3 PASS (engine-agnostic R35 fix confirmation); long-running portability fix unverified (dev-server hung)
+- **L25 boundary payload** → 3/3 ⭐ + R61 ⭐⭐ deep body_size_limit boundary edges (cap == / cap+1 / 0 / -1 + custom-caps override propagation)
 - **fs-scan baseline** → R52 raw 45 / honest ~75 → R56 raw 47 / honest ~78
 
-**Bugs found+closed S8:** Q12-L11-FF-001 (LOW cross-browser portability — long-running spec lacked auth cookie load).
+**Bugs found+closed S8:** Q12-L11-FF-001 (LOW cross-browser portability — long-running spec lacked auth cookie load). No new HIGH/MED.
 
 **S8 blockers:**
 - `next dev` on 3457 hung from R57 playwright churn; cannot kill without founder authorization. Blocks: cross-browser deep webkit + 3 deferred firefox specs (long-running validation, aria-live-deep, cold-cache); RSC Phase B Lighthouse measurement.
 - L21 destructive drill ACTUAL + Mutmut local actual: same founder-approval gate as S6 R38 / S7 R53–R54.
 
-**Test inventory delta this session:**
+**Test inventory delta this session (R56–R61):**
 - Vitest landing: +1 file (i18n-scope), +3 tests passing
-- Playwright firefox: +3 chaos-multi PASS (cross-browser confirmation)
-- Backend pytest: unchanged 1665 (no backend source touched)
+- Playwright firefox: +3 chaos-multi PASS (cross-browser confirmation, R35 fix engine-agnostic)
+- **Backend pytest: +25 (1665 → 1690 expected after image rebuild)** — R60 +15 i18n middleware deep, R61 +10 body_size boundary edges
 - fs-scan: 45 → 47 raw, ~75 → ~78 honest
 
 ---
