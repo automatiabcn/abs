@@ -371,3 +371,103 @@ class TestSprint21BundleRegression:
             "Sprint 21 regression: chunk totals exceeded +20% buffer:\n"
             + "\n".join(regressions)
         )
+
+
+class TestQ12L20003RegressionPin:
+    """Q12-L20-003 (S6 R35) — regression pin for the chat sessions-error-tile fix.
+
+    Two protections beyond the Playwright suite:
+      1. Source presence — the data-test attribute + the new useQuery
+         retry: 1 cap MUST stay in ChatClient.tsx. A grep regression
+         catches a future refactor that drops the banner or restores
+         the default retry: 3 (which kept isLoading=true ~15s under
+         cascade 503).
+      2. Reverse pin — the original failing pattern (sessions-error-tile
+         absent) MUST NOT come back. We assert the banner JSX block is
+         present *and* the retry: 1 line is present.
+    """
+
+    def test_chat_client_carries_sessions_error_tile_banner(self) -> None:
+        from pathlib import Path
+
+        chat_client = (
+            Path(__file__).resolve().parents[2]
+            / "landing"
+            / "app"
+            / "panel"
+            / "chat"
+            / "ChatClient.tsx"
+        )
+        if not chat_client.exists():
+            import pytest as _pytest
+
+            _pytest.skip(
+                "core/landing/app/panel/chat/ChatClient.tsx not on this build"
+            )
+        src = chat_client.read_text(encoding="utf-8")
+        # Q12-L20-003 fix surface — sessions-error-tile banner.
+        assert 'data-test="sessions-error-tile"' in src, (
+            "Q12-L20-003 regression: sessions-error-tile data-test is "
+            "missing from ChatClient.tsx — the role=alert banner that "
+            "surfaces /v1/chat/sessions 5xx is gone"
+        )
+        assert 'role="alert"' in src, (
+            "Q12-L20-003 regression: role=\"alert\" attribute is missing "
+            "from ChatClient.tsx — the SR contract for the error banner is broken"
+        )
+
+    def test_chat_client_caps_useQuery_retry(self) -> None:
+        """The retry default (3) keeps isLoading=true ~15s under cascade
+        503; the fix capped it to 1. Reverting would re-introduce the
+        spinner-hang surface S6 R32 chaos suite caught."""
+        from pathlib import Path
+
+        chat_client = (
+            Path(__file__).resolve().parents[2]
+            / "landing"
+            / "app"
+            / "panel"
+            / "chat"
+            / "ChatClient.tsx"
+        )
+        if not chat_client.exists():
+            import pytest as _pytest
+
+            _pytest.skip("ChatClient.tsx not on this build")
+        src = chat_client.read_text(encoding="utf-8")
+        assert "retry: 1" in src, (
+            "Q12-L20-003 regression: sessionsQuery retry cap (`retry: 1`) "
+            "is missing — default retry: 3 with backoff would re-introduce "
+            "the ~15s isLoading=true spinner-hang under cascade 503"
+        )
+
+    def test_no_test_fail_marker_on_chaos_multi_scenarios(self) -> None:
+        """The S6 R35 fix flipped scenarios 6+7 from test.fail() to test().
+        A future regression that re-marks them as test.fail() must surface.
+        We match the actual call site (`test.fail(<whitespace>"scenario X:")`),
+        not the empty-arg `test.fail()` reference that appears in prose."""
+        import re
+        from pathlib import Path
+
+        spec = (
+            Path(__file__).resolve().parents[2]
+            / "landing"
+            / "__tests__"
+            / "playwright"
+            / "q12-l20-chaos-multi.spec.ts"
+        )
+        if not spec.exists():
+            import pytest as _pytest
+
+            _pytest.skip("q12-l20-chaos-multi.spec.ts not on this build")
+        src = spec.read_text(encoding="utf-8")
+        # Real call site form: `test.fail(\s*"scenario 6:` — the prose
+        # comment `test.fail() upgraded to test()` has `()` immediately
+        # and won't match the scenario-string pattern.
+        for scenario in ("scenario 6:", "scenario 7:"):
+            pattern = rf"test\.fail\(\s*[\"']{re.escape(scenario)}"
+            if re.search(pattern, src):
+                raise AssertionError(
+                    f"Q12-L20-003 regression: {scenario} is gated by "
+                    "test.fail() again — the S6 R35 fix has been reverted"
+                )
