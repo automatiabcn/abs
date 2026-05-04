@@ -69,6 +69,8 @@ export default function CheckoutButton({
     <>
       <button
         type="button"
+        data-test="checkout-button"
+        data-tier={tier}
         onClick={handleClick}
         disabled={loading || !BILLING_ENABLED}
         aria-busy={loading}
