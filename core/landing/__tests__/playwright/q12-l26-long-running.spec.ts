@@ -21,7 +21,8 @@
 // 25 MB in 90 s would balloon to 8 GB in 30 minutes. The long variant
 // is the *empirical confirmation* for go/no-go on production rollout.
 
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
+import * as fs from "node:fs";
 
 const PANEL_CHAT_URL = "/panel/chat";
 // Anything other than 5xx is acceptable post-idle: 200 (legit session),
@@ -29,6 +30,64 @@ const PANEL_CHAT_URL = "/panel/chat";
 // scaffolding). The point is: server didn't crash + middleware didn't
 // emit an internal error.
 const ACCEPTABLE_POST_IDLE = (status: number) => status < 500;
+
+// Q12 S8 R57 — cross-browser portability fix.
+//
+// Pre-fix gap: this spec navigated bare to /panel/chat without seeding
+// the auth cookie. Chromium's dev-server compile path tolerated the
+// initial 401 + redirect chain; Firefox + WebKit failed at navigation
+// because the redirect dance ran past the default 30s navigation
+// timeout while `next dev` was lazy-compiling the route.
+//
+// Loading the cookie up-front matches q12-l20-chaos-multi.spec.ts and
+// q12-l18-cold-cache.spec.ts (both green on chromium + firefox + webkit
+// in S6/S7). Cookie absence is silently tolerated (test still asserts
+// post-idle status < 500, which works for 200 and 401 alike).
+function loadAuthCookie(): {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+} | null {
+  try {
+    const raw = fs.readFileSync("/tmp/q12_cookie.txt", "utf-8");
+    for (const rawLine of raw.split("\n")) {
+      if (!rawLine) continue;
+      let line = rawLine;
+      if (line.startsWith("#HttpOnly_")) line = line.slice("#HttpOnly_".length);
+      else if (line.startsWith("#")) continue;
+      const parts = line.split("\t");
+      if (parts.length < 7) continue;
+      if (parts[5] !== "abs_session") continue;
+      return {
+        name: "abs_session",
+        value: parts[6].trim(),
+        domain: "localhost",
+        path: "/",
+      };
+    }
+  } catch {
+    // No cookie file — test will still run with whatever the dev
+    // server hands back (typically 401 → ACCEPTABLE_POST_IDLE).
+  }
+  return null;
+}
+
+async function seedSessionCookie(page: Page): Promise<void> {
+  const cookie = loadAuthCookie();
+  if (!cookie) return;
+  await page.context().addCookies([
+    {
+      name: cookie.name,
+      value: cookie.value,
+      domain: cookie.domain,
+      path: cookie.path,
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax",
+    },
+  ]);
+}
 
 interface HeapSnapshot {
   used: number;
@@ -56,6 +115,7 @@ test.describe("Q12-L26 long-running session", () => {
     test.slow();
     test.setTimeout(3 * 60 * 1000);
 
+    await seedSessionCookie(page);
     const response = await page.goto(PANEL_CHAT_URL, { waitUntil: "load" });
     expect(response?.status() ?? 0).toBeLessThan(500);
 
@@ -113,6 +173,7 @@ test.describe("Q12-L26 long-running session", () => {
     test.slow();
     test.setTimeout(35 * 60 * 1000);
 
+    await seedSessionCookie(page);
     await page.goto(PANEL_CHAT_URL, { waitUntil: "load" });
 
     const heap0 = await snapshotHeap(page);
@@ -148,6 +209,7 @@ test.describe("Q12-L26 long-running session", () => {
     // Navigate to chat → dashboard → chat. Cookie must survive in-app
     // routing without a cold reauth. Catches regressions where a panel
     // route accidentally clears the session cookie.
+    await seedSessionCookie(page);
     await page.goto("/panel/chat", { waitUntil: "load" });
     const cookiesBefore = await page.context().cookies();
     const sessionBefore = cookiesBefore.find(
