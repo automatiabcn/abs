@@ -5,7 +5,7 @@
 // chrome bundle.
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -25,6 +25,7 @@ import {
   useChat,
   type SessionListItem,
 } from "@/lib/chat-stream";
+import { loadDraft, saveDraft } from "@/lib/chat-draft";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ChatClient() {
@@ -82,6 +83,33 @@ export default function ChatClient() {
       active = false;
     };
   }, [initialSessionId, setMessages]);
+
+  // Q12-L18 R48 — IndexedDB-backed draft persistence. Restores
+  // user input across reloads / offline blips. Only restores on
+  // cold mount when input is empty (don't clobber a fast typer).
+  const draftHydratedRef = useRef(false);
+  useEffect(() => {
+    if (draftHydratedRef.current) return;
+    let active = true;
+    void loadDraft().then((draft) => {
+      draftHydratedRef.current = true;
+      if (!active) return;
+      if (draft && !input) {
+        setInput(draft);
+      }
+    });
+    return () => {
+      active = false;
+    };
+    // Intentionally only depend on setInput identity — we want
+    // a cold-mount-only restore.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setInput]);
+
+  useEffect(() => {
+    if (!draftHydratedRef.current) return;
+    void saveDraft(input);
+  }, [input]);
 
   const newSession = useMutation({
     mutationFn: () => createSession(),
