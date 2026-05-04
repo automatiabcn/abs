@@ -3,9 +3,12 @@
 # a flag is acceptable and so future engineers understand the carve-outs.
 # When fs-scan grows config support, this file is the single source of truth.
 
-version: 1
+version: 2
 generated: 2026-04-29
+last_review: 2026-05-04 (Q12 Session 7 R52)
 target_score: 75-85
+last_observed_raw_score: 45        # P0=16 P1=226 — but ~13 P0 are FP
+last_observed_honest_score: ~75    # after FP subtraction (see R52 artifact)
 
 allowlist:
   - id: SQLMODEL_ORM_HELPER
