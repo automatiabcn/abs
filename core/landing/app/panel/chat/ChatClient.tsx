@@ -34,10 +34,15 @@ export default function ChatClient() {
   const sessionParam = params?.get("session");
   const initialSessionId = sessionParam ? Number(sessionParam) : undefined;
 
+  // Q12-L20-003 (S5 R32 chaos finding) — under cascade 503 the default
+  // retry: 3 with backoff keeps isLoading=true for ~15s and the user
+  // sees only a spinner. Cap retries so the error path is reached
+  // quickly and surfaced via the sessions-error-tile banner below.
   const sessionsQuery = useQuery<SessionListItem[]>({
     queryKey: ["chat", "sessions"],
     queryFn: listSessions,
     refetchOnWindowFocus: true,
+    retry: 1,
   });
 
   const {
@@ -122,6 +127,23 @@ export default function ChatClient() {
         isLoading={sessionsQuery.isLoading}
       />
       <main className="flex min-w-0 flex-1 flex-col">
+        {sessionsQuery.isError && (
+          <div
+            role="alert"
+            data-test="sessions-error-tile"
+            className="flex flex-wrap items-center justify-between gap-3 border-b border-rose-500/30 bg-rose-500/10 px-6 py-2 text-sm text-rose-200"
+          >
+            <span>Sohbet geçmişi yüklenemedi</span>
+            <button
+              type="button"
+              onClick={() => sessionsQuery.refetch()}
+              data-test="sessions-error-retry"
+              className="rounded border border-rose-500/40 px-2 py-0.5 text-xs hover:bg-rose-500/20"
+            >
+              Tekrar dene
+            </button>
+          </div>
+        )}
         <header className="flex items-center justify-between border-b border-border px-6 py-3">
           <div>
             <h1 className="text-base font-semibold tracking-tight">
