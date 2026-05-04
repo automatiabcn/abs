@@ -3,12 +3,12 @@
 # a flag is acceptable and so future engineers understand the carve-outs.
 # When fs-scan grows config support, this file is the single source of truth.
 
-version: 3
+version: 4
 generated: 2026-04-29
-last_review: 2026-05-04 (Q12 Session 8 R56)
+last_review: 2026-05-04 (Q12 Session 8 R68)
 target_score: 75-85
-last_observed_raw_score: 45        # P0=16 P1=229 P2=3 P3=1 — but ~13 P0 are FP, 2 P2 are monorepo carve-outs
-last_observed_honest_score: ~78    # after FP subtraction + R56 root .env.example + CHANGELOG symlink
+last_observed_raw_score: 47        # P0=16 P1=232 P2=2 — 12 P0 are SQLModel-ORM/env-var FPs, 2 P2 are monorepo carve-outs
+last_observed_honest_score: ~89    # R68: ~78 + 10 SQLModel db.exec API FPs + NEXTAUTH_SECRET env-var ref
 
 allowlist:
   - id: SQLMODEL_ORM_HELPER
@@ -19,6 +19,32 @@ allowlist:
       Wraps a typed-ORM call with no string interpolation and no Python
       interpreter access. Every other module imports `first_or_none` /
       `all_rows` from this helper instead of touching the substring directly.
+    risk: none
+    review_owner: backend
+
+  - id: SQLMODEL_DB_DRIVER_API
+    check: eval_exec
+    files:
+      - core/backend/app/api/chat.py
+      - core/backend/app/api/mcp_tokens.py
+      - core/backend/app/api/admin/users.py
+    lines:
+      "core/backend/app/api/chat.py":        [108, 219, 224, 265, 282, 300]
+      "core/backend/app/api/mcp_tokens.py":  [89, 225, 259]
+      "core/backend/app/api/admin/users.py": [38]
+    why: |
+      Each flagged line invokes the SQLModel typed-ORM driver method
+      named the same as Python's interpreter builtin (3-letter spelling).
+      The argument is a typed `Select` expression — not a string, not
+      user input, not a Python interpreter handle. The fs-scan
+      `eval_exec` regex matches the substring without distinguishing
+      the typed-ORM driver from the Python builtin. The
+      `query_helpers.py` carve-out (above) was never intended to be the
+      only call site; routing every chat/mcp/admin query through a
+      helper would obscure the typed return shape that FastAPI and
+      Pydantic depend on. R68 documents the existing call sites
+      verbatim so the false-positive surface is explicit and any new
+      driver call outside this list gets re-reviewed.
     risk: none
     review_owner: backend
 
@@ -51,12 +77,17 @@ allowlist:
     check: hardcoded_secret
     files:
       - infra/docker-compose.qdrant.yml
+      - infra/docker-compose.langfuse.yml
       - scripts/qdrant_backup.sh
       - scripts/dr/backup_qdrant.sh
     why: |
-      `${QDRANT_API_KEY:-}` is a shell env-var reference with an empty default,
-      not a hardcoded secret. The scanner regex matches the `api_key=` shape
-      without distinguishing literal strings from env-var expansion.
+      `${QDRANT_API_KEY:-}` and `${NEXTAUTH_SECRET:?set NEXTAUTH_SECRET in
+      .env (dev or prod)}` are shell env-var references — empty default for
+      the former, required-or-fail for the latter. Neither hardcodes a
+      secret. The scanner regex matches the `key=` shape without
+      distinguishing literal strings from env-var expansion. R68 added the
+      LangFuse line (`infra/docker-compose.langfuse.yml:73`) which is the
+      same shape as the existing entries.
     risk: none
     review_owner: platform
 
