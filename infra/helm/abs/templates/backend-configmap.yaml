@@ -20,4 +20,6 @@ data:
   ABS_STRIPE_LIVE_MODE: "{{ .Values.stripe.liveMode }}"
   ABS_LANGFUSE_URL: "{{ .Values.observability.langfuseUrl }}"
   ABS_OTLP_ENDPOINT: "{{ .Values.observability.openTelemetry.otlpEndpoint }}"
-  CERBOS_NO_TELEMETRY: "{{ .Values.cerbos.env.CERBOS_NO_TELEMETRY }}"
+  # CERBOS_NO_TELEMETRY belongs on the cerbos pod itself (.Values.cerbos.env list,
+  # propagated to the subchart). Backend does not read it, so we no longer surface
+  # it here — the previous map-form access broke under list-form values (R76).

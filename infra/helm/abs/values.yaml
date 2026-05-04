@@ -46,10 +46,15 @@ rateLimit:
   defaultPerMinute: 60
 
 # --- caveats #10 + #12: Cerbos audit → S3, telemetry off ---
+# Note (R76 fix): cerbos subchart expects `env: []` (list of name/value entries),
+# not a map. Earlier `env: {CERBOS_NO_TELEMETRY: "1"}` was silently dropped during
+# value coalescing ("Not a table" warning), defeating caveat #12. List form below
+# survives helm template under v3.20.x and v4.x.
 cerbos:
   enabled: true
   env:
-    CERBOS_NO_TELEMETRY: "1"
+    - name: CERBOS_NO_TELEMETRY
+      value: "1"
   audit:
     backend: "s3"
     s3Bucket: "abs-cerbos-audit"
