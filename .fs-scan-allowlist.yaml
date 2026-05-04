@@ -3,12 +3,12 @@
 # a flag is acceptable and so future engineers understand the carve-outs.
 # When fs-scan grows config support, this file is the single source of truth.
 
-version: 2
+version: 3
 generated: 2026-04-29
-last_review: 2026-05-04 (Q12 Session 7 R52)
+last_review: 2026-05-04 (Q12 Session 8 R56)
 target_score: 75-85
-last_observed_raw_score: 45        # P0=16 P1=226 — but ~13 P0 are FP
-last_observed_honest_score: ~75    # after FP subtraction (see R52 artifact)
+last_observed_raw_score: 45        # P0=16 P1=229 P2=3 P3=1 — but ~13 P0 are FP, 2 P2 are monorepo carve-outs
+last_observed_honest_score: ~78    # after FP subtraction + R56 root .env.example + CHANGELOG symlink
 
 allowlist:
   - id: SQLMODEL_ORM_HELPER
@@ -68,6 +68,45 @@ allowlist:
       from settings (`settings.vllm_api_key`) with the literal fallback
       `"self-host"`. The fallback is documented; no real secret leaks.
     risk: none
+    review_owner: backend
+
+  - id: MONOREPO_DOCKERFILE_NO_ROOT
+    check: missing_docker
+    files:
+      - core/backend/Dockerfile
+      - core/landing/Dockerfile
+      - infra/piper/Dockerfile
+      - infra/plugins/busybox-stub/Dockerfile
+    why: |
+      Multi-service monorepo: each service ships its own Dockerfile under
+      `core/<service>/Dockerfile` or `infra/<service>/Dockerfile`. A root-level
+      Dockerfile would be ambiguous (which service?) and is intentionally
+      absent. `infra/docker-compose.*.yml` references the per-service
+      Dockerfiles via `build.context: ../core/backend` etc.
+    risk: none
+    review_owner: platform
+
+  - id: MONOREPO_ESLINT_LANDING_ONLY
+    check: missing_lint_config
+    file: core/landing/eslint.config.mjs
+    why: |
+      ESLint applies to the Next.js landing app only (TypeScript + React).
+      The backend is Python (ruff + mypy via core/backend/pyproject.toml).
+      Root-level `.eslintrc*` would falsely imply backend coverage.
+      `core/landing/eslint.config.mjs` is the Next 15 flat-config home.
+    risk: none
+    review_owner: frontend
+
+  - id: ARTIFACT_HISTORICAL_REPRO_PASSWORD
+    check: hardcoded_secret
+    file: artifacts/sprint_q3/repro.sh
+    why: |
+      Q3 repro script uses a fixed bootstrap password to seed an admin
+      account in a throwaway compose namespace. R56 hardened the line to
+      `${A10_LOGIN_PASSWORD:-ReproQ32026!}` so CI/operators can override.
+      Default value remains for offline reproduction parity with the Q3
+      audit; this is reproduction documentation, not a live credential.
+    risk: low
     review_owner: backend
 
 policy:
