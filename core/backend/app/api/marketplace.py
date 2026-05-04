@@ -19,11 +19,12 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from app.api.auth import current_admin
 from app.config import settings
+from app.observability.audit import emit_event  # Q12-L23 sweep 5
 
 router = APIRouter(prefix="/v1/marketplace", tags=["marketplace"])
 logger = logging.getLogger(__name__)
@@ -169,14 +170,24 @@ async def list_plugins() -> Dict[str, Any]:
 
 
 @router.get("/plugins/{plugin_id}")
-async def get_plugin(plugin_id: str) -> Dict[str, Any]:
+async def get_plugin(plugin_id: str, request: Request) -> Dict[str, Any]:
     plugin = _by_id(plugin_id)
     if not plugin:
+        emit_event(
+            request,
+            action="marketplace.plugin.lookup",
+            outcome="denied",
+            reason="plugin_not_found",
+            plugin_id=plugin_id,
+            status_code=404,
+        )
         raise HTTPException(status_code=404, detail="plugin_not_found")
     return plugin
 
 
-def _enforce_tenant_match(admin: dict, tenant: str) -> None:
+def _enforce_tenant_match(
+    admin: dict, tenant: str, request: Request | None = None
+) -> None:
     """Q7 Phase B — block cross-tenant queries when admin claim carries a tenant.
 
     If the admin token has no tenant claim (legacy / single-tenant dev), we
@@ -184,20 +195,40 @@ def _enforce_tenant_match(admin: dict, tenant: str) -> None:
     """
     claim = admin.get("tenant")
     if claim and claim != tenant:
+        if request is not None:
+            emit_event(
+                request,
+                action="marketplace.install.gate",
+                outcome="denied",
+                reason="cross_tenant_forbidden",
+                tenant=tenant,
+                claim_tenant=claim,
+                status_code=403,
+            )
         raise HTTPException(status_code=403, detail="cross_tenant_forbidden")
 
 
 @router.post("/install", status_code=201)
 async def install(
     body: InstallBody,
+    request: Request,
     response: Response,
     _admin: dict = Depends(current_admin),
 ) -> Dict[str, Any]:
     plugin = _by_id(body.plugin_id)
     if not plugin:
+        emit_event(
+            request,
+            action="marketplace.install",
+            outcome="denied",
+            reason="plugin_not_found",
+            plugin_id=body.plugin_id,
+            tenant=body.tenant,
+            status_code=404,
+        )
         raise HTTPException(status_code=404, detail="plugin_not_found")
 
-    _enforce_tenant_match(_admin, body.tenant)
+    _enforce_tenant_match(_admin, body.tenant, request)
 
     # Q7 Phase B — cosign signature gate (skip-mode by default in dev).
     from app.marketplace.cosign_verify import verify_signature
@@ -208,6 +239,15 @@ async def install(
             "marketplace_install_signature_invalid plugin=%s tenant=%s",
             body.plugin_id,
             body.tenant,
+        )
+        emit_event(
+            request,
+            action="marketplace.install",
+            outcome="denied",
+            reason="signature_invalid",
+            plugin_id=body.plugin_id,
+            tenant=body.tenant,
+            status_code=403,
         )
         raise HTTPException(status_code=403, detail="signature_invalid")
 
@@ -272,17 +312,27 @@ async def install(
 @router.delete("/uninstall/{plugin_id}")
 async def uninstall(
     plugin_id: str,
+    request: Request,
     tenant: str = "default",
     _admin: dict = Depends(current_admin),
 ) -> Dict[str, Any]:
     """Q7 Phase B — tenant-scoped uninstall. Removes the install record and
     best-effort stops the sandbox container."""
-    _enforce_tenant_match(_admin, tenant)
+    _enforce_tenant_match(_admin, tenant, request)
 
     state = _read_installs()
     bucket = state.get(tenant, [])
     found = next((i for i in bucket if i.get("plugin_id") == plugin_id), None)
     if not found:
+        emit_event(
+            request,
+            action="marketplace.uninstall",
+            outcome="denied",
+            reason="not_installed",
+            plugin_id=plugin_id,
+            tenant=tenant,
+            status_code=404,
+        )
         raise HTTPException(status_code=404, detail="not_installed")
 
     state[tenant] = [i for i in bucket if i.get("plugin_id") != plugin_id]

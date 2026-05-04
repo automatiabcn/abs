@@ -24,6 +24,7 @@ from app.config import settings
 from app.db.models import License
 from app.db.session import get_session
 from app.i18n import t
+from app.observability.audit import emit_event  # Q12-L23 sweep 5
 
 router = APIRouter(prefix="/v1/billing", tags=["billing"])
 logger = logging.getLogger(__name__)
@@ -47,6 +48,13 @@ async def create_portal(
 ) -> PortalResponse:
     lang = getattr(request.state, "lang", "en")
     if not settings.stripe_secret_key:
+        emit_event(
+            request,
+            action="billing.portal.create",
+            outcome="denied",
+            reason="stripe_not_configured",
+            status_code=503,
+        )
         raise HTTPException(
             status_code=503, detail=t("errors.stripe_not_configured", lang)
         )
@@ -58,6 +66,13 @@ async def create_portal(
     ).first()
 
     if license_row is None or not license_row.customer_id_stripe:
+        emit_event(
+            request,
+            action="billing.portal.create",
+            outcome="denied",
+            reason="license_not_found",
+            status_code=404,
+        )
         raise HTTPException(
             status_code=404, detail=t("errors.license_not_found", lang)
         )
@@ -74,6 +89,14 @@ async def create_portal(
         # Prevents leakage of account-internal IDs / API key prefixes.
         logger.exception("portal session create failed: %s", exc)
         safe_detail = getattr(exc, "user_message", None) or "stripe_unavailable"
+        emit_event(
+            request,
+            action="billing.portal.create",
+            outcome="error",
+            reason="stripe_error",
+            error_class=type(exc).__name__,
+            status_code=502,
+        )
         raise HTTPException(
             status_code=502,
             detail=t("errors.portal_create_failed", lang, detail=safe_detail),
@@ -84,8 +107,22 @@ async def create_portal(
     if url is None and isinstance(portal, dict):
         url = portal.get("url")
     if not url:
+        emit_event(
+            request,
+            action="billing.portal.create",
+            outcome="error",
+            reason="portal_response_invalid",
+            status_code=502,
+        )
         raise HTTPException(
             status_code=502, detail=t("errors.portal_response_invalid", lang)
         )
 
+    emit_event(
+        request,
+        action="billing.portal.create",
+        outcome="success",
+        license_id=license_row.id,
+        status_code=200,
+    )
     return PortalResponse(portal_url=url, expires_at=expires.isoformat())
