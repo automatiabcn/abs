@@ -22,6 +22,20 @@
 import { test, expect, Page } from "@playwright/test";
 import * as fs from "node:fs";
 
+// R63 (S8) — block service-worker registration for these tests.
+// /panel/chat mounts <ServiceWorkerRegister> (R36); the SW excludes
+// /v1/* from its cache strategy but its fetch handler still wraps the
+// request in `event.respondWith(fetch(req))`. In Chromium and Firefox
+// this passthrough is transparent to `page.route()`. In WebKit (Safari
+// 17 / Playwright 1.59), requests dispatched from the SW thread are
+// not always visible to the route interceptor — confirmed by capturing
+// real seeded sessions in the page snapshot when the route was set to
+// 503 (chromium reproduced the original 503; webkit returned 200 with
+// fixture data). These scenarios test error-tile mounting, not SW
+// behaviour, so blocking SW makes the route inject deterministic
+// across all three engines.
+test.use({ serviceWorkers: "block" });
+
 function loadAuthCookie(): {
   name: string;
   value: string;
