@@ -91,20 +91,19 @@ async function noInfiniteSpinner(
 }
 
 test.describe("Q12-L20 round 4 — multi-failure simultaneous", () => {
-  // Q12-L20-003 (MED UX) — finding from this round:
+  // Q12-L20-003 (MED UX) — original finding from S5 R32:
   // Under cascade 503s on /v1/chat/sessions + /v1/chat/completions +
-  // /v1/quota the chat page renders only "Yükleniyor…" (Loading…)
-  // and never surfaces an error indicator. The user has no signal
-  // that anything failed; the loading paragraph stays put
-  // indefinitely. Frontend chat surface depends on the sessions-list
-  // resolving before any error UI mounts.
+  // /v1/quota the chat page rendered only "Yükleniyor…" (Loading…)
+  // and never surfaced an error indicator. The user had no signal
+  // that anything failed; the loading paragraph stayed put
+  // indefinitely.
   //
-  // Scenarios 6 and 7 are intentionally `test.fail()` to ship the
-  // finding without blocking CI, mirroring R5's L20-001 pattern.
-  // Fix surface: SessionsList error path must mount the
-  // chat-error-tile (or analogous) when /v1/chat/sessions 5xx.
-  // Tracked for Sprint 22 frontend resilience pass.
-  test.fail(
+  // FIX (S6 R35): ChatClient.tsx — sessions useQuery now uses
+  // retry: 1 (instead of default 3 with backoff) AND a new
+  // sessions-error-tile banner mounts above <main> whenever
+  // sessionsQuery.isError, regardless of message count or empty
+  // state. test.fail() upgraded to test() and verified PASS.
+  test(
     "scenario 6: chat 503 + sessions list 503 + completions 503 (cascade)",
     async ({ page }) => {
     if (!(await ensureAuthed(page)))
@@ -160,7 +159,7 @@ test.describe("Q12-L20 round 4 — multi-failure simultaneous", () => {
     }
   });
 
-  test.fail(
+  test(
     "scenario 7: 429 + 503 + connection abort (mixed failure modes)",
     async ({ page }) => {
     if (!(await ensureAuthed(page)))
