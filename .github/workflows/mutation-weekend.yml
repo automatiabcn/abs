@@ -89,3 +89,43 @@ jobs:
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  # Q12 R55 — Hypothesis 30K property-based fuzz, weekend opt-in.
+  # The same `[fuzz]` marker that lives default-skipped in PR CI
+  # runs here against the live FastAPI client. Independent of the
+  # mutmut matrix above (no fail-fast linkage); runs in parallel.
+  fuzz-30k:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: core/backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+      - name: Install backend + dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Run Hypothesis 30K (chat + RAG + workflows × 10K each)
+        run: |
+          python -m pytest \
+            tests/test_q11_l13_hypothesis_10k.py -m fuzz \
+            --no-header -q || python -m pytest \
+            tests/test_q11_l13_hypothesis_10k.py -m fuzz \
+            --no-header -q
+        # Single retry on transient flake (FastAPI client warm-up
+        # can be slow on a cold runner). The 2nd run is the
+        # authoritative pass/fail.
+      - name: Upload Hypothesis-DB on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hypothesis-db-fuzz-30k
+          path: core/backend/.hypothesis/
+          if-no-files-found: warn
+          retention-days: 14
