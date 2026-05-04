@@ -89,13 +89,47 @@ def verify_webhook_signature(
     """Verify GitHub `X-Hub-Signature-256` header.
 
     Format: `sha256=<hex>` where hex = HMAC-SHA256(secret, body).
+
+    Back-compat shim — keeps the bool return for any callers that
+    don't need the failure taxonomy. New callers should prefer
+    `verify_webhook_signature_typed` (Q12-L24-008).
     """
-    if not secret or not signature_header.startswith("sha256="):
-        return False
+    ok, _reason = verify_webhook_signature_typed(
+        secret=secret, body=body, signature_header=signature_header
+    )
+    return ok
+
+
+def verify_webhook_signature_typed(
+    *, secret: str, body: bytes, signature_header: str
+) -> tuple[bool, str]:
+    """Verify GitHub webhook signature with failure-reason taxonomy.
+
+    Returns: (ok, reason). `reason` is empty when ok=True, otherwise:
+      * "signing_secret_empty"  — backend not provisioned (boot misconfig);
+                                  ops should rotate/install secret. NOT
+                                  an attack signal.
+      * "header_missing"        — request lacked `X-Hub-Signature-256` or
+                                  the `sha256=` prefix.
+      * "signature_mismatch"    — header present + well-formed but HMAC
+                                  did not match. Attack signal.
+
+    Q12-L24-008 (LOW ops visibility) — pre-fix the single-boolean
+    return collapsed `secret_empty` and `signature_mismatch` into one
+    `signature_invalid` audit event. Operations could not distinguish
+    "we forgot to provision GITHUB_APP_WEBHOOK_SECRET" from "an
+    attacker is probing the endpoint."
+    """
+    if not secret:
+        return False, "signing_secret_empty"
+    if not signature_header or not signature_header.startswith("sha256="):
+        return False, "header_missing"
     expected = "sha256=" + hmac.new(
         secret.encode("utf-8"), body, hashlib.sha256
     ).hexdigest()
-    return hmac.compare_digest(expected, signature_header)
+    if hmac.compare_digest(expected, signature_header):
+        return True, ""
+    return False, "signature_mismatch"
 
 
 # ---- App manifest ---------------------------------------------------------------
