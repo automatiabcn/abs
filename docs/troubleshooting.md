@@ -175,6 +175,56 @@ docker compose exec backend python -c \
    p.write_text(json.dumps({'completed':True,'current_step':6,'completed_steps':['admin','license','domain','anthropic','providers','test'],'started_at':time.time(),'completed_at':time.time(),'data':{}}))"
 ```
 
+## Cerbos / Helm
+
+### `helm upgrade abs` Cerbos pod'u CrashLoopBackOff'a düşüyor (Caveat #12)
+
+**Sebep:** Q12-R76 öncesi `infra/helm/abs/values*.yaml` Cerbos için K8s
+1.27/1.28/1.29 ile uyumlu olmayan field'lar tutuyordu (`policy_compile_failed`).
+R76 helm umbrella + R89 production deploy spec bu sorunu kapatır.
+
+**Çözüm:**
+
+```bash
+cd infra/helm/abs
+helm upgrade --install abs . \
+    --namespace abs-prod \
+    --values values.production.yaml \
+    --atomic --timeout 5m
+```
+
+**Doğrulama (R89 4-adım):**
+
+1. `kubectl -n abs-prod rollout status deployment/abs-cerbos`
+2. `kubectl -n abs-prod logs deployment/abs-cerbos --tail 50` — `policy_compile_failed` görünmemeli
+3. `kubectl -n abs-prod exec deployment/abs-api -- curl -s localhost:3592/_cerbos/healthz` → `{"status":"SERVING"}`
+4. `kubectl -n abs-prod exec deployment/abs-api -- curl -s localhost:3592/api/check` örnek policy isteği → 200
+
+Detay: `artifacts/sprint_q12/round_89_cerbos_live_deploy_spec.md`.
+
+## Lighthouse nightly cron
+
+### Cron 0 fail / artefakt boş (`abs.local` resolution)
+
+**Sebep:** Q12-R82 öncesi `lighthouse-nightly.yml` workflow'u
+`http://abs.local`'i probe ediyordu — CI runner DNS'inde resolve etmiyor,
+job sessizce fail oluyordu.
+
+**Çözüm:** R82 (`f362601`) hedefi `http://localhost:3000`'e çevirdi.
+İlk post-fix Saturday cron: **2026-05-09 02:00 UTC**.
+
+**Doğrulama:**
+
+```bash
+ls -lah artifacts/lighthouse/2026-05-09T02-*.json
+jq '.categories | {perf:.performance.score, a11y:.accessibility.score, bp:."best-practices".score, seo:.seo.score}' \
+   artifacts/lighthouse/2026-05-09T02-*.json
+```
+
+4 × 1.0 (perf/a11y/bp/seo) bekleniyor. < 0.9 düşerse bug aç ve handoff'u
+durdur. Review template:
+`artifacts/sprint_q12/round_90_lighthouse_artifact_review.md`.
+
 ## Bilinmeyen hatalar
 
 `docker compose logs backend | tail -100` çıktısını
