@@ -49,27 +49,112 @@ def _admin_credentials_path() -> Path:
     return Path(settings.data_dir) / "admin_credentials.json"
 
 
+def _load_admin_credentials_raw() -> Optional[Dict]:
+    """Round-5 BUG-10 — read admin_credentials.json as a raw dict so callers
+    that need fields beyond `(email, hash, source)` (e.g. ``tenant_slug``)
+    can access them without breaking the legacy 3-tuple contract.
+
+    Returns None when the file is missing or unreadable.
+    """
+    creds_file = _admin_credentials_path()
+    try:
+        raw = json.loads(creds_file.read_text(encoding="utf-8"))
+        if isinstance(raw, dict):
+            return raw
+    except FileNotFoundError:
+        return None
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning(
+            "admin_credentials.json unreadable, falling back to bootstrap: %s", exc
+        )
+    return None
+
+
 def _load_admin_credentials() -> Tuple[str, bytes, str]:
     """Setup wizard creds varsa onlari, yoksa bootstrap fallback dondur.
 
     Returns:
         (email, password_hash_bytes, source) — source bir teshis amacli string.
     """
-    creds_file = _admin_credentials_path()
-    try:
-        raw = json.loads(creds_file.read_text(encoding="utf-8"))
-        email = raw["email"]
-        password_hash = raw["password_hash"].encode("utf-8")
-        return email, password_hash, "setup_wizard"
-    except FileNotFoundError:
-        pass
-    except (KeyError, json.JSONDecodeError, OSError) as exc:
-        logger.warning(
-            "admin_credentials.json unreadable, falling back to bootstrap: %s", exc
-        )
+    raw = _load_admin_credentials_raw()
+    if raw is not None:
+        try:
+            return (
+                raw["email"],
+                raw["password_hash"].encode("utf-8"),
+                "setup_wizard",
+            )
+        except KeyError as exc:
+            logger.warning(
+                "admin_credentials.json missing key, falling back to bootstrap: %s",
+                exc,
+            )
 
     bootstrap_hash = _hash_password(settings.admin_password_bootstrap)
     return BOOTSTRAP_ADMIN_EMAIL, bootstrap_hash, "bootstrap"
+
+
+_TENANT_SLUG_RE = __import__("re").compile(r"^[a-z0-9](?:[a-z0-9\-]{0,30}[a-z0-9])?$")
+
+
+def _derive_tenant_from_email(email: Optional[str]) -> Optional[str]:
+    """Round-5 BUG-10 fallback — derive tenant_slug from the email domain's
+    first label when no explicit slug is recorded.
+
+    ``admin@demo-acme.com`` → ``demo-acme``. Single-label domains
+    (``admin@local``, ``admin``) and slugs that fail the public signup
+    regex return None so the resolver can fall through to ``default``
+    instead of accepting an unsafe slug.
+    """
+    if not email or "@" not in email:
+        return None
+    domain = email.rsplit("@", 1)[1].lower()
+    if "." not in domain:
+        return None
+    label = domain.split(".", 1)[0]
+    if not _TENANT_SLUG_RE.match(label):
+        return None
+    return label
+
+
+def _lookup_tenant_slug(email: str) -> Optional[str]:
+    """Round-5 BUG-10 — resolve a session's tenant_slug from any source so
+    the JWT mint can carry it as a claim.
+
+    Order:
+      1. ``users`` table (active row owns the truth when present).
+      2. ``admin_credentials.json`` ``tenant_slug`` field (set by magic-link
+         claim path, optionally by setup wizard).
+      3. Email-domain heuristic for bootstrap-only deployments where neither
+         source carries a slug yet.
+    """
+    if not email:
+        return None
+    try:
+        from sqlmodel import Session, select
+
+        from app.db.models import User
+        from app.db.session import get_engine
+
+        with Session(get_engine()) as db:
+            stmt = (
+                select(User)
+                .where(User.email == email)
+                .where(User.status == "active")
+            )
+            user = db.execute(stmt).scalars().first()
+            if user is not None and user.tenant_slug:
+                return str(user.tenant_slug)
+    except Exception as exc:
+        logger.debug("tenant_slug DB lookup failed (non-fatal): %s", exc)
+
+    raw = _load_admin_credentials_raw()
+    if raw is not None and raw.get("email") == email:
+        slug = raw.get("tenant_slug")
+        if slug:
+            return str(slug)
+
+    return _derive_tenant_from_email(email)
 
 
 def _lookup_user_in_db(email: str) -> Optional[Tuple[str, bytes, str]]:
@@ -118,13 +203,23 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=1, max_length=128)
 
 
-def _create_token(email: str) -> str:
+def _create_token(email: str, tenant: Optional[str] = None) -> str:
+    """Round-5 BUG-10 — embed an optional ``tenant`` claim alongside ``sub``.
+
+    Without the claim, downstream tenant-scoped resolvers (e.g.
+    ``marketplace._resolve_admin_tenant``) had to fall back to the bootstrap
+    ``"default"`` slug whenever the users-table row was missing — true for
+    every setup-wizard admin. Embedding the claim here closes that gap for
+    the login + magic-link mint paths.
+    """
     now = datetime.now(tz=timezone.utc)
-    payload = {
+    payload: Dict[str, object] = {
         "sub": email,
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(seconds=COOKIE_MAX_AGE_SECONDS)).timestamp()),
     }
+    if tenant:
+        payload["tenant"] = tenant
     return jwt.encode(payload, settings.session_secret, algorithm="HS256")
 
 
@@ -257,7 +352,8 @@ def login(payload: LoginRequest, request: Request, response: Response) -> Dict:
 
     for admin_email, admin_hash, source in candidates:
         if _verify_password(payload.password, admin_hash):
-            token = _create_token(admin_email)
+            tenant_slug = _lookup_tenant_slug(admin_email)
+            token = _create_token(admin_email, tenant=tenant_slug)
             _set_cookie(response, token)
             emit_event(
                 request,
@@ -265,11 +361,13 @@ def login(payload: LoginRequest, request: Request, response: Response) -> Dict:
                 outcome="success",
                 provider=source,
                 email_hint=(admin_email[:3] + "***") if admin_email else None,
+                tenant=tenant_slug or "",
             )
             return {
                 "status": "logged_in",
                 "email": admin_email,
                 "source": source,
+                "tenant_slug": tenant_slug,
             }
 
     logger.info(
@@ -511,7 +609,9 @@ def magic_claim(token: str, request: Request, response: Response) -> Dict:
     rows = [r for r in rows if r.get("magic_token") != token]
     _write_pending_signups(rows)
 
-    session_token = _create_token(result["email"])
+    session_token = _create_token(
+        result["email"], tenant=result.get("tenant_slug")
+    )
     _set_cookie(response, session_token)
     return {
         "status": "claimed",

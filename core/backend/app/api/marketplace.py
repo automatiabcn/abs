@@ -189,13 +189,22 @@ async def get_plugin(plugin_id: str, request: Request) -> Dict[str, Any]:
 
 
 def _resolve_admin_tenant(admin: dict) -> str:
-    """Round-4 BUG-10 — fall back from JWT claim to users table lookup.
+    """Round-5 BUG-10 follow-up — resolve tenant for the active admin from
+    every available source so bootstrap (setup-wizard) admins are no longer
+    forced into the ``"default"`` tenant.
 
-    The session JWT only carries `sub` (email), so admin claims rarely
-    include `tenant`. Without this lookup, `/v1/marketplace/installed`
-    defaulted to `tenant=default` even when the admin owned
-    `tenant_slug=demo-acme`, returning an empty list despite a successful
-    install.
+    Resolution order:
+      1. JWT ``tenant`` claim — minted by ``auth._create_token`` whenever a
+         slug can be inferred at login / magic-link time.
+      2. ``users`` table active row — magic-link claim + signup persist this.
+      3. ``admin_credentials.json`` cross-check — magic-link claim writes
+         ``tenant_slug`` here; setup wizard may also persist it once the
+         operator opts in.
+      4. Email-domain heuristic — ``admin@demo-acme.com`` → ``demo-acme``
+         keeps the bootstrap (file-only) admin scoped without forcing the
+         caller to pass an explicit tenant query parameter on every request.
+      5. ``"default"`` — last-resort fallback for genuinely tenant-less
+         single-host installs (``admin@local``).
     """
     claim = admin.get("tenant")
     if claim:
@@ -203,6 +212,7 @@ def _resolve_admin_tenant(admin: dict) -> str:
     email = admin.get("sub")
     if not email:
         return "default"
+
     try:
         with Session(get_engine()) as db:
             stmt = (
@@ -211,9 +221,32 @@ def _resolve_admin_tenant(admin: dict) -> str:
                 .where(User.status == "active")
             )
             user = db.exec(stmt).first()
-            return user.tenant_slug if user else "default"
+            if user is not None and user.tenant_slug:
+                return str(user.tenant_slug)
     except Exception:  # pragma: no cover — boot before users table
-        return "default"
+        pass
+
+    try:
+        from app.api.auth import _load_admin_credentials_raw
+
+        raw = _load_admin_credentials_raw()
+        if raw is not None and raw.get("email") == email:
+            slug = raw.get("tenant_slug")
+            if slug:
+                return str(slug)
+    except Exception:  # pragma: no cover — credentials path unavailable
+        pass
+
+    try:
+        from app.api.auth import _derive_tenant_from_email
+
+        derived = _derive_tenant_from_email(email)
+        if derived:
+            return derived
+    except Exception:  # pragma: no cover
+        pass
+
+    return "default"
 
 
 def _enforce_tenant_match(
