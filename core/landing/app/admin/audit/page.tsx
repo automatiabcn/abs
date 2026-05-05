@@ -18,6 +18,13 @@ import { MOCK_AUDIT, type AuditEntry } from "./types";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// FOUNDER_FIX_1 / SWEEP — unique <title> per panel/admin page.
+import type { Metadata } from "next";
+export const metadata: Metadata = {
+  title: "Denetim — ABS Admin · Automatia ABS",
+  robots: { index: false, follow: false },
+};
+
 const BACKEND_URL = process.env.ABS_BACKEND_URL ?? "http://localhost:8000";
 
 async function fetchAuditServerSide(): Promise<AuditEntry[]> {
