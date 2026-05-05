@@ -3,12 +3,21 @@
 # a flag is acceptable and so future engineers understand the carve-outs.
 # When fs-scan grows config support, this file is the single source of truth.
 
-version: 4
+version: 5
 generated: 2026-04-29
-last_review: 2026-05-04 (Q12 Session 8 R68)
+last_review: 2026-05-05 (Q12 Session 9 R79)
 target_score: 75-85
-last_observed_raw_score: 47        # P0=16 P1=232 P2=2 — 12 P0 are SQLModel-ORM/env-var FPs, 2 P2 are monorepo carve-outs
-last_observed_honest_score: ~89    # R68: ~78 + 10 SQLModel db.exec API FPs + NEXTAUTH_SECRET env-var ref
+last_observed_raw_score: 47        # P0=16 P1=236 P2=2
+last_observed_honest_score: ~95    # R79: every P0 either SQLModel ORM (10), shell ${VAR:-default} env-default (5), or historical Q3 repro (1) — 0 unexplained P0
+# R79 changes vs v4:
+#   - delete extracted Bitnami subchart directories (kept .tgz; helm dep
+#     build re-extracts on demand) — eliminates ~11 large_file P1s and
+#     ~2 placeholder_code P0s that were vendored noise from postgresql/
+#     redis/nats subchart templates.
+#   - add DOCKER_SHELL_ENV_DEFAULTS entry: covers all 5 P0
+#     hardcoded_secret hits in infra/docker-compose.{demo,langfuse,qdrant}.yml
+#     and scripts/{qdrant_backup.sh, dr/backup_qdrant.sh}; every one is a
+#     ${VAR:-default} or ${VAR:?error} shell pattern, never a literal secret.
 
 allowlist:
   - id: SQLMODEL_ORM_HELPER
@@ -127,6 +136,32 @@ allowlist:
       `core/landing/eslint.config.mjs` is the Next 15 flat-config home.
     risk: none
     review_owner: frontend
+
+  - id: DOCKER_SHELL_ENV_DEFAULTS
+    check: hardcoded_secret
+    files:
+      - infra/docker-compose.demo.yml
+      - infra/docker-compose.langfuse.yml
+      - infra/docker-compose.qdrant.yml
+      - scripts/qdrant_backup.sh
+      - scripts/dr/backup_qdrant.sh
+    why: |
+      fs-scan flags `${VAR:-default}` and `${VAR:?error_message}` shell
+      parameter-expansion forms as hardcoded secrets because the scanner
+      sees a literal value to the right of `=`. They are NOT hardcoded
+      secrets — they are the safe fallback patterns:
+        ${VAR:-default}    use 'default' if VAR is unset or empty
+        ${VAR:?msg}        FAIL if VAR is unset or empty (msg is the error)
+      Every flagged line in this entry is one of:
+        * `${VAR:-}`                        empty fallback (no real secret)
+        * `${VAR:-whsec_demo_dummy}`        compose demo placeholder
+        * `${VAR:?set NEXTAUTH_SECRET ...}` *required* — the opposite of a
+          hardcoded value; the compose stack refuses to start without it
+      Real secrets ride env files (loaded via sops/age vault per caveat
+      013) or platform secret stores. None of the values here would
+      grant access to anything if leaked.
+    risk: none
+    review_owner: platform
 
   - id: ARTIFACT_HISTORICAL_REPRO_PASSWORD
     check: hardcoded_secret
