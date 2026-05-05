@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # Cascade order matches the customer-facing brief: paid first, then free
 # providers in approximate quality order. `provider_id` aligns with the
 # names used in `quota_monitor.QUOTAS` and `usage_log.append`.
-PROVIDER_ORDER: tuple[str, ...] = (
+PROVIDER_ORDER_PAID_FIRST: tuple[str, ...] = (
     "anthropic",
     "groq",
     "cerebras",
@@ -35,6 +35,26 @@ PROVIDER_ORDER: tuple[str, ...] = (
     "cloudflare",
     "cohere",
 )
+
+# Cost-saving chain — used when the request opts out of paid providers
+# (`skip_paid_providers=true` or wizard's free-tier path). `groq` leads
+# because Llama 3.3 70B + GPT-OSS 120B give the best free-tier quality
+# and lowest p95.
+PROVIDER_ORDER_FREE_FIRST: tuple[str, ...] = (
+    "groq",
+    "cerebras",
+    "gemini",
+    "cohere",
+    "cloudflare",
+)
+
+# Back-compat alias — modules + tests still import `PROVIDER_ORDER`.
+PROVIDER_ORDER: tuple[str, ...] = PROVIDER_ORDER_PAID_FIRST
+
+# Providers that cost money per token. `skip_paid_providers=true` filters
+# these out of the active chain. Future paid providers (OpenAI etc.)
+# get added here, not to the public chain.
+PAID_PROVIDERS: frozenset[str] = frozenset({"anthropic"})
 
 
 # Settings attribute name per provider — Cloudflare uses `cf_api_token` not
@@ -70,14 +90,21 @@ def is_configured(provider: str) -> bool:
     return len(value.strip()) > _MIN_KEY_LENGTH
 
 
-def get_active_providers(prefer: Optional[str] = None) -> List[str]:
+def get_active_providers(
+    prefer: Optional[str] = None,
+    skip_paid: bool = False,
+) -> List[str]:
     """Return the ordered cascade chain of *configured* providers.
     Empty list = no providers at all (caller should 503).
 
     `prefer`, when supplied and configured, moves that provider to the front
-    of the chain. The rest follow `PROVIDER_ORDER`.
+    of the chain. `skip_paid=True` swaps to the free-first chain and drops
+    paid providers entirely (founder-test Round 3 BUG-7 + BUG-8).
     """
-    active = [p for p in PROVIDER_ORDER if is_configured(p)]
+    base_order = PROVIDER_ORDER_FREE_FIRST if skip_paid else PROVIDER_ORDER_PAID_FIRST
+    active = [p for p in base_order if is_configured(p)]
+    if skip_paid:
+        active = [p for p in active if p not in PAID_PROVIDERS]
     if prefer and prefer in active:
         active.remove(prefer)
         active.insert(0, prefer)
