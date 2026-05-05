@@ -361,7 +361,8 @@ export function MessageInput({
             variant="ghost"
             size="icon"
             onClick={onAbort}
-            aria-label="Akışı durdur"
+            aria-label="Akışı durdur · Stop · Detener"
+            data-testid="chat-abort"
           >
             <StopCircle className="h-4 w-4" />
           </Button>
@@ -371,7 +372,8 @@ export function MessageInput({
             size="icon"
             onClick={onSubmit}
             disabled={disabled || !value.trim()}
-            aria-label="Gönder"
+            aria-label="Mesaj gönder · Send message · Enviar"
+            data-testid="chat-send"
           >
             <ArrowUp className="h-4 w-4" />
           </Button>

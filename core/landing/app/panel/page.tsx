@@ -30,6 +30,15 @@ import {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// FOUNDER_FIX_1 / SWEEP — every panel/admin page now ships a unique <title>
+// so tester walkthroughs and OS window titles can disambiguate routes.
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Genel Bakış — ABS Panel · Automatia ABS",
+  robots: { index: false, follow: false },
+};
+
 const BACKEND_URL = process.env.ABS_BACKEND_URL ?? "http://localhost:8000";
 
 async function fetchSlice<T>(path: string, fallback: T): Promise<T> {
