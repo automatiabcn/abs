@@ -20,7 +20,7 @@
         <p>Ödeme sırasında bu kodu kullanarak yıllık aboneliğinizde %50 indirim talep edin. Bu, yalnızca beta katılımcılarına özel olup 7 gün geçerli. Bundan sonra standart fiyatlandırma uygulanır.</p>
 
         <ul style="padding-left:20px;color:#374151;margin-top:16px;">
-            <li>Yıllık plan: Normalde <strike>4.800$</strike> → <strong>2.400$</strong></li>
+            {% if annual_offer_strike and annual_offer_price %}<li>Yıllık plan: Normalde <strike>{{ annual_offer_strike }}$</strike> → <strong>{{ annual_offer_price }}$</strong></li>{% else %}<li>Yıllık plan: Güncel fiyat için müşteri portalına bak.</li>{% endif %}
             <li>Sınırsız araç çağrıları, darboğaz yok</li>
             <li>Öncelikli destek + üç aylık strateji görüşmeleri</li>
             <li>Özel MCP araç geliştirme</li>

@@ -23,7 +23,7 @@
         <h3 style="color:#9a3412; margin-top:24px;">Ne yapmalısın?</h3>
         <ol style="padding-left:20px;">
             <li>Müşteri portal'a giderek aboneliğini yenile.</li>
-            <li>Maintenance paketin yoksa şimdi ekleyebilirsin ($49/yıl).</li>
+            {% if maintenance_price_yearly %}<li>Maintenance paketin yoksa şimdi ekleyebilirsin (${{ maintenance_price_yearly }}/yıl).</li>{% else %}<li>Maintenance paketi de ekleyebilirsin — fiyat için portala bak.</li>{% endif %}
             <li>Yenileme sonrası lisans otomatik aktif olur — hiçbir kurulum gerekmez.</li>
         </ol>
 

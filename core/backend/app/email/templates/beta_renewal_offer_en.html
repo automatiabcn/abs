@@ -20,7 +20,7 @@
         <p>Use this code at checkout to lock in 50% off your annual subscription. This is exclusive to beta participants and valid for 7 days only. After that, standard pricing applies.</p>
 
         <ul style="padding-left:20px;color:#374151;margin-top:16px;">
-            <li>Annual plan: Normally <strike>$4,800</strike> → <strong>$2,400</strong></li>
+            {% if annual_offer_strike and annual_offer_price %}<li>Annual plan: Normally <strike>${{ annual_offer_strike }}</strike> → <strong>${{ annual_offer_price }}</strong></li>{% else %}<li>Annual plan: see the customer portal for current pricing.</li>{% endif %}
             <li>Unlimited tool calls, no throttling</li>
             <li>Priority support + quarterly strategy calls</li>
             <li>Custom MCP tool development</li>
