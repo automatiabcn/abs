@@ -221,26 +221,29 @@ def _last_payment_iso() -> Optional[str]:
 
 
 def _mrr_estimate_usd() -> int:
-    """Rough MRR: self-host=$299/12, team-5=$99/seat/mo (5 seats)…
-    For beta launch we just count tier × seat heuristic without billing data."""
+    """Rough MRR: tier × active-license heuristic. Per-tier monthly contribution
+    comes from settings (Q12-R84 — operator configures real prices)."""
     try:
         from sqlmodel import Session, select
 
+        from app.config import settings as _s
         from app.db.models import License
         from app.db.session import get_engine
 
-        TIER_MONTHLY: dict[str, int] = {
-            "self-host": 25,
-            "team-5": 495,
-            "team-10": 870,
+        # Heuristic share of seat-pack list price counted per active license per
+        # month. Defaults are 0.0 — operator configures via env to surface MRR.
+        TIER_MONTHLY: dict[str, float] = {
+            "self-host": _s.abs_seat_price_self_host / 12.0,
+            "team-5": _s.abs_seat_price_team_5 / 12.0,
+            "team-10": _s.abs_seat_price_team_10 / 12.0,
         }
         with Session(get_engine()) as db:
             rows = list(db.scalars(select(License)).all())
-        total = 0
+        total = 0.0
         for r in rows:
             if r.tier in TIER_MONTHLY and r.revoked_at is None and r.purged_at is None:
                 total += TIER_MONTHLY[r.tier]
-        return total
+        return int(round(total))
     except Exception:
         return 0
 
