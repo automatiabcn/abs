@@ -191,11 +191,24 @@
       if (!timer) timer = setInterval(refresh, REFRESH_MS);
     }
 
+    let widgetPricing = { revenue_widget_multiplier: 0 };
+    async function loadWidgetPricing() {
+      try {
+        const r = await fetch('/v1/admin/widget_pricing', { credentials: 'include' });
+        if (r.ok) widgetPricing = await r.json();
+      } catch (err) {
+        // Silent — widget falls back to $0/mo when pricing not configured.
+      }
+    }
+
     async function refresh() {
       try {
         const r = await fetch('/v1/admin/dashboard', { credentials: 'include' });
         if (r.status === 401 || r.status === 403) { showLogin(); return; }
         const data = await r.json();
+        if (!widgetPricing || widgetPricing.revenue_widget_multiplier === undefined) {
+          await loadWidgetPricing();
+        }
         renderWidgets(data);
       } catch (err) {
         console.error('dashboard refresh failed', err);
@@ -236,7 +249,8 @@
 
       document.getElementById('w-licenses').textContent = billing.licenses_active ?? '—';
       const total = (billing.licenses_active || 0);
-      document.getElementById('w-revenue').textContent = total ? `$${total * 25}/mo` : '$0/mo';
+      const mult = Number(widgetPricing && widgetPricing.revenue_widget_multiplier) || 0;
+      document.getElementById('w-revenue').textContent = (total && mult) ? `$${total * mult}/mo` : '$0/mo';
 
       renderTierBreakdown(document.getElementById('w-tiers'), billing.tier_breakdown || {});
 
