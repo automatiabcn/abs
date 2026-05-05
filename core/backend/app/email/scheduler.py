@@ -129,6 +129,22 @@ def _render_for(row: EmailQueue, db: Session) -> Tuple[str, str]:
         "customer_email": row.customer_email,
         "license_jti": row.license_jti,
         "unsubscribe_url": unsubscribe_url,
+        # Q12-R84 — pricing pulled from settings; templates render "" when 0.0.
+        "maintenance_price_yearly": (
+            f"{settings.abs_maintenance_price_yearly:.0f}"
+            if settings.abs_maintenance_price_yearly > 0
+            else ""
+        ),
+        "annual_offer_strike": (
+            f"{settings.abs_annual_offer_strike:.0f}"
+            if settings.abs_annual_offer_strike > 0
+            else ""
+        ),
+        "annual_offer_price": (
+            f"{settings.abs_annual_offer_price:.0f}"
+            if settings.abs_annual_offer_price > 0
+            else ""
+        ),
     }
 
     if row.kind == "expiry_warning":
