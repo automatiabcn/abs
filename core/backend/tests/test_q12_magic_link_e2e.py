@@ -20,8 +20,11 @@ Six contracts:
 
 from __future__ import annotations
 
+import json
 import logging
+import time
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -31,6 +34,47 @@ from sqlmodel import Session, select
 
 from app.db.models import User
 from app.db.session import get_engine
+
+
+@pytest.fixture(autouse=True)
+def _isolate_data_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Q12-S12-R96 — pin per-test settings.data_dir so the magic-link
+    claim flow's `admin_credentials.json` write (auth.py
+    `_claim_user_by_token`) cannot leak into the session-scope data dir.
+
+    Without isolation the file overlays the bootstrap fallback
+    (`admin@local`/`CHANGEME`) and every later test that posts to
+    `/auth/login` with the bootstrap creds gets 401. S11 host baseline
+    surfaced this as 3 FAIL (`test_secrets_api`) + 17 ERROR
+    (`test_q12_provider_degradation_matrix` × 7 + `test_q8_chat` × 10).
+
+    Re-write `setup_state.json` to "completed" inside the per-test dir so
+    `FirstRunMiddleware` does not redirect `/auth/signup` to `/setup`.
+    """
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "data_dir", str(tmp_path))
+    state_file = tmp_path / "setup_state.json"
+    state_file.write_text(
+        json.dumps(
+            {
+                "completed": True,
+                "current_step": 6,
+                "completed_steps": [
+                    "admin",
+                    "license",
+                    "domain",
+                    "anthropic",
+                    "providers",
+                    "test",
+                ],
+                "started_at": time.time(),
+                "completed_at": time.time(),
+                "data": {},
+            }
+        ),
+        encoding="utf-8",
+    )
 
 
 def _signup(client: TestClient, email: str, slug: str, password: str = "TestPass2026!") -> str:
