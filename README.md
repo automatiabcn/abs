@@ -1,7 +1,7 @@
 # Automatia ABS — Self-host AI orchestration for Claude Code
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-409%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-1791%20passing-brightgreen.svg)](#testing)
 [![Lighthouse](https://img.shields.io/badge/lighthouse-100%2F100%2F100%2F100-brightgreen.svg)](docs/performance.md)
 [![Tools](https://img.shields.io/badge/MCP%20tools-107-blue.svg)](docs/api-reference.md)
 
@@ -82,7 +82,7 @@ prompts go from your machine to your ABS server to Anthropic, and stay private.
 - **MCP** — `mcp.server.fastmcp` (Anthropic-maintained Python SDK).
 - **Vault** — Mozilla sops + age (4096-bit RSA optional).
 - **Deploy** — Docker Compose + Caddy.
-- **Tests** — pytest (409) + vitest (22) + Lighthouse (100/100/100/100).
+- **Tests** — pytest (1791) + vitest (53) + Playwright (41) + Lighthouse (100/100/100/100).
 
 Architecture: [docs/architecture.md](docs/architecture.md).
 API reference: [docs/api-reference.md](docs/api-reference.md).
