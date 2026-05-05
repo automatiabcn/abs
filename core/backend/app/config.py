@@ -116,9 +116,22 @@ class Settings(BaseSettings):
     mlx_url: str = ""  # Apple Silicon Neural Engine bridge (boşsa graceful)
 
     # 011 — Stripe Price ID'leri (manuel setup_stripe_products.py'den .env'e elle yapıştır)
-    abs_price_self_host: str = ""   # Stripe Price ID — $299 self-host
-    abs_price_team_5: str = ""      # Stripe Price ID — $1196 team-pack 5 seat
-    abs_price_team_10: str = ""     # Stripe Price ID — $2093 team-pack 10 seat
+    abs_price_self_host: str = ""   # Stripe Price ID — self-host SKU
+    abs_price_team_5: str = ""      # Stripe Price ID — team-pack 5 seat SKU
+    abs_price_team_10: str = ""     # Stripe Price ID — team-pack 10 seat SKU
+
+    # Q12-R84 — Tier seat list prices (USD/month). Default 0.0 = pricing not
+    # configured; operators MUST set these in their own .env. Tier IDs
+    # ("self-host", "team-5", "team-10") are SKU keys, not prices.
+    abs_seat_price_self_host: float = 0.0
+    abs_seat_price_team_5: float = 0.0
+    abs_seat_price_team_10: float = 0.0
+    # Admin dashboard widget multiplier (revenue extrapolation: licenses × X / mo).
+    abs_revenue_widget_multiplier: float = 0.0
+    # Maintenance add-on yearly fee + beta annual offer (used in email templates).
+    abs_maintenance_price_yearly: float = 0.0
+    abs_annual_offer_strike: float = 0.0
+    abs_annual_offer_price: float = 0.0
 
     # 013 — Encrypted secrets vault (sops + age)
     vault_key_path: str = "/app/vault-key/age.key"  # master key (ayrı volume!)
