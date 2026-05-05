@@ -26,6 +26,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.api.auth import current_admin
+from app.cascade.orchestrator import call_with_cascade
 from app.config import settings
 from app.providers.anthropic_mock import (
     AnthropicMockProvider,
@@ -49,6 +50,8 @@ class CascadeRequest(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=8000)
     prefer: Optional[str] = None
     max_tokens: int = Field(default=1024, ge=1, le=8192)
+    model: Optional[str] = None
+    use_cache: bool = True
 
 
 class CascadeResponse(BaseModel):
@@ -57,6 +60,9 @@ class CascadeResponse(BaseModel):
     fallback_chain: List[str]
     tokens_used: int
     mock: bool = False
+    cached: bool = False
+    elapsed_ms: int = 0
+    model: str = ""
 
 
 @router.get("/providers")
@@ -126,14 +132,54 @@ async def run(
             "or enable ABS_ANTHROPIC_MOCK_MODE for test runs",
         )
 
-    # 3. Real provider cascade — Q4 Phase 7-live ships the live HTTP wiring
-    #    against Groq/Cerebras/Gemini. For now signal the gap clearly so
-    #    operators know what they need to provision.
-    raise HTTPException(
-        503,
-        "live_cascade_pending: providers configured but live cascade "
-        "wiring lands in Q4 Phase 7-live (operator vault key + judge tests). "
-        f"Detected chain: {','.join(active)}",
+    # 3. Real provider cascade — call_with_cascade walks the active chain
+    #    (cache → breaker → fallback). Configured-but-unregistered providers
+    #    (e.g. anthropic gated by ABS_ANTHROPIC_ENABLED) raise inside the
+    #    orchestrator and the loop falls through to the next.
+    primary, *rest = active
+    try:
+        resp = await call_with_cascade(
+            body.prompt,
+            primary=primary,
+            model=body.model,
+            fallbacks=tuple(rest),
+            use_cache=body.use_cache,
+            max_tokens=body.max_tokens,
+        )
+    except ProviderError as exc:
+        # All providers in the chain failed (transient or hard fail).
+        raise HTTPException(
+            502,
+            f"all_providers_failed: {exc.message or str(exc)} "
+            f"(chain={','.join(active)})",
+        ) from exc
+
+    fallback_chain.append(resp.provider or primary)
+    tokens_used = (resp.tokens_in or 0) + (resp.tokens_out or 0)
+    try:
+        usage_log.append(
+            resp.provider or primary,
+            tokens=tokens_used,
+            tenant_slug=admin.get("sub", "default"),
+        )
+    except Exception:
+        pass
+    try:
+        feature_usage_service.increment(
+            "cascade_provider_call", actor_email=admin.get("sub")
+        )
+    except Exception:
+        pass
+
+    return CascadeResponse(
+        completion=resp.text,
+        provider=resp.provider or primary,
+        fallback_chain=fallback_chain,
+        tokens_used=tokens_used,
+        mock=False,
+        cached=resp.cached,
+        elapsed_ms=resp.elapsed_ms,
+        model=resp.model,
     )
 
 

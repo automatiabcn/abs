@@ -21,7 +21,10 @@ services:
       # Production overlays should set QDRANT__SERVICE__API_KEY explicitly.
       # Leaving the variable unset disables auth entirely (dev mode).
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:6333/readyz || exit 1"]
+      # Qdrant 1.17.1 image ships without wget/curl. Open a TCP socket via
+      # Bash's /dev/tcp pseudo-device — it returns immediately when the
+      # HTTP listener has bound the port.
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333' || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 5
