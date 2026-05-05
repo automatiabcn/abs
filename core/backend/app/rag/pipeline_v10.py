@@ -6,7 +6,20 @@ import hashlib
 import logging
 import os
 import tempfile
+import uuid
 from dataclasses import dataclass
+
+
+# Founder Tester Round 2 (BUG-6, infra fix) — Qdrant point IDs must be
+# unsigned ints or RFC-4122 UUIDs. The previous chunk_id format
+# (`<doc_id>-<seq:04d>`) failed Qdrant validation with "is not a valid
+# point ID". We derive a deterministic UUID5 from doc_id+seq so reruns
+# remain idempotent and `id` is still inspectable from a known doc.
+_CHUNK_NAMESPACE = uuid.UUID("8a3b9f2c-1e4d-4f5a-9c7e-2b1d3e4f5a6b")
+
+
+def _chunk_uuid(doc_id: str, seq: int) -> str:
+    return str(uuid.uuid5(_CHUNK_NAMESPACE, f"{doc_id}/{seq}"))
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +197,7 @@ def late_chunks(
         meta["char_end"] = str(end)
         chunks.append(
             Chunk(
-                chunk_id=f"{doc.doc_id}-{seq:04d}",
+                chunk_id=_chunk_uuid(doc.doc_id, seq),
                 text=final,
                 raw_text=raw,
                 doc_id=doc.doc_id,

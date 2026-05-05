@@ -102,7 +102,12 @@ services:
       - "8000:8000"   # dev — direct access for Playwright + manual tests
     environment:
       ABS_NATS_URL: "nats://nats:4222"
-      ABS_CERBOS_HOST: "cerbos:3593"
+      # Founder Tester Round 2 (BUG-6) — Python `cerbos.sdk.client` is the
+      # HTTP transport. The previous override `cerbos:3593` (gRPC port,
+      # no scheme) caused the SDK to read `cerbos://3593` and fail every
+      # request with `Request protocol 'cerbos://'.`. Use the HTTP port
+      # explicitly so RAG endpoints can reach the PDP.
+      ABS_CERBOS_HOST: "http://cerbos:3592"
       ABS_PIPER_URL: "http://piper:5002"
       ABS_WHISPERX_URL: "http://whisperx:9000"
       # Q3 P3 / Q4 P10 — cascade mock mode override (off by default).

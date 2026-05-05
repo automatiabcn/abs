@@ -9,8 +9,11 @@ keys present. The cascade contract:
     so the panel can gray-out un-configured rows (configured:bool).
   * `POST /v1/cascade/run` with anthropic_mock OFF returns 503
     "no_providers_configured" when the active chain is empty, else
-    "live_cascade_pending" (not a behaviour bug — live wiring lands
-    in Q4 Phase 7-live and is out of R85's scope).
+    walks the live cascade via `call_with_cascade`. Round 2 of the
+    Founder Tester session (BUG-4) replaced the prior 503
+    "live_cascade_pending" gate with the real orchestrator wiring —
+    this test now mocks the orchestrator so we keep the *gate*
+    contract under test without making real provider HTTP calls.
 
 Brief tuple `(name, expected_active, expected_configured)` is honoured
 where the cascade semantics align; one tuple — "all_free_missing 0/1"
@@ -22,6 +25,8 @@ configured providers, so it is treated as a single-Anthropic case
 from __future__ import annotations
 
 import pytest
+
+from app.providers.schemas import ProviderResponse
 
 # A real-looking key passes is_configured (>8 chars, no placeholder prefix).
 REAL = "real-test-key-AAAAAAAA"
@@ -142,21 +147,37 @@ def test_provider_degradation_matrix(
     # Missing is the complement.
     assert len(body["missing"]) == body["total"] - body["configured_count"]
 
-    # 2) /v1/cascade/run (mock off) — should 503. Message changes by mode.
+    # 2) /v1/cascade/run (mock off) — gate behaviour:
+    #    • zero active   → 503 "no_providers_configured"
+    #    • ≥1 active     → call_with_cascade walks the chain. Founder
+    #      Tester Round 2 (BUG-4) wired this live; we mock the
+    #      orchestrator here so the test stays hermetic.
+    async def _fake_call(prompt, *, primary, model=None, fallbacks=(), **kw):
+        return ProviderResponse(
+            text=f"mocked:{primary}",
+            provider=primary,
+            model=model or "mock-model",
+            elapsed_ms=1,
+            tokens_in=2,
+            tokens_out=3,
+        )
+
+    monkeypatch.setattr(
+        "app.api.cascade.call_with_cascade", _fake_call
+    )
+
     run = admin_client.post(
         "/v1/cascade/run",
         json={"prompt": "Q12-R85 degradation ping", "max_tokens": 8},
     )
-    assert run.status_code == 503, run.text
-    detail = run.json().get("detail", "")
     if expected_active == 0:
+        assert run.status_code == 503, run.text
+        detail = run.json().get("detail", "")
         assert "no_providers_configured" in detail, detail
     else:
-        # Either live_cascade_pending (cascade gate ok, live HTTP not wired)
-        # or no_providers_configured (some scenarios may pass placeholder
-        # keys that the live layer rejects). We accept either as a graceful
-        # degraded response — UI should surface the message verbatim.
-        assert (
-            "live_cascade_pending" in detail
-            or "no_providers_configured" in detail
-        ), detail
+        assert run.status_code == 200, run.text
+        rb = run.json()
+        # primary should be the first active provider.
+        assert rb["provider"] in body["active"], rb
+        assert rb["completion"].startswith("mocked:")
+        assert rb["mock"] is False  # mock=True is reserved for anthropic-mock

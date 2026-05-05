@@ -15,7 +15,12 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["AuthContext", "get_auth_context", "get_cerbos_client"]
+__all__ = [
+    "AuthContext",
+    "get_auth_context",
+    "get_admin_or_bearer_auth_context",
+    "get_cerbos_client",
+]
 
 
 @dataclass
@@ -68,6 +73,74 @@ def get_auth_context(
         tenant_id=claims.get("tnt"),
         roles=list(roles),
         raw_claims=claims,
+    )
+
+
+# Founder Tester Round 2 (BUG-6) — `/admin/rag` console runs against
+# `/v1/rag/*` which historically required a Bearer JWT. The single-tenant
+# operator UX (cookie-based admin session) had no way to ship that token,
+# so ingest/query 401'd. We expose a *secondary* dep that accepts either
+# a Bearer JWT (multi-tenant API clients, MCP gateway, …) or the panel
+# `abs_session` cookie (the operator console). The cookie path derives
+# the admin's tenant from the users table and synthesises an AuthContext
+# with `roles=["admin"]`. Bearer-only routes (hooks, audit log, MCP
+# gateway) keep `get_auth_context` so their contract is unchanged.
+def _admin_cookie_context(request: Request) -> AuthContext | None:
+    """If the request carries a valid `abs_session` admin cookie, build
+    an AuthContext from it. Returns `None` when no cookie is present or
+    invalid so the caller can fall through to the Bearer error path."""
+    from app.api.auth import COOKIE_NAME, _SessionExpired, _SessionInvalid, _decode_token
+
+    token = request.cookies.get(COOKIE_NAME)
+    if not token:
+        return None
+    try:
+        claims = _decode_token(token)
+    except (_SessionExpired, _SessionInvalid):
+        return None
+
+    subject = str(claims.get("sub") or "")
+    if not subject:
+        return None
+
+    try:
+        from app.api.chat import _resolve_tenant
+
+        tenant = _resolve_tenant(subject)
+    except Exception:  # pragma: no cover — boot before users table
+        tenant = "default"
+
+    return AuthContext(
+        subject=subject,
+        tenant_id=tenant,
+        roles=["admin"],
+        raw_claims=dict(claims),
+    )
+
+
+def get_admin_or_bearer_auth_context(
+    request: Request,
+    authorization: str | None = Header(default=None),
+    x_abs_audience: str | None = Header(default=None),
+) -> AuthContext:
+    """Bearer JWT preferred; falls back to the panel admin cookie session.
+
+    Used by `/v1/rag/*` so the operator console can call ingest/query
+    without minting a token by hand. Bearer wins when both are present so
+    multi-tenant API clients keep their JWT semantics."""
+    if authorization and authorization.lower().startswith("bearer "):
+        return get_auth_context(
+            authorization=authorization, x_abs_audience=x_abs_audience
+        )
+
+    cookie_ctx = _admin_cookie_context(request)
+    if cookie_ctx is not None:
+        return cookie_ctx
+
+    raise HTTPException(
+        status.HTTP_401_UNAUTHORIZED,
+        detail="missing_bearer_token",
+        headers={"WWW-Authenticate": 'Bearer realm="abs"'},
     )
 
 

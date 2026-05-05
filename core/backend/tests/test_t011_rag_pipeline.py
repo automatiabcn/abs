@@ -141,8 +141,15 @@ def test_late_chunks_basic_count_and_ordering() -> None:
     chunks = pipe.late_chunks(doc, target_tokens=200, overlap_tokens=20)
     assert len(chunks) >= 2
     assert [c.seq for c in chunks] == list(range(len(chunks)))
+    seen_ids: set[str] = set()
     for c in chunks:
-        assert c.chunk_id == f"{doc.doc_id}-{c.seq:04d}"
+        # Founder Tester Round 2 (BUG-6 infra fix) — chunk_id is now a
+        # deterministic UUID5 (Qdrant requires UUID/uint point IDs).
+        # The ID must still be stable per (doc_id, seq) and unique
+        # across the chunk list.
+        assert c.chunk_id == pipe._chunk_uuid(doc.doc_id, c.seq)
+        assert c.chunk_id not in seen_ids
+        seen_ids.add(c.chunk_id)
         assert c.char_end > c.char_start
 
 

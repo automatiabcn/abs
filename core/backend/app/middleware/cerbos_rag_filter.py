@@ -12,7 +12,11 @@ import logging
 from cerbos.sdk.client import CerbosClient
 from fastapi import Depends, HTTPException, status
 
-from app.api.v1.deps import AuthContext, get_auth_context, get_cerbos_client
+from app.api.v1.deps import (
+    AuthContext,
+    get_admin_or_bearer_auth_context,
+    get_cerbos_client,
+)
 from app.auth.cerbos_client import build_resource, is_allowed
 
 logger = logging.getLogger(__name__)
@@ -37,7 +41,7 @@ def rag_action_dep(action: str):
     """Build a FastAPI dependency that enforces a Cerbos decision for *action*."""
 
     def _dep(
-        auth: AuthContext = Depends(get_auth_context),
+        auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
         cerbos: CerbosClient = Depends(get_cerbos_client),
     ) -> RAGAuth:
         tenant = (auth.tenant_id or "").strip()

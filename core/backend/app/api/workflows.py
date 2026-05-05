@@ -19,6 +19,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
 from app.api.auth import current_admin
+from app.cascade.orchestrator import call_with_cascade
+from app.providers.cascade import get_active_providers
+from app.providers.schemas import ProviderError
 from app.services import feature_usage as feature_usage_service
 from app.workflow_v10 import runner
 from app.workflow_v10.builder.synthesizer import (
@@ -147,10 +150,34 @@ def _template_fallback(intent: str, locale: str) -> Dict[str, Any]:
     }
 
 
-async def _llm_synth_fn(prompt: str) -> str:
-    """Optional LLM-backed synth. Raises if no provider available so caller
-    can fall back to template-match."""
-    raise SynthesisError("llm_provider_not_wired")
+async def _cascade_synth_fn(prompt: str) -> str:
+    """LLM-backed synth via the cascade. Picks the first active provider
+    and asks for the workflow JSON. Raises `SynthesisError` when no
+    provider is configured or all transient-fail so the caller falls
+    back to the keyword-matched template."""
+    active = get_active_providers()
+    if not active:
+        raise SynthesisError("no_providers_configured")
+    primary, *fallbacks = active
+    try:
+        resp = await call_with_cascade(
+            prompt,
+            primary=primary,
+            fallbacks=tuple(fallbacks),
+            use_cache=True,
+            max_tokens=2048,
+        )
+    except ProviderError as exc:
+        raise SynthesisError(
+            f"cascade_failed: {exc.message or str(exc)}"
+        ) from exc
+    if not resp.text:
+        raise SynthesisError("cascade_empty_response")
+    return resp.text
+
+
+# Default LLM hook for the route — overridable in tests via monkeypatch.
+_llm_synth_fn = _cascade_synth_fn
 
 
 # ---------- endpoints ------------------------------------------------------
@@ -160,7 +187,12 @@ async def _llm_synth_fn(prompt: str) -> str:
 async def synthesize(
     body: SynthesizeRequest, admin: dict = Depends(current_admin)
 ) -> SynthesizeResponse:
-    use_llm = os.environ.get("ABS_WORKFLOW_LLM_ENABLED", "false").lower() == "true"
+    # Founder Tester Round 2 (BUG-5) — LLM-first via cascade. Disable only
+    # when the operator explicitly opts out (`ABS_WORKFLOW_LLM_ENABLED=false`)
+    # or when the cascade chain is empty; the latter check happens inside
+    # `_cascade_synth_fn` and surfaces as `SynthesisError`.
+    use_llm = os.environ.get("ABS_WORKFLOW_LLM_ENABLED", "true").lower() == "true"
+    payload: Dict[str, Any]
     if use_llm:
         try:
             result = await synth_run(
@@ -168,13 +200,20 @@ async def synthesize(
             )
             payload = {
                 "workflow": result.workflow.model_dump(mode="json"),
-                "explanation": "LLM-synthesised workflow",
+                "explanation": (
+                    f"LLM-synthesised workflow "
+                    f"(revisions={result.revisions})"
+                ),
                 "source": "llm",
                 "revisions": result.revisions,
             }
         except SynthesisError as exc:
             logger.warning("LLM synth failed (%s); falling back to template", exc)
             payload = _template_fallback(body.intent, body.locale)
+            payload["explanation"] = (
+                f"Template fallback after LLM failure: {exc}. "
+                f"{payload['explanation']}"
+            )
     else:
         payload = _template_fallback(body.intent, body.locale)
 

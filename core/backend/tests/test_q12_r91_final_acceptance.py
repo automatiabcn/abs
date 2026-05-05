@@ -161,18 +161,23 @@ def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
             f"got {prov['missing']}"
         )
 
-    # /v1/cascade/run with mock off must 503 — either no_providers_configured
-    # or live_cascade_pending. R85 contract.
+    # /v1/cascade/run with mock off — Founder Tester Round 2 (BUG-4) wired
+    # the live cascade through `call_with_cascade`. Without real provider
+    # keys the orchestrator raises ProviderError → 502 all_providers_failed.
+    # If the chain happens to be entirely empty (config drift) the gate
+    # still surfaces 503 no_providers_configured. Both shapes are
+    # acceptable degradation surfaces for the R91 acceptance gate; the
+    # contract under test is "no 200 escapes the unconfigured environment".
     r_run = client.post(
         "/v1/cascade/run",
         json={"prompt": "R91 phase 2 ping", "max_tokens": 8},
     )
-    assert r_run.status_code == 503, r_run.text
+    assert r_run.status_code in (502, 503), r_run.text
     detail = r_run.json().get("detail", "")
     assert (
-        "live_cascade_pending" in detail
+        "all_providers_failed" in detail
         or "no_providers_configured" in detail
-    ), f"PHASE 2: unexpected 503 detail {detail!r}"
+    ), f"PHASE 2: unexpected detail {detail!r}"
 
     # ────────────────────────────────────────────────────────────────────
     # PHASE 3 — license JWT lifecycle: activate → revoke → status → reactivate
