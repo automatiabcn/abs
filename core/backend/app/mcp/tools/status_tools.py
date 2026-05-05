@@ -90,9 +90,15 @@ async def status_check() -> str:
             "total": len(rows),
         }
 
-        # Revenue today (gross, simple SKU map)
+        # Revenue today (gross, simple SKU map). Q12-R84: prices from settings.
+        from app.config import settings as _s
+
         today_start = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
-        price_map = {("self-host", 1): 299, ("team", 5): 1196, ("team", 10): 2093}
+        price_map = {
+            ("self-host", 1): _s.abs_seat_price_self_host,
+            ("team", 5): _s.abs_seat_price_team_5,
+            ("team", 10): _s.abs_seat_price_team_10,
+        }
         revenue_today = 0.0
         for lic in rows:
             issued_at = lic.issued_at
