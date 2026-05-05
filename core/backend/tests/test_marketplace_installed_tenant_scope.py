@@ -162,3 +162,78 @@ def test_installed_default_tenant_legacy_path(client):
     assert any(
         row["plugin_id"] == "slack-receiver" for row in body["installed"]
     ), body
+
+
+def test_bootstrap_admin_resolves_tenant_from_credentials_file(client, tmp_path):
+    """Round-5 BUG-10 follow-up — setup-wizard / magic-link-claim admin has
+    NO ``users`` row but ``admin_credentials.json`` carries ``tenant_slug``.
+
+    Without the file fallback the resolver short-circuited on the empty DB
+    lookup and dropped the admin into ``default`` — Phase D evidence.
+    The bootstrap admin must now land on ``demo-acme`` so the install they
+    just performed surfaces in the listing.
+    """
+    from app.api.marketplace import current_admin as live_dep
+    from app.main import app
+
+    creds_path = tmp_path / "admin_credentials.json"
+    creds_path.write_text(
+        json.dumps(
+            {
+                "email": "admin@demo-acme.com",
+                "password_hash": "$2b$12$placeholderhashforvalidationonly",
+                "created_at": time.time(),
+                "tenant_slug": "demo-acme",
+                "source": "setup_wizard",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    # Admin claim mirrors what /auth/login mints when the cookie is decoded
+    # but BEFORE the new tenant-claim wiring kicks in (worst case for
+    # legacy sessions still cached from the previous build).
+    app.dependency_overrides[live_dep] = lambda: {"sub": "admin@demo-acme.com"}
+    try:
+        r_install = client.post(
+            "/v1/marketplace/install",
+            json={"plugin_id": "gmail-archiver", "tenant": "demo-acme"},
+        )
+        assert r_install.status_code == 201, r_install.text
+
+        r = client.get("/v1/marketplace/installed")
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["tenant"] == "demo-acme", body
+        assert any(
+            row["plugin_id"] == "gmail-archiver" for row in body["installed"]
+        ), body
+    finally:
+        app.dependency_overrides.pop(live_dep, None)
+
+
+def test_bootstrap_admin_email_domain_heuristic(client):
+    """Round-5 BUG-10 follow-up — even when credentials.json lacks
+    ``tenant_slug`` the resolver falls back to the email-domain first
+    label so customers running fresh setup wizards never see ``default``
+    leaking installs unless their email actually points at a single-label
+    bootstrap host (``admin@local``)."""
+    from app.api.marketplace import current_admin as live_dep
+    from app.main import app
+
+    app.dependency_overrides[live_dep] = lambda: {
+        "sub": "owner@acme-co.io"
+    }
+    try:
+        r_install = client.post(
+            "/v1/marketplace/install",
+            json={"plugin_id": "slack-receiver", "tenant": "acme-co"},
+        )
+        assert r_install.status_code == 201, r_install.text
+
+        r = client.get("/v1/marketplace/installed")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["tenant"] == "acme-co", body
+    finally:
+        app.dependency_overrides.pop(live_dep, None)
