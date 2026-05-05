@@ -2,13 +2,30 @@
 
 ## Status
 
-Sprint Q12 closed at HEAD `ddfdf8c` on branch `feat/sprint-q12-deep-quality` after 96 atomic rounds. Backend pytest **1791** passing (R91 final acceptance E2E added on top of 1790). **10/10 Q12 layers FULL CLEAN**. Final acceptance combined E2E (R91) seals the threshold.
+Sprint Q12 closed at HEAD `dbaeca8` on branch `feat/sprint-q12-deep-quality` after 100 atomic rounds (R1–R99 + this docs alignment).
+
+> **S11 → S12 retraction note:** S11 worker shipped this checklist at HEAD `ddfdf8c` claiming 1791 PASS / "MÜHÜRLÜ"; founder host run revealed the true full-suite state was **1735 passed / 3 failed / 17 errors** (selective subset gave a false GREEN — Q12-L19-001 4th repeat). S12 R96–R99 closed the regression and re-sealed at the canonical full-suite count below.
+
+**Canonical pre-handoff command (single source of truth):**
+
+```
+cd core/backend
+./.venv/bin/python -m pytest --no-header -q \
+  --ignore=tests/test_providers.py \
+  --ignore=tests/test_q03_real_saas_backends.py \
+  --ignore=tests/test_update_channel.py
+```
+
+Run this on the founder host before tagging `handoff/v1`. Expected last line:
+`1755 passed, 14 skipped, 3 deselected, 0 failed, 0 errors`. The three
+ignored files are network-dependent (live SaaS / live update channel) and are
+deferred to staging or out-of-band.
 
 ## 1. Test Coverage Evidence
 
 | Layer | Status | Evidence (commit / file / count) |
 |-------|--------|-----------------------------------|
-| Backend pytest total | 1791 PASS | HEAD `ddfdf8c` after R91 |
+| Backend pytest full-suite (canonical command above) | **1755 PASS / 0 fail / 0 error / 14 skipped / 3 deselected** | HEAD `dbaeca8` (S12 R99) |
 | Q12 layers FULL CLEAN | 10/10 | L17–L26 closed |
 | Q11/Q10 inherited deep | CLOSED | L4 deep, L6 ZAP 0 alert, L13 fuzz 30K cron |
 | Cross-browser (chromium + firefox + webkit + chromium-mobile) | 24/24 | R72 commit `64f8600` |
@@ -81,4 +98,11 @@ Sprint Q12 closed at HEAD `ddfdf8c` on branch `feat/sprint-q12-deep-quality` aft
 
 ## 8. Sign-off
 
-Threshold sealed at HEAD `ddfdf8c` on **2026-05-05**. Tester may begin once the seven Founder Action Items above are completed. The seven items are pre-deployment one-shots; once executed and signed off, this checklist becomes the entry document for the tester. Any subsequent backend code change must trigger an image rebuild and re-run of R91 final acceptance E2E before re-handing off.
+Threshold sealed at HEAD `dbaeca8` on **2026-05-05** (S12 close-out). Tester may begin once the seven Founder Action Items above are completed AND the canonical full-suite command in §Status returns `0 failed / 0 errors`. The seven items are pre-deployment one-shots; once executed and signed off, this checklist becomes the entry document for the tester. Any subsequent backend code change must trigger an image rebuild, a full-suite re-run (canonical command), and a fresh R91 final acceptance E2E before re-handing off.
+
+> **Mandatory pre-handoff verification (S12 lesson):** before tagging
+> `handoff/v1`, founder runs the canonical full-suite command on the host
+> shell and pastes the last line into this section. Selective-subset
+> evidence is NOT acceptable for the seal — that path is what produced the
+> false S11 GREEN. The single source of truth is the canonical command's
+> last line.
