@@ -65,6 +65,46 @@ def _cleanup_chat_sessions():
         db.commit()
 
 
+@pytest.fixture(autouse=True)
+def _rag_stack_fakes(monkeypatch):
+    """Founder Tester Round 2 (BUG-6) — `/v1/rag/query` now accepts the
+    panel admin cookie session as a fallback for missing Bearer JWT, so
+    the 1000-example hypothesis loop reaches the real embedder + Qdrant.
+    Without these fakes those calls would 500 against an unreachable
+    Qdrant in CI; the contract under test is "no 5xx on input fuzz",
+    not "vector search works", so we stub the storage layer."""
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    from app.api.v1 import rag as rag_routes
+    from app.main import app
+
+    class _AllowingCerbos:
+        def check_resources(self, *, principal, resources):  # noqa: ANN001
+            entry = SimpleNamespace(is_allowed=lambda action: True)
+            return SimpleNamespace(
+                results=[entry], failed=lambda: False, status_code=200
+            )
+
+        def close(self) -> None:
+            return None
+
+    app.state.cerbos_client = _AllowingCerbos()
+
+    monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
+    monkeypatch.setattr(rag_routes.qc, "search", lambda **k: [])
+    monkeypatch.setattr(rag_routes.qc, "upsert_points", lambda **k: 0)
+
+    embedder = MagicMock()
+    embedder.dim = 4
+    embedder.embed_one.return_value = [0.0, 0.0, 0.0, 0.0]
+    embedder.embed.return_value = [[0.0, 0.0, 0.0, 0.0]]
+    monkeypatch.setattr(rag_routes, "get_embedder", lambda: embedder)
+    yield
+    if hasattr(app.state, "cerbos_client"):
+        delattr(app.state, "cerbos_client")
+
+
 # ─────────────────────────── Strategies ─────────────────────────────
 
 
