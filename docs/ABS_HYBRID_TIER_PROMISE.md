@@ -1,6 +1,6 @@
 # ABS Hybrid Tier Promise
 
-> v1.0 · 2026-04-29 · Sprint 20 T-F04
+> v1.1 · 2026-05-06 · Sprint Q12 promise-verify pass
 
 ## What ABS guarantees
 
@@ -40,14 +40,18 @@ When the customer opts into Claude (`ABS_ANTHROPIC_ENABLED=true` + their own `AB
 
 ## Quality bar
 
-Sprint 13 multi-model ensemble (T-049..T-056) verified that GPT-OSS-120B baseline answers reach ≥50 % win-rate against Claude Opus on the golden eval set. ABS's "best-free verified" badge replaces the legacy "premium" badge — same quality, no recurring cost.
+ABS ships a falsifiable multi-model win-rate harness so the "best-free verified" claim is reproducible by any operator with their own keys:
+
+- **Eval dataset:** [`core/backend/tests/fixtures/golden_eval_multimodel.json`](../core/backend/tests/fixtures/golden_eval_multimodel.json) — 30 prompts split 10 code / 10 analysis / 10 translation, each with `expected_traits` for an LLM-judge.
+- **Harness:** [`scripts/eval/multimodel_winrate.py`](../scripts/eval/multimodel_winrate.py) — calls Groq GPT-OSS-120B and Anthropic Claude Opus per prompt, judges with Groq Llama 3.3 70B, and writes [`artifacts/promise_verify/sprint_13_winrate.md`](../artifacts/promise_verify/sprint_13_winrate.md) plus a JSON sidecar.
+- **Latest run (2026-05-06, mode `live-no-claude`):** GPT-OSS-120B answered 10/30 rows before the Groq free-tier rate limit; Claude-side comparison was **not run** because no `ANTHROPIC_API_KEY` was configured in the founder-test environment. **Win-rate: unmeasured.** The earlier "≥50 % win-rate" line (Sprint 13 T-049..T-056) was an aspirational target — until an operator runs the harness with both keys, treat it as unverified. Re-run `python scripts/eval/multimodel_winrate.py` after `export ANTHROPIC_API_KEY=…` to populate the artifact.
 
 ## What the customer sees
 
-- **`/admin/usage` widget**: real-time `Free path: X %` + `Claude budget: Y %`.
-- **LangFuse dashboard**: `claude_tokens_used_pct_month` time-series.
-- **Audit chain**: every opt-in flip and quota-block event written to the T-016 SOC2 audit log.
-- **Workflow canvas (T-S03.4)**: `Estimated cost per run: $X.XX` shows zero for free-tier-only workflows.
+- **`/admin/usage` widget** — real-time `Free path: X %` + `Claude budget: Y %` tiles plus a 7-day Claude-token trend chart. Endpoint: `GET /v1/admin/usage`. Frontend: [`core/landing/app/admin/usage/page.tsx`](../core/landing/app/admin/usage/page.tsx).
+- **LangFuse dashboard** — `claude_tokens_used_pct_month` time-series. Wired in [`core/backend/app/observability/quota_monitor.py`](../core/backend/app/observability/quota_monitor.py) `record()` → `langfuse.score(name=…)`. Active when `ABS_LANGFUSE_ENABLED=true` and the public/secret keys are set.
+- **Audit chain** — every opt-in flip and quota-block event lands on the T-016 SOC2 audit log. Sources: [`app/observability/optin_state.py`](../core/backend/app/observability/optin_state.py) (boot-time flip detection) and [`app/observability/quota_monitor.py`](../core/backend/app/observability/quota_monitor.py) `gate()` (quota.block emit).
+- **Workflow canvas** — `POST /v1/workflows/execute` returns `estimated_cost_usd`; free-tier-only plans return `0.0`, anthropic / openai nodes surface non-zero. Source: [`app/workflow_v10/runner.py`](../core/backend/app/workflow_v10/runner.py) `estimate_cost()`.
 
 ## Promise summary (one paragraph)
 

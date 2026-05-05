@@ -40,6 +40,8 @@ const NAV: NavItem[] = [
   { href: "/panel", label: "Genel Bakış", icon: LayoutDashboard, group: "Üretim" },
   { href: "/panel/chat", label: "Sohbet", icon: MessageSquare, group: "Üretim" },
   { href: "/admin/workflow-builder", label: "Workflow", icon: Workflow, group: "Üretim" },
+  // BUG-V1 — /admin/usage Free path % + Claude budget % widget.
+  { href: "/admin/usage", label: "Kullanım", icon: BarChart3, group: "Üretim" },
   { href: "/panel/tools", label: "MCP Tools", icon: Wrench, group: "Üretim" },
   { href: "/admin/rag", label: "RAG Bilgi Tabanı", icon: Database, group: "Üretim" },
   { href: "/admin/pipelines", label: "Quality Pipelines", icon: Sliders, group: "Üretim" },
