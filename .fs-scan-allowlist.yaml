@@ -5,7 +5,7 @@
 
 version: 5
 generated: 2026-04-29
-last_review: 2026-05-05 (Q12 Session 9 R79)
+last_review: 2026-05-05 (Q12 Session 11 R95 — no surface change since R79)
 target_score: 75-85
 last_observed_raw_score: 47        # P0=16 P1=236 P2=2
 last_observed_honest_score: ~95    # R79: every P0 either SQLModel ORM (10), shell ${VAR:-default} env-default (5), or historical Q3 repro (1) — 0 unexplained P0
