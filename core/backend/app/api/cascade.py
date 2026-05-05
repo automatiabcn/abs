@@ -52,6 +52,7 @@ class CascadeRequest(BaseModel):
     max_tokens: int = Field(default=1024, ge=1, le=8192)
     model: Optional[str] = None
     use_cache: bool = True
+    skip_paid_providers: bool = False
 
 
 class CascadeResponse(BaseModel):
@@ -124,8 +125,17 @@ async def run(
         return mock_result
 
     # 2. Real cascade gate — needs at least one configured provider.
-    active = get_active_providers(prefer=body.prefer)
+    active = get_active_providers(
+        prefer=body.prefer, skip_paid=body.skip_paid_providers
+    )
     if not active:
+        if body.skip_paid_providers:
+            raise HTTPException(
+                503,
+                "no_free_providers_configured: skip_paid_providers=true but "
+                "no free provider keys (groq/cerebras/gemini/cohere/cloudflare) "
+                "are configured",
+            )
         raise HTTPException(
             503,
             "no_providers_configured: configure at least one API key "
