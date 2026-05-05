@@ -116,6 +116,9 @@ def gate(*, requested_tokens: int = 0, ledger: pathlib.Path | None = None) -> Qu
 
     Raises QuotaExceeded when (used + requested) >= BLOCK_PCT * limit. The
     caller then falls back to a free provider via the cascade.
+
+    BUG-V3 — emits a `quota.block` audit row on every refusal so the
+    SOC2 chain has the same observability the PROMISE.md vow advertises.
     """
     s = status(ledger=ledger)
     projected = s.used_tokens + max(0, requested_tokens)
@@ -127,6 +130,23 @@ def gate(*, requested_tokens: int = 0, ledger: pathlib.Path | None = None) -> Qu
             projected,
             s.limit_tokens,
         )
+        # BUG-V3 — emit audit. Imported lazily so this module stays
+        # decoupled from the FastAPI / starlette stack at import time.
+        try:
+            from app.observability.audit import emit_event
+
+            emit_event(
+                None,
+                action="quota.block",
+                outcome="denied",
+                reason=(
+                    f"claude budget {s.used_pct * 100:.0f}% reached "
+                    f"(projected {projected}/{s.limit_tokens})"
+                ),
+                provider="anthropic",
+            )
+        except Exception:  # noqa: BLE001 — audit failures never block the gate
+            logger.debug("quota.block audit emit skipped", exc_info=True)
         raise QuotaExceeded(
             f"Claude monthly token quota would breach block threshold "
             f"({projected}/{s.limit_tokens}); falling back to free provider"
@@ -161,7 +181,39 @@ def record(
         logger.warning("claude_quota_over_block month=%s pct=%.1f%%", s.month, s.used_pct * 100)
     elif s.over_warn:
         logger.info("claude_quota_over_warn month=%s pct=%.1f%%", s.month, s.used_pct * 100)
+    # BUG-V5 — push the rolling monthly used-pct as a LangFuse score
+    # so the dashboard time-series matches the PROMISE.md vow
+    # ("LangFuse dashboard `claude_tokens_used_pct_month` time-series").
+    _push_langfuse_pct(s)
     return s
+
+
+def _push_langfuse_pct(s: QuotaStatus) -> None:
+    """Best-effort emit a `claude_tokens_used_pct_month` score to LangFuse.
+
+    Failures (LangFuse disabled, network blip, missing SDK) are
+    swallowed — the quota gate must never fail just because metrics
+    are down.
+    """
+    try:
+        from app.observability.langfuse_client import get_langfuse, is_enabled
+
+        if not is_enabled():
+            return
+        client = get_langfuse()
+        if client is None:
+            return
+        score = getattr(client, "score", None)
+        if score is None:
+            return
+        score(
+            name="claude_tokens_used_pct_month",
+            value=float(s.used_pct),
+            comment=f"month={s.month} used={s.used_tokens}/{s.limit_tokens}",
+        )
+    except Exception:  # noqa: BLE001 — observability never blocks
+        logger.debug("langfuse claude_tokens_used_pct_month emit skipped",
+                     exc_info=True)
 
 
 def reset_for_tests(ledger: pathlib.Path | None = None) -> None:

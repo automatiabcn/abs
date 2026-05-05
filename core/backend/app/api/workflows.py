@@ -248,11 +248,16 @@ async def execute(
         raise HTTPException(400, "workflow.nodes required")
 
     plan_steps = runner.plan(body.workflow)
+    estimated_cost_usd = runner.estimate_cost(plan_steps)
+    # BUG-V2 — strip the embedded node from the response so the public
+    # surface stays the same shape the panel canvas already binds to.
+    public_steps = [{k: v for k, v in s.items() if k != "node"} for s in plan_steps]
     if body.dry_run:
         return {
             "status": "dry_run_ok",
-            "steps": plan_steps,
+            "steps": public_steps,
             "estimate_s": runner.estimate(plan_steps),
+            "estimated_cost_usd": estimated_cost_usd,
         }
     job_id = await runner.enqueue(
         body.workflow, tenant_slug=admin.get("sub", "default")
@@ -260,8 +265,9 @@ async def execute(
     return {
         "status": "queued",
         "job_id": job_id,
-        "steps": plan_steps,
+        "steps": public_steps,
         "estimate_s": runner.estimate(plan_steps),
+        "estimated_cost_usd": estimated_cost_usd,
     }
 
 

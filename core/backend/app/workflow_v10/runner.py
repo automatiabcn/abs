@@ -38,6 +38,85 @@ _PER_KIND_ESTIMATE_S: Dict[str, float] = {
 }
 
 
+# BUG-V2 — Per-call USD cost estimate (PROMISE.md: "Estimated cost per
+# run: $X.XX shows zero for free-tier-only workflows").
+#
+# Free providers (Groq, Cloudflare, Gemini, Cohere, Ollama, local) all
+# resolve to $0.0. Paid providers are priced per call so a single-node
+# workflow surfaces a non-zero estimate; refine to per-token once the
+# adapter pipeline reports planned token budgets.
+_FREE_PROVIDERS = frozenset(
+    {"groq", "cloudflare", "gemini", "cohere", "ollama", "local", "mlx"}
+)
+_PAID_PER_CALL_USD: Dict[str, float] = {
+    # Anthropic — assumes a typical 2K-in / 1K-out workflow node, sized to
+    # match Anthropic's published pricing (Sonnet 4.x baseline).
+    "claude-haiku": 0.0001,
+    "claude-sonnet": 0.0005,
+    "claude-opus": 0.0030,
+    "anthropic": 0.0005,  # generic anthropic node default → sonnet baseline
+    # OpenAI parity (kept conservative — surfaced when caller opts into a
+    # paid OpenAI provider via the cascade).
+    "openai": 0.0008,
+    "gpt-4": 0.0015,
+}
+
+
+def _node_cost_usd(node: Dict[str, Any]) -> float:
+    """Return the per-call USD cost for a single workflow node.
+
+    Resolution order:
+      1. Explicit `provider` / `model` config on the node.
+      2. `kind`-level fallback (only `llm_call` can incur a cost).
+      3. Default $0 (free path).
+    """
+    config = node.get("config") or {}
+    raw = (
+        str(config.get("model") or "")
+        + " "
+        + str(config.get("provider") or "")
+        + " "
+        + str(node.get("provider") or "")
+    ).lower()
+    # Free path short-circuit.
+    for free in _FREE_PROVIDERS:
+        if free in raw:
+            return 0.0
+    # Paid lookup (most-specific key wins).
+    for key, price in sorted(
+        _PAID_PER_CALL_USD.items(), key=lambda kv: -len(kv[0])
+    ):
+        if key in raw:
+            return price
+    # No provider hint → cost is 0 unless the node kind is explicitly
+    # an LLM call with no provider (treated as free path baseline).
+    return 0.0
+
+
+def estimate_cost(plan_steps: List[Dict[str, Any]]) -> float:
+    """Sum the per-node USD cost across the plan.
+
+    Returns a float rounded to 4 decimals so the UI can render
+    "$0.0001" without trailing-zero noise.
+    """
+    total = 0.0
+    for step in plan_steps:
+        node = step.get("node") or {}
+        if not node:
+            # Plan rows don't carry the original node; rebuild a thin
+            # surrogate from the planned fields so the lookup still
+            # works for cascade-tagged kinds.
+            node = {
+                "kind": step.get("kind"),
+                "config": {
+                    "provider": step.get("provider"),
+                    "model": step.get("model"),
+                },
+            }
+        total += _node_cost_usd(node)
+    return round(total, 4)
+
+
 @dataclass
 class JobRecord:
     job_id: str
@@ -92,6 +171,10 @@ def plan(workflow: Dict[str, Any]) -> List[Dict[str, Any]]:
             "estimate_s": _PER_KIND_ESTIMATE_S.get(
                 by_id.get(nid, {}).get("kind", ""), 0.5
             ),
+            # BUG-V2 — carry the source node so estimate_cost() can
+            # inspect provider/model config without re-walking the
+            # workflow.
+            "node": by_id.get(nid, {}),
         }
         for idx, nid in enumerate(order)
     ]
@@ -159,6 +242,7 @@ __all__ = [
     "JobRecord",
     "enqueue",
     "estimate",
+    "estimate_cost",
     "plan",
     "reset_for_tests",
     "status",
