@@ -21,6 +21,37 @@ def _chat_mock_env(monkeypatch):
     yield
 
 
+@pytest.fixture(autouse=True)
+def _wipe_default_tenant_chat_state():
+    """Q12-S12-R96 — earlier tests (q10/q11/q12 cascade + setup sweeps)
+    leave ChatSession + ChatMessage rows on `tenant_slug="default"`,
+    the bootstrap admin's tenant resolved by chat.py for `admin@local`.
+    `test_chat_sessions_empty_list` asserts the GET returns `[]`; any
+    leftover session breaks it. Per-test wipe makes the contract
+    suite-order independent."""
+    from sqlmodel import Session, select
+
+    from app.db.models import ChatMessage, ChatSession
+    from app.db.session import get_engine
+
+    with Session(get_engine()) as db:
+        leftover = db.exec(
+            select(ChatSession).where(
+                ChatSession.tenant_slug == "default"
+            )
+        ).all()
+        for sess in leftover:
+            for msg in db.exec(
+                select(ChatMessage).where(
+                    ChatMessage.session_id == sess.id
+                )
+            ).all():
+                db.delete(msg)
+            db.delete(sess)
+        db.commit()
+    yield
+
+
 @pytest.fixture()
 def auth_client(client):
     """Login as the bootstrap admin and return the cookie-laden client."""
