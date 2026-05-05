@@ -1,6 +1,6 @@
 # ABS Hybrid Tier Promise
 
-> v1.1 · 2026-05-06 · Sprint Q12 promise-verify pass
+> v1.2 · 2026-05-06 · Sprint Q12 consensus-eval scaffolding pass
 
 ## What ABS guarantees
 
@@ -42,9 +42,17 @@ When the customer opts into Claude (`ABS_ANTHROPIC_ENABLED=true` + their own `AB
 
 ABS ships a falsifiable multi-model win-rate harness so the "best-free verified" claim is reproducible by any operator with their own keys:
 
-- **Eval dataset:** [`core/backend/tests/fixtures/golden_eval_multimodel.json`](../core/backend/tests/fixtures/golden_eval_multimodel.json) — 30 prompts split 10 code / 10 analysis / 10 translation, each with `expected_traits` for an LLM-judge.
-- **Harness:** [`scripts/eval/multimodel_winrate.py`](../scripts/eval/multimodel_winrate.py) — calls Groq GPT-OSS-120B and Anthropic Claude Opus per prompt, judges with Groq Llama 3.3 70B, and writes [`artifacts/promise_verify/sprint_13_winrate.md`](../artifacts/promise_verify/sprint_13_winrate.md) plus a JSON sidecar.
-- **Latest run (2026-05-06, mode `live-no-claude`):** GPT-OSS-120B answered 10/30 rows before the Groq free-tier rate limit; Claude-side comparison was **not run** because no `ANTHROPIC_API_KEY` was configured in the founder-test environment. **Win-rate: unmeasured.** The earlier "≥50 % win-rate" line (Sprint 13 T-049..T-056) was an aspirational target — until an operator runs the harness with both keys, treat it as unverified. Re-run `python scripts/eval/multimodel_winrate.py` after `export ANTHROPIC_API_KEY=…` to populate the artifact.
+- **Eval dataset (v2):** [`core/backend/tests/fixtures/golden_eval_multimodel.json`](../core/backend/tests/fixtures/golden_eval_multimodel.json) — **100 prompts**, balanced 25 code / 25 analysis / 25 translation / 25 writing, each with `expected_traits` written to be objectively verifiable (no "high quality" / "well-written" judgments — only structural/content checks).
+- **Single-judge harness (legacy, audit trail):** [`scripts/eval/multimodel_winrate.py`](../scripts/eval/multimodel_winrate.py) — calls Groq GPT-OSS-120B and Anthropic Claude per prompt, judges with one model. Kept because it produced the founder evidence that single-judge LLM-as-judge is biased; do **not** use its numbers for product claims.
+- **Multi-judge consensus harness (v2, the canonical one):** [`scripts/eval/winrate_consensus.py`](../scripts/eval/winrate_consensus.py) — 4 judges (Groq Llama 3.3 70B, Anthropic Claude Sonnet 4.5, Google Gemini 2.5 Pro, Cohere Command R+) × A/B position swap = **8 verdicts per prompt**. Errors are surfaced as `ERROR` (never silently coerced to `TIE`). Output: [`artifacts/promise_verify/winrate_consensus_v2.md`](../artifacts/promise_verify/winrate_consensus_v2.md) plus JSON sidecar with per-judge breakdown, per-judge position-swap mismatch %, pairwise inter-judge agreement, and Wilson 95 % CI.
+- **Founder single-judge measurements (2026-05-06, retained as bias evidence):** the legacy harness ran end-to-end with both keys. Results were highly judge-dependent:
+  - GPT-OSS-120B vs Claude Sonnet 4.5, judge = Llama 3.3 70b (Groq) → **80 %** GPT-OSS win-rate (30/30 prompts).
+  - GPT-OSS-120B vs Claude Opus 4.1, judge = Llama 3.3 70b → **80 %** GPT-OSS win-rate (30/30).
+  - GPT-OSS-120B vs Claude Sonnet 4.5, judge = **Sonnet 4.5** → **22 %** GPT-OSS win-rate (30/30) — judge favoured itself.
+  - **Cross-judge spread = 58 percentage points**, exposing severe single-judge LLM bias. This is the reason single-judge numbers no longer back any product claim.
+- **2-judge bias-controlled smoke (legacy, 2026-05-05, 5 prompts × 4 verdicts):** 4/5 confident verdicts, **win-rate 50 %**, position-swap mismatch **60 %**. Treated as a sanity check; superseded by the v2 harness above.
+- **Honest claim today:** GPT-OSS-120B is **competitive** with Sonnet 4.5 / Opus 4.1 on this dataset — likely in the 40 – 60 % win-rate band — but **no single-judge run can prove categorical superiority**. The legacy "≥50 % win-rate" line is **retracted**. The empirically *real* customer wins are: ~100 % cost savings, 5–10× lower latency on Groq, and provider redundancy — not strict quality dominance. The v2 multi-judge consensus eval will replace this paragraph with a confident win-rate + 95 % CI once the founder runs it end-to-end with all four judge keys (`GROQ_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `COHERE_API_KEY`).
+- **Reproduce:** `python scripts/eval/winrate_consensus.py` (all four keys → 8-verdict consensus on N=100). The script can run with a subset of judges if some keys are missing; it surfaces the skip in the artifact header so operators see exactly which evidence stack was used.
 
 ## What the customer sees
 

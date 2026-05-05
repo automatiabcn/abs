@@ -51,21 +51,120 @@ RESULTS_JSON = ROOT / "artifacts/promise_verify/sprint_13_winrate.json"
 
 GROQ_BASE = "https://api.groq.com/openai/v1/chat/completions"
 ANTHROPIC_BASE = "https://api.anthropic.com/v1/messages"
+GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+COHERE_BASE = "https://api.cohere.com/v2/chat"
 
 
-def _http_post_json(url: str, body: dict, headers: dict, timeout: float = 60.0) -> dict:
+class RateLimitError(Exception):
+    """Raised when a provider returns 429 (rate limited).
+
+    Carries `retry_after` seconds (float, may be 0 if not advertised) so
+    the retry wrapper can honour Retry-After hints when the provider
+    sets them.
+    """
+
+    def __init__(self, provider: str, status: int, retry_after: float = 0.0,
+                 body: str = ""):
+        self.provider = provider
+        self.status = status
+        self.retry_after = retry_after
+        self.body = body[:300]
+        super().__init__(f"{provider} rate limited ({status}): {self.body}")
+
+
+def _http_post_json(url: str, body: dict, headers: dict,
+                    timeout: float = 60.0, *, provider: str = "?") -> dict:
+    """POST + JSON. Raises RateLimitError on 429, generic on others."""
     if _HAS_HTTPX:
         # httpx ships its own CA bundle (certifi) so it works on a
         # fresh macOS Python install where stdlib SSL has no trust
         # anchors yet.
-        with httpx.Client(timeout=timeout) as client:
+        with httpx.Client(timeout=timeout) as client:  # type: ignore[possibly-unbound-variable]
             resp = client.post(url, json=body, headers=headers)
+            if resp.status_code == 429:
+                ra = resp.headers.get("retry-after", "0")
+                try:
+                    ra_f = float(ra)
+                except ValueError:
+                    ra_f = 0.0
+                raise RateLimitError(provider, 429, ra_f, resp.text)
             resp.raise_for_status()
             return resp.json()
     data = json.dumps(body).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        if exc.code == 429:
+            ra = exc.headers.get("retry-after", "0") if exc.headers else "0"
+            try:
+                ra_f = float(ra)
+            except ValueError:
+                ra_f = 0.0
+            raise RateLimitError(provider, 429, ra_f,
+                                 exc.read().decode("utf-8", "replace")) from exc
+        raise
+
+
+def _post_with_retry(url: str, body: dict, headers: dict,
+                     *, provider: str, timeout: float = 60.0,
+                     max_retries: int = 5,
+                     base_sleep: float = 1.0,
+                     max_sleep: float = 60.0) -> dict:
+    """POST with exponential backoff on RateLimitError.
+
+    1s, 2s, 4s, 8s, 16s, capped at 60s. After max_retries the last
+    RateLimitError is re-raised; callers up the stack convert it into
+    an explicit verdict="error" sample (no silent TIE).
+    """
+    delay = base_sleep
+    last_exc: Exception | None = None
+    for attempt in range(max_retries + 1):
+        try:
+            return _http_post_json(url, body, headers, timeout, provider=provider)
+        except RateLimitError as exc:
+            last_exc = exc
+            if attempt == max_retries:
+                raise
+            sleep_for = max(exc.retry_after, delay)
+            sleep_for = min(sleep_for, max_sleep)
+            time.sleep(sleep_for)
+            delay = min(delay * 2, max_sleep)
+    if last_exc:
+        raise last_exc  # pragma: no cover — unreachable but type-safe
+    raise RuntimeError("retry loop exited without result")  # pragma: no cover
+
+
+class AnthropicThrottle:
+    """Plus-tier throttle: ≤30 calls per 15-min window.
+
+    Anthropic Plus quota is roughly 50/5h. Capping at 30/15min keeps the
+    consensus eval well below the budget while letting bursts proceed.
+    Singleton-style: callers `acquire()` before each Anthropic call.
+    """
+
+    WINDOW_SEC = 15 * 60
+    MAX_CALLS = 30
+
+    def __init__(self) -> None:
+        self._timestamps: list[float] = []
+
+    def acquire(self) -> None:
+        now = time.time()
+        self._timestamps = [t for t in self._timestamps
+                            if now - t < self.WINDOW_SEC]
+        if len(self._timestamps) >= self.MAX_CALLS:
+            wait = self.WINDOW_SEC - (now - self._timestamps[0]) + 1.0
+            if wait > 0:
+                time.sleep(wait)
+            now = time.time()
+            self._timestamps = [t for t in self._timestamps
+                                if now - t < self.WINDOW_SEC]
+        self._timestamps.append(now)
+
+
+_anthropic_throttle = AnthropicThrottle()
 
 
 def call_groq(prompt: str, model: str, api_key: str) -> str:
@@ -79,7 +178,7 @@ def call_groq(prompt: str, model: str, api_key: str) -> str:
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    payload = _http_post_json(GROQ_BASE, body, headers)
+    payload = _post_with_retry(GROQ_BASE, body, headers, provider="groq")
     return payload["choices"][0]["message"]["content"]
 
 
@@ -94,9 +193,56 @@ def call_claude(prompt: str, model: str, api_key: str) -> str:
         "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
     }
-    payload = _http_post_json(ANTHROPIC_BASE, body, headers)
+    _anthropic_throttle.acquire()
+    payload = _post_with_retry(ANTHROPIC_BASE, body, headers, provider="anthropic")
     parts = payload.get("content", [])
     return "".join(p.get("text", "") for p in parts if p.get("type") == "text")
+
+
+def call_gemini(prompt: str, model: str, api_key: str) -> str:
+    """Google Gemini generateContent REST.
+
+    Mirror of `call_groq`/`call_claude`: returns plain text. Caller
+    handles parser noise (single-letter A/B/TIE responses).
+    """
+    url = f"{GEMINI_BASE}/{model}:generateContent?key={api_key}"
+    body = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "temperature": 0.2,
+            "maxOutputTokens": 800,
+        },
+    }
+    headers = {"Content-Type": "application/json"}
+    payload = _post_with_retry(url, body, headers, provider="gemini")
+    candidates = payload.get("candidates") or []
+    if not candidates:
+        return ""
+    parts = candidates[0].get("content", {}).get("parts", []) or []
+    return "".join(p.get("text", "") for p in parts if "text" in p)
+
+
+def call_cohere(prompt: str, model: str, api_key: str) -> str:
+    """Cohere v2 chat REST.
+
+    Sync httpx; matches the rest of this module rather than the
+    backend's AsyncClientV2 SDK so the eval harness has no extra deps.
+    """
+    body = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 800,
+        "temperature": 0.2,
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    payload = _post_with_retry(COHERE_BASE, body, headers, provider="cohere")
+    msg = payload.get("message") or {}
+    content = msg.get("content") or []
+    return "".join(p.get("text", "") for p in content if p.get("type") == "text")
 
 
 JUDGE_PROMPT = """You are an impartial evaluator. Two assistants
@@ -120,15 +266,24 @@ Reply with A, B, or TIE only.
 """
 
 
-def judge(task: str, traits: list[str], a: str, b: str, api_key: str) -> str:
-    """Return 'A' / 'B' / 'TIE'. Defaults to TIE on parser noise."""
+def judge(task: str, traits: list[str], a: str, b: str, api_key: str,
+          judge_model: str = "llama-3.3-70b-versatile",
+          judge_provider: str = "groq",
+          claude_key: str | None = None) -> str:
+    """Return 'A' / 'B' / 'TIE'. Defaults to TIE on parser noise.
+
+    judge_provider: 'groq' (default, fast/free) | 'anthropic' (bias-control via Claude)
+    """
     prompt = JUDGE_PROMPT.format(
         task=task,
         traits="; ".join(traits),
         a=a[:4000],
         b=b[:4000],
     )
-    raw = call_groq(prompt, model="llama-3.3-70b-versatile", api_key=api_key)
+    if judge_provider == "anthropic" and claude_key:
+        raw = call_claude(prompt, model=judge_model, api_key=claude_key)
+    else:
+        raw = call_groq(prompt, model=judge_model, api_key=api_key)
     upper = raw.strip().upper()
     if upper.startswith("A"):
         return "A"
@@ -143,6 +298,8 @@ def run_one(
     groq_key: str | None,
     claude_key: str | None,
     gpt_oss_model: str,
+    judge_provider: str = "groq",
+    judge_model: str = "llama-3.3-70b-versatile",
     claude_model: str,
 ) -> dict[str, Any]:
     task = row["task"]
@@ -170,11 +327,14 @@ def run_one(
     # GPT-OSS answer = A, Claude answer = B for the judge.
     try:
         verdict_letter = judge(
-            task,
-            row.get("expected_traits", []),
-            out["gpt_oss_response"],
-            out["claude_response"],
-            groq_key,
+            task=task,
+            traits=row.get("expected_traits", row.get("traits", [])),
+            a=out["gpt_oss_response"],
+            b=out["claude_response"],
+            api_key=groq_key,
+            judge_model=judge_model,
+            judge_provider=judge_provider,
+            claude_key=claude_key,
         )
     except Exception as exc:  # noqa: BLE001 — log judge transport failures
         out["error"] = f"judge_failed: {exc}"
@@ -269,6 +429,15 @@ def main() -> int:
         "--claude-model", default="claude-opus-4-1-20250805",
         help="Anthropic model id for the Claude Opus path.",
     )
+    parser.add_argument(
+        "--judge-provider", default="groq",
+        choices=["groq", "anthropic"],
+        help="Judge LLM provider — groq=Llama free (fast), anthropic=Claude (bias-control).",
+    )
+    parser.add_argument(
+        "--judge-model", default="llama-3.3-70b-versatile",
+        help="Judge model id (e.g. llama-3.3-70b-versatile or claude-sonnet-4-5-20250929).",
+    )
     args = parser.parse_args()
 
     if not DATASET.exists():
@@ -296,6 +465,8 @@ def main() -> int:
                 claude_key=claude_key,
                 gpt_oss_model=args.gpt_oss_model,
                 claude_model=args.claude_model,
+                judge_provider=args.judge_provider,
+                judge_model=args.judge_model,
             )
             results.append(r)
             verdict = r.get("verdict", "?")

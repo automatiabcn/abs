@@ -40,13 +40,20 @@ def _load_module():
     return mod
 
 
-def test_promise_v4_dataset_has_30_balanced_rows():
+def test_promise_v4_dataset_balanced_after_v2_expansion():
+    """Dataset grew from 30 → 100 rows in Sprint Q12 consensus eval (R2).
+
+    Locking the new size + per-category split so a future drop in
+    coverage trips CI rather than silently weakening the win-rate
+    statistical power.
+    """
     rows = json.loads(DATASET.read_text(encoding="utf-8"))
-    assert len(rows) == 30
+    assert len(rows) == 100, f"expected 100 rows, got {len(rows)}"
     counts: dict[str, int] = {}
     for r in rows:
         counts[r["category"]] = counts.get(r["category"], 0) + 1
-    assert counts == {"code": 10, "analysis": 10, "translation": 10}, counts
+    assert counts == {"code": 25, "analysis": 25,
+                      "translation": 25, "writing": 25}, counts
     for r in rows:
         assert {"id", "category", "task", "expected_traits"} <= set(r.keys())
         assert r["task"].strip(), f"empty task in {r['id']}"
