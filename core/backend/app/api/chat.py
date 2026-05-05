@@ -30,9 +30,11 @@ from app.api.cascade import (
     CascadeResponse,
     _try_mock,
 )
+from app.cascade.orchestrator import call_with_cascade
 from app.db.models import ChatMessage, ChatSession, User
 from app.db.session import get_engine
 from app.providers.cascade import get_active_providers
+from app.providers.schemas import ProviderError
 
 
 logger = logging.getLogger(__name__)
@@ -132,10 +134,18 @@ def _detect_slash_command(content: str) -> Optional[Dict]:
 
 
 async def _run_cascade(
-    prompt: str, max_tokens: int = 1024
+    prompt: str,
+    max_tokens: int = 1024,
+    skip_paid_providers: bool = False,
 ) -> CascadeResponse:
     """Bypass the FastAPI route's auth dependency and call the cascade
-    directly (we already passed `current_admin` upstream).
+    via the live orchestrator (`call_with_cascade`).
+
+    Round-4 BUG-9 fix: previously raised `live_cascade_pending` 503 even
+    when providers were configured; the chat SSE swallowed that into a
+    "Cascade canli uclari henuz aktif degil." stub message. The /v1/cascade/run
+    route was wired in Round 2 but this helper was missed — chat path
+    bypasses the route layer, so it stayed stubbed until Round 4.
     """
     fallback_chain: List[str] = []
     cascade_req = CascadeRequest(prompt=prompt, max_tokens=max_tokens)
@@ -144,16 +154,44 @@ async def _run_cascade(
     if mock_result is not None:
         return mock_result
 
-    active = get_active_providers()
+    active = get_active_providers(skip_paid=skip_paid_providers)
     if not active:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="no_providers_configured",
+            detail=(
+                "no_free_providers_configured"
+                if skip_paid_providers
+                else "no_providers_configured"
+            ),
         )
 
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail=f"live_cascade_pending: {','.join(active)}",
+    primary, *rest = active
+    try:
+        resp = await call_with_cascade(
+            prompt,
+            primary=primary,
+            fallbacks=tuple(rest),
+            max_tokens=max_tokens,
+        )
+    except ProviderError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                f"all_providers_failed: {exc.message or str(exc)} "
+                f"(chain={','.join(active)})"
+            ),
+        ) from exc
+
+    tokens_used = (resp.tokens_in or 0) + (resp.tokens_out or 0)
+    return CascadeResponse(
+        completion=resp.text,
+        provider=resp.provider or primary,
+        fallback_chain=[resp.provider or primary],
+        tokens_used=tokens_used,
+        mock=False,
+        cached=resp.cached,
+        elapsed_ms=resp.elapsed_ms,
+        model=resp.model,
     )
 
 
@@ -381,11 +419,24 @@ async def completions(
         try:
             cascade_resp = await _run_cascade(last_user_content)
         except HTTPException as exc:
-            err_text = (
-                "Henuz saglayici yapilandirilmadi. /admin/settings → Providers."
-                if exc.detail == "no_providers_configured"
-                else "Cascade canli uclari henuz aktif degil."
-            )
+            detail_str = str(exc.detail or "")
+            if detail_str.startswith("no_providers_configured"):
+                err_text = (
+                    "Henuz saglayici yapilandirilmadi. "
+                    "/admin/settings → Providers."
+                )
+            elif detail_str.startswith("no_free_providers_configured"):
+                err_text = (
+                    "Ucretsiz saglayici yapilandirilmadi "
+                    "(skip_paid aktif)."
+                )
+            elif detail_str.startswith("all_providers_failed"):
+                err_text = (
+                    "Tum saglayicilar gecici hata verdi; "
+                    "lutfen tekrar deneyin."
+                )
+            else:
+                err_text = "Cascade canli uclari henuz aktif degil."
             yield f'data: {json.dumps({"type": "text", "content": err_text, "provider": "none"})}\n\n'
             yield 'data: [DONE]\n\n'
             with Session(get_engine()) as db:

@@ -25,6 +25,9 @@ from pydantic import BaseModel, Field
 from app.api.auth import current_admin
 from app.config import settings
 from app.observability.audit import emit_event  # Q12-L23 sweep 5
+from app.db.session import get_engine
+from app.db.models import User
+from sqlmodel import Session, select
 
 router = APIRouter(prefix="/v1/marketplace", tags=["marketplace"])
 logger = logging.getLogger(__name__)
@@ -183,6 +186,34 @@ async def get_plugin(plugin_id: str, request: Request) -> Dict[str, Any]:
         )
         raise HTTPException(status_code=404, detail="plugin_not_found")
     return plugin
+
+
+def _resolve_admin_tenant(admin: dict) -> str:
+    """Round-4 BUG-10 — fall back from JWT claim to users table lookup.
+
+    The session JWT only carries `sub` (email), so admin claims rarely
+    include `tenant`. Without this lookup, `/v1/marketplace/installed`
+    defaulted to `tenant=default` even when the admin owned
+    `tenant_slug=demo-acme`, returning an empty list despite a successful
+    install.
+    """
+    claim = admin.get("tenant")
+    if claim:
+        return str(claim)
+    email = admin.get("sub")
+    if not email:
+        return "default"
+    try:
+        with Session(get_engine()) as db:
+            stmt = (
+                select(User)
+                .where(User.email == email)
+                .where(User.status == "active")
+            )
+            user = db.exec(stmt).first()
+            return user.tenant_slug if user else "default"
+    except Exception:  # pragma: no cover — boot before users table
+        return "default"
 
 
 def _enforce_tenant_match(
@@ -366,12 +397,17 @@ async def uninstall(
 
 @router.get("/installed")
 async def installed(
-    tenant: str = "default", _admin: dict = Depends(current_admin)
+    tenant: Optional[str] = None,
+    _admin: dict = Depends(current_admin),
 ) -> Dict[str, Any]:
-    _enforce_tenant_match(_admin, tenant)
+    # Round-4 BUG-10: resolve from admin's users-row when caller omits the
+    # query param so the demo-acme operator does not fall back to the
+    # bootstrap "default" tenant and get an empty list.
+    resolved = tenant if tenant else _resolve_admin_tenant(_admin)
+    _enforce_tenant_match(_admin, resolved)
 
     state = _read_installs()
-    rows = state.get(tenant, [])
+    rows = state.get(resolved, [])
 
     # Q7 Phase B — best-effort live status enrichment. If docker SDK / daemon
     # is unavailable we just return the persisted records.
@@ -380,10 +416,10 @@ async def installed(
 
         sandbox = PluginSandbox()
         enriched = [
-            {**row, "live_status": sandbox.status(row["plugin_id"], tenant)}
+            {**row, "live_status": sandbox.status(row["plugin_id"], resolved)}
             for row in rows
         ]
     except Exception:
         enriched = rows
 
-    return {"tenant": tenant, "installed": enriched}
+    return {"tenant": resolved, "installed": enriched}

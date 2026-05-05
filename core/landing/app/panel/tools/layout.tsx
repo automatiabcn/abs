@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "MCP Tool Browser — ABS Panel · Automatia ABS",
+  title: "MCP Tool Browser — ABS Panel",
   robots: { index: false, follow: false },
 };
 

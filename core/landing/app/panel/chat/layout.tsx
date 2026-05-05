@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "Sohbet — ABS Panel · Automatia ABS",
+  title: "Sohbet — ABS Panel",
   robots: { index: false, follow: false },
 };
 

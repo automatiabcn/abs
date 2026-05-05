@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { type Lang, isLang, t } from "@/lib/i18n";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Automatia ABS",
+  title: "Privacy Policy",
   description:
     "GDPR-compliant privacy policy for the ABS self-host orchestrator. Data controller: Automatia BCN.",
 };
