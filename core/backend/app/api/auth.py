@@ -508,19 +508,28 @@ def _claim_user_by_token(magic_token: str) -> Optional[Dict]:
             db.add(user)
             db.commit()
 
-            _admin_credentials_path().write_text(
-                json.dumps(
-                    {
-                        "email": user.email,
-                        "password_hash": user.password_hash,
-                        "created_at": time.time(),
-                        "tenant_slug": user.tenant_slug,
-                        "source": "magic_link_claim",
-                    },
-                    ensure_ascii=False,
-                ),
-                encoding="utf-8",
-            )
+            # Round-6 BUG-12 — only refresh admin_credentials.json when the
+            # claimed user IS the bootstrap admin already recorded there.
+            # Unconditional write let any /auth/signup → magic-claim flow
+            # overwrite the setup-wizard bootstrap admin (lockout vector).
+            # New admins live in the User table; the panel session cookie
+            # set by this handler is enough — the JSON file is the
+            # bootstrap-admin overlay only.
+            existing = _load_admin_credentials_raw() or {}
+            if existing.get("email") == user.email:
+                _admin_credentials_path().write_text(
+                    json.dumps(
+                        {
+                            "email": user.email,
+                            "password_hash": user.password_hash,
+                            "created_at": time.time(),
+                            "tenant_slug": user.tenant_slug,
+                            "source": "magic_link_claim",
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
             return {
                 "email": user.email,
                 "tenant_slug": user.tenant_slug,

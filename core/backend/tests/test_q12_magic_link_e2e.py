@@ -201,6 +201,61 @@ def test_admin_a_cross_tenant_block_403():
 
 
 # ----------------------------------------------------------------------
+# 6b. Round-6 BUG-12 — magic claim must NOT overwrite bootstrap admin file
+# ----------------------------------------------------------------------
+
+
+def test_magic_claim_does_not_overwrite_bootstrap_admin(
+    client: TestClient, tmp_path: Path
+):
+    """Round-6 BUG-12 — Phase C founder evidence: a fresh /auth/signup +
+    /auth/magic?token=... claim was unconditionally overwriting
+    `admin_credentials.json`, wiping out the setup-wizard bootstrap admin
+    (lockout + privilege-escalation vector).
+
+    Contract: when the claimed user is NOT the email recorded in the file,
+    the file MUST stay byte-identical, and the bootstrap admin must keep
+    being able to log in.
+    """
+    creds_file = tmp_path / "admin_credentials.json"
+    bootstrap_payload = {
+        "email": "admin@demo-acme.com",
+        # bcrypt hash for "DemoPass2026!" — generated locally, not a secret.
+        "password_hash": "$2b$12$KIXxPfnK1Q1xZb6vQy7QmugQvJpZkZ7r4dQpYcJX8BkqAWqU6mG3K",
+        "created_at": time.time(),
+        "tenant_slug": "demo-acme",
+        "source": "setup_wizard",
+    }
+    creds_file.write_text(
+        json.dumps(bootstrap_payload, ensure_ascii=False), encoding="utf-8"
+    )
+    bootstrap_bytes_before = creds_file.read_bytes()
+
+    # New admin signs up + claims magic link → previously this overwrote
+    # admin_credentials.json. After the fix, the file stays untouched.
+    link = _signup(client, "newadmin@demo-acme.com", "demo-acme")
+    token = _token_from_link(link)
+    r = client.get(f"/auth/magic?token={token}")
+    assert r.status_code == 200, r.text
+
+    bootstrap_bytes_after = creds_file.read_bytes()
+    assert bootstrap_bytes_after == bootstrap_bytes_before, (
+        "Round-6 BUG-12 REGRESSION: magic claim overwrote bootstrap "
+        "admin_credentials.json (setup_wizard email lost)."
+    )
+
+    # New admin row must still be promoted in the User table even though
+    # the file write was suppressed.
+    with Session(get_engine()) as db:
+        new_user = db.execute(
+            select(User).where(User.email == "newadmin@demo-acme.com")
+        ).scalars().first()
+        assert new_user is not None
+        assert new_user.status == "active"
+        assert new_user.magic_token is None
+
+
+# ----------------------------------------------------------------------
 # 6. Q12-L24-001 regression — no full token in audit log
 # ----------------------------------------------------------------------
 
