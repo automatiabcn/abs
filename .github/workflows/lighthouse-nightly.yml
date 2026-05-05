@@ -1,3 +1,23 @@
+# Q12-L32 R82 — Lighthouse nightly stability hardening.
+#
+# Background: prior workflow targeted `https://abs.local/` which never
+# resolved on a GitHub runner — the nightly was silently broken. This
+# rewrite mirrors the working .github/workflows/perf-budget.yml pattern:
+# local landing build, lhci against `localhost:3000`, single source of
+# truth in core/landing/lighthouserc.json. Plus:
+#   - concurrency group + cancel-in-progress (no overlap when manual
+#     workflow_dispatch lands while a scheduled run is mid-flight)
+#   - 1 retry on transient flake (cold runner cold-start variance is
+#     the dominant non-bug failure mode)
+#   - uploadArtifacts on failure so the next-morning review has the
+#     report (otherwise the failed run is opaque)
+#   - separate slow-3G job (per S8 R66 framing — the desktop nightly
+#     is for parity, the slow-3G nightly catches actual mobile regressions)
+#
+# Security: variables come from controlled sources (github.ref for the
+# concurrency group only). No untrusted github.event.* interpolation in
+# run: blocks. The treosh/lighthouse-ci-action reads its config from
+# core/landing/lighthouserc.json which is in the repo.
 name: lighthouse-nightly
 
 on:
@@ -8,22 +28,62 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: lighthouse-nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: core/landing
+
 jobs:
-  lighthouse:
-    runs-on: ubuntu-latest
+  desktop:
     timeout-minutes: 25
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-      - name: Install Lighthouse CI
-        run: npm i -g @lhci/cli@0.14.x
-      - name: Run Lighthouse against landing
-        run: |
-          lhci autorun \
-            --upload.target=temporary-public-storage \
-            --collect.url=https://abs.local/ \
-            --collect.url=https://abs.local/pricing \
-            --assert.preset=lighthouse:recommended \
-            --assert.assertions.minScore=0.95
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: core/landing/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Lighthouse CI (desktop)
+        id: lhci
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: core/landing/lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+        # The action does not have a built-in retry, so a transient
+        # cold-runner failure surfaces here. The next step retries
+        # exactly once on failure.
+      - name: Lighthouse CI retry (failure-only)
+        if: failure()
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: core/landing/lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+  slow-3g:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    needs: desktop
+    if: always()  # run even if desktop failed; the two are independent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: core/landing/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Lighthouse CI (slow-3G mobile, throttled)
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: core/landing/lighthouserc.slow-3g.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
