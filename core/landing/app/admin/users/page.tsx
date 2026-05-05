@@ -21,7 +21,7 @@ export const revalidate = 0;
 // FOUNDER_FIX_1 / SWEEP — unique <title> per panel/admin page.
 import type { Metadata } from "next";
 export const metadata: Metadata = {
-  title: "Kullanıcılar — ABS Admin · Automatia ABS",
+  title: "Kullanıcılar — ABS Admin",
   robots: { index: false, follow: false },
 };
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Kullanım Koşulları — Automatia ABS",
+  title: "Kullanım Koşulları",
   description:
     "Automatia ABS self-host orchestrator için kullanım koşulları. Lisans, ödeme, sorumluluk, fesih.",
 };

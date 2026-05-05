@@ -5,7 +5,7 @@ import WorkflowChatPanel from "@/components/WorkflowChatPanel";
 import { SAMPLE_WORKFLOW } from "@/lib/workflow";
 
 export const metadata: Metadata = {
-  title: "Workflow Builder — ABS Admin · Automatia ABS",
+  title: "Workflow Builder — ABS Admin",
   robots: { index: false, follow: false },
 };
 
