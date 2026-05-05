@@ -1,9 +1,15 @@
-"""T-043 — Pricing tier + seat enforcement (Self-host / Team-5 / Team-10)."""
+"""T-043 — Pricing tier + seat enforcement (Self-host / Team-5 / Team-10).
+
+Q12-R84: list-prices are read from settings (env). Defaults are 0.0; operators
+MUST configure their own. Tier IDs are SKU keys, not prices.
+"""
 
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -32,19 +38,19 @@ TIERS: dict[str, Tier] = {
     "self-host": Tier(
         name="self-host",
         seat_cap=1,
-        monthly_price_usd=299.0,
+        monthly_price_usd=settings.abs_seat_price_self_host,
         stripe_price_setting="abs_price_self_host",
     ),
     "team-5": Tier(
         name="team-5",
         seat_cap=5,
-        monthly_price_usd=1196.0,  # ~ $239/seat
+        monthly_price_usd=settings.abs_seat_price_team_5,
         stripe_price_setting="abs_price_team_5",
     ),
     "team-10": Tier(
         name="team-10",
         seat_cap=10,
-        monthly_price_usd=2093.0,  # ~ $209/seat
+        monthly_price_usd=settings.abs_seat_price_team_10,
         stripe_price_setting="abs_price_team_10",
     ),
 }
