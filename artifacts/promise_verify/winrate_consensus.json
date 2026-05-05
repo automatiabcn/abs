@@ -1,0 +1,253 @@
+{
+  "duration_s": 3.244597911834717,
+  "summary": {
+    "uncertain": 30
+  },
+  "confidence_breakdown": {
+    "split": 30
+  },
+  "win_rate_confident": 0,
+  "swap_rate_pct": 0.0,
+  "results": [
+    {
+      "id": "code-01",
+      "category": "code",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "code-02",
+      "category": "code",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "code-03",
+      "category": "code",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "code-04",
+      "category": "code",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "code-05",
+      "category": "code",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "code-06",
+      "category": "code",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "code-07",
+      "category": "code",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "code-08",
+      "category": "code",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "code-09",
+      "category": "code",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "code-10",
+      "category": "code",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "analysis-01",
+      "category": "analysis",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "analysis-02",
+      "category": "analysis",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "analysis-03",
+      "category": "analysis",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "analysis-04",
+      "category": "analysis",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "analysis-05",
+      "category": "analysis",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "analysis-06",
+      "category": "analysis",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "analysis-07",
+      "category": "analysis",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "analysis-08",
+      "category": "analysis",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "analysis-09",
+      "category": "analysis",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "analysis-10",
+      "category": "analysis",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "translation-01",
+      "category": "translation",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "translation-02",
+      "category": "translation",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "translation-03",
+      "category": "translation",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "translation-04",
+      "category": "translation",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "translation-05",
+      "category": "translation",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "translation-06",
+      "category": "translation",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "translation-07",
+      "category": "translation",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "translation-08",
+      "category": "translation",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "translation-09",
+      "category": "translation",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "id": "translation-10",
+      "category": "translation",
+      "verdicts": [],
+      "consensus": "uncertain",
+      "confidence": "split",
+      "error": "gpt_oss_call_failed: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    }
+  ]
+}
