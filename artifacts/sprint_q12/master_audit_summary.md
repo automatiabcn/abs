@@ -115,14 +115,15 @@
 | 80 | **L31 fuzz weekend cron contract (NEW)** | Q11-L13 fuzz weekend artifact review. No git remote on this worktree → can't `gh run list` the actual cron output, but `.hypothesis/` has no `examples/` directory (Hypothesis writes one only on failure) and a local 30K rerun (chat + RAG + workflows × 10K each) finishes **3/3 PASS in 76.20 s, 0 counter-examples**. Round value: prevent the cron silently breaking (someone reformats `mutation-weekend.yml`, drops the `fuzz-30k` job, or removes `-m fuzz` selector → empty Monday review for weeks). `test_q12_l31_fuzz_cron_contract.py` ships **5 pytest** locking: workflow parses + name "Mutation Weekend"; `0 2 * * SAT` cron in `on.schedule`; `jobs.fuzz-30k` exists with correct test file + `-m fuzz` selector; `if: failure()` upload step still preserves `core/backend/.hypothesis/` with retention ≥ 7 days; the pytest target file carries the `[fuzz]` marker (else `-m fuzz` selects 0 tests and silently passes). PyYAML's YAML-1.1 boolean key for `on:` worked around (`workflow.get(True) or workflow.get("on")`). Backend pytest **1740 → 1745** (+5). | `2026-05-05 R80` | ✅ ship |
 | 81 | **L18 offline↔online transition stress** | Brief asked for "5-message queued outbox + flush" but **no outbox/send-queue exists** in the codebase — only R48's `chat-draft.ts` (single `current`-key textarea persistence). Building an outbox is a source-code change scoped to Sprint 22 follow-on. Honest pivot: the actual race the existing system can lose to is *flapping connection while the user is typing*. New `q12-l18-offline-online-stress.spec.ts` ships **3 Playwright tests**: (a) 5-toggle O→F→O→F→O cycle while a draft is in the textarea — IDB record + reload-restore both survive; (b) 5 sequential offline edits — last write wins (single-`current`-key upsert contract under offline conditions); (c) online flip after offline typing — neither React state nor IDB touched, catches an `online`-handler regression that would retroactively wipe local state. All assertions read IndexedDB directly (bypassing textarea state) so the contract is on the persistence layer, not React. **3/3 PASS in 19.3 s on chromium-desktop**. Cross-browser deferred — same IDB/useEffect paths across engines, no SW-route bypass like Q12-L11-WK-001. | `2026-05-05 R81` | ✅ ship |
 | 82 | **L32 Lighthouse nightly stability hardening (NEW)** | **Real bug found and fixed:** prior `lighthouse-nightly.yml` targeted `https://abs.local/` and `/pricing` — that hostname does not resolve on a GitHub runner. The nightly was **silently broken since its initial ship**, every scheduled run errored at the URL fetch step with no useful artifact (prior config had no `uploadArtifacts`). Fix mirrors the working `perf-budget.yml` pattern (local landing build + `treosh/lighthouse-ci-action@v12` + canonical `lighthouserc.json`) plus hardening: concurrency group + cancel-in-progress (no overlap on dispatch+schedule); 1 retry on the desktop job (`if: failure()` second action call) for cold-runner cold-start variance; `uploadArtifacts: true` everywhere so failures are reviewable; new `slow-3g` job (mobile, devtools throttling, slow-3G envelope) per S8 R66 framing — desktop = parity, slow-3G = mobile regression detector; `slow-3g.needs: desktop` + `if: always()` so two profiles are independent signals; node version pinned to 22 (matches perf-budget). New `core/landing/lighthouserc.slow-3g.json` with looser performance budget (`warn` not `error`) but `error`-level a11y/CLS that are profile-independent. Regression pin: `test_q12_l32_lighthouse_nightly_contract.py` (8 pytest, 0.52 s). Load-bearing test: `test_no_unreachable_abs_local_target` searches non-comment lines so the bad pattern cannot return (the rationale comment in the rewritten YAML mentioning `abs.local` is whitelisted). Backend pytest **1745 → 1753** (+8). | `2026-05-05 R82` | ✅ ship |
+| 83 | **L21 + Mutmut SKIP commits (Session 9)** | Founder-gate persist round. S9 brief listed both as "LOW (founder yine SKIP dedi — bu session'da da SKIP commit)". Cumulative skip count: **L21 destructive ACTUAL drill = 5 sessions** (S5 R12 / S6 R38 / S7 R53 / S8 / S9), **Mutmut local actual = 4 sessions** (S6 R39 / S7 R54 / S8 / S9). Both have shipped specs + 7-pytest / 5-pytest cron coverage in earlier rounds; the gate only blocks the actual destructive run. Single atomic commit covers `round_83_l21_destructive_drill_skipped_s9.md` + `round_83_mutmut_local_skipped_s9.md` + `session_9_complete.md` closing summary. No code or test changes (founder-gate persist). | `2026-05-05 R83` | ⏸ skip |
 
 ---
 
 ## Loop status
 
-🔄 **Q12 Session 9 IN-FLIGHT** — 7 atomic rounds shipped (R76–R82). Session 8 closed at R75 (20 rounds, R56–R75).
+✅ **Q12 Session 9 CLOSED** — 8 atomic rounds shipped (R76–R83). Session 8 closed at R75 (20 rounds, R56–R75).
 
-**S9 atomic commits so far:**
+**S9 atomic commits:**
 ```
 6debd63  R76  L27 helm K8s 1.27/1.28/1.29 dry-run matrix — caveat #12 cerbos.env list-form fix, backend 1718→1721
 cd7c745  R77  L28 DR backup-restore drill spec       — isolated namespace, ABS_DR_DRILL gate, 10 pytest, backend 1721→1731
@@ -130,8 +131,21 @@ d13588c  R78  L29 first-customer 11-step E2E sweep   — wizard→login→panel�
 529f296  R79  L30 fs-scan allowlist contract         — honest 89→~95, 5 new shell-FP entries, 6 pytest, backend 1734→1740
 97e552c  R80  L31 fuzz weekend cron contract         — 30K local PASS 76.20s 0 counter-examples, 5 pytest, backend 1740→1745
 f403c7c  R81  L18 offline↔online transition stress   — 5-toggle/edit-collapse/online-flip drafts, 3 Playwright PASS 19.3s
-(R82)    L32 Lighthouse nightly hardening       — fix abs.local→localhost, +slow-3G job, +retry, 8 pytest, backend 1745→1753
+f362601  R82  L32 Lighthouse nightly hardening       — fix abs.local→localhost, +slow-3G job, +retry, 8 pytest, backend 1745→1753
+(R83)    L21 + Mutmut SKIP commits S9          — 5th L21 / 4th Mutmut SKIP, session_9_complete.md
 ```
+
+**S9 real bugs found and fixed:**
+- **R76 — Caveat #12 silently broken** (`cerbos.env` map dropped by helm coalesce; CERBOS_NO_TELEMETRY never reached the cerbos pod since umbrella shipped)
+- **R82 — Lighthouse nightly silently broken since initial ship** (targeted unreachable `https://abs.local/` on every scheduled run)
+
+Both bugs of the same shape: shipped, looked tested, never actually ran in the path that mattered. Both ship regression tests that lock the fix.
+
+**Session 9 totals:**
+- Backend pytest: **1718 → 1753** (+35: R76 +3, R77 +10, R78 +3, R79 +6, R80 +5, R82 +8)
+- Playwright: +3 chromium-desktop tests (R81)
+- 6 new layers: L27 (helm matrix), L28 (DR drill), L29 (11-step E2E), L30 (fs-scan allowlist), L31 (fuzz cron), L32 (Lighthouse nightly)
+- fs-scan honest score: ~89 → **~95** (0 unexplained P0)
 
 **S8 atomic commits:**
 ```
