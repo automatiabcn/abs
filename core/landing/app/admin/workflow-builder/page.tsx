@@ -1,11 +1,12 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 
 import WorkflowChatPanel from "@/components/WorkflowChatPanel";
 import { SAMPLE_WORKFLOW } from "@/lib/workflow";
 
-export const metadata = {
-  title: "Workflow Builder — ABS Admin",
-  robots: { index: false },
+export const metadata: Metadata = {
+  title: "Workflow Builder — ABS Admin · Automatia ABS",
+  robots: { index: false, follow: false },
 };
 
 export default async function Page() {

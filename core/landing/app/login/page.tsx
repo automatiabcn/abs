@@ -4,15 +4,25 @@
 // HttpOnly and only readable by the backend.
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
-type LoginState = "idle" | "submitting" | "error";
+type LoginState = "idle" | "submitting" | "success" | "error";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [state, setState] = useState<LoginState>("idle");
   const [message, setMessage] = useState<string>("");
+  // FOUNDER_FIX_1 / BUG-1 — gate the submit button until React hydrates
+  // so a fast click can't trigger a native GET form submission to /login?
+  // (which is what Playwright + the founder were observing — the browser
+  // POST never reached our handler because hydration hadn't run yet).
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -26,9 +36,31 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       if (res.ok) {
-        // Cookie is set by backend (Set-Cookie travels through the rewrite).
+        // FOUNDER_FIX_1 / BUG-1 — explicit App Router push so the URL flips
+        // synchronously inside the click handler (Playwright was racing the
+        // old `window.location.href` assign and reading `/login`). We keep a
+        // hard-nav fallback in case `router.push` is no-op (e.g., when the
+        // session was already valid and the destination matches the current
+        // route, App Router skips the transition).
+        setState("success");
         const next = new URLSearchParams(window.location.search).get("next");
-        window.location.href = next && next.startsWith("/") ? next : "/panel/meetings";
+        const dest = next && next.startsWith("/") ? next : "/panel";
+        try {
+          router.push(dest);
+        } catch {
+          /* fall through to hard-nav */
+        }
+        // refresh ensures any RSC layout that reads cookies (`/panel/*`)
+        // re-fetches with the new abs_session.
+        router.refresh();
+        // belt-and-braces: hard-nav if the router did not change the URL
+        // within ~150ms (lets Playwright observe the new path even when the
+        // dev compile of the destination is cold).
+        window.setTimeout(() => {
+          if (window.location.pathname === "/login") {
+            window.location.assign(dest);
+          }
+        }, 150);
         return;
       }
       const payload = await res.json().catch(() => ({}));
@@ -51,7 +83,12 @@ export default function LoginPage() {
         oturum aç.
       </p>
 
-      <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
+      <form
+        onSubmit={submit}
+        noValidate
+        data-hydrated={hydrated ? "true" : "false"}
+        className="mt-6 flex flex-col gap-4"
+      >
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-zinc-800 dark:text-zinc-100">
             E-posta
@@ -82,7 +119,8 @@ export default function LoginPage() {
         </label>
         <button
           type="submit"
-          disabled={state === "submitting"}
+          disabled={!hydrated || state === "submitting"}
+          data-testid="login-submit"
           className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           {state === "submitting" ? "Giriş yapılıyor…" : "Oturum aç"}
