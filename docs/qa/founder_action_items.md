@@ -1,8 +1,40 @@
 # Founder Action Items — Pre‑Tester‑Handoff  
 
 ## Status  
-Sprint Q12 closed at commit `ddfdf8c` on branch `feat/sprint-q12-deep-quality`.  
-The checklist below contains **seven** ordered items. Items 1‑3 configure environment‑level values, items 4‑5 apply infrastructure changes, item 6 validates the nightly Lighthouse run, and item 7 packages everything for the external tester. Execute each step in the listed order; later steps assume the previous ones have completed successfully.
+Sprint Q12 closed at commit `dbaeca8` on branch `feat/sprint-q12-deep-quality` (S12 R96–R99 regression close-out + this docs alignment = R100).  
+
+> **S11 → S12 retraction note:** the prior version of this file referenced HEAD `ddfdf8c` and claimed full-suite green; founder host run on 2026-05-05 revealed 1735 passed / 3 failed / 17 errors. S12 root-caused the failure to a missing `data_dir` isolation in `tests/test_q12_magic_link_e2e.py` (single polluter for all 20 fail/error). One atomic fix re-greens to **1755 passed / 0 failed / 0 errors / 14 skipped / 3 deselected** in 176.13s.
+
+The checklist below contains **eight** ordered items. **Step 0 is the new mandatory pre-flight gate** added in S12: founder runs the canonical full-suite command on the host shell and confirms 0 failed / 0 errors before proceeding. Items 1‑3 configure environment‑level values, items 4‑5 apply infrastructure changes, item 6 validates the nightly Lighthouse run, and item 7 packages everything for the external tester. Execute each step in the listed order; later steps assume the previous ones have completed successfully.
+
+---
+
+## 0. Mandatory pre-flight — full backend suite must be GREEN (S12 gate)  
+
+**Goal** – Confirm the canonical full-suite command returns `0 failed / 0 errors` on the founder host before any other step. Selective subsets (`pytest tests/test_X.py`) are NOT acceptable evidence for the handoff seal — that path produced the false S11 GREEN.
+
+**Run**
+
+```bash
+cd core/backend
+./.venv/bin/python -m pytest --no-header -q \
+  --ignore=tests/test_providers.py \
+  --ignore=tests/test_q03_real_saas_backends.py \
+  --ignore=tests/test_update_channel.py
+```
+
+**Expected last line**
+
+```
+1755 passed, 14 skipped, 3 deselected, 41 warnings in NNN.NNs (0:0M:SS)
+```
+
+The three ignores are:
+- `test_providers.py` — live SaaS provider smoke (off by default; runs in staging cron)
+- `test_q03_real_saas_backends.py` — Recall.ai/Deepgram/ElevenLabs/Gmail live (founder approval gate)
+- `test_update_channel.py` — live update channel signature (staging only)
+
+If the run reports any failure or error, STOP. Do not advance to step 1 until 0 failed / 0 errors. Capture the last line and paste it into `tester_handoff_checklist.md` §8 Sign-off.
 
 ---  
 
@@ -259,17 +291,18 @@ If any score falls below 0.9, open a hot‑fix branch `hotfix/lighthouse-q12` an
 
 ## Sign‑off  
 
-When all seven items are completed, add a signed line to this document, commit the change, and create a Git tag `handoff/v1` pointing at `ddfdf8c`.
+When step 0 has been re-run on the founder host AND items 1–7 are complete, add a signed line to this document, commit the change, and create a Git tag `handoff/v1` pointing at `dbaeca8` (or whichever HEAD on `feat/sprint-q12-deep-quality` is current at sign-off — re-run step 0 against the current HEAD).
 
 ```
 Date: [COMPLETION DATE]
 Founder: [YOUR INITIALS]
+Pytest full-suite last line: [PASTE EXACT LINE FROM STEP 0 HERE]
 ```
 
 Push the tag:
 
 ```bash
-git tag handoff/v1 ddfdf8c
+git tag handoff/v1 dbaeca8
 git push origin handoff/v1
 ```
 
