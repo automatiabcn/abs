@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-05-07T10:41:34+00:00",
+  "source_latency_json": "/Users/eneseserkan/Main/abs-server-product/artifacts/promise_verify/latency_benchmark.json",
+  "ledger": {
+    "n_prompts": 100,
+    "groq_total_tokens": {
+      "input": 14462,
+      "output": 56458
+    },
+    "anthropic_total_tokens": {
+      "input": 0,
+      "output": 0
+    },
+    "anthropic_estimated_from_groq": true,
+    "per_prompt_avg_tokens": {
+      "groq": {
+        "input": 144.6,
+        "output": 564.6
+      },
+      "anthropic": {
+        "input": 144.6,
+        "output": 564.6
+      }
+    },
+    "cost_per_prompt": {
+      "groq_usd": 0.0,
+      "anthropic_usd": 0.008892
+    },
+    "monthly_projection_usd": {
+      "1000": {
+        "groq_usd": 0.0,
+        "anthropic_usd": 8.9026
+      },
+      "10000": {
+        "groq_usd": 0.0,
+        "anthropic_usd": 89.0256
+      }
+    },
+    "pricing": {
+      "groq": {
+        "model": "openai/gpt-oss-120b",
+        "input_per_mtok_usd": 0.0,
+        "output_per_mtok_usd": 0.0
+      },
+      "anthropic": {
+        "model": "claude-sonnet-4-5-20250929",
+        "input_per_mtok_usd": 3.0,
+        "output_per_mtok_usd": 15.0
+      }
+    }
+  }
+}
