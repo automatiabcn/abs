@@ -28,7 +28,21 @@ RUN curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSIO
 
 COPY pyproject.toml ./
 COPY app/ ./app/
+COPY setup.py ./
 RUN pip install --prefix=/install .
+
+# Q12 IP-Hardening R5 — compile license-critical modules to .so.
+# Gated behind ABS_COMPILE_CYTHON=1; default builds keep .py for fast
+# rebuilds + readable tracebacks during dev.
+ARG ABS_COMPILE_CYTHON=0
+RUN if [ "${ABS_COMPILE_CYTHON}" = "1" ]; then \
+        pip install cython>=3.0 && \
+        ABS_COMPILE_CYTHON=1 python setup.py build_ext --inplace && \
+        echo "[build] cython compiled" && \
+        find app -name "*.c" -delete; \
+    else \
+        echo "[build] cython skipped (ABS_COMPILE_CYTHON!=1)"; \
+    fi
 
 FROM base AS runtime
 # Q12 IP-Hardening R3 — build hash embedded at image build time.
