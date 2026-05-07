@@ -147,6 +147,37 @@ docker compose logs backend | tail -50    # migration log'u kontrol et
 
 ABS update channel signature ile imza doğrular (014). Bozuk imzayı reddeder.
 
+## Fresh Install — test/QA verilerini temizle
+
+Repo'da geliştirme + QA sırasında üretilmiş test admin'leri, sohbet geçmişi
+ve örnek RAG dosyaları bulunabilir (örnek: `l24scan@test.local`, `tester-…@digisfer.local`).
+Production handoff'tan önce bu verileri temizle:
+
+```bash
+# 1) Önce dry-run — neyin silineceğini gör
+docker compose exec backend python /app/scripts/audit_test_data.py
+#   → JSON çıktı + artifacts/test_data_audit.md
+
+# 2) Onayladıktan sonra confirm
+docker compose exec backend python /app/scripts/reset_test_data.py --confirm --purge-rag
+```
+
+**Otomatik (ilk açılış):** `.env` içine `ABS_FRESH_INSTALL=true` ekleyip
+`infra/scripts/first-boot-reset.sh` script'ini çalıştır — script flag'i kontrol eder,
+gerçek müşteri kurulumlarında atlanır:
+
+```bash
+ABS_FRESH_INSTALL=true bash infra/scripts/first-boot-reset.sh
+```
+
+Kurallar:
+
+- `admin@demo-acme.com` (bootstrap admin) ve `system@abs.local` **silinmez**.
+- `tier ∈ {self-host, team, enterprise}` lisansları **silinmez** (sadece `beta`).
+- Real-customer tenant verisi (`demo-acme`, `default`) için tüm silmeler
+  per-row email pattern bazlı; tenant-only sweep yapılmaz.
+- İkinci `--confirm` çalıştırması idempotent: `total_deleted == 0`.
+
 ## Sonraki adımlar
 
 - [API Reference](api-reference.md) — 100+ MCP tool
