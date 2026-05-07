@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -20,6 +20,10 @@ class LicensePayload(BaseModel):
         iat: Token oluşturma zamanı (UTC epoch saniye).
         exp: Token geçerlilik sonu (UTC epoch saniye).
         jti: Token'ın benzersiz kimliği (JWT ID).
+        machine_fp: Q12 IP-Hardening R1 — opsiyonel hardware fingerprint
+            binding. Mevcutsa, doğrulama sırasında host'un canlı FP'si ile
+            karşılaştırılır; eşleşmezse 403. ``None`` (legacy) lisanslar
+            geriye dönük uyumluluk için makineye bağlanmaz.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -32,3 +36,6 @@ class LicensePayload(BaseModel):
     iat: int = Field(..., description="Oluşturma zamanı (UTC epoch)")
     exp: int = Field(..., description="Geçerlilik sonu (UTC epoch)")
     jti: str = Field(..., description="Token benzersiz kimliği")
+    machine_fp: Optional[str] = Field(
+        None, description="Hardware fingerprint binding (SHA-256 hex)"
+    )

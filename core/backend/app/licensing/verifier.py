@@ -18,6 +18,7 @@ from jwt import (
 
 from app.config import settings
 
+from .fingerprint import collect_machine_fingerprint
 from .keys import load_public_key
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ def verify_license(token: str) -> dict:
     public_key_bytes = load_public_key(settings.public_key_path)
 
     try:
-        return jwt.decode(
+        payload = jwt.decode(
             token,
             key=public_key_bytes,
             algorithms=["RS256"],
@@ -71,3 +72,27 @@ def verify_license(token: str) -> dict:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="license_verify_failed",
         ) from exc
+
+    # Q12 IP-Hardening R1 — hardware fingerprint binding.
+    # Backwards compat: legacy licenses without `machine_fp` stay valid.
+    bound_fp = payload.get("machine_fp")
+    if bound_fp:
+        try:
+            live_fp = collect_machine_fingerprint()
+        except Exception:  # pragma: no cover — degraded host (no FP components)
+            logger.warning("license_machine_fp_collect_failed")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="license_machine_mismatch",
+            )
+        if live_fp != bound_fp:
+            logger.warning(
+                "license_machine_fp_mismatch jti=%s",
+                payload.get("jti"),
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="license_machine_mismatch",
+            )
+
+    return payload
