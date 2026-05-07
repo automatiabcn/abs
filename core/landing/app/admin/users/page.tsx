@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // R65 (S8) — Sprint 22 RSC Phase B leg 2: split-shell for /admin/users.
 //
 // Server-side fetches the current users list with the caller's session

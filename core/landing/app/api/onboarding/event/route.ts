@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // T-R04 — onboarding analytics receiver. Forwards events to LangFuse via the
 // backend `/v1/internal/onboarding-event` proxy. Failure mode: 202 Accepted
 // even on downstream timeout so the client never waits longer than 200 ms.

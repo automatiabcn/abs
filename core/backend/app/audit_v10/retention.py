@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
 """T-046 — SOC2 audit log retention helpers (HMAC chain + S3 hand-off plan).
 
 ⚠ Activating the 7-year S3 retention policy in production is a MANUAL approval

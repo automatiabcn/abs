@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // Q7 Phase C — premium /panel/meetings refactor (S20.5 behaviour preserved).
 // Q9 Phase B — MT8 fix: filter bar (search + status + speaker count + date range).
 "use client";

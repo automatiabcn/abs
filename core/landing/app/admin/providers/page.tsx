@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // Q8 Phase D — `/admin/providers` cascade chain visualisation. Polls
 // /v1/cascade/providers every 5s, shows 6 provider cards with status
 // chips, mock-mode toggle, last 10 cascade calls, and a `Test now`

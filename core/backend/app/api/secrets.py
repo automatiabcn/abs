@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
 """013 — Vault rotation + status API (admin auth zorunlu).
 
 POST /v1/secrets/rotate {key, new_value} → write_secret + invalidate cache + audit

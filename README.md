@@ -2,7 +2,7 @@
 
 > Part of the [Automatia BCN](https://automatiabcn.com) product family · Made in Barcelona
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-orange.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-1822%20passing-brightgreen.svg)](#testing)
 [![Lighthouse](https://img.shields.io/badge/lighthouse-100%2F100%2F100%2F100-brightgreen.svg)](docs/performance.md)
 [![Tools](https://img.shields.io/badge/MCP%20tools-107-blue.svg)](docs/api-reference.md)
@@ -107,8 +107,13 @@ npx lighthouse http://localhost:3000 --preset=desktop
 
 ## License
 
-ABS is **Apache 2.0**. The closed premium add-ons (advanced RAG, team panel, future SaaS
-mode) are bundled with every Self-Host Lifetime purchase. See [LICENSE](LICENSE).
+ABS is licensed under the **Business Source License 1.1** (BSL).
+
+- **Free use** — development, evaluation, internal testing on non-production environments. No fee, no permission required.
+- **Production use** — requires a Commercial License from [Automatia BCN](https://automatiabcn.com). See [docs/customer-agreement.md](docs/customer-agreement.md).
+- **Change Date** — on 2030-05-07 this software automatically converts to **Apache License 2.0** (full open source).
+
+See [LICENSE](LICENSE) for the full text. Contact: support@automatiabcn.com.
 
 ## Community
 

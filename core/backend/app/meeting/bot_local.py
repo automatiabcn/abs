@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
 """T-F01 — Self-hosted meeting bot backend (meetily / jitsi).
 
 Free-tier replacement for `bot_recall._RecallBackend`. The Python side just

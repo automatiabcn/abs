@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
 """Batch A — 6 quality tool (judge, write_tests, write_docs, code_review, ask_disagree, score_patch).
 
 Not: qual_human / qual_code_human / humanize_score / auto_verify_code / auto_verify_turkish

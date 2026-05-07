@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // Q8 Phase B / W3 — react-flow (xyflow) DAG canvas for the workflow
 // builder. Replaces the vertical list canvas with a real node graph
 // (zoom, pan, mini-map, controls) and a custom node renderer that mirrors

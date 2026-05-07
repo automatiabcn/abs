@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
 """Phase 4 / Q2.CO1 — UsageLog service: append + aggregate.
 
 Sister of `feature_usage` but tracks **provider tokens/cost** (not feature

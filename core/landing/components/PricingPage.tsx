@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // Q6 PA — pricing page deprecated. The /pricing route now redirects to
 // /#contact. This component remains as a thin Pilot/PoC contact CTA so
 // any lingering imports keep compiling, but no $/€/lifetime copy is

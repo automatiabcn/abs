@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
 """GUARD 9 — Feature nudge (Bash + MCP idle pattern).
 
 15 Bash pattern + 8 MCP idle nudge. Her feature için 10dk pencere.

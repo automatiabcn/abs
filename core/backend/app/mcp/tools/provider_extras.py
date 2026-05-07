@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
 """Batch B — 15 provider extras tool (ask_smart, ask_rerank, ask_aya, Granite, StarCoder,
 DeepSeek, CodeLlama, Gemma2, Llava, longcontext, OpenRouter x2, vLLM, reasoner).
 

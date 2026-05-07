@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // Q6 PB — frontend login page. Posts to /auth/login (proxied through
 // Next.js rewrite to FastAPI), receives the abs_session cookie, redirects
 // to /panel/meetings. No client-side token handling — the cookie is

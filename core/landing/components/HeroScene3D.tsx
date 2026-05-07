@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // T-Q05 — React Three Fiber hero scene.
 // Network nodes + particle flow + central ABS orb. Brand #1e57ac + electric cyan.
 // Lazy-mounted only on desktop AND when prefers-reduced-motion is "no-preference".
