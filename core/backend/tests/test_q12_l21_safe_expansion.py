@@ -73,9 +73,13 @@ def test_q12_l21_002_alembic_roundtrip_10x() -> None:
         assert "minted_token_blacklist" in baseline
         assert "chat_sessions" in baseline
 
+        # Q12 / Brief 3 R4 — `head` advanced past 0008, so `-1` no
+        # longer lands on the revision that drops minted_token_blacklist.
+        # Pin the downgrade target to 0007_chat_sessions so this 10×
+        # contract keeps exercising the same up/down/up cycle.
         # 10 consecutive cycles
         for i in range(10):
-            command.downgrade(cfg, "-1")
+            command.downgrade(cfg, "0007_chat_sessions")
             engine = create_engine(db_url)
             after_down = set(inspect(engine).get_table_names())
             engine.dispose()

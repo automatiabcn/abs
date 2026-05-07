@@ -102,6 +102,10 @@ class ChatSessionOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     message_count: int
+    # Q12 / Brief 3 R4 — threading metadata (pin / archive / sort key)
+    pinned: bool = False
+    archived_at: Optional[datetime] = None
+    last_activity_at: Optional[datetime] = None
 
 
 class ChatMessageOut(BaseModel):
@@ -261,7 +265,10 @@ def _session_out(sess: ChatSession, message_count: int) -> ChatSessionOut:
         user_email=sess.user_email,
         created_at=sess.created_at,
         updated_at=sess.updated_at,
-        message_count=message_count,
+        message_count=message_count or sess.message_count,
+        pinned=sess.pinned,
+        archived_at=sess.archived_at,
+        last_activity_at=sess.last_activity_at,
     )
 
 
@@ -269,15 +276,33 @@ def _session_out(sess: ChatSession, message_count: int) -> ChatSessionOut:
 
 
 @router.get("/sessions", response_model=List[ChatSessionOut])
-def list_sessions(admin: dict = Depends(current_admin)):
+def list_sessions(
+    admin: dict = Depends(current_admin),
+    search: Optional[str] = None,
+    include_archived: bool = False,
+):
+    """Q12 / Brief 3 R4 — thread sidebar list.
+
+    `search` filters case-insensitively against `title`; `include_archived`
+    is False by default so archived threads stay out of the active rail.
+    Ordering: pinned first, then `last_activity_at` desc.
+    """
     tenant = _resolve_tenant(admin["sub"])
     with Session(get_engine()) as db:
         stmt = (
             select(ChatSession)
             .where(ChatSession.tenant_slug == tenant)
-            .order_by(ChatSession.updated_at.desc())
-            .limit(50)
+            .order_by(
+                ChatSession.pinned.desc(),
+                ChatSession.last_activity_at.desc(),
+            )
+            .limit(100)
         )
+        if not include_archived:
+            stmt = stmt.where(ChatSession.archived_at.is_(None))
+        if search:
+            like = f"%{search.strip()}%"
+            stmt = stmt.where(ChatSession.title.ilike(like))
         sessions = db.exec(stmt).all()
         if not sessions:
             return []
@@ -350,6 +375,68 @@ def delete_session(
     return None
 
 
+# ───── Q12 / Brief 3 R4 — pin / archive thread mutations ─────────────────
+
+
+@router.post(
+    "/sessions/{session_id}/pin", response_model=ChatSessionOut
+)
+def pin_session(
+    session_id: int,
+    pinned: bool = True,
+    admin: dict = Depends(current_admin),
+):
+    """Toggle pin state. ``?pinned=false`` clears the pin."""
+    tenant = _resolve_tenant(admin["sub"])
+    with Session(get_engine()) as db:
+        sess = _load_session(db, session_id, tenant)
+        sess.pinned = bool(pinned)
+        sess.updated_at = datetime.now(timezone.utc)
+        db.add(sess)
+        db.commit()
+        db.refresh(sess)
+        return _session_out(sess, sess.message_count)
+
+
+@router.post(
+    "/sessions/{session_id}/archive", response_model=ChatSessionOut
+)
+def archive_session(
+    session_id: int,
+    admin: dict = Depends(current_admin),
+):
+    """Set ``archived_at`` (idempotent — re-archive keeps original ts)."""
+    tenant = _resolve_tenant(admin["sub"])
+    with Session(get_engine()) as db:
+        sess = _load_session(db, session_id, tenant)
+        if sess.archived_at is None:
+            sess.archived_at = datetime.now(timezone.utc)
+            sess.updated_at = sess.archived_at
+            db.add(sess)
+            db.commit()
+            db.refresh(sess)
+        return _session_out(sess, sess.message_count)
+
+
+@router.post(
+    "/sessions/{session_id}/unarchive", response_model=ChatSessionOut
+)
+def unarchive_session(
+    session_id: int,
+    admin: dict = Depends(current_admin),
+):
+    tenant = _resolve_tenant(admin["sub"])
+    with Session(get_engine()) as db:
+        sess = _load_session(db, session_id, tenant)
+        if sess.archived_at is not None:
+            sess.archived_at = None
+            sess.updated_at = datetime.now(timezone.utc)
+            db.add(sess)
+            db.commit()
+            db.refresh(sess)
+        return _session_out(sess, sess.message_count)
+
+
 @router.get(
     "/sessions/{session_id}/messages", response_model=List[ChatMessageOut]
 )
@@ -412,6 +499,12 @@ async def completions(
             content=last_user_content,
         )
         db.add(user_msg)
+        # Q12 / Brief 3 R4 — bump the sidebar denorm columns. The
+        # assistant-message branch later adds another +1 on its own
+        # commit, so user + assistant each contribute one.
+        sess.last_activity_at = datetime.now(timezone.utc)
+        sess.message_count = (sess.message_count or 0) + 1
+        db.add(sess)
         db.commit()
 
     cmd = _detect_slash_command(last_user_content)
@@ -505,7 +598,12 @@ async def completions(
                 )
                 touched = db.get(ChatSession, sess_id)
                 if touched is not None:
-                    touched.updated_at = datetime.now(timezone.utc)
+                    now = datetime.now(timezone.utc)
+                    touched.updated_at = now
+                    # Q12 / Brief 3 R4 — keep the sidebar-sort denorm
+                    # columns in step with the actual chat traffic.
+                    touched.last_activity_at = now
+                    touched.message_count = (touched.message_count or 0) + 1
                     db.add(touched)
                 db.commit()
             return
