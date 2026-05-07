@@ -1,6 +1,6 @@
 # ABS Hybrid Tier Promise
 
-> v1.2 · 2026-05-06 · Sprint Q12 consensus-eval scaffolding pass
+> v1.3 · 2026-05-07 · Sprint Q12 latency/cost/redundancy rewrite — multi-judge consensus retracted
 
 ## What ABS guarantees
 
@@ -38,21 +38,40 @@ When the customer opts into Claude (`ABS_ANTHROPIC_ENABLED=true` + their own `AB
 3. **Pre-flight gate.** Before each Claude call, the adapter projects `used + max_tokens` and refuses up-front if that breaches 95 %.
 4. **No silent overruns.** If the user's monthly token budget would be exceeded mid-run, the call returns a `ProviderError` and the cascade picks the next provider; the customer never sees a Claude bill they did not budget for.
 
-## Quality bar
+## What we measure (and what we don't)
 
-ABS ships a falsifiable multi-model win-rate harness so the "best-free verified" claim is reproducible by any operator with their own keys:
+ABS makes three falsifiable empirical promises. Each one is judge-free, deterministic, and reproducible from a single command on the operator's own keys.
 
-- **Eval dataset (v2):** [`core/backend/tests/fixtures/golden_eval_multimodel.json`](../core/backend/tests/fixtures/golden_eval_multimodel.json) — **100 prompts**, balanced 25 code / 25 analysis / 25 translation / 25 writing, each with `expected_traits` written to be objectively verifiable (no "high quality" / "well-written" judgments — only structural/content checks).
-- **Single-judge harness (legacy, audit trail):** [`scripts/eval/multimodel_winrate.py`](../scripts/eval/multimodel_winrate.py) — calls Groq GPT-OSS-120B and Anthropic Claude per prompt, judges with one model. Kept because it produced the founder evidence that single-judge LLM-as-judge is biased; do **not** use its numbers for product claims.
-- **Multi-judge consensus harness (v2, the canonical one):** [`scripts/eval/winrate_consensus.py`](../scripts/eval/winrate_consensus.py) — 4 judges (Groq Llama 3.3 70B, Anthropic Claude Sonnet 4.5, Google Gemini 2.5 Pro, Cohere Command R+) × A/B position swap = **8 verdicts per prompt**. Errors are surfaced as `ERROR` (never silently coerced to `TIE`). Output: [`artifacts/promise_verify/winrate_consensus_v2.md`](../artifacts/promise_verify/winrate_consensus_v2.md) plus JSON sidecar with per-judge breakdown, per-judge position-swap mismatch %, pairwise inter-judge agreement, and Wilson 95 % CI.
-- **Founder single-judge measurements (2026-05-06, retained as bias evidence):** the legacy harness ran end-to-end with both keys. Results were highly judge-dependent:
-  - GPT-OSS-120B vs Claude Sonnet 4.5, judge = Llama 3.3 70b (Groq) → **80 %** GPT-OSS win-rate (30/30 prompts).
-  - GPT-OSS-120B vs Claude Opus 4.1, judge = Llama 3.3 70b → **80 %** GPT-OSS win-rate (30/30).
-  - GPT-OSS-120B vs Claude Sonnet 4.5, judge = **Sonnet 4.5** → **22 %** GPT-OSS win-rate (30/30) — judge favoured itself.
-  - **Cross-judge spread = 58 percentage points**, exposing severe single-judge LLM bias. This is the reason single-judge numbers no longer back any product claim.
-- **2-judge bias-controlled smoke (legacy, 2026-05-05, 5 prompts × 4 verdicts):** 4/5 confident verdicts, **win-rate 50 %**, position-swap mismatch **60 %**. Treated as a sanity check; superseded by the v2 harness above.
-- **Honest claim today:** GPT-OSS-120B is **competitive** with Sonnet 4.5 / Opus 4.1 on this dataset — likely in the 40 – 60 % win-rate band — but **no single-judge run can prove categorical superiority**. The legacy "≥50 % win-rate" line is **retracted**. The empirically *real* customer wins are: ~100 % cost savings, 5–10× lower latency on Groq, and provider redundancy — not strict quality dominance. The v2 multi-judge consensus eval will replace this paragraph with a confident win-rate + 95 % CI once the founder runs it end-to-end with all four judge keys (`GROQ_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `COHERE_API_KEY`).
-- **Reproduce:** `python scripts/eval/winrate_consensus.py` (all four keys → 8-verdict consensus on N=100). The script can run with a subset of judges if some keys are missing; it surfaces the skip in the artifact header so operators see exactly which evidence stack was used.
+### 1. Latency — Groq is N× faster than Anthropic on identical prompts
+
+- **Evidence:** [`artifacts/promise_verify/latency_benchmark.md`](../artifacts/promise_verify/latency_benchmark.md) (+ JSON sidecar)
+- **Method:** N=100 prompts from [`core/backend/tests/fixtures/golden_eval_multimodel.json`](../core/backend/tests/fixtures/golden_eval_multimodel.json) (25 code / 25 analysis / 25 translation / 25 writing). `time.perf_counter()` is wrapped around each HTTP POST so the recorded number is wall-clock customer-felt latency, not just server-side compute. Anthropic Plus throttle (≤30 calls / 15 min) is honoured.
+- **Reproduce:** `python scripts/eval/latency_benchmark.py` (requires `GROQ_API_KEY`; `ANTHROPIC_API_KEY` is opt-in — when absent the artifact records `anthropic_unavailable` and leaves speedup as `unmeasured` rather than fabricating a number).
+
+### 2. Cost — Free path is $0 / prompt; Anthropic Plus stays inside the $20 budget
+
+- **Evidence:** [`artifacts/promise_verify/cost_ledger.md`](../artifacts/promise_verify/cost_ledger.md) (+ JSON sidecar)
+- **Method:** pure arithmetic — token counts from the latency JSON × published pricing ($3 / $15 per Mtok input/output for Sonnet 4.5; $0 for Groq GPT-OSS-120B). No LLM call, no network. Monthly projection at 1 000 and 10 000 prompts. Anthropic-side projections from the live N=100 run flag themselves as "floor estimate" when the latency benchmark ran without an Anthropic key.
+- **Customer guard:** `app/observability/quota_monitor.py` records every Claude token, warns at 80 %, hard-blocks at 95 % (`QuotaExceeded` ⇒ cascade falls back to Groq). Pre-flight gate refuses calls projected to breach 95 %.
+- **Reproduce:** `python scripts/eval/cost_calculator.py`
+
+### 3. Redundancy — The cascade survives any single-provider outage
+
+- **Evidence:** [`artifacts/promise_verify/cascade_smoke.md`](../artifacts/promise_verify/cascade_smoke.md) (+ JSON sidecar)
+- **Method:** 6 stub providers wired into production [`app/cascade/orchestrator.py`](../core/backend/app/cascade/orchestrator.py) `call_with_cascade`. 7 rounds total — 1 baseline + 6 kill-each — every round verifies the cascade falls through to the next configured provider. Stubs only; zero real API traffic so this round is rate-limit-safe.
+- **Reproduce:** `python scripts/eval/cascade_smoke.py`
+
+## What we do NOT claim
+
+ABS does **not** claim that GPT-OSS-120B is "categorically better" than Claude Sonnet 4.5 / Opus 4.1 on output quality. We attempted a multi-judge LLM-as-judge consensus eval (4 judges × A/B position swap = 8 verdicts per prompt) and **abandoned it** on 2026-05-07 after these findings:
+
+- **Cross-judge variance = 58 percentage points** on 30 prompts (Llama 3.3 70b judge → 80 % GPT-OSS win-rate; Sonnet 4.5 judge → 22 % — the judge favoured itself). LLM-as-judge is a noisy oracle, not a signal.
+- **Position-swap mismatch = 3/3** on the very first contested prompt of the v2 4-judge run. When swapping `A` and `B` flips the verdict 100 % of the time on the first probe, the methodology is not stable enough to back any product claim.
+- **Cohere/Gemini rate-limit storm** during the consensus run (24h cooldown email) — relying on four third-party APIs in the critical evaluation path adds an outage surface ABS itself doesn't have.
+
+The legacy single-judge artifacts in [`artifacts/promise_verify/`](../artifacts/promise_verify/) (`opus_v_gptoss_*`, `sonnet_v_gptoss_*`, `winrate_consensus*`) are retained as an **audit trail of why we abandoned LLM-as-judge** for product claims. Do not cite their win-rate numbers; cite the methodology critique instead. The earlier "≥50 % win-rate" line is **fully retracted**.
+
+What we observe by direct usage: GPT-OSS-120B output quality is at competitive parity with Sonnet 4.5 on this dataset. We have **not** statistically proven that and we no longer plan to — the customer's real win is the trio above (cost, latency, redundancy), all of which we can measure deterministically. Founders are encouraged to run their own eyeball N=10 on real tasks before opting in to Anthropic billing.
 
 ## What the customer sees
 
@@ -68,3 +87,4 @@ ABS lets the customer keep their Claude Plus subscription as a fixed-cost premiu
 ## Sign-off
 
 > Author: Founder + ABS engineering · Sprint 20 T-F04 · 2026-04-29.
+> v1.3 amendment: Sprint Q12 latency/cost/redundancy rewrite · 2026-05-07.
