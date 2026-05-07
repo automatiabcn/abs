@@ -1,83 +1,20 @@
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 
 import Pricing from "@/components/Pricing";
 
-describe("Pricing (018 modul B)", () => {
-  beforeEach(() => {
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: { href: "" },
-    });
-    vi.restoreAllMocks();
+// Q6 PA + brand alignment (aa010a7) collapsed the original three-tier
+// `<Pricing />` SKU grid (Self-Host / + Maintenance / Managed Cloud)
+// into a no-op stub so existing imports keep compiling. The Pilot/PoC
+// outreach now lives in `<Contact />`. These tests are the regression
+// fence that prevents accidentally re-introducing the deprecated UI.
+describe("Pricing — deprecated stub (post Q6 PA)", () => {
+  it("renders nothing (component is intentionally a no-op)", () => {
+    const { container } = render(<Pricing />);
+    expect(container.innerHTML).toBe("");
   });
 
-  it("renders 3 SKU cards (Self-Host, Maintenance, Managed Cloud)", () => {
-    render(<Pricing />);
-    expect(screen.getByText("Self-Host Lifetime")).toBeInTheDocument();
-    expect(screen.getByText("+ Maintenance")).toBeInTheDocument();
-    expect(screen.getByText("Managed Cloud")).toBeInTheDocument();
-    // 14-day refund vurgusu var
-    expect(screen.getByText(/14 gün/i)).toBeInTheDocument();
-  });
-
-  it("self-host CTA POSTs to /api/checkout and redirects on success", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ url: "https://checkout.stripe.com/sh" }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      }),
-    );
-
-    render(<Pricing />);
-    await userEvent.click(screen.getByRole("button", { name: "Self-Host Satın Al" }));
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/checkout",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ tier: "self-host" }),
-      }),
-    );
-    expect(window.location.href).toBe("https://checkout.stripe.com/sh");
-  });
-
-  it("renders team-5 and team-10 buttons that hit checkout", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ url: "https://checkout.stripe.com/team5" }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      }),
-    );
-
-    render(<Pricing />);
-    expect(screen.getByText("5 seat paketi")).toBeInTheDocument();
-    expect(screen.getByText("10 seat paketi")).toBeInTheDocument();
-
-    const teamButtons = screen.getAllByRole("button", { name: "Al" });
-    expect(teamButtons.length).toBeGreaterThanOrEqual(2);
-
-    await userEvent.click(teamButtons[0]);
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/checkout",
-      expect.objectContaining({
-        body: JSON.stringify({ tier: "team-5" }),
-      }),
-    );
-  });
-
-  it("shows error when checkout API returns failure", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ error: "Stripe rate limit" }), {
-        status: 502,
-        headers: { "content-type": "application/json" },
-      }),
-    );
-
-    render(<Pricing />);
-    await userEvent.click(screen.getByRole("button", { name: "Bakımla Satın Al" }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent("Stripe rate limit");
+  it("default export is a function component", () => {
+    expect(typeof Pricing).toBe("function");
   });
 });
