@@ -69,7 +69,7 @@ ABS does **not** claim that GPT-OSS-120B is "categorically better" than Claude S
 - **Position-swap mismatch = 3/3** on the very first contested prompt of the v2 4-judge run. When swapping `A` and `B` flips the verdict 100 % of the time on the first probe, the methodology is not stable enough to back any product claim.
 - **Cohere/Gemini rate-limit storm** during the consensus run (24h cooldown email) — relying on four third-party APIs in the critical evaluation path adds an outage surface ABS itself doesn't have.
 
-The legacy single-judge artifacts in [`artifacts/promise_verify/`](../artifacts/promise_verify/) (`opus_v_gptoss_*`, `sonnet_v_gptoss_*`, `winrate_consensus*`) are retained as an **audit trail of why we abandoned LLM-as-judge** for product claims. Do not cite their win-rate numbers; cite the methodology critique instead. The earlier "≥50 % win-rate" line is **fully retracted**.
+The legacy single-judge artifacts in [`artifacts/promise_verify/`](../artifacts/promise_verify/) (`opus_v_gptoss_*`, `sonnet_v_gptoss_*`, `winrate_consensus*`) are retained as an **audit trail of why we abandoned LLM-as-judge** for product claims. Do not cite their win-rate numbers; cite the methodology critique instead. The earlier majority-win-rate phrasing from v1.0 is **fully retracted** and will not be re-introduced.
 
 What we observe by direct usage: GPT-OSS-120B output quality is at competitive parity with Sonnet 4.5 on this dataset. We have **not** statistically proven that and we no longer plan to — the customer's real win is the trio above (cost, latency, redundancy), all of which we can measure deterministically. Founders are encouraged to run their own eyeball N=10 on real tasks before opting in to Anthropic billing.
 
