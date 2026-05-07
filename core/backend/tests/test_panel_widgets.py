@@ -1,62 +1,12 @@
-"""004b — 7 geri getirilen widget'ın HTML + stub endpoint parity testleri."""
+"""004b widget endpoints — survives the Brief 4 panel deprecation.
+
+The ``test_panel_has_all_15_widgets`` HTML-ID assertion was removed
+because `/panel` is now a 308 redirect to `/admin` (Next.js owns the
+widget rendering). The widget *backend* endpoints remain — the Next.js
+admin proxies them — so the API parity tests below stay in force.
+"""
 
 from __future__ import annotations
-
-# 004 8 widget + 004b 7 widget = 15 widget. Tümünün ID'leri HTML'de bulunmalı.
-ALL_WIDGET_IDS = [
-    # --- 004 (8 widget) ---
-    "brain-iframe",
-    "cs-provider-dots",
-    "cs-log",
-    "spark-deleg",
-    "spark-gpu",
-    "spark-cache",
-    "judge-summary",
-    "judge-body",
-    "workflow-card",
-    "wf-detail-summary",
-    "wf-detail-list",
-    "cs-cohere-count",
-    "cs-cohere-fill",
-    "cohere-alert-banner",
-    "feat-grid",
-    "feat-trend-list",
-    "feat-summary",
-    "cs-budget-usd",
-    "v8-budget-stat",
-    "deleg-budget",
-    # --- 004b (7 widget) ---
-    # Symbol Explorer
-    "sym-explorer-summary",
-    "sym-explorer-input",
-    "sym-explorer-btn",
-    "sym-explorer-results",
-    # Quota Radar
-    "quota-radar-day",
-    "quota-radar-grid",
-    # Anchor Nav
-    "anchor-nav",
-    # Notification Bell
-    "notif-bell",
-    "notif-panel",
-    "notif-list",
-    "notif-badge",
-    "notif-clear",
-    "notif-close",
-    # Theme Toggle
-    "theme-toggle",
-    "theme-icon",
-    # Disagreement Panel
-    "disagree-summary",
-    "disagree-body",
-    # Vital Signs
-    "vital-strip",
-    "vital-overall-dot",
-    "vital-overall-label",
-    "vital-overall-sub",
-    "vital-dots",
-    "vital-updated",
-]
 
 
 def _login(client):
@@ -65,13 +15,6 @@ def _login(client):
         json={"email": "admin@local", "password": "CHANGEME"},
     )
     assert r.status_code == 200
-
-
-def test_panel_has_all_15_widgets(client):
-    _login(client)
-    body = client.get("/panel").text
-    missing = [wid for wid in ALL_WIDGET_IDS if f'id="{wid}"' not in body]
-    assert not missing, f"Eksik widget ID'leri: {missing}"
 
 
 def test_symbol_graph_stub_reachable(client):

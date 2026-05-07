@@ -7,6 +7,35 @@ services:
     volumes:
       - abs-data:/app/data
       - abs-vault-key:/app/vault-key:ro    # 013 — master key ayrı volume, read-only
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8000/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  # Brief 4 R2 — Next.js admin / landing front. Caddy splits routes:
+  # /v1/*, /auth/*, /setup*, /panel, /healthz, /mcp*, /static/* → backend
+  # everything else (/, /admin/*, /pricing, /beta, /start, /showcase) → landing
+  landing:
+    build:
+      context: ../core/landing
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      ABS_BACKEND_URL: "http://backend:8000"
+      NEXT_PUBLIC_SITE_URL: "${ABS_PUBLIC_URL:-https://abs.local}"
+      NEXT_TELEMETRY_DISABLED: "1"
+    expose:
+      - "3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   email-cron:
@@ -24,7 +53,10 @@ services:
   caddy:
     image: caddy:2
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+      landing:
+        condition: service_healthy
     ports:
       - "80:80"
       - "443:443"
