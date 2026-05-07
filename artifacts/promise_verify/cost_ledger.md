@@ -1,8 +1,7 @@
 # Cost ledger — Groq vs Anthropic
 
-> Generated: 2026-05-07T10:41:34+00:00 · derived from `artifacts/promise_verify/latency_benchmark.json`
-> Latency run mode: `live-no-anthropic` · N=100 prompts
-> ⚠️ Anthropic side did not run live in the latency benchmark; per-prompt cost is projected from **Groq token counts** as a floor estimate. Real Sonnet 4.5 outputs are typically longer, so a live re-run will likely raise these numbers, not lower them.
+> Generated: 2026-05-07T11:52:04+00:00 · derived from `artifacts/promise_verify/latency_benchmark.json`
+> Latency run mode: `live` · N=100 prompts
 
 ## Pricing (per million tokens)
 
@@ -15,17 +14,17 @@
 
 | Provider | Mean input tokens | Mean output tokens | Cost / prompt |
 |---|---|---|---|
-| Groq | 144.6 | 564.6 | $0.000000 |
-| Anthropic | 144.6 | 564.6 | $0.008892 |
+| Groq | 144.6 | 562.1 | $0.000000 |
+| Anthropic | 92.1 | 475.9 | $0.007401 |
 
 ## Monthly projection (USD)
 
 | Workload | Groq monthly | Anthropic monthly |
 |---|---|---|
-| 1,000 prompts/mo | $0.00 | $8.90 |
-| 10,000 prompts/mo | $0.00 | $89.03 |
+| 1,000 prompts/mo | $0.00 | $7.41 |
+| 10,000 prompts/mo | $0.00 | $74.15 |
 
-At 1 000 prompts / month, Anthropic spend ($8.90) stays inside the $20 Claude Plus budget — quota_monitor (95 % hard block) keeps it that way at higher workloads.
+At 1 000 prompts / month, Anthropic spend ($7.41) stays inside the $20 Claude Plus budget — quota_monitor (95 % hard block) keeps it that way at higher workloads.
 
 ## What this ledger does NOT include
 

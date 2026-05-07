@@ -1,39 +1,39 @@
 {
-  "generated_at": "2026-05-07T10:41:34+00:00",
+  "generated_at": "2026-05-07T11:52:04+00:00",
   "source_latency_json": "/Users/eneseserkan/Main/abs-server-product/artifacts/promise_verify/latency_benchmark.json",
   "ledger": {
     "n_prompts": 100,
     "groq_total_tokens": {
       "input": 14462,
-      "output": 56458
+      "output": 56212
     },
     "anthropic_total_tokens": {
-      "input": 0,
-      "output": 0
+      "input": 9214,
+      "output": 47588
     },
-    "anthropic_estimated_from_groq": true,
+    "anthropic_estimated_from_groq": false,
     "per_prompt_avg_tokens": {
       "groq": {
         "input": 144.6,
-        "output": 564.6
+        "output": 562.1
       },
       "anthropic": {
-        "input": 144.6,
-        "output": 564.6
+        "input": 92.1,
+        "output": 475.9
       }
     },
     "cost_per_prompt": {
       "groq_usd": 0.0,
-      "anthropic_usd": 0.008892
+      "anthropic_usd": 0.007401
     },
     "monthly_projection_usd": {
       "1000": {
         "groq_usd": 0.0,
-        "anthropic_usd": 8.9026
+        "anthropic_usd": 7.4146
       },
       "10000": {
         "groq_usd": 0.0,
-        "anthropic_usd": 89.0256
+        "anthropic_usd": 74.1462
       }
     },
     "pricing": {

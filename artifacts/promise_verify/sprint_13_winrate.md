@@ -1,5 +1,5 @@
 # Sprint 13 multi-model win-rate evidence
-> Generated: 2026-05-07T10:47:46+00:00 · mode: `offline` · duration: 0.0s
+> Generated: 2026-05-07T11:53:50+00:00 · mode: `offline` · duration: 0.0s
 > Dataset: `core/backend/tests/fixtures/golden_eval_multimodel.json` (3 rows)
 > GPT-OSS model: `openai/gpt-oss-120b`
 > Claude model: `claude-opus-4-1-20250805`

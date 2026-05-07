@@ -1,6 +1,6 @@
 # Latency benchmark — Groq vs Anthropic
 
-> Generated: 2026-05-07T10:40:02+00:00 · mode: `live-no-anthropic` · duration: 507.7s
+> Generated: 2026-05-07T11:51:33+00:00 · mode: `live` · duration: 2818.9s
 > Dataset: `core/backend/tests/fixtures/golden_eval_multimodel.json` (100 prompts)
 > Groq model: `openai/gpt-oss-120b`
 > Anthropic model: `claude-sonnet-4-5-20250929`
@@ -9,19 +9,23 @@
 
 | Provider | n_ok | errors | P50 (ms) | P95 (ms) | mean (ms) | stdev (ms) |
 |---|---|---|---|---|---|---|
-| Groq GPT-OSS-120B | 100 | 0 | 5829.2 | 7312.3 | 5076.1 | 2277.3 |
-| Anthropic Sonnet 4.5 | 0 | 100 | None | None | None | None |
+| Groq GPT-OSS-120B | 100 | 0 | 1788.9 | 2066.7 | 1418.5 | 639.4 |
+| Anthropic Sonnet 4.5 | 100 | 0 | 9410.0 | 19492.1 | 10239.3 | 5638.8 |
 
 ## Speedup (Anthropic / Groq)
 
-_Speedup unmeasured — one provider returned zero successful samples (typical when `ANTHROPIC_API_KEY` is not set)._
+| Metric | Multiplier |
+|---|---|
+| P50 | 5.26× |
+| P95 | 9.43× |
+| mean | 7.22× |
 
 ## Token usage (sum across all prompts)
 
 | Provider | Input tokens | Output tokens |
 |---|---|---|
-| Groq | 14462 | 56458 |
-| Anthropic | 0 | 0 |
+| Groq | 14462 | 56212 |
+| Anthropic | 9214 | 47588 |
 
 ## Notes
 

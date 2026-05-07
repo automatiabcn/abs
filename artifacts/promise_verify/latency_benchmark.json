@@ -1,8 +1,8 @@
 {
-  "mode": "live-no-anthropic",
-  "started_at": "2026-05-07T10:31:34+00:00",
-  "finished_at": "2026-05-07T10:40:02+00:00",
-  "duration_s": 507.67,
+  "mode": "live",
+  "started_at": "2026-05-07T11:04:34+00:00",
+  "finished_at": "2026-05-07T11:51:33+00:00",
+  "duration_s": 2818.88,
   "groq_model": "openai/gpt-oss-120b",
   "anthropic_model": "claude-sonnet-4-5-20250929",
   "summary": {
@@ -10,1224 +10,1428 @@
     "groq": {
       "n_ok": 100,
       "errors": 0,
-      "p50_ms": 5829.2,
-      "p95_ms": 7312.3,
-      "mean_ms": 5076.1,
-      "stdev_ms": 2277.3,
+      "p50_ms": 1788.9,
+      "p95_ms": 2066.7,
+      "mean_ms": 1418.5,
+      "stdev_ms": 639.4,
       "total_input_tokens": 14462,
-      "total_output_tokens": 56458
+      "total_output_tokens": 56212
     },
     "anthropic": {
-      "n_ok": 0,
-      "errors": 100,
-      "p50_ms": null,
-      "p95_ms": null,
-      "mean_ms": null,
-      "stdev_ms": null,
-      "total_input_tokens": 0,
-      "total_output_tokens": 0
+      "n_ok": 100,
+      "errors": 0,
+      "p50_ms": 9410.0,
+      "p95_ms": 19492.1,
+      "mean_ms": 10239.3,
+      "stdev_ms": 5638.8,
+      "total_input_tokens": 9214,
+      "total_output_tokens": 47588
     },
-    "speedup": null
+    "speedup": {
+      "p50": 5.26,
+      "p95": 9.43,
+      "mean": 7.22
+    }
   },
   "samples": [
     {
       "id": "code-01",
       "category": "code",
       "groq": {
-        "latency_ms": 2147.1977920737118,
+        "latency_ms": 1477.8967499732971,
         "input_tokens": 205,
-        "output_tokens": 800
+        "output_tokens": 616
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9236.55183298979,
+        "input_tokens": 149,
+        "output_tokens": 767
       }
     },
     {
       "id": "code-02",
       "category": "code",
       "groq": {
-        "latency_ms": 1802.6534999953583,
+        "latency_ms": 1695.4071250511333,
         "input_tokens": 189,
-        "output_tokens": 756
+        "output_tokens": 700
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 10788.195749977604,
+        "input_tokens": 128,
+        "output_tokens": 800
       }
     },
     {
       "id": "code-03",
       "category": "code",
       "groq": {
-        "latency_ms": 1866.752375033684,
+        "latency_ms": 1806.2290000962093,
         "input_tokens": 169,
-        "output_tokens": 787
+        "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 6696.84208300896,
+        "input_tokens": 108,
+        "output_tokens": 395
       }
     },
     {
       "id": "code-04",
       "category": "code",
       "groq": {
-        "latency_ms": 1062.8743339329958,
+        "latency_ms": 962.2590829385445,
         "input_tokens": 167,
-        "output_tokens": 388
+        "output_tokens": 393
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 2241.1254999460652,
+        "input_tokens": 114,
+        "output_tokens": 79
       }
     },
     {
       "id": "code-05",
       "category": "code",
       "groq": {
-        "latency_ms": 1209.9518328905106,
+        "latency_ms": 1017.3865420510992,
         "input_tokens": 153,
-        "output_tokens": 505
+        "output_tokens": 419
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 4976.671084063128,
+        "input_tokens": 100,
+        "output_tokens": 301
       }
     },
     {
       "id": "code-06",
       "category": "code",
       "groq": {
-        "latency_ms": 2646.612292039208,
+        "latency_ms": 1937.858457909897,
         "input_tokens": 183,
-        "output_tokens": 518
+        "output_tokens": 625
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9562.006541993469,
+        "input_tokens": 128,
+        "output_tokens": 634
       }
     },
     {
       "id": "code-07",
       "category": "code",
       "groq": {
-        "latency_ms": 5064.120208960958,
+        "latency_ms": 1999.414167017676,
         "input_tokens": 193,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9465.431833988987,
+        "input_tokens": 140,
+        "output_tokens": 736
       }
     },
     {
       "id": "code-08",
       "category": "code",
       "groq": {
-        "latency_ms": 9513.378417002968,
+        "latency_ms": 1028.7719999905676,
         "input_tokens": 162,
-        "output_tokens": 545
+        "output_tokens": 401
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9087.07145799417,
+        "input_tokens": 107,
+        "output_tokens": 542
       }
     },
     {
       "id": "code-09",
       "category": "code",
       "groq": {
-        "latency_ms": 4812.308457912877,
+        "latency_ms": 1832.5831670081243,
         "input_tokens": 168,
-        "output_tokens": 654
+        "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9849.642666988075,
+        "input_tokens": 114,
+        "output_tokens": 619
       }
     },
     {
       "id": "code-10",
       "category": "code",
       "groq": {
-        "latency_ms": 6050.610749982297,
+        "latency_ms": 1435.6794169871137,
         "input_tokens": 163,
-        "output_tokens": 800
+        "output_tokens": 550
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9625.726165948436,
+        "input_tokens": 109,
+        "output_tokens": 528
       }
     },
     {
       "id": "analysis-01",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7943.092291941866,
+        "latency_ms": 1934.0387500124052,
         "input_tokens": 166,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 18544.731041998602,
+        "input_tokens": 111,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-02",
       "category": "analysis",
       "groq": {
-        "latency_ms": 6975.879207951948,
+        "latency_ms": 1946.8803749186918,
         "input_tokens": 140,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 19361.517417011783,
+        "input_tokens": 87,
+        "output_tokens": 751
       }
     },
     {
       "id": "analysis-03",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7013.504083966836,
+        "latency_ms": 1917.520708986558,
         "input_tokens": 138,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 18229.84587494284,
+        "input_tokens": 77,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-04",
       "category": "analysis",
       "groq": {
-        "latency_ms": 6924.990291008726,
+        "latency_ms": 1831.0707500204444,
         "input_tokens": 135,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 16250.412041903473,
+        "input_tokens": 79,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-05",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7101.711832918227,
+        "latency_ms": 1817.251667031087,
         "input_tokens": 134,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 18534.38399999868,
+        "input_tokens": 76,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-06",
       "category": "analysis",
       "groq": {
-        "latency_ms": 6976.060542045161,
+        "latency_ms": 1897.0910840434954,
         "input_tokens": 132,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 19248.244208982214,
+        "input_tokens": 75,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-07",
       "category": "analysis",
       "groq": {
-        "latency_ms": 6923.588209087029,
+        "latency_ms": 2171.754000009969,
         "input_tokens": 137,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 18656.889125006273,
+        "input_tokens": 78,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-08",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7016.22516696807,
+        "latency_ms": 1917.7055000327528,
         "input_tokens": 127,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 14036.589666036889,
+        "input_tokens": 76,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-09",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7074.516750057228,
+        "latency_ms": 1858.0394580494612,
         "input_tokens": 133,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 18947.598499944434,
+        "input_tokens": 78,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-10",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7037.146916962229,
+        "latency_ms": 1913.7325000483543,
         "input_tokens": 135,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 18378.817707998678,
+        "input_tokens": 76,
+        "output_tokens": 800
       }
     },
     {
       "id": "translation-01",
       "category": "translation",
       "groq": {
-        "latency_ms": 5649.111250066198,
+        "latency_ms": 641.2195840384811,
         "input_tokens": 130,
-        "output_tokens": 159
+        "output_tokens": 222
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 8316.106875077821,
+        "input_tokens": 69,
+        "output_tokens": 376
       }
     },
     {
       "id": "translation-02",
       "category": "translation",
       "groq": {
-        "latency_ms": 1529.3722909409553,
+        "latency_ms": 230.36466701887548,
         "input_tokens": 104,
-        "output_tokens": 50
+        "output_tokens": 41
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 6821.899416972883,
+        "input_tokens": 52,
+        "output_tokens": 22
       }
     },
     {
       "id": "translation-03",
       "category": "translation",
       "groq": {
-        "latency_ms": 1636.174708022736,
+        "latency_ms": 443.6618749750778,
         "input_tokens": 96,
-        "output_tokens": 105
+        "output_tokens": 109
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 5234.429250005633,
+        "input_tokens": 34,
+        "output_tokens": 133
       }
     },
     {
       "id": "translation-04",
       "category": "translation",
       "groq": {
-        "latency_ms": 1638.3372909622267,
+        "latency_ms": 313.99054208304733,
         "input_tokens": 144,
-        "output_tokens": 89
+        "output_tokens": 80
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 4286.657999968156,
+        "input_tokens": 104,
+        "output_tokens": 200
       }
     },
     {
       "id": "translation-05",
       "category": "translation",
       "groq": {
-        "latency_ms": 1599.3409579386935,
+        "latency_ms": 328.385416069068,
         "input_tokens": 118,
-        "output_tokens": 66
+        "output_tokens": 74
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 3083.990833023563,
+        "input_tokens": 57,
+        "output_tokens": 57
       }
     },
     {
       "id": "translation-06",
       "category": "translation",
       "groq": {
-        "latency_ms": 1658.0762079684064,
+        "latency_ms": 444.39870899077505,
         "input_tokens": 119,
-        "output_tokens": 128
+        "output_tokens": 130
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 1659.3668750720099,
+        "input_tokens": 68,
+        "output_tokens": 31
       }
     },
     {
       "id": "translation-07",
       "category": "translation",
       "groq": {
-        "latency_ms": 1543.9233330544084,
+        "latency_ms": 359.19833299703896,
         "input_tokens": 112,
         "output_tokens": 105
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 3801.221374887973,
+        "input_tokens": 62,
+        "output_tokens": 118
       }
     },
     {
       "id": "translation-08",
       "category": "translation",
       "groq": {
-        "latency_ms": 2241.78275000304,
+        "latency_ms": 418.9137500943616,
         "input_tokens": 134,
-        "output_tokens": 133
+        "output_tokens": 127
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 5411.2477080198005,
+        "input_tokens": 78,
+        "output_tokens": 242
       }
     },
     {
       "id": "translation-09",
       "category": "translation",
       "groq": {
-        "latency_ms": 1486.3342919852585,
+        "latency_ms": 382.90116598363966,
         "input_tokens": 103,
-        "output_tokens": 94
+        "output_tokens": 98
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 3018.970959004946,
+        "input_tokens": 52,
+        "output_tokens": 18
       }
     },
     {
       "id": "translation-10",
       "category": "translation",
       "groq": {
-        "latency_ms": 1505.0652079517022,
+        "latency_ms": 356.1589999590069,
         "input_tokens": 93,
         "output_tokens": 71
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 3704.9506249604747,
+        "input_tokens": 34,
+        "output_tokens": 64
       }
     },
     {
       "id": "code-11",
       "category": "code",
       "groq": {
-        "latency_ms": 3347.8010420221835,
+        "latency_ms": 2498.8365420140326,
         "input_tokens": 157,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 10468.609417090192,
+        "input_tokens": 97,
+        "output_tokens": 800
       }
     },
     {
       "id": "code-12",
       "category": "code",
       "groq": {
-        "latency_ms": 6912.660332978703,
+        "latency_ms": 1816.679292009212,
         "input_tokens": 159,
-        "output_tokens": 738
+        "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 6285.353583982214,
+        "input_tokens": 110,
+        "output_tokens": 342
       }
     },
     {
       "id": "code-13",
       "category": "code",
       "groq": {
-        "latency_ms": 7085.777499945834,
+        "latency_ms": 1830.2687089890242,
         "input_tokens": 152,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9682.405874948017,
+        "input_tokens": 100,
+        "output_tokens": 800
       }
     },
     {
       "id": "code-14",
       "category": "code",
       "groq": {
-        "latency_ms": 7100.144083029591,
+        "latency_ms": 1857.4674999108538,
         "input_tokens": 142,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 10247.004417004064,
+        "input_tokens": 94,
+        "output_tokens": 800
       }
     },
     {
       "id": "code-15",
       "category": "code",
       "groq": {
-        "latency_ms": 6955.62445896212,
+        "latency_ms": 1949.261166038923,
         "input_tokens": 141,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 10729.693250032142,
+        "input_tokens": 92,
+        "output_tokens": 646
       }
     },
     {
       "id": "code-16",
       "category": "code",
       "groq": {
-        "latency_ms": 6958.64654192701,
+        "latency_ms": 1956.8847080226988,
         "input_tokens": 153,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9914.461459033191,
+        "input_tokens": 103,
+        "output_tokens": 800
       }
     },
     {
       "id": "code-17",
       "category": "code",
       "groq": {
-        "latency_ms": 6490.816207951866,
+        "latency_ms": 1374.874041066505,
         "input_tokens": 163,
-        "output_tokens": 583
+        "output_tokens": 549
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 5307.437833049335,
+        "input_tokens": 114,
+        "output_tokens": 284
       }
     },
     {
       "id": "code-18",
       "category": "code",
       "groq": {
-        "latency_ms": 6009.316709008999,
+        "latency_ms": 3271.477499976754,
         "input_tokens": 156,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 10981.28837510012,
+        "input_tokens": 109,
+        "output_tokens": 800
       }
     },
     {
       "id": "code-19",
       "category": "code",
       "groq": {
-        "latency_ms": 6955.950082978234,
+        "latency_ms": 1855.2111249882728,
         "input_tokens": 174,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 10600.320333964191,
+        "input_tokens": 123,
+        "output_tokens": 791
       }
     },
     {
       "id": "code-20",
       "category": "code",
       "groq": {
-        "latency_ms": 8013.474666979164,
+        "latency_ms": 1872.3303750157356,
         "input_tokens": 174,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 12213.315207976848,
+        "input_tokens": 122,
+        "output_tokens": 800
       }
     },
     {
       "id": "code-21",
       "category": "code",
       "groq": {
-        "latency_ms": 6965.934916981496,
+        "latency_ms": 1861.280292039737,
         "input_tokens": 149,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 10616.181084071286,
+        "input_tokens": 103,
+        "output_tokens": 605
       }
     },
     {
       "id": "code-22",
       "category": "code",
       "groq": {
-        "latency_ms": 7004.0972919669,
+        "latency_ms": 1898.7586670555174,
         "input_tokens": 150,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 12728.14887505956,
+        "input_tokens": 96,
+        "output_tokens": 750
       }
     },
     {
       "id": "code-23",
       "category": "code",
       "groq": {
-        "latency_ms": 6957.439374993555,
+        "latency_ms": 1862.0407501002774,
         "input_tokens": 157,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 10918.828667025082,
+        "input_tokens": 102,
+        "output_tokens": 800
       }
     },
     {
       "id": "code-24",
       "category": "code",
       "groq": {
-        "latency_ms": 8110.431875102222,
+        "latency_ms": 1835.588000016287,
         "input_tokens": 171,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 8560.297540971078,
+        "input_tokens": 128,
+        "output_tokens": 448
       }
     },
     {
       "id": "code-25",
       "category": "code",
       "groq": {
-        "latency_ms": 6937.030541943386,
+        "latency_ms": 1817.5016249297187,
         "input_tokens": 159,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9775.293332990259,
+        "input_tokens": 109,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-11",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7102.650124928914,
+        "latency_ms": 1819.3790420191363,
         "input_tokens": 139,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 17578.25620798394,
+        "input_tokens": 80,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-12",
       "category": "analysis",
       "groq": {
-        "latency_ms": 6926.910958951339,
+        "latency_ms": 1909.0953749837354,
         "input_tokens": 146,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 22890.089125023223,
+        "input_tokens": 91,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-13",
       "category": "analysis",
       "groq": {
-        "latency_ms": 6921.596499974839,
+        "latency_ms": 1904.5557499630377,
         "input_tokens": 134,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 19458.4436659934,
+        "input_tokens": 81,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-14",
       "category": "analysis",
       "groq": {
-        "latency_ms": 6965.975667000748,
+        "latency_ms": 1826.1713749961928,
         "input_tokens": 139,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 15188.184999977238,
+        "input_tokens": 80,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-15",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7014.709415961988,
+        "latency_ms": 1873.0933329788968,
         "input_tokens": 141,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 16929.980500019155,
+        "input_tokens": 86,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-16",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7279.105375055224,
+        "latency_ms": 1943.3939169393852,
         "input_tokens": 136,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 18595.755457994528,
+        "input_tokens": 82,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-17",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7006.376874982379,
+        "latency_ms": 1832.1425419999287,
         "input_tokens": 152,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 16514.353124890476,
+        "input_tokens": 90,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-18",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7054.487791028805,
+        "latency_ms": 2107.2496669366956,
         "input_tokens": 143,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 20132.330374908634,
+        "input_tokens": 89,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-19",
       "category": "analysis",
       "groq": {
-        "latency_ms": 6923.779875040054,
+        "latency_ms": 2064.576582983136,
         "input_tokens": 146,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 22435.416583903134,
+        "input_tokens": 93,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-20",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7087.804834009148,
+        "latency_ms": 1836.0439169919118,
         "input_tokens": 137,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 20823.211417067796,
+        "input_tokens": 85,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-21",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7025.481374934316,
+        "latency_ms": 1923.6232080729678,
         "input_tokens": 153,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 19406.786417006515,
+        "input_tokens": 97,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-22",
       "category": "analysis",
       "groq": {
-        "latency_ms": 7110.25566700846,
+        "latency_ms": 1832.5931249419227,
         "input_tokens": 148,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 18505.193584016524,
+        "input_tokens": 94,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-23",
       "category": "analysis",
       "groq": {
-        "latency_ms": 6989.015166065656,
+        "latency_ms": 1847.9059579549357,
         "input_tokens": 145,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 18980.516333016567,
+        "input_tokens": 90,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-24",
       "category": "analysis",
       "groq": {
-        "latency_ms": 9034.907459048554,
+        "latency_ms": 1926.8903749762103,
         "input_tokens": 148,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 22090.21862503141,
+        "input_tokens": 90,
+        "output_tokens": 800
       }
     },
     {
       "id": "analysis-25",
       "category": "analysis",
       "groq": {
-        "latency_ms": 5039.127791998908,
+        "latency_ms": 2002.6847090339288,
         "input_tokens": 149,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 14937.05129204318,
+        "input_tokens": 95,
+        "output_tokens": 800
       }
     },
     {
       "id": "translation-11",
       "category": "translation",
       "groq": {
-        "latency_ms": 5633.128541056067,
+        "latency_ms": 530.5413339519873,
         "input_tokens": 127,
-        "output_tokens": 155
+        "output_tokens": 174
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 2447.5302919745445,
+        "input_tokens": 69,
+        "output_tokens": 59
       }
     },
     {
       "id": "translation-12",
       "category": "translation",
       "groq": {
-        "latency_ms": 2996.4109170250595,
+        "latency_ms": 2108.5035420255736,
         "input_tokens": 112,
-        "output_tokens": 337
+        "output_tokens": 393
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 7440.102208056487,
+        "input_tokens": 58,
+        "output_tokens": 225
       }
     },
     {
       "id": "translation-13",
       "category": "translation",
       "groq": {
-        "latency_ms": 2894.961207988672,
+        "latency_ms": 623.5972499707714,
         "input_tokens": 133,
-        "output_tokens": 223
+        "output_tokens": 213
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 2903.0962500255555,
+        "input_tokens": 85,
+        "output_tokens": 74
       }
     },
     {
       "id": "translation-14",
       "category": "translation",
       "groq": {
-        "latency_ms": 2388.8092500856146,
+        "latency_ms": 252.84999993164092,
         "input_tokens": 116,
         "output_tokens": 45
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 5449.381667072885,
+        "input_tokens": 71,
+        "output_tokens": 162
       }
     },
     {
       "id": "translation-15",
       "category": "translation",
       "groq": {
-        "latency_ms": 1569.743916974403,
+        "latency_ms": 498.1976669514552,
         "input_tokens": 115,
-        "output_tokens": 138
+        "output_tokens": 158
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 3875.714834081009,
+        "input_tokens": 53,
+        "output_tokens": 108
       }
     },
     {
       "id": "translation-16",
       "category": "translation",
       "groq": {
-        "latency_ms": 1549.0898339776322,
+        "latency_ms": 534.9656250327826,
         "input_tokens": 116,
         "output_tokens": 96
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 3415.993709000759,
+        "input_tokens": 74,
+        "output_tokens": 114
       }
     },
     {
       "id": "translation-17",
       "category": "translation",
       "groq": {
-        "latency_ms": 1580.8588749496266,
+        "latency_ms": 545.3637919854373,
         "input_tokens": 125,
-        "output_tokens": 101
+        "output_tokens": 179
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 2991.011625039391,
+        "input_tokens": 88,
+        "output_tokens": 63
       }
     },
     {
       "id": "translation-18",
       "category": "translation",
       "groq": {
-        "latency_ms": 1781.450374983251,
+        "latency_ms": 683.5999169852585,
         "input_tokens": 123,
-        "output_tokens": 208
+        "output_tokens": 225
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 2743.935165926814,
+        "input_tokens": 66,
+        "output_tokens": 53
       }
     },
     {
       "id": "translation-19",
       "category": "translation",
       "groq": {
-        "latency_ms": 3195.103666977957,
+        "latency_ms": 451.5308750560507,
         "input_tokens": 125,
-        "output_tokens": 183
+        "output_tokens": 100
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 7145.207916968502,
+        "input_tokens": 67,
+        "output_tokens": 299
       }
     },
     {
       "id": "translation-20",
       "category": "translation",
       "groq": {
-        "latency_ms": 1650.253833970055,
+        "latency_ms": 376.10937491990626,
         "input_tokens": 122,
-        "output_tokens": 176
+        "output_tokens": 112
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 3156.740208971314,
+        "input_tokens": 74,
+        "output_tokens": 55
       }
     },
     {
       "id": "translation-21",
       "category": "translation",
       "groq": {
-        "latency_ms": 2836.913458071649,
+        "latency_ms": 770.3082080697641,
         "input_tokens": 130,
-        "output_tokens": 91
+        "output_tokens": 157
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 2168.124708929099,
+        "input_tokens": 72,
+        "output_tokens": 60
       }
     },
     {
       "id": "translation-22",
       "category": "translation",
       "groq": {
-        "latency_ms": 1682.3334159562364,
+        "latency_ms": 558.1190410302952,
         "input_tokens": 136,
-        "output_tokens": 195
+        "output_tokens": 182
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 2189.138582907617,
+        "input_tokens": 85,
+        "output_tokens": 43
       }
     },
     {
       "id": "translation-23",
       "category": "translation",
       "groq": {
-        "latency_ms": 2538.216624991037,
+        "latency_ms": 434.4913329696283,
         "input_tokens": 113,
-        "output_tokens": 145
+        "output_tokens": 141
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 4405.378041905351,
+        "input_tokens": 68,
+        "output_tokens": 146
       }
     },
     {
       "id": "translation-24",
       "category": "translation",
       "groq": {
-        "latency_ms": 1689.088208018802,
+        "latency_ms": 426.33525002747774,
         "input_tokens": 117,
-        "output_tokens": 186
+        "output_tokens": 101
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 6845.879583037458,
+        "input_tokens": 57,
+        "output_tokens": 282
       }
     },
     {
       "id": "translation-25",
       "category": "translation",
       "groq": {
-        "latency_ms": 1743.3464999776334,
+        "latency_ms": 623.583042062819,
         "input_tokens": 116,
-        "output_tokens": 214
+        "output_tokens": 218
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 5214.543999987654,
+        "input_tokens": 56,
+        "output_tokens": 197
       }
     },
     {
       "id": "writing-01",
       "category": "writing",
       "groq": {
-        "latency_ms": 3243.7819170299917,
+        "latency_ms": 991.7644170345739,
         "input_tokens": 146,
-        "output_tokens": 392
+        "output_tokens": 407
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 6736.650708015077,
+        "input_tokens": 84,
+        "output_tokens": 348
       }
     },
     {
       "id": "writing-02",
       "category": "writing",
       "groq": {
-        "latency_ms": 4075.133000034839,
+        "latency_ms": 1070.1922089792788,
         "input_tokens": 138,
-        "output_tokens": 383
+        "output_tokens": 357
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 7237.760332995094,
+        "input_tokens": 82,
+        "output_tokens": 255
       }
     },
     {
       "id": "writing-03",
       "category": "writing",
       "groq": {
-        "latency_ms": 4980.1314159994945,
+        "latency_ms": 1854.6777080046013,
         "input_tokens": 158,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 7777.63245801907,
+        "input_tokens": 104,
+        "output_tokens": 273
       }
     },
     {
       "id": "writing-04",
       "category": "writing",
       "groq": {
-        "latency_ms": 6966.610457981005,
+        "latency_ms": 1852.7309580240399,
         "input_tokens": 148,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 10828.170499997213,
+        "input_tokens": 94,
+        "output_tokens": 206
       }
     },
     {
       "id": "writing-05",
       "category": "writing",
       "groq": {
-        "latency_ms": 7077.3637080565095,
+        "latency_ms": 1887.878290959634,
         "input_tokens": 149,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 8550.278458045796,
+        "input_tokens": 95,
+        "output_tokens": 309
       }
     },
     {
       "id": "writing-06",
       "category": "writing",
       "groq": {
-        "latency_ms": 6440.09712501429,
+        "latency_ms": 1437.6001249765977,
         "input_tokens": 144,
-        "output_tokens": 550
+        "output_tokens": 601
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9846.070041996427,
+        "input_tokens": 88,
+        "output_tokens": 335
       }
     },
     {
       "id": "writing-07",
       "category": "writing",
       "groq": {
-        "latency_ms": 5122.401083004661,
+        "latency_ms": 905.75924993027,
         "input_tokens": 143,
-        "output_tokens": 359
+        "output_tokens": 353
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 6010.540624964051,
+        "input_tokens": 85,
+        "output_tokens": 252
       }
     },
     {
       "id": "writing-08",
       "category": "writing",
       "groq": {
-        "latency_ms": 4808.517416939139,
+        "latency_ms": 1747.5330419838428,
         "input_tokens": 139,
-        "output_tokens": 671
+        "output_tokens": 745
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 7505.829083034769,
+        "input_tokens": 82,
+        "output_tokens": 384
       }
     },
     {
       "id": "writing-09",
       "category": "writing",
       "groq": {
-        "latency_ms": 5426.676791976206,
+        "latency_ms": 1089.8103329818696,
         "input_tokens": 166,
-        "output_tokens": 537
+        "output_tokens": 452
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9354.64958299417,
+        "input_tokens": 113,
+        "output_tokens": 278
       }
     },
     {
       "id": "writing-10",
       "category": "writing",
       "groq": {
-        "latency_ms": 5433.239541947842,
+        "latency_ms": 1202.6822920888662,
         "input_tokens": 137,
-        "output_tokens": 524
+        "output_tokens": 507
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 7450.1754170050845,
+        "input_tokens": 78,
+        "output_tokens": 368
       }
     },
     {
       "id": "writing-11",
       "category": "writing",
       "groq": {
-        "latency_ms": 4209.779042052105,
+        "latency_ms": 1815.8568750368431,
         "input_tokens": 149,
-        "output_tokens": 435
+        "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 7220.535875065252,
+        "input_tokens": 96,
+        "output_tokens": 279
       }
     },
     {
       "id": "writing-12",
       "category": "writing",
       "groq": {
-        "latency_ms": 6016.232209047303,
+        "latency_ms": 1068.4665000298992,
         "input_tokens": 145,
-        "output_tokens": 800
+        "output_tokens": 437
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 7619.643250014633,
+        "input_tokens": 91,
+        "output_tokens": 269
       }
     },
     {
       "id": "writing-13",
       "category": "writing",
       "groq": {
-        "latency_ms": 6264.861374977045,
+        "latency_ms": 1500.0190840801224,
         "input_tokens": 150,
-        "output_tokens": 474
+        "output_tokens": 595
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 6738.587667001411,
+        "input_tokens": 90,
+        "output_tokens": 192
       }
     },
     {
       "id": "writing-14",
       "category": "writing",
       "groq": {
-        "latency_ms": 4534.320875070989,
+        "latency_ms": 1533.326540957205,
         "input_tokens": 152,
-        "output_tokens": 586
+        "output_tokens": 591
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 6799.8471659375355,
+        "input_tokens": 89,
+        "output_tokens": 335
       }
     },
     {
       "id": "writing-15",
       "category": "writing",
       "groq": {
-        "latency_ms": 5228.179750032723,
+        "latency_ms": 1126.607707934454,
         "input_tokens": 157,
-        "output_tokens": 414
+        "output_tokens": 445
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 13012.550250045024,
+        "input_tokens": 100,
+        "output_tokens": 308
       }
     },
     {
       "id": "writing-16",
       "category": "writing",
       "groq": {
-        "latency_ms": 4562.04612494912,
+        "latency_ms": 1471.2835419923067,
         "input_tokens": 156,
-        "output_tokens": 620
+        "output_tokens": 630
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 8315.635500010103,
+        "input_tokens": 109,
+        "output_tokens": 479
       }
     },
     {
       "id": "writing-17",
       "category": "writing",
       "groq": {
-        "latency_ms": 6456.208584015258,
+        "latency_ms": 1323.3185419812799,
         "input_tokens": 169,
-        "output_tokens": 552
+        "output_tokens": 543
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 12937.399457907304,
+        "input_tokens": 128,
+        "output_tokens": 548
       }
     },
     {
       "id": "writing-18",
       "category": "writing",
       "groq": {
-        "latency_ms": 5262.588334036991,
+        "latency_ms": 1047.4450420588255,
         "input_tokens": 169,
-        "output_tokens": 444
+        "output_tokens": 412
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 10083.267249981873,
+        "input_tokens": 144,
+        "output_tokens": 399
       }
     },
     {
       "id": "writing-19",
       "category": "writing",
       "groq": {
-        "latency_ms": 5042.143790982664,
+        "latency_ms": 1771.4976250426844,
         "input_tokens": 167,
-        "output_tokens": 800
+        "output_tokens": 770
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 13895.463833003305,
+        "input_tokens": 141,
+        "output_tokens": 587
       }
     },
     {
       "id": "writing-20",
       "category": "writing",
       "groq": {
-        "latency_ms": 6444.47929202579,
+        "latency_ms": 1142.4155830172822,
         "input_tokens": 177,
-        "output_tokens": 519
+        "output_tokens": 475
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 11699.960083933547,
+        "input_tokens": 147,
+        "output_tokens": 468
       }
     },
     {
       "id": "writing-21",
       "category": "writing",
       "groq": {
-        "latency_ms": 5594.460666994564,
+        "latency_ms": 1615.484124980867,
         "input_tokens": 151,
-        "output_tokens": 620
+        "output_tokens": 692
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 6936.115665943362,
+        "input_tokens": 104,
+        "output_tokens": 386
       }
     },
     {
       "id": "writing-22",
       "category": "writing",
       "groq": {
-        "latency_ms": 6109.014124958776,
+        "latency_ms": 1936.0407079802826,
         "input_tokens": 163,
         "output_tokens": 800
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9187.317957985215,
+        "input_tokens": 133,
+        "output_tokens": 392
       }
     },
     {
       "id": "writing-23",
       "category": "writing",
       "groq": {
-        "latency_ms": 6011.545165907592,
+        "latency_ms": 960.4495420353487,
         "input_tokens": 149,
-        "output_tokens": 358
+        "output_tokens": 353
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 6746.271750074811,
+        "input_tokens": 115,
+        "output_tokens": 305
       }
     },
     {
       "id": "writing-24",
       "category": "writing",
       "groq": {
-        "latency_ms": 4755.7535419473425,
+        "latency_ms": 1876.482208026573,
         "input_tokens": 164,
-        "output_tokens": 712
+        "output_tokens": 732
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 8700.995916966349,
+        "input_tokens": 118,
+        "output_tokens": 419
       }
     },
     {
       "id": "writing-25",
       "category": "writing",
       "groq": {
-        "latency_ms": 6873.561582993716,
+        "latency_ms": 1672.740500071086,
         "input_tokens": 155,
-        "output_tokens": 741
+        "output_tokens": 711
       },
       "anthropic": {
-        "error": "anthropic_unavailable"
+        "latency_ms": 9793.640792020597,
+        "input_tokens": 116,
+        "output_tokens": 395
       }
     }
   ]
