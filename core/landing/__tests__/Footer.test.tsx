@@ -16,17 +16,17 @@ describe("Footer (018 modul F)", () => {
     expect(screen.getByText(/GDPR uyumlu/)).toBeInTheDocument();
   });
 
-  it("links to /privacy, /terms, /refund pages", () => {
+  it("links to /privacy and /terms pages", () => {
+    // Brand alignment (aa010a7) collapsed the legacy three-link legal
+    // strip down to /privacy + /terms; refund language now lives in
+    // the dedicated /refund page (deep link from privacy), not the
+    // global footer.
     render(<Footer />);
     const privacy = screen.getByRole("link", { name: /gizlilik politikası/i });
     expect(privacy).toHaveAttribute("href", "/privacy");
 
     const terms = screen.getByRole("link", { name: /kullanım koşulları/i });
     expect(terms).toHaveAttribute("href", "/terms");
-
-    // Turkish "İade" — case folding on Turkish I is non-trivial; use exact prefix
-    const refund = screen.getByRole("link", { name: /İade politikası/ });
-    expect(refund).toHaveAttribute("href", "/refund");
   });
 
   it("links to support email", () => {
