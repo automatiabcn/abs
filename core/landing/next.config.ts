@@ -1,12 +1,25 @@
 import type { NextConfig } from "next";
-import withBundleAnalyzer from "@next/bundle-analyzer";
 
 // T-R03 fix #2 — `ANALYZE=true npm run build` writes .next/analyze/*.html
 // reports we can ship to the QA artifacts dir.
-const enableAnalyzer = withBundleAnalyzer({
-  enabled: process.env.ANALYZE === "true",
-  openAnalyzer: false,
-});
+//
+// Brief 4 R1 — `@next/bundle-analyzer` is an optional devDep we don't
+// pin in package.json (skipped from prod images to keep them small).
+// Resolve lazily so the production build still works when the analyzer
+// is absent; only require it when the operator actually opts in.
+const ANALYZE_ENABLED = process.env.ANALYZE === "true";
+
+type AnalyzerWrap = (cfg: NextConfig) => NextConfig;
+
+let enableAnalyzer: AnalyzerWrap = (cfg: NextConfig) => cfg;
+if (ANALYZE_ENABLED) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const withBundleAnalyzer = require("@next/bundle-analyzer");
+  enableAnalyzer = withBundleAnalyzer({
+    enabled: true,
+    openAnalyzer: false,
+  }) as AnalyzerWrap;
+}
 
 /**
  * 024 — Security headers for Lighthouse best-practices ≥ 100.

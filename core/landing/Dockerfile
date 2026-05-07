@@ -6,7 +6,16 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev=false
+# Brief 4 R1 — `@tremor/react@3.18.x` declares peer `react@^18` while the
+# project ships `react@19`. The peer warning is benign on this codebase
+# (Tremor charts render against the public hooks API), so we accept the
+# resolution rather than holding back React. Drop `--legacy-peer-deps`
+# once Tremor publishes a v19-compatible peer range.
+#
+# `--include=dev` keeps `next`, `typescript`, etc. (declared as
+# devDependencies) on disk for the builder stage; the runtime stage
+# copies only `.next/standalone`, so dev deps don't leak to production.
+RUN npm ci --include=dev --legacy-peer-deps
 
 # ─── build stage ──────────────────────────────────────────────────────────
 FROM node:22-alpine AS builder
