@@ -1,6 +1,6 @@
 # ABS Hybrid Tier Promise
 
-> v1.3 · 2026-05-07 · Sprint Q12 latency/cost/redundancy rewrite — multi-judge consensus retracted
+> v1.3.1 · 2026-05-07 · Anthropic re-run filled live latency + cost numbers (5.26× P50, $7.41/mo @ 1k prompts)
 
 ## What ABS guarantees
 
@@ -42,16 +42,18 @@ When the customer opts into Claude (`ABS_ANTHROPIC_ENABLED=true` + their own `AB
 
 ABS makes three falsifiable empirical promises. Each one is judge-free, deterministic, and reproducible from a single command on the operator's own keys.
 
-### 1. Latency — Groq is N× faster than Anthropic on identical prompts
+### 1. Latency — Groq is 5× faster than Anthropic at P50, 9× faster at P95
 
-- **Evidence:** [`artifacts/promise_verify/latency_benchmark.md`](../artifacts/promise_verify/latency_benchmark.md) (+ JSON sidecar)
-- **Method:** N=100 prompts from [`core/backend/tests/fixtures/golden_eval_multimodel.json`](../core/backend/tests/fixtures/golden_eval_multimodel.json) (25 code / 25 analysis / 25 translation / 25 writing). `time.perf_counter()` is wrapped around each HTTP POST so the recorded number is wall-clock customer-felt latency, not just server-side compute. Anthropic Plus throttle (≤30 calls / 15 min) is honoured.
+- **Result (live N=100, 2026-05-07):** Groq GPT-OSS-120B P50 = 1 789 ms, Anthropic Sonnet 4.5 P50 = 9 410 ms ⇒ **5.26× speedup at P50**, **9.43× at P95**, 7.22× at the mean. Both providers ran 100/100 successful, 0 errors. Throttle-bound wall-clock for the run was 47 minutes (Anthropic Plus 30/15-min cap).
+- **Evidence:** [`artifacts/promise_verify/latency_benchmark.md`](../artifacts/promise_verify/latency_benchmark.md) (+ JSON sidecar with per-prompt timings).
+- **Method:** N=100 prompts from [`core/backend/tests/fixtures/golden_eval_multimodel.json`](../core/backend/tests/fixtures/golden_eval_multimodel.json) (25 code / 25 analysis / 25 translation / 25 writing). `time.perf_counter()` is wrapped around each HTTP POST so the recorded number is wall-clock customer-felt latency, not just server-side compute.
 - **Reproduce:** `python scripts/eval/latency_benchmark.py` (requires `GROQ_API_KEY`; `ANTHROPIC_API_KEY` is opt-in — when absent the artifact records `anthropic_unavailable` and leaves speedup as `unmeasured` rather than fabricating a number).
 
 ### 2. Cost — Free path is $0 / prompt; Anthropic Plus stays inside the $20 budget
 
+- **Result (live N=100, 2026-05-07):** Groq cost / prompt = **$0.000000** (free tier). Anthropic Sonnet 4.5 cost / prompt = **$0.007401** at the measured 92 input + 476 output token mean. Monthly projection at 1 000 prompts = **$7.41** Anthropic spend (well inside the $20 Claude Plus budget); 10 000 prompts = $74.15, where the `quota_monitor` 95 %-cap fires before that lands as a real bill.
 - **Evidence:** [`artifacts/promise_verify/cost_ledger.md`](../artifacts/promise_verify/cost_ledger.md) (+ JSON sidecar)
-- **Method:** pure arithmetic — token counts from the latency JSON × published pricing ($3 / $15 per Mtok input/output for Sonnet 4.5; $0 for Groq GPT-OSS-120B). No LLM call, no network. Monthly projection at 1 000 and 10 000 prompts. Anthropic-side projections from the live N=100 run flag themselves as "floor estimate" when the latency benchmark ran without an Anthropic key.
+- **Method:** pure arithmetic — token counts from the latency JSON × published pricing ($3 / $15 per Mtok input/output for Sonnet 4.5; $0 for Groq GPT-OSS-120B). No LLM call, no network.
 - **Customer guard:** `app/observability/quota_monitor.py` records every Claude token, warns at 80 %, hard-blocks at 95 % (`QuotaExceeded` ⇒ cascade falls back to Groq). Pre-flight gate refuses calls projected to breach 95 %.
 - **Reproduce:** `python scripts/eval/cost_calculator.py`
 
