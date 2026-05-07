@@ -4,7 +4,7 @@
 // and /v1/license/* finishes alongside the customer journey gate (O).
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Bell,
@@ -103,37 +103,254 @@ function GeneralTab() {
   );
 }
 
+// Polish round R6 — shape returned by GET /v1/license/info. Fields are
+// nullable for the demo branch (no key configured yet).
+type LicenseInfo = {
+  status: "demo" | "licensed" | "expired" | "invalid" | "revoked";
+  tier: string | null;
+  jti: string | null;
+  seat_count: number | null;
+  expires_at: string | null;
+  customer_id: string | null;
+  demo: { remaining_seconds?: number; expired?: boolean } | null;
+};
+
+function maskJti(jti: string): string {
+  // JTIs are usually 32+ chars; show "…" + last 8.
+  if (jti.length <= 8) return jti;
+  return `…${jti.slice(-8)}`;
+}
+
 function LicenseTab() {
+  const [info, setInfo] = useState<LicenseInfo | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [pendingKey, setPendingKey] = useState<string>("");
+  const [activateState, setActivateState] = useState<"idle" | "submitting" | "ok" | "error">("idle");
+  const [activateMessage, setActivateMessage] = useState<string>("");
+
+  async function reload() {
+    try {
+      const res = await fetch("/v1/license/info", { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = (await res.json()) as LicenseInfo;
+      setInfo(json);
+      setLoadError(null);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "fetch failed");
+    }
+  }
+
+  useEffect(() => {
+    void reload();
+  }, []);
+
+  async function handleActivate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!pendingKey.trim()) return;
+    setActivateState("submitting");
+    setActivateMessage("");
+    try {
+      const res = await fetch("/v1/license/activate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ license_key: pendingKey.trim() }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      setActivateState("ok");
+      setActivateMessage("Lisans aktive edildi.");
+      setPendingKey("");
+      await reload();
+    } catch (err) {
+      setActivateState("error");
+      setActivateMessage(err instanceof Error ? err.message : "Aktivasyon başarısız.");
+    }
+  }
+
+  if (loadError) {
+    return (
+      <div data-test="license-tab" className="space-y-3 text-sm">
+        <p className="text-destructive">Lisans bilgisi yüklenemedi: {loadError}</p>
+        <Button onClick={() => void reload()} variant="outline">
+          Tekrar dene
+        </Button>
+      </div>
+    );
+  }
+
+  if (!info) {
+    return (
+      <div data-test="license-tab" className="text-sm text-muted-foreground">
+        Yükleniyor…
+      </div>
+    );
+  }
+
+  const isDemo = info.status === "demo";
+  const tierLabel = info.tier ?? "—";
+  const seatLabel = info.seat_count !== null ? String(info.seat_count) : "—";
+  const expiresLabel = info.expires_at
+    ? new Date(info.expires_at).toLocaleDateString("tr-TR")
+    : "—";
+  const jtiLabel = info.jti ? maskJti(info.jti) : "—";
+
   return (
-    <div className="space-y-3 text-sm">
-      <FormRow label="Tier">
-        <Badge>Solo</Badge>
-      </FormRow>
-      <FormRow label="JTI">
-        <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
-          jwt-…12ab34cd
-        </code>
-      </FormRow>
-      <FormRow label="Seat limiti">
-        <span>1</span>
-      </FormRow>
-      <FormRow label="Bitiş">
-        <span>2027-04-30</span>
-      </FormRow>
-      <Button variant="outline">Tier yükselt (Stripe)</Button>
+    <div data-test="license-tab" className="space-y-4 text-sm">
+      <div className="space-y-3">
+        <FormRow label="Durum">
+          <Badge
+            data-test="license-status"
+            variant={info.status === "licensed" ? "default" : "outline"}
+          >
+            {info.status}
+          </Badge>
+        </FormRow>
+        <FormRow label="Tier">
+          <Badge data-test="license-tier" variant="outline">
+            {tierLabel}
+          </Badge>
+        </FormRow>
+        <FormRow label="JTI">
+          <code
+            data-test="license-jti"
+            className="rounded bg-muted px-2 py-1 font-mono text-xs"
+          >
+            {jtiLabel}
+          </code>
+        </FormRow>
+        <FormRow label="Seat limiti">
+          <span data-test="license-seats">{seatLabel}</span>
+        </FormRow>
+        <FormRow label="Bitiş">
+          <span data-test="license-expires">{expiresLabel}</span>
+        </FormRow>
+        {info.customer_id && (
+          <FormRow label="Müşteri ID">
+            <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
+              {info.customer_id}
+            </code>
+          </FormRow>
+        )}
+      </div>
+
+      {isDemo && (
+        <div
+          data-test="license-demo-banner"
+          className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-amber-200"
+        >
+          Demo modda çalışıyorsunuz. Lisans aktivasyonu için aşağıdaki forma
+          token&apos;ınızı yapıştırın.
+        </div>
+      )}
+
+      <form
+        data-test="license-activation-form"
+        onSubmit={handleActivate}
+        className="space-y-2"
+      >
+        <label className="block text-xs font-medium text-muted-foreground">
+          Lisans token&apos;ı yapıştır
+        </label>
+        <textarea
+          data-test="license-activation-input"
+          aria-label="Lisans token"
+          value={pendingKey}
+          onChange={(event) => setPendingKey(event.target.value)}
+          rows={3}
+          placeholder="eyJhbGciOi..."
+          className="w-full rounded-md border border-input bg-background p-2 font-mono text-xs"
+        />
+        <div className="flex items-center gap-3">
+          <Button
+            type="submit"
+            data-test="license-activate-button"
+            disabled={activateState === "submitting" || pendingKey.trim() === ""}
+          >
+            {activateState === "submitting" ? "Aktive ediliyor…" : "Aktive et"}
+          </Button>
+          {activateState === "ok" && (
+            <span className="text-xs text-emerald-400" data-test="license-activate-ok">
+              {activateMessage}
+            </span>
+          )}
+          {activateState === "error" && (
+            <span className="text-xs text-destructive" data-test="license-activate-error">
+              {activateMessage}
+            </span>
+          )}
+        </div>
+      </form>
     </div>
   );
 }
 
+// Polish round R7 — capitalised labels, password inputs, real status
+// badge from /v1/admin/providers/status. Test button stays inert until a
+// /v1/providers/{id}/test endpoint lands; for now it surfaces a friendly
+// "henüz uygulanmadı" toast instead of a broken silent click.
+type ProviderStatus = {
+  id: string;
+  label: string;
+  configured: boolean;
+};
+
+const PROVIDER_PLACEHOLDER: Record<string, string> = {
+  groq: "Groq API anahtarı (gsk_...)",
+  cerebras: "Cerebras API anahtarı",
+  cloudflare: "Cloudflare Workers AI API token",
+  gemini: "Google AI Studio API key (AIza...)",
+  cohere: "Cohere API key",
+  anthropic: "Anthropic API key (sk-ant-...)",
+};
+
 function ProvidersTab() {
-  const providers = [
-    { id: "groq", configured: false },
-    { id: "cerebras", configured: false },
-    { id: "cloudflare", configured: false },
-    { id: "gemini", configured: false },
-    { id: "cohere", configured: false },
-    { id: "anthropic", configured: false },
-  ];
+  const [providers, setProviders] = useState<ProviderStatus[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [testState, setTestState] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/v1/admin/providers/status", {
+          cache: "no-store",
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = (await res.json()) as { providers: ProviderStatus[] };
+        if (!cancelled) setProviders(json.providers);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "fetch failed");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function handleTest(id: string) {
+    setTestState((prev) => ({ ...prev, [id]: "Henüz uygulanmadı" }));
+  }
+
+  if (error) {
+    return (
+      <p className="text-sm text-destructive" data-test="providers-error">
+        Sağlayıcı durumu yüklenemedi: {error}
+      </p>
+    );
+  }
+
+  if (!providers) {
+    return (
+      <p className="text-sm text-muted-foreground" data-test="providers-loading">
+        Yükleniyor…
+      </p>
+    );
+  }
+
   return (
     <ul className="space-y-3">
       {providers.map((p) => (
@@ -141,17 +358,44 @@ function ProvidersTab() {
           key={p.id}
           data-test="provider-config-row"
           data-provider={p.id}
-          className="grid grid-cols-1 items-center gap-2 rounded-md border border-border bg-card/40 p-3 sm:grid-cols-[140px_1fr_auto]"
+          className="grid grid-cols-1 items-center gap-2 rounded-md border border-border bg-card/40 p-3 sm:grid-cols-[180px_1fr_auto_auto]"
         >
-          <code className="font-mono text-sm">{p.id}</code>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium">{p.label}</span>
+            <Badge
+              data-test={`provider-status-${p.id}`}
+              variant={p.configured ? "default" : "outline"}
+              className={cn(
+                "w-fit text-[10px]",
+                p.configured
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                  : "border-amber-500/40 text-amber-200",
+              )}
+            >
+              {p.configured ? "Yapılandırıldı" : "Eksik"}
+            </Badge>
+          </div>
           <Input
             type="password"
-            placeholder={`${p.id} API anahtarı`}
+            aria-label={`${p.label} API anahtarı`}
+            placeholder={PROVIDER_PLACEHOLDER[p.id] ?? `${p.label} API anahtarı`}
             className="font-mono text-xs"
+            data-test={`provider-input-${p.id}`}
           />
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleTest(p.id)}
+            data-test={`provider-test-${p.id}`}
+          >
             Test
           </Button>
+          <span
+            className="text-[10px] text-muted-foreground"
+            data-test={`provider-test-result-${p.id}`}
+          >
+            {testState[p.id] ?? ""}
+          </span>
         </li>
       ))}
     </ul>
