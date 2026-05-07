@@ -28,6 +28,7 @@ def generate_license(
     tier: str = "self-host",
     seat_count: int = 1,
     valid_days: int = 365,
+    machine_fp: str | None = None,
 ) -> str:
     """Belirtilen müşteri için RS256 imzalı JWT lisans üretir.
 
@@ -36,6 +37,9 @@ def generate_license(
         tier: Lisans seviyesi (self-host | team | enterprise).
         seat_count: Seat sayısı (>=1).
         valid_days: Lisans geçerlilik süresi (gün).
+        machine_fp: Q12 IP-Hardening R1 — opsiyonel hardware fingerprint
+            (SHA-256 hex). Mevcutsa lisans yalnızca aynı FP'ye sahip
+            host'ta doğrulanır. ``None`` (legacy) → makineye bağlı değil.
 
     Returns:
         İmzalanmış JWT token (str).
@@ -60,12 +64,19 @@ def generate_license(
         iat=iat,
         exp=exp,
         jti=jti,
+        machine_fp=machine_fp,
     )
 
     private_key_bytes = load_private_key(settings.private_key_path)
 
+    payload_dict = payload.model_dump()
+    if machine_fp is None:
+        # Legacy compat: keep the on-wire JWT free of `null` fields so
+        # tokens minted before R2 stay byte-identical for unchanged calls.
+        payload_dict.pop("machine_fp", None)
+
     return jwt.encode(
-        payload.model_dump(),
+        payload_dict,
         key=private_key_bytes,
         algorithm="RS256",
     )
