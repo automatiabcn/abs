@@ -1,13 +1,15 @@
-# Automatia ABS — Self-host AI orchestration for Claude Code
+# Automatia ABS — Self-hosted AI orchestrator
+
+> Part of the [Automatia BCN](https://automatiabcn.com) product family · Made in Barcelona
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1791%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-1822%20passing-brightgreen.svg)](#testing)
 [![Lighthouse](https://img.shields.io/badge/lighthouse-100%2F100%2F100%2F100-brightgreen.svg)](docs/performance.md)
 [![Tools](https://img.shields.io/badge/MCP%20tools-107-blue.svg)](docs/api-reference.md)
 
-> **Run 100+ MCP tools and 6-provider cascade on your own server.** Pair your $20 Claude
-> Pro plan with ABS to get RAG hybrid retrieval, quality pipelines, and tool
-> orchestration that normally costs $1,000+/month — for **$299 one-time**.
+> **Automate the chaos — on your own server.** Pair your Anthropic API key (or Claude
+> Pro plan) with ABS to get 100+ MCP tools, a 6-provider cascade, RAG hybrid retrieval,
+> and quality pipelines that normally cost $1,000+/month — for **$299 one-time**.
 
 🇬🇧 **English (default)** · 🇹🇷 [Türkçe](README.tr.md) · 🇪🇸 [Español](README.es.md)
 
@@ -15,7 +17,7 @@
 
 ## Why ABS
 
-If you use **Claude Code** every day and pay $20 for Claude Pro, you have already paid
+If you pay for Anthropic Claude (Pro plan or pay-as-you-go API), you have already paid
 for the model. What you don't have is an orchestrator that:
 
 - Routes calls across **6 providers** (Anthropic + Groq + Cerebras + Gemini +
@@ -82,7 +84,7 @@ prompts go from your machine to your ABS server to Anthropic, and stay private.
 - **MCP** — `mcp.server.fastmcp` (Anthropic-maintained Python SDK).
 - **Vault** — Mozilla sops + age (4096-bit RSA optional).
 - **Deploy** — Docker Compose + Caddy.
-- **Tests** — pytest (1791) + vitest (53) + Playwright (41) + Lighthouse (100/100/100/100).
+- **Tests** — pytest (1822) + vitest (53) + Playwright (41) + Lighthouse (100/100/100/100).
 
 Architecture: [docs/architecture.md](docs/architecture.md).
 API reference: [docs/api-reference.md](docs/api-reference.md).
@@ -125,3 +127,7 @@ We accept patches. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and the
 
 [Automatia BCN](https://automatiabcn.com) · Barcelona, Spain · GDPR-compliant ·
 14-day refund guarantee.
+
+Sister products from the same team: [Automatia MCP Suite](https://automatiabcn.com/products)
+(LeadPipe, InvoiceFlow, ShopOps, AdOps) · AutoPilot Business · custom AI/automation
+consulting.

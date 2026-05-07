@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     template: "%s · Automatia ABS",
   },
   description:
-    "Claude Pro aboneliğinle kendi sunucunda 100+ MCP tool + 6 sağlayıcı cascade + kalite pipeline'ları. Docker Compose ile dakikalar içinde kurulum.",
+    "Kaosu otomasyona dönüştür — kendi sunucunda. 100+ MCP tool + 6 sağlayıcı cascade + kalite pipeline'ları. Anthropic Claude key'inle çalışır, veri tamamen sende kalır.",
   keywords: [
     "ABS",
     "Automatia",
