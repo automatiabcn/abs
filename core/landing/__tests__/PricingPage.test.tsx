@@ -18,52 +18,44 @@ vi.mock("next/link", () => ({
 
 import PricingPage from "@/components/PricingPage";
 
-describe("PricingPage (T-061)", () => {
-  it("renders English copy by default", () => {
+// Q6 PA + brand alignment (aa010a7) collapsed the original three-tier
+// pricing cards (Self-Host Lifetime / + Maintenance / Managed Cloud)
+// into a single Pilot/PoC contact CTA. The component now ignores the
+// `lang` prop entirely so we exercise the surfaces that survived: the
+// section testid, the heading, and the mailto CTA.
+describe("PricingPage — Pilot/PoC outreach (post Q6 PA)", () => {
+  it("renders the Pilot/PoC outreach section", () => {
     render(<PricingPage lang="en" />);
-    expect(screen.getByText("Pricing")).toBeInTheDocument();
-    expect(screen.getByText("Self-Host Lifetime")).toBeInTheDocument();
-    expect(screen.getByText("+ Maintenance")).toBeInTheDocument();
-    expect(screen.getByText("Managed Cloud")).toBeInTheDocument();
+    expect(screen.getByTestId("pricing-page")).toBeInTheDocument();
+    expect(screen.getByText(/Pilot \/ PoC görüşmesi/)).toBeInTheDocument();
   });
 
-  it("renders Turkish copy when lang=tr", () => {
-    render(<PricingPage lang="tr" />);
-    expect(screen.getByText("Fiyatlandırma")).toBeInTheDocument();
-    expect(screen.getByText("Self-Host (Ömür Boyu)")).toBeInTheDocument();
-    expect(screen.getByText("Yönetilen Bulut")).toBeInTheDocument();
-  });
-
-  it("renders Spanish copy when lang=es", () => {
-    render(<PricingPage lang="es" />);
-    expect(screen.getByText("Precios")).toBeInTheDocument();
-    expect(screen.getByText("Self-Host de por vida")).toBeInTheDocument();
-    expect(screen.getByText("Cloud gestionado")).toBeInTheDocument();
-  });
-
-  it("shows the three plan cards with stable test ids", () => {
+  it("ships a mailto CTA to the support inbox", () => {
     render(<PricingPage lang="en" />);
-    expect(screen.getByTestId("pricing-plan-selfHost")).toBeInTheDocument();
-    expect(screen.getByTestId("pricing-plan-maintenance")).toBeInTheDocument();
-    expect(screen.getByTestId("pricing-plan-managed")).toBeInTheDocument();
+    const cta = screen.getByTestId("pricing-page-cta");
+    expect(cta.tagName.toLowerCase()).toBe("a");
+    expect(cta.getAttribute("href")).toBe(
+      "mailto:support@automatiabcn.com",
+    );
   });
 
-  it("disables managed-cloud CTA (waitlist)", () => {
+  it("shows the Barcelona footer line", () => {
     render(<PricingPage lang="en" />);
-    const managedCard = screen.getByTestId("pricing-plan-managed");
-    const cta = managedCard.querySelector("button[disabled]");
-    expect(cta).not.toBeNull();
-    expect(cta?.textContent?.trim()).toBe("Join Waitlist");
+    expect(
+      screen.getByText(/support@automatiabcn\.com · Barcelona/),
+    ).toBeInTheDocument();
   });
 
-  it("renders the refund notice in the active language", () => {
+  it("renders the same surface regardless of lang prop", () => {
+    // Component currently does not branch on `lang` — guard against a
+    // silent regression that would re-introduce stale per-locale copy.
     const { rerender } = render(<PricingPage lang="en" />);
-    expect(screen.getByText(/14-day no-questions refund/)).toBeInTheDocument();
-
+    const enHtml = screen.getByTestId("pricing-page").innerHTML;
     rerender(<PricingPage lang="tr" />);
-    expect(screen.getByText(/14 gün koşulsuz iade/)).toBeInTheDocument();
-
+    const trHtml = screen.getByTestId("pricing-page").innerHTML;
     rerender(<PricingPage lang="es" />);
-    expect(screen.getByText(/14 días de devolución/)).toBeInTheDocument();
+    const esHtml = screen.getByTestId("pricing-page").innerHTML;
+    expect(trHtml).toBe(enHtml);
+    expect(esHtml).toBe(enHtml);
   });
 });

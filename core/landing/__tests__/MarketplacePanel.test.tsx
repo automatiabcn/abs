@@ -133,6 +133,11 @@ describe("MarketplacePanel", () => {
       />,
     );
     fireEvent.click(screen.getByTestId("install-button-plugin-llm"));
+    // Q9 / MP4 — Approve is gated behind an explicit acknowledgement
+    // checkbox so admins can't blind-install. Tick it before clicking
+    // approve, otherwise the button stays `disabled` and onInstall
+    // never fires.
+    fireEvent.click(screen.getByTestId("permission-acknowledge"));
     fireEvent.click(screen.getByTestId("permission-approve"));
     await waitFor(() => {
       expect(onInstall).toHaveBeenCalledTimes(1);

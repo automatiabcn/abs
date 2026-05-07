@@ -2,6 +2,13 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// Same kill-switch override as CheckoutButton — billing path is disabled
+// by default at module load, so we lift it for this jsdom suite.
+vi.mock("@/lib/billing-flag", () => ({
+  BILLING_ENABLED: true,
+  BILLING_DISABLED_TITLE: "Billing disabled (test override)",
+}));
+
 import ManageModal from "@/components/ManageModal";
 
 const openModal = async () => {

@@ -9,14 +9,15 @@ import {
 
 describe("Landing i18n (023 modul E)", () => {
   it("default lang is en and t() returns english", () => {
+    // aa010a7 brand alignment moved the hero CTA from a price-led
+    // ("Get Self-Host — $299") to demo-led ("Watch Demo") frame.
     expect(DEFAULT_LANG).toBe("en");
-    expect(t("hero.cta_primary", "en")).toContain("Self-Host");
-    expect(t("hero.cta_primary", "en")).toContain("$299");
+    expect(t("hero.cta_primary", "en")).toBe("Watch Demo");
   });
 
   it("translates to tr and es", () => {
-    expect(t("hero.cta_primary", "tr")).toContain("Al");
-    expect(t("hero.cta_primary", "es")).toContain("Comprar");
+    expect(t("hero.cta_primary", "tr")).toBe("Demo İncele");
+    expect(t("hero.cta_primary", "es")).toBe("Ver Demo");
   });
 
   it("falls back to en when key missing in non-en", () => {
