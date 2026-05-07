@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
 """Cohere quota alert MCP tool'ları (009).
 
 008 STUB `cohere_alert_status` workflow_stub.py'den taşındı; gerçek implementasyon

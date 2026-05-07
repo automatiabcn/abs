@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // S20.6 — /panel/transcription: WebRTC mic → 5s chunked POST /v1/transcribe/stream → segments
 // Q9 Phase C — TR2 mic permission Modal + TR3 real-time waveform + TR6 empty state.
 "use client";

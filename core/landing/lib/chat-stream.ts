@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // Q8 Phase A — custom SSE parser for `/v1/chat/completions` and helpers
 // for `/v1/chat/sessions[/{id}/messages]`. Keeps a tight grip on the
 // custom event protocol (session/tool-call/tool-result/text/meta/[DONE]).

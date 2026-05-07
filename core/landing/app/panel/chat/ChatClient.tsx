@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // Sprint 21 / Faz C — chat client extracted into its own file so the
 // /panel/chat route can next/dynamic-import it. Vercel AI SDK +
 // react-markdown + the chat panel components only ship when the user

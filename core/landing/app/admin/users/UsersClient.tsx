@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // R65 (S8) — split-shell client island for /admin/users. Original
 // logic from `page.tsx` lifted here verbatim; the only delta is that
 // `initialUsers` from the server component seeds React Query as

@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
 """T-038 — Human-in-the-loop approval flow + panel-session→OAuth subject bridge.
 
 Closes the T-005 caveat: panel session cookies map to an OAuth subject so

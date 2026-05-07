@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
 """T-R03 fix #4 — Ollama-first cascade chain.
 
 Priority order: yerel Ollama (cost = $0) → Groq (cloud fast, $0 free quota)

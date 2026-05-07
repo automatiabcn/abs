@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // BUG-V1 — `/admin/usage` widget. Server-side fetches the aggregated
 // usage payload from /v1/admin/usage with the caller's session cookie,
 // hands it to <UsageClient/> as initialData so the first paint shows

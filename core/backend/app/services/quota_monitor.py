@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
 """Sprint 20 / CJ-009 — Provider quota monitor.
 
 `get_monthly_usage(provider, start, end)` dondurdugu deger:

@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // Q8 Phase E — `/admin/pipelines` Quality Pipelines launcher. Lists all
 // qual_* + race_* pipelines, exposes a Run form, polls
 // /v1/panel/pipeline/recent for run history.

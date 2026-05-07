@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // Q8 Phase C — `/panel/tools` MCP tool browser. Renders 122-tool inventory
 // from `/v1/panel/tools` as a TanStack Table with category sidebar +
 // fuzzy search + slide-in detail Sheet (input schema + Try-it cascade run).

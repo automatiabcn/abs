@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // Q7 Phase C — premium dark/light toggle (next-themes powered).
 // Q8 / MT3 fix — defer the aria-label + icon swap until after mount so
 // SSR (theme=undefined) doesn't disagree with CSR (theme=resolvedTheme).

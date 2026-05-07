@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
 """015 — Tracker × provider_configs pricing → günlük tahmini maliyet.
 
 Token sayisi tracker'da tutulmuyor (sadece count_24h). Ortalama 1500 tok/call,

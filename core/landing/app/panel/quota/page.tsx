@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // S20.7 — `/panel/quota` monthly usage bars + 80%/95% markers + 5dk
 // auto-refresh.
 // Q8 / QT1+QT2+QT5+QT6 — Tremor visualisation, Configure CTA per

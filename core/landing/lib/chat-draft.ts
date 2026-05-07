@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) 2026 Automatia BCN. All rights reserved.
+ * Licensed under the Business Source License 1.1.
+ * Production use requires a Commercial License - see LICENSE.
+ * Change Date: 2030-05-07 -> Apache License, Version 2.0
+ */
+
 // Q12-L18 (S7 R48) — IndexedDB-backed draft persistence for the
 // /panel/chat textarea. The R36 service-worker caches *responses*;
 // this helper persists *user input* across reloads, navigations,
