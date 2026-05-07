@@ -8,7 +8,7 @@ import Contact from "@/components/Contact";
 
 const heroTitle = "Kendi sunucunda 100+ MCP tool ve 6 sağlayıcı cascade — tek paket, kendi altyapın.";
 
-const heroSubtitle = "Automatia ABS: Claude Pro aboneliğinle çalışan RAG, pipeline ve tool orkestrasyonunu kendi sunucunda çalıştır. Docker Compose tek komut, dakikalar içinde kurulum (warm-boot 16 saniye).";
+const heroSubtitle = "Automatia ABS: kaosu otomasyona dönüştür, kendi sunucunda. 100+ MCP tool + 6 sağlayıcı cascade + kalite pipeline'ları. Anthropic Claude key'inle çalışır, veri tamamen sende kalır.";
 
 const primaryCta = { text: "Demo İncele", href: "#demo" };
 

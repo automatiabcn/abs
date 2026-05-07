@@ -30,7 +30,7 @@
   "header.manage": "Gestionar",
   "header.lang.label": "Idioma",
   "hero.title": "100+ MCP tools y cascade de 6 proveedores en tu servidor.",
-  "hero.subtitle": "Automatia ABS: ejecuta RAG, pipelines y orquestación de tools en tu infraestructura con tu plan Claude Pro. Instalación con Docker Compose en minutos (warm-boot 16 segundos).",
+  "hero.subtitle": "Automatia ABS: automatiza el caos — en tu propio servidor. 100+ herramientas MCP, cascada de 6 proveedores, pipelines de calidad. Trae tu clave Anthropic, tus datos se quedan contigo.",
   "hero.cta_primary": "Ver Demo",
   "hero.cta_secondary": "Contacto",
   "footer.legal": "Automatia BCN · Barcelona, España",
