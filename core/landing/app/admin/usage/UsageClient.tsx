@@ -52,6 +52,12 @@ export default function UsageClient({ initial }: { initial: UsagePayload }) {
     date: b.day,
     "Claude tokens": b.claude_tokens,
   }));
+  // Polish round R5 — empty axes look broken; surface a friendly message
+  // until the first Claude call lands. `every(=== 0)` covers fresh installs
+  // and tenants that opted out of Claude.
+  const trendIsEmpty =
+    trendData.length === 0 ||
+    trendData.every((b) => (b["Claude tokens"] ?? 0) === 0);
   const providerRows = Object.entries(data.provider_mix_24h).sort(
     (a, b) => b[1] - a[1],
   );
@@ -127,18 +133,30 @@ export default function UsageClient({ initial }: { initial: UsagePayload }) {
           7-gün Claude token trendi
         </h2>
         <Card data-test="usage-trend-chart">
-          <AreaChart
-            className="h-64"
-            data={trendData}
-            index="date"
-            categories={["Claude tokens"]}
-            colors={["indigo"]}
-            showAnimation
-            showLegend={false}
-            showGridLines={false}
-            curveType="monotone"
-            yAxisWidth={48}
-          />
+          {trendIsEmpty ? (
+            <div
+              data-test="usage-trend-empty"
+              className="flex h-64 flex-col items-center justify-center gap-1 text-center text-sm text-muted-foreground"
+            >
+              <p className="font-medium text-foreground">
+                Henüz Claude çağrısı yok.
+              </p>
+              <p>İlk çağrıdan sonra trend burada görünecek.</p>
+            </div>
+          ) : (
+            <AreaChart
+              className="h-64"
+              data={trendData}
+              index="date"
+              categories={["Claude tokens"]}
+              colors={["indigo"]}
+              showAnimation
+              showLegend={false}
+              showGridLines={false}
+              curveType="monotone"
+              yAxisWidth={48}
+            />
+          )}
         </Card>
       </section>
 
