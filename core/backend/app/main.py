@@ -127,6 +127,47 @@ async def lifespan(_app: FastAPI):
             start_demo()
         except Exception:
             pass
+
+    # Q12 IP-Hardening R4 — verifier tamper check.
+    # No-op when ABS_VERIFIER_HASH is unset (dev) or
+    # ABS_TAMPER_CHECK_DISABLED=1 (test). Panics on mismatch in prod.
+    try:
+        from app.licensing.tamper_check import assert_self_integrity
+
+        assert_self_integrity()
+    except Exception as exc:
+        _lf_logger.critical("tamper_check_failed: %s", exc)
+        raise
+
+    # Q12 IP-Hardening R2 — online activation phone-home.
+    # Fail-open within 7 days (server outage MUST NOT brick paying
+    # customers). Skipped under ABS_TEST_MODE=1 and when activation is
+    # disabled via ABS_PHONE_HOME_DISABLED=1 (dev convenience only —
+    # production builds ignore this knob via Cython compile).
+    import os as _ph_os
+
+    if (
+        _settings.license_key
+        and _ph_os.environ.get("ABS_TEST_MODE") != "1"
+        and _ph_os.environ.get("ABS_PHONE_HOME_DISABLED") != "1"
+    ):
+        try:
+            from app.licensing.fingerprint import collect_machine_fingerprint
+            from app.licensing.phone_home import activate_online
+
+            fp = collect_machine_fingerprint()
+            result = await activate_online(_settings.license_key, fp)
+            _lf_logger.info(
+                "license_phone_home valid=%s reason=%s",
+                result.get("valid"),
+                result.get("reason"),
+            )
+            if not result.get("valid") and result.get("reason") == "offline_grace_expired":
+                _lf_logger.critical(
+                    "license_offline_grace_expired — paid providers blocked"
+                )
+        except Exception as exc:
+            _lf_logger.warning("phone_home_skipped: %s", exc)
     # 014 — provider configs YAML yükle (boot, idempotent)
     try:
         from app.providers.configs import load_all

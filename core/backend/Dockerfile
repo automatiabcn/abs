@@ -31,6 +31,12 @@ COPY app/ ./app/
 RUN pip install --prefix=/install .
 
 FROM base AS runtime
+# Q12 IP-Hardening R3 — build hash embedded at image build time.
+# scripts/build_with_hash.sh sets BUILD_HASH=<git-short>-<source-sha256>;
+# phone_home.py sends this to the activation server which can refuse
+# tampered images by comparing against the known-good registry.
+ARG BUILD_HASH=unknown
+ENV ABS_BUILD_HASH=${BUILD_HASH}
 # 010 — apply_patch tool runtime'da `patch` binary'sine ihtiyaç duyar
 # 013 — sops/age binary'leri builder'dan kopyalanır (apt-install yerine küçük binary)
 RUN apt-get update && apt-get install -y --no-install-recommends patch ca-certificates \
