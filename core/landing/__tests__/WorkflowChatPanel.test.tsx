@@ -103,7 +103,8 @@ describe("WorkflowChatPanel", () => {
     );
     fireEvent.click(screen.getByTestId("dry-run-button"));
     await waitFor(() => {
-      expect(screen.getByTestId("dry-run-status")).toHaveTextContent("Success");
+      // Polish round R4 — admin console is Turkish-first.
+      expect(screen.getByTestId("dry-run-status")).toHaveTextContent("Başarılı");
     });
     expect(onDryRun).toHaveBeenCalled();
   });

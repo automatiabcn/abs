@@ -53,7 +53,7 @@ Sonuç: Claude token **minimum** tüketilir (orkestrasyon için), iş yükü **f
 
 ## Sınır (dürüst)
 
-- **Solo operatör** (Enes). 20-30 müşteri tavan, sonra ekip lazım.
+- **Solo operatör** (Automatia BCN engineering). 20-30 müşteri tavan, sonra ekip lazım.
 - **Anthropic TOS** cevapsız — Claude Pro plan'ı orchestrate etmek resmi onay gerektirebilir.
 - **Müşteri kodu Claude prompt'una gider** → Anthropic'e ulaşır (data residency transparent olmalı).
 - **Free tier'lar sonsuz değil** — Cohere 1000/ay, Gemini 1500/gün. Aşım = paid fallback veya hard cap.

@@ -5,7 +5,7 @@
 | Status | **ACCEPTED** |
 | Date | 2026-04-29 |
 | Sprint | 19 (post-completion gate G2) |
-| Deciders | Founder (Enes Eserkan) · ABS engineering |
+| Deciders | Automatia BCN engineering |
 | Supersedes | – |
 | Superseded by | – |
 | References | [`litellm-vs-native.md`](./litellm-vs-native.md), T-S02.1, T-S02.4, T-018 |
@@ -67,7 +67,7 @@ Re-open this decision when **any** of:
 
 | Role | Name | Decision | Date |
 |------|------|----------|------|
-| Founder / Approver | Enes Eserkan | ✅ Accepted (Option C — native canonical, LiteLLM opt-in) | 2026-04-29 |
+| Founder / Approver | Automatia BCN engineering | ✅ Accepted (Option C — native canonical, LiteLLM opt-in) | 2026-04-29 |
 | Engineering | ABS platform team | ✅ Implemented as designed | 2026-04-29 |
 
 This ADR is the controlling document; the trade-off doc is informational background.

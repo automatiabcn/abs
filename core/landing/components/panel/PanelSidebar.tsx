@@ -38,21 +38,24 @@ interface NavItem {
 const NAV: NavItem[] = [
   // ── Üretim ─────────────────────────────────────
   { href: "/panel", label: "Genel Bakış", icon: LayoutDashboard, group: "Üretim" },
-  { href: "/panel/chat", label: "Sohbet", icon: MessageSquare, group: "Üretim" },
+  // Polish round R2 — admin/* is the canonical URL surface; redirects in
+  // next.config map these to the live /panel/* pages.
+  { href: "/admin/chat", label: "Sohbet", icon: MessageSquare, group: "Üretim" },
   { href: "/admin/workflow-builder", label: "Workflow", icon: Workflow, group: "Üretim" },
   // BUG-V1 — /admin/usage Free path % + Claude budget % widget.
   { href: "/admin/usage", label: "Kullanım", icon: BarChart3, group: "Üretim" },
-  { href: "/panel/tools", label: "MCP Tools", icon: Wrench, group: "Üretim" },
+  { href: "/admin/mcp-tools", label: "MCP Tools", icon: Wrench, group: "Üretim" },
   { href: "/admin/rag", label: "RAG Bilgi Tabanı", icon: Database, group: "Üretim" },
   { href: "/admin/pipelines", label: "Quality Pipelines", icon: Sliders, group: "Üretim" },
   // ── Operasyon ──────────────────────────────────
-  { href: "/admin/providers", label: "Cascade", icon: Layers, group: "Operasyon" },
+  // Polish round R2 — label aligned with route ("Sağlayıcılar" not "Cascade").
+  { href: "/admin/providers", label: "Sağlayıcılar", icon: Layers, group: "Operasyon" },
   { href: "/admin/marketplace", label: "Marketplace", icon: Store, group: "Operasyon" },
   { href: "/panel/quota", label: "Kota", icon: BarChart3, group: "Operasyon" },
   { href: "/admin/graph", label: "Knowledge Graph", icon: Brain, group: "Operasyon" },
   // ── Toplantılar ────────────────────────────────
-  { href: "/panel/meetings", label: "Toplantılar", icon: Mic, group: "Toplantılar" },
-  { href: "/panel/transcription", label: "Transcription", icon: Boxes, group: "Toplantılar" },
+  { href: "/admin/meetings", label: "Toplantılar", icon: Mic, group: "Toplantılar" },
+  { href: "/admin/transcription", label: "Transcription", icon: Boxes, group: "Toplantılar" },
   // ── Yönetim ────────────────────────────────────
   { href: "/admin/settings", label: "Ayarlar", icon: Settings, group: "Yönetim" },
   { href: "/admin/users", label: "Kullanıcılar", icon: Users, group: "Yönetim" },
@@ -60,6 +63,38 @@ const NAV: NavItem[] = [
 ];
 
 const GROUP_ORDER: NavGroup[] = ["Üretim", "Operasyon", "Toplantılar", "Yönetim"];
+
+// Polish round R4 — CSS `text-transform: uppercase` runs in the document
+// locale (English by default) and turns Turkish "i" into dotless "I"
+// instead of "İ". Pre-render the labels with `toLocaleUpperCase("tr-TR")`
+// and drop the CSS transform so the dotted İ comes through verbatim.
+const GROUP_LABEL_TR: Record<NavGroup, string> = {
+  "Üretim": "Üretim".toLocaleUpperCase("tr-TR"),
+  "Operasyon": "Operasyon".toLocaleUpperCase("tr-TR"),
+  "Toplantılar": "Toplantılar".toLocaleUpperCase("tr-TR"),
+  "Yönetim": "Yönetim".toLocaleUpperCase("tr-TR"),
+};
+
+// Polish round R2 — sidebar advertises /admin/* but a few pages still
+// resolve to /panel/* via next.config redirects (308). Map both ways so the
+// active highlight tracks the user wherever the redirect lands them.
+const REDIRECT_EQUIVALENTS: Record<string, string> = {
+  "/admin/chat": "/panel/chat",
+  "/admin/meetings": "/panel/meetings",
+  "/admin/transcription": "/panel/transcription",
+  "/admin/mcp-tools": "/panel/tools",
+  "/admin/cascade": "/admin/providers",
+  "/admin/dashboard": "/admin/usage",
+};
+
+function isActive(href: string, pathname: string): boolean {
+  if (href === "/panel") return pathname === "/panel";
+  if (pathname === href) return true;
+  if (pathname.startsWith(href + "/")) return true;
+  const live = REDIRECT_EQUIVALENTS[href];
+  if (live && (pathname === live || pathname.startsWith(live + "/"))) return true;
+  return false;
+}
 
 export function PanelSidebar() {
   const pathname = usePathname() ?? "";
@@ -85,15 +120,15 @@ export function PanelSidebar() {
           if (items.length === 0) return null;
           return (
             <div key={group}>
-              <div className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {group}
+              <div
+                lang="tr"
+                className="mb-1 px-2 text-[10px] font-semibold tracking-wider text-muted-foreground"
+              >
+                {GROUP_LABEL_TR[group]}
               </div>
               <ul className="space-y-1">
                 {items.map(({ href, label, icon: Icon }) => {
-                  const active =
-                    pathname === href ||
-                    (href !== "/panel" && pathname.startsWith(href + "/")) ||
-                    (href === "/panel" && pathname === "/panel");
+                  const active = isActive(href, pathname);
                   return (
                     <li key={href}>
                       <Link

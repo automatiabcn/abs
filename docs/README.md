@@ -4,8 +4,8 @@ Bu klasör ABS'nin **ürünleştirme** çalışmasıdır. Burası **kod** değil
 
 ## Neden ayrı klasör
 
-`/Users/eneseserkan/Main/Automatia BCN/SERVER/` = Enes'in üretim sistemi, dokunulmaz.
-`/Users/eneseserkan/Main/abs-server-product/` = Ürün (yeni, temiz-oda inşa).
+`Automatia BCN/SERVER/` = orchestrator üretim sistemi, dokunulmaz.
+`abs-server-product/` = Ürün (yeni, temiz-oda inşa).
 
 Ürün SERVER'ın kopyası değil — aynı **özellikleri** veren, müşteri sunucusunda çalışan **yeniden yazılmış** sürüm olacak.
 

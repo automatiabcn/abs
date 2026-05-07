@@ -78,7 +78,7 @@ const PIPELINES: PipelineDef[] = [
     id: "qual_code_human",
     label: "qual_code_human",
     family: "quality",
-    description: "qual_code + Enes humanize fingerprint",
+    description: "qual_code + humanize layer fingerprint",
     chain: ["qual_code", "humanize_score"],
     icon: Sparkles,
     tone: "pink",
