@@ -72,7 +72,8 @@ from app.middleware.request_id import RequestIDMiddleware  # Q12-L23
 
 PANEL_STATIC_DIR = Path(__file__).resolve().parent / "static" / "panel"
 SETUP_STATIC_DIR = Path(__file__).resolve().parent / "static" / "setup"
-ADMIN_STATIC_DIR = Path(__file__).resolve().parent / "static" / "admin"
+# Brief 4 R4 — ADMIN_STATIC_DIR removed; /admin/* is Next.js territory
+# served by the `landing` container behind the Caddy route split.
 
 
 @asynccontextmanager
@@ -308,10 +309,9 @@ async def setup_index():
     return FileResponse(SETUP_STATIC_DIR / "index.html", media_type="text/html")
 
 
-@app.get("/admin", include_in_schema=False)
-async def admin_index():
-    """032 — Admin dashboard UI (vanilla HTML/JS, brand-aligned)."""
-    return FileResponse(ADMIN_STATIC_DIR / "index.html", media_type="text/html")
+# Brief 4 R4 — vanilla 032 admin route deleted; /admin/* is now Next.js
+# territory served by the `landing` container behind the Caddy split.
+# Keeping the static mount so /static/* (panel, setup) still works.
 
 
 # MCP HTTP transport — Claude Code `claude mcp add abs https://abs.local/mcp`
