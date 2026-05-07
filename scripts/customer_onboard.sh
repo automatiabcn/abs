@@ -4,7 +4,7 @@
 # license JWT, and produces an email template for the customer.
 #
 # Usage:
-#   ./scripts/customer_onboard.sh "Acme Corp" "admin@acme.com" team 5 365
+#   ./scripts/customer_onboard.sh "Acme Corp" "admin@acme.com" team 5 365 [machine_fp_hex]
 #
 # Args:
 #   $1 customer name (free text)
@@ -12,6 +12,9 @@
 #   $3 tier (self-host | team | enterprise | beta) — default: self-host
 #   $4 seats — default: 1
 #   $5 valid days — default: 365
+#   $6 machine_fp (Q12 R1) — optional SHA-256 hex of customer's host
+#      fingerprint (run `python -m app.licensing.fingerprint --print`
+#      on their server). When set, license is bound to that machine.
 
 set -euo pipefail
 
@@ -20,6 +23,7 @@ CUSTOMER_EMAIL="${2:?customer email required}"
 TIER="${3:-self-host}"
 SEATS="${4:-1}"
 VALID_DAYS="${5:-365}"
+MACHINE_FP="${6:-}"
 
 CUSTOMER_SLUG=$(echo "$CUSTOMER_NAME" | tr '[:upper:] ' '[:lower:]-' | tr -cd 'a-z0-9-')
 KEYS_DIR="customer-keys/${CUSTOMER_SLUG}"
@@ -47,10 +51,17 @@ gh repo deploy-key add "${KEYS_DIR}/deploy_key.pub" \
 }
 
 echo "[3/4] Minting license JWT…"
+if [ -n "${MACHINE_FP}" ]; then
+  MFP_ARG="machine_fp='${MACHINE_FP}'"
+  echo "      machine_fp binding: ${MACHINE_FP:0:12}…"
+else
+  MFP_ARG="machine_fp=None"
+  echo "      no machine_fp — legacy mode (license portable across hosts)"
+fi
 LICENSE_TOKEN=$(docker compose -f infra/docker-compose.yml exec -T backend \
   python -c "
 from app.licensing import generate_license
-print(generate_license('${CUSTOMER_EMAIL}', tier='${TIER}', seat_count=${SEATS}, valid_days=${VALID_DAYS}))
+print(generate_license('${CUSTOMER_EMAIL}', tier='${TIER}', seat_count=${SEATS}, valid_days=${VALID_DAYS}, ${MFP_ARG}))
 " 2>/dev/null | tail -1)
 
 if [ -z "$LICENSE_TOKEN" ]; then
