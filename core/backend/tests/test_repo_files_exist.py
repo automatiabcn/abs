@@ -32,11 +32,14 @@ def test_github_templates_exist():
     assert (repo / ".github" / "pull_request_template.md").is_file()
 
 
-def test_license_is_apache_2_0():
+def test_license_is_bsl_1_1():
     text = (_repo() / "LICENSE").read_text(encoding="utf-8")
-    assert "Apache License" in text
-    assert "Version 2.0" in text
+    # BSL 1.1 since 2026-05-07
+    assert "Business Source License 1.1" in text
     assert "Automatia BCN" in text
+    assert "Change Date:" in text
+    # Change License is Apache 2.0 (auto-flip on Change Date)
+    assert "Apache License" in text and "Version 2.0" in text
 
 
 # Modul G — README contents
@@ -61,8 +64,9 @@ def test_readme_lists_pricing_and_license_and_languages():
     # Pricing SKUs
     for sku in ("Self-Host Lifetime", "Maintenance", "Team Pack 5", "Team Pack 10"):
         assert sku in text
-    # License badge / link
-    assert "Apache 2.0" in text
+    # License badge / link (BSL 1.1 since legal switch 2026-05-07; Change Date
+    # 2030-05-07 reverts to Apache 2.0)
+    assert "BSL 1.1" in text or "Business Source License" in text
     # Multi-language switcher
     assert "README.tr.md" in text
     assert "README.es.md" in text
