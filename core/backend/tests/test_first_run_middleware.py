@@ -60,11 +60,20 @@ def test_no_redirect_for_whitelist(incomplete_setup, client):
 
 
 def test_no_redirect_when_completed(completed_setup, client):
-    """Setup tamamlandiginda hicbir endpoint redirect'e gonderilmez."""
-    r = client.get("/panel/login", follow_redirects=False)
-    # /panel/login direkt 200 (auth gerekmez) → redirect yok
-    assert r.status_code in (200, 401)
-    assert r.status_code != 302
+    """Setup tamamlandiginda first-run middleware /setup'a yonlendirmez.
+
+    Brief 4 R4 panel deprecation sonrasi /panel/login 308 (Next.js
+    /admin'e), ama bu test middleware davranisini olcuyor — onemli olan
+    302→/setup *olmadigi*. /healthz ile test ediyoruz cunku panel tarafi
+    artik kendi redirect'ini issue ediyor.
+    """
+    r = client.get("/healthz", follow_redirects=False)
+    assert r.status_code == 200
+
+    # Sanity: /panel/login Brief 4 sonrasi 308 (panel.py decision), 302
+    # olmamali (302 = first-run middleware → /setup, ki tamamlandi).
+    p = client.get("/panel/login", follow_redirects=False)
+    assert p.status_code != 302
 
 
 def test_api_request_gets_307_not_html(incomplete_setup, client):

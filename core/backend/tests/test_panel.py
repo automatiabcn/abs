@@ -1,86 +1,64 @@
-"""Panel erişim + widget ID parity."""
+"""Brief 4 R4/R7 — legacy `/panel` is now a redirect to the Next.js
+admin under `/admin`. Vanilla-panel HTML widget IDs are no longer
+asserted here — that contract moved to the Next.js admin pages and is
+covered by Playwright in Brief 4 R7.
+
+Spec: ``_agent-tasks/WORKER_NEXTJS_ADMIN_DEPLOY.md`` §9.
+"""
 
 from __future__ import annotations
 
-# SERVER panel'inden korunması zorunlu widget ID'leri (feature parity sözleşmesi)
-REQUIRED_WIDGET_IDS = [
-    "brain-iframe",
-    "cs-provider-dots",
-    "cs-log",
-    "spark-deleg",
-    "spark-gpu",
-    "spark-cache",
-    "judge-summary",
-    "judge-body",
-    "workflow-card",
-    "wf-detail-summary",
-    "wf-detail-list",
-    "cs-cohere-count",
-    "cs-cohere-fill",
-    "cohere-alert-banner",
-    "feat-grid",
-    "feat-trend-list",
-    "feat-summary",
-    "cs-budget-usd",
-    "v8-budget-stat",
-    "deleg-budget",
-]
+
+def test_panel_redirect_to_admin(client):
+    """`/panel` → 308 → `/admin` (Next.js admin owns rendering)."""
+    r = client.get("/panel", follow_redirects=False)
+    assert r.status_code == 308
+    assert r.headers["location"] == "/admin"
 
 
-def _login(client):
+def test_panel_login_redirect_to_admin(client):
+    """`/panel/login` → 308 → `/admin` (Next.js handles login UI)."""
+    r = client.get("/panel/login", follow_redirects=False)
+    assert r.status_code == 308
+    assert r.headers["location"] == "/admin"
+
+
+def test_legacy_panel_returns_410_when_authenticated(client):
+    """`/panel/legacy` is the explicit kill switch — admins still see
+    a 410 GONE pointing them to /admin/dashboard."""
     r = client.post(
         "/auth/login",
         json={"email": "admin@local", "password": "CHANGEME"},
     )
     assert r.status_code == 200
+    g = client.get("/panel/legacy", follow_redirects=False)
+    assert g.status_code == 410
+    assert "Legacy panel removed" in g.text
 
 
-def test_panel_without_auth_redirects_to_login(client):
-    # TestClient default follow_redirects=True, disable et
-    r = client.get("/panel", follow_redirects=False)
+def test_legacy_panel_redirects_unauth_to_admin_login(client):
+    r = client.get("/panel/legacy", follow_redirects=False)
     assert r.status_code == 302
-    assert r.headers["location"] == "/panel/login"
+    assert r.headers["location"] == "/admin/login"
 
 
-def test_panel_login_page_is_public(client):
-    r = client.get("/panel/login")
-    assert r.status_code == 200
-    assert "text/html" in r.headers["content-type"]
-    body = r.text
-    assert "Automatia ABS" in body
-    assert 'id="login-form"' in body
+def test_admin_route_removed_on_backend(client):
+    """Brief 4 R4: backend `/admin` returns 404 — Next.js owns it now.
+    Caddy in production routes `/admin/*` to `landing:3000`; the backend
+    image must not also serve a vanilla 032 HTML page."""
+    r = client.get("/admin", follow_redirects=False)
+    assert r.status_code == 404
 
 
-def test_panel_after_login_renders_html(client):
-    _login(client)
-    r = client.get("/panel")
-    assert r.status_code == 200
-    assert "text/html" in r.headers["content-type"]
-    body = r.text
-    assert "Automatia ABS" in body
-
-
-def test_panel_preserves_widget_ids(client):
-    """SERVER panel'den taşınan 8 widget'ın ID'leri panelde bulunmalı."""
-    _login(client)
-    body = client.get("/panel").text
-    missing = [wid for wid in REQUIRED_WIDGET_IDS if f'id="{wid}"' not in body]
-    assert not missing, f"Eksik widget ID'leri: {missing}"
-
-
-def test_panel_assets_js_served(client):
-    # T-R02 — panel.js is now a 5-line ES module shim that imports
-    # ./panel/main.js. The SSE wiring lives in panel/sse.js, not the entry.
+def test_panel_assets_js_still_served(client):
+    """Static assets under `/panel/assets/*` survive — they back the
+    Next.js admin's embedded panel iframe widgets (T-R02 split)."""
     r = client.get("/panel/assets/panel.js")
     assert r.status_code == 200
     assert 'import "./panel/main.js"' in r.text
 
-    sse = client.get("/panel/assets/panel/sse.js")
-    assert sse.status_code == 200
-    assert "EventSource" in sse.text
 
-
-def test_panel_assets_css_served(client):
+def test_panel_assets_css_still_served(client):
     r = client.get("/panel/assets/panel.css")
     assert r.status_code == 200
     assert "--bg0" in r.text
