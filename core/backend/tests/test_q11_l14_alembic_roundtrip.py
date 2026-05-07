@@ -56,7 +56,11 @@ class TestQ11L14AlembicRoundTrip:
             assert "chat_sessions" in tables_after_up  # 0007
             engine.dispose()
 
-            command.downgrade(cfg, "-1")
+            # Q12 / Brief 3 R4 — `head` is no longer 0008; downgrade
+            # explicitly to 0007_chat_sessions so this contract still
+            # exercises the 0008 → 0007 path that Q11 L14-001 hardened,
+            # regardless of how many migrations land after 0008.
+            command.downgrade(cfg, "0007_chat_sessions")
             engine = create_engine(db_url)
             tables_after_down = set(inspect(engine).get_table_names())
             assert "minted_token_blacklist" not in tables_after_down, (

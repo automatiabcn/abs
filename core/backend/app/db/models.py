@@ -297,7 +297,13 @@ class UsageLog(SQLModel, table=True):
 
 
 class ChatSession(SQLModel, table=True):
-    """Q8 / Phase A — multi-tenant chat session header."""
+    """Q8 / Phase A — multi-tenant chat session header.
+
+    Q12 / Brief 3 R4 added four threading columns: `pinned`,
+    `archived_at`, `last_activity_at` (sidebar sort key, denormalised
+    from chat_messages.created_at), and `message_count` (counter cache
+    so the sidebar avoids a per-row COUNT()).
+    """
 
     __tablename__ = "chat_sessions"
 
@@ -313,6 +319,13 @@ class ChatSession(SQLModel, table=True):
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
+    # Q12 / Brief 3 R4 — threading metadata
+    pinned: bool = Field(default=False)
+    archived_at: Optional[datetime] = Field(default=None, index=True)
+    last_activity_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+    message_count: int = Field(default=0)
 
 
 class ChatMessage(SQLModel, table=True):
