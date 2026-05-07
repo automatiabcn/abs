@@ -31,6 +31,15 @@ from app.api.cascade import (
     _try_mock,
 )
 from app.cascade.orchestrator import call_with_cascade
+from app.chat import (
+    PIPELINE_OPTIONS,
+    ChatCitation,
+    build_citation_prompt_block,
+    detect_pipeline,
+    estimate_call_cost_usd,
+    retrieve_citations,
+)
+from app.chat.citations import serialise_citations
 from app.db.models import ChatMessage, ChatSession, User
 from app.db.session import get_engine
 from app.providers.cascade import get_active_providers
@@ -68,6 +77,21 @@ class ChatCompletionsRequest(BaseModel):
     session_id: Optional[int] = None
     messages: List[ChatMessageIn] = Field(..., max_length=200)
     stream: bool = True
+    # Q12 / Brief 3 R2 — explicit pipeline override; "auto" → detect
+    # from the last user message; "auto_direct" skips routing entirely.
+    pipeline: Literal[
+        "auto",
+        "auto_direct",
+        "qual_code",
+        "qual_tr",
+        "qual_translate",
+        "qual_analysis",
+        "race_code",
+    ] = "auto"
+    # Q12 / Brief 3 R1 — citations are on by default; opt-out per call
+    # for cheap factual chat where RAG would just add latency.
+    rag_citations: bool = True
+    rag_top_k: int = Field(default=5, ge=1, le=20)
 
 
 class ChatSessionOut(BaseModel):
@@ -392,8 +416,15 @@ async def completions(
 
     cmd = _detect_slash_command(last_user_content)
 
+    # Q12 / Brief 3 R2 — pipeline routing decision (auto / explicit).
+    if body.pipeline == "auto":
+        pipeline_used = detect_pipeline(last_user_content)
+    else:
+        pipeline_used = body.pipeline
+
     async def stream() -> AsyncGenerator[str, None]:
         yield f'data: {json.dumps({"type": "session", "session_id": sess_id, "title": sess_title})}\n\n'
+        yield f'data: {json.dumps({"type": "pipeline", "id": pipeline_used})}\n\n'
 
         if cmd:
             yield f'data: {json.dumps({"type": "tool-call", "name": cmd["name"], "args": cmd["args"]})}\n\n'
@@ -408,6 +439,29 @@ async def completions(
                 }
                 yield f'data: {json.dumps(stub)}\n\n'
 
+        # Q12 / Brief 3 R1 — RAG-grounded citations: pull top-K chunks
+        # before the cascade call, inject as a [1]/[2]/… block, and ship
+        # the structured citation list in the closing `meta` event. Pure
+        # no-op when retrieval fails or returns nothing — no hallucinated
+        # citations are ever emitted.
+        citations: List[ChatCitation] = []
+        if body.rag_citations:
+            try:
+                citations = await retrieve_citations(
+                    last_user_content,
+                    project=tenant,
+                    top_k=body.rag_top_k,
+                )
+            except Exception as exc:  # pragma: no cover — defensive only
+                logger.info("citation retrieval skipped: %s", exc)
+                citations = []
+            if citations:
+                yield f'data: {json.dumps({"type": "citations", "citations": serialise_citations(citations)})}\n\n'
+
+        prompt_for_cascade = build_citation_prompt_block(
+            citations, user_message=last_user_content
+        )
+
         # Q11-L10-002: emit a "thinking" frame before the cascade call
         # so the client (and any intermediate proxy / load balancer) sees
         # SSE traffic well within the 30s idle-timeout window. Live
@@ -417,7 +471,7 @@ async def completions(
 
         t0 = time.perf_counter()
         try:
-            cascade_resp = await _run_cascade(last_user_content)
+            cascade_resp = await _run_cascade(prompt_for_cascade)
         except HTTPException as exc:
             detail_str = str(exc.detail or "")
             if detail_str.startswith("no_providers_configured"):
@@ -469,6 +523,19 @@ async def completions(
             await asyncio.sleep(0.01)
 
         latency_ms = int((time.perf_counter() - t0) * 1000)
+        # Q12 / Brief 3 R5 — provider transparency: emit cost USD +
+        # cascade chain so the message footer can show the receipt.
+        # `tokens_in` / `tokens_out` are best-effort: the cascade
+        # response only exposes the combined `tokens_used`, so we split
+        # 30/70 input/output the same way `cost_estimator.py` does.
+        tin = int(round((cascade_resp.tokens_used or 0) * 0.3))
+        tout = max(0, (cascade_resp.tokens_used or 0) - tin)
+        cost_info = estimate_call_cost_usd(
+            provider=provider,
+            tokens_in=tin,
+            tokens_out=tout,
+            model=getattr(cascade_resp, "model", None),
+        )
         meta = {
             "type": "meta",
             "provider": provider,
@@ -476,11 +543,29 @@ async def completions(
             "tokens_used": cascade_resp.tokens_used,
             "latency_ms": latency_ms,
             "mock": cascade_resp.mock,
+            "pipeline": pipeline_used,
+            "cost_usd": cost_info["usd"],
+            "free": cost_info["free"],
+            "citation_count": len(citations),
         }
         yield f'data: {json.dumps(meta)}\n\n'
         yield 'data: [DONE]\n\n'
 
         with Session(get_engine()) as db:
+            tool_calls_json = (
+                json.dumps(
+                    {
+                        "pipeline": pipeline_used,
+                        "citations": serialise_citations(citations),
+                        "fallback_chain": cascade_resp.fallback_chain,
+                        "cost_usd": cost_info["usd"],
+                        "free": cost_info["free"],
+                    },
+                    ensure_ascii=False,
+                )
+                if (citations or pipeline_used != "auto_direct")
+                else None
+            )
             db.add(
                 ChatMessage(
                     session_id=sess_id,
@@ -489,6 +574,7 @@ async def completions(
                     provider=provider,
                     tokens_used=cascade_resp.tokens_used,
                     latency_ms=latency_ms,
+                    tool_calls=tool_calls_json,
                 )
             )
             touched = db.get(ChatSession, sess_id)
