@@ -101,7 +101,7 @@ export default function MarketplacePanel({
           data-testid="admin-banner"
           className="rounded-2xl bg-yellow-100 p-3 text-sm text-yellow-900 ring-1 ring-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-200 dark:ring-yellow-800"
         >
-          Read-only — admin role required to install plugins
+          Yalnızca okuma — eklenti kurulumu için admin rolü gerekir
         </div>
       )}
 
@@ -109,14 +109,14 @@ export default function MarketplacePanel({
         <div className="relative max-w-md flex-1">
           <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
           <label htmlFor={searchId} className="sr-only">
-            Search plugins
+            Eklenti ara
           </label>
           <input
             id={searchId}
             data-testid="marketplace-search"
-            aria-label="Search plugins"
+            aria-label="Eklenti ara"
             type="search"
-            placeholder="Search plugins…"
+            placeholder="Eklenti ara…"
             className="w-full rounded-xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm text-zinc-900 ring-1 ring-zinc-900/5 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -127,7 +127,7 @@ export default function MarketplacePanel({
           <FilterChip
             testId="filter-chip-all"
             active={filter === "all"}
-            label="All"
+            label="Tümü"
             onClick={() => setFilter("all")}
           />
           {PLUGIN_TYPE_ORDER.map((t) => (
@@ -199,7 +199,7 @@ export default function MarketplacePanel({
               onClick={() => setSelected(plugin)}
               className="mt-5 inline-flex items-center justify-center rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:enabled:bg-zinc-200"
             >
-              Install
+              Kur
             </button>
           </article>
         ))}

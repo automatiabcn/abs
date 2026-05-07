@@ -29,11 +29,12 @@ type Props = {
   onSave?: (wf: WorkflowDefinition) => void;
 };
 
+// Polish round R4 — admin console copy is Turkish-first.
 const DRY_RUN_LABEL: Record<DryRunStatus, string> = {
-  idle: "Idle",
-  running: "Running",
-  ok: "Success",
-  error: "Failed",
+  idle: "Bekliyor",
+  running: "Çalışıyor",
+  ok: "Başarılı",
+  error: "Başarısız",
 };
 
 async function defaultSynthesize(
@@ -113,7 +114,7 @@ export default function WorkflowChatPanel({
   }
 
   const costCents = estimateCostCents(workflow);
-  const costLabel = `Estimated cost per run: $${(costCents / 100).toFixed(2)}`;
+  const costLabel = `Çalıştırma başına tahmini maliyet: $${(costCents / 100).toFixed(2)}`;
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -128,7 +129,7 @@ export default function WorkflowChatPanel({
 
       <aside className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-5 ring-1 ring-zinc-900/5 dark:border-zinc-800 dark:bg-zinc-950 dark:ring-zinc-50/10">
         <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-          Describe your workflow
+          Workflow&apos;unu anlat
         </h3>
 
         <textarea
@@ -137,7 +138,7 @@ export default function WorkflowChatPanel({
           rows={4}
           value={intent}
           onChange={(e) => setIntent(e.target.value)}
-          placeholder="e.g. Classify inbound Gmail messages and draft replies for sales-tagged emails."
+          placeholder="örn. Gelen Gmail mesajlarını sınıflandır ve satış etiketli e-postalara yanıt taslağı hazırla."
           className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-1 ring-zinc-900/5 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
         />
 
@@ -153,7 +154,7 @@ export default function WorkflowChatPanel({
           ) : (
             <PaperPlaneTilt className="size-4" />
           )}
-          Synthesize
+          Sentezle
         </button>
 
         {error && (
@@ -195,15 +196,15 @@ export default function WorkflowChatPanel({
 
         <div className="border-t border-zinc-200 pt-4 dark:border-zinc-800">
           <label className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Refine
+            Düzenle
           </label>
           <textarea
             data-testid="refine-textarea"
-            aria-label="Refine"
+            aria-label="Düzenle"
             rows={3}
             value={refineText}
             onChange={(e) => setRefineText(e.target.value)}
-            placeholder="Add a HITL step before sending."
+            placeholder="Göndermeden önce HITL (insan onayı) adımı ekle."
             className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-1 ring-zinc-900/5 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
           />
           <button
@@ -213,7 +214,7 @@ export default function WorkflowChatPanel({
             disabled={synthesising || refineText.trim() === ""}
             className="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
           >
-            Apply refinement
+            Düzenlemeyi uygula
           </button>
         </div>
 
@@ -227,7 +228,7 @@ export default function WorkflowChatPanel({
           >
             {dryRunStatus === "ok" && <CheckCircle className="size-4 text-emerald-600" />}
             {dryRunStatus === "error" && <WarningCircle className="size-4 text-red-600" />}
-            Dry run
+            Kuru çalıştır
           </button>
           <button
             type="button"
@@ -237,7 +238,7 @@ export default function WorkflowChatPanel({
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:enabled:bg-zinc-200"
           >
             <FloppyDisk className="size-4" />
-            Save
+            Kaydet
           </button>
         </div>
 

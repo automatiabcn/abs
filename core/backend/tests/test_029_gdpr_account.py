@@ -5,8 +5,12 @@ from __future__ import annotations
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from sqlmodel import Session, select
+
+# Resolve repo root dynamically so the suite works on any developer/CI host.
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 from app.db.models import (
     Consent,
@@ -138,7 +142,7 @@ def test_purge_script_dry_run_lists_candidates():
         )
         db.commit()
 
-    repo = "/Users/eneseserkan/Main/abs-server-product"
+    repo = str(REPO_ROOT)
     out = subprocess.run(
         [sys.executable, f"{repo}/infra/scripts/purge_deleted_accounts.py", "--dry-run"],
         capture_output=True,
@@ -190,7 +194,7 @@ def test_purge_script_executes_and_zeros_pii():
         )
         db.commit()
 
-    repo = "/Users/eneseserkan/Main/abs-server-product"
+    repo = str(REPO_ROOT)
     out = subprocess.run(
         [sys.executable, f"{repo}/infra/scripts/purge_deleted_accounts.py"],
         capture_output=True,

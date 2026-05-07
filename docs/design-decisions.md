@@ -39,7 +39,7 @@ SERVER'daki HER şey (75 MCP tool + 5 hook + 13 pipeline + RAG + judge + workflo
 
 ### 7. İki Paralel Track
 
-- **SERVER** (Enes üretim) — dokunulmuyor
+- **SERVER** (Automatia BCN üretim) — dokunulmuyor
 - **abs-server-product** (ürün) — temiz-oda
 - Oturum başlarken hangi track belirtilir
 

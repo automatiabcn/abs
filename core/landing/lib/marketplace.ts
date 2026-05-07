@@ -23,11 +23,14 @@ export interface PluginManifest {
   permissions: PluginPermissions;
 }
 
+// Polish round R4 — admin console is Turkish-first, so the marketplace
+// filter chips must speak the same language. English label kept inside the
+// type map for any future EN locale.
 export const PLUGIN_TYPE_LABEL: Record<PluginType, string> = {
-  "llm-provider": "LLM Provider",
-  "rag-source": "RAG Source",
-  "mcp-tool": "MCP Tool",
-  "workflow-template": "Workflow Template",
+  "llm-provider": "LLM Sağlayıcı",
+  "rag-source": "RAG Kaynağı",
+  "mcp-tool": "MCP Aracı",
+  "workflow-template": "Workflow Şablonu",
 };
 
 export const PLUGIN_TYPE_ORDER: PluginType[] = [

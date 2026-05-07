@@ -233,4 +233,4 @@ Bu senaryo, saatler süren manuel toplantı deşifre ve özetleme işini saniyel
 ---
 
 **Doküman versiyonu:** 4.0 — 2026-04-30 — Teknik referans 
-**Yazar:** Enes (Automatiabcn kurucusu)
+**Yazar:** Automatia BCN engineering

@@ -1,7 +1,7 @@
 # Stripe Billing Runbook
 
 Bu doküman ABS billing altyapısını canlıya alma + günlük operasyon
-sorumluluklarını tanımlar. Hedef kitle: solo operatör (Enes / Automatia BCN).
+sorumluluklarını tanımlar. Hedef kitle: solo operatör (Automatia BCN engineering).
 
 ---
 

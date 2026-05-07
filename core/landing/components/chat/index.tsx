@@ -566,22 +566,25 @@ export function MetaSidebar({ meta }: { meta: MetaEvent | null }) {
 
 // ───── EmptyState ───────────────────────────────────────────────────────
 
+// Polish round R8 — sample prompts must be customer-friendly. Earlier
+// set referenced an internal team channel and a role-specific security
+// doc; replaced with four neutral, role-agnostic openers.
 const SAMPLE_PROMPTS: { label: string; prompt: string }[] = [
   {
-    label: "Müşteri sorularını özetle",
-    prompt: "Geçen haftaki müşteri destek konuşmalarını üç başlıkta özetle.",
+    label: "İlk projeye başla",
+    prompt: "İlk projemde sana nasıl yardım edebilirim?",
   },
   {
-    label: "Slack thread analizi",
-    prompt: "Slack #ürün kanalındaki son 24 saatlik tartışmayı analiz et.",
+    label: "Haftalık ekip özeti",
+    prompt: "Bu hafta ekibimin yaptığı işleri kısa bir özetle anlat.",
   },
   {
-    label: "/rag güvenlik politikası",
-    prompt: "/rag CTO'nun yayınladığı güvenlik politikasını anlat",
+    label: "Müşteri görüşmesi hazırlığı",
+    prompt: "Yeni müşteri görüşmesi için hazırlık notları çıkar.",
   },
   {
-    label: "/code FastAPI endpoint",
-    prompt: "/code FastAPI ile health check endpoint'i yaz",
+    label: "/help — komutları gör",
+    prompt: "/help",
   },
 ];
 

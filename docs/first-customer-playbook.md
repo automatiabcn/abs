@@ -14,7 +14,7 @@ için 12 haftalık taktik playbook (sprint formatı).
 docker compose exec abs-backend python -c "
 from app.licensing import generate_license
 token = generate_license(
-    customer_id='beta:enes-friend-1',
+    customer_id='beta:friend-1',
     tier='self-host',
     seat_count=1,
     duration_days=180,  # 6 ay beta
@@ -53,7 +53,7 @@ send_license_email(to="friend@example.com", license_key=token, refund_url="")
 
 - 2× Türkiye CTO (LinkedIn network — kişisel ilişki)
 - 2× ES/EU indie hacker (Twitter dev community)
-- 1× kişisel kullanım — Enes kendi (dogfood doğrulama, en kritik beta)
+- 1× kişisel kullanım — kurucu dogfood (doğrulama, en kritik beta)
 
 ### 1.3 Beta feedback toplama
 
@@ -91,7 +91,7 @@ kalitesi elde ediyorsunuz. ROI: 10 kişilik ekip → ~$1300/ay tasarruf.
 
 Demo (15 dk) için müsait misiniz?
 
-—Enes
+—Automatia BCN
 ```
 
 **Twitter/X (build-in-public):**
