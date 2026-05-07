@@ -147,3 +147,81 @@ async def demo_status_endpoint() -> Dict[str, Any]:
     from app.licensing.demo import status as demo_status
 
     return demo_status()
+
+
+@router.get("/info", status_code=status.HTTP_200_OK)
+async def license_info() -> Dict[str, Any]:
+    """Polish round R6 — single source of truth for the Settings → Lisans tab.
+
+    Combines ``/status`` and ``/demo-status`` into one shape so the frontend
+    no longer hardcodes the tier / jti / expires_at trio. Returns ``demo``
+    payload when no key is configured so the UI can render the countdown
+    inline instead of issuing a second request.
+    """
+    from app.licensing.demo import status as demo_status
+
+    if not settings.license_key:
+        return {
+            "status": "demo",
+            "tier": None,
+            "jti": None,
+            "seat_count": None,
+            "expires_at": None,
+            "customer_id": None,
+            "demo": demo_status(),
+        }
+
+    try:
+        payload = verify_license(settings.license_key)
+    except HTTPException as exc:
+        det = str(exc.detail or "").lower()
+        if exc.status_code == status.HTTP_401_UNAUTHORIZED and (
+            "süresi dolmuş" in det or "expired" in det or "expirado" in det
+        ):
+            return {
+                "status": "expired",
+                "tier": None,
+                "jti": None,
+                "seat_count": None,
+                "expires_at": None,
+                "customer_id": None,
+                "demo": None,
+            }
+        return {
+            "status": "invalid",
+            "tier": None,
+            "jti": None,
+            "seat_count": None,
+            "expires_at": None,
+            "customer_id": None,
+            "demo": None,
+            "detail": exc.detail,
+        }
+
+    revoked_info = _check_revoked_at(payload.get("jti"))
+    if revoked_info is not None:
+        return {
+            "status": "revoked",
+            "tier": payload.get("tier"),
+            "jti": payload.get("jti"),
+            "seat_count": payload.get("seat_count"),
+            "expires_at": datetime.fromtimestamp(
+                payload["exp"], tz=timezone.utc
+            ).isoformat(),
+            "customer_id": payload.get("customer_id"),
+            "demo": None,
+            "revoked_at": revoked_info["revoked_at"],
+            "reason": revoked_info["reason"],
+        }
+
+    return {
+        "status": "licensed",
+        "tier": payload.get("tier"),
+        "jti": payload.get("jti"),
+        "seat_count": payload.get("seat_count"),
+        "expires_at": datetime.fromtimestamp(
+            payload["exp"], tz=timezone.utc
+        ).isoformat(),
+        "customer_id": payload.get("customer_id"),
+        "demo": None,
+    }
