@@ -1,9 +1,16 @@
 // Polish round R8 — sample prompt audit. The earlier set leaked the
-// founder's internal Slack channel ("#ürün") and a CTO-only doc. Brief
-// asks for four neutral openers a paying customer can make sense of.
+// founder's internal Slack channel ("#ürün") and a CTO-only doc.
+// FAZ B (2026-05-08) — SAMPLE_PROMPTS retired in favour of the
+// 48-prompt library; EmptyState now hydrates hero prompts from
+// lib/prompt-library.ts via HERO_PROMPT_IDS. The retired-leak invariant
+// on chat/index.tsx still holds; the brief's four legacy openers no
+// longer appear in source because the i18n empty-state copy replaced
+// them.
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+
+import { HERO_PROMPT_IDS, PROMPTS } from "@/lib/prompt-library";
 
 const CHAT_INDEX = readFileSync(
   resolve(__dirname, "../components/chat/index.tsx"),
@@ -20,23 +27,15 @@ describe("Chat EmptyState — sample prompts", () => {
     expect(CHAT_INDEX).not.toContain("CTO'nun yayınladığı güvenlik");
   });
 
-  it("includes the brief's four customer-facing openers", () => {
-    const expected = [
-      "İlk projemde sana nasıl yardım edebilirim?",
-      "Bu hafta ekibimin yaptığı işleri",
-      "Yeni müşteri görüşmesi için hazırlık",
-      "/help",
-    ];
-    for (const phrase of expected) {
-      expect(
-        CHAT_INDEX.includes(phrase),
-        `sample prompts missing phrase: ${phrase}`,
-      ).toBe(true);
-    }
+  it("hydrates hero prompts from the prompt library", () => {
+    expect(CHAT_INDEX).toContain("HERO_PROMPT_IDS");
+    expect(CHAT_INDEX).not.toContain("const SAMPLE_PROMPTS");
   });
 
-  it("still defines exactly one SAMPLE_PROMPTS array", () => {
-    const matches = CHAT_INDEX.match(/const SAMPLE_PROMPTS\b/g) ?? [];
-    expect(matches.length).toBe(1);
+  it("hero prompt ids each resolve to a real prompt-library entry", () => {
+    expect(HERO_PROMPT_IDS.length).toBe(8);
+    for (const id of HERO_PROMPT_IDS) {
+      expect(PROMPTS.find((p) => p.id === id)).toBeDefined();
+    }
   });
 });
