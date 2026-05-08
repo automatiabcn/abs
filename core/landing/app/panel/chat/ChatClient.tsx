@@ -12,7 +12,7 @@
 // chrome bundle.
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -24,6 +24,8 @@ import {
   MessageInput,
   MetaSidebar,
 } from "@/components/chat";
+import { PromptLibrary } from "@/components/chat/PromptLibrary";
+import type { PromptLang } from "@/lib/prompt-library";
 import {
   createSession,
   deleteSession,
@@ -144,6 +146,27 @@ export default function ChatClient() {
     [setInput, send],
   );
 
+  // FAZ B (2026-05-08) — prompt-library drawer state. The drawer mounts
+  // to the right of <main>; toggled from the chat sidebar footer + the
+  // empty-state CTA. `lang` reads from localStorage on first paint and
+  // defaults to "en" so the bundle is never blocked on hydration.
+  const [showPromptLibrary, setShowPromptLibrary] = useState(false);
+  const [lang, setLang] = useState<PromptLang>("en");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("abs_pref_lang");
+    if (stored === "tr" || stored === "es" || stored === "en") {
+      setLang(stored);
+    }
+  }, []);
+  const handlePickFromLibrary = useCallback(
+    (prompt: string) => {
+      setInput(prompt);
+      setShowPromptLibrary(false);
+    },
+    [setInput],
+  );
+
   const sessions = sessionsQuery.data ?? [];
   const activeId = sessionId ?? initialSessionId;
   const showEmpty = messages.length === 0 && !isStreaming;
@@ -160,6 +183,7 @@ export default function ChatClient() {
         onNew={() => newSession.mutate()}
         onDelete={(id) => removeSession.mutate(id)}
         isLoading={sessionsQuery.isLoading}
+        onShowPrompts={() => setShowPromptLibrary((v) => !v)}
       />
       <main className="flex min-w-0 flex-1 flex-col">
         {sessionsQuery.isError && (
@@ -195,7 +219,11 @@ export default function ChatClient() {
 
         <section className="flex-1 overflow-y-auto px-6 py-6">
           {showEmpty ? (
-            <EmptyState onPick={handlePickPrompt} />
+            <EmptyState
+              onPick={handlePickPrompt}
+              lang={lang}
+              onShowAll={() => setShowPromptLibrary(true)}
+            />
           ) : (
             <motion.div
               initial={{ opacity: 0 }}
@@ -252,6 +280,13 @@ export default function ChatClient() {
         </footer>
       </main>
       <MetaSidebar meta={lastMeta} />
+      {showPromptLibrary && (
+        <PromptLibrary
+          lang={lang}
+          onPick={handlePickFromLibrary}
+          onClose={() => setShowPromptLibrary(false)}
+        />
+      )}
     </div>
   );
 }
