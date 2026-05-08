@@ -66,6 +66,11 @@ PLATFORMS="${RELEASE_PLATFORMS:-linux/amd64}"
 echo "[release] platforms=${PLATFORMS}"
 
 # 3. Backend image — Cython compile + source strip in production stage.
+#    The Dockerfile's builder stage hashes the produced verifier.so and
+#    bakes it into /etc/abs.verifier.hash; tamper_check.py reads that
+#    file at boot. Patch A (2026-05-08) — pilot Round 5 found the
+#    earlier env-var gate silently disabled in production, so the
+#    file-based gate now ships in every release image.
 echo "=== Building ${BACKEND_IMAGE}:${VERSION} ==="
 docker buildx build \
   --platform "${PLATFORMS}" \
