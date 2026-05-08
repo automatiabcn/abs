@@ -1,0 +1,26 @@
+{
+	# Customer-facing reverse proxy. The site address is sourced from the
+	# customer's .env via $ABS_PUBLIC_HOSTNAME (e.g. abs.acme.com).
+	# Caddy auto-provisions a Let's Encrypt certificate via the HTTP-01
+	# challenge as long as port 80 + 443 are reachable from the public
+	# internet. Override with `tls internal` for pre-DNS smoke tests.
+	admin off
+	# email is required for ACME contact + revocation notices.
+	email {$ABS_ACME_EMAIL:admin@example.com}
+}
+
+{$ABS_PUBLIC_HOSTNAME} {
+	# Q12 R3 route split. Backend exposes API + setup wizard + auth + MCP
+	# transport on FastAPI (port 8000). Everything else (marketing pages
+	# + Next.js admin panels under /admin/*) goes to the landing image
+	# (Next.js standalone on port 3000).
+	@backend path /v1/* /auth/* /setup* /healthz /mcp* /static/* /panel /panel/* /api/inngest /api/inngest/*
+	handle @backend {
+		reverse_proxy backend:8000
+	}
+
+	# Default: marketing + Next.js admin under /admin/*.
+	handle {
+		reverse_proxy landing:3000
+	}
+}
