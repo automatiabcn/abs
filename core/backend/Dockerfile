@@ -45,9 +45,12 @@ RUN if [ "${ABS_COMPILE_CYTHON}" = "1" ]; then \
         rm -f app/licensing/verifier.py \
               app/licensing/fingerprint.py \
               app/observability/quota_monitor.py && \
-        echo "[build] license-critical .py source removed"; \
+        echo "[build] license-critical .py source removed" && \
+        sha256sum app/licensing/verifier.cpython-*.so | cut -c1-64 > /tmp/verifier.hash && \
+        echo "[build] verifier.so hash: $(cat /tmp/verifier.hash)"; \
     else \
-        echo "[build] cython skipped (ABS_COMPILE_CYTHON!=1)"; \
+        echo "[build] cython skipped (ABS_COMPILE_CYTHON!=1)" && \
+        : > /tmp/verifier.hash; \
     fi
 
 FROM base AS runtime
@@ -72,6 +75,12 @@ COPY --from=builder /install /usr/local
 # guarantees the production image never sees the .py source files for
 # license-critical modules when ABS_COMPILE_CYTHON=1.
 COPY --from=builder /app/app /app/app
+# Patch A (P1, 2026-05-08) — verifier.so hash, written by the builder
+# stage RUN block above. Empty file when ABS_COMPILE_CYTHON=0 (dev
+# images skip the tamper gate). tamper_check.py reads this file at
+# boot; an attacker who edits the .so flips its sha256 and the gate
+# panics. Path is hard-coded in app/licensing/tamper_check.py.
+COPY --from=builder /tmp/verifier.hash /etc/abs.verifier.hash
 # CJ-006 — first-boot RSA keypair + demo license bootstrap
 COPY scripts/entrypoint.sh /usr/local/bin/abs-entrypoint
 RUN chmod +x /usr/local/bin/abs-entrypoint && \

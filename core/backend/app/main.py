@@ -128,9 +128,12 @@ async def lifespan(_app: FastAPI):
         except Exception:
             pass
 
-    # Q12 IP-Hardening R4 — verifier tamper check.
-    # No-op when ABS_VERIFIER_HASH is unset (dev) or
-    # ABS_TAMPER_CHECK_DISABLED=1 (test). Panics on mismatch in prod.
+    # Q12 IP-Hardening R4 + Patch A (2026-05-08) — verifier tamper check.
+    # Production: reads /etc/abs.verifier.hash (written by Dockerfile
+    # builder stage from the shipped .so) and panics on mismatch.
+    # No-op when neither /etc/abs.verifier.hash nor ABS_VERIFIER_HASH
+    # is set (dev) or when ABS_TAMPER_CHECK_DISABLED=1 (test).
+    # Exception propagates — boot must fail on tamper detection.
     try:
         from app.licensing.tamper_check import assert_self_integrity
 
