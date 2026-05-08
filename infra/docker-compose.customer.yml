@@ -1,20 +1,64 @@
-# Q12 IP-Hardening R3 — customer-facing compose.
-# Pulls pre-built images from ghcr.io. NO source on customer side, NO
-# build context — fork is impossible because customers never see Python
-# or Next.js source. Founder dev workflow stays on docker-compose.yml.
+# =============================================================================
+# ABS Customer Stack — pull-image-only deployment.
+# -----------------------------------------------------------------------------
+# Customers run this compose. NO source code, NO build context: forking is
+# impossible because backend (FastAPI) and landing (Next.js) ship as
+# pre-built images on GitHub Container Registry. Founder dev workflow
+# stays on infra/docker-compose.yml (which has build: contexts).
+# Q12 IP-Hardening R3 reference: docs/RUNBOOK_HETZNER_PILOT.md.
+# -----------------------------------------------------------------------------
+# Required env vars (set these in `.env` next to this file):
+#   ABS_LICENSE_KEY      — your signed license JWT, sent in a separate
+#                          email after purchase. Paste the full token on
+#                          one line, no quotes. The backend phones home
+#                          to validate it on every boot (fail-open for
+#                          7 days if the activation server is offline).
+#   ABS_PUBLIC_HOSTNAME  — your domain (e.g. abs.mycompany.com) or, for
+#                          a no-DNS smoke test, a sslip.io alias such as
+#                          203-0-113-7.sslip.io.
+#   ABS_PUBLIC_URL       — full https URL (https://${ABS_PUBLIC_HOSTNAME}).
+#                          Next.js needs this for absolute links + canonical.
+#   ABS_ACME_EMAIL       — Let's Encrypt contact email for cert renewal
+#                          notices. Required by Caddy ACME defaults.
+#   ABS_VERSION          — image tag, default 1.0.0-rc2. Don't change unless
+#                          your support contact tells you to.
+#   ABS_VAULT_KEY        — 32-byte base64 secret encrypting the local vault
+#                          (provider keys, OAuth state). Generate once with
+#                          `openssl rand -base64 32` then keep it backed up.
+#
+# First-run checklist:
+#   1. Create .env with the keys listed above.
+#   2. cat ghcr_pull.token | docker login ghcr.io -u <your-github-user> --password-stdin
+#   3. docker compose pull
+#   4. docker compose up -d
+#   5. Visit https://${ABS_PUBLIC_HOSTNAME}/setup to finish admin onboarding
+#      (the license itself is already loaded from ABS_LICENSE_KEY at boot).
+# =============================================================================
 
 services:
+  # ---------------------------------------------------------------------------
+  # backend — FastAPI app (auth, MCP gateway, RAG, billing, admin API).
+  # Runs the license verifier on boot and pre-warms Cerbos PDP. Internal
+  # port 8000 only; Caddy proxies /v1/*, /auth/*, /setup*, /healthz, /mcp*.
+  # ---------------------------------------------------------------------------
   backend:
     image: ghcr.io/enzoemir1/abs-backend:${ABS_VERSION:-latest}
     pull_policy: always
     env_file: .env
     expose:
+      # Internal-only — Caddy is the only edge. Never publish 8000.
       - "8000"
     volumes:
+      # abs-data: license cache, RSA keys, SQLite RAG index, audit log.
       - abs-data:/app/data
+      # abs-vault-key: 32-byte secret used to AES-GCM encrypt vault rows.
+      # Mounted read-only; the backend doesn't need to rotate it at runtime.
       - abs-vault-key:/app/vault-key:ro
     restart: unless-stopped
     healthcheck:
+      # Python urllib probe — `curl`/`wget` are stripped from the image to
+      # shrink IP surface. /healthz returns 200 only after license + DB
+      # + Cerbos pre-warm succeed, so this gates downstream services.
       test:
         - "CMD"
         - "python"
@@ -24,21 +68,34 @@ services:
       timeout: 5s
       retries: 6
 
+  # ---------------------------------------------------------------------------
+  # landing — Next.js standalone build (marketing pages + /panel admin UI).
+  # Talks to backend over the docker network at http://backend:8000.
+  # Caddy routes everything that isn't a backend path here.
+  # ---------------------------------------------------------------------------
   landing:
     image: ghcr.io/enzoemir1/abs-landing:${ABS_VERSION:-latest}
     pull_policy: always
     env_file: .env
     environment:
+      # Internal API base URL — Next.js server-side calls hit backend
+      # directly inside the docker network (faster than going via Caddy).
       ABS_BACKEND_URL: "http://backend:8000"
+      # Public origin — used for absolute URLs, OG tags, canonical links.
       NEXT_PUBLIC_SITE_URL: "${ABS_PUBLIC_URL:-https://abs.local}"
+      # Disable Next telemetry on customer hosts (privacy + offline air-gap).
       NEXT_TELEMETRY_DISABLED: "1"
+      # Bind on all interfaces so the docker DNS name resolves.
       HOSTNAME: "0.0.0.0"
     expose:
       - "3000"
     depends_on:
       backend:
+        # Don't start landing until backend is healthy — otherwise the
+        # /panel pages 500 because /v1/license/info isn't ready yet.
         condition: service_healthy
     healthcheck:
+      # Node-only HTTP check — no curl/wget in the standalone image.
       test:
         - "CMD"
         - "node"
@@ -49,20 +106,35 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # email-cron — out-of-band tick that ships transactional emails (digest,
+  # invoice receipts, NPS, password resets). Sleeps 5 min between runs.
+  # Reuses the backend image so license + vault unlock work identically.
+  # ---------------------------------------------------------------------------
   email-cron:
     image: ghcr.io/enzoemir1/abs-backend:${ABS_VERSION:-latest}
     pull_policy: always
     env_file: .env
     command: ["sh", "-c", "while true; do python infra/scripts/email_tick.py; sleep 300; done"]
     volumes:
+      # Shares abs-data so the cron sees the same DB/license as backend.
       - abs-data:/app/data
       - abs-vault-key:/app/vault-key:ro
+      # Mounts the script directory read-only — script lives in the image
+      # but bind-mounting allows hot-patching without re-pulling.
       - ./scripts:/app/infra/scripts:ro
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # caddy — reverse proxy + automatic Let's Encrypt TLS.
+  # Reads infra/Caddyfile (must be `infra/Caddyfile.customer` copied to
+  # ./Caddyfile next to this compose).
+  # Ports 80 + 443 must be reachable from the public internet for
+  # ACME HTTP-01 challenge to succeed.
+  # ---------------------------------------------------------------------------
   caddy:
     image: caddy:2
     env_file: .env
@@ -72,14 +144,23 @@ services:
       landing:
         condition: service_healthy
     ports:
+      # 80 must stay open for ACME HTTP-01 — Caddy auto-redirects to 443.
       - "80:80"
+      # 443: live HTTPS. Cert auto-renewed every ~60 days.
       - "443:443"
     volumes:
+      # Caddyfile is bind-mounted read-only so customers can edit it without
+      # rebuilding the caddy image (e.g. add basic auth on /panel).
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # caddy-data: persists ACME account + issued certs across restarts.
+      # Losing this volume forces a full re-issue — back it up nightly.
       - caddy-data:/data
+      # caddy-config: Caddy's autosaved running config (rare but useful).
       - caddy-config:/config
     restart: unless-stopped
 
+# Named volumes — managed by docker, persist across `docker compose down`.
+# Run `docker compose down -v` to wipe them (license + certs go too).
 volumes:
   abs-data:
   abs-vault-key:
