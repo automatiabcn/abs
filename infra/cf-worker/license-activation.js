@@ -2,11 +2,13 @@
 // Bindings:
 //   ABS_LICENSE_KV — KV namespace 'abs-license-state'
 // Endpoints:
-//   POST /v1/activate         — first-boot activation (license + machine_fp)
-//   POST /v1/heartbeat        — 24h ping (license still valid?)
-//   POST /v1/admin/revoke     — founder admin: kill a license
-//   GET  /v1/admin/list-active — founder admin: list active customers
-//   GET  /health              — uptime probe
+//   POST /v1/activate           — first-boot activation (license + machine_fp)
+//   POST /v1/heartbeat          — 24h ping (license still valid?)
+//   POST /v1/admin/revoke       — founder admin: kill a license
+//   GET  /v1/admin/list-active  — founder admin: list active customers
+//   GET  /v1/stripe-event/check — webhook idempotency dedup probe (admin auth)
+//   POST /v1/stripe-event/mark  — webhook idempotency state writer (admin auth)
+//   GET  /health                — uptime probe
 
 const PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAl5BvFEnugu006q6sledL
@@ -185,6 +187,67 @@ async function handleAdminList(req, env) {
   return jsonResponse({ count: active.length, records: active });
 }
 
+// Stripe webhook idempotency store. Key = `stripe_event:<event_id>`, TTL 30d
+// (Stripe retry window 3d, 30d gives ample margin). Reuses admin Bearer auth.
+async function handleStripeEventCheck(req, env) {
+  if (!(await checkAdminAuth(req))) {
+    return jsonResponse({ error: "unauthorized" }, 401);
+  }
+  const url = new URL(req.url);
+  const eventId = url.searchParams.get("event_id");
+  if (!eventId) {
+    return jsonResponse({ error: "event_id_required" }, 400);
+  }
+  const rec = await env.ABS_LICENSE_KV.get(`stripe_event:${eventId}`, { type: "json" });
+  if (!rec) {
+    return jsonResponse({ processed: false, exists: false });
+  }
+  return jsonResponse({
+    processed: rec.status === "processed",
+    exists: true,
+    status: rec.status,
+    event_type: rec.event_type,
+    received_at: rec.received_at,
+    processed_at: rec.processed_at || null,
+    error: rec.error || null,
+  });
+}
+
+async function handleStripeEventMark(req, env) {
+  if (!(await checkAdminAuth(req))) {
+    return jsonResponse({ error: "unauthorized" }, 401);
+  }
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonResponse({ error: "invalid_json" }, 400);
+  }
+  const { event_id, event_type, status, error } = body;
+  if (!event_id || !status) {
+    return jsonResponse({ error: "event_id_and_status_required" }, 400);
+  }
+  if (!["received", "processed", "failed"].includes(status)) {
+    return jsonResponse({ error: "invalid_status" }, 400);
+  }
+
+  const key = `stripe_event:${event_id}`;
+  const existing = await env.ABS_LICENSE_KV.get(key, { type: "json" });
+  const now = Date.now();
+  const record = {
+    event_id,
+    event_type: event_type || existing?.event_type || "unknown",
+    received_at: existing?.received_at || now,
+    status,
+    processed_at: status === "processed" ? now : existing?.processed_at || null,
+    error: error || null,
+  };
+  await env.ABS_LICENSE_KV.put(key, JSON.stringify(record), {
+    expirationTtl: 30 * 86400,
+  });
+  return jsonResponse({ ok: true, event_id, status, server_time: now });
+}
+
 export default {
   async fetch(req, env) {
     if (req.method === "OPTIONS") {
@@ -207,6 +270,12 @@ export default {
     }
     if (url.pathname === "/v1/admin/list-active" && req.method === "GET") {
       return handleAdminList(req, env);
+    }
+    if (url.pathname === "/v1/stripe-event/check" && req.method === "GET") {
+      return handleStripeEventCheck(req, env);
+    }
+    if (url.pathname === "/v1/stripe-event/mark" && req.method === "POST") {
+      return handleStripeEventMark(req, env);
     }
 
     return jsonResponse({ error: "not_found", path: url.pathname }, 404);
