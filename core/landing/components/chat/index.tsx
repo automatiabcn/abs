@@ -46,6 +46,14 @@ import type {
   SessionListItem,
   ToolCall,
 } from "@/lib/chat-stream";
+import {
+  CATEGORY_ICONS,
+  HERO_PROMPT_IDS,
+  PROMPT_CATEGORIES,
+  PROMPTS,
+  type PromptItem,
+  type PromptLang,
+} from "@/lib/prompt-library";
 
 // ───── ProviderChip ─────────────────────────────────────────────────────
 
@@ -402,6 +410,7 @@ export function ChatSidebar({
   onNew,
   onDelete,
   isLoading,
+  onShowPrompts,
 }: {
   sessions: SessionListItem[];
   activeId?: number;
@@ -409,6 +418,10 @@ export function ChatSidebar({
   onNew: () => void;
   onDelete: (id: number) => void;
   isLoading: boolean;
+  // FAZ B (2026-05-08) — chat sidebar exposes a footer button that
+  // toggles the right-side PromptLibrary drawer in the parent. Optional
+  // so non-chat consumers (e.g. workflow chat panel) keep working.
+  onShowPrompts?: () => void;
 }) {
   const [filter, setFilter] = useState("");
   const visible = useMemo(
@@ -491,6 +504,19 @@ export function ChatSidebar({
           </ul>
         )}
       </div>
+      {onShowPrompts && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onShowPrompts}
+          data-test="chat-prompts-toggle"
+          className="mt-3 justify-start gap-2 border-t border-border/60 pt-3 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <Sparkles className="h-4 w-4 text-primary" />
+          Prompt kütüphanesi
+        </Button>
+      )}
     </aside>
   );
 }
@@ -573,72 +599,113 @@ export function MetaSidebar({ meta }: { meta: MetaEvent | null }) {
 
 // ───── EmptyState ───────────────────────────────────────────────────────
 
-// Polish round R8 — sample prompts must be customer-friendly. Earlier
-// set referenced an internal team channel and a role-specific security
-// doc; replaced with four neutral, role-agnostic openers.
-const SAMPLE_PROMPTS: { label: string; prompt: string }[] = [
-  {
-    label: "İlk projeye başla",
-    prompt: "İlk projemde sana nasıl yardım edebilirim?",
+// FAZ B (2026-05-08) — empty chat state now surfaces eight hero prompts
+// (one per category from lib/prompt-library.ts) plus a "show all" CTA
+// that opens the right-side PromptLibrary drawer. Replaces the four
+// hardcoded TR openers from Polish R8; the older neutral openers were
+// fine but did not scale and offered no discoverability for the 48
+// curated prompts the library now ships with.
+const EMPTY_STATE_COPY: Record<
+  PromptLang,
+  { title: string; subtitle: string; cta: string; tip: string }
+> = {
+  en: {
+    title: "Start chatting with AI",
+    subtitle:
+      "Cascade router fails over across 6 providers. Slash commands invoke MCP tools.",
+    cta: "Browse all 48 prompts",
+    tip: "Tip: open the command palette with ⌘K",
   },
-  {
-    label: "Haftalık ekip özeti",
-    prompt: "Bu hafta ekibimin yaptığı işleri kısa bir özetle anlat.",
+  tr: {
+    title: "AI ile konuşmaya başlayın",
+    subtitle:
+      "Cascade router 6 sağlayıcı arasında otomatik geçiş yapar. Slash komutlarıyla MCP tool'larını çağırabilirsiniz.",
+    cta: "48 prompt'un tümünü gör",
+    tip: "İpucu: ⌘K ile komut paletini aç",
   },
-  {
-    label: "Müşteri görüşmesi hazırlığı",
-    prompt: "Yeni müşteri görüşmesi için hazırlık notları çıkar.",
+  es: {
+    title: "Empieza a hablar con la IA",
+    subtitle:
+      "El cascade router conmuta entre 6 proveedores. Los comandos slash invocan herramientas MCP.",
+    cta: "Ver los 48 prompts",
+    tip: "Sugerencia: abre la paleta de comandos con ⌘K",
   },
-  {
-    label: "/help — komutları gör",
-    prompt: "/help",
-  },
-];
+};
 
 export function EmptyState({
   onPick,
+  lang = "en",
+  onShowAll,
 }: {
   onPick: (prompt: string) => void;
+  // FAZ B — default "en" so existing callers without the prop fall back
+  // to English copy. ChatClient passes the customer's preferred lang.
+  lang?: PromptLang;
+  // FAZ B — clicking the CTA opens the PromptLibrary drawer. Optional
+  // so non-chat consumers (workflow chat panel) keep their old behaviour.
+  onShowAll?: () => void;
 }) {
+  const heroes = useMemo(
+    () => HERO_PROMPT_IDS.map((id) => PROMPTS.find((p) => p.id === id)).filter(
+      (p): p is PromptItem => Boolean(p),
+    ),
+    [],
+  );
+  const copy = EMPTY_STATE_COPY[lang];
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32 }}
       data-test="chat-empty"
-      className="mx-auto flex max-w-2xl flex-col items-center justify-center gap-6 px-6 py-16 text-center"
+      className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-6 px-6 py-16 text-center"
     >
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
         <Sparkles className="h-7 w-7 text-primary" />
       </div>
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight">
-          AI ile konuşmaya başlayın
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Cascade router 6 sağlayıcı arasında otomatik geçiş yapar. Slash
-          komutlarıyla MCP tool'larını çağırabilirsiniz.
-        </p>
+        <h2 className="text-2xl font-semibold tracking-tight">{copy.title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{copy.subtitle}</p>
       </div>
-      <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
-        {SAMPLE_PROMPTS.map((s) => (
-          <button
-            key={s.label}
-            type="button"
-            onClick={() => onPick(s.prompt)}
-            data-test="chat-sample-prompt"
-            className="rounded-xl border border-border bg-card/60 p-4 text-left text-sm transition-colors hover:border-primary/50 hover:bg-card"
-          >
-            <div className="mb-1 flex items-center gap-2 text-xs font-medium text-primary">
-              <ArrowDownToLine className="h-3 w-3" />
-              {s.label}
-            </div>
-            <div className="text-muted-foreground">{s.prompt}</div>
-          </button>
-        ))}
+      <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {heroes.map((h) => {
+          const cat = PROMPT_CATEGORIES.find((c) => c.id === h.category);
+          const Icon = cat ? CATEGORY_ICONS[cat.iconName] : ArrowDownToLine;
+          return (
+            <button
+              key={h.id}
+              type="button"
+              onClick={() => onPick(h.prompt[lang])}
+              data-test="chat-sample-prompt"
+              data-prompt-id={h.id}
+              className="rounded-xl border border-border bg-card/60 p-4 text-left text-sm transition-colors hover:border-primary/50 hover:bg-card"
+            >
+              <div className="mb-1 flex items-center gap-2 text-xs font-medium text-primary">
+                <Icon className="h-3.5 w-3.5" />
+                {h.title[lang]}
+              </div>
+              <div className="line-clamp-3 text-xs text-muted-foreground">
+                {h.description[lang]}
+              </div>
+            </button>
+          );
+        })}
       </div>
+      {onShowAll && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onShowAll}
+          data-test="chat-empty-show-all"
+          className="gap-2"
+        >
+          <Sparkles className="h-4 w-4 text-primary" />
+          {copy.cta}
+        </Button>
+      )}
       <Badge variant="outline" className="text-xs">
-        İpucu: ⌘K ile komut paletini aç (Phase M)
+        {copy.tip}
       </Badge>
     </motion.div>
   );
