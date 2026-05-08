@@ -32,25 +32,34 @@ COPY setup.py ./
 RUN pip install --prefix=/install .
 
 # Q12 IP-Hardening R5 — compile license-critical modules to .so.
-# Gated behind ABS_COMPILE_CYTHON=1; default builds keep .py for fast
-# rebuilds + readable tracebacks during dev.
+# R3 — when compile is on, delete the matching .py files so only the
+# binary `.so` survives in the builder's app/ tree. The runtime stage
+# copies that tree, so the production image cannot leak source for
+# verifier / fingerprint / quota_monitor.
 ARG ABS_COMPILE_CYTHON=0
 RUN if [ "${ABS_COMPILE_CYTHON}" = "1" ]; then \
         pip install cython>=3.0 && \
         ABS_COMPILE_CYTHON=1 python setup.py build_ext --inplace && \
         echo "[build] cython compiled" && \
-        find app -name "*.c" -delete; \
+        find app -name "*.c" -delete && \
+        rm -f app/licensing/verifier.py \
+              app/licensing/fingerprint.py \
+              app/observability/quota_monitor.py && \
+        echo "[build] license-critical .py source removed"; \
     else \
         echo "[build] cython skipped (ABS_COMPILE_CYTHON!=1)"; \
     fi
 
 FROM base AS runtime
 # Q12 IP-Hardening R3 — build hash embedded at image build time.
-# scripts/build_with_hash.sh sets BUILD_HASH=<git-short>-<source-sha256>;
+# scripts/release.sh sets BUILD_HASH=<git-short>-<source-sha256>;
 # phone_home.py sends this to the activation server which can refuse
 # tampered images by comparing against the known-good registry.
 ARG BUILD_HASH=unknown
 ENV ABS_BUILD_HASH=${BUILD_HASH}
+LABEL abs.build.hash="${BUILD_HASH}" \
+      org.opencontainers.image.title="abs-backend" \
+      org.opencontainers.image.vendor="Automatia BCN"
 # 010 — apply_patch tool runtime'da `patch` binary'sine ihtiyaç duyar
 # 013 — sops/age binary'leri builder'dan kopyalanır (apt-install yerine küçük binary)
 RUN apt-get update && apt-get install -y --no-install-recommends patch ca-certificates \
@@ -59,13 +68,10 @@ COPY --from=builder /usr/local/bin/sops /usr/local/bin/sops
 COPY --from=builder /usr/local/bin/age /usr/local/bin/age
 COPY --from=builder /usr/local/bin/age-keygen /usr/local/bin/age-keygen
 COPY --from=builder /install /usr/local
-COPY app/ ./app/
-# Q7 — Neo4j integration (explicit pin alongside the broad COPY)
-COPY app/api/graph.py /app/app/api/graph.py
-COPY app/integrations/neo4j_client.py /app/app/integrations/neo4j_client.py
-# Q7 — Marketplace hardening
-COPY app/marketplace/sandbox.py /app/app/marketplace/sandbox.py
-COPY app/marketplace/cosign_verify.py /app/app/marketplace/cosign_verify.py
+# Q12 R3 — copy app from builder (post-Cython), NOT from host. This
+# guarantees the production image never sees the .py source files for
+# license-critical modules when ABS_COMPILE_CYTHON=1.
+COPY --from=builder /app/app /app/app
 # CJ-006 — first-boot RSA keypair + demo license bootstrap
 COPY scripts/entrypoint.sh /usr/local/bin/abs-entrypoint
 RUN chmod +x /usr/local/bin/abs-entrypoint && \
