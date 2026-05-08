@@ -1,0 +1,78 @@
+# Q12 IP-Hardening R3 — customer-facing compose.
+# Pulls pre-built images from ghcr.io. NO source on customer side, NO
+# build context — fork is impossible because customers never see Python
+# or Next.js source. Founder dev workflow stays on docker-compose.yml.
+
+services:
+  backend:
+    image: ghcr.io/enzoemir1/abs-backend:${ABS_VERSION:-latest}
+    pull_policy: always
+    env_file: .env
+    expose:
+      - "8000"
+    volumes:
+      - abs-data:/app/data
+      - abs-vault-key:/app/vault-key:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8000/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  landing:
+    image: ghcr.io/enzoemir1/abs-landing:${ABS_VERSION:-latest}
+    pull_policy: always
+    env_file: .env
+    environment:
+      ABS_BACKEND_URL: "http://backend:8000"
+      NEXT_PUBLIC_SITE_URL: "${ABS_PUBLIC_URL:-https://abs.local}"
+      NEXT_TELEMETRY_DISABLED: "1"
+      HOSTNAME: "0.0.0.0"
+    expose:
+      - "3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  email-cron:
+    image: ghcr.io/enzoemir1/abs-backend:${ABS_VERSION:-latest}
+    pull_policy: always
+    env_file: .env
+    command: ["sh", "-c", "while true; do python infra/scripts/email_tick.py; sleep 300; done"]
+    volumes:
+      - abs-data:/app/data
+      - abs-vault-key:/app/vault-key:ro
+      - ./scripts:/app/infra/scripts:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    depends_on:
+      backend:
+        condition: service_healthy
+      landing:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+volumes:
+  abs-data:
+  abs-vault-key:
+  caddy-data:
+  caddy-config:
