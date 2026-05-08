@@ -58,9 +58,17 @@ else
   exit 1
 fi
 
+# Customer fleet (Hetzner CX22, generic VPS) is x86_64 — pin platform so a
+# build from an Apple Silicon founder workstation does not silently ship an
+# arm64-only image that customer hosts can not pull. Override with
+# RELEASE_PLATFORMS=linux/amd64,linux/arm64 if a multi-arch push is needed.
+PLATFORMS="${RELEASE_PLATFORMS:-linux/amd64}"
+echo "[release] platforms=${PLATFORMS}"
+
 # 3. Backend image — Cython compile + source strip in production stage.
 echo "=== Building ${BACKEND_IMAGE}:${VERSION} ==="
 docker buildx build \
+  --platform "${PLATFORMS}" \
   --build-arg "BUILD_HASH=${COMBINED}" \
   --build-arg "ABS_COMPILE_CYTHON=1" \
   --label "org.opencontainers.image.source=https://github.com/${GHCR_USER}/abs" \
@@ -75,6 +83,7 @@ docker buildx build \
 # 4. Landing image — standalone Next.js, no IP to strip but keep parity.
 echo "=== Building ${LANDING_IMAGE}:${VERSION} ==="
 docker buildx build \
+  --platform "${PLATFORMS}" \
   --label "org.opencontainers.image.source=https://github.com/${GHCR_USER}/abs" \
   --label "org.opencontainers.image.revision=${GIT_HASH}" \
   --label "org.opencontainers.image.version=${VERSION}" \
