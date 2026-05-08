@@ -173,9 +173,16 @@ async function handleAdminList(req, env) {
   }
   const list = await env.ABS_LICENSE_KV.list({ prefix: "activation:" });
   const records = await Promise.all(
-    list.keys.map(async (k) => await env.ABS_LICENSE_KV.get(k.name, { type: "json" }))
+    list.keys.map(async (k) => {
+      const rec = await env.ABS_LICENSE_KV.get(k.name, { type: "json" });
+      if (!rec) return null;
+      const revoked = await env.ABS_LICENSE_KV.get(`revoked:${rec.jti}`);
+      if (revoked) return null;
+      return rec;
+    })
   );
-  return jsonResponse({ count: records.length, records });
+  const active = records.filter(Boolean);
+  return jsonResponse({ count: active.length, records: active });
 }
 
 export default {
