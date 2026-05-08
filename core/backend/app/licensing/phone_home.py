@@ -31,8 +31,11 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # Hardcoded — see PROMISE.md / IP-Hardening R2 spec section 8.
-ACTIVATION_URL = "https://license.automatiabcn.com/v1/activate"
-HEARTBEAT_URL = "https://license.automatiabcn.com/v1/heartbeat"
+# 2026-05-08: deployed on Cloudflare Workers (KV-backed). When
+# automatiabcn.com migrates to Cloudflare DNS, swap this for the custom
+# domain `license.automatiabcn.com` (Worker route already maps both).
+ACTIVATION_URL = "https://abs-license-activation.automatiaabs.workers.dev/v1/activate"
+HEARTBEAT_URL = "https://abs-license-activation.automatiaabs.workers.dev/v1/heartbeat"
 STATE_PATH = Path("/app/data/license_activation.json")
 
 # 7-day fail-open window (in days). After this, paid providers are blocked.
