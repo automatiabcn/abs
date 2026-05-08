@@ -65,6 +65,7 @@ services:
 
   caddy:
     image: caddy:2
+    env_file: .env
     depends_on:
       backend:
         condition: service_healthy
