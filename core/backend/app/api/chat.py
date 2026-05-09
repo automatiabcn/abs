@@ -35,7 +35,11 @@ from app.api.cascade import (
     CascadeResponse,
     _try_mock,
 )
-from app.licensing.phone_home import _load_activation_state
+from app.licensing.phone_home import (
+    cache_age_seconds,
+    force_heartbeat_sync,
+    get_cached_license_state,
+)
 from app.cascade.orchestrator import call_with_cascade
 from app.chat import (
     PIPELINE_OPTIONS,
@@ -472,26 +476,53 @@ def list_messages(
         ]
 
 
+_LICENSE_GATE_STALE_SECS = 30.0
+
+
 def _assert_license_ok() -> None:
-    """BUG-21 — pre-flight license cache gate.
+    """BUG-21 — pre-flight license cache gate with sync heartbeat refresh.
 
     The cascade router already gates paid providers via quota_monitor, but
-    the chat endpoint itself was happily streaming mock responses to a
-    revoked tenant for up to one heartbeat interval. Read the cached
-    activation state directly: a server-side revoke flips ``valid`` to
-    False on the next heartbeat, and this gate refuses chat traffic the
-    moment that flip is persisted (no waiting on quota_monitor's slower
-    paid-provider path). Missing state file means the heartbeat never
-    succeeded — fail-open, since cascade still has its own gates.
+    the chat endpoint itself used to happily stream mock responses to a
+    revoked tenant for up to one heartbeat interval (60s).  The new flow:
+
+    1. Read the cached activation state.
+    2. If the cache is missing, **or** older than
+       ``_LICENSE_GATE_STALE_SECS``, trigger a synchronous heartbeat
+       (best-effort, 3s timeout, 5s cooldown across requests). A
+       server-side revoke now propagates to the chat path within seconds
+       instead of waiting on the next 60s tick.
+    3. Refuse the request unless the (possibly refreshed) state has
+       ``valid=true``. Missing state after a refresh attempt means we
+       could not contact the activation server *and* never had a prior
+       successful activation — fail-closed so a fresh, never-activated
+       container cannot bypass the gate.
+
+    Honours ``ABS_TEST_MODE=1`` and ``ABS_LICENSE_GATE_DISABLED=1`` so
+    the unit suite + dev environments are unaffected.
     """
     import os
 
     if os.environ.get("ABS_TEST_MODE") == "1":
         return
-    state = _load_activation_state()
-    if state is None:
+    if os.environ.get("ABS_LICENSE_GATE_DISABLED") == "1":
         return
-    if state.get("valid") is False:
+
+    state = get_cached_license_state()
+    age = cache_age_seconds()
+    if not state or age is None or age > _LICENSE_GATE_STALE_SECS:
+        refreshed = force_heartbeat_sync()
+        if refreshed is not None:
+            state = refreshed
+
+    if not state:
+        # No prior activation, no successful sync refresh → fail-closed.
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="license_not_activated",
+        )
+
+    if not state.get("valid", False):
         reason = state.get("reason") or "license_invalid"
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

@@ -180,7 +180,7 @@ async def lifespan(_app: FastAPI):
             # sane. ABS_PHONE_HOME_DISABLED disables this loop too.
             interval = max(
                 15,
-                int(_ph_os.environ.get("ABS_HEARTBEAT_INTERVAL_SECS", "60")),
+                int(_ph_os.environ.get("ABS_HEARTBEAT_INTERVAL_SECS", "30")),
             )
 
             async def _heartbeat_loop(token: str, machine_fp: str, secs: int) -> None:
