@@ -29,11 +29,36 @@ REPO_ROOT="$(pwd)"
 # 0. Verify clean working tree — a dirty tree means the build hash would
 #    not match what's actually in git, and customers' phone-home would
 #    later flag the image as tampered.
+#
+#    The manifest_pubkey.pem fetch below is intentionally skipped from
+#    this gate (it's `*.pem`-gitignored), so the build context can pick
+#    it up without dirtying the tree.
 if [ -n "$(git status --porcelain)" ]; then
   echo "ERROR: working tree dirty — commit or stash changes before releasing." >&2
   git status --short >&2
   exit 1
 fi
+
+# 0.1 BUG-12 — fetch the founder's manifest pubkey from ai-pc into the
+# backend build context so Dockerfile can COPY it into the image at
+# /etc/abs/manifest_pubkey.pem. Without this every customer container
+# self-generates a keypair on first boot and rejects the founder's
+# license mint with "signature invalid".
+echo "[release] fetching manifest pubkey from ai-pc..."
+if ! ssh -o BatchMode=yes -o ConnectTimeout=5 ai-pc \
+      'cat ~/keys/abs-manifest-signing-public.pem' \
+      > core/backend/manifest_pubkey.pem; then
+  echo "ERROR: could not fetch manifest pubkey from ai-pc:~/keys/" >&2
+  rm -f core/backend/manifest_pubkey.pem
+  exit 1
+fi
+if [ ! -s core/backend/manifest_pubkey.pem ] \
+   || ! head -1 core/backend/manifest_pubkey.pem | grep -q "BEGIN PUBLIC KEY"; then
+  echo "ERROR: fetched manifest_pubkey.pem looks malformed" >&2
+  exit 1
+fi
+chmod 644 core/backend/manifest_pubkey.pem
+echo "[release] manifest pubkey staged ($(wc -c < core/backend/manifest_pubkey.pem) bytes)"
 
 GIT_HASH=$(git rev-parse HEAD)
 SHORT_HASH=${GIT_HASH:0:12}

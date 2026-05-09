@@ -81,6 +81,16 @@ COPY --from=builder /app/app /app/app
 # boot; an attacker who edits the .so flips its sha256 and the gate
 # panics. Path is hard-coded in app/licensing/tamper_check.py.
 COPY --from=builder /tmp/verifier.hash /etc/abs.verifier.hash
+# BUG-12 — image-baked manifest pubkey (founder-shared). When this file
+# is present, the entrypoint skips self-generation of /app/data/{pub,priv}.pem
+# so that licenses minted by the founder (signed with the founder's private
+# key on ai-pc) verify against this same pubkey on every customer install.
+# Pre-fix every container generated its own keypair on first boot, which
+# meant every customer rejected the founder's mint with "signature invalid".
+COPY manifest_pubkey.pem /etc/abs/manifest_pubkey.pem
+RUN chmod 644 /etc/abs/manifest_pubkey.pem
+ENV ABS_PUBLIC_KEY_PATH=/etc/abs/manifest_pubkey.pem
+
 # CJ-006 — first-boot RSA keypair + demo license bootstrap
 COPY scripts/entrypoint.sh /usr/local/bin/abs-entrypoint
 RUN chmod +x /usr/local/bin/abs-entrypoint && \

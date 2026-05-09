@@ -35,6 +35,7 @@ from app.api.cascade import (
     CascadeResponse,
     _try_mock,
 )
+from app.licensing.phone_home import _load_activation_state
 from app.cascade.orchestrator import call_with_cascade
 from app.chat import (
     PIPELINE_OPTIONS,
@@ -471,6 +472,33 @@ def list_messages(
         ]
 
 
+def _assert_license_ok() -> None:
+    """BUG-21 — pre-flight license cache gate.
+
+    The cascade router already gates paid providers via quota_monitor, but
+    the chat endpoint itself was happily streaming mock responses to a
+    revoked tenant for up to one heartbeat interval. Read the cached
+    activation state directly: a server-side revoke flips ``valid`` to
+    False on the next heartbeat, and this gate refuses chat traffic the
+    moment that flip is persisted (no waiting on quota_monitor's slower
+    paid-provider path). Missing state file means the heartbeat never
+    succeeded — fail-open, since cascade still has its own gates.
+    """
+    import os
+
+    if os.environ.get("ABS_TEST_MODE") == "1":
+        return
+    state = _load_activation_state()
+    if state is None:
+        return
+    if state.get("valid") is False:
+        reason = state.get("reason") or "license_invalid"
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"license_revoked:{reason}",
+        )
+
+
 @router.post("/completions")
 async def completions(
     body: ChatCompletionsRequest,
@@ -483,6 +511,7 @@ async def completions(
         raise HTTPException(
             status_code=400, detail="last_message_must_be_user"
         )
+    _assert_license_ok()
 
     admin_email = admin["sub"]
     tenant = _resolve_tenant(admin_email)
