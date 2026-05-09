@@ -13,7 +13,7 @@ import jwt
 
 from app.config import settings
 
-from .keys import load_private_key
+from .keys import assert_mint_keypair_pairs, load_private_key
 from .schemas import LicensePayload
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,10 @@ def generate_license(
     Returns:
         İmzalanmış JWT token (str).
     """
+    # BUG-12 — refuse to mint with a private key that does not pair with
+    # the image-baked founder pubkey. No-op in dev/test (no baked pubkey).
+    assert_mint_keypair_pairs()
+
     if valid_days > _EXCESSIVE_VALID_DAYS:
         logger.warning(
             "license_excessive_valid_days customer_id=%s valid_days=%d threshold=%d",
