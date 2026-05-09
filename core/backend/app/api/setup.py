@@ -37,6 +37,42 @@ from app.config import settings
 from app.licensing import verify_license
 from app.observability.audit import emit_event  # Q12-L23 sweep 4
 
+
+def _persist_customer_audit(
+    license_jti: str | None,
+    action: str,
+    detail: str | None = None,
+) -> None:
+    """BUG-24 — best-effort persistence to CustomerAuditEntry.
+
+    `emit_event` ships structured logs but never writes to the DB, which
+    is why the /v1/admin/audit/recent UI was perpetually empty after the
+    setup wizard ran. Writing the same lifecycle events into the
+    HMAC-chain audit table makes them surface in the admin viewer
+    without changing the broader emit_event contract.
+
+    Tolerates missing license_jti (pre-license setup steps fall back to
+    the literal `setup-pre-license` so the row is still queryable).
+    Failures are swallowed — audit must never block the wizard.
+    """
+    try:
+        from sqlmodel import Session
+
+        from app.db.models import CustomerAuditEntry
+        from app.db.session import get_engine
+
+        with Session(get_engine()) as db:
+            db.add(
+                CustomerAuditEntry(
+                    license_jti=(license_jti or "setup-pre-license")[:64],
+                    action=action[:64],
+                    detail=(detail or None) and detail[:512],
+                )
+            )
+            db.commit()
+    except Exception as exc:  # pragma: no cover — defensive only
+        logger.info("customer_audit_persist_skipped action=%s err=%s", action, exc)
+
 router = APIRouter(prefix="/v1/setup", tags=["setup"])
 logger = logging.getLogger(__name__)
 
@@ -444,6 +480,11 @@ async def step_license(body: LicenseBody, request: Request) -> Dict[str, Any]:
         resource_type="license",
         provider=str(payload.get("tier") or ""),
     )
+    _persist_customer_audit(
+        license_jti=str(payload.get("jti") or "") or None,
+        action="setup.license.activated",
+        detail=f"tier={payload.get('tier')} seats={payload.get('seat_count')}",
+    )
     return {"ok": True, "current_step": state["current_step"], "tier": payload.get("tier")}
 
 
@@ -497,6 +538,17 @@ async def step_anthropic(body: AnthropicBody, request: Request) -> Dict[str, Any
             assert body.anthropic_api_key is not None  # for type-checker
             settings.anthropic_api_key = body.anthropic_api_key
             _persist_encrypted_secret("anthropic_api_key", body.anthropic_api_key)
+            # BUG-15 — vault stores the secret but pydantic Settings only re-reads
+            # .env at boot, so an explicit env-var write is required for a clean
+            # restart to surface the key. Vault path is the encrypted-at-rest
+            # source of truth; .env is the boot-loader.
+            _persist_env_var("ABS_ANTHROPIC_API_KEY", body.anthropic_api_key)
+            # BUG-18 — Settings.anthropic_enabled defaults to False so that an
+            # operator who hasn't configured a key never silently calls the
+            # paid provider. When the wizard accepts a valid key we must flip
+            # the flag, otherwise the cascade router skips Anthropic forever.
+            settings.anthropic_enabled = True
+            _persist_env_var("ABS_ANTHROPIC_ENABLED", "true")
             state["data"]["anthropic_configured"] = True
             state["data"]["paid_skipped"] = False
         _advance(state, "anthropic")
@@ -507,6 +559,11 @@ async def step_anthropic(body: AnthropicBody, request: Request) -> Dict[str, Any
         outcome="success",
         resource_type="anthropic",
         provider="skipped" if body.skip_paid_providers else "configured",
+    )
+    _persist_customer_audit(
+        license_jti=str(state.get("data", {}).get("license", {}).get("jti") or "") or None,
+        action="setup.provider.anthropic",
+        detail="skipped" if body.skip_paid_providers else "configured",
     )
     return {
         "ok": True,
@@ -534,6 +591,11 @@ async def step_providers(body: ProvidersBody, request: Request) -> Dict[str, Any
             if value:
                 setattr(settings, field_name, value)
                 _persist_encrypted_secret(field_name, value)
+                # BUG-15 — same reason as the Anthropic step: pydantic Settings
+                # reads .env once at boot, so the vault write alone is not
+                # enough for the cascade router to pick up new keys after a
+                # container restart.
+                _persist_env_var(f"ABS_{field_name.upper()}", value)
                 configured.append(field_name)
         state["data"]["providers_configured"] = configured
         _advance(state, "providers")
@@ -544,6 +606,11 @@ async def step_providers(body: ProvidersBody, request: Request) -> Dict[str, Any
         outcome="success",
         resource_type="providers",
         count=len(configured),
+    )
+    _persist_customer_audit(
+        license_jti=str(state.get("data", {}).get("license", {}).get("jti") or "") or None,
+        action="setup.providers.configured",
+        detail=",".join(configured) if configured else "none",
     )
     return {"ok": True, "current_step": state["current_step"], "configured": configured}
 
