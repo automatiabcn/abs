@@ -73,22 +73,69 @@ __REPLACE_WITH_PAT_FROM_GITHUB__
 EOF
 chmod 600 "${KEYS_DIR}/ghcr_pull.token"
 
-echo "[3/5] Minting license JWT…"
+echo "[3/5] Minting license JWT (host Python, no backend container)…"
 if [ -n "${MACHINE_FP}" ]; then
-  MFP_ARG="machine_fp='${MACHINE_FP}'"
   echo "      machine_fp binding: ${MACHINE_FP:0:12}…"
 else
-  MFP_ARG="machine_fp=None"
   echo "      no machine_fp — legacy mode (license portable across hosts)"
 fi
-LICENSE_TOKEN=$(docker compose -f infra/docker-compose.yml exec -T backend \
-  python -c "
-from app.licensing import generate_license
-print(generate_license('${CUSTOMER_EMAIL}', tier='${TIER}', seat_count=${SEATS}, valid_days=${VALID_DAYS}, ${MFP_ARG}))
-" 2>/dev/null | tail -1)
 
-if [ -z "$LICENSE_TOKEN" ]; then
-  echo "ERROR: license mint failed — backend container running?"
+# Resolve RSA private key path. Order:
+#   1. $ABS_PRIVATE_KEY_PATH (explicit override)
+#   2. $HOME/.config/automatia/abs-manifest-signing-private.pem (founder local)
+#   3. ssh ai-pc:~/keys/abs-manifest-signing-private.pem (fetch to temp 0600 file)
+KEY_PATH=""
+TMP_KEY=""
+cleanup_tmp_key() {
+  if [ -n "${TMP_KEY}" ] && [ -f "${TMP_KEY}" ]; then
+    rm -f "${TMP_KEY}"
+  fi
+}
+trap cleanup_tmp_key EXIT
+
+if [ -n "${ABS_PRIVATE_KEY_PATH:-}" ] && [ -f "${ABS_PRIVATE_KEY_PATH}" ]; then
+  KEY_PATH="${ABS_PRIVATE_KEY_PATH}"
+  echo "      key source: \$ABS_PRIVATE_KEY_PATH"
+elif [ -f "${HOME}/.config/automatia/abs-manifest-signing-private.pem" ]; then
+  KEY_PATH="${HOME}/.config/automatia/abs-manifest-signing-private.pem"
+  echo "      key source: ${HOME}/.config/automatia/"
+elif ssh -o ConnectTimeout=3 -o BatchMode=yes ai-pc \
+       'test -f ~/keys/abs-manifest-signing-private.pem' 2>/dev/null; then
+  TMP_KEY="$(mktemp -t abs-mint-key.XXXXXX)"
+  chmod 600 "${TMP_KEY}"
+  ssh -o BatchMode=yes ai-pc 'cat ~/keys/abs-manifest-signing-private.pem' \
+    > "${TMP_KEY}"
+  if [ ! -s "${TMP_KEY}" ]; then
+    echo "ERROR: ssh fetch returned empty key"; exit 1
+  fi
+  KEY_PATH="${TMP_KEY}"
+  echo "      key source: ssh ai-pc (fetched to ${TMP_KEY})"
+else
+  echo "ERROR: RSA private key not found. Set ABS_PRIVATE_KEY_PATH, place"
+  echo "       the PEM at ~/.config/automatia/, or ensure ssh ai-pc works."
+  exit 1
+fi
+
+# Pre-flight: pyjwt + cryptography on host Python.
+if ! python3 -c "import jwt, cryptography" 2>/dev/null; then
+  echo "ERROR: host python3 missing pyjwt or cryptography."
+  echo "       Install with: pip3 install pyjwt cryptography"
+  exit 1
+fi
+
+LICENSE_TOKEN=$(
+  ABS_PRIVATE_KEY_PATH="${KEY_PATH}" \
+  MINT_EMAIL="${CUSTOMER_EMAIL}" \
+  MINT_TIER="${TIER}" \
+  MINT_SEATS="${SEATS}" \
+  MINT_VALID_DAYS="${VALID_DAYS}" \
+  MINT_MACHINE_FP="${MACHINE_FP}" \
+  python3 scripts/_mint_license.py 2>&1 | tail -1
+)
+
+if [ -z "$LICENSE_TOKEN" ] || [[ "$LICENSE_TOKEN" == *"Traceback"* ]] \
+   || [[ "$LICENSE_TOKEN" != *.*.* ]]; then
+  echo "ERROR: license mint failed — output: ${LICENSE_TOKEN}"
   exit 1
 fi
 

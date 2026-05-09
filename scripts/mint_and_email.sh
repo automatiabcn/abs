@@ -132,7 +132,7 @@ hdr "[4/7] Composing bilingual email payload"
 SUBJECT="Your ABS license is ready / ABS lisansınız hazır"
 TIER_DISPLAY="$TIER (real=$REAL_TIER seats=$SEATS valid_days=$VALID_DAYS)"
 SETUP_URL="https://automatiabcn.com/products/abs/setup-guide"
-SUPPORT_EMAIL="founder@automatiabcn.com"
+SUPPORT_EMAIL="info@automatiabcn.com"
 
 # HTML body — use a heredoc with no command substitution besides scalar vars.
 EMAIL_HTML=$(cat <<HTML
@@ -199,12 +199,12 @@ PAYLOAD="$(
   python3 - <<'PY'
 import json, os
 payload = {
-    "from": "Automatia BCN <hello@automatiabcn.com>",
+    "from": "Automatia BCN <info@automatiabcn.com>",
     "to": [os.environ["EMAIL"]],
     "subject": os.environ["SUBJECT"],
     "html": os.environ["HTML_BODY"],
     "text": os.environ["TEXT_BODY"],
-    "reply_to": ["founder@automatiabcn.com"],
+    "reply_to": ["info@automatiabcn.com"],
 }
 print(json.dumps(payload, ensure_ascii=False))
 PY
