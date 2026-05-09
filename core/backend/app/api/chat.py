@@ -548,8 +548,13 @@ async def completions(
     tenant = _resolve_tenant(admin_email)
     last_user_content = body.messages[-1].content
 
-    # Persist user message + create session before streaming so the panel
-    # sidebar reflects the conversation even if the client disconnects.
+    # BUG-40 — multi-turn chat history. Pre-fix the handler persisted
+    # only the last user message and shipped only that string to the
+    # cascade orchestrator, so the assistant lost prior context as soon
+    # as the client included earlier turns in body.messages. Now any
+    # messages in body.messages not already in DB get persisted, and
+    # the cascade prompt is rendered from the full history below.
+
     with Session(get_engine()) as db:
         if body.session_id:
             sess = _load_session(db, body.session_id, tenant)
@@ -558,17 +563,28 @@ async def completions(
         sess_id = sess.id
         sess_title = sess.title
 
-        user_msg = ChatMessage(
-            session_id=sess_id,
-            role="user",
-            content=last_user_content,
+        existing_count = int(
+            db.exec(
+                select(func.count(ChatMessage.id)).where(
+                    ChatMessage.session_id == sess_id
+                )
+            ).one()
+            or 0
         )
-        db.add(user_msg)
+        new_msgs = body.messages[existing_count:] if existing_count else list(body.messages)
+        for m in new_msgs:
+            db.add(
+                ChatMessage(
+                    session_id=sess_id,
+                    role=m.role,
+                    content=m.content,
+                )
+            )
         # Q12 / Brief 3 R4 — bump the sidebar denorm columns. The
         # assistant-message branch later adds another +1 on its own
         # commit, so user + assistant each contribute one.
         sess.last_activity_at = datetime.now(timezone.utc)
-        sess.message_count = (sess.message_count or 0) + 1
+        sess.message_count = (sess.message_count or 0) + len(new_msgs)
         db.add(sess)
         db.commit()
 
@@ -616,9 +632,26 @@ async def completions(
             if citations:
                 yield f'data: {json.dumps({"type": "citations", "citations": serialise_citations(citations)})}\n\n'
 
-        prompt_for_cascade = build_citation_prompt_block(
-            citations, user_message=last_user_content
-        )
+        # BUG-40 — multi-turn rendering. Build a "User: …\nAssistant: …"
+        # transcript from body.messages and append the citation-augmented
+        # last user line. Single-turn requests (one user msg) collapse
+        # to the previous behaviour: just the user content + citations.
+        if len(body.messages) > 1:
+            history_lines: list[str] = []
+            for m in body.messages[:-1]:
+                role_label = "User" if m.role == "user" else (
+                    "Assistant" if m.role == "assistant" else m.role.capitalize()
+                )
+                history_lines.append(f"{role_label}: {m.content}")
+            transcript = "\n".join(history_lines)
+            last_with_citations = build_citation_prompt_block(
+                citations, user_message=last_user_content
+            )
+            prompt_for_cascade = f"{transcript}\nUser: {last_with_citations}"
+        else:
+            prompt_for_cascade = build_citation_prompt_block(
+                citations, user_message=last_user_content
+            )
 
         # Q11-L10-002: emit a "thinking" frame before the cascade call
         # so the client (and any intermediate proxy / load balancer) sees
