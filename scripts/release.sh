@@ -58,11 +58,11 @@ else
   exit 1
 fi
 
-# Customer fleet (Hetzner CX22, generic VPS) is x86_64 — pin platform so a
-# build from an Apple Silicon founder workstation does not silently ship an
-# arm64-only image that customer hosts can not pull. Override with
-# RELEASE_PLATFORMS=linux/amd64,linux/arm64 if a multi-arch push is needed.
-PLATFORMS="${RELEASE_PLATFORMS:-linux/amd64}"
+# Multi-arch push so customers on x86_64 (Hetzner CX22 / generic Linux VPS)
+# AND Apple Silicon (M1/M2/M3/M4 dev boxes) can both `docker pull` without
+# `no matching manifest` errors. Override with RELEASE_PLATFORMS=linux/amd64
+# for amd64-only builds during emergency releases.
+PLATFORMS="${RELEASE_PLATFORMS:-linux/amd64,linux/arm64}"
 echo "[release] platforms=${PLATFORMS}"
 
 # 3. Backend image — Cython compile + source strip in production stage.
