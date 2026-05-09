@@ -3,14 +3,112 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""FastMCP sunucu instance'ı + tool kayıt noktası."""
+"""FastMCP sunucu instance'ı + tool kayıt noktası.
+
+BUG-38 (2026-05-09) — FastMCP defaults to ``host="127.0.0.1"`` which
+auto-enables DNS-rebinding protection with an allowlist of localhost
+variants only. External callers (Hetzner sslip.io, customer custom
+domains) hit `Invalid Host header` 421s before any tool ever runs.
+
+The fix is a configurable allowlist: localhost stays in for in-container
+healthchecks; we also allow ``*.sslip.io`` (IP-based pilots), the
+operator-configured ``settings.domain``, and any extra hosts from the
+``ABS_MCP_ALLOWED_HOSTS`` env (comma-separated). Wildcard ``*`` disables
+the gate entirely for customers who terminate TLS upstream and trust
+their network.
+"""
 
 from __future__ import annotations
 
+import os
+
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
+
+
+def _resolve_allowed_hosts() -> list[str]:
+    """Compose the host allowlist from settings + env.
+
+    Order:
+      1. Localhost variants (always — in-container healthcheck).
+      2. ``settings.domain`` (operator config) — both bare + ":*" pattern.
+      3. Wildcard ``*.sslip.io`` for IP-based pilots.
+      4. Extra hosts from ``ABS_MCP_ALLOWED_HOSTS`` (comma-separated).
+      5. ``ABS_MCP_ALLOWED_HOSTS=*`` short-circuits to disabled gate.
+    """
+
+    hosts: list[str] = [
+        "127.0.0.1",
+        "127.0.0.1:*",
+        "localhost",
+        "localhost:*",
+        "[::1]",
+        "[::1]:*",
+    ]
+
+    try:
+        from app.config import settings
+
+        domain = (settings.domain or "").strip()
+    except Exception:  # pragma: no cover — boot before settings load
+        domain = ""
+
+    if domain and domain != "abs.local":
+        hosts.append(domain)
+        hosts.append(f"{domain}:*")
+
+    # sslip.io family — wildcard subdomain pattern via "*.sslip.io"
+    # is not a TransportSecurityMiddleware feature, so we add the most
+    # common Hetzner pilot pattern explicitly. Customers on other
+    # sslip patterns extend via ABS_MCP_ALLOWED_HOSTS.
+    hosts.append("168.119.104.24.sslip.io")
+    hosts.append("168.119.104.24.sslip.io:*")
+
+    extra = os.environ.get("ABS_MCP_ALLOWED_HOSTS", "").strip()
+    if extra == "*":
+        return ["*"]
+    if extra:
+        for h in (x.strip() for x in extra.split(",")):
+            if h and h not in hosts:
+                hosts.append(h)
+                if ":*" not in h and not h.startswith("*"):
+                    hosts.append(f"{h}:*")
+    return hosts
+
+
+def _build_security() -> TransportSecuritySettings | None:
+    """Return the TransportSecuritySettings for FastMCP.
+
+    Returns ``None`` (gate disabled) when the allowlist contains the
+    wildcard ``*`` so customers who terminate TLS upstream can opt out.
+    """
+    hosts = _resolve_allowed_hosts()
+    if "*" in hosts:
+        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+
+    origins: list[str] = []
+    for h in hosts:
+        if h.endswith(":*") or h in {"127.0.0.1", "localhost", "[::1]"}:
+            continue
+        origins.append(f"https://{h}")
+        origins.append(f"http://{h}")
+
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=hosts,
+        allowed_origins=origins,
+    )
+
 
 # streamable_http_path="/" → inner route root'ta; ana app /mcp altına mount eder.
-mcp_server = FastMCP("Automatia ABS", streamable_http_path="/")
+# host="0.0.0.0" so the auto-localhost-only allowlist is NOT applied
+# (we install our own via transport_security).
+mcp_server = FastMCP(
+    "Automatia ABS",
+    streamable_http_path="/",
+    host="0.0.0.0",
+    transport_security=_build_security(),
+)
 
 
 def http_app():
