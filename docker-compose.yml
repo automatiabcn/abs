@@ -1,0 +1,109 @@
+# =============================================================================
+# ABS Customer Stack — root-level compose for the `git clone && docker compose up`
+# customer flow. Functionally identical to infra/docker-compose.customer.yml,
+# with paths adjusted for execution from repo root.
+# -----------------------------------------------------------------------------
+# Customer flow:
+#   git clone https://github.com/automatiabcn/abs.git
+#   cd abs
+#   cp .env.example .env
+#   nano .env   # paste ABS_LICENSE_KEY (from welcome email) + provider API keys
+#   docker compose up -d
+#   # backend healthy in ~30-60s, then visit https://<your-domain>/setup
+#
+# IP surface: pull-image-only deployment. NO build context. Backend (FastAPI)
+# and landing (Next.js) ship as pre-built images on GHCR. Forking is impossible
+# — customers consume binaries, not source.
+#
+# Required .env vars (template in .env.example):
+#   ABS_LICENSE_KEY      — your signed license JWT (separate "license is ready" email)
+#   ABS_PUBLIC_HOSTNAME  — your domain (e.g. abs.mycompany.com) or sslip.io alias
+#   ABS_PUBLIC_URL       — full https URL (https://${ABS_PUBLIC_HOSTNAME})
+#   ABS_ACME_EMAIL       — Let's Encrypt contact email
+#   ABS_VAULT_KEY        — 32-byte base64; generate with `openssl rand -base64 32`
+#   ABS_VERSION          — image tag (default 1.0.0-rc2)
+#   plus at least one provider key — ANTHROPIC_API_KEY recommended
+# =============================================================================
+
+services:
+  backend:
+    image: ghcr.io/enzoemir1/abs-backend:${ABS_VERSION:-latest}
+    pull_policy: always
+    env_file: .env
+    expose:
+      - "8000"
+    volumes:
+      - abs-data:/app/data
+      - abs-vault-key:/app/vault-key:ro
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz',timeout=4).status==200 else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  landing:
+    image: ghcr.io/enzoemir1/abs-landing:${ABS_VERSION:-latest}
+    pull_policy: always
+    env_file: .env
+    environment:
+      ABS_BACKEND_URL: "http://backend:8000"
+      NEXT_PUBLIC_SITE_URL: "${ABS_PUBLIC_URL:-https://abs.local}"
+      NEXT_TELEMETRY_DISABLED: "1"
+      HOSTNAME: "0.0.0.0"
+    expose:
+      - "3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD"
+        - "node"
+        - "-e"
+        - "require('http').get('http://127.0.0.1:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  email-cron:
+    image: ghcr.io/enzoemir1/abs-backend:${ABS_VERSION:-latest}
+    pull_policy: always
+    env_file: .env
+    command: ["sh", "-c", "while true; do python infra/scripts/email_tick.py; sleep 300; done"]
+    volumes:
+      - abs-data:/app/data
+      - abs-vault-key:/app/vault-key:ro
+      - ./infra/scripts:/app/infra/scripts:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    env_file: .env
+    depends_on:
+      backend:
+        condition: service_healthy
+      landing:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/Caddyfile.customer:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+volumes:
+  abs-data:
+  abs-vault-key:
+  caddy-data:
+  caddy-config:
