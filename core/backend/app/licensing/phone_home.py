@@ -116,6 +116,102 @@ def _load_activation_state() -> dict[str, Any] | None:
         return None
 
 
+# BUG-21 — public read API + cache-age helper. The chat handler calls
+# ``get_cached_license_state()`` on every /v1/chat/completions request and
+# falls back to a synchronous heartbeat (``force_heartbeat_sync``) when
+# the cache is older than the half-interval, so a server-side revoke
+# blocks chat traffic in well under a heartbeat cycle instead of within
+# 60s. Pre-fix the chat gate read the cache directly and could serve a
+# revoked license for up to one full interval.
+
+# Cooldown so a burst of chat requests does not fan-out into N parallel
+# heartbeat HTTP calls. One synchronous refresh per ``_SYNC_HB_COOLDOWN``
+# seconds is enough to make revoke responsive.
+_SYNC_HB_COOLDOWN = 5.0
+_last_sync_hb_ts: float = 0.0
+
+
+def get_cached_license_state() -> dict[str, Any]:
+    """Return the cached activation state as a plain dict.
+
+    Empty dict means "no cache yet" — callers must treat that as
+    "license not yet validated" rather than "fail-open". Use
+    :func:`cache_age_seconds` to decide whether to trigger a sync
+    heartbeat refresh.
+    """
+
+    state = _load_activation_state()
+    if state is None:
+        return {}
+    return state
+
+
+def cache_age_seconds() -> float | None:
+    """Wall-clock age of the cached state. ``None`` if no cache."""
+
+    state = _load_activation_state()
+    if not state:
+        return None
+    try:
+        last_seen = datetime.fromisoformat(state["last_check"])
+    except (KeyError, ValueError):
+        return None
+    return (datetime.now(timezone.utc) - last_seen).total_seconds()
+
+
+def force_heartbeat_sync(timeout_s: float = 3.0) -> dict[str, Any] | None:
+    """Synchronously refresh activation state from the CF Worker.
+
+    Runs in a private event loop so it works from sync FastAPI handlers
+    too. Honours a short cooldown so concurrent chat requests do not
+    fan-out into a heartbeat storm. Returns the new state on success,
+    ``None`` on cooldown / missing license / network failure (caller
+    falls back to whatever the cache already says).
+    """
+
+    global _last_sync_hb_ts
+
+    now = time.monotonic()
+    if now - _last_sync_hb_ts < _SYNC_HB_COOLDOWN:
+        return None
+    _last_sync_hb_ts = now
+
+    try:
+        from app.config import settings
+        from app.licensing.fingerprint import collect_machine_fingerprint
+    except Exception as exc:  # pragma: no cover — import-time degraded host
+        logger.warning("sync_heartbeat_setup_failed: %s", exc)
+        return None
+
+    token = (settings.license_key or "").strip()
+    if not token:
+        return None
+
+    try:
+        fp = collect_machine_fingerprint()
+    except Exception as exc:  # pragma: no cover
+        logger.warning("sync_heartbeat_fp_failed: %s", exc)
+        return None
+
+    payload = {
+        "jti": _extract_jti(token),
+        "machine_fp": fp,
+        "build_hash": _read_build_hash(),
+        "timestamp": int(time.time()),
+    }
+    try:
+        with httpx.Client(timeout=timeout_s) as client:
+            response = client.post(HEARTBEAT_URL, json=payload)
+            response.raise_for_status()
+            data = response.json()
+    except Exception as exc:
+        logger.info("sync_heartbeat_offline: %s", exc)
+        return None
+
+    _persist_activation_state(data)
+    return data
+
+
 def _check_offline_grace(exc: Exception) -> dict[str, Any]:
     """Decide whether to fail-open during a phone-home outage.
 
