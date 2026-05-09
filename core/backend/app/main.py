@@ -3,6 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -149,6 +150,7 @@ async def lifespan(_app: FastAPI):
     # production builds ignore this knob via Cython compile).
     import os as _ph_os
 
+    _heartbeat_task = None  # for cleanup in finally
     if (
         _settings.license_key
         and _ph_os.environ.get("ABS_TEST_MODE") != "1"
@@ -156,7 +158,7 @@ async def lifespan(_app: FastAPI):
     ):
         try:
             from app.licensing.fingerprint import collect_machine_fingerprint
-            from app.licensing.phone_home import activate_online
+            from app.licensing.phone_home import activate_online, heartbeat_online
 
             fp = collect_machine_fingerprint()
             result = await activate_online(_settings.license_key, fp)
@@ -169,6 +171,39 @@ async def lifespan(_app: FastAPI):
                 _lf_logger.critical(
                     "license_offline_grace_expired — paid providers blocked"
                 )
+
+            # BUG-21 — periodic heartbeat so a server-side revoke
+            # propagates to /v1/chat/completions within one interval
+            # instead of waiting for the next manual restart. Default
+            # 60s for live pilots; production deployments override via
+            # ABS_HEARTBEAT_INTERVAL_SECS to keep CF Worker pressure
+            # sane. ABS_PHONE_HOME_DISABLED disables this loop too.
+            interval = max(
+                15,
+                int(_ph_os.environ.get("ABS_HEARTBEAT_INTERVAL_SECS", "60")),
+            )
+
+            async def _heartbeat_loop(token: str, machine_fp: str, secs: int) -> None:
+                while True:
+                    try:
+                        await asyncio.sleep(secs)
+                        hb = await heartbeat_online(token, machine_fp)
+                        _lf_logger.info(
+                            "license_heartbeat valid=%s reason=%s",
+                            hb.get("valid"),
+                            hb.get("reason"),
+                        )
+                    except asyncio.CancelledError:
+                        raise
+                    except Exception as exc:
+                        _lf_logger.warning("heartbeat_loop_error: %s", exc)
+
+            _heartbeat_task = asyncio.create_task(
+                _heartbeat_loop(_settings.license_key, fp, interval)
+            )
+            _lf_logger.info(
+                "license heartbeat scheduler started interval=%ds", interval
+            )
         except Exception as exc:
             _lf_logger.warning("phone_home_skipped: %s", exc)
     # 014 — provider configs YAML yükle (boot, idempotent)
@@ -230,6 +265,15 @@ async def lifespan(_app: FastAPI):
         async with mcp_server.session_manager.run():
             yield
     finally:
+        # BUG-21 — cancel the heartbeat loop before shutdown so a stuck
+        # CF Worker call doesn't hold the lifespan-finalisation open.
+        if _heartbeat_task is not None:
+            _heartbeat_task.cancel()
+            try:
+                await _heartbeat_task
+            except (asyncio.CancelledError, Exception):
+                pass
+
         # T-018 — flush LangFuse + close Cerbos pre-warmed client
         try:
             from app.observability.langfuse_client import close_langfuse

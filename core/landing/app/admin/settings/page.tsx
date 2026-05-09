@@ -75,19 +75,51 @@ function FormRow({
   );
 }
 
+type SetupStatus = {
+  data?: {
+    domain?: { domain?: string | null; ssl_mode?: string | null } | null;
+    admin?: { email?: string | null } | null;
+  } | null;
+};
+
 function GeneralTab() {
+  // BUG-22 — pre-fix the form rendered "Acme Corp" / "acme" / "abs.acme.com"
+  // as hard-coded demo data, which made customers think their setup wizard
+  // input was lost. The wizard persists `domain` + admin email under
+  // /v1/setup/status, so the form now hydrates from there. Tenant name +
+  // slug are not collected by the wizard yet — leave them empty rather
+  // than continue to display fake demo identities.
+  const [domain, setDomain] = useState<string>("");
+  const [sslMode, setSslMode] = useState<string>("internal");
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/v1/setup/status", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: SetupStatus | null) => {
+        if (cancelled || !data) return;
+        const d = data?.data?.domain?.domain;
+        const m = data?.data?.domain?.ssl_mode;
+        if (d) setDomain(d);
+        if (m) setSslMode(m);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="space-y-4">
       <FormRow label="Tenant adı" hint="Müşteri görünür ad">
         <Input
-          defaultValue="Acme Corp"
+          placeholder="Henüz yapılandırılmadı"
           data-test="settings-tenant-name"
           aria-label="Tenant adı"
         />
       </FormRow>
       <FormRow label="Slug" hint="URL ön eki — değiştirilemez">
         <Input
-          value="acme"
+          value="default"
           disabled
           className="font-mono"
           aria-label="Slug"
@@ -95,14 +127,16 @@ function GeneralTab() {
       </FormRow>
       <FormRow label="Domain" hint="Caddy reverse proxy hedefi">
         <Input
-          defaultValue="abs.acme.com"
+          value={domain}
+          onChange={(e) => setDomain(e.target.value)}
+          placeholder="Henüz yapılandırılmadı"
           data-test="settings-domain"
           aria-label="Domain"
         />
       </FormRow>
       <FormRow label="SSL durumu">
         <Badge variant="outline" className="border-emerald-500/40 text-emerald-300">
-          Otomatik (Let's Encrypt)
+          {sslMode === "acme" ? "Otomatik (Let's Encrypt)" : "Internal (self-signed)"}
         </Badge>
       </FormRow>
       <Button data-test="settings-save-general">Kaydet</Button>
@@ -459,7 +493,7 @@ function BrandingTab() {
         <Input type="color" defaultValue="#6366f1" className="h-10 w-24" />
       </FormRow>
       <FormRow label="Login sayfası mesajı">
-        <Input defaultValue="Acme Corp ABS panel" />
+        <Input placeholder="ABS Panel — özel mesajınızı buraya girin" />
       </FormRow>
       <Button>Kaydet</Button>
     </div>
