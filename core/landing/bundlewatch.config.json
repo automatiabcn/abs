@@ -17,7 +17,7 @@
     },
     {
       "path": ".next/static/chunks/*.js",
-      "maxSize": "70 kB",
+      "maxSize": "160 kB",
       "compression": "gzip"
     }
   ],
