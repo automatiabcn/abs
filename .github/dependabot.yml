@@ -1,0 +1,118 @@
+version: 2
+
+# Public repo supply-chain protection.
+#
+# Auto-PR for security + version updates across 5 ecosystems:
+#   - npm (root + 2 sub-projects: landing + backend has no npm)
+#   - pip (Python backend)
+#   - github-actions (workflow file SHA pinning suggestions)
+#   - docker (compose + Dockerfile base images)
+#
+# Strategy:
+#   - security updates: auto-PR ASAP (Dependabot default).
+#   - version updates: weekly on Mondays, batch into one PR per ecosystem
+#     to limit notification noise.
+#   - GitHub Actions: pin to commit SHA (Trivy supply-chain attack lesson —
+#     immutable references prevent tag-hijack class of attacks).
+
+updates:
+  # ----- npm -----
+  - package-ecosystem: "npm"
+    directory: "/core/landing"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Madrid"
+    open-pull-requests-limit: 5
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+      development-dependencies:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+    labels:
+      - "dependencies"
+      - "ecosystem:npm"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Madrid"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ecosystem:npm-root"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # ----- pip -----
+  - package-ecosystem: "pip"
+    directory: "/core/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Madrid"
+    open-pull-requests-limit: 5
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+      development-dependencies:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+    labels:
+      - "dependencies"
+      - "ecosystem:pip"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # ----- github-actions (SHA pinning suggestions) -----
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Madrid"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ecosystem:actions"
+      - "security:supply-chain"
+    commit-message:
+      prefix: "chore(actions)"
+      include: "scope"
+
+  # ----- docker (Dockerfile + compose) -----
+  - package-ecosystem: "docker"
+    directory: "/core/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Madrid"
+    labels:
+      - "dependencies"
+      - "ecosystem:docker"
+
+  - package-ecosystem: "docker"
+    directory: "/core/landing"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Madrid"
+    labels:
+      - "dependencies"
+      - "ecosystem:docker"
