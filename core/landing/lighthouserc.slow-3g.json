@@ -8,7 +8,7 @@
         "http://localhost:3000/showcase",
         "http://localhost:3000/onboarding"
       ],
-      "startServerCommand": "npx next start",
+      "startServerCommand": "cd core/landing && npx next start",
       "startServerReadyPattern": "ready in",
       "numberOfRuns": 3,
       "settings": {
