@@ -138,11 +138,27 @@ async function handleHeartbeat(req, env) {
   const activationKey = `activation:${jti}:${machine_fp}`;
   const existing = await env.ABS_LICENSE_KV.get(activationKey, { type: "json" });
   if (existing) {
-    existing.last_seen = Date.now();
-    existing.heartbeat_count = (existing.heartbeat_count || 0) + 1;
-    await env.ABS_LICENSE_KV.put(activationKey, JSON.stringify(existing), {
-      expirationTtl: 90 * 86400,
-    });
+    // CF Free Tier KV write budget: 1000/day. Backend heartbeat is 30s
+    // (BUG-21 fix) → 2880 hb/day per customer instance. Writing
+    // last_seen on EVERY heartbeat would burn 2.88x the daily write
+    // budget per customer. Throttle: only re-write the activation
+    // record when the cached last_seen is older than 1 hour. With this
+    // throttle one customer is 24 writes/day instead of 2880, so the
+    // free-tier budget supports ~40 concurrent customer instances
+    // before pushing into paid plan territory. Read counts are
+    // unaffected (still 2 reads per heartbeat, well under 100k/day).
+    // Revoke propagation is unaffected (revoke is a separate write
+    // path on /v1/admin/revoke, and the heartbeat read of revoked:${jti}
+    // still fires every cycle).
+    const HEARTBEAT_WRITE_THROTTLE_MS = 60 * 60 * 1000; // 1h
+    const lastSeenAge = Date.now() - (existing.last_seen || 0);
+    if (lastSeenAge >= HEARTBEAT_WRITE_THROTTLE_MS) {
+      existing.last_seen = Date.now();
+      existing.heartbeat_count = (existing.heartbeat_count || 0) + 1;
+      await env.ABS_LICENSE_KV.put(activationKey, JSON.stringify(existing), {
+        expirationTtl: 90 * 86400,
+      });
+    }
   }
 
   return jsonResponse({ valid: true, server_time: Date.now() });
