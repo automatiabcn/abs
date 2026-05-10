@@ -26,11 +26,15 @@ def test_customer_compose_email_cron_has_process_healthcheck():
     ).read_text(encoding="utf-8")
     cron_block = _slice(compose, "email-cron:")
     assert "healthcheck:" in cron_block
-    assert "pgrep -f 'email_tick" in cron_block or "pgrep -f \"email_tick" in cron_block
+    # debian-slim backend image has no procps → no pgrep. We walk
+    # /proc/[0-9]*/cmdline + grep for email_tick instead.
+    assert "/proc/[0-9]*" in cron_block
+    assert "email_tick" in cron_block
 
 
 def test_root_compose_email_cron_has_process_healthcheck():
     compose = (REPO_ROOT / "docker-compose.yml").read_text(encoding="utf-8")
     cron_block = _slice(compose, "email-cron:")
     assert "healthcheck:" in cron_block
-    assert "pgrep -f 'email_tick" in cron_block or "pgrep -f \"email_tick" in cron_block
+    assert "/proc/[0-9]*" in cron_block
+    assert "email_tick" in cron_block

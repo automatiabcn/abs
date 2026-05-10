@@ -162,7 +162,13 @@ services:
     # unhealthy forever (failing streak 58+ on Hetzner pre-rc7).
     # Override with a process probe that matches the sleep-loop.
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f 'email_tick|email_cron|email_dispatcher' || exit 1"]
+      # The backend image is debian:slim without procps, so pgrep is
+      # missing. Walk /proc/[0-9]*/cmdline (every Linux container mounts
+      # /proc) and look for the email_tick string in any process's
+      # argv. POSIX sh + grep are guaranteed.
+      test:
+        - "CMD-SHELL"
+        - "for d in /proc/[0-9]*; do grep -q email_tick \"$$d/cmdline\" 2>/dev/null && exit 0; done; exit 1"
       interval: 30s
       timeout: 5s
       retries: 3
