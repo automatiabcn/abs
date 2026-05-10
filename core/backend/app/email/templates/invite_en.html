@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatia ABS invitation</title>
+    <!-- subject: Join {{ tenant_name }} on Automatia ABS -->
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #f9f9f9;">
+    <div style="max-width: 600px; margin: 20px auto; padding: 24px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.06);">
+        <h2 style="color: #222; margin-top: 0;">You've been invited to {{ tenant_name }}</h2>
+        <p>Hello,</p>
+        <p><strong>{{ invited_by }}</strong> has invited you to join the
+            <strong>{{ tenant_name }}</strong> tenant on Automatia ABS as
+            <strong>{{ role_label }}</strong>.</p>
+        <p>Click the button below to accept the invitation. The link is
+            valid for 7 days.</p>
+        <p style="margin: 24px 0;">
+            <a href="{{ magic_url }}"
+               style="display: inline-block; padding: 12px 20px; background: #111; color: #fff;
+                      text-decoration: none; border-radius: 6px; font-weight: 600;">
+                Accept invitation
+            </a>
+        </p>
+        <p>Or paste this URL into your browser:</p>
+        <p style="font-family: Menlo, Consolas, monospace; word-break: break-all;
+                  background: #f4f4f4; padding: 10px; border-radius: 4px; font-size: 12px;">
+            {{ magic_url }}
+        </p>
+        <p style="margin-top: 24px;">If you did not expect this invitation, you can safely ignore it.</p>
+        <p style="margin-top: 28px;">— The Automatia ABS team</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin-top: 20px;">
+        <p style="font-size: 0.8em; color: #888; text-align: center;">
+            This email was sent automatically. Questions? Reach us at
+            <a href="mailto:support@automatiabcn.com" style="color: #2b6cb0;">support@automatiabcn.com</a>.
+        </p>
+    </div>
+</body>
+</html>

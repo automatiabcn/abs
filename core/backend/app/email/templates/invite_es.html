@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitación a Automatia ABS</title>
+    <!-- subject: {{ tenant_name }} te ha invitado a Automatia ABS -->
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #f9f9f9;">
+    <div style="max-width: 600px; margin: 20px auto; padding: 24px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.06);">
+        <h2 style="color: #222; margin-top: 0;">Te han invitado a {{ tenant_name }}</h2>
+        <p>Hola,</p>
+        <p><strong>{{ invited_by }}</strong> te ha invitado a unirte al
+            tenant <strong>{{ tenant_name }}</strong> en Automatia ABS con el rol
+            <strong>{{ role_label }}</strong>.</p>
+        <p>Haz clic en el botón para aceptar la invitación. El enlace es
+            válido durante 7 días.</p>
+        <p style="margin: 24px 0;">
+            <a href="{{ magic_url }}"
+               style="display: inline-block; padding: 12px 20px; background: #111; color: #fff;
+                      text-decoration: none; border-radius: 6px; font-weight: 600;">
+                Aceptar invitación
+            </a>
+        </p>
+        <p>O pega esta URL en tu navegador:</p>
+        <p style="font-family: Menlo, Consolas, monospace; word-break: break-all;
+                  background: #f4f4f4; padding: 10px; border-radius: 4px; font-size: 12px;">
+            {{ magic_url }}
+        </p>
+        <p style="margin-top: 24px;">Si no esperabas esta invitación, puedes ignorar este mensaje.</p>
+        <p style="margin-top: 28px;">— El equipo de Automatia ABS</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin-top: 20px;">
+        <p style="font-size: 0.8em; color: #888; text-align: center;">
+            Este correo se envió automáticamente. ¿Preguntas?
+            <a href="mailto:support@automatiabcn.com" style="color: #2b6cb0;">support@automatiabcn.com</a>.
+        </p>
+    </div>
+</body>
+</html>

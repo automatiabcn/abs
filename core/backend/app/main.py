@@ -28,6 +28,8 @@ from app.api.admin import usage as admin_usage_router  # BUG-V1 — /v1/admin/us
 from app.api.admin import users as admin_users_router  # Q8.5 finalize — /v1/admin/users
 from app.api.admin import widget_pricing as admin_widget_pricing_router  # Q12-R84
 from app.api.admin import providers_status as admin_providers_status_router  # Polish R7
+from app.api.admin import tenant as admin_tenant_router  # Sprint 2C ITEM-1
+from app.api.admin import providers_save as admin_providers_save_router  # Sprint 2C ITEM-2
 from app.api import demo_mode as demo_mode_router
 from app.api.demo_panel import cascade as panel_cascade_router
 from app.api.demo_panel import pipeline as panel_pipeline_router
@@ -329,6 +331,8 @@ app.include_router(admin_users_router.router)  # Q8.5 finalize — /v1/admin/use
 app.include_router(admin_usage_router.router)  # BUG-V1 — /v1/admin/usage
 app.include_router(admin_widget_pricing_router.router)  # Q12-R84 — /v1/admin/widget_pricing
 app.include_router(admin_providers_status_router.router)  # Polish R7 — /v1/admin/providers/status
+app.include_router(admin_tenant_router.router)  # Sprint 2C ITEM-1 — /v1/admin/tenant + /v1/admin/branding
+app.include_router(admin_providers_save_router.router)  # Sprint 2C ITEM-2 — POST /v1/admin/providers/{id}
 app.include_router(beta_portal_router.router)
 app.include_router(beta_admin_router.router)
 app.include_router(demo_mode_router.router)
