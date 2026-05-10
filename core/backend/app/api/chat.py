@@ -661,8 +661,27 @@ async def completions(
         yield f'data: {json.dumps({"type": "thinking"})}\n\n'
 
         t0 = time.perf_counter()
+        # Sprint 2C ITEM-3 — qual_* dedicated multi-model pipelines.
+        from app.pipelines.qual import QUAL_HANDLERS as _QUAL_HANDLERS
+        from app.pipelines.qual import run_qual_pipeline as _run_qual
+
+        qual_meta: Optional[Dict] = None
         try:
-            cascade_resp = await _run_cascade(prompt_for_cascade)
+            if pipeline_used in _QUAL_HANDLERS:
+                qual_result = await _run_qual(pipeline_used, prompt_for_cascade)
+                qual_meta = qual_result.to_dict()
+                cascade_resp = CascadeResponse(
+                    completion=qual_result.completion or "",
+                    provider=(qual_result.providers[-1] if qual_result.providers else "qual"),
+                    fallback_chain=list(qual_result.providers) or ["qual"],
+                    tokens_used=0,
+                    mock=False,
+                    cached=False,
+                    elapsed_ms=qual_result.elapsed_ms,
+                    model=pipeline_used,
+                )
+            else:
+                cascade_resp = await _run_cascade(prompt_for_cascade)
         except HTTPException as exc:
             detail_str = str(exc.detail or "")
             if detail_str.startswith("no_providers_configured"):
@@ -744,6 +763,22 @@ async def completions(
             "free": cost_info["free"],
             "citation_count": len(citations),
         }
+        if qual_meta is not None:
+            meta["qual"] = {
+                "verified": qual_meta.get("verified", False),
+                "revisions": qual_meta.get("revisions", 0),
+                "stages": qual_meta.get("stages", []),
+                "fallback": qual_meta.get("fallback", False),
+                "fallback_reason": qual_meta.get("fallback_reason"),
+            }
+        if qual_meta is not None:
+            meta["qual"] = {
+                "verified": qual_meta.get("verified", False),
+                "revisions": qual_meta.get("revisions", 0),
+                "stages": qual_meta.get("stages", []),
+                "fallback": qual_meta.get("fallback", False),
+                "fallback_reason": qual_meta.get("fallback_reason"),
+            }
         yield f'data: {json.dumps(meta)}\n\n'
         yield 'data: [DONE]\n\n'
 

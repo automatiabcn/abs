@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatia ABS davetiye</title>
+    <!-- subject: {{ tenant_name }} sizi Automatia ABS'ye davet etti -->
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #f9f9f9;">
+    <div style="max-width: 600px; margin: 20px auto; padding: 24px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.06);">
+        <h2 style="color: #222; margin-top: 0;">{{ tenant_name }} sizi davet etti</h2>
+        <p>Merhaba,</p>
+        <p><strong>{{ invited_by }}</strong> sizi <strong>{{ tenant_name }}</strong>
+            tenant'ına <strong>{{ role_label }}</strong> rolüyle davet etti.</p>
+        <p>Aşağıdaki butona tıklayarak daveti kabul edin. Bağlantının
+            geçerlilik süresi 7 gündür.</p>
+        <p style="margin: 24px 0;">
+            <a href="{{ magic_url }}"
+               style="display: inline-block; padding: 12px 20px; background: #111; color: #fff;
+                      text-decoration: none; border-radius: 6px; font-weight: 600;">
+                Daveti kabul et
+            </a>
+        </p>
+        <p>Ya da bu URL'i tarayıcıya yapıştırın:</p>
+        <p style="font-family: Menlo, Consolas, monospace; word-break: break-all;
+                  background: #f4f4f4; padding: 10px; border-radius: 4px; font-size: 12px;">
+            {{ magic_url }}
+        </p>
+        <p style="margin-top: 24px;">Bu daveti beklemiyorduysanız mesajı yok sayabilirsiniz.</p>
+        <p style="margin-top: 28px;">— Automatia ABS ekibi</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin-top: 20px;">
+        <p style="font-size: 0.8em; color: #888; text-align: center;">
+            Bu e-posta otomatik gönderildi. Sorularınız için
+            <a href="mailto:support@automatiabcn.com" style="color: #2b6cb0;">support@automatiabcn.com</a>.
+        </p>
+    </div>
+</body>
+</html>
