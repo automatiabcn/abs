@@ -383,6 +383,57 @@ class User(SQLModel, table=True):
     claimed_at: Optional[datetime] = Field(default=None)
 
 
+class TenantInvite(SQLModel, table=True):
+    """Sprint 2B BUG-36 — pending tenant invite + magic-link hash.
+
+    The plaintext magic-link token is mailed to the recipient; only the
+    HMAC-SHA256 digest is stored here so a database read cannot recover
+    a usable token. ``status`` transitions:
+        pending  → invite created, awaiting consume
+        accepted → magic_claim succeeded; ``accepted_at`` populated
+        revoked  → admin revoked; ``revoked_at`` populated
+        expired  → consume attempt past ``expires_at`` (lazy update)
+    """
+
+    __tablename__ = "tenant_invites"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    invite_id: str = Field(index=True, unique=True, max_length=24)
+    email: str = Field(index=True, max_length=255)
+    role: str = Field(max_length=20)
+    tenant_id: str = Field(index=True, max_length=64)
+    invited_by: str = Field(max_length=255)
+    magic_token_hash: str = Field(unique=True, max_length=64)
+    expires_at: datetime
+    accepted_at: Optional[datetime] = Field(default=None)
+    revoked_at: Optional[datetime] = Field(default=None)
+    status: str = Field(max_length=20, default="pending")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+
+class TenantInstalledPlugin(SQLModel, table=True):
+    """Sprint 2B BUG-34 — durable record of a tenant's plugin install.
+
+    Marketplace install handler writes one row per ``(tenant, plugin)``
+    pair. ``uninstalled_at`` is set on /uninstall instead of deleting the
+    row so audit history stays intact.
+    """
+
+    __tablename__ = "tenant_installed_plugins"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: str = Field(index=True, max_length=64)
+    plugin_id: str = Field(index=True, max_length=64)
+    version: str = Field(max_length=32)
+    sandbox_container_id: Optional[str] = Field(default=None, max_length=64)
+    installed_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    uninstalled_at: Optional[datetime] = Field(default=None)
+
+
 class MintedTokenBlacklist(SQLModel, table=True):
     """Q10-L6-002 — revoked MCP integration tokens.
 

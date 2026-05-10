@@ -11,11 +11,10 @@
 // `initialData` so first paint already renders rows.
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-  Copy,
   Mail,
   Users as UsersIcon,
   UserCog,
@@ -56,29 +55,62 @@ async function fetchUsers(): Promise<UserRow[]> {
   return Array.isArray(data) ? data : (data.users ?? []);
 }
 
+interface InviteResponse {
+  invite_id: string;
+  email: string;
+  role: string;
+  tenant_id?: string;
+  status: "pending" | "accepted" | "revoked" | "expired";
+  expires_at?: string | null;
+}
+
+// Sprint 2B BUG-36 — real invite endpoint. The backend persists a
+// tenant_invites row, hashes the magic-link token (NEVER returned on
+// the wire), and emails the recipient. The operator only sees the
+// invite_id + expiry; the magic URL itself is sent via Resend/SMTP.
 async function inviteUser(payload: {
   email: string;
   role: string;
-}): Promise<UserRow> {
+}): Promise<InviteResponse> {
+  const res = await fetch("/v1/admin/users/invite", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`HTTP ${res.status}: ${detail.slice(0, 200)}`);
+  }
+  return (await res.json()) as InviteResponse;
+}
+
+interface InvitesListResponse {
+  invites: InviteResponse[];
+  total: number;
+}
+
+async function fetchInvites(): Promise<InviteResponse[]> {
   try {
-    const res = await fetch("/auth/signup", {
-      method: "POST",
+    const res = await fetch("/v1/admin/users/invites", {
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      cache: "no-store",
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    if (!res.ok) return [];
+    const data = (await res.json()) as InvitesListResponse;
+    return data.invites ?? [];
   } catch {
-    return {
-      id: Math.floor(Math.random() * 1000) + 100,
-      email: payload.email,
-      role: payload.role,
-      status: "pending",
-      last_login: null,
-      created_at: new Date().toISOString(),
-      magic_link: `https://abs.demo-acme.com/auth/magic?token=mock_${Math.random().toString(36).slice(2, 10)}`,
-    };
+    return [];
+  }
+}
+
+async function revokeInvite(inviteId: string): Promise<void> {
+  const res = await fetch(`/v1/admin/users/invite/${encodeURIComponent(inviteId)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok && res.status !== 204) {
+    throw new Error(`revoke_${res.status}`);
   }
 }
 
@@ -113,8 +145,10 @@ interface UsersClientProps {
 export default function UsersClient({ initialUsers }: UsersClientProps) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("operator");
-  const [lastInvite, setLastInvite] = useState<string | null>(null);
+  const [role, setRole] = useState("member");
+  const [lastInvite, setLastInvite] = useState<InviteResponse | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [pendingInvites, setPendingInvites] = useState<InviteResponse[]>([]);
   const queryClient = useQueryClient();
 
   const users = useQuery<UserRow[]>({
@@ -125,17 +159,41 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
     initialDataUpdatedAt: 0,
   });
 
+  // Sprint 2B BUG-36 — invite list refreshes alongside the user table.
+  useEffect(() => {
+    let active = true;
+    void fetchInvites().then((rows) => {
+      if (active) setPendingInvites(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, [users.dataUpdatedAt]);
+
   const invite = useMutation({
     mutationFn: () => inviteUser({ email, role }),
-    onSuccess: (newUser) => {
-      setLastInvite(newUser.magic_link ?? null);
+    onSuccess: async (data) => {
+      setLastInvite(data);
+      setInviteError(null);
       setEmail("");
       void queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      const fresh = await fetchInvites();
+      setPendingInvites(fresh);
+    },
+    onError: (exc) => {
+      setLastInvite(null);
+      setInviteError(exc instanceof Error ? exc.message : "bilinmeyen hata");
     },
   });
 
-  function copyLink(link: string) {
-    void navigator.clipboard.writeText(link);
+  async function handleRevoke(inviteId: string) {
+    try {
+      await revokeInvite(inviteId);
+      const fresh = await fetchInvites();
+      setPendingInvites(fresh);
+    } catch (exc) {
+      setInviteError(exc instanceof Error ? exc.message : "revoke failed");
+    }
   }
 
   return (
@@ -188,29 +246,29 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                 className="w-full rounded-md border border-border bg-background p-2 text-sm"
               >
                 <option value="admin">Admin</option>
-                <option value="operator">Operatör</option>
-                <option value="viewer">Okur</option>
+                <option value="member">Member</option>
               </select>
               {lastInvite && (
                 <div
-                  data-test="users-invite-magic-link"
-                  className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs"
+                  data-test="users-invite-success"
+                  className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-200"
                 >
-                  <div className="mb-1 text-emerald-200">
-                    Magic-link oluşturuldu (15dk ömür):
+                  Davet gönderildi:{" "}
+                  <strong className="text-emerald-100">{lastInvite.email}</strong>
+                  {" — "}
+                  <span className="font-mono">{lastInvite.invite_id}</span>
+                  <div className="mt-1 text-emerald-200/80">
+                    Magic-link e-posta ile gönderildi (7 gün ömür). URL backend
+                    log'larına yazılmaz.
                   </div>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 truncate font-mono">
-                      {lastInvite}
-                    </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyLink(lastInvite)}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
+                </div>
+              )}
+              {inviteError && (
+                <div
+                  data-test="users-invite-error"
+                  className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200"
+                >
+                  {inviteError}
                 </div>
               )}
             </div>
@@ -228,13 +286,64 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
         </Dialog>
       </motion.header>
 
+      {pendingInvites.length > 0 && (
+        <Card data-test="users-invite-list" className="mb-6 bg-card/70">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">
+              Bekleyen davetler ({pendingInvites.length})
+            </CardTitle>
+            <CardDescription>
+              7 gün geçerli. Magic-link plaintext'i sadece e-postaya gönderilir;
+              backend HMAC digest'i tutar.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {pendingInvites.map((inv) => (
+                <li
+                  key={inv.invite_id}
+                  data-test="invite-row"
+                  data-invite-id={inv.invite_id}
+                  className="flex items-center justify-between gap-2 rounded-md border border-border/50 px-3 py-2 text-xs"
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-mono text-foreground">
+                      {inv.email}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {inv.role} · {inv.status}
+                      {inv.expires_at
+                        ? ` · ${new Date(inv.expires_at).toLocaleDateString("tr-TR")}`
+                        : ""}
+                    </span>
+                  </div>
+                  {inv.status === "pending" && (
+                    <Button
+                      data-test="invite-revoke"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[11px] text-rose-300"
+                      onClick={() => void handleRevoke(inv.invite_id)}
+                    >
+                      <XCircle className="mr-1 h-3 w-3" />
+                      İptal
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="bg-card/70">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">
             Kayıtlı kullanıcılar ({users.data?.length ?? 0})
           </CardTitle>
           <CardDescription>
-            Pending davetlerin magic-link'i 15 dakika sonra invalid olur.
+            Pending davetlerin magic-link'i 7 gün geçerli; magic-link sadece
+            e-postaya gönderilir.
           </CardDescription>
         </CardHeader>
         <CardContent>
