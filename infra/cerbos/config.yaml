@@ -12,7 +12,7 @@ server:
 storage:
   driver: "disk"
   disk:
-    directory: /cerbos/policies
+    directory: /etc/cerbos/policies
     watchForChanges: true
 
 audit:
