@@ -138,6 +138,13 @@ def send_refund_email(*, to: str, license_jti: str, refund_date: str) -> None:
     _send_html(to=to, subject=subject, html=html, kind="refund")
 
 
+_ROLE_LABELS = {
+    "en": {"admin": "Administrator", "operator": "Operator", "viewer": "Viewer", "member": "Member"},
+    "tr": {"admin": "Admin", "operator": "Operatör", "viewer": "Okur", "member": "Üye"},
+    "es": {"admin": "Administrador", "operator": "Operador", "viewer": "Lector", "member": "Miembro"},
+}
+
+
 def send_invite_email(
     *,
     to: str,
@@ -145,34 +152,29 @@ def send_invite_email(
     role: str,
     magic_url: str,
     invited_by: str,
+    lang: str = "en",
 ) -> None:
-    """Sprint 2B BUG-36 — admin invite email.
+    """Sprint 2B BUG-36 / Sprint 2C ITEM-5 — admin invite email.
 
-    Renders a minimal inline HTML body so we don't need a new template
-    file in the rc7 ship; the token is delivered verbatim in the URL.
-    SMTP_HOST boşsa console fallback (exception fırlatmaz) — same
-    semantics as send_refund_email/send_expiration_email so unit tests
-    don't have to stub a real SMTP server.
+    Sprint 2C extracted the inline HTML to per-locale templates
+    (invite_en.html / invite_tr.html / invite_es.html). Default locale
+    is English to honour the global-first product stance; ``lang`` can
+    be set per-call when the recipient's preference is known.
     """
-    subject = f"Automatia ABS davet — {tenant_name}"
-    role_label = {"admin": "Admin", "operator": "Operatör", "viewer": "Okur"}.get(
-        role, role
-    )
-    html = (
-        "<!doctype html><html><body style='font-family:sans-serif'>"
-        f"<h2>Automatia ABS davetiye</h2>"
-        f"<p>Merhaba,</p>"
-        f"<p><strong>{invited_by}</strong> sizi <strong>{tenant_name}</strong>"
-        f" tenant'ına <strong>{role_label}</strong> rolüyle davet etti.</p>"
-        f"<p>Aşağıdaki bağlantıya 7 gün içinde tıklayarak hesabınızı"
-        f" oluşturabilirsiniz:</p>"
-        f"<p><a href='{magic_url}' style='display:inline-block;padding:10px 16px;"
-        f"background:#111;color:#fff;text-decoration:none;border-radius:6px'>"
-        f"Daveti kabul et</a></p>"
-        f"<p>Veya bu URL'i tarayıcıya yapıştırın:</p>"
-        f"<p style='font-family:monospace;word-break:break-all'>{magic_url}</p>"
-        "</body></html>"
-    )
+    role_label = _ROLE_LABELS.get(lang, _ROLE_LABELS["en"]).get(role, role.capitalize())
+    try:
+        subject, html = _render(
+            "invite.html",
+            lang=lang,
+            tenant_name=tenant_name,
+            role=role,
+            role_label=role_label,
+            magic_url=magic_url,
+            invited_by=invited_by,
+        )
+    except Exception as exc:
+        logger.exception("invite email render fail: %s", exc)
+        return
     _send_html(to=to, subject=subject, html=html, kind="invite")
 
 

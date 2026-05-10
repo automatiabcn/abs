@@ -25,6 +25,10 @@ class Tenant(SQLModel, table=True):
     name: str = Field(default="", max_length=128)
     created_at: datetime
     archived_at: Optional[datetime] = Field(default=None)
+    # Sprint 2C ITEM-1 — Settings → Genel/Marka tabs.
+    branding_message: Optional[str] = Field(default=None, max_length=500)
+    logo_url: Optional[str] = Field(default=None, max_length=512)
+    primary_color: Optional[str] = Field(default=None, max_length=7)
 
 
 class Project(SQLModel, table=True):
