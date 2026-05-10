@@ -5,11 +5,11 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q8 Phase F — `/admin/rag` knowledge-base console. Drag-drop ingest +
-// query test + result viz. Backend (`/v1/rag/*`) currently uses OAuth
-// gating, so this page ships in mock-friendly mode (POST attempts forwarded
-// to backend; on 401/403 we fall back to a deterministic local response so
-// the UX is exercisable end-to-end during Phase O).
+// Q8 Phase F + BUG-27 — `/admin/rag` knowledge-base console. Drag-drop
+// ingest + real `/v1/rag/query` against BGE-M3 + Qdrant. Cookie-session
+// auth flows via `get_admin_or_bearer_auth_context`; failures surface as
+// inline errors so operators see real backend issues (Cerbos DENY,
+// embedder warming up, Qdrant unreachable) and act on them.
 "use client";
 
 import { useCallback, useState } from "react";
@@ -49,29 +49,11 @@ interface RagHit {
   doc_id: string;
 }
 
-const MOCK_DOCS: IngestedDoc[] = [
-  {
-    id: "doc-001",
-    filename: "guvenlik_politikasi.md",
-    size_bytes: 18432,
-    chunks: 14,
-    ingested_at: "2026-04-29T10:42:00Z",
-  },
-  {
-    id: "doc-002",
-    filename: "satis_q2_raporu.pdf",
-    size_bytes: 528000,
-    chunks: 86,
-    ingested_at: "2026-04-30T08:15:00Z",
-  },
-  {
-    id: "doc-003",
-    filename: "musteri_destek_sss.txt",
-    size_bytes: 9120,
-    chunks: 7,
-    ingested_at: "2026-05-01T09:55:00Z",
-  },
-];
+// BUG-27 — local-only inventory; docs are appended after a real
+// `/v1/rag/ingest-file` POST returns 200. We no longer pre-seed with mock
+// rows so the operator can see at a glance whether their tenant has any
+// actual chunks indexed.
+const INITIAL_DOCS: IngestedDoc[] = [];
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -80,7 +62,7 @@ function formatSize(bytes: number): string {
 }
 
 export default function RagPage() {
-  const [docs, setDocs] = useState<IngestedDoc[]>(MOCK_DOCS);
+  const [docs, setDocs] = useState<IngestedDoc[]>(INITIAL_DOCS);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [query, setQuery] = useState("");
@@ -94,28 +76,59 @@ export default function RagPage() {
     async (files: FileList) => {
       setUploading(true);
       setError(null);
-      const incoming = Array.from(files).map((f) => ({
-        id: `doc-${crypto.randomUUID().slice(0, 8)}`,
-        filename: f.name,
-        size_bytes: f.size,
-        chunks: Math.ceil(f.size / 1200),
-        ingested_at: new Date().toISOString(),
-      }));
-      // Best-effort backend ping; falls back to local mock if 401/403/404.
-      try {
-        for (const f of files) {
-          const form = new FormData();
-          form.append("file", f);
-          await fetch("/v1/rag/ingest-file", {
+      // BUG-27 — POST every file to /v1/rag/ingest individually so a single
+      // failed upload doesn't poison the rest of the batch. Successful rows
+      // are appended with the doc_id + chunk count returned by the backend
+      // so the operator sees real chunk math, not estimated `size / 1200`.
+      const successes: IngestedDoc[] = [];
+      const failures: string[] = [];
+      for (const file of Array.from(files)) {
+        const text = await file.text().catch(() => "");
+        if (!text.trim()) {
+          failures.push(`${file.name}: boş dosya`);
+          continue;
+        }
+        try {
+          const res = await fetch("/v1/rag/ingest", {
             method: "POST",
             credentials: "include",
-            body: form,
-          }).catch(() => null);
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text,
+              filename: file.name,
+              mime_type: file.type || "text/plain",
+            }),
+          });
+          if (!res.ok) {
+            const detail = await res.text().catch(() => "");
+            failures.push(
+              `${file.name}: HTTP ${res.status} ${detail.slice(0, 120)}`,
+            );
+            continue;
+          }
+          const data: {
+            doc_id: string;
+            chunks: number;
+          } = await res.json();
+          successes.push({
+            id: data.doc_id,
+            filename: file.name,
+            size_bytes: file.size,
+            chunks: data.chunks,
+            ingested_at: new Date().toISOString(),
+          });
+        } catch (exc) {
+          failures.push(
+            `${file.name}: ${exc instanceof Error ? exc.message : "unknown"}`,
+          );
         }
-      } catch {
-        /* mock fallback */
       }
-      setDocs((prev) => [...incoming, ...prev]);
+      if (failures.length > 0) {
+        setError(`Yükleme hatası: ${failures.join(" · ")}`);
+      }
+      if (successes.length > 0) {
+        setDocs((prev) => [...successes, ...prev]);
+      }
       setUploading(false);
     },
     [],
@@ -125,6 +138,7 @@ export default function RagPage() {
     if (!query.trim()) return;
     setSearching(true);
     setError(null);
+    setHits([]);
     try {
       const res = await fetch("/v1/rag/query", {
         method: "POST",
@@ -133,15 +147,12 @@ export default function RagPage() {
         body: JSON.stringify({ query, limit: topK, rerank: hybrid }),
       });
       if (!res.ok) {
-        // Fall back to a deterministic mock response so the UX is exercisable
-        // even before tenant OAuth is wired through to the panel session.
-        setHits(
-          docs.slice(0, topK).map((d, i) => ({
-            chunk_id: `${d.id}-${i}`,
-            score: Math.max(0.42, 0.95 - i * 0.08),
-            text: `[MOCK] '${query}' sorgusunun ${d.filename} dökümanındaki ${i + 1}. eşleşmesi. Backend OAuth bağlantısı Phase K'da aktiflenecek.`,
-            doc_id: d.id,
-          })),
+        // BUG-27 — surface the real backend failure instead of rendering a
+        // synthetic mock. Operators need to see Cerbos DENY / embedder
+        // warming up / Qdrant unreachable so they can fix infra.
+        const detail = await res.text().catch(() => "");
+        setError(
+          `Backend /v1/rag/query döndü ${res.status}: ${detail.slice(0, 280) || "boş yanıt"}`,
         );
         return;
       }

@@ -1,0 +1,27 @@
+# T-004 — Common derived roles, evaluated against principal+resource attrs.
+# A user is considered an `owner` of a project iff their principal scope
+# matches the resource's tenant_id, and they hold the `member` base role.
+---
+apiVersion: api.cerbos.dev/v1
+description: "ABS common derived roles (tenant binding, owner mapping)."
+derivedRoles:
+  name: common_roles
+  definitions:
+    - name: tenant_member
+      parentRoles: ["member"]
+      condition:
+        match:
+          expr: request.resource.attr.tenant_id == request.principal.attr.tenant_id
+    - name: tenant_admin
+      parentRoles: ["admin"]
+      condition:
+        match:
+          expr: request.resource.attr.tenant_id == request.principal.attr.tenant_id
+    - name: project_owner
+      parentRoles: ["member", "admin"]
+      condition:
+        match:
+          all:
+            of:
+              - expr: request.resource.attr.tenant_id == request.principal.attr.tenant_id
+              - expr: request.resource.attr.owner_id == request.principal.id
