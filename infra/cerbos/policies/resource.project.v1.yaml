@@ -1,0 +1,42 @@
+# T-004 — Project resource policy. Multi-tenant: every action requires
+# tenant binding. Owners can update/delete; tenant admins can do anything;
+# tenant members can read + create.
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  resource: project
+  version: default
+  importDerivedRoles:
+    - common_roles
+  rules:
+    # Suspended principals are denied first, regardless of role.
+    - actions: ["*"]
+      effect: EFFECT_DENY
+      roles: ["*"]
+      condition:
+        match:
+          expr: has(request.principal.attr.suspended) && request.principal.attr.suspended == true
+
+    - actions: ["read", "list"]
+      effect: EFFECT_ALLOW
+      derivedRoles: ["tenant_member", "tenant_admin", "project_owner"]
+
+    - actions: ["create"]
+      effect: EFFECT_ALLOW
+      derivedRoles: ["tenant_member", "tenant_admin"]
+
+    - actions: ["update", "archive"]
+      effect: EFFECT_ALLOW
+      derivedRoles: ["project_owner", "tenant_admin"]
+
+    - actions: ["delete"]
+      effect: EFFECT_ALLOW
+      derivedRoles: ["tenant_admin"]
+
+    # Cross-tenant access is implicitly denied because no derived role matches.
+    - actions: ["*"]
+      effect: EFFECT_DENY
+      roles: ["*"]
+      condition:
+        match:
+          expr: request.resource.attr.tenant_id != request.principal.attr.tenant_id
