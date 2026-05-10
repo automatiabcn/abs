@@ -69,6 +69,16 @@ class Settings(BaseSettings):
     admin_ip_whitelist: str = ""  # comma-separated; empty = no IP filter
     churn_threshold: float = 0.5
 
+    # Sprint 2B BUG-36 — HMAC secret for magic-link token hashing.
+    # Empty falls back to admin_jwt_secret (still per-install random in
+    # prod) so existing customers don't have to set a new env var.
+    magic_link_hmac_secret: str = ""
+
+    # Sprint 2B BUG-36 — public hostname used to build magic-link URLs in
+    # invite emails. Defaults to the dev/local origin; customer compose
+    # overrides via ABS_PUBLIC_HOSTNAME.
+    public_hostname: str = "http://localhost:3000"
+
     # 033 — Demo readiness
     demo_mode: bool = False
     provider_mock: bool = False  # forces app.providers.mock for live calls

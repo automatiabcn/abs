@@ -44,9 +44,11 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   // ── Üretim ─────────────────────────────────────
-  { href: "/panel", label: "Genel Bakış", icon: LayoutDashboard, group: "Üretim" },
-  // Polish round R2 — admin/* is the canonical URL surface; redirects in
-  // next.config map these to the live /panel/* pages.
+  // Sprint 2B BUG-19 — Genel Bakış now lands on the new /admin/dashboard
+  // route (5-source aggregated overview) instead of /panel home.
+  { href: "/admin/dashboard", label: "Genel Bakış", icon: LayoutDashboard, group: "Üretim" },
+  // Sprint 2B BUG-20 — /admin/chat is now a real page (not a 308 to
+  // /panel/chat). Same for /admin/mcp-tools and /admin/quota below.
   { href: "/admin/chat", label: "Sohbet", icon: MessageSquare, group: "Üretim" },
   { href: "/admin/workflow-builder", label: "Workflow", icon: Workflow, group: "Üretim" },
   // BUG-V1 — /admin/usage Free path % + Claude budget % widget.
@@ -58,7 +60,8 @@ const NAV: NavItem[] = [
   // Polish round R2 — label aligned with route ("Sağlayıcılar" not "Cascade").
   { href: "/admin/providers", label: "Sağlayıcılar", icon: Layers, group: "Operasyon" },
   { href: "/admin/marketplace", label: "Marketplace", icon: Store, group: "Operasyon" },
-  { href: "/panel/quota", label: "Kota", icon: BarChart3, group: "Operasyon" },
+  // Sprint 2B BUG-25 — /admin/quota is the canonical kota route now.
+  { href: "/admin/quota", label: "Kota", icon: BarChart3, group: "Operasyon" },
   { href: "/admin/graph", label: "Knowledge Graph", icon: Brain, group: "Operasyon" },
   // ── Toplantılar ────────────────────────────────
   { href: "/admin/meetings", label: "Toplantılar", icon: Mic, group: "Toplantılar" },
@@ -85,17 +88,22 @@ const GROUP_LABEL_TR: Record<NavGroup, string> = {
 // Polish round R2 — sidebar advertises /admin/* but a few pages still
 // resolve to /panel/* via next.config redirects (308). Map both ways so the
 // active highlight tracks the user wherever the redirect lands them.
+//
+// Sprint 2B BUG-19/20/25/26 — chat / mcp-tools / quota / dashboard are
+// now real /admin/* pages (no redirect). The /panel/* equivalents are
+// kept here so a user who deep-links to a legacy URL still gets the
+// matching sidebar highlight.
 const REDIRECT_EQUIVALENTS: Record<string, string> = {
   "/admin/chat": "/panel/chat",
   "/admin/meetings": "/panel/meetings",
   "/admin/transcription": "/panel/transcription",
   "/admin/mcp-tools": "/panel/tools",
+  "/admin/quota": "/panel/quota",
+  "/admin/dashboard": "/panel",
   "/admin/cascade": "/admin/providers",
-  "/admin/dashboard": "/admin/usage",
 };
 
 function isActive(href: string, pathname: string): boolean {
-  if (href === "/panel") return pathname === "/panel";
   if (pathname === href) return true;
   if (pathname.startsWith(href + "/")) return true;
   const live = REDIRECT_EQUIVALENTS[href];
