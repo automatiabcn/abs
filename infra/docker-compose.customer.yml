@@ -78,7 +78,10 @@ services:
       - abs-vault-key:/app/vault-key:ro
     depends_on:
       qdrant:
-        condition: service_healthy
+        # qdrant image has no curl/wget/nc/bash so a /dev/tcp probe always
+        # fails; rely on `service_started` + backend's own qdrant_client
+        # retry instead of an unreliable HEALTHCHECK.
+        condition: service_started
       cerbos:
         condition: service_started
       neo4j:
@@ -169,13 +172,9 @@ services:
       - "6333"
     volumes:
       - abs-qdrant-data:/qdrant/storage
-    healthcheck:
-      # qdrant ships no curl/wget either — use the busybox `nc` baked into
-      # the alpine base layer to confirm the HTTP port accepts connections.
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/6333 && echo -e 'GET /readyz HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
+    # No HEALTHCHECK — qdrant image has no curl/wget/nc/bash so docker
+    # has no portable probe. Backend uses its own qdrant_client retry +
+    # the /v1/rag/* graceful 503 wrappers instead.
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
