@@ -29,7 +29,28 @@ SynthFn = Callable[[str], Awaitable[str]]
 
 _FEW_SHOT_HEADER = """You are an ABS workflow architect. Given a user intent in any language,
 output ONLY a JSON object that conforms to the ABS Workflow schema. No prose,
-no markdown fences. Use abs.* tool names where appropriate."""
+no markdown fences, no commentary before or after the JSON. Use abs.* tool
+names where appropriate.
+
+REQUIRED SHAPE (any extra keys are dropped by the validator):
+
+  {
+    "id": "<slug-id>",
+    "name": "<short title>",
+    "nodes": [
+      {"id": "<node-id>", "tool": "abs.<tool>", "params": { ... }, "next": "<id|null>"}
+    ],
+    "edges": [{"from": "<id>", "to": "<id>"}]
+  }
+
+RULES:
+  1. Respond with EXACTLY ONE JSON object. No prose. No markdown.
+  2. Every node must reference a real abs.* tool from the examples below.
+  3. `nodes` and `edges` must be non-empty.
+  4. Pick the smallest set of nodes that satisfies the intent — do not
+     invent steps the user did not ask for.
+  5. If the intent maps to multiple integrations (e.g. Slack + Linear),
+     wire them in dependency order via `edges`."""
 
 
 @dataclass

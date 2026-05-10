@@ -103,6 +103,15 @@ services:
       - abs-data:/app/data
       - abs-vault-key:/app/vault-key:ro
       - ./infra/scripts:/app/infra/scripts:ro
+    # Sprint 2B — override the backend HEALTHCHECK (probes :8000 which
+    # the cron loop never binds). Process-based probe matches the sleep
+    # loop's name so the container reports healthy within ~30s.
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'email_tick|email_cron|email_dispatcher' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       backend:
         condition: service_healthy

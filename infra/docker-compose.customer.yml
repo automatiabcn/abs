@@ -155,6 +155,18 @@ services:
       # Mounts the script directory read-only — script lives in the image
       # but bind-mounting allows hot-patching without re-pulling.
       - ./scripts:/app/infra/scripts:ro
+    # Sprint 2B — the cron container reuses the backend image, but its
+    # entrypoint is the email_tick loop, not the FastAPI server. The
+    # backend Dockerfile HEALTHCHECK probes :8000 which never binds in
+    # this container, so the inherited healthcheck would mark email-cron
+    # unhealthy forever (failing streak 58+ on Hetzner pre-rc7).
+    # Override with a process probe that matches the sleep-loop.
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'email_tick|email_cron|email_dispatcher' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       backend:
         condition: service_healthy

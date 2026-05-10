@@ -32,6 +32,31 @@ type MarketplacePanelProps = {
   onInstall?: (m: PluginManifest) => void;
 };
 
+interface InstalledRow {
+  plugin_id: string;
+  version?: string;
+  installed_at?: number | null;
+}
+
+interface InstalledResponse {
+  tenant: string;
+  installed: InstalledRow[];
+}
+
+async function fetchInstalled(): Promise<Set<string>> {
+  try {
+    const res = await fetch("/v1/marketplace/installed", {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) return new Set();
+    const data = (await res.json()) as InstalledResponse;
+    return new Set((data.installed ?? []).map((r) => r.plugin_id));
+  } catch {
+    return new Set();
+  }
+}
+
 export default function MarketplacePanel({
   initialPlugins,
   isAdmin,
@@ -41,7 +66,21 @@ export default function MarketplacePanel({
   const [filter, setFilter] = useState<FilterValue>("all");
   const [selected, setSelected] = useState<PluginManifest | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
+  // Sprint 2B BUG-34 — installed plugin ids drive the "Kurulu" badge +
+  // "Kaldır" button. Refetched after every install/uninstall.
+  const [installedIds, setInstalledIds] = useState<Set<string>>(new Set());
+  const [busyId, setBusyId] = useState<string | null>(null);
   const searchId = useId();
+
+  useEffect(() => {
+    let active = true;
+    void fetchInstalled().then((s) => {
+      if (active) setInstalledIds(s);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Q9 / MP4 — reset acknowledgement whenever the modal target changes.
   useEffect(() => {
@@ -81,9 +120,9 @@ export default function MarketplacePanel({
       setSelected(null);
       return;
     }
-    // P1 / S19-close — fall through to /api/marketplace/install proxy.
+    setBusyId(selected.id);
     try {
-      const res = await fetch("/api/marketplace/install", {
+      const res = await fetch("/v1/marketplace/install", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -92,12 +131,41 @@ export default function MarketplacePanel({
       if (!res.ok && typeof console !== "undefined") {
         console.warn("install_failed", selected.id, res.status);
       }
+      // Sprint 2B BUG-34 — refresh installed list so the card flips to
+      // "Kurulu" without forcing the operator to reload the page.
+      const fresh = await fetchInstalled();
+      setInstalledIds(fresh);
     } catch (exc) {
       if (typeof console !== "undefined") {
         console.warn("install_error", selected.id, exc);
       }
     } finally {
       setSelected(null);
+      setBusyId(null);
+    }
+  };
+
+  const handleUninstall = async (pluginId: string) => {
+    setBusyId(pluginId);
+    try {
+      const res = await fetch(
+        `/v1/marketplace/uninstall/${encodeURIComponent(pluginId)}?tenant=default`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      if (!res.ok && typeof console !== "undefined") {
+        console.warn("uninstall_failed", pluginId, res.status);
+      }
+      const fresh = await fetchInstalled();
+      setInstalledIds(fresh);
+    } catch (exc) {
+      if (typeof console !== "undefined") {
+        console.warn("uninstall_error", pluginId, exc);
+      }
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -199,15 +267,38 @@ export default function MarketplacePanel({
                 cosign · imzalı
               </span>
             </div>
-            <button
-              type="button"
-              data-testid={`install-button-${plugin.id}`}
-              disabled={!isAdmin}
-              onClick={() => setSelected(plugin)}
-              className="mt-5 inline-flex items-center justify-center rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:enabled:bg-zinc-200"
-            >
-              Kur
-            </button>
+            {installedIds.has(plugin.id) ? (
+              <div
+                className="mt-5 flex items-center gap-2"
+                data-testid={`installed-row-${plugin.id}`}
+              >
+                <span
+                  data-testid={`installed-badge-${plugin.id}`}
+                  className="inline-flex items-center justify-center rounded-xl bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800"
+                >
+                  Kurulu
+                </span>
+                <button
+                  type="button"
+                  data-testid={`uninstall-button-${plugin.id}`}
+                  disabled={!isAdmin || busyId === plugin.id}
+                  onClick={() => handleUninstall(plugin.id)}
+                  className="ml-auto inline-flex items-center justify-center rounded-xl border border-rose-300 px-3 py-2 text-xs font-medium text-rose-700 transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-rose-50 dark:border-rose-700 dark:text-rose-200 dark:hover:enabled:bg-rose-900/20"
+                >
+                  {busyId === plugin.id ? "İşleniyor…" : "Kaldır"}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                data-testid={`install-button-${plugin.id}`}
+                disabled={!isAdmin || busyId === plugin.id}
+                onClick={() => setSelected(plugin)}
+                className="mt-5 inline-flex items-center justify-center rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:enabled:bg-zinc-200"
+              >
+                {busyId === plugin.id ? "Kuruluyor…" : "Kur"}
+              </button>
+            )}
           </article>
         ))}
       </div>

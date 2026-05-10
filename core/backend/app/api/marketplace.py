@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -31,7 +32,7 @@ from app.api.auth import current_admin
 from app.config import settings
 from app.observability.audit import emit_event  # Q12-L23 sweep 5
 from app.db.session import get_engine
-from app.db.models import User
+from app.db.models import TenantInstalledPlugin, User
 from sqlmodel import Session, select
 
 router = APIRouter(prefix="/v1/marketplace", tags=["marketplace"])
@@ -147,6 +148,98 @@ def _write_installs(state: Dict[str, List[Dict[str, Any]]]) -> None:
     p = _installs_path()
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+# ---------- Sprint 2B BUG-34 — SQL persistence -----------------------------
+
+
+def _select_active_install(db: "Session", tenant: str, plugin_id: str):
+    return db.exec(
+        select(TenantInstalledPlugin).where(
+            TenantInstalledPlugin.tenant_id == tenant,
+            TenantInstalledPlugin.plugin_id == plugin_id,
+            TenantInstalledPlugin.uninstalled_at.is_(None),  # type: ignore[union-attr]
+        )
+    ).first()
+
+
+def _persist_install_row(
+    *, tenant: str, plugin_id: str, version: str, container_id: Optional[str]
+) -> None:
+    """Upsert tenant_installed_plugins row for the (tenant, plugin) pair."""
+    try:
+        with Session(get_engine()) as db:
+            existing = _select_active_install(db, tenant, plugin_id)
+            if existing is not None:
+                return
+            row = TenantInstalledPlugin(
+                tenant_id=tenant,
+                plugin_id=plugin_id,
+                version=version,
+                sandbox_container_id=container_id,
+                installed_at=datetime.now(timezone.utc),
+                uninstalled_at=None,
+            )
+            db.add(row)
+            db.commit()
+    except Exception as exc:  # pragma: no cover
+        logger.warning(
+            "tenant_installed_plugins persist failed plugin=%s tenant=%s err=%s",
+            plugin_id,
+            tenant,
+            exc,
+        )
+
+
+def _mark_uninstalled_row(*, tenant: str, plugin_id: str) -> None:
+    """Mark the active install row as uninstalled (soft-delete)."""
+    try:
+        with Session(get_engine()) as db:
+            row = _select_active_install(db, tenant, plugin_id)
+            if row is None:
+                return
+            row.uninstalled_at = datetime.now(timezone.utc)
+            db.add(row)
+            db.commit()
+    except Exception as exc:  # pragma: no cover
+        logger.warning(
+            "tenant_installed_plugins uninstall mark failed plugin=%s tenant=%s err=%s",
+            plugin_id,
+            tenant,
+            exc,
+        )
+
+
+def _list_installed_rows(tenant: str) -> List[Dict[str, Any]]:
+    """SQL view of installed plugins for the tenant; JSON fallback on error."""
+    try:
+        with Session(get_engine()) as db:
+            rows = db.exec(
+                select(TenantInstalledPlugin).where(
+                    TenantInstalledPlugin.tenant_id == tenant,
+                    TenantInstalledPlugin.uninstalled_at.is_(None),  # type: ignore[union-attr]
+                )
+            ).all()
+            out: List[Dict[str, Any]] = []
+            for r in rows:
+                installed_ts: Optional[float] = None
+                if r.installed_at is not None:
+                    inst = r.installed_at
+                    if inst.tzinfo is None:
+                        inst = inst.replace(tzinfo=timezone.utc)
+                    installed_ts = inst.timestamp()
+                out.append(
+                    {
+                        "plugin_id": r.plugin_id,
+                        "version": r.version,
+                        "container_id": r.sandbox_container_id,
+                        "installed_at": installed_ts,
+                    }
+                )
+            return out
+    except Exception as exc:
+        logger.info("tenant_installed_plugins read fell back to JSON: %s", exc)
+        return _read_installs().get(tenant, [])
 
 
 # ---------- request bodies -------------------------------------------------
@@ -361,6 +454,21 @@ async def install(
 
     bucket.append(install_record)
     _write_installs(state)
+    # Sprint 2B BUG-34 — durable SQL persistence so the marketplace UI
+    # can reliably distinguish installed plugins after a backend restart.
+    _persist_install_row(
+        tenant=body.tenant,
+        plugin_id=body.plugin_id,
+        version=plugin["version"],
+        container_id=install_record.get("container_id"),
+    )
+    emit_event(
+        request,
+        action="marketplace.install",
+        outcome="success",
+        plugin_id=body.plugin_id,
+        tenant=body.tenant,
+    )
     logger.info(
         "marketplace_install plugin=%s tenant=%s container=%s",
         body.plugin_id,
@@ -406,6 +514,9 @@ async def uninstall(
 
     state[tenant] = [i for i in bucket if i.get("plugin_id") != plugin_id]
     _write_installs(state)
+    # Sprint 2B BUG-34 — soft-delete the SQL row so the marketplace UI
+    # stops showing the plugin as installed after refresh.
+    _mark_uninstalled_row(tenant=tenant, plugin_id=plugin_id)
 
     sandbox_result: Dict[str, Any] = {"status": "no_sandbox"}
     try:
@@ -419,6 +530,13 @@ async def uninstall(
             exc,
         )
 
+    emit_event(
+        request,
+        action="marketplace.uninstall",
+        outcome="success",
+        plugin_id=plugin_id,
+        tenant=tenant,
+    )
     logger.info(
         "marketplace_uninstall plugin=%s tenant=%s sandbox=%s",
         plugin_id,
@@ -444,8 +562,10 @@ async def installed(
     resolved = tenant if tenant else _resolve_admin_tenant(_admin)
     _enforce_tenant_match(_admin, resolved)
 
-    state = _read_installs()
-    rows = state.get(resolved, [])
+    # Sprint 2B BUG-34 — SQL is now authoritative; legacy JSON store is
+    # consulted only as a fallback inside `_list_installed_rows` if the
+    # tenant_installed_plugins table is unreachable (boot-before-migrate).
+    rows = _list_installed_rows(resolved)
 
     # Q7 Phase B — best-effort live status enrichment. If docker SDK / daemon
     # is unavailable we just return the persisted records.
