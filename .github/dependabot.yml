@@ -32,9 +32,6 @@ updates:
       development-dependencies:
         dependency-type: "development"
         update-types: ["minor", "patch"]
-    labels:
-      - "dependencies"
-      - "ecosystem:npm"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -47,9 +44,6 @@ updates:
       time: "06:00"
       timezone: "Europe/Madrid"
     open-pull-requests-limit: 3
-    labels:
-      - "dependencies"
-      - "ecosystem:npm-root"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -70,9 +64,6 @@ updates:
       development-dependencies:
         dependency-type: "development"
         update-types: ["minor", "patch"]
-    labels:
-      - "dependencies"
-      - "ecosystem:pip"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -86,10 +77,6 @@ updates:
       time: "06:00"
       timezone: "Europe/Madrid"
     open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "ecosystem:actions"
-      - "security:supply-chain"
     commit-message:
       prefix: "chore(actions)"
       include: "scope"
@@ -102,9 +89,6 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Madrid"
-    labels:
-      - "dependencies"
-      - "ecosystem:docker"
 
   - package-ecosystem: "docker"
     directory: "/core/landing"
@@ -113,6 +97,3 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Madrid"
-    labels:
-      - "dependencies"
-      - "ecosystem:docker"
