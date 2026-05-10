@@ -35,7 +35,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import ProviderConfigModal, {
+  type ProviderConfigEntry,
+} from "@/components/admin/ProviderConfigModal";
 import { cn } from "@/lib/utils";
+
+interface ProvidersStatusResponse {
+  providers: ProviderConfigEntry[];
+}
+
+async function fetchProvidersStatus(): Promise<ProvidersStatusResponse> {
+  const res = await fetch("/v1/admin/providers/status", {
+    credentials: "include",
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
 
 interface ProvidersResponse {
   active: string[];
@@ -151,11 +167,24 @@ export default function ProvidersPage() {
   const [animatingProvider, setAnimatingProvider] = useState<string | null>(
     null,
   );
+  // Sprint 2B BUG-33 — selected provider drives the config modal.
+  const [activeConfig, setActiveConfig] = useState<ProviderConfigEntry | null>(
+    null,
+  );
 
   const providers = useQuery<ProvidersResponse>({
     queryKey: ["admin", "providers"],
     queryFn: fetchProviders,
     refetchInterval: 5000,
+  });
+
+  // Sprint 2B BUG-33 — pull the configured-or-not flag for each provider
+  // so the modal can render the masked-key state without exposing the
+  // raw value. Cached for 30s; the test button itself does NOT poll.
+  const status = useQuery<ProvidersStatusResponse>({
+    queryKey: ["admin", "providers", "status"],
+    queryFn: fetchProvidersStatus,
+    staleTime: 30_000,
   });
 
   const test = useMutation({
@@ -351,8 +380,23 @@ export default function ProvidersPage() {
                       variant="outline"
                       size="sm"
                       className="mt-2 w-full"
-                      disabled
-                      title="Phase K — Settings sayfasından API key ekle"
+                      data-test="provider-configure"
+                      onClick={() => {
+                        // Sprint 2B BUG-33 — anthropic-mock has no real
+                        // key to test against; clicking it just opens the
+                        // settings link path inside the modal.
+                        const fromStatus =
+                          status.data?.providers.find(
+                            (p) => p.id === c.name,
+                          ) ?? null;
+                        setActiveConfig(
+                          fromStatus ?? {
+                            id: c.name,
+                            label: meta?.label ?? c.name,
+                            configured: c.configured,
+                          },
+                        );
+                      }}
                     >
                       <Settings2 className="mr-2 h-3 w-3" />
                       Yapılandır
@@ -438,6 +482,12 @@ export default function ProvidersPage() {
           )}
         </CardContent>
       </Card>
+
+      <ProviderConfigModal
+        provider={activeConfig}
+        open={activeConfig !== null}
+        onClose={() => setActiveConfig(null)}
+      />
     </main>
   );
 }

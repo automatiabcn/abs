@@ -113,18 +113,15 @@ const nextConfig: NextConfig = {
     ];
   },
   // Polish round R2/R3 — short /admin/* URLs are the canonical entry the
-  // sidebar advertises. The actual pages still live under /panel/* (Q12
-  // didn't move them) so we redirect at the edge rather than duplicating
-  // a dozen client routes. 308 keeps verb + body so future API form posts
-  // don't silently degrade.
+  // sidebar advertises. Sprint 2B BUG-19/20/25/26: chat / mcp-tools /
+  // quota / dashboard now ship as real /admin/* pages so the sidebar
+  // links resolve without a 308. /admin/meetings + /admin/transcription
+  // still ride the redirect to the existing /panel/* implementations.
   async redirects() {
     return [
-      { source: "/admin/chat", destination: "/panel/chat", permanent: true },
       { source: "/admin/meetings", destination: "/panel/meetings", permanent: true },
       { source: "/admin/transcription", destination: "/panel/transcription", permanent: true },
-      { source: "/admin/mcp-tools", destination: "/panel/tools", permanent: true },
       { source: "/admin/cascade", destination: "/admin/providers", permanent: true },
-      { source: "/admin/dashboard", destination: "/admin/usage", permanent: true },
     ];
   },
   async headers() {

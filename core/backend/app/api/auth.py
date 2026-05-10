@@ -586,10 +586,85 @@ def signup(body: SignupRequest) -> Dict:
     }
 
 
+def _claim_invite_by_token(token: str) -> Optional[Dict]:
+    """Sprint 2B BUG-36 — accept the magic-link plaintext, look up the
+    matching ``tenant_invites`` row by HMAC digest, validate purpose +
+    expiry + status, mark accepted, and return the user payload the
+    panel session cookie will be minted from.
+    """
+    try:
+        from sqlmodel import Session, select
+
+        from app.auth.magic_link import hash_magic_token
+        from app.db.models import TenantInvite, User
+        from app.db.session import get_engine
+
+        digest = hash_magic_token(token)
+        with Session(get_engine()) as db:
+            stmt = select(TenantInvite).where(
+                TenantInvite.magic_token_hash == digest
+            )
+            invite = db.execute(stmt).scalars().first()
+            if invite is None:
+                return None
+            if invite.status == "revoked":
+                return {"error": "revoked"}
+            if invite.status == "accepted":
+                return {"error": "already_accepted"}
+            stored = invite.expires_at
+            now = datetime.now(timezone.utc)
+            if stored is not None:
+                exp = (
+                    stored
+                    if stored.tzinfo
+                    else stored.replace(tzinfo=timezone.utc)
+                )
+                if exp < now:
+                    return {"error": "expired"}
+            invite.status = "accepted"
+            invite.accepted_at = now
+            db.add(invite)
+
+            ustmt = select(User).where(User.email == invite.email)
+            existing_user = db.execute(ustmt).scalars().first()
+            if existing_user is None:
+                user = User(
+                    email=invite.email,
+                    password_hash="",
+                    tenant_slug=invite.tenant_id,
+                    role=invite.role,
+                    status="active",
+                    magic_token=None,
+                    magic_expires_at=None,
+                    claimed_at=now,
+                )
+                db.add(user)
+            else:
+                existing_user.status = "active"
+                existing_user.claimed_at = now
+                existing_user.tenant_slug = invite.tenant_id
+                existing_user.role = invite.role
+                db.add(existing_user)
+            db.commit()
+
+            return {
+                "email": invite.email,
+                "tenant_slug": invite.tenant_id,
+                "role": invite.role,
+            }
+    except Exception as exc:
+        logger.warning("invite claim flow failed: %s", exc)
+        return None
+
+
 @router.get("/magic")
 def magic_claim(token: str, request: Request, response: Response) -> Dict:
     """Q3 P2 — claim a pending signup. Sets the panel session cookie so the
     next /auth/login is unnecessary; user lands authenticated.
+
+    Sprint 2B BUG-36 — also accepts admin-invite tokens minted by
+    ``POST /v1/admin/users/invite``; the invite row carries an HMAC
+    digest of the same plaintext so we can look it up here.
 
     Returns 200 with claim payload (frontend renders confirmation +
     optional redirect). Invalid token → 404; expired → 410."""
@@ -601,6 +676,44 @@ def magic_claim(token: str, request: Request, response: Response) -> Dict:
             reason="invalid_token",
         )
         raise HTTPException(400, "invalid_token")
+
+    invite_result = _claim_invite_by_token(token)
+    if invite_result is not None:
+        if invite_result.get("error") == "expired":
+            emit_event(
+                request,
+                action="auth.magic.claim",
+                outcome="denied",
+                reason="invite_expired",
+            )
+            raise HTTPException(410, "token_expired")
+        if invite_result.get("error") in ("revoked", "already_accepted"):
+            emit_event(
+                request,
+                action="auth.magic.claim",
+                outcome="denied",
+                reason=f"invite_{invite_result['error']}",
+            )
+            raise HTTPException(410, f"invite_{invite_result['error']}")
+        session_token = _create_token(
+            invite_result["email"], tenant=invite_result.get("tenant_slug")
+        )
+        _set_cookie(response, session_token)
+        emit_event(
+            request,
+            action="auth.magic.claim",
+            outcome="success",
+            reason="invite_accepted",
+            tenant_id=invite_result.get("tenant_slug"),
+        )
+        return {
+            "status": "claimed",
+            "email": invite_result["email"],
+            "tenant_slug": invite_result["tenant_slug"],
+            "role": invite_result.get("role", "member"),
+            "via": "invite",
+        }
+
     result = _claim_user_by_token(token)
     if result is None:
         emit_event(

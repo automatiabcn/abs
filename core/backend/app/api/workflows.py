@@ -198,10 +198,19 @@ async def synthesize(
     # `_cascade_synth_fn` and surfaces as `SynthesisError`.
     use_llm = os.environ.get("ABS_WORKFLOW_LLM_ENABLED", "true").lower() == "true"
     payload: Dict[str, Any]
+    fallback_warning: Optional[str] = None
     if use_llm:
         try:
+            # Sprint 2B BUG-31 — synth_run already retries up to
+            # max_revisions+1 times on parse / validation errors. Cap at
+            # 1 retry (so 2 attempts total) so we don't multiply LLM
+            # cost when the cascade is just returning bad JSON; the
+            # template fallback below covers the remaining tail.
             result = await synth_run(
-                body.intent, synth_fn=_llm_synth_fn, locale=body.locale
+                body.intent,
+                synth_fn=_llm_synth_fn,
+                locale=body.locale,
+                max_revisions=1,
             )
             payload = {
                 "workflow": result.workflow.model_dump(mode="json"),
@@ -219,6 +228,14 @@ async def synthesize(
                 f"Template fallback after LLM failure: {exc}. "
                 f"{payload['explanation']}"
             )
+            # Sprint 2B BUG-31 — surface a soft warning so the panel
+            # can show a toast ("LLM çıktısı doğrulanamadı; şablon
+            # eşleşmesi gösteriliyor") instead of the operator seeing
+            # the canvas silently revert without any explanation.
+            fallback_warning = (
+                "LLM synthesis failed, using template match — "
+                f"{type(exc).__name__}: {str(exc)[:120]}"
+            )
     else:
         payload = _template_fallback(body.intent, body.locale)
 
@@ -228,6 +245,8 @@ async def synthesize(
         for label, items in (("warning", report.warnings), ("error", report.errors))
         for msg in items
     ]
+    if fallback_warning:
+        warnings.insert(0, fallback_warning)
 
     try:
         feature_usage_service.increment(
