@@ -142,10 +142,17 @@ fi
 echo "$LICENSE_TOKEN" > "${KEYS_DIR}/license.jwt"
 chmod 600 "${KEYS_DIR}/license.jwt"
 
-echo "[4/5] Copying customer compose + Caddyfile…"
+echo "[4/5] Copying customer compose + Caddyfile + Cerbos policies…"
 cp infra/docker-compose.customer.yml "${KEYS_DIR}/docker-compose.yml"
 if [ -f infra/Caddyfile ]; then
   cp infra/Caddyfile "${KEYS_DIR}/Caddyfile"
+fi
+# BUG-27 — the cerbos service in the compose mounts ./cerbos read-only at
+# /cerbos. Bundle the engine config + policies so the customer's
+# `docker compose up -d` finds them in the same directory as the compose.
+if [ -d infra/cerbos ]; then
+  rm -rf "${KEYS_DIR}/cerbos"
+  cp -R infra/cerbos "${KEYS_DIR}/cerbos"
 fi
 
 echo "[5/5] Generating onboarding email…"

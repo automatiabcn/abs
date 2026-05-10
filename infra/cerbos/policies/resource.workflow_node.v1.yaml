@@ -1,0 +1,88 @@
+# G3 — Cerbos policy for ABS-specific workflow node executions.
+# Each `abs.*` tool referenced by `app/workflow_v10/builder/templates.py`
+# is mapped to a discrete action. Tenant boundary + suspended-user gates
+# match the T-005/T-012 pattern. Destructive write actions (rag_ingest,
+# linear_create_ticket, gmail_send) require tenant_admin / project_owner.
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  resource: workflow_node
+  version: default
+  importDerivedRoles:
+    - common_roles
+  rules:
+    # 0) Suspended principals are denied first, regardless of role or action.
+    - actions: ["*"]
+      effect: EFFECT_DENY
+      roles: ["*"]
+      condition:
+        match:
+          expr: has(request.principal.attr.suspended) && request.principal.attr.suspended == true
+
+    # 1) Read-only / quality tools — any tenant member may invoke.
+    - actions:
+        - "abs.qual_code"
+        - "abs.qual_tr"
+        - "abs.qual_translate"
+        - "abs.qual_analysis"
+        - "abs.rag_query"
+        - "abs.langfuse_trace"
+        - "abs.cerbos_check"
+      effect: EFFECT_ALLOW
+      derivedRoles: ["tenant_member", "tenant_admin"]
+
+    # 2) Communication / extraction tools — tenant member is enough, but
+    # the workflow validator (T-S03.3) still requires a HITL ancestor for
+    # destructive writes (gmail_send, linear_create_ticket).
+    - actions:
+        - "abs.gmail_classify"
+        - "abs.gmail_draft"
+        - "abs.action_extract"
+        - "abs.notion_log"
+      effect: EFFECT_ALLOW
+      derivedRoles: ["tenant_member", "tenant_admin"]
+
+    # 3) Meeting transcription — gated on tenant-level GDPR consent flag.
+    - actions: ["abs.meeting_transcribe"]
+      effect: EFFECT_ALLOW
+      derivedRoles: ["tenant_member", "tenant_admin"]
+      condition:
+        match:
+          expr: has(request.resource.attr.gdpr_consent) && request.resource.attr.gdpr_consent == true
+
+    - actions: ["abs.meeting_transcribe"]
+      effect: EFFECT_DENY
+      roles: ["*"]
+      condition:
+        match:
+          expr: "!has(request.resource.attr.gdpr_consent) || request.resource.attr.gdpr_consent != true"
+
+    # 4) Outbound mail — tenant member with explicit account_manager flag.
+    - actions: ["abs.gmail_send"]
+      effect: EFFECT_ALLOW
+      derivedRoles: ["tenant_admin"]
+
+    - actions: ["abs.gmail_send"]
+      effect: EFFECT_ALLOW
+      derivedRoles: ["tenant_member"]
+      condition:
+        match:
+          expr: has(request.principal.attr.account_manager) && request.principal.attr.account_manager == true
+
+    # 5) RAG ingest is a tenant-scoped write — admin only.
+    - actions: ["abs.rag_ingest"]
+      effect: EFFECT_ALLOW
+      derivedRoles: ["tenant_admin"]
+
+    # 6) Linear ticket creation — project_owner derived role.
+    - actions: ["abs.linear_create_ticket"]
+      effect: EFFECT_ALLOW
+      derivedRoles: ["project_owner", "tenant_admin"]
+
+    # 7) Cross-tenant catch-all DENY (defence-in-depth, audit evidence).
+    - actions: ["*"]
+      effect: EFFECT_DENY
+      roles: ["*"]
+      condition:
+        match:
+          expr: request.resource.attr.tenant_id != request.principal.attr.tenant_id

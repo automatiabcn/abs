@@ -91,6 +91,46 @@ def _tenant_collection(auth: AuthContext) -> str:
     return settings.qdrant_default_collection
 
 
+def _ensure_embedder():
+    """BUG-27 — surface embedder import/init failures as 503 instead of 500.
+
+    The customer image ships with the deterministic `mock` backend by
+    default; switching to `sentence_transformers` requires the optional
+    library + a 2 GB BGE-M3 download. If the operator flips
+    `ABS_EMBEDDING_BACKEND=sentence_transformers` without installing the
+    package the server now returns a clean 503 the panel can render —
+    historically this was a 500 with a Python ImportError leaking out.
+    """
+    try:
+        return get_embedder()
+    except ImportError as exc:
+        logger.warning("embedder_unavailable_import: %s", exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"embedder_unavailable: {exc}",
+        ) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("embedder_unavailable_init: %s", exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"embedder_unavailable: {exc}",
+        ) from exc
+
+
+def _ensure_qdrant_collection(collection: str, vector_size: int) -> None:
+    """Like _ensure_embedder above but for the Qdrant TCP connection. The
+    customer compose ships qdrant alongside the backend, so this normally
+    succeeds; if the service is mid-restart we surface 503 with a hint."""
+    try:
+        qc.ensure_collection(collection, vector_size=vector_size)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("qdrant_unavailable: %s", exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"qdrant_unavailable: {exc}",
+        ) from exc
+
+
 def _ingest_chunks(
     *,
     tenant_id: str,
@@ -99,8 +139,8 @@ def _ingest_chunks(
 ) -> int:
     if not chunks:
         return 0
-    embedder = get_embedder()
-    qc.ensure_collection(collection, vector_size=embedder.dim)
+    embedder = _ensure_embedder()
+    _ensure_qdrant_collection(collection, vector_size=embedder.dim)
     vectors = embedder.embed([c.text for c in chunks])
     now = int(time.time())
     points = [
@@ -200,16 +240,23 @@ def query(
     auth = rag.auth
     collection = _tenant_collection(auth)
     started = time.perf_counter()
-    embedder = get_embedder()
-    qc.ensure_collection(collection, vector_size=embedder.dim)
+    embedder = _ensure_embedder()
+    _ensure_qdrant_collection(collection, vector_size=embedder.dim)
     vector = embedder.embed_one(body.query)
-    raw_hits = qc.search(
-        collection=collection,
-        tenant_id=auth.tenant_id or "",
-        query_vector=vector,
-        limit=body.limit,
-        score_threshold=body.score_threshold,
-    )
+    try:
+        raw_hits = qc.search(
+            collection=collection,
+            tenant_id=auth.tenant_id or "",
+            query_vector=vector,
+            limit=body.limit,
+            score_threshold=body.score_threshold,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("qdrant_search_failed: %s", exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"qdrant_search_failed: {exc}",
+        ) from exc
 
     if body.rerank and raw_hits:
         reranker = get_reranker()

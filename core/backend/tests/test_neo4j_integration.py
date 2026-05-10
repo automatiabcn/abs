@@ -3,6 +3,11 @@
 Live tests are skipped unless ABS_NEO4J_LIVE=1 (CI default = skip).
 The destructive-guard test runs without Neo4j — FastAPI rejects before
 the client is touched.
+
+BUG-29 — graph routes flipped from `current_admin` (cookie-only dict) to
+`get_admin_or_bearer_auth_context` (AuthContext with tenant_id). The
+fixture now overrides the new dep so the test fleet keeps passing without
+booting an actual Neo4j.
 """
 from __future__ import annotations
 
@@ -16,26 +21,27 @@ LIVE = os.environ.get("ABS_NEO4J_LIVE") == "1"
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "graph_seed.json"
 
 
-def _override_admin(client):
-    """Bypass cookie auth — pretend we're a logged-in admin."""
-    from app.api.auth import current_admin
-    from app.main import app
+def _fake_auth():
+    from app.api.v1.deps import AuthContext
 
-    app.dependency_overrides[current_admin] = lambda: {"sub": "test-admin@local"}
-    yield
-    app.dependency_overrides.pop(current_admin, None)
+    return AuthContext(
+        subject="test-admin@local",
+        tenant_id="test-tenant",
+        roles=["admin"],
+        raw_claims={"sub": "test-admin@local"},
+    )
 
 
 @pytest.fixture()
 def admin_client(client):
-    from app.api.auth import current_admin
+    from app.api.v1.deps import get_admin_or_bearer_auth_context
     from app.main import app
 
-    app.dependency_overrides[current_admin] = lambda: {"sub": "test-admin@local"}
+    app.dependency_overrides[get_admin_or_bearer_auth_context] = _fake_auth
     try:
         yield client
     finally:
-        app.dependency_overrides.pop(current_admin, None)
+        app.dependency_overrides.pop(get_admin_or_bearer_auth_context, None)
 
 
 def test_cypher_destructive_blocked(admin_client):

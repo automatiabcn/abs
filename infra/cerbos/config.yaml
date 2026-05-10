@@ -1,0 +1,31 @@
+# T-004 / BUG-27 — Cerbos engine configuration for the customer compose.
+# infra/docker-compose.customer.yml bind-mounts ./cerbos read-only at /cerbos
+# inside the container, so policies live at /cerbos/policies and audit logs
+# stay inside the cerbos container's writable layer.
+
+server:
+  httpListenAddr: ":3592"
+  grpcListenAddr: ":3593"
+  metricsEnabled: true
+  playgroundEnabled: false
+
+storage:
+  driver: "disk"
+  disk:
+    directory: /cerbos/policies
+    watchForChanges: true
+
+audit:
+  enabled: true
+  backend: local
+  accessLogsEnabled: true
+  decisionLogsEnabled: true
+  local:
+    storagePath: /tmp/cerbos-audit
+
+engine:
+  defaultPolicyVersion: "default"
+  lenientScopeSearch: true
+
+schema:
+  enforcement: "warn"
