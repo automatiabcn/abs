@@ -3,8 +3,6 @@
 # Setup (founder, one-time):
 #   npm install -g wrangler
 #   wrangler login
-#   # then fill in KV_NAMESPACE_ID below from CF Dashboard:
-#   #   Workers & Pages -> KV -> abs-license-state -> ID column
 #
 # Deploy:
 #   cd infra/cf-worker
@@ -12,26 +10,19 @@
 #
 # Tail live logs:
 #   wrangler tail abs-license-activation
+#
+# Free tier post-2026-04 daily limits:
+#   100,000 reads / 1,000 writes / 1,000 deletes / 1,000 lists
+# Worker-side throttle (1h activation last_seen rewrite) keeps each customer
+# instance under ~24 writes/day. Read budget is the binding scaling
+# constraint — paid plan ($5/mo) lifts to 10M reads + 1M writes.
 
 name = "abs-license-activation"
 main = "license-activation.js"
 compatibility_date = "2026-05-10"
-account_id = ""  # optional — wrangler auto-detects from `wrangler login`
-workers_dev = false  # production routes via custom domain
-route = { pattern = "abs-license-activation.automatiaabs.workers.dev/*", zone_name = "automatiaabs.workers.dev" }
 
 # KV namespace binding consumed in code as `env.ABS_LICENSE_KV`.
-# Replace KV_NAMESPACE_ID with the actual namespace ID from CF Dashboard
-# (Workers & Pages -> KV -> abs-license-state -> ID column).
+# `abs-license-state` namespace.
 [[kv_namespaces]]
 binding = "ABS_LICENSE_KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID_FROM_DASHBOARD"
-
-# Free tier daily limits (post-2026-04 schedule):
-#   100,000 reads/day
-#   1,000 writes/day
-#   1,000 deletes/day
-#   1,000 lists/day
-# Worker-side throttle (1h activation last_seen rewrite) keeps each customer
-# instance under ~24 writes/day. Read budget is the binding scaling
-# constraint — paid plan ($5/mo) lifts to 10M reads + 1M writes.
+id = "58aec9f5ab714a2ba3ee2be9b7357ede"
