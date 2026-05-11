@@ -72,9 +72,16 @@ async def fetch_manifest(force: bool = False) -> Dict[str, Any]:
         manifest = r.json()
         if not isinstance(manifest, dict):
             return {"error": "manifest top-level dict bekleniyor"}
-    except Exception as exc:
-        logger.warning("manifest fetch failed: %s", exc)
-        return {"error": str(exc)[:200]}
+    except Exception:
+        # Sprint 2D ITEM-2.3 — CodeQL py/stack-trace-exposure (#12/#13). The
+        # caller (api/update.py) embeds this `error` field in HTTP responses;
+        # do not leak raw exception text. Log full detail server-side, return
+        # only an opaque correlation id.
+        import uuid as _uuid
+
+        request_id = _uuid.uuid4().hex[:12]
+        logger.exception("manifest_fetch_failed request_id=%s", request_id)
+        return {"error": "manifest_fetch_failed", "request_id": request_id}
 
     # 015 — fail-closed signature verify (settings.update_signature_required)
     if settings.update_signature_required:

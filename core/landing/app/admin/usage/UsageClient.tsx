@@ -10,7 +10,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AreaChart, Card, ProgressBar } from "@tremor/react";
+import dynamic from "next/dynamic";
+import { Card, ProgressBar } from "@tremor/react";
+
+// Sprint 2D ITEM-4 — Lazy-load the Tremor AreaChart (pulls in recharts ~80KB).
+// The empty-state path doesn't need it at all; the chart only mounts when
+// `trendData` has at least one non-zero point.
+const UsageTrendChart = dynamic(
+  () => import("@/components/admin/charts/UsageTrendChart"),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        data-test="usage-trend-skeleton"
+        className="flex h-64 items-center justify-center text-sm text-muted-foreground"
+      >
+        Yükleniyor…
+      </div>
+    ),
+  },
+);
 
 export type UsagePayload = {
   month: string;
@@ -151,18 +170,7 @@ export default function UsageClient({ initial }: { initial: UsagePayload }) {
               <p>İlk çağrıdan sonra trend burada görünecek.</p>
             </div>
           ) : (
-            <AreaChart
-              className="h-64"
-              data={trendData}
-              index="date"
-              categories={["Claude tokens"]}
-              colors={["indigo"]}
-              showAnimation
-              showLegend={false}
-              showGridLines={false}
-              curveType="monotone"
-              yAxisWidth={48}
-            />
+            <UsageTrendChart data={trendData} />
           )}
         </Card>
       </section>

@@ -30,14 +30,34 @@ from pydantic import BaseModel, Field
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("piper-server")
 
-MODEL_DIR = Path(os.environ.get("ABS_PIPER_MODEL_DIR", "/models"))
+MODEL_DIR = Path(os.environ.get("ABS_PIPER_MODEL_DIR", "/models")).resolve(strict=False)
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
+# Sprint 2D ITEM-2.1 — only filenames matching this regex are allowed to be
+# composed into MODEL_DIR. Defends against path-traversal even though
+# VOICE_INDEX is a closed allowlist (defense-in-depth).
+_VOICE_ID_RE = __import__("re").compile(r"^[A-Za-z0-9_-]+$")
 
 VOICE_INDEX: Dict[str, str] = {
     "tr_TR-fettah-medium": "tr/tr_TR/fettah/medium",
     "en_US-amy-medium": "en/en_US/amy/medium",
     "es_ES-davefx-medium": "es/es_ES/davefx/medium",
 }
+
+
+def _safe_model_path(voice_id: str, suffix: str) -> Path:
+    """Compose a model filename onto MODEL_DIR, rejecting traversal/symlinks."""
+    if not _VOICE_ID_RE.match(voice_id):
+        raise HTTPException(400, f"invalid voice id: {voice_id}")
+    candidate = (MODEL_DIR / f"{voice_id}{suffix}").resolve(strict=False)
+    try:
+        candidate.relative_to(MODEL_DIR)
+    except ValueError as exc:
+        raise HTTPException(400, "voice path outside MODEL_DIR") from exc
+    if candidate.is_symlink():
+        # `resolve(strict=False)` already canonicalizes; reject explicit symlinks.
+        raise HTTPException(400, "voice path is a symlink")
+    return candidate
 # Piper-voices uses a tagged ref (`v1.0.0`) for stable downloads; `main` is
 # blocked from Hugging Face's CDN raw resolver for these blobs.
 VOICE_BASE = (
@@ -48,8 +68,8 @@ VOICE_BASE = (
 def _ensure_voice(voice_id: str) -> Path:
     if voice_id not in VOICE_INDEX:
         raise HTTPException(400, f"unknown voice: {voice_id}")
-    onnx = MODEL_DIR / f"{voice_id}.onnx"
-    cfg = MODEL_DIR / f"{voice_id}.onnx.json"
+    onnx = _safe_model_path(voice_id, ".onnx")
+    cfg = _safe_model_path(voice_id, ".onnx.json")
     if onnx.exists() and cfg.exists():
         return onnx
     rel = VOICE_INDEX[voice_id]
@@ -60,7 +80,8 @@ def _ensure_voice(voice_id: str) -> Path:
         if target.exists():
             continue
         logger.info("downloading %s -> %s", url, target)
-        with urllib.request.urlopen(url, timeout=120) as resp:
+        # URL is computed from the closed VOICE_INDEX allowlist + a fixed base.
+        with urllib.request.urlopen(url, timeout=120) as resp:  # nosec B310
             target.write_bytes(resp.read())
     return onnx
 
