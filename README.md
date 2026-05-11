@@ -2,7 +2,7 @@
 
 > Part of the [Automatia BCN](https://automatiabcn.com) product family · Made in Barcelona
 
-[![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-orange.svg)](LICENSE)
+[![License: BUSL-1.1](https://img.shields.io/badge/License-BUSL--1.1-orange.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-1822%20passing-brightgreen.svg)](#testing)
 [![Lighthouse](https://img.shields.io/badge/lighthouse-100%2F100%2F100%2F100-brightgreen.svg)](docs/performance.md)
 [![Tools](https://img.shields.io/badge/MCP%20tools-107-blue.svg)](docs/api-reference.md)
@@ -107,13 +107,26 @@ npx lighthouse http://localhost:3000 --preset=desktop
 
 ## License
 
-ABS is licensed under the **Business Source License 1.1** (BSL).
+ABS is licensed under the **Business Source License 1.1** (SPDX: `BUSL-1.1`).
 
 - **Free use** — development, evaluation, internal testing on non-production environments. No fee, no permission required.
 - **Production use** — requires a Commercial License from [Automatia BCN](https://automatiabcn.com). See [docs/customer-agreement.md](docs/customer-agreement.md).
 - **Change Date** — on 2030-05-07 this software automatically converts to **Apache License 2.0** (full open source).
 
-See [LICENSE](LICENSE) for the full text. Contact: support@automatiabcn.com.
+> **Note on license terminology:** BUSL-1.1 is a [source-available](https://en.wikipedia.org/wiki/Source-available_software)
+> license. It is **NOT** an [OSI-approved Open Source](https://opensource.org/osd) license. You may read, fork, and
+> evaluate the source freely; production use requires a Commercial License from Automatia BCN until the Change Date
+> (2030-05-07), after which the software automatically converts to Apache License 2.0 (full Open Source).
+
+Related legal documents:
+
+- [LICENSE](LICENSE) — full BUSL-1.1 text
+- [NOTICE.md](NOTICE.md) — canonical attribution + trademark statement
+- [docs/legal/TRADEMARKS.md](docs/legal/TRADEMARKS.md) — trademark policy (FOSSmarks-style)
+- [docs/legal/PRIVACY_PHONE_HOME.md](docs/legal/PRIVACY_PHONE_HOME.md) — license heartbeat disclosure
+- [docs/legal/THIRD_PARTY_LICENSES.md](docs/legal/THIRD_PARTY_LICENSES.md) — third-party dependency inventory
+
+Contact: support@automatiabcn.com.
 
 ## Community
 
