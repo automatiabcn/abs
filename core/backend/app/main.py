@@ -92,6 +92,16 @@ async def lifespan(_app: FastAPI):
     init_db()
     _lf_logger = logging.getLogger("app.lifespan")
 
+    # Sprint 2E ITEM-A — install secret-bearing query-param sanitizer on
+    # httpx / uvicorn-access loggers so a regression elsewhere can't re-leak
+    # credentials via URL logs (defence-in-depth alongside header auth).
+    try:
+        from app.observability.url_sanitizer import install_url_log_sanitizer
+
+        install_url_log_sanitizer()
+    except Exception as exc:
+        _lf_logger.warning("url sanitizer install skipped: %s", exc)
+
     # 013 — vault: plaintext .env migration + boot decrypt → settings'e bind
     try:
         from app.vault.migration import migrate_plaintext_env_to_vault
