@@ -1,0 +1,53 @@
+name: License Detection
+
+on:
+  pull_request:
+    paths:
+      - "LICENSE"
+      - "NOTICE.md"
+      - ".github/workflows/license-check.yml"
+  push:
+    branches: [main]
+    paths:
+      - "LICENSE"
+      - "NOTICE.md"
+      - ".github/workflows/license-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Install licensee
+        run: gem install licensee --version "~> 9.16"
+
+      - name: Detect LICENSE with confidence threshold
+        run: |
+          set -euo pipefail
+          licensee detect LICENSE --confidence=90 --json > /tmp/license.json
+          cat /tmp/license.json
+          MATCH_KEY=$(jq -r '.licenses[0].key // "none"' /tmp/license.json)
+          MATCH_CONFIDENCE=$(jq -r '.matched_files[0].matcher.confidence // 0' /tmp/license.json)
+          echo "Detected license key: $MATCH_KEY"
+          echo "Match confidence: $MATCH_CONFIDENCE"
+          if [ "$MATCH_KEY" != "bsl-1.1" ] && [ "$MATCH_KEY" != "busl-1.1" ]; then
+            echo "::error::Expected BUSL-1.1 license key (bsl-1.1 / busl-1.1); got '$MATCH_KEY'."
+            echo "::error::LICENSE may have drifted from canonical BUSL-1.1 body."
+            exit 1
+          fi
+          OK=$(awk -v c="$MATCH_CONFIDENCE" 'BEGIN{ exit !(c+0 >= 90) }' && echo 1 || echo 0)
+          if [ "$OK" != "1" ]; then
+            echo "::error::Licensee confidence ($MATCH_CONFIDENCE) below 90% — LICENSE drift detected."
+            exit 1
+          fi
+          echo "License detected as $MATCH_KEY at $MATCH_CONFIDENCE% confidence."
