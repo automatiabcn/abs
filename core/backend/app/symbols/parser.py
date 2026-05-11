@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Set
 
+from app.symbols._safe_path import safe_read_text, safe_resolve
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +37,9 @@ class Symbol:
 def parse_python_file(path: Path) -> List[Symbol]:
     """Tek bir .py dosyasindan sembolleri cikar. Hata durumunda bos liste."""
     try:
-        text = path.read_text(encoding="utf-8")
+        text = safe_read_text(path, encoding="utf-8")
+    except (PermissionError, FileNotFoundError, OSError):
+        return []
     except Exception:
         return []
     try:
@@ -148,20 +152,28 @@ def parse_directory(root: Path, skip_dirs: Optional[Set[str]] = None) -> List[Sy
     from app.symbols.typescript_parser import is_ts_or_js, parse_typescript_file
 
     out: List[Symbol] = []
-    if not root.exists():
+    try:
+        safe_root = safe_resolve(root)
+    except PermissionError:
         return out
-    if root.is_file():
-        if root.suffix == ".py":
-            return parse_python_file(root)
-        if is_ts_or_js(root):
-            return parse_typescript_file(root)
+    if not safe_root.exists():
         return out
-    for dirpath, dirnames, filenames in os.walk(root):
+    if safe_root.is_file():
+        if safe_root.suffix == ".py":
+            return parse_python_file(safe_root)
+        if is_ts_or_js(safe_root):
+            return parse_typescript_file(safe_root)
+        return out
+    for dirpath, dirnames, filenames in os.walk(safe_root):
         dirnames[:] = [d for d in dirnames if d not in skip and not d.startswith(".")]
         for fn in filenames:
             p = Path(dirpath) / fn
+            try:
+                safe_p = safe_resolve(p)
+            except PermissionError:
+                continue
             if fn.endswith(".py"):
-                out.extend(parse_python_file(p))
-            elif is_ts_or_js(p):
-                out.extend(parse_typescript_file(p))
+                out.extend(parse_python_file(safe_p))
+            elif is_ts_or_js(safe_p):
+                out.extend(parse_typescript_file(safe_p))
     return out

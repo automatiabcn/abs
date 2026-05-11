@@ -14,6 +14,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import { safeRedirect } from "./safeRedirect";
+
 type LoginState = "idle" | "submitting" | "success" | "error";
 
 export default function LoginPage() {
@@ -51,7 +53,7 @@ export default function LoginPage() {
         // route, App Router skips the transition).
         setState("success");
         const next = new URLSearchParams(window.location.search).get("next");
-        const dest = next && next.startsWith("/") ? next : "/panel";
+        const dest = safeRedirect(next);
         try {
           router.push(dest);
         } catch {
