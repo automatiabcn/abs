@@ -1,8 +1,33 @@
 {
   "files": [
     {
+      "path": ".next/static/chunks/*.*.js",
+      "maxSize": "160 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": ".next/static/chunks/*-*.js",
+      "maxSize": "90 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": ".next/static/chunks/main-*.js",
+      "maxSize": "50 kB",
+      "compression": "gzip"
+    },
+    {
       "path": ".next/static/chunks/main-app-*.js",
-      "maxSize": "60 kB",
+      "maxSize": "10 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": ".next/static/chunks/framework-*.js",
+      "maxSize": "65 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": ".next/static/chunks/polyfills-*.js",
+      "maxSize": "50 kB",
       "compression": "gzip"
     },
     {
@@ -16,8 +41,18 @@
       "compression": "gzip"
     },
     {
-      "path": ".next/static/chunks/*.js",
-      "maxSize": "160 kB",
+      "path": ".next/static/chunks/app/admin/usage/*.js",
+      "maxSize": "20 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": ".next/static/chunks/app/login/*.js",
+      "maxSize": "10 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": ".next/static/chunks/app/pricing/*.js",
+      "maxSize": "10 kB",
       "compression": "gzip"
     }
   ],
