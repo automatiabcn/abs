@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from app.config import settings
+from app.providers.gemini._auth import gemini_headers
 from app.providers.schemas import ProviderError, ProviderResponse
 
 
@@ -32,10 +33,10 @@ def _require_key() -> str:
     return settings.gemini_api_key
 
 
-async def _post(url: str, body: dict, *, timeout: float = 90.0) -> dict:
+async def _post(url: str, body: dict, *, key: str, timeout: float = 90.0) -> dict:
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
-            r = await client.post(url, headers={"Content-Type": "application/json"}, json=body)
+            r = await client.post(url, headers=gemini_headers(key), json=body)
     except httpx.HTTPError as exc:
         raise ProviderError(
             f"Gemini HTTP: {exc}", provider="gemini", transient=True
@@ -72,7 +73,7 @@ async def gemini_search(
         "tools": [{"google_search": {}}],
     }
     start = time.monotonic()
-    data = await _post(f"{_BASE}/models/{model}:generateContent?key={key}", body)
+    data = await _post(f"{_BASE}/models/{model}:generateContent", body, key=key)
     elapsed = int((time.monotonic() - start) * 1000)
     text = _collect_text(data)
 
@@ -101,7 +102,7 @@ async def gemini_url(url: str, question: str = "Bu sayfayı özetle", *, model: 
         "tools": [{"url_context": {}}],
     }
     start = time.monotonic()
-    data = await _post(f"{_BASE}/models/{model}:generateContent?key={key}", body)
+    data = await _post(f"{_BASE}/models/{model}:generateContent", body, key=key)
     elapsed = int((time.monotonic() - start) * 1000)
     return ProviderResponse(
         text=_collect_text(data), model=model, provider="gemini", elapsed_ms=elapsed
@@ -119,7 +120,7 @@ async def gemini_structured(prompt: str, schema: dict, *, model: str = "gemini-2
         },
     }
     start = time.monotonic()
-    data = await _post(f"{_BASE}/models/{model}:generateContent?key={key}", body)
+    data = await _post(f"{_BASE}/models/{model}:generateContent", body, key=key)
     elapsed = int((time.monotonic() - start) * 1000)
     return ProviderResponse(
         text=_collect_text(data), model=model, provider="gemini", elapsed_ms=elapsed
@@ -135,7 +136,7 @@ async def gemini_image(
     key = _require_key()
     body = {"contents": [{"parts": [{"text": prompt}]}]}
     start = time.monotonic()
-    data = await _post(f"{_BASE}/models/{model}:generateContent?key={key}", body, timeout=120.0)
+    data = await _post(f"{_BASE}/models/{model}:generateContent", body, key=key, timeout=120.0)
     elapsed = int((time.monotonic() - start) * 1000)
     # İlk image part'ını al
     text_parts: List[str] = []
@@ -184,8 +185,9 @@ async def gemini_image_edit(prompt: str, image_base64: str) -> ProviderResponse:
     }
     start = time.monotonic()
     data = await _post(
-        f"{_BASE}/models/gemini-2.5-flash-image:generateContent?key={key}",
+        f"{_BASE}/models/gemini-2.5-flash-image:generateContent",
         body,
+        key=key,
         timeout=120.0,
     )
     return ProviderResponse(
@@ -204,7 +206,8 @@ async def gemini_video(prompt: str) -> ProviderResponse:
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
             r = await client.post(
-                f"{_BASE}/models/veo-3.0-generate-001:predictLongRunning?key={key}",
+                f"{_BASE}/models/veo-3.0-generate-001:predictLongRunning",
+                headers=gemini_headers(key),
                 json=body,
             )
     except httpx.HTTPError as exc:
@@ -228,7 +231,10 @@ async def gemini_video_status(operation_name: str) -> ProviderResponse:
     key = _require_key()
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            r = await client.get(f"{_BASE}/{operation_name}?key={key}")
+            r = await client.get(
+                f"{_BASE}/{operation_name}",
+                headers=gemini_headers(key, json=False),
+            )
     except httpx.HTTPError as exc:
         raise ProviderError(
             f"Gemini video status: {exc}", provider="gemini", transient=True
