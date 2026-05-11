@@ -1,0 +1,79 @@
+name: SBOM Generation
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install CycloneDX generators
+        run: |
+          npm install -g @cyclonedx/cyclonedx-npm
+          pip install --quiet cyclonedx-bom
+
+      - name: Prepare SBOM output directory
+        run: mkdir -p artifacts/sbom
+
+      - name: Generate npm SBOM (core/landing)
+        working-directory: core/landing
+        run: |
+          npm ci --legacy-peer-deps
+          cyclonedx-npm \
+            --output-format JSON \
+            --output-file ../../artifacts/sbom/abs-landing.cdx.json
+
+      - name: Generate pip SBOM (core/backend)
+        working-directory: core/backend
+        run: |
+          python -m venv .sbom-venv
+          . .sbom-venv/bin/activate
+          pip install --quiet --upgrade pip
+          pip install --quiet -e .
+          pip install --quiet cyclonedx-bom
+          cyclonedx-py environment \
+            --output-format json \
+            --outfile ../../artifacts/sbom/abs-backend.cdx.json
+
+      - name: Validate SBOM files exist and are non-empty
+        run: |
+          for f in artifacts/sbom/abs-landing.cdx.json artifacts/sbom/abs-backend.cdx.json; do
+            test -s "$f" || { echo "::error::Missing or empty SBOM: $f"; exit 1; }
+            python -c "import json,sys; json.load(open('$f'))" \
+              || { echo "::error::Invalid JSON in $f"; exit 1; }
+          done
+
+      - name: Upload SBOM artifacts (workflow run)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: artifacts/sbom/*.cdx.json
+          retention-days: 365
+
+      - name: Attach SBOMs to GitHub Release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            artifacts/sbom/abs-landing.cdx.json \
+            artifacts/sbom/abs-backend.cdx.json \
+            --clobber
