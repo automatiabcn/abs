@@ -1,6 +1,6 @@
 # Cascade redundancy smoke
 
-> Generated: 2026-05-07T11:53:50+00:00 · duration: 0.09s · `7/7` rounds green
+> Generated: 2026-05-10T22:50:08+00:00 · duration: 0.10s · `7/7` rounds green
 
 Each round monkey-patches the provider registry: every provider in the chain is a stub that either returns `ok:<provider>` or raises a transient `ProviderError`. **No real API calls** — this is a contract smoke for the cascade orchestrator's fallthrough logic, executed against the production `app.cascade.orchestrator.call_with_cascade` code path.
 
@@ -10,13 +10,13 @@ Chain under test (paid-first): `anthropic → groq → cerebras → gemini → c
 
 | Killed | Chain | Expected answerer | Actual answerer | Elapsed (ms) | Pass |
 |---|---|---|---|---|---|
-| `—` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.48 | ✅ |
-| `anthropic` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `groq` | `groq` | 0.34 | ✅ |
-| `groq` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.16 | ✅ |
+| `—` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.47 | ✅ |
+| `anthropic` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `groq` | `groq` | 0.36 | ✅ |
+| `groq` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.15 | ✅ |
 | `cerebras` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.14 | ✅ |
-| `gemini` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.14 | ✅ |
-| `cloudflare` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.14 | ✅ |
-| `cohere` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.23 | ✅ |
+| `gemini` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.15 | ✅ |
+| `cloudflare` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.13 | ✅ |
+| `cohere` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.14 | ✅ |
 
 ## Customer interpretation
 
