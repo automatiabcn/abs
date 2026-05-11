@@ -24,6 +24,7 @@ import re
 from pathlib import Path
 from typing import List
 
+from app.symbols._safe_path import safe_read_text
 from app.symbols.parser import Symbol
 
 
@@ -51,7 +52,9 @@ _RE_IMPORT = re.compile(
 def parse_typescript_file(path: Path) -> List[Symbol]:
     """TS / JS / TSX / JSX dosyasını regex ile parse et, sembolleri döndür."""
     try:
-        text = path.read_text(encoding="utf-8", errors="ignore")
+        text = safe_read_text(path, encoding="utf-8", errors="ignore")
+    except (PermissionError, FileNotFoundError, OSError):
+        return []
     except Exception:
         return []
     out: List[Symbol] = []
