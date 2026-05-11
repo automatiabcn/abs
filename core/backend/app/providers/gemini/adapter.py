@@ -16,6 +16,7 @@ from app.config import settings
 
 from ..base import BaseProvider
 from ..schemas import ProviderError, ProviderResponse
+from ._auth import gemini_headers
 
 
 class GeminiProvider(BaseProvider):
@@ -35,7 +36,7 @@ class GeminiProvider(BaseProvider):
         model = model or self.default_model
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{model}:generateContent?key={settings.gemini_api_key}"
+            f"{model}:generateContent"
         )
         body = {
             "contents": [{"parts": [{"text": prompt}]}],
@@ -51,7 +52,7 @@ class GeminiProvider(BaseProvider):
             async with httpx.AsyncClient(timeout=timeout) as client:
                 r = await client.post(
                     url,
-                    headers={"Content-Type": "application/json"},
+                    headers=gemini_headers(settings.gemini_api_key),
                     json=body,
                 )
         except httpx.TimeoutException as exc:

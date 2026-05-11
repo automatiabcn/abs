@@ -108,7 +108,8 @@ def validate_gemini(api_key: str) -> dict:
     try:
         with httpx.Client(timeout=5.0) as c:
             r = c.get(
-                f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+                "https://generativelanguage.googleapis.com/v1beta/models",
+                headers={"x-goog-api-key": api_key},
             )
         if r.status_code == 200:
             return _result(True, t0)
