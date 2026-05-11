@@ -30,6 +30,30 @@ async def check_update():
     return update_state(manifest, _current_version())
 
 
+_SAFE_ERROR_CODES = {
+    "manifest_fetch_failed",
+    "update_manifest_url tanimli degil",
+    "manifest top-level dict bekleniyor",
+    "signature missing — refused (fail-closed)",
+    "signature invalid — refused (fail-closed)",
+}
+
+
+def _safe_error_label(raw: str | None) -> str:
+    """Sprint 2D ITEM-2.3 — never echo raw exception text to clients.
+
+    Only allow a fixed allowlist of error codes through. Status-code style
+    strings ("manifest fetch 502") are reduced to a generic upstream label.
+    """
+    if not raw:
+        return "upstream_unavailable"
+    if raw in _SAFE_ERROR_CODES:
+        return raw
+    if raw.startswith("manifest fetch "):
+        return "upstream_http_error"
+    return "upstream_unavailable"
+
+
 @router.get("/changelog")
 async def changelog(_admin: dict = Depends(current_admin)):
     """CJ-012 — manifest yoksa/registry erisilemiyorsa 503 yerine bos changelog
@@ -42,7 +66,7 @@ async def changelog(_admin: dict = Depends(current_admin)):
             "released_at": None,
             "version": _current_version(),
             "entries": [],
-            "note": f"upstream_unavailable: {manifest['error']}",
+            "note": _safe_error_label(manifest.get("error")),
         }
     return {
         "changelog_url": manifest.get("changelog_url"),

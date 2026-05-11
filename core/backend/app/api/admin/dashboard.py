@@ -16,6 +16,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -29,6 +31,52 @@ logger = logging.getLogger(__name__)
 
 CACHE_PATH = Path("/tmp/abs_admin_dashboard_cache.json")
 CACHE_TTL_SECONDS = 5 * 60
+
+# Sprint 2D ITEM-2.2 — CodeQL py/clear-text-storage-sensitive-data (#32).
+# The aggregated dashboard payload may transitively contain provider keys,
+# webhook secrets, or audit-chain HMACs. Mask any field whose key (or value
+# prefix) suggests a secret before persisting to the on-disk cache.
+_SENSITIVE_KEY_RE = re.compile(
+    r"(?i)(api[_-]?key|secret|password|token|webhook|signing[_-]?key|"
+    r"private[_-]?key|access[_-]?key|client[_-]?secret|bearer)"
+)
+_SENSITIVE_VALUE_PREFIXES = (
+    "sk-",
+    "ghp_",
+    "ghs_",
+    "xoxb-",
+    "xoxp-",
+    "AKIA",
+    "AIza",
+    "Bearer ",
+)
+
+
+def _mask_value(v: Any) -> Any:
+    if isinstance(v, str) and v:
+        if len(v) <= 8:
+            return "***"
+        return f"{v[:3]}***{v[-2:]}"
+    return "***"
+
+
+def _sanitize_for_cache(value: Any) -> Any:
+    """Recursively strip/mask values that look like secrets before disk write."""
+    if isinstance(value, dict):
+        out: dict[str, Any] = {}
+        for k, v in value.items():
+            if isinstance(k, str) and _SENSITIVE_KEY_RE.search(k):
+                out[k] = _mask_value(v)
+            else:
+                out[k] = _sanitize_for_cache(v)
+        return out
+    if isinstance(value, list):
+        return [_sanitize_for_cache(item) for item in value]
+    if isinstance(value, str):
+        for prefix in _SENSITIVE_VALUE_PREFIXES:
+            if value.startswith(prefix):
+                return _mask_value(value)
+    return value
 
 
 def _read_cache() -> dict | None:
@@ -45,9 +93,17 @@ def _read_cache() -> dict | None:
 
 def _write_cache(payload: dict) -> None:
     try:
-        body = dict(payload)
+        sanitized = _sanitize_for_cache(payload)
+        body = dict(sanitized) if isinstance(sanitized, dict) else {"payload": sanitized}
         body["_ts"] = time.time()
-        CACHE_PATH.write_text(json.dumps(body, default=str))
+        # Sprint 2D ITEM-2.2 — write with 0600 perms (owner read/write only).
+        # Defense-in-depth on top of the sanitizer.
+        serialized = json.dumps(body, default=str)
+        fd = os.open(str(CACHE_PATH), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        try:
+            os.write(fd, serialized.encode("utf-8"))
+        finally:
+            os.close(fd)
     except Exception as exc:
         logger.debug("dashboard cache write failed: %s", exc)
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import time
+import uuid
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -148,16 +149,27 @@ async def _live_test_provider(provider_id: str) -> Dict[str, Any]:
         }
     except ProviderError as exc:
         latency_ms = int((time.perf_counter() - started) * 1000)
+        # Sprint 2D ITEM-2.3 — CodeQL py/stack-trace-exposure (#46). ProviderError
+        # carries a curated `.message` (no Python frame), so we can surface it
+        # as a short code. Defense-in-depth: cap length, strip newlines.
+        safe_msg = (str(exc.message or "") or "provider_error").splitlines()[0][:120]
         return {
             "ok": False,
-            "error": str(exc.message or exc) or "provider_error",
+            "error": safe_msg or "provider_error",
             "latency_ms": latency_ms,
         }
     except Exception as exc:  # pragma: no cover
         latency_ms = int((time.perf_counter() - started) * 1000)
+        # Sprint 2D ITEM-2.3 — opaque request_id pattern: log full trace
+        # server-side, return only a correlation id to the caller.
+        request_id = uuid.uuid4().hex[:12]
+        logger.exception(
+            "provider_test_failed provider=%s request_id=%s", provider_id, request_id
+        )
         return {
             "ok": False,
-            "error": f"{type(exc).__name__}: {str(exc)[:160]}",
+            "error": "internal_error",
+            "request_id": request_id,
             "latency_ms": latency_ms,
         }
 

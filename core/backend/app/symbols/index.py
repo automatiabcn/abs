@@ -7,15 +7,18 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, Dict
 
+from ._safe_path import safe_resolve
 from .parser import parse_directory
 from .store import bulk_insert, reset, stats as store_stats
 
 
 def index_path(path: str, replace: bool = False) -> Dict[str, Any]:
-    p = Path(path)
+    try:
+        p = safe_resolve(path)
+    except PermissionError:
+        return {"error": "path outside allowed roots", "indexed": 0}
     if not p.exists():
         return {"error": f"yol yok: {path}", "indexed": 0}
     if replace:
