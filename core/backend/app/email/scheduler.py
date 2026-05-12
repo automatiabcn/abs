@@ -261,7 +261,8 @@ def unsubscribe(token: str) -> Tuple[bool, Optional[str]]:
     except jwt.ExpiredSignatureError:
         return False, "Token expired"
     except jwt.InvalidTokenError as exc:
-        return False, f"Invalid token: {exc}"
+        logger.warning("email unsubscribe invalid token: %s", type(exc).__name__)
+        return False, "Invalid token"
 
     license_jti = payload.get("license_jti")
     if not license_jti:

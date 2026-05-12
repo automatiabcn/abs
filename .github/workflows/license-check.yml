@@ -1,3 +1,29 @@
+# License Detection — Sprint 2G ITEM 4
+#
+# Original workflow used `licensee detect LICENSE --confidence=90` and
+# expected MATCH_KEY to be `bsl-1.1` or `busl-1.1`. That can never
+# succeed: the licensee gem (any version through 9.16+) bundles
+# choosealicense.com's `_licenses` directory, which contains
+# `bsl-1.0.txt` (Boost Software License 1.0) but no BUSL-1.1 entry.
+# choosealicense.com itself does not ship a BUSL-1.1 template either.
+# So Licensee structurally cannot return key `busl-1.1`, and the
+# workflow has been failing on every run since it was introduced.
+#
+# This rewrite drops the `licensee detect` strict-match in favour of a
+# body-shape verification: confirm the LICENSE file is unambiguously
+# the BUSL-1.1 canonical body (header phrase + the five required
+# Parameters + the MariaDB Covenants block + the BSL Notice block).
+# The check still catches accidental drift (e.g. someone replacing the
+# body with MIT or deleting a Parameter) but does not depend on a
+# template Licensee never had.
+#
+# Linguist NOASSERTION on the repo home page is an expected upstream
+# consequence of the same gap and is documented in README "License".
+#
+# Security: no untrusted user input is interpolated into any run: block.
+# All markers are hardcoded strings; the LICENSE/NOTICE.md paths are
+# checked-out repository files, not user-supplied data.
+
 name: License Detection
 
 on:
@@ -20,34 +46,76 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.3"
-
-      - name: Install licensee
-        run: gem install licensee --version "~> 9.16"
-
-      - name: Detect LICENSE with confidence threshold
+      - name: Verify LICENSE body shape (BUSL-1.1 canonical markers)
         run: |
           set -euo pipefail
-          licensee detect LICENSE --confidence=90 --json > /tmp/license.json
-          cat /tmp/license.json
-          MATCH_KEY=$(jq -r '.licenses[0].key // "none"' /tmp/license.json)
-          MATCH_CONFIDENCE=$(jq -r '.matched_files[0].matcher.confidence // 0' /tmp/license.json)
-          echo "Detected license key: $MATCH_KEY"
-          echo "Match confidence: $MATCH_CONFIDENCE"
-          if [ "$MATCH_KEY" != "bsl-1.1" ] && [ "$MATCH_KEY" != "busl-1.1" ]; then
-            echo "::error::Expected BUSL-1.1 license key (bsl-1.1 / busl-1.1); got '$MATCH_KEY'."
-            echo "::error::LICENSE may have drifted from canonical BUSL-1.1 body."
+          if [ ! -s LICENSE ]; then
+            echo "::error::LICENSE file is missing or empty."
             exit 1
           fi
-          OK=$(awk -v c="$MATCH_CONFIDENCE" 'BEGIN{ exit !(c+0 >= 90) }' && echo 1 || echo 0)
-          if [ "$OK" != "1" ]; then
-            echo "::error::Licensee confidence ($MATCH_CONFIDENCE) below 90% — LICENSE drift detected."
+          MISS=0
+          for MARKER in \
+            "Business Source License 1.1" \
+            "Licensor:" \
+            "Licensed Work:" \
+            "Additional Use Grant:" \
+            "Change Date:" \
+            "Change License:" \
+            "Covenants of Licensor" \
+            "MariaDB"
+          do
+            if ! grep -q -F "$MARKER" LICENSE; then
+              echo "::error::LICENSE missing required canonical marker: $MARKER"
+              MISS=$((MISS + 1))
+            fi
+          done
+          if [ "$MISS" -gt 0 ]; then
+            echo "::error::LICENSE drift detected ($MISS markers missing)."
             exit 1
           fi
-          echo "License detected as $MATCH_KEY at $MATCH_CONFIDENCE% confidence."
+          # Sanity: full body should be at least 2.5 KB. Sprint 2F
+          # canonical body is ~3.5 KB; anything under 2500 means the
+          # body was truncated or replaced with a stub.
+          SIZE=$(wc -c < LICENSE)
+          if [ "$SIZE" -lt 2500 ]; then
+            echo "::error::LICENSE size ($SIZE bytes) below 2500-byte canonical floor."
+            exit 1
+          fi
+          echo "LICENSE: BUSL-1.1 canonical markers present, size=${SIZE}B."
+
+      - name: Verify NOTICE.md attribution block (Sprint 2F)
+        run: |
+          set -euo pipefail
+          if [ ! -s NOTICE.md ]; then
+            echo "::error::NOTICE.md is missing or empty."
+            exit 1
+          fi
+          if ! grep -q -F "Automatia BCN" NOTICE.md; then
+            echo "::error::NOTICE.md missing 'Automatia BCN' attribution."
+            exit 1
+          fi
+          if ! grep -q -F "Business Source License 1.1" NOTICE.md; then
+            echo "::error::NOTICE.md missing BUSL-1.1 reference."
+            exit 1
+          fi
+          echo "NOTICE.md: canonical attribution block present."
+
+      - name: Informational licensee probe (non-gating)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          # Best-effort Licensee output for diagnostics. NOASSERTION
+          # is expected (see workflow header) — never used to fail
+          # the job.
+          if command -v gem >/dev/null 2>&1; then
+            gem install licensee --version "~> 9.16" --no-document >/dev/null 2>&1 || true
+            if command -v licensee >/dev/null 2>&1; then
+              echo "--- licensee informational output ---"
+              licensee detect LICENSE --json 2>/dev/null || echo "(licensee returned non-zero — expected for BUSL-1.1)"
+              echo "--- end licensee output ---"
+            fi
+          fi

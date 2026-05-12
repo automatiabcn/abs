@@ -48,5 +48,8 @@ welcome and reviewed quickly.
 Open a [GitHub Discussion](https://github.com/automatiabcn/abs/discussions) or email
 [support@automatiabcn.com](mailto:support@automatiabcn.com).
 
-By contributing, you agree your contribution is licensed under
-[Apache 2.0](LICENSE).
+By contributing, you agree your contribution is licensed under the
+[Business Source License 1.1](LICENSE) (the project's source-available
+license). The Change Date (2030-05-07) converts the entire codebase —
+including all accepted contributions — to Apache License 2.0
+automatically.
