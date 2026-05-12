@@ -55,6 +55,13 @@ jobs:
         with:
           configPath: core/landing/lighthouserc.json
           uploadArtifacts: true
+          # Sprint 2H F-2H-02 — desktop + slow-3g run as two jobs in the
+          # same workflow run; the action's default artifactName is
+          # `lighthouse-results` for both, which collides with HTTP 409
+          # on the slow-3g upload. Suffix per job so both reports survive.
+          # All values here are static; no untrusted user input is
+          # interpolated through to a run: block.
+          artifactName: lighthouse-results-desktop
           temporaryPublicStorage: true
         # The action does not have a built-in retry, so a transient
         # cold-runner failure surfaces here. The next step retries
@@ -65,6 +72,7 @@ jobs:
         with:
           configPath: core/landing/lighthouserc.json
           uploadArtifacts: true
+          artifactName: lighthouse-results-desktop-retry
           temporaryPublicStorage: true
 
   slow-3g:
@@ -86,4 +94,7 @@ jobs:
         with:
           configPath: core/landing/lighthouserc.slow-3g.json
           uploadArtifacts: true
+          # Sprint 2H F-2H-02 — see desktop job: unique artifactName
+          # per job avoids the HTTP 409 collision on uploadArtifact.
+          artifactName: lighthouse-results-slow-3g
           temporaryPublicStorage: true
