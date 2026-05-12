@@ -72,9 +72,12 @@ jobs:
           pip install --quiet --upgrade pip
           pip install --quiet -e .
           pip install --quiet cyclonedx-bom
+          # Sprint 2H F-2H-01 — cyclonedx-py CLI uses --output-file
+          # (kebab-case), not --outfile. Older docs cached the abbreviated
+          # form; current versions reject it with exit 2.
           cyclonedx-py environment \
             --output-format json \
-            --outfile ../../artifacts/sbom/abs-backend.cdx.json
+            --output-file ../../artifacts/sbom/abs-backend.cdx.json
 
       - name: Validate SBOM files exist and are non-empty
         run: |
