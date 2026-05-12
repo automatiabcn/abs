@@ -13,6 +13,7 @@ GET /status            — HTML page with 30s auto-refresh
 
 from __future__ import annotations
 
+import logging
 import time
 from pathlib import Path
 
@@ -23,6 +24,8 @@ from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import FileResponse
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["status"])
 
@@ -43,7 +46,8 @@ def _check_db() -> dict:
             conn.execute(text("SELECT 1")).scalar()
         return {"name": "database", "ok": True}
     except Exception as exc:
-        return {"name": "database", "ok": False, "error": str(exc)[:120]}
+        logger.exception("status_page database check failed")
+        return {"name": "database", "ok": False, "error_class": type(exc).__name__}
 
 
 def _check_vault() -> dict:
@@ -91,7 +95,8 @@ def _check_mcp() -> dict:
 
         return {"name": "mcp", "ok": _REGISTERED_COUNT >= 100, "tools": _REGISTERED_COUNT}
     except Exception as exc:
-        return {"name": "mcp", "ok": False, "error": str(exc)[:120]}
+        logger.exception("status_page mcp check failed")
+        return {"name": "mcp", "ok": False, "error_class": type(exc).__name__}
 
 
 def _check_email() -> dict:

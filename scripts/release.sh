@@ -122,10 +122,30 @@ docker buildx build \
   --push \
   core/landing
 
-# 5. Tag the git release. `|| true` because re-running the script on the
-#    same version (after a push retry) should not error out.
-git tag "v${VERSION}" 2>/dev/null || echo "[release] git tag v${VERSION} already exists"
-git push origin "v${VERSION}" 2>/dev/null || echo "[release] origin already has v${VERSION}"
+# 5. Tag the git release. Sprint 2G ITEM 1 root cause: the original lines
+#    `git tag ... 2>/dev/null || echo "already exists"` masked every real
+#    failure (auth rejected, signing failure, network timeout) and let
+#    the script print "✅ Released" while no tag ever reached origin.
+#    Three sprints (2D/2E/2F) shipped image-only with no git tag because
+#    of this. Lesson 15 revised: post-release verification is mandatory.
+if ! git rev-parse --verify "v${VERSION}" >/dev/null 2>&1; then
+  git tag -s "v${VERSION}" -m "Automatia ABS v${VERSION}"
+else
+  echo "[release] git tag v${VERSION} already exists locally"
+fi
+if git ls-remote --tags origin "v${VERSION}" 2>/dev/null | grep -q "refs/tags/v${VERSION}$"; then
+  echo "[release] origin already has v${VERSION}"
+else
+  git push origin "v${VERSION}"
+fi
+# Hard verification gate (Lesson 15 revised). NO stderr suppression here.
+if ! git ls-remote --tags origin "v${VERSION}" | grep -q "refs/tags/v${VERSION}$"; then
+  echo "ERROR: tag v${VERSION} not visible on origin after push; aborting." >&2
+  exit 1
+fi
+if ! gh release view "v${VERSION}" >/dev/null 2>&1; then
+  echo "[release] WARN: GitHub Release for v${VERSION} not yet visible (release.yml may still be running; check manually)." >&2
+fi
 
 # 6. Make packages private (idempotent — safe to re-run).
 gh api -X PATCH "/users/${GHCR_USER}/packages/container/abs-backend" \

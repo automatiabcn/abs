@@ -197,6 +197,6 @@ async def test_provider(
         return {
             "ok": False,
             "provider": provider_id,
-            "error": f"{type(exc).__name__}: {str(exc)[:160]}",
+            "error_class": type(exc).__name__,
             "latency_ms": latency_ms,
         }

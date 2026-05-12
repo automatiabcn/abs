@@ -42,7 +42,8 @@ def _check_db() -> dict:
             "detail": {"engine": str(engine.url)},
         }
     except Exception as exc:
-        return {"name": "database", "ok": False, "detail": str(exc)[:200]}
+        logger.exception("health_full database check failed")
+        return {"name": "database", "ok": False, "detail": {"error_class": type(exc).__name__}}
 
 
 def _check_vault() -> dict:
@@ -60,7 +61,8 @@ def _check_vault() -> dict:
             },
         }
     except Exception as exc:
-        return {"name": "vault", "ok": False, "detail": str(exc)[:200]}
+        logger.exception("health_full vault check failed")
+        return {"name": "vault", "ok": False, "detail": {"error_class": type(exc).__name__}}
 
 
 def _check_providers() -> dict:
@@ -88,7 +90,8 @@ def _check_rag() -> dict:
         importlib.import_module("chromadb")
         return {"name": "rag", "ok": True, "detail": {"chromadb": "importable"}}
     except Exception as exc:
-        return {"name": "rag", "ok": False, "detail": str(exc)[:200]}
+        logger.exception("health_full rag check failed")
+        return {"name": "rag", "ok": False, "detail": {"error_class": type(exc).__name__}}
 
 
 def _check_mcp() -> dict:
@@ -101,7 +104,8 @@ def _check_mcp() -> dict:
             "detail": {"registered_count": _REGISTERED_COUNT},
         }
     except Exception as exc:
-        return {"name": "mcp", "ok": False, "detail": str(exc)[:200]}
+        logger.exception("health_full mcp check failed")
+        return {"name": "mcp", "ok": False, "detail": {"error_class": type(exc).__name__}}
 
 
 def _check_email() -> dict:

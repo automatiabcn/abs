@@ -43,8 +43,10 @@ A separate **admin key** lives only in the Algolia dashboard for crawler runs.
 ```bash
 pip install \
   "mkdocs-material[imaging]>=9.5" \
-  "mike>=2.1" \
-  "mkdocs-algolia-docsearch>=0.4"
+  "mike>=2.1"
+# Note: Sprint 2G ITEM 3 removed `mkdocs-algolia-docsearch` — the
+# package was never published to PyPI. Site search uses MkDocs
+# Material's built-in lunr.js plugin.
 
 # regenerate api-reference.md from MCP tool annotations
 bash scripts/build_docs.sh

@@ -154,7 +154,8 @@ async def slack_callback(code: str, state: str) -> dict:
             else:
                 error = f"HTTP {r.status_code}"
     except Exception as exc:
-        error = str(exc)[:200]
+        logger.exception("slack oauth callback failed")
+        error = type(exc).__name__
 
     if bot_token:
         encrypt_secret(
@@ -196,4 +197,5 @@ async def slack_post(
             "error": (data or {}).get("error", "unknown"),
         }
     except Exception as exc:
-        return {"ok": False, "error": str(exc)[:200]}
+        logger.exception("slack post failed")
+        return {"ok": False, "error_class": type(exc).__name__}

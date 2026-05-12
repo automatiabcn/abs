@@ -253,7 +253,8 @@ async def github_callback(code: str, state: str, request: Request) -> dict:
             else:
                 error = f"HTTP {r.status_code}"
     except Exception as exc:
-        error = str(exc)[:200]
+        logger.exception("github smart_link callback failed")
+        error = type(exc).__name__
 
     if token:
         encrypt_secret(
