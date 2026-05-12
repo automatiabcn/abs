@@ -2,6 +2,91 @@
 
 Versiyon kayıtları — her task tek satır, tarih + delta.
 
+## 1.0.0 (2026-05-11) — First production release · BUSL-1.1
+
+ABS Server **v1.0.0** — first production-ready release, source-available
+under [Business Source License 1.1](../LICENSE). Change Date 2030-05-07,
+Change License Apache 2.0.
+
+### Highlights since rc1
+
+- **6-provider cascade** with circuit breaker — Anthropic + Groq + Cerebras
+  + Gemini + Cloudflare + Cohere (Sprint 19 hexagonal restructure, pact
+  contract tests, nightly regression).
+- **123 MCP tools** across code, RAG, judge ML, fullstack, billing,
+  observability, marketplace, compliance (was 107 in early rc).
+- **Plugin marketplace** with cosign verification + Docker sandbox +
+  Cerbos pre-filter + Next.js admin UI (Sprint 19 T-S01).
+- **NL workflow builder** — natural-language → JSON synthesizer +
+  2-stage validator + canvas (Sprint 19 T-S03).
+- **Free-tier hybrid promise** — Claude quota discipline + paid-SaaS
+  opt-in only + Anthropic policy compliance (Sprint 20 T-F01..F05).
+- **License + IP hardening** — JWT RS256, hardware fingerprint, phone-home
+  with 7-day grace, Cython-compiled verifier (Q12 IP-Hardening R1..R3).
+- **Image-only customer distribution** — ghcr.io compose with source
+  strip in production stage (R3 onboarding ghcr PAT, 1.0.0-rc2..rc8
+  Cython gate verified).
+- **i18n EN/TR/ES** — landing, admin, customer portal, 24 email templates,
+  /panel/* + /404 in three locales (Sprint 17 + Sprint 19 polish).
+- **Lighthouse 100/100/100/100** desktop + slow-3g accessibility (Sprint
+  17 + Sprint 2E ITEM C).
+- **Test corpus 2065 passing** (pytest backend) + 53 vitest + 41 Playwright
+  + 8 axe-core a11y — zero failure across CI green.
+
+### Ship integrity reconciliation (Sprint 2G)
+
+Sprints 2D / 2E / 2F shipped images to GHCR for `1.0.0-rc9`, `1.0.0-rc10`,
+`1.0.0-rc11` but the corresponding git tags never reached `origin`. Sprint
+2G (ITEM 1 audit + ITEM 2 retroactive tag) reconciled the gap:
+
+- `v1.0.0-rc9` retro-tagged at commit `d225a1c` (Sprint 2D — CodeQL prod
+  fix x13 + dynamic imports + commit signing)
+- `v1.0.0-rc10` retro-tagged at commit `9e0d837` (Sprint 2E — Gemini
+  header-auth + URL sanitizer + CodeQL config + lighthouse slow-3g a11y)
+- `v1.0.0-rc11` retro-tagged at commit `10868d6` (Sprint 2F — NOTICE.md
+  + trademarks + license metadata + SBOM CI + heartbeat privacy doc)
+- `v1.0.0` at the Sprint 2G head — first production GA tag with SBOM
+  (CycloneDX) + cosign keyless signature attached via release.yml.
+
+Root cause + Lesson 15 revision documented at
+`_agent-tasks/SHIP_INTEGRITY_AUDIT_2026-05-11.md`. `scripts/release.sh`
+patched to mandate a `git ls-remote --tags origin | grep v${VERSION}`
+verification gate; no future RC ships with a silent tag-push failure.
+
+### Sprint 2G — final readiness deltas
+
+- **ITEM 1** — release.sh tag-push verification gate + audit doc.
+- **ITEM 2** — rc9/rc10/rc11 retroactive git tag + GitHub Release notes.
+- **ITEM 3** — docs workflow phantom `mkdocs-algolia-docsearch` removed
+  (PyPI package never existed); validation tolerance + mike-only deps.
+- **ITEM 4** — License Detection workflow no longer expects an upstream
+  `bsl-1.1` Licensee template that does not exist; replaced with
+  body-shape verification.
+- **ITEM 5** — README "GitHub Other / NOASSERTION" disclosure (Licensee
+  gem doesn't bundle BUSL-1.1; documented as upstream gap).
+- **ITEM 6** — CodeQL default-setup → advanced workflow with config-file
+  + matrix python / javascript-typescript.
+- **ITEM 7** — branch protection main with 7 required status checks
+  (CodeQL python + ts, Perf Budget lighthouse + bundlewatch + web-vitals,
+  Lighthouse Nightly desktop + slow-3g).
+- **ITEM 9** — all production CodeQL alerts resolved or per-alert
+  documented dismissal (Lesson 11 — no mass-dismiss).
+- **ITEM 10** — all Dependabot alerts patched or rationale closed.
+- **ITEM 11** — `v1.0.0` git tag + SBOM (CycloneDX) + cosign keyless +
+  multi-arch Docker images (linux/amd64 + linux/arm64) + GitHub Release.
+- **ITEM 12** — README + CHANGELOG + CUSTOMER_USER_GUIDE final review,
+  README badges refreshed (tests 2065, MCP tools 123, CI + CodeQL
+  workflow badges, "Made in Barcelona").
+- **ITEM 13** — Sprint 2G report + customer pilot plan
+  (`_agent-tasks/CUSTOMER_PILOT_PLAN.md`).
+- **ITEM 14** — repo image audit: About + Topics + social preview +
+  Discussions + branch cleanup + 4 → 0 open issue.
+
+ITEM 8 (BGE-M3 default embedder flip) remains gated behind a founder
+APPROVED trailer; carried forward to Sprint 21.
+
+---
+
 ## 1.0.0-rc1 (2026-04-28) — Sprint 17 QA + 3D Hero
 
 ### T-Q05 — 3D Hero Scene

@@ -1,0 +1,65 @@
+# CodeQL Advanced — Sprint 2G ITEM 6
+#
+# Replaces GitHub's default-setup CodeQL with an advanced workflow that
+# honours .github/codeql/codeql-config.yml. Default-setup ignores the
+# in-repo config file, which is why 9 path-injection alerts (#33, #47,
+# #48, #49, #50, #51, #53, #54, #55) on _safe_path.py + its three call
+# sites + infra/piper/server.py stayed open after Sprint 2E shipped the
+# sanitizer + the config exclusion. Advanced setup picks the config up.
+#
+# Before this workflow can take over scanning, default-setup must be
+# disabled (founder action):
+#   gh api -X DELETE /repos/automatiabcn/abs/code-scanning/default-setup
+#
+# Schedule mirrors the previous default-setup cadence (Monday 06:00 UTC)
+# plus PR + push triggers on main so every commit gets scanned.
+#
+# Security: this workflow uses only safe context references — matrix.language
+# (workflow-defined enum) and github.ref (internal git ref) for the
+# concurrency group identifier. No untrusted user input (issue title, PR
+# body, commit message, etc.) is ever interpolated into a run: block.
+
+name: CodeQL Advanced
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          config-file: ./.github/codeql/codeql-config.yml
+          queries: security-extended,security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

@@ -62,6 +62,9 @@ playwright/.cache/
 # Internal worker briefs — founder ↔ worker coordination, not for distribution
 _agent-tasks/
 
+# Generated research assets (social previews, image experiments, scratch)
+_research/
+
 # Per-customer SSH deploy keys + license tokens — NEVER commit
 customer-keys/
 

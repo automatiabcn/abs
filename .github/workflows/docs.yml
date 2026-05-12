@@ -48,10 +48,16 @@ jobs:
         run: pip install -e .
       - name: Install docs deps
         run: |
+          # Sprint 2G ITEM 3 — dropped `mkdocs-algolia-docsearch>=0.4`:
+          # the PyPI package never existed, so `pip install` failed on
+          # every docs.yml run since T-R07 (Sprint 18). The matching
+          # `algolia_docsearch:` plugin entry has been removed from
+          # mkdocs.yml. MkDocs Material's built-in search covers site
+          # search; Algolia DocSearch can be re-introduced later as a
+          # template override (no PyPI plugin).
           pip install \
             "mkdocs-material[imaging]>=9.5" \
-            "mike>=2.1" \
-            "mkdocs-algolia-docsearch>=0.4"
+            "mike>=2.1"
       - name: Configure git author for mike
         run: |
           git config --global user.name "abs-docs-bot"

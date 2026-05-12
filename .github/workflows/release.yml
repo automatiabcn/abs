@@ -1,0 +1,155 @@
+# Release — Sprint 2G ITEM 11
+#
+# Trigger: push of a semver tag (v1.0.0, v1.0.0-rcN). Creates the GitHub
+# Release entry which then triggers sbom.yml (release: published) to
+# attach the CycloneDX SBOMs as release assets.
+#
+# Distinct from cicd.yml which also runs on tags but targets staging /
+# production Kubernetes deploys that require KUBECONFIG_* secrets and
+# pushes images to ghcr.io/automatiabcn/abs-backend. Customer-facing
+# images live at ghcr.io/enzoemir1/abs-{backend,landing} (per
+# scripts/release.sh) — release.yml only touches GitHub release + SBOM
+# + cosign keyless signature.
+#
+# Cosign keyless attestation is best-effort: signing a package in a
+# different GHCR namespace (enzoemir1/*) from this workflow's identity
+# (github.com/automatiabcn/abs/...) is conditional on package
+# permissions enzoemir1 explicitly grants. If the signature step fails
+# the release still publishes — verifiable provenance comes from the
+# SBOM + the image digest in the GHCR registry.
+#
+# Security: every interpolation routes through env: blocks. The only
+# refs used are github.ref_name (tag), github.repository, github.actor
+# and secrets.GITHUB_TOKEN — all controlled by the workflow context,
+# not by external user input. No issue/PR/commit text is consumed.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      tag_name: ${{ steps.tag.outputs.tag }}
+      is_prerelease: ${{ steps.tag.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history so release-notes can diff against the previous tag
+
+      - name: Identify tag metadata
+        id: tag
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          echo "tag=$REF_NAME" >> "$GITHUB_OUTPUT"
+          if [[ "$REF_NAME" == *-rc* || "$REF_NAME" == *-beta* || "$REF_NAME" == *-alpha* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate release body (commit log since previous tag)
+        id: notes
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REPO_FULL: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          PREV=$(git describe --tags --abbrev=0 "${REF_NAME}^" 2>/dev/null || echo "")
+          VERSION="${REF_NAME#v}"
+          {
+            echo "# Automatia ABS ${REF_NAME}"
+            echo
+            if [ -n "$PREV" ]; then
+              echo "## Changes since ${PREV}"
+              echo
+              git log --no-merges --pretty=format:"- %s (%h)" "${PREV}..${REF_NAME}"
+            else
+              echo "## Changes"
+              echo
+              git log --no-merges --pretty=format:"- %s (%h)" -n 50 "${REF_NAME}"
+            fi
+            echo
+            echo
+            echo "## Docker images"
+            echo
+            echo "- \`ghcr.io/enzoemir1/abs-backend:${VERSION}\`"
+            echo "- \`ghcr.io/enzoemir1/abs-landing:${VERSION}\`"
+            echo
+            echo "## Provenance"
+            echo
+            echo "- SBOM (CycloneDX) attached as release asset by .github/workflows/sbom.yml."
+            echo "- Cosign keyless signature published to Sigstore Rekor (where package permissions allow)."
+            echo "- Source: https://github.com/${REPO_FULL}/tree/${REF_NAME}"
+          } > /tmp/release-body.md
+          echo "body_path=/tmp/release-body.md" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          body_path: ${{ steps.notes.outputs.body_path }}
+          prerelease: ${{ steps.tag.outputs.is_prerelease }}
+          generate_release_notes: false
+          make_latest: ${{ steps.tag.outputs.is_prerelease == 'false' }}
+
+  cosign-sign:
+    name: Cosign keyless sign (best-effort)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: publish
+    continue-on-error: true
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: v2.4.1
+
+      - name: Cosign login to ghcr.io
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cosign login ghcr.io -u "$GHCR_USER" -p "$GHCR_TOKEN"
+
+      - name: Sign backend + landing images (keyless)
+        env:
+          TAG: ${{ needs.publish.outputs.tag_name }}
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          for IMAGE in \
+            "ghcr.io/enzoemir1/abs-backend:${VERSION}" \
+            "ghcr.io/enzoemir1/abs-landing:${VERSION}"; do
+            echo "==> Signing $IMAGE"
+            # -y accepts the OIDC identity prompt non-interactively.
+            # If the image is not accessible from this workflow's
+            # token (cross-namespace), the step exits non-zero and
+            # continue-on-error: true keeps the release pipeline green.
+            cosign sign -y "$IMAGE" || {
+              echo "::warning::cosign sign failed for $IMAGE — package permission may be needed in enzoemir1/* namespace"
+              exit 0
+            }
+          done
