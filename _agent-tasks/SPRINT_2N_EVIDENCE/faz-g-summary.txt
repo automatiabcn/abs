@@ -1,0 +1,24 @@
+Sprint 2N FAZ G — regression + closeout evidence
+Generated: 2026-05-14T21:24:17Z
+
+=== G1 full pytest regression ===
+2171 passed, 24 skipped, 3 deselected, 58 warnings in 219.95s (0:03:39)
+
+=== G2 commit chain (Sprint 2N) ===
+a53f899 chore(2n-f): 10 P2 polish + 6 P3 doc/brief update
+10dd45c fix(2n-e): 6 P1 bug toplu fix (#009 #014 #018 #020 #023 #024)
+f1a47d8 fix(2n-d): customer onboarding paket bütünlüğü + tek-dosya tar.gz builder (smebes lesson 18)
+b31a16f fix(2n-c): Postgres + RLS customer compose entegre (P0 #2M-026 + smebes lesson)
+858c91f fix(2n-b): UAT-009 fail-closed landing SSR backend health probe (P0 #2M-025)
+aba5cbc fix(2n-a): Türkçe byte-exact blanket fix + CI gate (P0 #2M-003 + #2M-017)
+
+=== G3 customer pkg smoke (already validated in FAZ D) ===
+scripts/build_customer_pkg.sh evidence-* run: 27KB tarball, 5 top-level files + 2 dirs, 0 pyc
+
+=== G4 + G5 cert + report files ===
+-rw-r--r--  1 eneseserkan  staff  31333 May 14 23:18 _agent-tasks/PRODUCTION_READY_CERTIFICATE_v1.0.0.md
+-rw-r--r--  1 eneseserkan  staff   9131 May 14 23:23 _agent-tasks/SPRINT_2N_HOT_FIX_REPORT.md
+
+=== G6 memory lesson 18 ===
+-rw-r--r--  1 eneseserkan  staff  1932 May 14 23:20 /Users/eneseserkan/.claude/projects/-Users-eneseserkan-Main-abs-server-product/memory/feedback_customer_onboarding_pkg_completeness.md
+-rw-r--r--  1 eneseserkan  staff  2904 May 14 23:21 /Users/eneseserkan/.claude/projects/-Users-eneseserkan-Main-abs-server-product/memory/session_resume_state_sprint_2n.md

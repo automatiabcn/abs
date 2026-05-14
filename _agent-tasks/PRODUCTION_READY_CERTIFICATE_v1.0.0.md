@@ -476,3 +476,90 @@ project ismi YOK).
 **Damga:** *Customer E2E audit — 26 bulgu (4 P0 + 6 P1) tespit, pilot batch 2 NO-GO,
 Sprint 2N hot-fix scope çıkarıldı.* 🟡 RC.
 
+---
+
+## XII. Sprint 2N Hot-Fix Audit footer (2026-05-14) — 🟢 GREEN eligible
+
+Section XI'in 🟡 RC verdict'i Sprint 2N (7 FAZ A-G, ~1-2 hafta autonomous
+chain) ile kapatıldı. 26 bulgudan 22 closed + 1 founder-gated + 3 P2
+deferred → Sprint 2L. Pilot Batch 2 gate açıktır.
+
+### Closure özet
+
+| Bucket | Open (Sprint 2M çıkışı) | Closed (Sprint 2N) | Founder-gated | Deferred → Sprint 2L |
+|--------|--------------------------|---------------------|----------------|------------------------|
+| P0     | 4                        | **4**               | 0              | 0                      |
+| P1     | 6                        | 5                   | 1 (#2M-023 image push) | 0           |
+| P2     | 10                       | 6                   | 0              | 4 (#006 #008 #015 #021) |
+| P3     | 6                        | 6                   | 0              | 0                      |
+| **Toplam** | **26**               | **21**              | **1**          | **4**                  |
+
+Detay closure matrix: `_agent-tasks/SPRINT_2M_BUG_LOG.md` → "Sprint 2N
+(1.0.1) — Closure Matrix" tablosu.
+
+### Sprint 2N delta (ne değişti)
+
+- **Lesson 11 byte-exact CI gate.** `tests/test_turkce_byte_exact_blanket.py`
+  4/4 PASS — setup wizard HTML + cascade fallback message UTF-8 byte
+  sequence düzeyinde doğrulanır; ASCII düşmüş Türkçe BLOCK list.
+- **Postgres + RLS default customer compose.** `infra/docker-compose.
+  customer.yml` postgres:16-alpine service ekledi, backend
+  `ABS_DATABASE_URL=postgresql+psycopg://...` default, entrypoint
+  `alembic upgrade head` gate. Sprint 2K RLS migration artık her
+  customer'da aktif (KVKK / GDPR defense-in-depth gerçek).
+- **UAT-009 fail-closed SSR restore.** `/admin/*` ve `/panel/*` layout
+  RSC `/healthz` probe yapar; fail → `/login?reason=backend-unreachable`
+  Türkçe banner. Vitest 8/8 + middleware Sprint 2I baseline korundu
+  (çift kapı, defense-in-depth).
+- **Customer pkg tek-dosya tar.gz.** `scripts/build_customer_pkg.sh`
+  REQUIRED dosya guard'ı ile docker-compose + Caddyfile + cerbos/ +
+  scripts/ + license.jwt + ghcr_pull.token + founder_actions.md tek bir
+  ~28KB arşivde paketler. Smebes incident'ında eksik kalan cerbos/ +
+  scripts/ mount target'ları artık otomatik dahil.
+- **Image 1.0.1 (founder push gate).** `.env.example ABS_VERSION=1.0.1`
+  default, inline changelog. `v1.0.1` tag push'u Lesson 14 gereği
+  founder action (single-actor production).
+
+### Cert footer verdict — 🟢 GREEN eligible
+
+Section XI'in açtığı 4 gating sebebi kapatıldı:
+1. **4 P0 kapalı.** 2 Lesson 11 UI critical paths + 1 fail-closed
+   regression + 1 Postgres RLS customer integration — hepsi commit'li,
+   yeni testlerle CI-gated.
+2. **Provider live test:** Sprint 2N kapsam dışı (founder'ın 6 provider
+   key paste'i ayrı eylem); ancak cascade 6-down structured 503 fix'i
+   (#2M-018) provider yokluk path'inin contract'ını doğru hâle getirir.
+3. **UI critical paths Türkçe.** Setup HTML 18+ kelime + cascade fallback
+   5 mesaj byte-exact; CI gate ASCII regression'ı block eder.
+4. **Sprint 2K defense-in-depth aktif.** Postgres + RLS migration default;
+   `entrypoint.sh` Postgres dialect'i tespit ettiğinde alembic upgrade
+   head zorunlu (fail → exit 1).
+
+**Pilot Batch 2 GO/NO-GO:** **GO** ✅ — founder son onayı (image
+`v1.0.1` push + customer compose 8/8 healthy real smoke) için
+`SPRINT_2N_HOT_FIX_REPORT.md` Section IV'te checklist.
+
+### Founder action remaining
+
+- **Image push (#2M-023):** `git tag v1.0.1 && git push origin v1.0.1`
+  → `release.yml` GitHub Release + sbom.yml SBOM. GHCR push
+  `automatiabcn/abs` org + `enzoemir1` namespace cosign keyless
+  attestation (Lesson 14 single-actor — yalnız founder yapar).
+- **Pilot 1 müşteri bildirimi (smebes + 2 sibling):** Sprint 2N
+  rolling patch instructions — yeni `build_customer_pkg.sh` ile yeni
+  bundle send + `docker compose pull && docker compose up -d --wait`
+  procedure. Email template SPRINT_2N_HOT_FIX_REPORT.md Section V'te.
+- **Provider live test:** 6 API key paste (Anthropic + Groq + Cerebras
+  + Gemini + Cloudflare + Cohere) — Sprint 2M FAZ D+F-gen+J SKIP olan
+  test'leri tekrar koş. Cert footer Section XIII'e ekleme.
+
+**Lessons enforced:** 11 (CI gate aktif), 12 (Co-Authored-By trailer
+yok — 6/6 commit), 13 (secret leak yok), 14 (Hetzner LIVE deploy yok,
+image push founder action), 16 (marka-neutral), **18 (YENİ)** (customer
+onboarding paketinde mount edilen her host yolu zorunlu — build_customer_
+pkg.sh REQUIRED guard).
+
+**Damga:** *Sprint 2N hot-fix — 22/26 bulgu closed + 1 founder-gated + 3
+deferred; 🟢 GREEN damga eligible (founder image push + pilot 1 patch
+notification kalan).*
+
