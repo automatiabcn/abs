@@ -222,6 +222,51 @@ async def delete_request(
     return response
 
 
+@router.get("/deletion-status")
+async def deletion_status(
+    request: Request,
+    authorization: Optional[str] = Header(default=None),
+) -> dict:
+    """Sprint 2I UAT-038 — surface the 30-day grace window to the UI.
+
+    Returned shape (always 200):
+      - status: "none" | "scheduled" | "purged"
+      - scheduled_delete_at / purged_at: ISO strings or null
+      - days_remaining: int >= 0 (only relevant when scheduled)
+    """
+    jti = _verify_bearer_license(authorization, request)
+    with Session(get_engine()) as db:
+        row = db.scalars(select(License).where(License.jti == jti)).first()
+        if row is None:
+            raise HTTPException(404, "license_not_found")
+        if row.purged_at is not None:
+            return {
+                "status": "purged",
+                "scheduled_delete_at": None,
+                "purged_at": row.purged_at.isoformat(),
+                "days_remaining": 0,
+            }
+        if row.scheduled_delete_at is None:
+            return {
+                "status": "none",
+                "scheduled_delete_at": None,
+                "purged_at": None,
+                "days_remaining": 0,
+            }
+        scheduled = row.scheduled_delete_at
+        if scheduled.tzinfo is None:
+            scheduled = scheduled.replace(tzinfo=timezone.utc)
+        remaining = max(
+            0, int((scheduled - datetime.now(timezone.utc)).total_seconds() // 86400)
+        )
+        return {
+            "status": "scheduled",
+            "scheduled_delete_at": scheduled.isoformat(),
+            "purged_at": None,
+            "days_remaining": remaining,
+        }
+
+
 @router.post("/delete-confirm")
 async def delete_confirm(
     body: DeleteConfirmBody,
