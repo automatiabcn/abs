@@ -61,3 +61,17 @@ def panel_legacy_disabled(request: Request) -> Response:
         status_code=410,
         media_type="text/plain",
     )
+
+
+# Sprint 2N FAZ E (P1 #2M-009) — catch-all `/panel/{path}` → `/admin/{path}`.
+# Brief'in `/panel/quota`, `/panel/tools`, `/panel/chat`, `/panel/meetings`
+# çağrıları Sprint 2M sırasında 404 dönüyordu çünkü yalnızca `/panel`,
+# `/panel/login` ve `/panel/legacy` redirect handler'ları kayıtlı. Catch-all
+# her `/panel/<x>` çağrısını canonical `/admin/<x>`'a 308 redirect eder.
+# Daha spesifik route'lar (/panel, /panel/login, /panel/legacy) declaration
+# sırası gereği bu catch-all'tan ÖNCE gelir; FastAPI ilk eşleşeni seçer.
+@router.get("/panel/{path:path}")
+def panel_subpath_compat_redirect(path: str) -> Response:
+    """Legacy `/panel/<x>` → `/admin/<x>` 308 redirect."""
+    target = f"/admin/{path}" if path else "/admin"
+    return RedirectResponse(url=target, status_code=308)

@@ -148,11 +148,17 @@ def test_chat_completions_no_stub_when_providers_configured(
     assert meta["mock"] is False
 
 
-def test_chat_completions_no_provider_returns_friendly_error(
+def test_chat_completions_no_provider_returns_503(
     auth_client, monkeypatch
 ):
-    """When no providers configured AND mock disabled, chat surfaces a
-    Turkish hint pointing at /admin/settings."""
+    """Sprint 2N FAZ E (P1 #2M-018) — no provider → structured HTTP 503.
+
+    Pre-fix: chat completions opened a 200 SSE stream and yielded a
+    Türkçe error event, so JS `response.ok = true` lost retry semantics.
+    Post-fix: pre-flight provider probe raises HTTPException(503) BEFORE
+    StreamingResponse starts. Body is JSON with `error`, `retry_after`,
+    `hint`; Retry-After header is set.
+    """
     monkeypatch.setenv("ABS_ANTHROPIC_MOCK_MODE", "off")
     from app.config import settings
 
@@ -169,9 +175,11 @@ def test_chat_completions_no_provider_returns_friendly_error(
             "stream": True,
         },
     )
-    assert r.status_code == 200
-    body = r.content.decode("utf-8")
-
-    # Friendly hint, NOT the Round-3 stub literal.
-    assert "Henuz saglayici yapilandirilmadi" in body
-    assert "Cascade canli uclari henuz aktif degil" not in body
+    assert r.status_code == 503
+    payload = r.json()
+    detail = payload.get("detail", payload)
+    assert detail["error"] == "all_providers_unavailable"
+    assert detail["retry_after"] == 60
+    assert "/admin/settings" in detail["hint"]
+    # Retry-After HTTP header set.
+    assert r.headers.get("retry-after") == "60"
