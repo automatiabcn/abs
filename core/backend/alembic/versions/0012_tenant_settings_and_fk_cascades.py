@@ -1,6 +1,6 @@
 """Sprint 2C - tenant branding columns + FK CASCADE follow-up (Lesson 9).
 
-Revision ID: 0012_tenant_settings_and_fk_cascades
+Revision ID: 0012_tenant_settings_fk
 Revises: 0011_tenant_installed_plugins
 Create Date: 2026-05-10
 
@@ -26,7 +26,7 @@ from alembic import op
 from sqlalchemy.exc import OperationalError
 
 
-revision: str = "0012_tenant_settings_and_fk_cascades"
+revision: str = "0012_tenant_settings_fk"
 down_revision: Union[str, None] = "0011_tenant_installed_plugins"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

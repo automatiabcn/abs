@@ -1,0 +1,20 @@
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0000_init_baseline, T-057 — Initial baseline of pre-OAuth ABS tables (caveat clear).
+INFO  [alembic.runtime.migration] Running upgrade 0000_init_baseline -> 0001_oauth_baseline, T-003 — OAuth 2.1 server tables (clients, auth codes, refresh tokens).
+INFO  [alembic.runtime.migration] Running upgrade 0001_oauth_baseline -> 0002_oauth_extra_claims, T-005 — Add extra_claims_json to oauth_auth_codes and oauth_refresh_tokens.
+INFO  [alembic.runtime.migration] Running upgrade 0002_oauth_extra_claims -> 0003_tenant_projects, T-009 — Tenant + project + tenant_projects (M2M).
+INFO  [alembic.runtime.migration] Running upgrade 0003_tenant_projects -> 0004_sprint20_meetings, Sprint 20 — feature_usage_log + meetings + meeting_segments.
+INFO  [alembic.runtime.migration] Running upgrade 0004_sprint20_meetings -> 0005_usage_log, Phase 4 / Q2.CO1 — usage_log table for provider quota aggregation.
+INFO  [alembic.runtime.migration] Running upgrade 0005_usage_log -> 0006_users_magic_link, Phase 2 / Q3 / Q2.CO5 — users table for magic-link multi-admin signup.
+INFO  [alembic.runtime.migration] Running upgrade 0006_users_magic_link -> 0007_chat_sessions, Q8 / Phase A — chat_sessions + chat_messages tables.
+INFO  [alembic.runtime.migration] Running upgrade 0007_chat_sessions -> 0008_minted_token_blacklist, Q10-L6-002 / Q11-L14-001 — minted_token_blacklist table.
+INFO  [alembic.runtime.migration] Running upgrade 0008_minted_token_blacklist -> 0009_chat_threading, Q12 / Brief 3 R4 — chat session threading metadata.
+INFO  [alembic.runtime.migration] Running upgrade 0009_chat_threading -> 0010_tenant_invites, Sprint 2B BUG-36 — tenant_invites table for the admin invite flow.
+INFO  [alembic.runtime.migration] Running upgrade 0010_tenant_invites -> 0011_tenant_installed_plugins, Sprint 2B BUG-34 — tenant_installed_plugins persistence.
+INFO  [alembic.runtime.migration] Running upgrade 0011_tenant_installed_plugins -> 0012_tenant_settings_fk, Sprint 2C - tenant branding columns + FK CASCADE follow-up (Lesson 9).
+INFO  [alembic.runtime.migration] Running upgrade 0012_tenant_settings_fk -> 0013_failed_login_attempts, Sprint 2I UAT-041 — failed_login_attempt table for brute-force defense.
+INFO  [alembic.runtime.migration] Running upgrade 0013_failed_login_attempts -> 0014_tenant_id_audit_tables, Sprint 2K — add tenant_id column to 3 audit tables (RLS preparation).
+INFO  [alembic.runtime.migration] Running upgrade 0014_tenant_id_audit_tables -> 0014b_backfill_tenant_id, Sprint 2K — backfill tenant_id for the 3 RLS-guarded audit tables.
+INFO  [alembic.runtime.migration] Running upgrade 0014b_backfill_tenant_id -> 0015_rls_audit_tables, Sprint 2K — enable + force Row Level Security on the 3 audit tables.
+INFO  [alembic.runtime.migration] Running upgrade 0015_rls_audit_tables -> 0015b_abs_admin_role, Sprint 2K — create the abs_admin Postgres role that owns BYPASSRLS.

@@ -1,0 +1,127 @@
+...s.....................ssssssssss..................................... [  3%]
+...........sss.......................................................... [  6%]
+........................................................................ [  9%]
+........................................................................ [ 13%]
+........................................................................ [ 16%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 26%]
+........................................s............................... [ 29%]
+........................................................................ [ 32%]
+............ssss........................................................ [ 36%]
+........................................................................ [ 39%]
+........................................................................ [ 42%]
+........................................................................ [ 45%]
+........................................................................ [ 49%]
+........................................................................ [ 52%]
+........................................................................ [ 55%]
+........................................................................ [ 59%]
+........................................................................ [ 62%]
+........................................................................ [ 65%]
+........................................................................ [ 68%]
+........................................................................ [ 72%]
+........................................................................ [ 75%]
+........................................................................ [ 78%]
+........................................................................ [ 82%]
+........................................................................ [ 85%]
+........................................................................ [ 88%]
+........................................................................ [ 91%]
+...............................s........................................ [ 95%]
+.......................ss............................................... [ 98%]
+.................................                                        [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.13/site-packages/inngest/_internal/comm_lib/models.py:20
+  /Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/inngest/_internal/comm_lib/models.py:20: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class CommRequest(types.BaseModel):
+
+tests/test_t044_webhook_idempotent.py:11
+  /Users/eneseserkan/Main/abs-server-product/core/backend/tests/test_t044_webhook_idempotent.py:11: DeprecationWarning: app.billing_v10.webhook_idempotent is deprecated; use app.api.webhooks.idempotency.claim_event for Stripe webhook deduplication (DB-backed, survives worker restarts).
+    from app.billing_v10.webhook_idempotent import (
+
+tests/test_029_gdpr_account.py: 4 warnings
+tests/test_q12_l23_sweep2_me_account.py: 3 warnings
+tests/test_uat031_delete_token_email_only.py: 3 warnings
+tests/test_uat032_kvkk_audit_emit.py: 3 warnings
+  /Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/jwt/api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 30 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+tests/test_029_gdpr_account.py::test_delete_confirm_schedules_purge
+tests/test_029_gdpr_account.py::test_delete_confirm_rejects_other_users_token
+tests/test_029_gdpr_account.py::test_delete_cancel_unschedules
+tests/test_q12_l23_sweep2_me_account.py::TestQ12L23Sweep2DeleteToken::test_expired_delete_token_emits_denied_expired
+tests/test_q12_l23_sweep2_me_account.py::TestQ12L23Sweep2DeleteToken::test_wrong_scope_delete_token_emits_denied_wrong_scope
+tests/test_q12_l23_sweep2_me_account.py::TestQ12L23Sweep2DeleteToken::test_jti_mismatch_emits_denied
+tests/test_uat032_kvkk_audit_emit.py::test_delete_confirmed_emits_ok
+  /Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/jwt/api_jwt.py:365: InsecureKeyLengthWarning: The HMAC key is 30 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    decoded = self.decode_complete(
+
+tests/test_032_admin_auth.py::test_admin_jwt_signature_change_rejects_old_tokens
+  /Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/jwt/api_jwt.py:365: InsecureKeyLengthWarning: The HMAC key is 14 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    decoded = self.decode_complete(
+
+tests/test_github_app.py::test_generate_app_jwt_signs_with_rs256
+tests/test_github_app.py::test_app_jwt_within_github_max_ttl
+tests/test_github_app.py::test_fetch_installation_token_success
+tests/test_github_app.py::test_fetch_installation_token_failure
+  /Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/jwt/api_jwt.py:147: InsecureKeyLengthWarning: The RSA key is 1024 bits long, which is below the minimum recommended size of 2048 bits. See NIST SP 800-131A.
+    return self._jws.encode(
+
+tests/test_github_app.py::test_generate_app_jwt_signs_with_rs256
+  /Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/jwt/api_jwt.py:365: InsecureKeyLengthWarning: The RSA key is 1024 bits long, which is below the minimum recommended size of 2048 bits. See NIST SP 800-131A.
+    decoded = self.decode_complete(
+
+tests/test_q11_l14_alembic_roundtrip.py::TestQ11L14AlembicRoundTrip::test_upgrade_downgrade_upgrade_round_trip
+tests/test_q12_l21_fresh_deploy_drill.py::TestQ12L21FullMigrationChain::test_full_chain_base_to_head
+tests/test_q12_l21_fresh_deploy_drill.py::TestQ12L21FullMigrationChain::test_head_to_base_to_head_idempotent
+tests/test_q12_l21_fresh_deploy_drill.py::TestQ12L21FullMigrationChain::test_head_to_base_to_head_idempotent
+tests/test_q12_l21_safe_expansion.py::test_q12_l21_002_alembic_roundtrip_10x
+tests/test_t003_alembic_migration.py::test_alembic_upgrade_creates_oauth_tables
+tests/test_t003_alembic_migration.py::test_alembic_downgrade_drops_oauth_tables
+  /Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py:952: DeprecationWarning: The default datetime adapter is deprecated as of Python 3.12; see the sqlite3 documentation for suggested replacement recipes
+    cursor.execute(statement, parameters)
+
+tests/test_q12_l23_sweep4_setup_admin.py::TestQ12L23Sweep4AdminLogin::test_password_valid_emits_success
+tests/test_q12_l23_sweep4_setup_admin.py::TestQ12L23Sweep4AdminGate::test_expired_jwt_emits_denied
+  /Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/jwt/api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 17 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+tests/test_q12_l23_sweep4_setup_admin.py::TestQ12L23Sweep4AdminGate::test_expired_jwt_emits_denied
+  /Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/jwt/api_jwt.py:365: InsecureKeyLengthWarning: The HMAC key is 17 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    decoded = self.decode_complete(
+
+tests/test_q12_l26_long_running_session.py: 7 warnings
+tests/test_q12_l8_i18n_middleware_deep.py: 5 warnings
+  /Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/starlette/testclient.py:445: DeprecationWarning: Setting per-request cookies=<...> is being deprecated, because the expected behaviour on cookie persistence is ambiguous. Set cookies directly on the client instance instead.
+    return super().request(
+
+tests/test_q12_r26_atomic_claim_boundaries.py::test_q12_r31_atomic_claim_writes_used_at_column
+  /Users/eneseserkan/Main/abs-server-product/core/backend/tests/test_q12_r26_atomic_claim_boundaries.py:117: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    delta = datetime.utcnow() - rec.used_at
+
+tests/test_q12_r26_atomic_claim_boundaries.py::test_q12_r31_manual_atomic_update_returns_zero_on_used_row
+  /Users/eneseserkan/Main/abs-server-product/core/backend/tests/test_q12_r26_atomic_claim_boundaries.py:147: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    .values(used_at=datetime.utcnow())
+
+tests/test_q12_r26_atomic_claim_boundaries.py::test_q12_r31_manual_atomic_update_returns_zero_on_used_row
+  /Users/eneseserkan/Main/abs-server-product/core/backend/tests/test_q12_r26_atomic_claim_boundaries.py:157: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    .values(used_at=datetime.utcnow())
+
+tests/test_q12_r26_atomic_claim_boundaries.py::test_q12_r31_manual_update_without_predicate_DOES_overwrite
+  /Users/eneseserkan/Main/abs-server-product/core/backend/tests/test_q12_r26_atomic_claim_boundaries.py:182: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    .values(used_at=datetime.utcnow())
+
+tests/test_q12_r26_atomic_claim_boundaries.py::test_q12_r31_manual_update_without_predicate_DOES_overwrite
+  /Users/eneseserkan/Main/abs-server-product/core/backend/tests/test_q12_r26_atomic_claim_boundaries.py:189: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    .values(used_at=datetime.utcnow())
+
+tests/test_q12_r26_atomic_claim_boundaries.py::test_q12_r31_revoke_family_revokes_exactly_chain_length
+  /Users/eneseserkan/Main/abs-server-product/core/backend/tests/test_q12_r26_atomic_claim_boundaries.py:218: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_uat047_stripe_body_limit.py::test_content_length_above_cap_rejected_with_413
+tests/test_uat047_stripe_body_limit.py::test_body_above_cap_rejected_after_buffering
+  /Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/fastapi/routing.py:328: DeprecationWarning: 'HTTP_413_REQUEST_ENTITY_TOO_LARGE' is deprecated. Use 'HTTP_413_CONTENT_TOO_LARGE' instead.
+    return await dependant.call(**values)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2171 passed, 24 skipped, 3 deselected, 58 warnings in 218.23s (0:03:38)
