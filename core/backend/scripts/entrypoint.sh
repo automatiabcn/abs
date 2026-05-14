@@ -73,4 +73,29 @@ PY
     fi
 fi
 
+# Sprint 2N FAZ C (P0 #2M-026) — when ABS_DATABASE_URL points at Postgres,
+# run alembic upgrade head before launching uvicorn. Sprint 2K RLS migration
+# (0015_rls_audit_tables) needs to be applied or KVKK defense-in-depth is
+# silently bypassed. SQLite path keeps using SQLModel.metadata.create_all
+# (called by app startup) — no schema migration needed for the legacy
+# single-tenant install.
+DB_URL="${ABS_DATABASE_URL:-}"
+case "${DB_URL}" in
+    postgresql*|postgres*)
+        echo "[BOOT] Postgres detected — running alembic upgrade head..."
+        if (cd /app && alembic upgrade head); then
+            echo "[BOOT] alembic upgrade head OK"
+        else
+            echo "[BOOT] ERROR — alembic upgrade head failed; refusing to start with stale schema" >&2
+            exit 1
+        fi
+        ;;
+    sqlite*|"")
+        echo "[BOOT] SQLite (or unset DB URL) — skipping alembic; SQLModel.metadata.create_all on app start"
+        ;;
+    *)
+        echo "[BOOT] WARN — unknown ABS_DATABASE_URL scheme: ${DB_URL%%:*}" >&2
+        ;;
+esac
+
 exec "$@"
