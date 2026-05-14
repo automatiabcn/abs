@@ -66,6 +66,23 @@ def _resolve_allowed_hosts() -> list[str]:
 
     extra = os.environ.get("ABS_MCP_ALLOWED_HOSTS", "").strip()
     if extra == "*":
+        # Sprint 2I UAT-020 — wildcard host allowlist on a production
+        # deployment is a DNS-rebinding / cross-tenant Host-header
+        # footgun. Refuse to boot in env=prod so operators cannot ship
+        # the gate disabled by accident; dev / test keeps the opt-out.
+        try:
+            from app.config import settings as _s
+
+            if (_s.env or "").lower() in ("prod", "production"):
+                raise SystemExit(
+                    "ABS refusing to boot: ABS_MCP_ALLOWED_HOSTS='*' "
+                    "is forbidden in env=prod. Set ABS_MCP_ALLOWED_HOSTS "
+                    "to an explicit host list (e.g. 'abs.your-domain.com')."
+                )
+        except SystemExit:
+            raise
+        except Exception:  # pragma: no cover — boot before settings load
+            pass
         return ["*"]
     if extra:
         for h in (x.strip() for x in extra.split(",")):
