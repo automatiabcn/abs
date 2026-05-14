@@ -181,7 +181,7 @@ async def _run_cascade(
 
     Round-4 BUG-9 fix: previously raised `live_cascade_pending` 503 even
     when providers were configured; the chat SSE swallowed that into a
-    "Cascade canli uclari henuz aktif degil." stub message. The /v1/cascade/run
+    "Cascade canlı uçları henüz aktif değil." stub message. The /v1/cascade/run
     route was wired in Round 2 but this helper was missed — chat path
     bypasses the route layer, so it stayed stubbed until Round 4.
     """
@@ -686,21 +686,21 @@ async def completions(
             detail_str = str(exc.detail or "")
             if detail_str.startswith("no_providers_configured"):
                 err_text = (
-                    "Henuz saglayici yapilandirilmadi. "
+                    "Henüz sağlayıcı yapılandırılmadı. "
                     "/admin/settings → Providers."
                 )
             elif detail_str.startswith("no_free_providers_configured"):
                 err_text = (
-                    "Ucretsiz saglayici yapilandirilmadi "
+                    "Ücretsiz sağlayıcı yapılandırılmadı "
                     "(skip_paid aktif)."
                 )
             elif detail_str.startswith("all_providers_failed"):
                 err_text = (
-                    "Tum saglayicilar gecici hata verdi; "
-                    "lutfen tekrar deneyin."
+                    "Tüm sağlayıcılar geçici hata verdi; "
+                    "lütfen tekrar deneyin."
                 )
             else:
-                err_text = "Cascade canli uclari henuz aktif degil."
+                err_text = "Cascade canlı uçları henüz aktif değil."
             yield f'data: {json.dumps({"type": "text", "content": err_text, "provider": "none"})}\n\n'
             yield 'data: [DONE]\n\n'
             with Session(get_engine()) as db:
