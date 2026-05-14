@@ -43,39 +43,62 @@ def test_login_ip_rate_limit_5_per_minute(client):
     assert r6.headers.get("Retry-After")
 
 
-def test_login_success_clears_failed_login_row(client):
+def test_login_success_clears_failed_login_row(client, monkeypatch):
     """A successful login deletes the per-email backoff row so the next
-    wrong attempt starts from zero."""
+    wrong attempt starts from zero.
+
+    Hermetic guard: tests earlier in the run may have written a stale
+    admin_credentials.json that shadows the bootstrap credentials, so
+    we explicitly remove it for this test and pin the bootstrap pair.
+    """
+    import json
+    from pathlib import Path
+
     from sqlmodel import Session, select
 
+    from app.api.auth import _admin_credentials_path
+    from app.config import settings
     from app.db.models import FailedLoginAttempt
     from app.db.session import get_engine
 
-    # Two wrong attempts → row exists.
-    for _ in range(2):
-        _wrong_login(client)
-    with Session(get_engine()) as db:
-        row = db.execute(
-            select(FailedLoginAttempt).where(
-                FailedLoginAttempt.email == "admin@local"
-            )
-        ).scalars().first()
-        assert row is not None
-        assert row.attempts_count == 2
+    creds_path: Path = _admin_credentials_path()
+    backup: str | None = None
+    if creds_path.exists():
+        backup = creds_path.read_text(encoding="utf-8")
+        creds_path.unlink()
+    monkeypatch.setattr(settings, "admin_password_bootstrap", "CHANGEME")
 
-    r = client.post(
-        "/auth/login",
-        json={"email": "admin@local", "password": "CHANGEME"},
-    )
-    assert r.status_code == 200, r.text
+    try:
+        # Two wrong attempts → row exists.
+        for _ in range(2):
+            _wrong_login(client)
+        with Session(get_engine()) as db:
+            row = db.execute(
+                select(FailedLoginAttempt).where(
+                    FailedLoginAttempt.email == "admin@local"
+                )
+            ).scalars().first()
+            assert row is not None
+            assert row.attempts_count == 2
 
-    with Session(get_engine()) as db:
-        row = db.execute(
-            select(FailedLoginAttempt).where(
-                FailedLoginAttempt.email == "admin@local"
-            )
-        ).scalars().first()
-        assert row is None
+        r = client.post(
+            "/auth/login",
+            json={"email": "admin@local", "password": "CHANGEME"},
+        )
+        assert r.status_code == 200, r.text
+
+        with Session(get_engine()) as db:
+            row = db.execute(
+                select(FailedLoginAttempt).where(
+                    FailedLoginAttempt.email == "admin@local"
+                )
+            ).scalars().first()
+            assert row is None
+    finally:
+        if backup is not None:
+            creds_path.write_text(backup, encoding="utf-8")
+        # Quiet json-unused lint when no backup is restored.
+        _ = json
 
 
 def test_per_email_lockout_after_threshold():
