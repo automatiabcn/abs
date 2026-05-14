@@ -9,6 +9,7 @@
 // landing nav doesn't double up on auth'd pages (UX_BUGS MT1 + MP1).
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 
 // Sprint 21 / Faz D — cmdk palette deferred via the same client shim
 // used by /panel/layout.tsx.
@@ -25,7 +26,30 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+// Sprint 2N FAZ B — UAT-009 fail-closed restore (P0 #2M-025).
+// Middleware (middleware.ts) already gates /admin/* on cookie + /auth/me,
+// but Sprint 2M repro showed `docker compose stop backend` left /admin/*
+// returning 200 + cached HTML. Defense-in-depth: SSR layout itself
+// probes /healthz before rendering chrome. Backend down → /login banner.
+const BACKEND_URL = process.env.ABS_BACKEND_URL ?? "http://localhost:8000";
+
+async function _probeBackendHealthy(): Promise<boolean> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/healthz`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(2000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const healthy = await _probeBackendHealthy();
+  if (!healthy) {
+    redirect("/login?reason=backend-unreachable");
+  }
   return (
     <PanelThemeProvider>
       <QueryProvider>

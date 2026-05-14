@@ -181,7 +181,7 @@ async def _run_cascade(
 
     Round-4 BUG-9 fix: previously raised `live_cascade_pending` 503 even
     when providers were configured; the chat SSE swallowed that into a
-    "Cascade canli uclari henuz aktif degil." stub message. The /v1/cascade/run
+    "Cascade canlı uçları henüz aktif değil." stub message. The /v1/cascade/run
     route was wired in Round 2 but this helper was missed — chat path
     bypasses the route layer, so it stayed stubbed until Round 4.
     """
@@ -596,6 +596,43 @@ async def completions(
     else:
         pipeline_used = body.pipeline
 
+    # Sprint 2N FAZ E (P1 #2M-018) — pre-flight provider probe.
+    # Sprint 2M repro: 6 provider hepsi devre dışıyken /v1/chat/completions
+    # HTTP 200 + SSE stream başlatıyor, içinde Türkçe error text yield.
+    # JS client `response.ok = true` görüp retry semantics kaybediyor.
+    # Stream başlatmadan ÖNCE active provider sayısı 0 ise structured
+    # 503 JSON dön → fetch().ok=false, retry/Retry-After mantığı doğru.
+    #
+    # Skip when:
+    #   - qual_* pipeline (kendi orchestration'ını yapar)
+    #   - Anthropic mock provider active (test/dev path; _try_mock
+    #     stream içinde yine çalışır)
+    if (
+        body.pipeline in ("auto", "cascade")
+        and pipeline_used not in ("qual_code", "qual_tr", "qual_analysis", "qual_translate")
+    ):
+        try:
+            from app.providers.anthropic_mock import get_mock_provider
+            _mock_active = get_mock_provider() is not None
+        except Exception:
+            _mock_active = False
+        if not _mock_active:
+            try:
+                _probe_active = get_active_providers(skip_paid=False)
+            except Exception:
+                _probe_active = []
+            if not _probe_active:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail={
+                        "error": "all_providers_unavailable",
+                        "providers_tried": [],
+                        "retry_after": 60,
+                        "hint": "/admin/settings → Providers'ta en az bir API anahtarı yapılandırın.",
+                    },
+                    headers={"Retry-After": "60"},
+                )
+
     async def stream() -> AsyncGenerator[str, None]:
         yield f'data: {json.dumps({"type": "session", "session_id": sess_id, "title": sess_title})}\n\n'
         yield f'data: {json.dumps({"type": "pipeline", "id": pipeline_used})}\n\n'
@@ -686,21 +723,21 @@ async def completions(
             detail_str = str(exc.detail or "")
             if detail_str.startswith("no_providers_configured"):
                 err_text = (
-                    "Henuz saglayici yapilandirilmadi. "
+                    "Henüz sağlayıcı yapılandırılmadı. "
                     "/admin/settings → Providers."
                 )
             elif detail_str.startswith("no_free_providers_configured"):
                 err_text = (
-                    "Ucretsiz saglayici yapilandirilmadi "
+                    "Ücretsiz sağlayıcı yapılandırılmadı "
                     "(skip_paid aktif)."
                 )
             elif detail_str.startswith("all_providers_failed"):
                 err_text = (
-                    "Tum saglayicilar gecici hata verdi; "
-                    "lutfen tekrar deneyin."
+                    "Tüm sağlayıcılar geçici hata verdi; "
+                    "lütfen tekrar deneyin."
                 )
             else:
-                err_text = "Cascade canli uclari henuz aktif degil."
+                err_text = "Cascade canlı uçları henüz aktif değil."
             yield f'data: {json.dumps({"type": "text", "content": err_text, "provider": "none"})}\n\n'
             yield 'data: [DONE]\n\n'
             with Session(get_engine()) as db:

@@ -104,4 +104,9 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz').status==200 else 1)" || exit 1
 
 ENTRYPOINT ["/usr/local/bin/abs-entrypoint"]
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Sprint 2N FAZ F (P2 #2M-010) — honour X-Forwarded-Proto so trailing-slash
+# 307 redirects from Caddy preserve HTTPS instead of falling back to http://.
+# --proxy-headers tells Uvicorn to read Forwarded / X-Forwarded-* from the
+# upstream reverse proxy; --forwarded-allow-ips="*" trusts every hop in the
+# docker network (Caddy is the only thing in front of us inside the stack).
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*"]

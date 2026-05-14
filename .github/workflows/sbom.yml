@@ -1,6 +1,18 @@
 name: SBOM Generation
 
+# Sprint 2H F-2H-01 — release: published does not cascade when the
+# upstream release is published by github-actions[bot] (GitHub security
+# restriction prevents workflow chaining from bot-authored events). Tag
+# push is a direct, controlled trigger that fires for every signed
+# annotated tag pushed via release.sh, with no bot-event dependency.
+# All triggers are static (push.tags pattern is hardcoded "v*"; release
+# and workflow_dispatch carry no untrusted user input through into run:
+# blocks). No prompt-injection surface introduced.
+
 on:
+  push:
+    tags:
+      - "v*"
   release:
     types: [published]
   workflow_dispatch:
@@ -13,7 +25,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      # Sprint 2H F-2H-01 — resolve tag from whichever event fired the
+      # workflow. release event → github.event.release.tag_name; tag
+      # push event → github.ref_name (the tag); workflow_dispatch → use
+      # github.ref_name (the ref selected in the dispatch UI).
+      RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -35,9 +51,16 @@ jobs:
 
       - name: Generate npm SBOM (core/landing)
         working-directory: core/landing
+        # Sprint 2H F-2H-01 — cyclonedx-npm calls `npm ls --json --long
+        # --all` internally; without --ignore-npm-errors any drift in
+        # the lockfile (extraneous, invalid peer deps, missing peerOpt)
+        # bubbles up as ELSPROBLEMS and tanks the whole SBOM. The SBOM
+        # only needs the resolved dep tree at install time; npm's strict
+        # peer-dep complaints are not informative for CycloneDX output.
         run: |
           npm ci --legacy-peer-deps
           cyclonedx-npm \
+            --ignore-npm-errors \
             --output-format JSON \
             --output-file ../../artifacts/sbom/abs-landing.cdx.json
 
@@ -49,9 +72,12 @@ jobs:
           pip install --quiet --upgrade pip
           pip install --quiet -e .
           pip install --quiet cyclonedx-bom
+          # Sprint 2H F-2H-01 — cyclonedx-py CLI uses --output-file
+          # (kebab-case), not --outfile. Older docs cached the abbreviated
+          # form; current versions reject it with exit 2.
           cyclonedx-py environment \
             --output-format json \
-            --outfile ../../artifacts/sbom/abs-backend.cdx.json
+            --output-file ../../artifacts/sbom/abs-backend.cdx.json
 
       - name: Validate SBOM files exist and are non-empty
         run: |

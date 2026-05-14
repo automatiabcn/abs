@@ -5,6 +5,18 @@
 
 from .generator import generate_license
 from .schemas import LicensePayload
-from .verifier import verify_license
+from .verifier import (
+    LicenseStatus,
+    license_grace_status,
+    verify_license,
+    verify_license_with_grace,
+)
 
-__all__ = ["generate_license", "verify_license", "LicensePayload"]
+__all__ = [
+    "generate_license",
+    "verify_license",
+    "LicensePayload",
+    "LicenseStatus",
+    "license_grace_status",
+    "verify_license_with_grace",
+]
