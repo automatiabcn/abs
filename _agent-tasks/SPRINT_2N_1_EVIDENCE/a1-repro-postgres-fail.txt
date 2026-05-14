@@ -1,0 +1,160 @@
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0000_init_baseline, T-057 — Initial baseline of pre-OAuth ABS tables (caveat clear).
+INFO  [alembic.runtime.migration] Running upgrade 0000_init_baseline -> 0001_oauth_baseline, T-003 — OAuth 2.1 server tables (clients, auth codes, refresh tokens).
+Traceback (most recent call last):
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.DatatypeMismatch: column "is_confidential" is of type boolean but default expression is of type integer
+HINT:  You will need to rewrite or cast the expression.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/bin/alembic", line 6, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/config.py", line 1047, in main
+    CommandLine(prog=prog).main(argv=argv)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/config.py", line 1037, in main
+    self.run_cmd(cfg, options)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/config.py", line 971, in run_cmd
+    fn(
+    ~~^
+        config,
+        ^^^^^^^
+        *[getattr(options, k, None) for k in positional],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        **{k: getattr(options, k, None) for k in kwarg},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/command.py", line 483, in upgrade
+    script.run_env()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/script/base.py", line 545, in run_env
+    util.load_python_file(self.dir, "env.py")
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+    module = load_module_py(module_id, path)
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 1026, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/alembic/env.py", line 75, in <module>
+    run_migrations_online()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/alembic/env.py", line 69, in run_migrations_online
+    context.run_migrations()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 8, in run_migrations
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/runtime/environment.py", line 969, in run_migrations
+    self.get_context().run_migrations(**kw)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/runtime/migration.py", line 626, in run_migrations
+    step.migration_fn(**kw)
+    ~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/alembic/versions/0001_oauth_baseline.py", line 26, in upgrade
+    op.create_table(
+    ~~~~~~~~~~~~~~~^
+        "oauth_clients",
+        ^^^^^^^^^^^^^^^^
+    ...<18 lines>...
+        sa.Column("revoked_at", sa.DateTime, nullable=True),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "<string>", line 8, in create_table
+  File "<string>", line 3, in create_table
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/operations/ops.py", line 1331, in create_table
+    return operations.invoke(op)
+           ~~~~~~~~~~~~~~~~~^^^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/operations/base.py", line 452, in invoke
+    return fn(self, operation)
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/operations/toimpl.py", line 140, in create_table
+    operations.impl.create_table(table, **kw)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/ddl/impl.py", line 442, in create_table
+    self._exec(schema.CreateTable(table, **kw))
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/alembic/ddl/impl.py", line 256, in _exec
+    return conn.execute(construct, params)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/sqlalchemy/sql/ddl.py", line 187, in _execute_on_connection
+    return connection._execute_ddl(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1530, in _execute_ddl
+    ret = self._execute_context(
+        dialect,
+    ...<4 lines>...
+        compiled,
+    )
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/eneseserkan/Main/abs-server-product/core/backend/.venv/lib/python3.13/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+sqlalchemy.exc.ProgrammingError: (psycopg.errors.DatatypeMismatch) column "is_confidential" is of type boolean but default expression is of type integer
+HINT:  You will need to rewrite or cast the expression.
+[SQL: 
+CREATE TABLE oauth_clients (
+	id SERIAL NOT NULL, 
+	client_id VARCHAR(64) NOT NULL, 
+	client_secret_hash VARCHAR(128), 
+	name VARCHAR(128) DEFAULT '' NOT NULL, 
+	redirect_uris TEXT DEFAULT '' NOT NULL, 
+	allowed_scopes VARCHAR(512) DEFAULT 'openid profile' NOT NULL, 
+	is_confidential BOOLEAN DEFAULT 0 NOT NULL, 
+	created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
+	revoked_at TIMESTAMP WITHOUT TIME ZONE, 
+	PRIMARY KEY (id)
+)
+
+]
+(Background on this error at: https://sqlalche.me/e/20/f405)
