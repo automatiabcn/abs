@@ -7,8 +7,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import List, Optional, Sequence
+
+import httpx
+from fastapi import HTTPException
 
 from app.providers.registry import get_provider
 from app.providers.schemas import ProviderError, ProviderResponse
@@ -17,6 +21,17 @@ from .breaker import default_breaker
 from .cache import default_cache, prompt_hash
 
 logger = logging.getLogger(__name__)
+
+
+# Sprint 2I UAT-014 — transient infra failures (network, timeout) used
+# to bypass the cascade fallback. We catch them alongside ProviderError
+# and treat them as ``transient=True``.
+_TRANSIENT_INFRA_EXCEPTIONS = (
+    ConnectionError,
+    asyncio.TimeoutError,
+    TimeoutError,
+    httpx.HTTPError,
+)
 
 
 def _breaker_key(tenant_id: str, provider: str) -> str:
@@ -56,7 +71,8 @@ async def call_with_cascade(
             cached_copy = cached.model_copy(update={"cached": True})
             return cached_copy
 
-    last_err: Optional[ProviderError] = None
+    last_err: Optional[Exception] = None
+    tried: List[str] = []
     for name in chain:
         breaker_id = _breaker_key(tenant_id, name)
         if not await default_breaker.allow(breaker_id):
@@ -67,6 +83,7 @@ async def call_with_cascade(
         except KeyError:
             logger.warning("bilinmeyen provider: %s", name)
             continue
+        tried.append(name)
         try:
             resp = await provider.call(prompt, model=model, **kwargs)
             await default_breaker.record_success(breaker_id)
@@ -80,7 +97,33 @@ async def call_with_cascade(
                 raise
             logger.info("provider %s transient fail, sıradakine geç: %s", name, exc)
             continue
+        except _TRANSIENT_INFRA_EXCEPTIONS as exc:
+            # Sprint 2I UAT-014 — ConnectionError / TimeoutError /
+            # httpx.HTTPError used to bypass the cascade and raise 500.
+            # Treat them like a transient ProviderError so the next
+            # provider gets a chance.
+            last_err = exc
+            await default_breaker.record_failure(breaker_id)
+            logger.info(
+                "provider %s infra transient (%s), sıradakine geç: %s",
+                name,
+                type(exc).__name__,
+                exc,
+            )
+            continue
 
+    # Sprint 2I UAT-044 — every provider failed: surface a structured
+    # 503 instead of leaking the last exception's stack trace to the
+    # client. ``Retry-After`` advises the caller to back off.
+    detail = {
+        "error": "providers_unavailable",
+        "providers_tried": tried,
+        "retry_after": 60,
+    }
     if last_err is not None:
-        raise last_err
-    raise ProviderError("cascade: hiçbir provider çalışmadı", provider=primary, transient=True)
+        detail["last_error_class"] = type(last_err).__name__
+    raise HTTPException(
+        status_code=503,
+        detail=detail,
+        headers={"Retry-After": "60"},
+    )
