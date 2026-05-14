@@ -1,7 +1,7 @@
 """Sprint 2I UAT-041 — failed_login_attempt table for brute-force defense.
 
 Revision ID: 0013_failed_login_attempts
-Revises: 0012_tenant_settings_and_fk_cascades
+Revises: 0012_tenant_settings_fk
 Create Date: 2026-05-14
 
 The /auth/login endpoint had no rate limit or per-email backoff. This
@@ -21,7 +21,7 @@ from alembic import op
 
 
 revision: str = "0013_failed_login_attempts"
-down_revision: Union[str, None] = "0012_tenant_settings_and_fk_cascades"
+down_revision: Union[str, None] = "0012_tenant_settings_fk"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
