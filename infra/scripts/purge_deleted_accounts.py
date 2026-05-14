@@ -81,6 +81,7 @@ def main(argv=None) -> int:
 
     from app.db.models import License
     from app.db.session import get_session_sync
+    from app.observability.audit import emit_event
 
     now = datetime.now(timezone.utc)
     out = {
@@ -103,6 +104,15 @@ def main(argv=None) -> int:
             if not args.dry_run:
                 entry["counts"] = _purge_one(db, row)
                 out["purged"] += 1
+                # Sprint 2I UAT-032 — purge success is part of the KVKK
+                # audit trail (Article 7 + GDPR Article 17). Background
+                # task → request=None.
+                emit_event(
+                    None,
+                    action="me.account.purge_executed",
+                    outcome="success",
+                    user_id=row.jti,
+                )
             out["details"].append(entry)
         if not args.dry_run:
             db.commit()
