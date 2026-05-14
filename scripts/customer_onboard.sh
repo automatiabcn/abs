@@ -142,7 +142,7 @@ fi
 echo "$LICENSE_TOKEN" > "${KEYS_DIR}/license.jwt"
 chmod 600 "${KEYS_DIR}/license.jwt"
 
-echo "[4/5] Copying customer compose + Caddyfile + Cerbos policies…"
+echo "[4/5] Copying customer compose + Caddyfile + Cerbos policies + cron scripts…"
 cp infra/docker-compose.customer.yml "${KEYS_DIR}/docker-compose.yml"
 if [ -f infra/Caddyfile ]; then
   cp infra/Caddyfile "${KEYS_DIR}/Caddyfile"
@@ -153,6 +153,16 @@ fi
 if [ -d infra/cerbos ]; then
   rm -rf "${KEYS_DIR}/cerbos"
   cp -R infra/cerbos "${KEYS_DIR}/cerbos"
+fi
+# Sprint 2N FAZ D (smebes lesson 18) — email-cron service mounts
+# ./scripts:/app/infra/scripts:ro at runtime. Without the host scripts
+# directory the cron container exits immediately ("No such file or
+# directory: infra/scripts/email_tick.py"). Bundle the cron scripts
+# alongside docker-compose.yml so every customer's `docker compose up -d`
+# finds the same files the compose file is wired against.
+if [ -d infra/scripts ]; then
+  rm -rf "${KEYS_DIR}/scripts"
+  cp -R infra/scripts "${KEYS_DIR}/scripts"
 fi
 
 echo "[5/5] Generating onboarding email…"
@@ -170,7 +180,12 @@ you do not need any source code.
 2. Install Docker:
    curl -fsSL https://get.docker.com | sh
 
-3. Place the attached files AND the cerbos/ folder in /opt/abs/ on your server:
+3. Easiest path — extract the single attached tarball into /opt/abs/:
+     cd /opt/abs && tar -xzvf customer-pkg-${CUSTOMER_SLUG}.tar.gz
+     ls /opt/abs   # docker-compose.yml + Caddyfile + cerbos/ + scripts/
+                   # + license.jwt + ghcr_pull.token
+
+   (Equivalent manual list — extract the tarball or copy each item:)
      docker-compose.yml      # this customer compose
      Caddyfile               # reverse proxy config
      ghcr_pull.token         # read-only token to pull our images
@@ -178,10 +193,13 @@ you do not need any source code.
      cerbos/                 # authorization engine config + policies (REQUIRED)
        config.yaml
        policies/*.yaml
+     scripts/                # email-cron + housekeeping scripts (REQUIRED)
+       email_tick.py
+       ...
 
-   Note: cerbos/ is mounted read-only at /etc/cerbos inside the cerbos
-   container. Without it the stack starts but cerbos exits and backend
-   cannot reach its authorization engine.
+   Note: cerbos/ is mounted read-only at /etc/cerbos and scripts/ is
+   mounted read-only at /app/infra/scripts. Without either directory
+   the related container exits immediately on boot.
 
    Create /opt/abs/.env with:
      ABS_PUBLIC_URL=https://your-domain.com
