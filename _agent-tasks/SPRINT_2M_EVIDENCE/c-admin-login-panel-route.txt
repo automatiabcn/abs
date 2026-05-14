@@ -1,0 +1,25 @@
+# Sprint 2M FAZ C — Admin Login + Panel Route Audit
+
+## POST /auth/login
+  payload: {"email":"admin@sim.local","password":"SimTest123!"}
+  → 200 {"status":"logged_in","tenant_slug":"sim"}
+  → set-cookie: abs_session=eyJhbGc...; HttpOnly; Max-Age=604800; SameSite=strict
+
+## Cookie-based route check
+  /admin/dashboard            → 200 OK (34KB HTML, Next.js render)
+  /admin                      → 404
+  /panel/dashboard            → 404
+  /panel/chat                 → 404
+  /panel/                     → 307 redirect chain → 404
+
+## /admin/dashboard nav (15 admin route)
+  audit, chat, dashboard, graph, marketplace, mcp-tools, meetings, pipelines,
+  providers, quota, rag, settings, transcription, usage, users
+
+## Title check
+  <title>Automatia ABS — Self-hosted AI ağı</title> — TR karakter byte-exact OK ✅
+
+## Brief beklentisi vs gerçek
+  Brief: /panel/quota, /panel/tools, /panel/chat, /panel/meetings
+  Gerçek: /admin/quota, /admin/mcp-tools, /admin/chat, /admin/meetings
+  Polish memory v1.7 "/admin/* → /panel/* 308 redirect" — stale ya da regression

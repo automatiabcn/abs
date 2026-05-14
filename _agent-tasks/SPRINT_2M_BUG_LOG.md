@@ -23,17 +23,22 @@ açıklama + UX impact + öneri fix tek pakette.
 | 2M-003 | **P0** | B4 (HTML) | setup wizard HTML i18n | "İleri" yerine **5 yerde** "Ileri" (Latin capital I U+0049, Türkçe İ U+0130 değil). Lesson 11 byte-exact ihlali. Müşteri "şirket profesyonel mi?" sorgular. | `curl -kL https://host/setup` → HTML 5x `<button>Ileri</button>` | b4-smoke.txt | `core/backend/app/setup_ui/static/index.html` veya template — `Ileri` → `İleri` global replace. Lesson 11 enforce. |
 | 2M-004 | P2 | B4 (HTML) | setup wizard grammar | "Kuruluma Bitir" yerine "Kurulumu Bitir" daha doğru TR. Dative yerine accusative. | Aynı HTML | b4-smoke.txt | Aynı template — "Kuruluma Bitir" → "Kurulumu Bitir". |
 | 2M-005 | P3 | B3 | compose up UX | `docker compose up -d` 60-90s alır, backend healthcheck loop'u 6×15s. Müşteri progress bar görmez, "asıldı mı?" düşünür. | `docker compose up -d` + watch | b3-compose-up.txt | Quickstart doc'a "First boot 60-90s normal, sleep 90 sonra `docker compose ps`" not. Belki `--wait` flag öner. |
+| 2M-006 | P2 | C1 | setup wizard lang state | `/v1/setup/status` `"lang":"en"` döner ama `/setup` HTML Türkçe render. State-UI inconsistency. | GET `/v1/setup/status` post-reset → en, GET `/setup` HTML → tr buttons. | c-setup-wizard-6step.txt | Lang detection: Accept-Language header → state.lang sync. Default "tr" eğer client locale TR. |
+| 2M-007 | P3 | C3 | brief stale (`mode:public`) | Brief FAZ C2 payload `{"mode":"public","domain":...}` örnek veriyor ama backend `Literal["ip","domain"]` bekler — 422. | POST `/v1/setup/step/domain` brief payload → 422. | c-setup-wizard-6step.txt | Brief'i güncelle: `mode:"domain"` veya `mode:"ip"`. Worker doc bug, code OK. |
+| 2M-008 | P2 | C4 | setup step ping disabled | Step 4 anthropic & Step 6 test `"reason":"live ping disabled in setup"`. Format-only validation. Müşteri yanlış key paste → setup tamamlanır → ilk chat fail. | Step 4 payload `{"anthropic_api_key":"sk-ant-placeholder"}` → 200 OK. | c-setup-wizard-6step.txt | Setup Step 6 "test" gerçek 1-prompt ping yapsın (1 token, $0.0001), başarısız ise setup tamamlanmasın. Founder cost-conscious yine de minimum smoke ekle. |
+| 2M-009 | **P1** | C5 | panel route mismatch | Brief `/panel/quota`, `/panel/tools`, `/panel/chat`, `/panel/meetings` rotalarını talep ediyor — gerçek hepsi 404. Canonical rota `/admin/*`. Polish memory v1.7 "/admin/* → /panel/* 308 redirect" ile çelişiyor. | `curl -kL /panel/chat` → 404; `/admin/chat` → 200. | c-admin-login-panel-route.txt | İki seçenek: (a) `/panel/* → /admin/*` redirect ekle (polish memory'yi onayla); (b) Brief'i güncelle `/admin/*`. Polish memory v1.7 yanıltıcı — invalidate veya impl ekle. |
+| 2M-010 | P2 | C5 | /panel/ HTTPS downgrade redirect | `/panel/` 307 location: `http://abs.sim.local/panel` (HTTPS yerine HTTP). Cookie `SameSite=strict` ile bu cross-protocol redirect cookie drop edebilir. | `curl -kI https://host/panel/` → 307 `location: http://host/panel`. | c-admin-login-panel-route.txt | Redirect protokolü origin'den miras alsın. `https://` zorla. Backend redirect handler patch. |
 
 ---
 
-## P0/P1/P2/P3 sayım (FAZ M sonunda revize)
+## P0/P1/P2/P3 sayım (FAZ C kapanışı)
 
-- **P0 (blocker):** 1 (2M-003 Türkçe Lesson 11)
-- **P1 (critical):** 0
-- **P2 (polish):** 3 (2M-001 API contract, 2M-002 TLS toggle, 2M-004 grammar)
-- **P3 (note):** 1 (2M-005 first-boot UX)
+- **P0 (blocker):** 1 (2M-003 Türkçe Lesson 11 setup HTML)
+- **P1 (critical):** 1 (2M-009 panel route mismatch — brief vs gerçek)
+- **P2 (polish):** 6 (2M-001 API contract, 2M-002 TLS toggle, 2M-004 grammar, 2M-006 lang state, 2M-008 ping disabled, 2M-010 HTTPS downgrade)
+- **P3 (note):** 2 (2M-005 first-boot UX, 2M-007 brief stale payload)
 
-**Toplam:** 5 bulgu (FAZ B kapanışı)
+**Toplam:** 10 bulgu (FAZ A-C)
 
 ---
 

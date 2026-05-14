@@ -1,0 +1,75 @@
+# Sprint 2M FAZ C — Setup Wizard 6-Step LIVE
+
+## /v1/setup/status (initial)
+  {"completed":false,"current_step":1,"completed_steps":[],"lang":"en"}
+
+## Step 1 admin POST
+  payload: {"email":"admin@sim.local","password":"SimTest123!"}
+  → 200 {"ok":true,"current_step":2}
+
+## Step 2 license POST (SIM_JWT mint)
+  payload: {"license_key":"<JWT_REDACTED>"}
+  → 200 {"ok":true,"current_step":3,"tier":"self-host"}
+
+## Step 3 domain POST
+  Brief beklentisi: mode="public" → backend "ip"/"domain" → 422 validation error
+  Fixed: {"mode":"domain","domain":"abs.sim.local","ssl_mode":"internal"}
+  → 200 {"ok":true,"current_step":4}
+
+## Step 4 anthropic POST
+  payload: {"anthropic_api_key":"sk-ant-placeholder-not-real-key"}
+  → 200 {"ok":true,"current_step":5,"paid_skipped":false}
+  ⚠ NOTE: backend "live ping disabled in setup" — format-only validation
+
+## Step 5 providers POST (all empty)
+  → 200 {"ok":true,"current_step":6,"configured":[]}
+
+## Step 6 test POST
+  → 200 {"completed":true,"current_step":6,"test_results":{"anthropic_api_key":{"status":"skipped","reason":"live ping disabled in setup"}}}
+
+## Final state.json
+{
+    "completed": true,
+    "current_step": 6,
+    "completed_steps": [
+        "admin",
+        "license",
+        "domain",
+        "anthropic",
+        "providers",
+        "test"
+    ],
+    "started_at": 1778788037.0640638,
+    "completed_at": 1778788090.0802917,
+    "lang": "en",
+    "data": {
+        "admin": {
+            "email": "admin@sim.local"
+        },
+        "license": {
+            "jti": "3b18a3024c484e49af05de240d70e140",
+            "tier": "self-host",
+            "seat_count": 1
+        },
+        "domain": {
+            "mode": "domain",
+            "domain": "abs.sim.local",
+            "ssl_mode": "internal"
+        },
+        "anthropic_configured": true,
+        "providers_configured": [],
+        "test_results": {
+            "anthropic_api_key": {
+                "status": "skipped",
+                "reason": "live ping disabled in setup"
+            }
+        },
+        "paid_skipped": false
+    }
+}
+
+## Setup completion time
+  53 saniye (started_at 1778788037 → completed_at 1778788090)
+
+## Post-setup first-run middleware off
+  /v1/license/info GET 200 JSON {"status":"licensed","tier":"self-host","expires_at":"2027-05-14"}
