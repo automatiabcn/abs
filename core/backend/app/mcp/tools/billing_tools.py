@@ -172,11 +172,31 @@ def _recent_events(db, limit: int = 10) -> list[dict]:
 @mcp_server.tool()
 @with_hooks("daily_cost")
 async def daily_cost() -> str:
-    """tracker × provider_configs pricing → bugunku tahmini maliyet."""
+    """tracker × provider_configs pricing → bugunku tahmini maliyet.
+
+    Sprint 2N FAZ E (P1 #2M-014) — provider-free customer'da
+    estimate_daily_cost veya tracker.snapshot içinde IndexError oluşursa
+    stack trace MCP client'a sızıyordu. Empty fallback shape döndür.
+    """
     await tracker.bump("daily_cost")
     from app.billing.cost_estimator import estimate_daily_cost
 
-    return json.dumps(estimate_daily_cost(), ensure_ascii=False, indent=2)
+    try:
+        payload = estimate_daily_cost()
+    except (IndexError, KeyError) as exc:
+        payload = {
+            "today_usd": 0.0,
+            "projected_monthly_usd": 0.0,
+            "by_provider": {},
+            "breakdown": [],
+            "estimated_at": __import__("time").time(),
+            "note": (
+                "Maliyet verisi henüz yok — provider konfigürasyonu veya "
+                "tracker geçmişi eksik."
+            ),
+            "_diagnostic": f"{type(exc).__name__}: {exc}",
+        }
+    return json.dumps(payload, ensure_ascii=False, indent=2)
 
 
 @mcp_server.tool()
