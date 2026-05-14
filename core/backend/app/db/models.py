@@ -460,3 +460,29 @@ class MintedTokenBlacklist(SQLModel, table=True):
     )
     expires_at: Optional[datetime] = Field(default=None, index=True)
     reason: Optional[str] = Field(default=None, max_length=256)
+
+
+class FailedLoginAttempt(SQLModel, table=True):
+    """Sprint 2I UAT-041 — per-email backoff state for /auth/login.
+
+    Each unsuccessful login increments ``attempts_count`` for the
+    submitted email; the exponential-backoff helper extends
+    ``locked_until`` so subsequent attempts within the window are
+    rejected with HTTP 429 before the password is even verified.
+
+    On a successful login the row is deleted (back to zero). The
+    @limiter.limit("5/minute") decorator on the route guards against IP
+    fan-out brute force; this table guards against patient single-IP
+    credential stuffing.
+    """
+
+    __tablename__ = "failed_login_attempts"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email: str = Field(max_length=256, index=True, unique=True)
+    tenant_slug: Optional[str] = Field(default=None, max_length=64)
+    attempts_count: int = Field(default=0)
+    last_attempt_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    locked_until: Optional[datetime] = Field(default=None, index=True)
