@@ -34,17 +34,20 @@ açıklama + UX impact + öneri fix tek pakette.
 | 2M-014 | **P1** | F1 | MCP tool `daily_cost` IndexError | Provider-free customer-facing tool `daily_cost()` çağrıldığında `IndexError: 4` exception. Stack trace MCP client'a sızar. Müşteri "cost ne kadar?" sorusuna cevap alamaz. | `from app.mcp.server import mcp_server; mcp_server._tool_manager._tools['daily_cost'].fn()` → IndexError | f-mcp-tool-audit.txt | `daily_cost.fn` içinde guard: cost log entry yoksa `{"cost": 0, "currency":"USD","period":"today","entries":0}` döndür, IndexError yerine. |
 | 2M-015 | P2 | F2 | MCP tool latency outlier `rag_status` | rag_status 423ms (vs p95 system tools <20ms). Qdrant scroll/count yaparken her seferinde tam tarama olabilir. Multi-collection durumda ölçeklemez. | `mcp_server._tool_manager._tools['rag_status'].fn()` → 422ms | f-mcp-tool-audit.txt | qdrant_client.count() cache + LRU 30s. Veya periodic background refresh. |
 | 2M-016 | P3 | F2 | `news_digest` graceful degrade | Gemini API key yokken news_digest "_(query failed: Gemini API key ..._)" döner — graceful degrade ama UX'te belirsiz. | `news_digest()` no key → markdown "query failed" mesajı | f-mcp-tool-audit.txt | "News digest unavailable: Gemini API key required" gibi clear-user mesaj. |
+| 2M-017 | **P0** | G3 | Cascade 6-down Türkçe fallback Lesson 11 | `/v1/chat/completions` 6-down fallback message: "Tum saglayicilar gecici hata verdi; lutfen tekrar deneyin." 8 Türkçe karakter ASCII'ye düşmüş (Ü/ü/ğ/ç/ı/ş hepsi düz). Müşteri ürün kalitesizliği hisseder. | POST `/v1/chat/completions` no provider configured → SSE event `{"content":"Tum..."}` | g-cascade-6down-audit.txt | Cascade orchestrator `_no_providers_message` literal'ı UTF-8 byte-exact'a güncelle. Test: bytes(msg.encode()) içinde `\xc4\xb0` (İ) `\xc4\xb1` (ı) `\xc5\x9f` (ş) `\xc4\x9f` (ğ) `\xc3\xa7` (ç) `\xc3\xbc` (ü). |
+| 2M-018 | **P1** | G3 | Cascade 6-down HTTP 200 vs UAT-044 503 | Brief beklentisi: 503 `{"error":"providers_unavailable",...}`. Gerçek: HTTP 200 + SSE stream. Stack leak yok (UAT-044 P0 koşul OK) ama client retry semantics kaybolur — JS fetch `response.ok = true` yanıltıcı. | POST `/v1/chat/completions` 5x no-provider → 200 SSE her seferinde | g-cascade-6down-audit.txt | Stream başında `{"type":"error","code":"all_providers_unavailable","retry_after":60}` event emit + son event'te `[DONE]` öncesi HTTP 503 trailer (HTTP/2 trailers) veya alternate header `x-abs-providers-unavailable: true`. Veya başlangıçta direkt 503 ve SSE stream başlatma. |
+| 2M-019 | P3 | G0 | Brief endpoint listesi stale | `/v1/chat`, `/v1/cascade/test`, `/v1/admin/cascade/breaker`, `/v1/admin/providers/circuit_state` — 4 endpoint brief'te ama gerçek 404/405. Canonical: `/v1/chat/completions`, `/v1/admin/providers/status`, `/v1/system/quota_status`. | `curl /v1/chat` → 404, `curl /v1/cascade/test` → 404, `/v1/admin/cascade/breaker` → 404 | g-cascade-6down-audit.txt | Brief'i revize: `/v1/chat/completions` SSE örneği + `/v1/admin/providers/status` + `/v1/system/quota_status`. |
 
 ---
 
-## P0/P1/P2/P3 sayım (FAZ F kapanışı)
+## P0/P1/P2/P3 sayım (FAZ G kapanışı)
 
-- **P0 (blocker):** 1 (2M-003 Türkçe Lesson 11 setup HTML)
-- **P1 (critical):** 2 (2M-009 panel route, 2M-014 daily_cost IndexError)
+- **P0 (blocker):** 2 (2M-003 setup HTML Türkçe, 2M-017 cascade fallback Türkçe)
+- **P1 (critical):** 3 (2M-009 panel route, 2M-014 daily_cost, 2M-018 cascade HTTP 200 vs 503)
 - **P2 (polish):** 8 (2M-001, 002, 004, 006, 008, 010, 013, 015)
-- **P3 (note):** 5 (2M-005, 007, 011, 012, 016)
+- **P3 (note):** 6 (2M-005, 007, 011, 012, 016, 019)
 
-**Toplam:** 16 bulgu (FAZ A-C-E-F)
+**Toplam:** 19 bulgu (FAZ A-C-E-F-G)
 
 ---
 

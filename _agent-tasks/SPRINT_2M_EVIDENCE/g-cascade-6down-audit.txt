@@ -1,0 +1,51 @@
+# Sprint 2M FAZ G — Cascade + Breaker + 6-Down Audit
+
+## G0 — Endpoint discovery (brief stale)
+  Brief: /v1/chat, /v1/cascade/test → BOTH 404 (eskimiş)
+  Gerçek: /v1/chat/completions SSE stream (admin auth lazım)
+  Bug 2M-019 P3 — brief 7+ endpoint stale, FAZ G1-G5 örneklerini güncelle
+
+## G1 — /v1/admin/providers/status
+  GET → 200 JSON
+  6 provider: groq, cerebras, cloudflare, gemini, cohere (5 configured=false)
+                              anthropic (configured=true, placeholder key)
+
+## G2 — /v1/system/quota_status
+  GET → 200 JSON
+  claude_plus: configured=true, used=0/1M, percent=0
+  groq, gemini, cerebras, cohere, cloudflare: configured=false
+  warnings=[], period_end=2026-05-14
+
+## G3 — Cascade 6-down sim (5x sequential POST /v1/chat/completions)
+  Pattern her istekte:
+    data: {"type":"session","session_id":N,"title":"Request N"}
+    data: {"type":"pipeline","id":"auto_direct"}
+    data: {"type":"thinking"}
+    data: {"type":"text","content":"Tum saglayicilar gecici hata verdi; lutfen tekrar deneyin.","provider":"none"}
+    data: [DONE]
+
+  HTTP status: 200 (DEĞIL 503 — UAT-044 regression mu?)
+  Content-type: text/event-stream
+  Provider chain: "auto_direct" pipeline → "none" final provider
+
+## G4 — KRİTİK BULGULAR
+
+  ❌ Bug 2M-018 P1 — Cascade 6-down HTTP 200 yerine 503 beklenir (UAT-044)
+     Client retry logic için 5xx status lazım. SSE 200 streaming içinde "text" mesajı
+     fallback ama klient SDK genelde HTTP status'le hata yönetir.
+
+  ❌ Bug 2M-017 P0 — Türkçe fallback message Lesson 11 byte-exact FAIL
+     Gerçek: "Tum saglayicilar gecici hata verdi; lutfen tekrar deneyin."
+     Olması gereken: "Tüm sağlayıcılar geçici hata verdi; lütfen tekrar deneyin."
+     Eksik karakterler: Ü, ü, ğ, ç, ı, ş (toplam 8 karakterde ASCII fallback)
+
+  ✅ İyi yanlar:
+     - 500 stack leak YOK (UAT-044 P0 koşulu sağlandı)
+     - SSE protocol intact (5/5 event tipi: session, pipeline, thinking, text, [DONE])
+     - Pipeline ID "auto_direct" telemetry friendly
+     - Provider: "none" → client side conditional logic
+
+## G5 — SKIP: Normal cascade + fallback chain + breaker open/close
+  G6 brief: ANTHROPIC_API_KEY toggle → fallback to groq verify, breaker state
+  Provider key yok → tüm cascade chain'i zaten "all-down" durumunda — G5 anlamsız
+  Founder paste sonrası ayrı sprint
