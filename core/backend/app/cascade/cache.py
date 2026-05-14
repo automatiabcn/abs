@@ -17,8 +17,18 @@ from typing import Generic, Optional, TypeVar
 T = TypeVar("T")
 
 
-def prompt_hash(prompt: str, model: str = "") -> str:
+def prompt_hash(
+    prompt: str, model: str = "", tenant_id: str = "_global"
+) -> str:
+    """Sprint 2I UAT-016 — tenant-scoped cache key.
+
+    The cache namespace is keyed by ``tenant_id`` so two tenants sending
+    the identical prompt+model do not collide. ``"_global"`` is used when
+    no tenant context is available (CLI / internal warmup paths).
+    """
     h = hashlib.sha256()
+    h.update(tenant_id.encode("utf-8"))
+    h.update(b"\x00")
     h.update(model.encode("utf-8"))
     h.update(b"\x00")
     h.update(prompt.encode("utf-8"))
