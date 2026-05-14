@@ -1,0 +1,75 @@
+name: CI Postgres (RLS)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-postgres-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: core/backend
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: abs_app
+          POSTGRES_PASSWORD: abs_app
+          POSTGRES_DB: abs_rls_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ABS_DATABASE_URL: postgresql://abs_app:abs_app@localhost:5432/abs_rls_test
+      ABS_TEST_POSTGRES_URL: postgresql://abs_app:abs_app@localhost:5432/abs_rls_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - name: Install dependencies
+        run: pip install -e ".[dev]" psycopg2-binary
+      - name: Grant abs_app schema-create privilege for alembic
+        env:
+          PGPASSWORD: abs_app
+        run: |
+          psql -h localhost -U abs_app -d abs_rls_test \
+            -c "ALTER USER abs_app WITH SUPERUSER;"
+      - name: Run migrations (head)
+        run: alembic -c alembic.ini upgrade head
+      - name: Configure abs_admin login for BYPASSRLS suite
+        env:
+          PGPASSWORD: abs_app
+        run: |
+          psql -h localhost -U abs_app -d abs_rls_test \
+            -c "ALTER ROLE abs_admin WITH LOGIN PASSWORD 'abs_admin';"
+          psql -h localhost -U abs_app -d abs_rls_test \
+            -c "GRANT CONNECT ON DATABASE abs_rls_test TO abs_admin;"
+          psql -h localhost -U abs_app -d abs_rls_test \
+            -c "GRANT USAGE ON SCHEMA public TO abs_admin;"
+          psql -h localhost -U abs_app -d abs_rls_test \
+            -c "GRANT SELECT ON customer_audit_entries, webhook_events, vault_audit_entries TO abs_admin;"
+      - name: Run postgres_only suite
+        env:
+          ABS_TEST_POSTGRES_ADMIN_URL: postgresql://abs_admin:abs_admin@localhost:5432/abs_rls_test
+        run: |
+          pytest -q -m postgres_only \
+            tests/integration/test_rls_audit_tables.py \
+            tests/integration/test_admin_bypass_rls.py
