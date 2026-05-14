@@ -301,6 +301,9 @@ _DEV_INSECURE_DEFAULTS: dict[str, str] = {
     "session_secret": "dev-insecure-change-in-prod",
     "admin_password_bootstrap": "CHANGEME",
     "vault_audit_hmac_secret": "dev-insecure-vault-hmac-change-in-prod",
+    # Sprint 2I #13 — block production boot if the operator forgot to
+    # override the Neo4j placeholder password.
+    "neo4j_password": "AbsNeo2026!",
 }
 
 

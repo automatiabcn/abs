@@ -60,6 +60,7 @@ def test_prod_env_with_real_secrets_passes() -> None:
     s.session_secret = "real-session"
     s.admin_password_bootstrap = "real-bootstrap"
     s.vault_audit_hmac_secret = "real-vault"
+    s.neo4j_password = "real-neo4j-password"  # Sprint 2I #13
     leaked = validate_production_secrets(s)
     assert leaked == []
     assert_production_safe(s)  # must not raise
