@@ -35,6 +35,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.api.admin.auth import admin_required
 from app.config import settings
+from app.middleware.rate_limit import limiter
 from app.observability.audit import emit_event
 
 logger = logging.getLogger(__name__)
@@ -97,6 +98,7 @@ def _provider_spec(provider_id: str) -> Optional[Dict[str, str]]:
 
 
 @router.post("/{provider_id}/test")
+@limiter.limit("5/minute")
 async def test_provider(
     provider_id: str,
     request: Request,
@@ -107,6 +109,10 @@ async def test_provider(
     The endpoint is read-only side-effect-wise: no key write, no flag
     flip. It only ever measures whether the operator's stored key is
     accepted and returns ``{ok, latency_ms, model?, error?}``.
+
+    Sprint 2I UAT-019 — `@limiter.limit("5/minute")` caps abusive
+    automation that would otherwise burn through real provider quota
+    on every keystroke.
     """
     spec = _provider_spec(provider_id)
     if spec is None:
