@@ -82,10 +82,10 @@ export default function MetricCard({
           <span>{label}</span>
         </div>
         <span
-          className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
+          className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase"
           style={{
-            background: `color-mix(in oklch, ${STATUS_BG[status]} 18%, transparent)`,
-            color: STATUS_BG[status],
+            background: STATUS_BG[status],
+            color: "var(--abs-surface-base)",
           }}
         >
           {status}

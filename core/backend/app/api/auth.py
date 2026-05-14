@@ -28,10 +28,113 @@ from jose import ExpiredSignatureError, JWTError, jwt
 from pydantic import BaseModel, Field
 
 from app.config import settings
+from app.middleware.rate_limit import limiter
 from app.observability.audit import emit_event  # Q12-L23
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
+
+
+# Sprint 2I UAT-041 — per-email exponential backoff thresholds. Lockout
+# kicks in once attempts cross _LOCKOUT_THRESHOLD; the delay doubles each
+# subsequent attempt up to _LOCKOUT_MAX_SECONDS, then plateaus.
+_LOCKOUT_THRESHOLD = 5
+_LOCKOUT_BASE_SECONDS = 30
+_LOCKOUT_MAX_SECONDS = 3600
+
+
+def _backoff_seconds(attempts: int) -> int:
+    """Return the seconds the email should remain locked after ``attempts``
+    consecutive failures."""
+    if attempts < _LOCKOUT_THRESHOLD:
+        return 0
+    delay = _LOCKOUT_BASE_SECONDS * (2 ** (attempts - _LOCKOUT_THRESHOLD))
+    return min(delay, _LOCKOUT_MAX_SECONDS)
+
+
+def _check_locked(email: str) -> Optional[datetime]:
+    """Return the active ``locked_until`` value if ``email`` is still in
+    backoff, otherwise None."""
+    try:
+        from sqlmodel import Session, select
+
+        from app.db.models import FailedLoginAttempt
+        from app.db.session import get_engine
+
+        with Session(get_engine()) as db:
+            row = db.execute(
+                select(FailedLoginAttempt).where(
+                    FailedLoginAttempt.email == email
+                )
+            ).scalars().first()
+            if row is None or row.locked_until is None:
+                return None
+            locked = row.locked_until
+            if locked.tzinfo is None:
+                locked = locked.replace(tzinfo=timezone.utc)
+            if locked > datetime.now(timezone.utc):
+                return locked
+            return None
+    except Exception as exc:
+        logger.debug("failed_login lock check skipped (non-fatal): %s", exc)
+        return None
+
+
+def _record_failed_login(email: str, tenant_slug: Optional[str]) -> None:
+    """Increment ``attempts_count`` and extend ``locked_until`` per the
+    exponential backoff schedule."""
+    try:
+        from sqlmodel import Session, select
+
+        from app.db.models import FailedLoginAttempt
+        from app.db.session import get_engine
+
+        now = datetime.now(timezone.utc)
+        with Session(get_engine()) as db:
+            row = db.execute(
+                select(FailedLoginAttempt).where(
+                    FailedLoginAttempt.email == email
+                )
+            ).scalars().first()
+            if row is None:
+                row = FailedLoginAttempt(
+                    email=email,
+                    tenant_slug=tenant_slug,
+                    attempts_count=1,
+                    last_attempt_at=now,
+                    locked_until=None,
+                )
+            else:
+                row.attempts_count = int(row.attempts_count or 0) + 1
+                row.last_attempt_at = now
+                if tenant_slug:
+                    row.tenant_slug = tenant_slug
+            backoff = _backoff_seconds(row.attempts_count)
+            if backoff > 0:
+                row.locked_until = now + timedelta(seconds=backoff)
+            db.add(row)
+            db.commit()
+    except Exception as exc:
+        logger.debug("failed_login record skipped (non-fatal): %s", exc)
+
+
+def _clear_failed_login(email: str) -> None:
+    """Drop the failed-login row on a successful authentication."""
+    try:
+        from sqlmodel import Session, delete
+
+        from app.db.models import FailedLoginAttempt
+        from app.db.session import get_engine
+
+        with Session(get_engine()) as db:
+            db.execute(
+                delete(FailedLoginAttempt).where(
+                    FailedLoginAttempt.email == email
+                )
+            )
+            db.commit()
+    except Exception as exc:
+        logger.debug("failed_login clear skipped (non-fatal): %s", exc)
 
 
 def _hash_password(raw: str) -> bytes:
@@ -314,6 +417,7 @@ def current_admin(request: Request) -> Dict:
 
 
 @router.post("/login")
+@limiter.limit("5/minute")
 def login(payload: LoginRequest, request: Request, response: Response) -> Dict:
     """E-posta + parola ile oturum aç; JWT cookie set edilir.
 
@@ -324,11 +428,33 @@ def login(payload: LoginRequest, request: Request, response: Response) -> Dict:
     coexist (e.g. when the setup wizard rewrites the file but a DB row from
     an older magic-link claim still carries a stale hash). Only one source
     is needed to authenticate.
+
+    Sprint 2I UAT-041 — `@limiter.limit("5/minute")` caps IP fan-out brute
+    force, ``FailedLoginAttempt`` enforces per-email exponential backoff.
     """
     bad = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="E-posta veya parola hatalı",
     )
+
+    locked_until = _check_locked(payload.email)
+    if locked_until is not None:
+        retry_after = max(
+            1, int((locked_until - datetime.now(timezone.utc)).total_seconds())
+        )
+        emit_event(
+            request,
+            action="auth.login",
+            outcome="denied",
+            reason="email_locked",
+            retry_after=retry_after,
+            email_hint=(payload.email[:3] + "***") if payload.email else None,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Çok fazla başarısız deneme, lütfen bekleyin",
+            headers={"Retry-After": str(retry_after)},
+        )
 
     candidates: list[Tuple[str, bytes, str]] = []
 
@@ -346,6 +472,7 @@ def login(payload: LoginRequest, request: Request, response: Response) -> Dict:
         logger.info(
             "login_failed reason=email_no_source email=%s", payload.email
         )
+        _record_failed_login(payload.email, None)
         emit_event(
             request,
             action="auth.login",
@@ -360,6 +487,7 @@ def login(payload: LoginRequest, request: Request, response: Response) -> Dict:
             tenant_slug = _lookup_tenant_slug(admin_email)
             token = _create_token(admin_email, tenant=tenant_slug)
             _set_cookie(response, token)
+            _clear_failed_login(admin_email)
             emit_event(
                 request,
                 action="auth.login",
@@ -378,6 +506,9 @@ def login(payload: LoginRequest, request: Request, response: Response) -> Dict:
     logger.info(
         "login_failed reason=password_mismatch sources=%s",
         [c[2] for c in candidates],
+    )
+    _record_failed_login(
+        payload.email, _lookup_tenant_slug(payload.email)
     )
     emit_event(
         request,
@@ -578,12 +709,19 @@ def signup(body: SignupRequest) -> Dict:
         body.tenant_slug,
         token[:6],
     )
-    return {
+    # Sprint 2I UAT-045 — production never echoes the magic_link in the
+    # response body (access logs + APM trace storage retain it for 24h
+    # which equals a working credential). Dev / test (env != "prod")
+    # keep it so the existing harness can claim without an SMTP capture.
+    response: Dict = {
         "status": "pending",
         "magic_link_sent": True,
+        "check_email": True,
         "tenant_slug": body.tenant_slug,
-        "magic_link": f"/auth/magic?token={token}",
     }
+    if settings.env != "prod":
+        response["magic_link"] = f"/auth/magic?token={token}"
+    return response
 
 
 def _claim_invite_by_token(token: str) -> Optional[Dict]:

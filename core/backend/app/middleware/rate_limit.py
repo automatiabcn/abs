@@ -54,8 +54,34 @@ def breach_count_24h() -> int:
         return sum(1 for t in _breach_timestamps if t >= cutoff)
 
 
+def _trusted_proxy_set() -> frozenset[str]:
+    raw = getattr(settings, "trusted_proxies", "") or ""
+    return frozenset(
+        ip.strip() for ip in raw.split(",") if ip.strip()
+    )
+
+
+def client_ip_for_rate_limit(request: Request) -> str:
+    """Sprint 2I UAT-042 — pick the real client IP for rate-limit keying.
+
+    If the immediate hop (``request.client.host``) is listed in
+    ``ABS_TRUSTED_PROXIES`` we honour the first IP in
+    ``X-Forwarded-For``. Untrusted hops fall back to the raw socket
+    address so a malicious origin cannot spoof its IP by setting the
+    header itself.
+    """
+    remote = get_remote_address(request)
+    if remote in _trusted_proxy_set():
+        fwd = request.headers.get("x-forwarded-for")
+        if fwd:
+            first = fwd.split(",", 1)[0].strip()
+            if first:
+                return first
+    return remote
+
+
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=client_ip_for_rate_limit,
     storage_uri=settings.rate_limit_storage_uri,
     default_limits=[],  # opt-in per route via decorator
 )

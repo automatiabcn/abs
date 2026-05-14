@@ -3,7 +3,40 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
+import os
+import warnings
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _promote_legacy_license_key_env() -> None:
+    """Sprint 2J FAZ F — accept the legacy un-prefixed LICENSE_KEY env var.
+
+    The 023 settings model uses ``env_prefix='ABS_'``, so a customer
+    whose ``.env`` carries the un-prefixed ``LICENSE_KEY=...`` (the
+    name docs/quickstart-30min.md shipped through Sprint 2I) would
+    silently boot in demo mode. Detect the typo before pydantic
+    parses, promote the value into ``ABS_LICENSE_KEY``, and emit a
+    DeprecationWarning so the operator sees the rename in logs.
+
+    Backwards compatibility window: one minor release. Customers who
+    refresh their ``.env`` from ``.env.example`` (already ABS-prefixed)
+    will never trip this branch.
+    """
+    legacy = os.environ.get("LICENSE_KEY")
+    canonical = os.environ.get("ABS_LICENSE_KEY")
+    if legacy and not canonical:
+        os.environ["ABS_LICENSE_KEY"] = legacy
+        warnings.warn(
+            "LICENSE_KEY env var is deprecated; rename to ABS_LICENSE_KEY "
+            "(see docs/quickstart-30min.md). Value was auto-promoted for "
+            "this boot.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+
+_promote_legacy_license_key_env()
 
 
 class Settings(BaseSettings):
@@ -50,6 +83,10 @@ class Settings(BaseSettings):
     # 028 — Rate limiting (slowapi)
     rate_limit_enabled: bool = True
     rate_limit_storage_uri: str = "memory://"  # Redis: redis://host:6379/0
+    # Sprint 2I UAT-042 — comma-separated proxy IPs whose X-Forwarded-For
+    # header may be trusted. Anything outside this allowlist falls back
+    # to request.client.host so a malicious origin cannot spoof its IP.
+    trusted_proxies: str = "127.0.0.1,::1"
 
     # T-058 — X-ABS-Audience header enforcement (caveat #11)
     audience_enforce: bool = False
@@ -297,6 +334,9 @@ _DEV_INSECURE_DEFAULTS: dict[str, str] = {
     "session_secret": "dev-insecure-change-in-prod",
     "admin_password_bootstrap": "CHANGEME",
     "vault_audit_hmac_secret": "dev-insecure-vault-hmac-change-in-prod",
+    # Sprint 2I #13 — block production boot if the operator forgot to
+    # override the Neo4j placeholder password.
+    "neo4j_password": "AbsNeo2026!",
 }
 
 

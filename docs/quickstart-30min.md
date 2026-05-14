@@ -32,7 +32,10 @@ Edit `core/backend/.env`:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 ABS_AUDIENCE_ENFORCE=false   # leave off for local
-LICENSE_KEY=demo-30min
+ABS_LICENSE_KEY=demo-30min   # Sprint 2J FAZ F: ABS_ prefix is the
+                             # canonical name; legacy LICENSE_KEY
+                             # is auto-promoted with a deprecation
+                             # warning for one release.
 ```
 
 ## Step 2 — Boot the stack (10 minutes)
@@ -113,3 +116,37 @@ You should get a JSON response with cited chunks + a generated answer.
 `docker compose logs backend` is your friend. Common gotchas in
 [Troubleshooting](troubleshooting.md). If you're stuck, open a GitHub issue with
 the trace ID from the LangFuse dashboard.
+
+## Sprint 2N (1.0.1) notes
+
+- **First boot 60-90s is normal.** The backend health probe loops 6×15s
+  while Cerbos pre-warms and BGE-M3 lazy-init kicks in. Don't kill the
+  stack until `docker compose ps` shows every service `healthy`.
+  Suggestion: `docker compose up -d --wait` (Compose v2.20+) to block
+  the terminal exactly until that point.
+- **Pre-DNS smoke test:** uncomment `tls internal` inside
+  `Caddyfile.customer` so `curl -k https://abs.local/` works before
+  pointing real DNS at the host. Re-comment the line before issuing
+  real Let's Encrypt certs.
+- **MCP / JSON-RPC remote smoke:** `/mcp/` rejects unknown `Host`
+  headers with 421 by design. To curl-test from another machine, add
+  the public hostname to `ABS_MCP_ALLOWED_HOSTS` in `.env`
+  (`ABS_MCP_ALLOWED_HOSTS=abs.mycompany.com,localhost`). SDK clients
+  derive the host from `ABS_PUBLIC_URL` automatically and need no
+  extra config.
+- **KVKK / GDPR self-service endpoints** live at `/me/data-export`,
+  `/me/account/delete-request`, `/me/account/delete-confirm`,
+  `/me/consents`, `/me/audit-log`. From Sprint 2N onwards Caddy routes
+  every `/me/*` to the FastAPI backend (previously fell into the
+  Next.js 404 page on customer compose).
+- **Canonical chat endpoint** is `POST /v1/chat/completions` (SSE). The
+  former `/v1/chat`, `/v1/cascade/test`, `/v1/admin/cascade/breaker`
+  paths are retired; use `/v1/admin/providers/status` for circuit
+  inspection and `/v1/system/quota_status` for quota.
+- **MCP tool inventory** is **122 tools** (1 legacy entry retired
+  during Sprint 19 hexagonal restructure — STOP CRITERIA #8 floor is
+  <80, this is well above it).
+- **RAG ingest body is JSON** (`{"text": "...", "project_slug":
+  "...", "title": "..."}` POST to `/v1/rag/ingest`). The old multipart
+  `-F file=@...` example is retired; the endpoint never accepted
+  multipart.
