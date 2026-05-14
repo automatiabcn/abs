@@ -71,5 +71,12 @@
   "privacy.subprocessors.title": "Subprocesadores y Contrato de Tratamiento de Datos",
   "privacy.subprocessors.body": "La lista actual de subprocesadores se encuentra en docs/legal/subprocessors.md; la plantilla de DPA para clientes B2B está en docs/legal/dpa-template.md.",
   "privacy.contact.title": "Contacto",
-  "privacy.contact.body": "Para solicitudes de derechos, contacte a privacy@automatiabcn.com. Las solicitudes se responden dentro de 30 días después de la autenticación (sin costo)."
+  "privacy.contact.body": "Para solicitudes de derechos, contacte a privacy@automatiabcn.com. Las solicitudes se responden dentro de 30 días después de la autenticación (sin costo).",
+  "deletion.title": "Estado de eliminación de cuenta",
+  "deletion.none": "No hay ninguna solicitud de eliminación pendiente para esta cuenta.",
+  "deletion.scheduled.title": "Tu cuenta está programada para eliminación",
+  "deletion.scheduled.body": "Tus datos se eliminarán permanentemente el {date}. Te quedan {days} días para cancelar.",
+  "deletion.cancel": "Cancelar eliminación",
+  "deletion.purged.title": "Cuenta ya eliminada",
+  "deletion.purged.body": "Los datos personales de esta cuenta se eliminaron el {date}."
 }
