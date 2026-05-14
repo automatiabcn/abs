@@ -1,0 +1,48 @@
+# Sprint 2M FAZ H — Admin Panel + KVKK + Data Export + Audit
+
+## H1 /admin/* 15 sayfa HTTP durum (admin cookie auth)
+  GREEN (13/15 → 200):
+    dashboard, quota, mcp-tools, chat, audit, providers, usage, settings,
+    users, marketplace, rag, graph, pipelines
+  REDIRECT (2/15 → 308):
+    meetings, transcription (yeni path, not P0)
+
+## H2 KVKK 2-step (Bearer license JWT auth — NOT admin cookie)
+  POST /v1/me/account/delete-request — 200 OK
+    Response: {"ok":true,"confirm_token":"eyJ...","expires_in_hours":24,"status":"email_sent"}
+    ⚠ confirm_token PLAINTEXT in body — settings.env != "prod" diye intended
+    Production env=prod ise token body'ye sızmaz (UAT-031 fix doğru kodda)
+    Sim ortamı dev → token plaintext (BY DESIGN)
+    Bug 2M-022 P2 — quickstart doc'a ABS_ENV=prod zorunluluğu net yaz
+
+  POST /v1/me/account/delete-confirm {"token":"<jwt>"} — 404 "license_not_found"
+    Sebep: SIM mint dry-run, DB'ye license row yazılmadı. Beklenen.
+
+  POST /v1/me/account/delete-cancel — 404 same reason
+
+  GET /v1/me/account/deletion-status — 404 (endpoint code'da var, container image stale)
+    Bug 2M-023 P1 — ghcr.io/enzoemir1/abs-backend:1.0.0 stale.
+    Container me_account.py 240 satır vs lokal 355 — Sprint 2I UAT-038 deletion-status
+    decorator container'da yok. Müşteri 1.0.0 kullanırsa /panel/account/deletion-status banner çalışmaz.
+    Çözüm: ABS_VERSION default'u 1.0.0-rc2 veya 1.0.1'e güncelle, yeni image build + push.
+
+## H3 Data Export (/v1/me/data-export)
+  POST /v1/me/data-export → 200 {"job_id":"dxj_vV...","status":"done"}
+  GET  /v1/me/data-export/{job} → status=done, size_bytes=2060, expires=24h
+  GET  /v1/me/data-export/{job}/download → 200 + Content-Disposition: filename="*.zip.enc"
+    Encrypted blob (base64 ASCII), 2060 bytes — vault key ile decrypt
+    ✅ KVKK encrypted-at-rest semantics tutuyor
+
+## H4 Audit pagination (UAT-034)
+  GET /v1/admin/audit/recent → 200 6 entries (setup wizard + login events)
+  GET /v1/admin/audit/recent?limit=100 → 6 entries (cap honored, next_cursor null)
+  GET /v1/admin/audit/recent?limit=9999 → 6 entries (cap=100 enforce)
+  ✅ UAT-034 audit pagination cap GREEN
+  Sample entry: source=customer, action=account.delete_requested, ts=2026-05-14
+
+## H5 — Caddy /me/* route gap
+  Bug 2M-020 P1 — Caddyfile.customer @backend pattern listesinde /me/* yok.
+  /me/* requestleri landing service'e gider, 404 Next.js HTML döner.
+  Çalışan path: /v1/me/* (zaten /v1/* pattern'e dahil)
+  Eski API client'ları (/me/delete-request) → 404 silent
+  Çözüm: Caddyfile @backend'e /me* ekle veya 404 deprecation note.

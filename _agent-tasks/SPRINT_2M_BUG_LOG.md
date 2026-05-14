@@ -37,17 +37,21 @@ açıklama + UX impact + öneri fix tek pakette.
 | 2M-017 | **P0** | G3 | Cascade 6-down Türkçe fallback Lesson 11 | `/v1/chat/completions` 6-down fallback message: "Tum saglayicilar gecici hata verdi; lutfen tekrar deneyin." 8 Türkçe karakter ASCII'ye düşmüş (Ü/ü/ğ/ç/ı/ş hepsi düz). Müşteri ürün kalitesizliği hisseder. | POST `/v1/chat/completions` no provider configured → SSE event `{"content":"Tum..."}` | g-cascade-6down-audit.txt | Cascade orchestrator `_no_providers_message` literal'ı UTF-8 byte-exact'a güncelle. Test: bytes(msg.encode()) içinde `\xc4\xb0` (İ) `\xc4\xb1` (ı) `\xc5\x9f` (ş) `\xc4\x9f` (ğ) `\xc3\xa7` (ç) `\xc3\xbc` (ü). |
 | 2M-018 | **P1** | G3 | Cascade 6-down HTTP 200 vs UAT-044 503 | Brief beklentisi: 503 `{"error":"providers_unavailable",...}`. Gerçek: HTTP 200 + SSE stream. Stack leak yok (UAT-044 P0 koşul OK) ama client retry semantics kaybolur — JS fetch `response.ok = true` yanıltıcı. | POST `/v1/chat/completions` 5x no-provider → 200 SSE her seferinde | g-cascade-6down-audit.txt | Stream başında `{"type":"error","code":"all_providers_unavailable","retry_after":60}` event emit + son event'te `[DONE]` öncesi HTTP 503 trailer (HTTP/2 trailers) veya alternate header `x-abs-providers-unavailable: true`. Veya başlangıçta direkt 503 ve SSE stream başlatma. |
 | 2M-019 | P3 | G0 | Brief endpoint listesi stale | `/v1/chat`, `/v1/cascade/test`, `/v1/admin/cascade/breaker`, `/v1/admin/providers/circuit_state` — 4 endpoint brief'te ama gerçek 404/405. Canonical: `/v1/chat/completions`, `/v1/admin/providers/status`, `/v1/system/quota_status`. | `curl /v1/chat` → 404, `curl /v1/cascade/test` → 404, `/v1/admin/cascade/breaker` → 404 | g-cascade-6down-audit.txt | Brief'i revize: `/v1/chat/completions` SSE örneği + `/v1/admin/providers/status` + `/v1/system/quota_status`. |
+| 2M-020 | P1 | H5 | Caddyfile `/me/*` route gap | Caddyfile.customer `@backend path /v1/* /auth/* /setup* /healthz /mcp* /static/* /panel /panel/* /api/inngest /api/inngest/*` — `/me/*` (eski API path) yok. Brief'in `/me/delete-request`, `/me/data-export` çağrıları landing'in Next.js 404 page'ine düşer. Silent failure, müşteri "endpoint bozuk" düşünür. | `curl https://host/me/delete-request` → 404 Next.js HTML (DEĞIL backend JSON) | h-admin-panel-kvkk-audit.txt | Caddyfile @backend pattern'a `/me/*` ekle, ya da v0 deprecation 410 Gone döndür. |
+| 2M-021 | P2 | H4 | UAT-034 cap test data sparse | Audit cap=100 enforce ediliyor ama veri sadece 6 entry → 9999 limit ile de 6 döndü. Cap'i gerçek doğrulamak için 200+ entry seed gerekir. Sim ortamı seed eksik. | `?limit=9999` → 6 entry (cap=100 hedef ama veri yetersiz, fonksiyonel doğrulamadı) | h-admin-panel-kvkk-audit.txt | E2E test'e 200+ audit entry seed ekle, cap=100 kesinleştir. (Test infrastructure improvement) |
+| 2M-022 | P2 | H2 | KVKK confirm_token plaintext (env dependent) | delete-request response body `confirm_token` plaintext döner — ama `settings.env != "prod"` koşulluda intended (test/dev). Customer compose default ABS_ENV unset → dev mode → plaintext sızar. Quickstart doc'a ABS_ENV=prod enforce eksik. | `curl POST /v1/me/account/delete-request` → 200 body `confirm_token` field | h-admin-panel-kvkk-audit.txt | (a) Customer compose `.env.example`'a `ABS_ENV=prod` default + comment. (b) Boot guard: `env != "prod"` ise `WARN: dev mode, do not use for real customer data`. |
+| 2M-023 | **P1** | H2 | Container image `1.0.0` stale (deletion-status eksik) | `ghcr.io/enzoemir1/abs-backend:1.0.0` me_account.py 240 satır, lokal repo 355 satır. Sprint 2I UAT-038 `/v1/me/account/deletion-status` endpoint container'a deploy edilmemiş. Müşteri default `ABS_VERSION=1.0.0` kullanırsa countdown banner + scheduled_delete_at API çalışmaz. | `docker exec backend grep -c deletion-status /app/app/api/me_account.py` → 0 (lokal repo → 1+) | h-admin-panel-kvkk-audit.txt | Build + push `ghcr.io/enzoemir1/abs-backend:1.0.0-rc2` (veya 1.0.1) + `.env.example` `ABS_VERSION=1.0.0-rc2` default. CI workflow image-publish job retag. |
 
 ---
 
-## P0/P1/P2/P3 sayım (FAZ G kapanışı)
+## P0/P1/P2/P3 sayım (FAZ H kapanışı)
 
 - **P0 (blocker):** 2 (2M-003 setup HTML Türkçe, 2M-017 cascade fallback Türkçe)
-- **P1 (critical):** 3 (2M-009 panel route, 2M-014 daily_cost, 2M-018 cascade HTTP 200 vs 503)
-- **P2 (polish):** 8 (2M-001, 002, 004, 006, 008, 010, 013, 015)
+- **P1 (critical):** 5 (2M-009 panel route, 2M-014 daily_cost, 2M-018 cascade 200, 2M-020 Caddy /me/*, 2M-023 image stale)
+- **P2 (polish):** 10 (2M-001, 002, 004, 006, 008, 010, 013, 015, 021, 022)
 - **P3 (note):** 6 (2M-005, 007, 011, 012, 016, 019)
 
-**Toplam:** 19 bulgu (FAZ A-C-E-F-G)
+**Toplam:** 23 bulgu (FAZ A-C-E-F-G-H)
 
 ---
 
