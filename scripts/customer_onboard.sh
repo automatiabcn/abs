@@ -170,16 +170,32 @@ you do not need any source code.
 2. Install Docker:
    curl -fsSL https://get.docker.com | sh
 
-3. Place the four attached files in /opt/abs/ on your server:
+3. Place the attached files AND the cerbos/ folder in /opt/abs/ on your server:
      docker-compose.yml      # this customer compose
      Caddyfile               # reverse proxy config
      ghcr_pull.token         # read-only token to pull our images
      license.jwt             # your signed license
+     cerbos/                 # authorization engine config + policies (REQUIRED)
+       config.yaml
+       policies/*.yaml
+
+   Note: cerbos/ is mounted read-only at /etc/cerbos inside the cerbos
+   container. Without it the stack starts but cerbos exits and backend
+   cannot reach its authorization engine.
 
    Create /opt/abs/.env with:
      ABS_PUBLIC_URL=https://your-domain.com
-     ABS_VERSION=latest
+     ABS_VERSION=1.0.1
+     ABS_VAULT_KEY=\$(openssl rand -base64 32)
+     ABS_DB_PASSWORD=\$(openssl rand -base64 32)
      # plus your provider keys (Groq, Anthropic, etc.) — bring your own.
+
+   Note: ABS_DB_PASSWORD is REQUIRED from 1.0.1 onwards. The stack ships
+   with Postgres 16 by default so the Sprint 2K Row-Level Security
+   policies (KVKK / GDPR defense-in-depth) are active. To stay on the
+   single-tenant SQLite path, also add:
+     ABS_DATABASE_URL=sqlite:////app/data/abs.db
+   and leave ABS_DB_PASSWORD set anyway (Postgres still starts).
 
 4. Authenticate with our private container registry:
    cat ghcr_pull.token | docker login ghcr.io -u ${CUSTOMER_GITHUB_USER} --password-stdin
