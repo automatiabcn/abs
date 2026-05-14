@@ -709,12 +709,19 @@ def signup(body: SignupRequest) -> Dict:
         body.tenant_slug,
         token[:6],
     )
-    return {
+    # Sprint 2I UAT-045 — production never echoes the magic_link in the
+    # response body (access logs + APM trace storage retain it for 24h
+    # which equals a working credential). Dev / test (env != "prod")
+    # keep it so the existing harness can claim without an SMTP capture.
+    response: Dict = {
         "status": "pending",
         "magic_link_sent": True,
+        "check_email": True,
         "tenant_slug": body.tenant_slug,
-        "magic_link": f"/auth/magic?token={token}",
     }
+    if settings.env != "prod":
+        response["magic_link"] = f"/auth/magic?token={token}"
+    return response
 
 
 def _claim_invite_by_token(token: str) -> Optional[Dict]:
