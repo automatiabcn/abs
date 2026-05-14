@@ -25,7 +25,7 @@ import json
 import logging
 
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import RedirectResponse
+from starlette.responses import JSONResponse, RedirectResponse
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +65,18 @@ class FirstRunMiddleware(BaseHTTPMiddleware):
         if any(path.startswith(prefix) for prefix in _WHITELIST_PREFIXES):
             return await call_next(request)
         accept = request.headers.get("accept", "")
+        # Sprint 2N FAZ F (P2 #2M-001) — API clients asking for JSON get
+        # a structured 503 so they can parse `error` + `setup_url`,
+        # instead of the HTML wizard redirect that confuses SDK parsers.
+        if "application/json" in accept and "text/html" not in accept:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "error": "setup_incomplete",
+                    "setup_url": "/setup",
+                    "hint": "Visit /setup in a browser to finish first-run setup.",
+                },
+            )
         if "text/html" in accept:
             return RedirectResponse(url="/setup", status_code=302)
         return RedirectResponse(url="/setup", status_code=307)
