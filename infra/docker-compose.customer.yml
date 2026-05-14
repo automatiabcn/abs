@@ -20,8 +20,10 @@
 #                          Next.js needs this for absolute links + canonical.
 #   ABS_ACME_EMAIL       — Let's Encrypt contact email for cert renewal
 #                          notices. Required by Caddy ACME defaults.
-#   ABS_VERSION          — image tag, default 1.0.0-rc2. Don't change unless
-#                          your support contact tells you to.
+#   ABS_VERSION          — image tag, default 1.0.1 (Sprint 2N). Don't
+#                          change unless your support contact tells you.
+#                          See .env.example for the per-release changelog
+#                          embedded next to ABS_VERSION.
 #   ABS_VAULT_KEY        — 32-byte base64 secret encrypting the local vault
 #                          (provider keys, OAuth state). Generate once with
 #                          `openssl rand -base64 32` then keep it backed up.
@@ -46,6 +48,18 @@ services:
     pull_policy: always
     env_file: .env
     environment:
+      # Sprint 2N FAZ C (P0 #2M-026) — Postgres default for customer
+      # compose so the Sprint 2K RLS migration (0015_rls_audit_tables)
+      # is active by default. SQLite legacy stays available via
+      # ABS_DATABASE_URL=sqlite:////app/data/abs.db in .env.
+      ABS_DATABASE_URL: "${ABS_DATABASE_URL:-postgresql+psycopg://abs:${ABS_DB_PASSWORD}@postgres:5432/abs}"
+      # Sprint 2N FAZ E (P1 #2M-024) — explicit prod env + rate limit
+      # enable so customer compose never falls back to the dev-mode
+      # disable path. UAT-041 (/auth/login 5/min brute-force guard)
+      # depends on rate_limit_enabled=true; Sprint 2M repro found 10
+      # consecutive wrong-password attempts returning 10x 401 with 0x 429.
+      ABS_ENV: "${ABS_ENV:-prod}"
+      ABS_RATE_LIMIT_ENABLED: "${ABS_RATE_LIMIT_ENABLED:-true}"
       # BUG-27 — point RAG/Cerbos at the in-stack services declared below.
       # Customers can override either URL in .env if they front-load their
       # own Qdrant/Cerbos clusters; defaults match the compose service names.
@@ -77,6 +91,11 @@ services:
       # Mounted read-only; the backend doesn't need to rotate it at runtime.
       - abs-vault-key:/app/vault-key:ro
     depends_on:
+      postgres:
+        # Sprint 2N FAZ C — wait for Postgres before backend boot.
+        # Backend entrypoint runs `alembic upgrade head` so the schema
+        # (incl. Sprint 2K RLS policies) is current before serving.
+        condition: service_healthy
       qdrant:
         # qdrant image has no curl/wget/nc/bash so a /dev/tcp probe always
         # fails; rely on `service_started` + backend's own qdrant_client
@@ -199,6 +218,14 @@ services:
   # cerbos — policy decision point for /v1/rag/* and /v1/projects/* (T-004,
   # T-012). Policies are baked into the backend image at /app/cerbos/policies
   # and bind-mounted into cerbos read-only here.
+  #
+  # IMPORTANT — bundle layout (Sprint 2J FAZ C, BUG-2J-C-01):
+  # The `./cerbos/` directory next to this compose MUST contain BOTH
+  # `config.yaml` AND `policies/`. Do NOT copy from the repo-root
+  # `cerbos/` (which only ships policies); the canonical bundle lives
+  # at `infra/cerbos/`. Customer-side, `scripts/customer_onboard.sh`
+  # copies the correct bundle into `customer-keys/<slug>/cerbos/` —
+  # ship that to the customer, not the repo-root directory.
   # ---------------------------------------------------------------------------
   cerbos:
     image: ghcr.io/cerbos/cerbos:0.40.0
@@ -240,6 +267,34 @@ services:
       timeout: 10s
       retries: 12
       start_period: 40s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # postgres — Sprint 2N FAZ C (P0 #2M-026) — KVKK defense-in-depth DB.
+  #
+  # Sprint 2K shipped Row-Level Security on the audit_*/tenant_* tables,
+  # but the customer compose previously had no Postgres service, so backend
+  # silently fell back to SQLite and RLS was never engaged. From 1.0.1
+  # onwards Postgres is the default; SQLite stays opt-in via
+  # ABS_DATABASE_URL=sqlite:////app/data/abs.db in .env (legacy, single-
+  # tenant only — RLS policies are no-op on SQLite).
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: abs
+      POSTGRES_PASSWORD: "${ABS_DB_PASSWORD:?ABS_DB_PASSWORD env required — generate with openssl rand -base64 32}"
+      POSTGRES_DB: abs
+    volumes:
+      - abs-postgres-data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U abs -d abs"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
@@ -286,3 +341,6 @@ volumes:
   # BUG-29 — neo4j graph + transaction logs. Same persistence contract as
   # qdrant: stable across upgrades, wiped only by an explicit volume drop.
   abs-neo4j-data:
+  # Sprint 2N FAZ C (P0 #2M-026) — Postgres RLS-backed audit + tenant
+  # tables. Single named volume; back this up nightly alongside abs-data.
+  abs-postgres-data:

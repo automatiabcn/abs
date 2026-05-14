@@ -65,24 +65,60 @@ def _full_mask(provider_id: str) -> str:
     return "sk-" + ("•" * 12)
 
 
-def _persist_secret(provider_id: str, value: str) -> Dict[str, bool]:
-    attr = _PROVIDER_ATTR[provider_id]
-    vault_ok = False
-    env_ok = False
-    try:
-        from app.api.setup import (
-            _persist_encrypted_secret,
-            _persist_env_var,
-        )
+class _PersistError(RuntimeError):
+    """Sprint 2I UAT-012 — raised when vault/env persistence cannot be
+    completed atomically. The caller is expected to translate this to
+    HTTP 500 + rollback the in-memory ``settings`` attribute."""
 
+
+def _persist_secret(
+    provider_id: str, value: str, previous: Optional[str] = None
+) -> Dict[str, bool]:
+    """Sprint 2I UAT-012 — atomic vault + .env persistence.
+
+    Previous behaviour swallowed every ``Exception`` so a vault write
+    that succeeded followed by an ``IOError`` on the .env patch left a
+    half-persisted state: the UI returned 200, but the next boot reloaded
+    settings from ``.env`` and the key was gone (vault is a side-channel
+    in dev). Now both writes must succeed; on .env failure we roll the
+    vault back to ``previous`` (or delete it if ``previous`` is empty).
+    """
+    attr = _PROVIDER_ATTR[provider_id]
+    env_key = f"ABS_{attr.upper()}"
+    from app.api.setup import _persist_encrypted_secret, _persist_env_var
+
+    try:
         vault_ok = bool(_persist_encrypted_secret(attr, value))
-        env_ok = bool(_persist_env_var(f"ABS_{attr.upper()}", value))
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:
+        logger.warning("vault write failed provider=%s err=%s", provider_id, exc)
+        raise _PersistError(f"vault_write_failed:{type(exc).__name__}") from exc
+
+    try:
+        env_ok = bool(_persist_env_var(env_key, value))
+    except Exception as exc:
         logger.warning(
-            "provider_save persist failed provider=%s err=%s",
+            "env write failed provider=%s err=%s — rolling vault back",
             provider_id,
             exc,
         )
+        # Best-effort rollback so the boot doesn't see a half-persisted state.
+        try:
+            if previous:
+                _persist_encrypted_secret(attr, previous)
+            else:
+                from app.vault.runner import delete_secret
+
+                delete_secret(attr)
+        except Exception as rb_exc:  # pragma: no cover
+            logger.error(
+                "vault rollback also failed provider=%s err=%s",
+                provider_id,
+                rb_exc,
+            )
+        raise _PersistError(
+            f"env_write_failed:{type(exc).__name__}"
+        ) from exc
+
     return {"vault": vault_ok, "env": env_ok}
 
 
@@ -237,7 +273,29 @@ async def save_provider(
                 },
             )
 
-    persist_status = _persist_secret(provider_id, raw_key)
+    try:
+        persist_status = _persist_secret(
+            provider_id, raw_key, previous=str(previous or "")
+        )
+    except _PersistError as exc:
+        # Revert in-memory setting so the runtime matches disk.
+        setattr(settings, attr, previous)
+        emit_event(
+            request,
+            action="admin.provider.save",
+            outcome="error",
+            reason="persist_failed",
+            provider=provider_id,
+            error_class=str(exc),
+            status_code=500,
+        )
+        raise HTTPException(
+            500,
+            {
+                "error": "provider_key_persist_failed",
+                "detail": str(exc),
+            },
+        )
     enabled_persisted = _persist_enabled_flag(provider_id, body.enabled)
     await _invalidate_caches(provider_id)
 

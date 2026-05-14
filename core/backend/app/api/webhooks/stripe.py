@@ -37,6 +37,11 @@ logger = logging.getLogger(__name__)
 # module-level: boot'ta tek sefer (per-request mutation race'ini önler)
 stripe.api_key = settings.stripe_secret_key
 
+# Sprint 2I UAT-047 — Stripe webhook body 1 MiB cap so an attacker
+# cannot force the FastAPI worker to buffer a multi-GB POST before the
+# signature check rejects it.
+STRIPE_WEBHOOK_MAX_BODY_BYTES = 1 * 1024 * 1024  # 1 MiB
+
 
 def _parse_seat_count(raw) -> int:
     """Stripe metadata'dan gelen seat_count'u güvenli şekilde parse et."""
@@ -54,8 +59,47 @@ async def stripe_webhook(
     db: Session = Depends(get_session),
 ) -> dict:
     """Stripe webhook işleyicisi — imza doğrula, event'e göre aksiyon al."""
-    payload = await request.body()
     lang = getattr(request.state, "lang", "en")
+
+    # Sprint 2I UAT-047 — short-circuit before reading the body when
+    # Content-Length advertises an oversize payload so the worker never
+    # buffers a multi-GB request.
+    content_length_header = request.headers.get("content-length")
+    if content_length_header:
+        try:
+            advertised = int(content_length_header)
+        except ValueError:
+            advertised = -1
+        if advertised > STRIPE_WEBHOOK_MAX_BODY_BYTES:
+            emit_event(
+                request,
+                action="webhooks.stripe.payload",
+                outcome="denied",
+                reason="payload_too_large",
+                status_code=413,
+                provider="stripe",
+            )
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="payload_too_large",
+            )
+
+    payload = await request.body()
+    if len(payload) > STRIPE_WEBHOOK_MAX_BODY_BYTES:
+        # Defence in depth — chunked transfer can dodge Content-Length.
+        emit_event(
+            request,
+            action="webhooks.stripe.payload",
+            outcome="denied",
+            reason="payload_too_large",
+            status_code=413,
+            provider="stripe",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="payload_too_large",
+        )
+
     sig_header = request.headers.get("stripe-signature")
     if sig_header is None:
         emit_event(

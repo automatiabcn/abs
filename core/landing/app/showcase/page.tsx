@@ -73,9 +73,10 @@ export default function ShowcasePage() {
                 }}
               >
                 <div
+                  role="img"
+                  aria-label={label}
                   className="h-16"
                   style={{ background: `var(${token})` }}
-                  aria-label={label}
                 />
                 <div className="p-3 text-xs">
                   <div className="font-semibold">{label}</div>

@@ -49,7 +49,7 @@ def _silence_persistence(monkeypatch):
     monkeypatch.setattr(
         providers_save,
         "_persist_secret",
-        lambda pid, val: {"vault": False, "env": False},
+        lambda pid, val, **_kw: {"vault": False, "env": False},
     )
     monkeypatch.setattr(
         providers_save,
@@ -143,7 +143,7 @@ def test_save_invalidates_cascade_cache(client, monkeypatch):
     monkeypatch.setattr(
         providers_save,
         "_persist_secret",
-        lambda pid, val: {"vault": False, "env": False},
+        lambda pid, val, **_kw: {"vault": False, "env": False},
     )
     monkeypatch.setattr(
         providers_save,

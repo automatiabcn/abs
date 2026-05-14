@@ -46,6 +46,14 @@ def client(monkeypatch):
 
     monkeypatch.setattr(chat_mod, "_run_cascade", fake_run_cascade)
     monkeypatch.setattr(chat_mod, "_assert_license_ok", lambda: None)
+    # Sprint 2N FAZ E (P1 #2M-018) — pre-flight provider probe gerektiriyor.
+    # _run_cascade fake'lendiği için chat path provider olmadan çalışıyor;
+    # probe'u memnun etmek için en az bir provider varmış gibi davran.
+    monkeypatch.setattr(
+        chat_mod,
+        "get_active_providers",
+        lambda **_: ["anthropic"],
+    )
 
     async def empty_citations(*a, **kw):
         return []

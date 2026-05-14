@@ -87,10 +87,10 @@ export default function PricingTierCard({
       >
         {badge ? (
           <span
-            className="absolute -top-3 right-4 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wide"
+            className="absolute -top-3 right-4 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide"
             style={{
               background: "var(--abs-brand-base)",
-              color: "var(--abs-surface-base)",
+              color: "#ffffff",
               boxShadow:
                 "0 4px 12px color-mix(in oklch, var(--abs-brand-base) 35%, transparent)",
             }}

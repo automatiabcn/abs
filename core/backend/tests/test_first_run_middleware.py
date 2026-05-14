@@ -76,12 +76,18 @@ def test_no_redirect_when_completed(completed_setup, client):
     assert p.status_code != 302
 
 
-def test_api_request_gets_307_not_html(incomplete_setup, client):
+def test_api_request_gets_503_json(incomplete_setup, client):
+    """Sprint 2N FAZ F (P2 #2M-001) — Accept: application/json istekleri
+    artık 307 HTML redirect yerine yapılandırılmış 503 JSON alır.
+    API clients/SDK'lar `error` + `setup_url` alanlarını parse eder.
+    """
     r = client.get(
         "/v1/license/status",
         headers={"accept": "application/json"},
         follow_redirects=False,
     )
-    # JSON Accept → 307 (POST/PUT için method preserve)
-    assert r.status_code == 307
-    assert r.headers["location"] == "/setup"
+    assert r.status_code == 503
+    body = r.json()
+    assert body["error"] == "setup_incomplete"
+    assert body["setup_url"] == "/setup"
+    assert "hint" in body

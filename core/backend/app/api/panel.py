@@ -61,3 +61,31 @@ def panel_legacy_disabled(request: Request) -> Response:
         status_code=410,
         media_type="text/plain",
     )
+
+
+# Sprint 2N FAZ E (P1 #2M-009) — catch-all `/panel/{path}` → `/admin/{path}`.
+# Brief'in `/panel/quota`, `/panel/tools`, `/panel/chat`, `/panel/meetings`
+# çağrıları Sprint 2M sırasında 404 dönüyordu çünkü yalnızca `/panel`,
+# `/panel/login` ve `/panel/legacy` redirect handler'ları kayıtlı.
+#
+# `/panel/assets/*` (StaticFiles mount'u tarafından serve edilir) exclude
+# edilir — main.py panel_router include'undan SONRA StaticFiles mount eder,
+# ama Starlette route order'ı declaration'a göredir, bu yüzden burada
+# exclude etmeliyiz. `assets/` prefix'li path'ler 404'e düşerse Starlette
+# router zinciri devam edemez; bu nedenle 404 yerine doğrudan static
+# dosyayı serve eden FileResponse döner. Bu sayede main.py mount'una
+# bağlı kalmadan catch-all + static dosya servisi birlikte çalışır.
+@router.get("/panel/{path:path}")
+def panel_subpath_compat_redirect(path: str) -> Response:
+    """Legacy `/panel/<x>` → `/admin/<x>` 308 redirect.
+
+    `/panel/assets/*` istekleri StaticFiles dosyalarına yönlendirilir,
+    redirect uygulanmaz.
+    """
+    if path.startswith("assets/"):
+        asset_path = PANEL_DIR / path
+        if asset_path.is_file():
+            return FileResponse(str(asset_path))
+        return Response(status_code=404)
+    target = f"/admin/{path}" if path else "/admin"
+    return RedirectResponse(url=target, status_code=308)

@@ -10,11 +10,23 @@
 }
 
 {$ABS_PUBLIC_HOSTNAME} {
+	# Sprint 2N FAZ F (P2 #2M-002) — pre-DNS smoke toggle.
+	# UNCOMMENT the next line to force self-signed certs (lets you hit
+	# https://abs.local with `curl -k` before DNS points at the host).
+	# Leave commented in production so Caddy's default ACME HTTP-01 flow
+	# (driven by the global `email` directive) issues real Let's Encrypt
+	# certs once port 80 + 443 are reachable.
+	# tls internal
+
 	# Q12 R3 route split. Backend exposes API + setup wizard + auth + MCP
 	# transport on FastAPI (port 8000). Everything else (marketing pages
 	# + Next.js admin panels under /admin/*) goes to the landing image
 	# (Next.js standalone on port 3000).
-	@backend path /v1/* /auth/* /setup* /healthz /mcp* /static/* /panel /panel/* /api/inngest /api/inngest/*
+	# Sprint 2N FAZ E (P1 #2M-020) — `/me/*` added so KVKK / GDPR
+	# self-service endpoints (data-export, delete-request, delete-confirm,
+	# consents, audit-log) reach FastAPI instead of falling through to
+	# the Next.js 404 page.
+	@backend path /v1/* /auth/* /me/* /setup* /healthz /mcp* /static/* /panel /panel/* /api/inngest /api/inngest/*
 	handle @backend {
 		reverse_proxy backend:8000
 	}
