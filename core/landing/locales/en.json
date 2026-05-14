@@ -71,5 +71,12 @@
   "privacy.subprocessors.title": "Sub-processors and Data Processing Agreement",
   "privacy.subprocessors.body": "The current sub-processor list is in docs/legal/subprocessors.md; the DPA template for B2B customers is in docs/legal/dpa-template.md.",
   "privacy.contact.title": "Contact",
-  "privacy.contact.body": "For rights requests, contact privacy@automatiabcn.com. Requests are answered within 30 days after identity verification (free of charge)."
+  "privacy.contact.body": "For rights requests, contact privacy@automatiabcn.com. Requests are answered within 30 days after identity verification (free of charge).",
+  "deletion.title": "Account deletion status",
+  "deletion.none": "No deletion request is currently pending for this account.",
+  "deletion.scheduled.title": "Your account is scheduled for deletion",
+  "deletion.scheduled.body": "Your data will be permanently purged on {date}. You have {days} days left to cancel.",
+  "deletion.cancel": "Cancel deletion",
+  "deletion.purged.title": "Account already purged",
+  "deletion.purged.body": "The personal data on this account was purged on {date}."
 }
