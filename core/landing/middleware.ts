@@ -28,11 +28,14 @@ export async function middleware(req: NextRequest) {
 
   // Validate the cookie against the backend. We hit /auth/me directly
   // (not the proxy) so middleware avoids loops and edge-runtime fetch
-  // limitations.
+  // limitations. Sprint 2I UAT-009 — fail-CLOSED: backend timeout or
+  // network error sends the request back to /login instead of leaking
+  // /panel and /admin into an unauthenticated render.
   try {
     const res = await fetch(`${BACKEND_URL}/auth/me`, {
       headers: { cookie: `abs_session=${session.value}` },
       cache: "no-store",
+      signal: AbortSignal.timeout(2000),
     });
     if (!res.ok) {
       const url = req.nextUrl.clone();
@@ -41,9 +44,11 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(url);
     }
   } catch {
-    // If the backend is unreachable, allow the request through — the
-    // page itself will render the empty state. We don't want to loop
-    // when only the backend is down.
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", path);
+    url.searchParams.set("reason", "backend-unreachable");
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
