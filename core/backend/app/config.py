@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     # 028 — Rate limiting (slowapi)
     rate_limit_enabled: bool = True
     rate_limit_storage_uri: str = "memory://"  # Redis: redis://host:6379/0
+    # Sprint 2I UAT-042 — comma-separated proxy IPs whose X-Forwarded-For
+    # header may be trusted. Anything outside this allowlist falls back
+    # to request.client.host so a malicious origin cannot spoof its IP.
+    trusted_proxies: str = "127.0.0.1,::1"
 
     # T-058 — X-ABS-Audience header enforcement (caveat #11)
     audience_enforce: bool = False
