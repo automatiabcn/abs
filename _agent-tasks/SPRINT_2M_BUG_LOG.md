@@ -68,3 +68,124 @@ açıklama + UX impact + öneri fix tek pakette.
 
 **Update pattern:** FAZ C-M ilerledikçe yeni bug'lar bu tablonun altına eklenir, P0/P1/P2/P3
 sayım güncellenir.
+
+---
+
+## Founder Recommendations — Top 5 Acil Aksiyon (FAZ L)
+
+### 1. 🚨 Lesson 11 Türkçe karakter blanket-audit + fix (P0 #003 + #017)
+
+İki kritik konum:
+- `core/backend/app/setup_ui/static/` (veya template) — `"Ileri"` → `"İleri"` global replace, `"Kuruluma Bitir"` → `"Kurulumu Bitir"`.
+- `core/backend/app/cascade/` orchestrator fallback message — `"Tum saglayicilar gecici hata verdi; lutfen tekrar deneyin."` → `"Tüm sağlayıcılar geçici hata verdi; lütfen tekrar deneyin."` byte-exact.
+
+**Test:** Mevcut `tests/test_turkce_byte_exact.py` (varsa) + yeni assert: cascade fallback message bytes contains `\xc3\x9c` (Ü), `\xc4\x9f` (ğ), `\xc3\xa7` (ç), `\xc4\xb1` (ı), `\xc5\x9f` (ş). CI gate ekle.
+
+**Etki:** Müşteri ilk 30 saniyede güveni iade eder. Türk pazarına satış ön-koşul.
+
+### 2. 🚨 Postgres RLS customer compose'a entegre et (P0 #026)
+
+Customer compose şu an Postgres servisi içermiyor → SQLite fallback. Sprint 2K defense-in-depth katmanı kaybediliyor. Çözüm:
+
+- `infra/docker-compose.customer.yml`'a `postgres` service ekle (`postgres:16-alpine`, named volume `abs-postgres-data`).
+- Backend `DATABASE_URL=postgresql+psycopg://abs:${ABS_DB_PASSWORD}@postgres:5432/abs` default.
+- Setup wizard step 0'a "DB backend" toggle (Postgres default, SQLite legacy fallback).
+- Migration `0000_init_baseline` + Sprint 2K RLS migration boot'ta otomatik.
+- Quickstart doc'a Postgres recipe.
+
+**Etki:** KVKK compliance defense-in-depth, cross-tenant guard 2-layer (Cerbos + Postgres RLS GUC).
+
+### 3. 🚨 UAT-009 fail-closed restore (P0 #025)
+
+Landing `app/admin/layout.tsx` veya `middleware.ts`:
+
+```typescript
+export async function middleware(req: Request) {
+  const health = await fetch(`${process.env.ABS_BACKEND_URL}/healthz`).catch(() => null);
+  if (!health || !health.ok) return Response.redirect('/login?backend_down', 307);
+  // existing auth check...
+}
+```
+
+**Etki:** Backend down sim → /admin/* redirect /login, müşteri "bozuk" sanmaz, fail-loud mesaj alır.
+
+### 4. 🔴 Image `1.0.0` retag → `1.0.1` / `rc2` push (P1 #023)
+
+`ghcr.io/enzoemir1/abs-backend:1.0.0` Sprint 2I UAT-038 (deletion-status) eksik. CI:
+
+```yaml
+# .github/workflows/image-publish.yml (varsa update)
+- name: Build + push abs-backend
+  run: |
+    docker build -t ghcr.io/enzoemir1/abs-backend:1.0.1 .
+    docker push ghcr.io/enzoemir1/abs-backend:1.0.1
+```
+
+`.env.example` `ABS_VERSION=1.0.1` default. Customer compose immediate sync.
+
+**Etki:** Müşteri UAT-038 countdown banner + scheduled_delete_at API çalışır.
+
+### 5. 🔴 `/auth/login` rate limit middleware (P1 #024)
+
+`slowapi` veya `fastapi-limiter` ekle:
+
+```python
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+limiter = Limiter(key_func=get_remote_address)
+
+@auth_router.post("/login")
+@limiter.limit("5/minute")
+async def login(...):
+    ...
+```
+
+In-memory store yeterli (small deploy). Per-IP cap; per-email enhancement bonus.
+
+**Etki:** Brute force korumalı, UAT-041 restore.
+
+---
+
+## Sprint 2N kararı (founder review için)
+
+| Sprint | Kapsam | Süre |
+|--------|--------|------|
+| **Sprint 2N — Hot-fix patch (önerilir)** | 5 founder rec + 5 P1 bug fix | 1-2 hafta |
+| Sprint 2L — RLS dalga 2 | tablo seti genişletme | 1 hafta (Sprint 2N sonra) |
+| Pilot Batch 2 | Sprint 2N closed olmadan ❌ | gating: P0 = 0 |
+
+**Pilot batch 2 gating kriteri:**
+- ✅ Sprint 2N kapanışında **0 P0 bug** kalmalı
+- ✅ P1 bug ≤ 2 (acil olmayan polish)
+- ✅ Cert footer 🟡 RC → 🟢 GREEN damga
+- ✅ Postgres RLS customer compose default (KVKK için zorunlu)
+- ✅ Türkçe karakter blanket-audit CI gate aktif
+
+Mevcut durumda **pilot batch 2 GO/NO-GO: NO-GO** çünkü:
+- 4 P0 bug açık (#003, #017, #025, #026)
+- 6 P1 bug açık (kümülatif risk)
+- Cert footer 🟡 RC seviyesinde
+
+---
+
+## Müşteri perspektif final yorum
+
+**Olumlu:**
+- Setup time 3-8 dk EXCELLENT (hedef %10-25)
+- 7/7 service docker healthy
+- 122 MCP tool registered (brief 123 hedef ≈ 99%)
+- KVKK 2-step + encrypted data export OK
+- RAG round-trip Türkçe byte-exact PASS (storage layer)
+- Cerbos + app-level RLS guard işler
+
+**Düzeltilmeli:**
+- Türkçe karakter 2 kritik konum (P0)
+- Postgres RLS defense-in-depth (P0)
+- Backend down → panel açık (P0)
+- Image stale 1.0.0 → 1.0.1 (P1)
+- Auth rate limit (P1)
+- 10+ polish (P2)
+
+**Sonuç:** Pilot 1 (mevcut 3 müşteri) gözden geçirilmeli — yeni batch açmadan önce
+Sprint 2N hot-fix. Cert footer 🟡 RC; 🟢 GREEN damga Sprint 2N closed sonra eligible.
+
