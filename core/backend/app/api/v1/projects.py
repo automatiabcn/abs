@@ -22,7 +22,11 @@ from cerbos.sdk.client import CerbosClient
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v1.deps import AuthContext, get_auth_context, get_cerbos_client
-from app.auth.cerbos_client import build_resource, is_allowed
+from app.auth.cerbos_client import (
+    CerbosUnavailable,
+    build_resource,
+    is_allowed_or_raise,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1", tags=["mcp-gateway"])
@@ -71,7 +75,27 @@ def read_project(
         tenant_id=record["tenant_id"],
         owner_id=record["owner_id"],
     )
-    if not is_allowed(principal, resource, "read", client=cerbos):
+    try:
+        allowed = is_allowed_or_raise(
+            principal, resource, "read", client=cerbos
+        )
+    except CerbosUnavailable as exc:
+        # Sprint 2I UAT-046 — PDP transport blip surfaces as 503 so the
+        # client retries; falling back to 403 would tell a legitimate
+        # user "permanently forbidden" for what is actually an
+        # infrastructure outage.
+        logger.error(
+            "cerbos_unavailable subject=%s project=%s err=%s",
+            auth.subject,
+            project_id,
+            exc,
+        )
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="authorization_service_unavailable",
+            headers={"Retry-After": "30"},
+        )
+    if not allowed:
         logger.info(
             "project_read_denied subject=%s tenant=%s project=%s",
             auth.subject,

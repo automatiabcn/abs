@@ -27,6 +27,7 @@ __all__ = [
     "build_principal",
     "build_resource",
     "is_allowed",
+    "is_allowed_or_raise",
     "check_resources",
 ]
 
@@ -84,6 +85,51 @@ def is_allowed(
     return _check_actions(principal, resource, [action], client=client).get(
         action, False
     )
+
+
+def is_allowed_or_raise(
+    principal: Principal,
+    resource: Resource,
+    action: str,
+    *,
+    client: CerbosClient | None = None,
+) -> bool:
+    """Same as ``is_allowed`` but a transport failure raises
+    ``CerbosUnavailable`` instead of returning False, so the
+    caller can map it to 503 (vs. 403 for a real policy denial)."""
+    own = client is None
+    pdp = client or _client()
+    try:
+        result = pdp.check_resources(
+            principal=principal,
+            resources=ResourceList(
+                resources=[ResourceAction(resource, actions={action})]
+            ),
+        )
+    except Exception as exc:
+        if own:
+            try:
+                pdp.close()
+            except Exception:
+                pass
+        raise CerbosUnavailable(
+            f"cerbos_pdp_unreachable:{type(exc).__name__}"
+        ) from exc
+
+    if own:
+        try:
+            pdp.close()
+        except Exception:
+            pass
+
+    if result.failed():
+        raise CerbosUnavailable(
+            f"cerbos_decision_failed:{result.status_code}"
+        )
+    decision = False
+    for entry in result.results:
+        decision = entry.is_allowed(action)
+    return decision
 
 
 def check_resources(
