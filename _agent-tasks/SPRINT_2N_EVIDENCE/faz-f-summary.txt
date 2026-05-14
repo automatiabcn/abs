@@ -1,0 +1,20 @@
+Sprint 2N FAZ F — P2/P3 polish + doc update evidence
+Generated: 2026-05-14T21:16:58Z
+
+=== Files touched ===
+ _agent-tasks/SPRINT_2M_BUG_LOG.md               | 36 +++++++++++++++++++++++++
+ core/backend/Dockerfile                         |  7 ++++-
+ core/backend/app/mcp/tools/news_digest.py       | 19 +++++++++++++
+ core/backend/app/middleware/first_run.py        | 14 +++++++++-
+ core/backend/tests/test_first_run_middleware.py | 14 +++++++---
+ docs/quickstart-30min.md                        | 34 +++++++++++++++++++++++
+ infra/Caddyfile.customer                        |  8 ++++++
+ 7 files changed, 126 insertions(+), 6 deletions(-)
+
+=== Touched test regression ===
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+4 passed, 1 warning in 1.24s
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+10 passed, 2 skipped, 2186 deselected, 2 warnings in 2.00s

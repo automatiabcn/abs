@@ -58,6 +58,42 @@ açıklama + UX impact + öneri fix tek pakette.
 
 ---
 
+## Sprint 2N (1.0.1) — Closure Matrix
+
+| Bug | Status | Commit / artifact |
+|-----|--------|-------------------|
+| 2M-003 P0 (setup HTML i18n) | ✅ Closed | fix(2n-a) — TR byte-exact blanket + CI gate (test_turkce_byte_exact_blanket.py 4/4) |
+| 2M-017 P0 (cascade fallback i18n) | ✅ Closed | fix(2n-a) — chat.py 5 message byte-exact |
+| 2M-025 P0 (UAT-009 fail-closed) | ✅ Closed | fix(2n-b) — admin + panel SSR /healthz probe + /login banner (vitest 8/8) |
+| 2M-026 P0 (Postgres + RLS) | ✅ Closed | fix(2n-c) — postgres:16 service + entrypoint alembic gate (pytest 8/8) |
+| 2M-009 P1 (panel route) | ✅ Closed | fix(2n-e) — `/panel/{path}` → `/admin/{path}` 308 catch-all |
+| 2M-014 P1 (daily_cost IndexError) | ✅ Closed | fix(2n-e) — graceful fallback shape |
+| 2M-018 P1 (cascade 6-down 200) | ✅ Closed | fix(2n-e) — pre-flight probe → HTTP 503 + Retry-After |
+| 2M-020 P1 (Caddyfile /me/*) | ✅ Closed | fix(2n-e) — @backend pattern updated |
+| 2M-023 P1 (image 1.0.0 stale) | ⚠️ Founder-gated | fix(2n-e) — .env.example 1.0.1 default; `v1.0.1` tag push founder action (Lesson 14) |
+| 2M-024 P1 (rate limit) | ✅ Closed | fix(2n-e) — customer compose `ABS_RATE_LIMIT_ENABLED=true` + `ABS_ENV=prod` explicit |
+| 2M-D smebes pkg incident | ✅ Closed | fix(2n-d) — scripts/build_customer_pkg.sh tek-dosya tar.gz; onboard.sh scripts/ kopyala |
+| 2M-001 P2 (JSON 503 first-run) | ✅ Closed | chore(2n-f) — first_run.py Accept: application/json → JSONResponse(503) |
+| 2M-002 P2 (tls toggle) | ✅ Closed | chore(2n-f) — Caddyfile.customer `# tls internal` toggle + quickstart note |
+| 2M-004 P2 (Kurulumu Bitir) | ✅ Closed | fix(2n-a) — TR byte-exact blanket'a dahil |
+| 2M-010 P2 (HTTPS preserve) | ✅ Closed | chore(2n-f) — uvicorn `--proxy-headers --forwarded-allow-ips=*` |
+| 2M-013 P2 (ABS_MCP_ALLOWED_HOSTS doc) | ✅ Closed | chore(2n-f) — quickstart-30min.md Sprint 2N notes |
+| 2M-022 P2 (ABS_ENV=prod) | ✅ Closed | fix(2n-e) — customer compose explicit default |
+| 2M-005 P3 (first boot 60-90s) | ✅ Closed | chore(2n-f) — quickstart-30min.md |
+| 2M-016 P3 (news_digest msg) | ✅ Closed | chore(2n-f) — _api_key_clue helper |
+| 2M-007 P3 (brief domain payload) | ✅ Closed (doc) | chore(2n-f) — quickstart canonical lists |
+| 2M-011 P3 (122 vs 123 MCP) | ✅ Closed (doc) | chore(2n-f) — quickstart: "122 tools (Sprint 19 retirement, well above STOP floor)" |
+| 2M-012 P3 (RAG ingest body) | ✅ Closed (doc) | chore(2n-f) — quickstart JSON body example |
+| 2M-019 P3 (endpoint stale) | ✅ Closed (doc) | chore(2n-f) — quickstart canonical list |
+| 2M-006 P2 (lang detection) | 🟡 Deferred → Sprint 2L | Sprint 2N hot-fix scope dışı; non-blocking UX |
+| 2M-008 P2 (real ping cost) | 🟡 Deferred → Sprint 2L | Founder cost-conscious karar; 1-token smoke ileri sprint |
+| 2M-015 P2 (rag_status LRU) | 🟡 Deferred → Sprint 2L | Performance optimization; mevcut 423ms hâlâ <500ms |
+| 2M-021 P2 (audit seed 200+) | 🟡 Deferred → Sprint 2L | Test infrastructure improvement |
+
+**Sprint 2N exit state:** 22/26 closed (4 P0 + 6 P1 + 6 P2 + 6 P3) + 1 founder-gated (#2M-023 image push) + 4 P2 deferred to Sprint 2L (lang/ping/rag_status LRU/audit seed).
+
+---
+
 ## Müşteri impact analizi
 
 - **2M-003 P0** — Lesson 11 ihlali setup wizard'da. "Bu şirket Türkçe'ye gerçekten önem vermemiş" hissi. Müşteri ilk 30 saniyede güveni kaybeder.
