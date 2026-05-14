@@ -31,17 +31,20 @@ açıklama + UX impact + öneri fix tek pakette.
 | 2M-011 | P3 | E1 | MCP tool count 122 vs brief 123 | FastMCP registry `len = 122`, brief 123 hedef — 1 tool kaybı veya brief stale. STOP CRITERIA #8 trigger eşiği <80, sınırın çok üstünde — minor inconsistency. | `register_all_tools(); len(mcp_server._tool_manager._tools)` → 122 | e-mcp-rag-tr.txt | Brief'i 122'ye güncelle veya registration audit (legacy tool removed muhtemelen). |
 | 2M-012 | P3 | E2 | RAG ingest brief stale (multipart) | Brief E2 `curl -F file=@... -F project_slug=...` multipart bekler. Gerçek endpoint `IngestTextRequest` JSON body alır — multipart 422. | `curl -F file=@x.md https://host/v1/rag/ingest` → 422 validation error. | e-mcp-rag-tr.txt | Brief'i JSON body örneğine güncelle. Veya `/ingest/multipart` ayrı endpoint ekle. |
 | 2M-013 | P2 | E3 | MCP Streamable HTTP host validation | `/mcp/` JSON-RPC dış host header (`abs.sim.local`) ile 421 "Invalid Host header". Curl ile test imkansız. SDK clients ile OK ama smoke testing zor. | `curl https://host/mcp/ -d '{"jsonrpc":...}'` → 421 | e-mcp-rag-tr.txt | `ABS_MCP_ALLOWED_HOSTS` env'i quickstart doc'a yaz. Veya allowed_hosts'a ABS_PUBLIC_HOSTNAME otomatik eklensin. |
+| 2M-014 | **P1** | F1 | MCP tool `daily_cost` IndexError | Provider-free customer-facing tool `daily_cost()` çağrıldığında `IndexError: 4` exception. Stack trace MCP client'a sızar. Müşteri "cost ne kadar?" sorusuna cevap alamaz. | `from app.mcp.server import mcp_server; mcp_server._tool_manager._tools['daily_cost'].fn()` → IndexError | f-mcp-tool-audit.txt | `daily_cost.fn` içinde guard: cost log entry yoksa `{"cost": 0, "currency":"USD","period":"today","entries":0}` döndür, IndexError yerine. |
+| 2M-015 | P2 | F2 | MCP tool latency outlier `rag_status` | rag_status 423ms (vs p95 system tools <20ms). Qdrant scroll/count yaparken her seferinde tam tarama olabilir. Multi-collection durumda ölçeklemez. | `mcp_server._tool_manager._tools['rag_status'].fn()` → 422ms | f-mcp-tool-audit.txt | qdrant_client.count() cache + LRU 30s. Veya periodic background refresh. |
+| 2M-016 | P3 | F2 | `news_digest` graceful degrade | Gemini API key yokken news_digest "_(query failed: Gemini API key ..._)" döner — graceful degrade ama UX'te belirsiz. | `news_digest()` no key → markdown "query failed" mesajı | f-mcp-tool-audit.txt | "News digest unavailable: Gemini API key required" gibi clear-user mesaj. |
 
 ---
 
-## P0/P1/P2/P3 sayım (FAZ E kapanışı)
+## P0/P1/P2/P3 sayım (FAZ F kapanışı)
 
 - **P0 (blocker):** 1 (2M-003 Türkçe Lesson 11 setup HTML)
-- **P1 (critical):** 1 (2M-009 panel route mismatch — brief vs gerçek)
-- **P2 (polish):** 7 (2M-001, 002, 004, 006, 008, 010, 013)
-- **P3 (note):** 4 (2M-005, 007, 011 tool count, 012 brief stale)
+- **P1 (critical):** 2 (2M-009 panel route, 2M-014 daily_cost IndexError)
+- **P2 (polish):** 8 (2M-001, 002, 004, 006, 008, 010, 013, 015)
+- **P3 (note):** 5 (2M-005, 007, 011, 012, 016)
 
-**Toplam:** 13 bulgu (FAZ A-C-E)
+**Toplam:** 16 bulgu (FAZ A-C-E-F)
 
 ---
 
