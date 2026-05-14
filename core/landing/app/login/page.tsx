@@ -12,7 +12,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { safeRedirect } from "./safeRedirect";
 
@@ -20,6 +20,11 @@ type LoginState = "idle" | "submitting" | "success" | "error";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Sprint 2N FAZ B — backend-unreachable banner (P0 #2M-025).
+  // /admin/* and /panel/* SSR layouts redirect here with this param
+  // whenever the FastAPI backend /healthz probe fails.
+  const backendUnreachable = searchParams?.get("reason") === "backend-unreachable";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [state, setState] = useState<LoginState>("idle");
@@ -91,6 +96,16 @@ export default function LoginPage() {
         Setup wizard ya da magic-link ile aldığın e-posta + parolayla
         oturum aç.
       </p>
+
+      {backendUnreachable && (
+        <p
+          role="alert"
+          data-testid="backend-unreachable-banner"
+          className="mt-4 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+        >
+          Backend şu an erişilemez. Lütfen birkaç dakika sonra tekrar deneyin.
+        </p>
+      )}
 
       <form
         onSubmit={submit}
