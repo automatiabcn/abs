@@ -137,11 +137,31 @@ def _check_mcp() -> Dict[str, Any]:
 
 
 def _check_stripe() -> Dict[str, Any]:
+    # Sprint 2J FAZ D — honour the billing kill-switch the landing image
+    # already wires through `NEXT_PUBLIC_BILLING_ENABLED`. Self-host
+    # customers who don't resell ABS opt out by setting
+    # `ABS_BILLING_ENABLED=false`; the validator then reports OK with a
+    # skipped-hint so 7/7 doesn't require a Stripe account just to boot.
+    # Backwards compatible: missing env var keeps the original FAIL
+    # behaviour the pilot playbook documents.
+    billing_enabled = os.environ.get("ABS_BILLING_ENABLED", "true").strip().lower()
+    if billing_enabled in ("false", "0", "no", "off"):
+        return {
+            "ok": True,
+            "error": None,
+            "fix_hint": (
+                "Billing kill-switch active (ABS_BILLING_ENABLED=false). "
+                "Set a Stripe key only if you intend to resell ABS."
+            ),
+        }
     if not os.environ.get("ABS_STRIPE_SECRET_KEY"):
         return {
             "ok": False,
             "error": "ABS_STRIPE_SECRET_KEY not set",
-            "fix_hint": "Set ABS_STRIPE_SECRET_KEY in .env (or skip if not selling)",
+            "fix_hint": (
+                "Set ABS_STRIPE_SECRET_KEY in .env, or "
+                "ABS_BILLING_ENABLED=false if you don't resell ABS."
+            ),
         }
     return {"ok": True, "error": None, "fix_hint": None}
 
