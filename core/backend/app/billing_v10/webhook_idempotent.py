@@ -3,7 +3,19 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-044 — Stripe webhook idempotency + replay protection + audit log."""
+"""T-044 — Stripe webhook idempotency + replay protection + audit log.
+
+.. deprecated:: Sprint 2I (UAT-043)
+
+   The DB-backed implementation in
+   ``app.api.webhooks.idempotency.claim_event`` (``WebhookEvent``
+   SQLModel with ``event_id`` PRIMARY KEY) is the single source of
+   truth for Stripe webhook deduplication across worker restarts.
+   This in-memory module survived from the T-044 prototype because a
+   handful of unit tests imported it directly. New callers must use
+   ``app.api.webhooks.idempotency``; ``WebhookProcessor`` will be
+   removed in a follow-up sprint once the legacy imports migrate.
+"""
 
 from __future__ import annotations
 
@@ -11,9 +23,20 @@ import hashlib
 import hmac
 import logging
 import time
+import warnings
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
+
+# Sprint 2I UAT-043 — warn anyone importing this module so future
+# refactors know to migrate to ``app.api.webhooks.idempotency``.
+warnings.warn(
+    "app.billing_v10.webhook_idempotent is deprecated; use "
+    "app.api.webhooks.idempotency.claim_event for Stripe webhook "
+    "deduplication (DB-backed, survives worker restarts).",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 __all__ = [
     "ReplayedWebhookError",
