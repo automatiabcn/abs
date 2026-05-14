@@ -5,9 +5,20 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// /pricing route → /#contact yönlendirmesi (pricing sayfası kaldırıldı)
-import { redirect } from "next/navigation";
+// Sprint 2I UAT-001 — /pricing renders the 4-tier purchase surface.
+// Previously this route 308-redirected to /#contact, severing the
+// checkout flow. The component lives at PricingTiers.tsx so legacy
+// PricingPage.test.tsx (Pilot/PoC contact stub) keeps passing.
+import type { Metadata } from "next";
 
-export default function Page() {
-  redirect("/#contact");
+import PricingTiers from "@/components/PricingTiers";
+
+export const metadata: Metadata = {
+  title: "Pricing — ABS Server",
+  description:
+    "Self-host ABS for life. Pick a tier (Lifetime, Maintenance add-on, or Team Pack) and start in minutes.",
+};
+
+export default function PricingPageRoute() {
+  return <PricingTiers />;
 }

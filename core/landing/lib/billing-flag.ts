@@ -6,12 +6,15 @@
  */
 
 // T-R03 fix #1 — single source of truth for the billing kill-switch.
-// `NEXT_PUBLIC_BILLING_ENABLED=true` lights up Buy / Subscribe / Waitlist
-// flows. Default is OFF so a clean checkout doesn't ship before T-R08
-// real-beta E2E + Stripe sandbox approval.
+// Sprint 2I UAT-001 — pilot launch flips the default ON; operators may
+// opt out with `NEXT_PUBLIC_BILLING_ENABLED=false`. The optional
+// `NEXT_PUBLIC_BILLING_DISABLED_REASON` env var overrides the
+// disabled-banner copy when a kill-switch is in effect (e.g. while a
+// Stripe key rotation is in flight).
 
 export const BILLING_ENABLED =
-  (process.env.NEXT_PUBLIC_BILLING_ENABLED ?? "").toLowerCase() === "true";
+  (process.env.NEXT_PUBLIC_BILLING_ENABLED ?? "true").toLowerCase() === "true";
 
 export const BILLING_DISABLED_TITLE =
-  "Sprint 19'da aktif — beta onboarding sonrası açılır";
+  process.env.NEXT_PUBLIC_BILLING_DISABLED_REASON ??
+  "Checkout temporarily paused — please contact support.";
