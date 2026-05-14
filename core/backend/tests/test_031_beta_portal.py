@@ -43,9 +43,9 @@ def test_beta_request_persists_pending(client, monkeypatch):
     )
     assert r.status_code == 200
     body = r.json()
-    assert body["ok"] is True
-    assert body["auto_approved"] is False
-    assert body["status"] == "pending"
+    # Sprint 2I UAT-022/024 — response body is neutral so it cannot leak
+    # tenant identifiers or be used as an email-enumeration oracle.
+    assert body == {"ok": True, "status": "queued", "check_email": True}
 
     with Session(get_engine()) as db:
         rows = list(db.scalars(select(BetaRequest)).all())
@@ -63,7 +63,11 @@ def test_beta_request_dedupes_within_24h(client, monkeypatch):
     r1 = client.post("/v1/beta/request", json=payload)
     assert r1.status_code == 200
     r2 = client.post("/v1/beta/request", json=payload)
-    assert r2.status_code == 429
+    # UAT-024 — duplicate now returns the same neutral 200 instead of
+    # 429 with diagnostic body so the endpoint cannot be probed for
+    # known emails.
+    assert r2.status_code == 200
+    assert r2.json() == r1.json()
 
 
 def test_beta_request_honeypot_silently_drops(client, monkeypatch):
@@ -76,7 +80,7 @@ def test_beta_request_honeypot_silently_drops(client, monkeypatch):
         json={"email": "spam@example.com", "website": "https://spam.example"},
     )
     assert r.status_code == 200
-    assert r.json()["queued"] is False
+    assert r.json()["status"] == "queued"
     with Session(get_engine()) as db:
         rows = list(db.scalars(select(BetaRequest)).all())
     assert rows == []
@@ -93,9 +97,9 @@ def test_beta_request_auto_approves_when_flag_set(client, monkeypatch):
     )
     assert r.status_code == 200
     body = r.json()
-    assert body["auto_approved"] is True
-    assert body["license_jti"]
-    assert body["license_jti"].startswith("") and len(body["license_jti"]) >= 16
+    # UAT-022 — JTI never appears in the response; it travels via the
+    # magic-link email only. We only check the row got approved.
+    assert body == {"ok": True, "status": "queued", "check_email": True}
 
     with Session(get_engine()) as db:
         rows = list(db.scalars(select(BetaRequest)).all())
