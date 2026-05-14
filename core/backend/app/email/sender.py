@@ -178,6 +178,34 @@ def send_invite_email(
     _send_html(to=to, subject=subject, html=html, kind="invite")
 
 
+def send_account_delete_email(
+    *,
+    to: str,
+    license_jti: str,
+    confirm_url: str,
+    expires_at: str,
+    lang: str = "en",
+) -> None:
+    """Sprint 2I UAT-031 — KVKK/GDPR account deletion confirmation email.
+
+    The confirmation token leaves the backend only via this email path.
+    It must not appear in any HTTP response body so it cannot be
+    captured by access logs or support-ticket clipboards.
+    """
+    try:
+        subject, html = _render(
+            "account_delete_confirm.html",
+            lang=lang,
+            jti=license_jti,
+            confirm_url=confirm_url,
+            expires_at=expires_at,
+        )
+    except Exception as exc:
+        logger.exception("account_delete email render fail: %s", exc)
+        return
+    _send_html(to=to, subject=subject, html=html, kind="account_delete")
+
+
 def send_expiration_email(*, to: str, license_jti: str, expired_at: str) -> None:
     """012 — Lisans süresi doldu maili. SMTP yoksa console fallback."""
     try:
