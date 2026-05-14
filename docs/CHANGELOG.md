@@ -2,6 +2,52 @@
 
 Versiyon kayıtları — her task tek satır, tarih + delta.
 
+## 1.0.1 (2026-05-14) — Sprint 2N hot-fix patch
+
+Sprint 2M Customer E2E Audit'in 4 P0 + 6 P1 bulgusu + smebes (ilk pilot)
+customer onboarding incident'ı kapatıldı. Cert footer 🟡 RC → 🟢 GREEN
+eligible; Pilot Batch 2 gate açıldı.
+
+### Fixes — P0 (4/4)
+
+- **#2M-003** Setup wizard HTML Türkçe byte-exact (18+ kelime: İleri,
+  Yönetici Hesabı, Şifre, Lisans Anahtarı, Kurulumu Bitir, …).
+- **#2M-017** Cascade fallback 5 mesaj byte-exact ("Tüm sağlayıcılar
+  geçici hata verdi; lütfen tekrar deneyin." vb.).
+- **#2M-025** UAT-009 fail-closed restore — `/admin/*` ve `/panel/*` SSR
+  layout'ları backend `/healthz` probe yapar; fail → `/login?reason=
+  backend-unreachable` Türkçe banner.
+- **#2M-026** Customer compose Postgres 16 + Sprint 2K RLS varsayılan
+  (SQLite legacy opt-in); entrypoint `alembic upgrade head` gate'i.
+
+### Fixes — P1 (6/6)
+
+- **#2M-009** `/panel/{path}` → `/admin/{path}` 308 catch-all redirect.
+- **#2M-014** `daily_cost` MCP tool IndexError → graceful 0.0 fallback.
+- **#2M-018** Cascade 6-down structured HTTP 503 (Retry-After 60s) —
+  silent 200 SSE yerine pre-flight provider probe.
+- **#2M-020** Caddyfile.customer `@backend` pattern'ına `/me/*` eklendi
+  (KVKK self-service endpoints).
+- **#2M-023** Image tag 1.0.0 → 1.0.1 (founder `v1.0.1` push gate).
+- **#2M-024** `/auth/login` 5/min rate limit (UAT-041 brute force guard).
+
+### Customer onboarding (smebes lesson 18)
+
+- `scripts/build_customer_pkg.sh` — tek-dosya tar.gz paket üretici;
+  REQUIRED dosya guard'ı; `__pycache__` exclude.
+- `scripts/customer_onboard.sh` — `./scripts` host mount target paketlenir
+  (email-cron compose'da `./scripts:/app/infra/scripts:ro` mount eder);
+  email template tek-dosya `tar -xzvf` flow'unu açıkça anlatır.
+
+### CI / regression
+
+- `tests/test_turkce_byte_exact_blanket.py` (4) — Lesson 11 byte-exact gate.
+- `tests/test_2n_customer_compose_postgres.py` (8) — compose schema +
+  alembic boot gate.
+- `tests/test_2n_customer_pkg_mount_audit.py` (7) — mount completeness.
+- Backend pytest baseline korundu (Sprint 2K + 2M = 2143 + Sprint 2N
+  yeni testler).
+
 ## 1.0.0 (2026-05-11) — First production release · BUSL-1.1
 
 ABS Server **v1.0.0** — first production-ready release, source-available

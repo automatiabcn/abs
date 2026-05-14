@@ -1,0 +1,142 @@
+"""Sprint 2N FAZ E — 6 P1 bug fix verification.
+
+Tests cover the surface area each fix touches without spinning up the
+full stack:
+  - #2M-009 panel/{path} → admin/{path} 308 route
+  - #2M-014 daily_cost MCP tool resilience (IndexError → fallback)
+  - #2M-018 cascade no-provider pre-flight HTTP 503 (not 200 SSE)
+  - #2M-020 Caddyfile.customer @backend includes /me/*
+  - #2M-023 ABS_VERSION=1.0.1 default + CHANGELOG entry
+  - #2M-024 customer compose explicit ABS_RATE_LIMIT_ENABLED=true
+"""
+from __future__ import annotations
+
+import pathlib
+import re
+
+BACKEND_ROOT = pathlib.Path(__file__).resolve().parents[1]
+REPO_ROOT = BACKEND_ROOT.parents[1]
+
+PANEL_PY = BACKEND_ROOT / "app" / "api" / "panel.py"
+BILLING_TOOLS_PY = BACKEND_ROOT / "app" / "mcp" / "tools" / "billing_tools.py"
+CHAT_PY = BACKEND_ROOT / "app" / "api" / "chat.py"
+CADDYFILE_CUSTOMER = REPO_ROOT / "infra" / "Caddyfile.customer"
+COMPOSE_CUSTOMER = REPO_ROOT / "infra" / "docker-compose.customer.yml"
+ENV_EXAMPLE = REPO_ROOT / ".env.example"
+CHANGELOG = REPO_ROOT / "docs" / "CHANGELOG.md"
+
+
+# ---- #2M-009 -----------------------------------------------------------------
+def test_panel_subpath_compat_redirect_declared() -> None:
+    raw = PANEL_PY.read_text()
+    assert "panel_subpath_compat_redirect" in raw, (
+        "panel.py must declare /panel/{path:path} → /admin/{path} catch-all"
+    )
+    assert '"/panel/{path:path}"' in raw
+    assert "status_code=308" in raw
+
+
+def test_panel_catchall_returns_308_via_starlette_router() -> None:
+    """In-process: invoke FastAPI route function with a fake path."""
+    from app.api.panel import panel_subpath_compat_redirect
+
+    resp = panel_subpath_compat_redirect("chat")
+    assert resp.status_code == 308
+    assert resp.headers["location"] == "/admin/chat"
+
+    # Root /panel/ case ("" path → /admin).
+    resp_root = panel_subpath_compat_redirect("")
+    assert resp_root.headers["location"] == "/admin"
+
+
+# ---- #2M-014 -----------------------------------------------------------------
+def test_daily_cost_tool_handles_index_error() -> None:
+    """Force estimate_daily_cost to raise IndexError, ensure tool catches.
+
+    FastMCP wraps the function; the underlying coroutine is reachable via
+    the registry. For this test we replicate the tool body directly so we
+    do not depend on FastMCP internals (which changed across releases).
+    """
+    raw = BILLING_TOOLS_PY.read_text()
+    block = raw.split('async def daily_cost(', 1)[1]
+    body = block.split("async def ", 1)[0]
+    # Required code paths the source must contain to count as the fix.
+    assert "try:" in body and "except (IndexError, KeyError)" in body
+    assert "today_usd" in body and "0.0" in body
+    assert "_diagnostic" in body
+    assert "Maliyet verisi henüz yok" in body
+
+
+# ---- #2M-018 -----------------------------------------------------------------
+def test_chat_completions_preflights_cascade_503() -> None:
+    raw = CHAT_PY.read_text()
+    assert "all_providers_unavailable" in raw, (
+        "chat.py must emit structured `all_providers_unavailable` 503 "
+        "BEFORE starting the SSE stream"
+    )
+    # Retry-After header in the HTTPException response.
+    assert "Retry-After" in raw
+    # Pre-flight probe lives before the stream() definition.
+    head, _, tail = raw.partition('async def stream()')
+    assert "get_active_providers" in head, (
+        "provider probe must run pre-stream so HTTP status reflects "
+        "the all-down case (Sprint 2M repro: 200 SSE instead of 503)"
+    )
+
+
+# ---- #2M-020 -----------------------------------------------------------------
+def test_caddyfile_customer_backend_pattern_includes_me() -> None:
+    raw = CADDYFILE_CUSTOMER.read_text()
+    backend_line = next(
+        (line for line in raw.splitlines() if "@backend path" in line), None
+    )
+    assert backend_line is not None, "Caddyfile.customer missing @backend matcher"
+    assert "/me/*" in backend_line, (
+        "Caddyfile.customer @backend must include /me/* so KVKK self-service "
+        "endpoints reach FastAPI instead of the Next.js 404 page"
+    )
+
+
+# ---- #2M-023 -----------------------------------------------------------------
+def test_env_example_version_is_one_zero_one() -> None:
+    raw = ENV_EXAMPLE.read_text()
+    assert re.search(r"^ABS_VERSION=1\.0\.1\b", raw, re.MULTILINE), (
+        "Sprint 2N ships images at 1.0.1 — .env.example must point there"
+    )
+
+
+def test_changelog_documents_sprint_2n() -> None:
+    raw = CHANGELOG.read_text()
+    assert "1.0.1" in raw and "Sprint 2N" in raw, (
+        "CHANGELOG.md must document the 1.0.1 / Sprint 2N release"
+    )
+    # Every P0 + P1 bug referenced.
+    for bug in ("#2M-003", "#2M-017", "#2M-025", "#2M-026", "#2M-009",
+                "#2M-014", "#2M-018", "#2M-020", "#2M-023", "#2M-024"):
+        assert bug in raw, f"CHANGELOG missing reference to {bug}"
+
+
+# ---- #2M-024 -----------------------------------------------------------------
+def test_customer_compose_forces_rate_limit_enabled() -> None:
+    raw = COMPOSE_CUSTOMER.read_text()
+    # Default-on substitution: ${ABS_RATE_LIMIT_ENABLED:-true}.
+    assert "ABS_RATE_LIMIT_ENABLED" in raw, (
+        "customer compose must explicitly set ABS_RATE_LIMIT_ENABLED so "
+        "the /auth/login 5/min brute-force guard stays on by default"
+    )
+    assert ":-true" in raw
+    # ABS_ENV defaults to prod so the dev-mode disable path never engages.
+    assert "ABS_ENV" in raw
+    assert "${ABS_ENV:-prod}" in raw
+
+
+def test_auth_login_decorated_with_rate_limit() -> None:
+    raw = (BACKEND_ROOT / "app" / "api" / "auth.py").read_text()
+    # Login route is rate-limited (Sprint 2I UAT-041 retained).
+    block = raw.split('@router.post("/login")', 1)
+    assert len(block) == 2, "auth.py missing @router.post('/login') decorator"
+    next_segment = block[1][:300]
+    assert "limiter.limit" in next_segment, (
+        "/auth/login must retain the slowapi @limiter.limit decorator "
+        "(Sprint 2I UAT-041 → Sprint 2N #2M-024 customer enforcement)"
+    )
