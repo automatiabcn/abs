@@ -8,6 +8,7 @@
 // Q7 Phase C — premium /panel shell: theme + query + sidebar + header.
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 
 // Sprint 21 / Faz D — cmdk palette deferred via a client-only shim
 // (Server Components can't pass ssr:false to next/dynamic).
@@ -25,7 +26,28 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function PanelLayout({ children }: { children: ReactNode }) {
+// Sprint 2N FAZ B — UAT-009 fail-closed SSR probe (P0 #2M-025).
+// Twin of /admin/layout.tsx — defense-in-depth against cached HTML / SW
+// fallback paths that bypass middleware. Backend unreachable → /login.
+const BACKEND_URL = process.env.ABS_BACKEND_URL ?? "http://localhost:8000";
+
+async function _probeBackendHealthy(): Promise<boolean> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/healthz`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(2000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export default async function PanelLayout({ children }: { children: ReactNode }) {
+  const healthy = await _probeBackendHealthy();
+  if (!healthy) {
+    redirect("/login?reason=backend-unreachable");
+  }
   return (
     <PanelThemeProvider>
       <QueryProvider>
