@@ -203,8 +203,8 @@ async def delete_request(
     emit_event(
         request,
         action="me.account.delete_requested",
-        outcome="ok",
-        actor=jti,
+        outcome="success",
+        user_id=jti,
     )
     response: dict = {
         "ok": True,
@@ -259,6 +259,12 @@ async def delete_confirm(
         resource=jti,
         detail=f"purge_at={scheduled.isoformat()}",
     )
+    emit_event(
+        request,
+        action="me.account.delete_confirmed",
+        outcome="success",
+        user_id=jti,
+    )
     return {"ok": True, "scheduled_delete_at": scheduled.isoformat()}
 
 
@@ -294,5 +300,11 @@ async def delete_cancel(
         license_jti=jti,
         action="account.delete_cancelled",
         resource=jti,
+    )
+    emit_event(
+        request,
+        action="me.account.delete_cancelled",
+        outcome="success",
+        user_id=jti,
     )
     return {"ok": True}
