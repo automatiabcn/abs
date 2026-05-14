@@ -29,6 +29,7 @@ from app.config import settings
 from app.customer_audit.logger import log_customer_action
 from app.db.models import License
 from app.db.session import get_engine
+from app.email.sender import send_account_delete_email
 from app.licensing import verify_license
 from app.observability.audit import emit_event  # Q12-L23 sweep 2
 
@@ -37,6 +38,11 @@ logger = logging.getLogger(__name__)
 
 DELETE_TOKEN_TTL_HOURS = 24
 GRACE_DAYS = 30
+
+
+def _confirm_url(token: str) -> str:
+    base = getattr(settings, "public_base_url", "") or "https://abs.automatiabcn.com"
+    return f"{base.rstrip('/')}/account/delete-confirm?token={token}"
 
 
 def _verify_bearer_license(
@@ -148,20 +154,72 @@ async def delete_request(
     request: Request,
     authorization: Optional[str] = Header(default=None),
 ) -> dict:
-    """Step 1: issue a 24h confirm token. In production this would also email
-    the customer; for MVP we return the token directly (operator can email)."""
+    """Step 1: issue a 24h confirm token + email it to the customer.
+
+    Sprint 2I UAT-031 — the token never appears in the HTTP response.
+    In production the SMTP path is mandatory; the response body only
+    confirms that an email was dispatched. Dev/test environments fall
+    back to the console logger (sender.py ``_send_html``).
+    """
     jti = _verify_bearer_license(authorization, request)
+
+    if settings.env == "prod" and not settings.smtp_host:
+        emit_event(
+            request,
+            action="me.account.delete_request",
+            outcome="error",
+            reason="smtp_not_configured",
+        )
+        raise HTTPException(
+            503, "deletion_flow_requires_smtp_in_production"
+        )
+
     token = _issue_delete_token(jti)
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(hours=DELETE_TOKEN_TTL_HOURS)
+
+    customer_email = ""
+    preferred_lang = "en"
+    with Session(get_engine()) as db:
+        row = db.scalars(select(License).where(License.jti == jti)).first()
+        if row is not None:
+            customer_email = row.customer_email or ""
+            preferred_lang = row.preferred_lang or "en"
+
+    if customer_email:
+        send_account_delete_email(
+            to=customer_email,
+            license_jti=jti,
+            confirm_url=_confirm_url(token),
+            expires_at=expires_at.isoformat(),
+            lang=preferred_lang,
+        )
+
     log_customer_action(
         license_jti=jti,
         action="account.delete_requested",
         resource=jti,
     )
-    return {
+    emit_event(
+        request,
+        action="me.account.delete_requested",
+        outcome="ok",
+        actor=jti,
+    )
+    response: dict = {
         "ok": True,
-        "confirm_token": token,
+        "status": "email_sent",
+        "expires_at": expires_at.isoformat(),
         "expires_in_hours": DELETE_TOKEN_TTL_HOURS,
     }
+    # Sprint 2I UAT-031 — production NEVER returns the token in the
+    # response body (it leaks through access logs / APM trace storage).
+    # Dev / test (``env != "prod"``) keep the token in the body so
+    # operators and the unit-test harness can exercise the flow without
+    # an SMTP capture.
+    if settings.env != "prod":
+        response["confirm_token"] = token
+    return response
 
 
 @router.post("/delete-confirm")
