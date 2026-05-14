@@ -199,6 +199,14 @@ services:
   # cerbos — policy decision point for /v1/rag/* and /v1/projects/* (T-004,
   # T-012). Policies are baked into the backend image at /app/cerbos/policies
   # and bind-mounted into cerbos read-only here.
+  #
+  # IMPORTANT — bundle layout (Sprint 2J FAZ C, BUG-2J-C-01):
+  # The `./cerbos/` directory next to this compose MUST contain BOTH
+  # `config.yaml` AND `policies/`. Do NOT copy from the repo-root
+  # `cerbos/` (which only ships policies); the canonical bundle lives
+  # at `infra/cerbos/`. Customer-side, `scripts/customer_onboard.sh`
+  # copies the correct bundle into `customer-keys/<slug>/cerbos/` —
+  # ship that to the customer, not the repo-root directory.
   # ---------------------------------------------------------------------------
   cerbos:
     image: ghcr.io/cerbos/cerbos:0.40.0
