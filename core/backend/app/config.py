@@ -3,7 +3,40 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
+import os
+import warnings
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _promote_legacy_license_key_env() -> None:
+    """Sprint 2J FAZ F — accept the legacy un-prefixed LICENSE_KEY env var.
+
+    The 023 settings model uses ``env_prefix='ABS_'``, so a customer
+    whose ``.env`` carries the un-prefixed ``LICENSE_KEY=...`` (the
+    name docs/quickstart-30min.md shipped through Sprint 2I) would
+    silently boot in demo mode. Detect the typo before pydantic
+    parses, promote the value into ``ABS_LICENSE_KEY``, and emit a
+    DeprecationWarning so the operator sees the rename in logs.
+
+    Backwards compatibility window: one minor release. Customers who
+    refresh their ``.env`` from ``.env.example`` (already ABS-prefixed)
+    will never trip this branch.
+    """
+    legacy = os.environ.get("LICENSE_KEY")
+    canonical = os.environ.get("ABS_LICENSE_KEY")
+    if legacy and not canonical:
+        os.environ["ABS_LICENSE_KEY"] = legacy
+        warnings.warn(
+            "LICENSE_KEY env var is deprecated; rename to ABS_LICENSE_KEY "
+            "(see docs/quickstart-30min.md). Value was auto-promoted for "
+            "this boot.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+
+_promote_legacy_license_key_env()
 
 
 class Settings(BaseSettings):
