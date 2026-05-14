@@ -1,0 +1,7 @@
+=== core/backend/app/hooks/feature_nudge.py ===
+  L169 [cozum]: kw = ("karmasik matematik", "math proof", "reasoning problem", "logic puzzle", "mantiksal cozum")
+=== core/backend/app/mcp/tools/hook_companions.py ===
+  L36 [kapat]: return "Freeze mode kapatıldı."
+  L50 [kapat]: return "Investigate mode kapatıldı."
+=== core/backend/app/mcp/tools/gemini_extras.py ===
+  L88 [tamamla]: return f"[TIMEOUT] {max_seconds}s sonunda video tamamlanmadı: {operation_name}"

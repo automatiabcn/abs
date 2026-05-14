@@ -1,0 +1,199 @@
+Sprint 2N FAZ A — Türkçe blanket audit evidence
+Generated: 2026-05-14T20:44:47Z
+
+=== A1 Backend scan summary ===
+=== core/backend/app/hooks/feature_nudge.py ===
+  L169 [cozum]: kw = ("karmasik matematik", "math proof", "reasoning problem", "logic puzzle", "mantiksal cozum")
+=== core/backend/app/mcp/tools/hook_companions.py ===
+  L36 [kapat]: return "Freeze mode kapatıldı."
+  L50 [kapat]: return "Investigate mode kapatıldı."
+=== core/backend/app/mcp/tools/gemini_extras.py ===
+  L88 [tamamla]: return f"[TIMEOUT] {max_seconds}s sonunda video tamamlanmadı: {operation_name}"
+
+=== A3 setup HTML diff ===
+diff --git a/core/backend/app/static/setup/index.html b/core/backend/app/static/setup/index.html
+index 60f52ea..48dbe9d 100644
+--- a/core/backend/app/static/setup/index.html
++++ b/core/backend/app/static/setup/index.html
+@@ -24,9 +24,9 @@
+       <p class="setup-tagline">Automate the Chaos</p>
+     </header>
+ 
+-    <nav class="setup-progress" aria-label="Adimlar">
++    <nav class="setup-progress" aria-label="Adımlar">
+       <ol>
+-        <li data-step-indicator="1" class="active">1. Yonetici</li>
++        <li data-step-indicator="1" class="active">1. Yönetici</li>
+         <li data-step-indicator="2">2. Lisans</li>
+         <li data-step-indicator="3">3. Domain</li>
+         <li data-step-indicator="4">4. Anthropic</li>
+@@ -38,25 +38,25 @@
+     <div id="setup-error" class="setup-error" hidden></div>
+ 
+     <section class="setup-step" data-step="1">
+-      <h2>1. Yonetici Hesabi</h2>
+-      <p class="setup-help">Panel girisini bu hesap kullanacak.</p>
++      <h2>1. Yönetici Hesabı</h2>
++      <p class="setup-help">Panel girişini bu hesap kullanacak.</p>
+       <form data-step-key="admin">
+         <label>Email <input name="email" type="email" required autocomplete="email"></label>
+-        <label>Sifre <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
++        <label>Şifre <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+         <div class="setup-actions">
+-          <button type="submit" class="setup-next">Ileri</button>
++          <button type="submit" class="setup-next">İleri</button>
+         </div>
+       </form>
+     </section>
+ 
+     <section class="setup-step" data-step="2" hidden>
+-      <h2>2. Lisans Anahtari</h2>
+-      <p class="setup-help">Email ile aldiginiz JWT lisansi yapistirin. Lisans olmadan demo modu 14 gun aktif kalir.</p>
++      <h2>2. Lisans Anahtarı</h2>
++      <p class="setup-help">Email ile aldığınız JWT lisansı yapıştırın. Lisans olmadan demo modu 14 gün aktif kalır.</p>
+       <form data-step-key="license">
+         <label>Lisans <textarea name="license_key" rows="4" required></textarea></label>
+         <div class="setup-actions">
+           <button type="button" class="setup-back">Geri</button>
+-          <button type="submit" class="setup-next">Ileri</button>
++          <button type="submit" class="setup-next">İleri</button>
+         </div>
+       </form>
+     </section>
+@@ -66,7 +66,7 @@
+       <form data-step-key="domain">
+         <label>Mod
+           <select name="mode">
+-            <option value="ip">IP (gelistirme)</option>
++            <option value="ip">IP (geliştirme)</option>
+             <option value="domain">Domain</option>
+           </select>
+         </label>
+@@ -79,24 +79,24 @@
+         </label>
+         <div class="setup-actions">
+           <button type="button" class="setup-back">Geri</button>
+-          <button type="submit" class="setup-next">Ileri</button>
++          <button type="submit" class="setup-next">İleri</button>
+         </div>
+       </form>
+     </section>
+ 
+     <section class="setup-step" data-step="4" hidden>
+       <h2>4. Anthropic API Key</h2>
+-      <p class="setup-help">Claude API erisimi icin (sk-ant-... formati). Sadece Claude Plus abonelik kullanacaksaniz <strong>atlayabilirsiniz</strong>.</p>
++      <p class="setup-help">Claude API erişimi için (sk-ant-... formatı). Sadece Claude Plus abonelik kullanacaksanız <strong>atlayabilirsiniz</strong>.</p>
+       <form data-step-key="anthropic">
+         <label class="setup-skip-row">
+           <input type="checkbox" id="setup-skip-paid" name="skip_paid_providers_ui">
+-          Ucretsiz tier — Anthropic API anahtarim yok (Claude Plus + free saglayicilar)
++          Ücretsiz tier — Anthropic API anahtarım yok (Claude Plus + free sağlayıcılar)
+         </label>
+         <label id="setup-anthropic-row">Anthropic Key <input id="setup-anthropic-key" name="anthropic_api_key" type="password" required minlength="8" placeholder="sk-ant-..."></label>
+         <input type="hidden" name="skip_paid_providers" value="false">
+         <div class="setup-actions">
+           <button type="button" class="setup-back">Geri</button>
+-          <button type="submit" class="setup-next">Ileri</button>
++          <button type="submit" class="setup-next">İleri</button>
+         </div>
+       </form>
+       <script>
+@@ -120,7 +120,7 @@
+     </section>
+ 
+     <section class="setup-step" data-step="5" hidden>
+-      <h2>5. Provider Anahtarlari</h2>
++      <h2>5. Provider Anahtarları</h2>
+       <p class="setup-help">Hepsi opsiyonel. Sonra panel'den de eklenebilir.</p>
+       <form data-step-key="providers">
+         <label>Groq <input name="groq_api_key" type="password" autocomplete="off"></label>
+@@ -131,18 +131,18 @@
+         <label>CloudFlare API Token <input name="cf_api_token" type="password" autocomplete="off"></label>
+         <div class="setup-actions">
+           <button type="button" class="setup-back">Geri</button>
+-          <button type="submit" class="setup-next">Ileri</button>
++          <button type="submit" class="setup-next">İleri</button>
+         </div>
+       </form>
+     </section>
+ 
+     <section class="setup-step" data-step="6" hidden>
+       <h2>6. Provider Testi</h2>
+-      <p class="setup-help">Yapilandirilmis provider'lara hizli ping atilir.</p>
++      <p class="setup-help">Yapılandırılmış provider'lara hızlı ping atılır.</p>
+       <div id="setup-test-results"></div>
+       <div class="setup-actions">
+         <button type="button" class="setup-back">Geri</button>
+-        <button type="button" class="setup-finish" data-step-key="test">Kuruluma Bitir</button>
++        <button type="button" class="setup-finish" data-step-key="test">Kurulumu Bitir</button>
+       </div>
+     </section>
+   </main>
+
+=== A4 cascade fallback diff ===
+diff --git a/core/backend/app/api/chat.py b/core/backend/app/api/chat.py
+index 233e525..afafa46 100644
+--- a/core/backend/app/api/chat.py
++++ b/core/backend/app/api/chat.py
+@@ -181,7 +181,7 @@ async def _run_cascade(
+ 
+     Round-4 BUG-9 fix: previously raised `live_cascade_pending` 503 even
+     when providers were configured; the chat SSE swallowed that into a
+-    "Cascade canli uclari henuz aktif degil." stub message. The /v1/cascade/run
++    "Cascade canlı uçları henüz aktif değil." stub message. The /v1/cascade/run
+     route was wired in Round 2 but this helper was missed — chat path
+     bypasses the route layer, so it stayed stubbed until Round 4.
+     """
+@@ -686,21 +686,21 @@ async def completions(
+             detail_str = str(exc.detail or "")
+             if detail_str.startswith("no_providers_configured"):
+                 err_text = (
+-                    "Henuz saglayici yapilandirilmadi. "
++                    "Henüz sağlayıcı yapılandırılmadı. "
+                     "/admin/settings → Providers."
+                 )
+             elif detail_str.startswith("no_free_providers_configured"):
+                 err_text = (
+-                    "Ucretsiz saglayici yapilandirilmadi "
++                    "Ücretsiz sağlayıcı yapılandırılmadı "
+                     "(skip_paid aktif)."
+                 )
+             elif detail_str.startswith("all_providers_failed"):
+                 err_text = (
+-                    "Tum saglayicilar gecici hata verdi; "
+-                    "lutfen tekrar deneyin."
++                    "Tüm sağlayıcılar geçici hata verdi; "
++                    "lütfen tekrar deneyin."
+                 )
+             else:
+-                err_text = "Cascade canli uclari henuz aktif degil."
++                err_text = "Cascade canlı uçları henüz aktif değil."
+             yield f'data: {json.dumps({"type": "text", "content": err_text, "provider": "none"})}\n\n'
+             yield 'data: [DONE]\n\n'
+             with Session(get_engine()) as db:
+
+=== A5 CI gate file ===
+-rw-r--r--  1 eneseserkan  staff  4087 May 14 22:44 core/backend/tests/test_turkce_byte_exact_blanket.py
+=== A5 CI gate PASS proof ===
+plugins: benchmark-5.2.3, timeout-2.4.0, asyncio-1.3.0, respx-0.23.1, hypothesis-6.152.4, anyio-4.13.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+tests/test_turkce_byte_exact_blanket.py::test_setup_html_has_correct_turkish_bytes PASSED [ 25%]
+tests/test_turkce_byte_exact_blanket.py::test_setup_html_no_ascii_fallen_turkish PASSED [ 50%]
+tests/test_turkce_byte_exact_blanket.py::test_chat_cascade_fallback_byte_exact PASSED [ 75%]
+tests/test_turkce_byte_exact_blanket.py::test_chat_cascade_no_ascii_fallen_turkish PASSED [100%]
+
+============================== 4 passed in 0.49s ===============================
+
+=== A5 CI gate PASS proof ===
+plugins: benchmark-5.2.3, timeout-2.4.0, asyncio-1.3.0, respx-0.23.1, hypothesis-6.152.4, anyio-4.13.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+tests/test_turkce_byte_exact_blanket.py::test_setup_html_has_correct_turkish_bytes PASSED [ 25%]
+tests/test_turkce_byte_exact_blanket.py::test_setup_html_no_ascii_fallen_turkish PASSED [ 50%]
+tests/test_turkce_byte_exact_blanket.py::test_chat_cascade_fallback_byte_exact PASSED [ 75%]
+tests/test_turkce_byte_exact_blanket.py::test_chat_cascade_no_ascii_fallen_turkish PASSED [100%]
+
+============================== 4 passed in 0.38s ===============================
