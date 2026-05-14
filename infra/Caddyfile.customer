@@ -10,6 +10,14 @@
 }
 
 {$ABS_PUBLIC_HOSTNAME} {
+	# Sprint 2N FAZ F (P2 #2M-002) — pre-DNS smoke toggle.
+	# UNCOMMENT the next line to force self-signed certs (lets you hit
+	# https://abs.local with `curl -k` before DNS points at the host).
+	# Leave commented in production so Caddy's default ACME HTTP-01 flow
+	# (driven by the global `email` directive) issues real Let's Encrypt
+	# certs once port 80 + 443 are reachable.
+	# tls internal
+
 	# Q12 R3 route split. Backend exposes API + setup wizard + auth + MCP
 	# transport on FastAPI (port 8000). Everything else (marketing pages
 	# + Next.js admin panels under /admin/*) goes to the landing image

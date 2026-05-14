@@ -62,13 +62,32 @@ def _write_cache(markdown: str) -> None:
         logger.debug("news_digest cache write failed: %s", exc)
 
 
+def _api_key_clue(message: str) -> str | None:
+    """Sprint 2N FAZ F (P3 #2M-016) — surface the underlying cause when
+    the failure boils down to a missing or empty API key. Returns a
+    customer-readable hint or None when the error is unrelated."""
+    lower = message.lower()
+    if "api key" in lower or "api_key" in lower or "authentication" in lower:
+        return (
+            "News digest unavailable: Gemini API key required. "
+            "Add GEMINI_API_KEY in /admin/settings → Providers."
+        )
+    return None
+
+
 async def _one_query(label: str, query: str) -> tuple[str, str]:
     try:
         resp = await _gx.gemini_search(query)
         return label, (resp.text or "").strip()
     except ProviderError as exc:
+        hint = _api_key_clue(str(exc.message))
+        if hint is not None:
+            return label, f"_{hint}_"
         return label, f"_(query failed: {exc.message})_"
     except Exception as exc:  # noqa: BLE001
+        hint = _api_key_clue(str(exc))
+        if hint is not None:
+            return label, f"_{hint}_"
         return label, f"_(query failed: {exc})_"
 
 
