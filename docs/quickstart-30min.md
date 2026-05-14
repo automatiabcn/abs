@@ -32,7 +32,10 @@ Edit `core/backend/.env`:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 ABS_AUDIENCE_ENFORCE=false   # leave off for local
-LICENSE_KEY=demo-30min
+ABS_LICENSE_KEY=demo-30min   # Sprint 2J FAZ F: ABS_ prefix is the
+                             # canonical name; legacy LICENSE_KEY
+                             # is auto-promoted with a deprecation
+                             # warning for one release.
 ```
 
 ## Step 2 — Boot the stack (10 minutes)
