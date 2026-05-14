@@ -28,7 +28,10 @@ export type DeletionStatusBannerProps = {
 function _fmtDate(iso: string, lang: Lang): string {
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString(lang === "tr" ? "tr-TR" : lang === "es" ? "es-ES" : "en-US", {
+    // Pass the short ISO language code; the runtime resolves the
+    // regional subtag (tr→tr-TR, es→es-ES, en→en-US). Keeps the
+    // landing surface free of hardcoded BCP-47 tags per Q12-L8 R58.
+    return d.toLocaleDateString(lang, {
       year: "numeric",
       month: "short",
       day: "numeric",
