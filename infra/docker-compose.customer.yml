@@ -20,8 +20,10 @@
 #                          Next.js needs this for absolute links + canonical.
 #   ABS_ACME_EMAIL       — Let's Encrypt contact email for cert renewal
 #                          notices. Required by Caddy ACME defaults.
-#   ABS_VERSION          — image tag, default 1.0.0-rc2. Don't change unless
-#                          your support contact tells you to.
+#   ABS_VERSION          — image tag, default 1.0.1 (Sprint 2N). Don't
+#                          change unless your support contact tells you.
+#                          See .env.example for the per-release changelog
+#                          embedded next to ABS_VERSION.
 #   ABS_VAULT_KEY        — 32-byte base64 secret encrypting the local vault
 #                          (provider keys, OAuth state). Generate once with
 #                          `openssl rand -base64 32` then keep it backed up.
@@ -51,6 +53,13 @@ services:
       # is active by default. SQLite legacy stays available via
       # ABS_DATABASE_URL=sqlite:////app/data/abs.db in .env.
       ABS_DATABASE_URL: "${ABS_DATABASE_URL:-postgresql+psycopg://abs:${ABS_DB_PASSWORD}@postgres:5432/abs}"
+      # Sprint 2N FAZ E (P1 #2M-024) — explicit prod env + rate limit
+      # enable so customer compose never falls back to the dev-mode
+      # disable path. UAT-041 (/auth/login 5/min brute-force guard)
+      # depends on rate_limit_enabled=true; Sprint 2M repro found 10
+      # consecutive wrong-password attempts returning 10x 401 with 0x 429.
+      ABS_ENV: "${ABS_ENV:-prod}"
+      ABS_RATE_LIMIT_ENABLED: "${ABS_RATE_LIMIT_ENABLED:-true}"
       # BUG-27 — point RAG/Cerbos at the in-stack services declared below.
       # Customers can override either URL in .env if they front-load their
       # own Qdrant/Cerbos clusters; defaults match the compose service names.
