@@ -1,0 +1,81 @@
+# Sprint 2M FAZ K — Customer UX Scorecard
+
+## K1 — UX Flow 8-Kategori (1-10)
+
+| Kategori | Puan | Gerekçe |
+|----------|------|---------|
+| Setup wizard flow | 7/10 | 6/6 step JSON API OK, 53s'de tamamlandı. Adımlar net, ama: "Ileri" Lesson 11 ihlali (P0 2M-003), "Kuruluma Bitir" gramer (P2 2M-004), step 4 anthropic placeholder kabul (P2 2M-008). Geri/iptal butonu yok terminal flow'da. UI testi yapılmadı (Playwright önerimde tutuluyor). |
+| Hata mesajları (TR) | 4/10 | Cascade 6-down fallback "Tum saglayicilar gecici hata verdi" — 8 karakter ASCII'ye düşmüş (P0 2M-017). Setup wizard HTML "Ileri" (P0 2M-003). Stack trace gizli (positive). Müşteri "şirket kaliteyi önemsemiyor mu?" hisseder. |
+| Dokümantasyon erişimi | 5/10 | Quickstart link `https://automatiabcn.com/products/abs/setup-guide` mevcut. Pre-DNS smoke için `tls internal` recipe yok (P2 2M-002). Postgres RLS recipe yok (P0 2M-026 implied). ABS_ENV=prod enforce yok (P2 2M-022). |
+| Response kalite | N/A | Provider key yok — cascade chat live test yapılamadı. RAG retrieval Türkçe byte-exact PASS (E4 ✅). MCP tool 20/22 GREEN. |
+| Performance hissi | 9/10 | Setup wizard 53s ✅ (hedef <2dk). MCP system tools p50=2.5ms p95=315ms. RAG ingest 215ms / query 18ms. /admin/dashboard 200 OK. First-boot 60-90s healthcheck. Üst seviye. |
+| Türkçe deneyimi | 3/10 | 2 P0 Lesson 11 ihlali (setup HTML "Ileri" x5 + cascade fallback "Tum saglayicilar gecici..."). RAG Türkçe round-trip 8/8 byte-exact PASS — ama UI/cascade fail. Net pass rate setup HTML: 0/5, cascade fallback: 0/8 — toplam ~0% UI critical paths. RAG storage layer 100%. |
+| Mobil deneyim | N/A | Playwright mobile profile testi yapılmadı (UI-headed mode atlandı, terminal-only audit). |
+| KVKK / güven | 6/10 | KVKK 2-step flow OK (delete-request 200 + email). Data export encrypted-at-rest ✅. Audit pagination cap=100 ✅. AMA: confirm_token plaintext dev mode (P2 2M-022), deletion-status 404 image stale (P1 2M-023), Postgres RLS aktif değil (P0 2M-026). KVKK compliance var ama defense-in-depth aksak. |
+
+**Ortalama:** (7+4+5+9+3+6) / 6 = **5.7 / 10** (Response + Mobil N/A hariç).
+Bu skor: "fonksiyonel ama kalite eksikleri var, müşteri bir-ikide pes edebilir".
+
+## K2 — Setup time gerçek ölçüm
+
+```
+Compose container created:    2026-05-14 21:42:17
+Setup wizard started_at:      2026-05-14 21:47:17
+Setup wizard completed_at:    2026-05-14 21:48:10
+```
+
+| Faz | Süre |
+|-----|------|
+| GHCR docker login + pull (6 image, cached partial) | ~30s |
+| docker compose up -d + 7 service healthy wait | ~60-90s |
+| Manuel: Caddyfile `tls internal` patch + restart (Bug 2M-002 nedeniyle ek) | ~30s |
+| Setup wizard 6-step (API sequential) | 53s |
+| Login + /admin/dashboard verify | ~10s |
+| **TOPLAM (ilk install, cached image)** | **~3-4 dakika** |
+| **TOPLAM (ilk install, image pull 0%)** | **~5-8 dakika** (ARM transcoding) |
+
+**Hedef:** ≤30 dakika (brief K2).
+**Gerçek:** 3-8 dakika (cached vs cold pull).
+**Verdict:** ✅ EXCELLENT — hedefi %10-25 ile karşılıyor.
+
+## K3 — Müşteri perspektif yorum
+
+İlk 5 dakika:
+- Login email gelir, JWT + GHCR token paylaşılır (Resend email çalışıyor)
+- `docker compose pull` 6 image OK, müşteri "professional setup"
+- `docker compose up -d` 60s wait — progress bar yok, "asıldı mı?" düşünür (P3 2M-005)
+- HTTPS access denerse `tls internal` patch'siz fail (P2 2M-002) — Caddy ACME DNS yok
+
+İlk wizard:
+- Step 1 admin → 200 (UI'da "Ileri" görünür — KALITE EROZYON başlangıcı, P0 2M-003)
+- Step 2 license → 200 tier=self-host
+- Step 3 domain → 200 (eğer "public" değil "ip/domain" seçtiyse — brief stale)
+- Step 4 anthropic → 200 kabul (placeholder bile geçer, müşteri "yanlış key denedim?" şüphe — P2 2M-008)
+- Step 5 providers → 200 boş bile OK
+- Step 6 test → 200 "skipped: live ping disabled" (müşteri "ne test ettin?" sorgular)
+
+İlk admin login:
+- /panel/* path'leri 404, /admin/dashboard 200 (brief panel route yanlış, P1 2M-009)
+- Cookie set OK
+- /admin/dashboard 34KB HTML render — UI shell güzel görünüyor
+
+İlk problem moment:
+- "Tum saglayicilar gecici hata verdi" (P0 2M-017) — Türkçe karakter eksik, müşteri **güveni kaybeder**
+- daily_cost MCP tool IndexError (P1 2M-014) — cost panel bozuk
+- Backend stop edersen panel hala açık görünür (P0 2M-025) — false security
+- Brute force koruması yok (P1 2M-024) — şifre attempt sınırsız
+
+Verdict müşteri: "Ürün hızlı kurulur ama Türkçe kalitesi kaba, panel'in bazı parçaları
+bozuk, güvenlik (rate limit + fail-closed + Postgres RLS) eksik. Pilot için RC seviyesi,
+GA değil." → cert footer 🟡 RC, ✅ GREEN değil.
+
+## K4 — 30dk hedef vs gerçek 4dk
+
+Müşteri perspektif: 4 dakika çok iyi. "Ben Hetzner CX22 €5/ay tutuyorum, 4 dakika sonra
+panel açık, dokümantasyon var, MCP 122 tool listesi var." → Pozitif first impression.
+
+Ama 5. dakikada "Tum saglayicilar gecici" görünce: "Bu Türkçe değil." → 1. damga.
+6. dakikada panel'i kapayıp tekrar açtığında daily_cost bozuk: "Cost ne kadar?" → 2. damga.
+7. dakikada şifremi 3 kez yanlış girip giriyorum: "Yine girdi, korumasız." → 3. damga.
+
+3 damga = pilot batch güveni sarsılır.
