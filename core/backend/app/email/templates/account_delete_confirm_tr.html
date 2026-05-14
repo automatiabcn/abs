@@ -1,0 +1,33 @@
+<!-- subject: Hesap silme talebini onayla -->
+<!doctype html>
+<html lang="tr">
+  <body style="font-family: system-ui, sans-serif; max-width: 560px; margin: auto;">
+    <h2>Hesap silme talebini onayla</h2>
+    <p>Merhaba,</p>
+    <p>
+      Lisans <code>{{ jti }}</code> ile bağlı hesabın silinmesi için bir
+      talep aldık. Onaylamak için aşağıdaki bağlantıya 24 saat içinde
+      tıkla. Onaydan 30 gün sonra verilerin tamamen temizlenir; bu süre
+      içinde iptal de edebilirsin.
+    </p>
+    <p>
+      <a
+        href="{{ confirm_url }}"
+        style="
+          display: inline-block;
+          padding: 12px 18px;
+          background: #111;
+          color: #fff;
+          text-decoration: none;
+          border-radius: 6px;
+        "
+        >Silmeyi onayla</a
+      >
+    </p>
+    <p>Bu işlemi sen başlatmadıysan e-postayı yok say — hiçbir işlem yapılmaz.</p>
+    <p style="color:#888; font-size: 12px;">
+      Token süresi: {{ expires_at }}<br />
+      Automatia ABS — Made in Barcelona
+    </p>
+  </body>
+</html>
