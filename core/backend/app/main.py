@@ -311,6 +311,14 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="Automatia ABS", version="0.1.0", lifespan=lifespan)
 install_rate_limit(app)  # 028 — must run before include_router so decorators work
 
+# Sprint 2K — convert RLS write-side violations (Postgres SQLSTATE 42501)
+# into a typed 403 tenant_isolation_required response. Without this any
+# request that tried to insert into an RLS-guarded audit table without a
+# matching tenant GUC would surface a generic 500.
+from app.middleware.rls_violation_handler import install_rls_violation_handler
+
+install_rls_violation_handler(app)
+
 # T-058 caveat #11 — X-ABS-Audience enforcement (off by default; helm values flip it on).
 from app.config import settings as _abs_settings_for_audience
 from app.middleware.audience import install_audience_enforcer
