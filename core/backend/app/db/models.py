@@ -113,6 +113,10 @@ class VaultAuditEntry(SQLModel, table=True):
     detail: Optional[str] = Field(default=None, max_length=512)
     hmac: str = Field(max_length=64)
     prev_hmac: str = Field(default="", max_length=64)
+    # Sprint 2K — Postgres RLS tenant column. Defaults to "_unknown" for
+    # rows seeded before the backfill migration runs; runtime writes
+    # populate it from the request ContextVar (see app.db.session).
+    tenant_id: str = Field(default="_unknown", max_length=64, index=True)
 
 
 class CustomerAuditEntry(SQLModel, table=True):
@@ -130,6 +134,8 @@ class CustomerAuditEntry(SQLModel, table=True):
     ts: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc), index=True
     )
+    # Sprint 2K — Postgres RLS tenant column (see VaultAuditEntry).
+    tenant_id: str = Field(default="_unknown", max_length=64, index=True)
 
 
 class Consent(SQLModel, table=True):
@@ -221,6 +227,8 @@ class WebhookEvent(SQLModel, table=True):
     processed_at: Optional[datetime] = Field(default=None)
     license_jti: Optional[str] = Field(default=None, max_length=64, index=True)
     error: Optional[str] = Field(default=None, max_length=512)
+    # Sprint 2K — Postgres RLS tenant column (see VaultAuditEntry).
+    tenant_id: str = Field(default="_unknown", max_length=64, index=True)
 
 
 # ───── Sprint 20 — feature_usage + meetings ─────────────────────────────
