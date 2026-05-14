@@ -71,5 +71,12 @@
   "privacy.subprocessors.title": "Alt İşleyiciler ve Veri İşleme Sözleşmesi",
   "privacy.subprocessors.body": "Güncel alt işleyici listesi docs/legal/subprocessors.md dosyasında; B2B müşteriler için DPA şablonu docs/legal/dpa-template.md yolundadır.",
   "privacy.contact.title": "İletişim",
-  "privacy.contact.body": "Hak kullanım talepleri için privacy@automatiabcn.com. Talepler kimlik doğrulama sonrası 30 gün içinde yanıtlanır (ücretsiz)."
+  "privacy.contact.body": "Hak kullanım talepleri için privacy@automatiabcn.com. Talepler kimlik doğrulama sonrası 30 gün içinde yanıtlanır (ücretsiz).",
+  "deletion.title": "Hesap silme durumu",
+  "deletion.none": "Bu hesap için bekleyen bir silme talebi yok.",
+  "deletion.scheduled.title": "Hesabın silinmek üzere planlandı",
+  "deletion.scheduled.body": "Verilerin {date} tarihinde kalıcı olarak silinecek. İptal etmek için {days} günün kaldı.",
+  "deletion.cancel": "Silmeyi iptal et",
+  "deletion.purged.title": "Hesap zaten silinmiş",
+  "deletion.purged.body": "Bu hesabın kişisel verileri {date} tarihinde silindi."
 }
