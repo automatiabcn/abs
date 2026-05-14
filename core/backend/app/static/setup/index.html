@@ -24,9 +24,9 @@
       <p class="setup-tagline">Automate the Chaos</p>
     </header>
 
-    <nav class="setup-progress" aria-label="Adimlar">
+    <nav class="setup-progress" aria-label="Adımlar">
       <ol>
-        <li data-step-indicator="1" class="active">1. Yonetici</li>
+        <li data-step-indicator="1" class="active">1. Yönetici</li>
         <li data-step-indicator="2">2. Lisans</li>
         <li data-step-indicator="3">3. Domain</li>
         <li data-step-indicator="4">4. Anthropic</li>
@@ -38,25 +38,25 @@
     <div id="setup-error" class="setup-error" hidden></div>
 
     <section class="setup-step" data-step="1">
-      <h2>1. Yonetici Hesabi</h2>
-      <p class="setup-help">Panel girisini bu hesap kullanacak.</p>
+      <h2>1. Yönetici Hesabı</h2>
+      <p class="setup-help">Panel girişini bu hesap kullanacak.</p>
       <form data-step-key="admin">
         <label>Email <input name="email" type="email" required autocomplete="email"></label>
-        <label>Sifre <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+        <label>Şifre <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
         <div class="setup-actions">
-          <button type="submit" class="setup-next">Ileri</button>
+          <button type="submit" class="setup-next">İleri</button>
         </div>
       </form>
     </section>
 
     <section class="setup-step" data-step="2" hidden>
-      <h2>2. Lisans Anahtari</h2>
-      <p class="setup-help">Email ile aldiginiz JWT lisansi yapistirin. Lisans olmadan demo modu 14 gun aktif kalir.</p>
+      <h2>2. Lisans Anahtarı</h2>
+      <p class="setup-help">Email ile aldığınız JWT lisansı yapıştırın. Lisans olmadan demo modu 14 gün aktif kalır.</p>
       <form data-step-key="license">
         <label>Lisans <textarea name="license_key" rows="4" required></textarea></label>
         <div class="setup-actions">
           <button type="button" class="setup-back">Geri</button>
-          <button type="submit" class="setup-next">Ileri</button>
+          <button type="submit" class="setup-next">İleri</button>
         </div>
       </form>
     </section>
@@ -66,7 +66,7 @@
       <form data-step-key="domain">
         <label>Mod
           <select name="mode">
-            <option value="ip">IP (gelistirme)</option>
+            <option value="ip">IP (geliştirme)</option>
             <option value="domain">Domain</option>
           </select>
         </label>
@@ -79,24 +79,24 @@
         </label>
         <div class="setup-actions">
           <button type="button" class="setup-back">Geri</button>
-          <button type="submit" class="setup-next">Ileri</button>
+          <button type="submit" class="setup-next">İleri</button>
         </div>
       </form>
     </section>
 
     <section class="setup-step" data-step="4" hidden>
       <h2>4. Anthropic API Key</h2>
-      <p class="setup-help">Claude API erisimi icin (sk-ant-... formati). Sadece Claude Plus abonelik kullanacaksaniz <strong>atlayabilirsiniz</strong>.</p>
+      <p class="setup-help">Claude API erişimi için (sk-ant-... formatı). Sadece Claude Plus abonelik kullanacaksanız <strong>atlayabilirsiniz</strong>.</p>
       <form data-step-key="anthropic">
         <label class="setup-skip-row">
           <input type="checkbox" id="setup-skip-paid" name="skip_paid_providers_ui">
-          Ucretsiz tier — Anthropic API anahtarim yok (Claude Plus + free saglayicilar)
+          Ücretsiz tier — Anthropic API anahtarım yok (Claude Plus + free sağlayıcılar)
         </label>
         <label id="setup-anthropic-row">Anthropic Key <input id="setup-anthropic-key" name="anthropic_api_key" type="password" required minlength="8" placeholder="sk-ant-..."></label>
         <input type="hidden" name="skip_paid_providers" value="false">
         <div class="setup-actions">
           <button type="button" class="setup-back">Geri</button>
-          <button type="submit" class="setup-next">Ileri</button>
+          <button type="submit" class="setup-next">İleri</button>
         </div>
       </form>
       <script>
@@ -120,7 +120,7 @@
     </section>
 
     <section class="setup-step" data-step="5" hidden>
-      <h2>5. Provider Anahtarlari</h2>
+      <h2>5. Provider Anahtarları</h2>
       <p class="setup-help">Hepsi opsiyonel. Sonra panel'den de eklenebilir.</p>
       <form data-step-key="providers">
         <label>Groq <input name="groq_api_key" type="password" autocomplete="off"></label>
@@ -131,18 +131,18 @@
         <label>CloudFlare API Token <input name="cf_api_token" type="password" autocomplete="off"></label>
         <div class="setup-actions">
           <button type="button" class="setup-back">Geri</button>
-          <button type="submit" class="setup-next">Ileri</button>
+          <button type="submit" class="setup-next">İleri</button>
         </div>
       </form>
     </section>
 
     <section class="setup-step" data-step="6" hidden>
       <h2>6. Provider Testi</h2>
-      <p class="setup-help">Yapilandirilmis provider'lara hizli ping atilir.</p>
+      <p class="setup-help">Yapılandırılmış provider'lara hızlı ping atılır.</p>
       <div id="setup-test-results"></div>
       <div class="setup-actions">
         <button type="button" class="setup-back">Geri</button>
-        <button type="button" class="setup-finish" data-step-key="test">Kuruluma Bitir</button>
+        <button type="button" class="setup-finish" data-step-key="test">Kurulumu Bitir</button>
       </div>
     </section>
   </main>
