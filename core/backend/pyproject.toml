@@ -52,5 +52,6 @@ include = ["app*"]
 asyncio_mode = "auto"
 markers = [
     "fuzz: opt-in heavy property-based fuzz (10K+ Hypothesis examples; default-skip)",
+    "postgres_only: requires a live Postgres (Sprint 2K RLS suite); skipped on SQLite",
 ]
 addopts = "-m 'not fuzz'"
