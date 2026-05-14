@@ -111,11 +111,92 @@ jobs:
           generate_release_notes: false
           make_latest: ${{ steps.tag.outputs.is_prerelease == 'false' }}
 
+  publish-images:
+    # Sprint 2N.1 FAZ B: build + push customer-facing images so cosign-sign
+    # has a real target. Previously absent — v1.0.1 release shipped no GHCR
+    # manifest (HTTP 404 on docker manifest inspect), blocking smebes upgrade.
+    name: Build + push container images
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: publish
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend
+            context: core/backend
+            dockerfile: core/backend/Dockerfile
+          - name: landing
+            context: core/landing
+            dockerfile: core/landing/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve version (strip leading v)
+        id: version
+        env:
+          TAG: ${{ needs.publish.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == *-rc* || "$VERSION" == *-beta* || "$VERSION" == *-alpha* ]]; then
+            echo "tag_latest=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag_latest=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build + push (stable)
+        if: steps.version.outputs.tag_latest == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          provenance: true
+          sbom: true
+          tags: |
+            ghcr.io/enzoemir1/abs-${{ matrix.name }}:${{ steps.version.outputs.version }}
+            ghcr.io/enzoemir1/abs-${{ matrix.name }}:latest
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,scope=${{ matrix.name }},mode=max
+
+      - name: Build + push (pre-release, no :latest)
+        if: steps.version.outputs.tag_latest != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          provenance: true
+          sbom: true
+          tags: |
+            ghcr.io/enzoemir1/abs-${{ matrix.name }}:${{ steps.version.outputs.version }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,scope=${{ matrix.name }},mode=max
+
   cosign-sign:
     name: Cosign keyless sign (best-effort)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: publish
+    needs: [publish, publish-images]
     continue-on-error: true
     permissions:
       contents: read

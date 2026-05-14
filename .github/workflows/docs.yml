@@ -64,14 +64,24 @@ jobs:
           git config --global user.email "docs@automatiabcn.com"
       - name: Generate static api-reference.md
         run: bash scripts/build_docs.sh
-      - name: Deploy with mike (versioned)
+      - name: Deploy with mike (versioned, idempotent)
+        # Sprint 2N.1 FAZ C: mike refuses to redeploy an existing
+        # (version, alias) pair with "duplicated version and alias".
+        # Delete the alias first (if present), then redeploy. The
+        # `|| true` keeps first-run installs (no prior alias) green.
         if: github.event_name != 'pull_request'
         env:
           ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
           ALGOLIA_SEARCH_KEY: ${{ secrets.ALGOLIA_SEARCH_KEY }}
           MIKE_VERSION: ${{ inputs.version || 'latest' }}
         run: |
-          mike deploy --push --update-aliases "$MIKE_VERSION" latest
+          set -euo pipefail
+          git fetch origin gh-pages --depth=1 2>/dev/null || true
+          if mike list 2>/dev/null | grep -Eq "(^|[, ])${MIKE_VERSION}([ ,]|$)"; then
+            echo "==> mike: removing prior '${MIKE_VERSION}' before redeploy"
+            mike delete --push "${MIKE_VERSION}" || true
+          fi
+          mike deploy --push --update-aliases "${MIKE_VERSION}" latest
           mike set-default --push latest
       - name: Build site (PR preview only)
         if: github.event_name == 'pull_request'
