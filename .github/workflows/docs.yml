@@ -65,10 +65,16 @@ jobs:
       - name: Generate static api-reference.md
         run: bash scripts/build_docs.sh
       - name: Deploy with mike (versioned, idempotent)
-        # Sprint 2N.1 FAZ C: mike refuses to redeploy an existing
-        # (version, alias) pair with "duplicated version and alias".
-        # Delete the alias first (if present), then redeploy. The
-        # `|| true` keeps first-run installs (no prior alias) green.
+        # Sprint 2N.2 FAZ C: 2N.1 tried `mike list | grep ${VERSION}`
+        # but mike formats aliases inside brackets — `1.0.1 [latest]` —
+        # so the regex never matched `latest` and the conditional
+        # delete was skipped. v1.0.2 push then crashed with
+        # `duplicated version and alias`.
+        #
+        # Fix: just `mike delete --push` unconditionally with stderr
+        # silenced. Exits 0 on first-run installs (nothing to delete),
+        # exits 0 after a real prior deploy is removed. Then deploy
+        # cleanly. No regex, no fragile output parsing.
         if: github.event_name != 'pull_request'
         env:
           ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
@@ -77,10 +83,8 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin gh-pages --depth=1 2>/dev/null || true
-          if mike list 2>/dev/null | grep -Eq "(^|[, ])${MIKE_VERSION}([ ,]|$)"; then
-            echo "==> mike: removing prior '${MIKE_VERSION}' before redeploy"
-            mike delete --push "${MIKE_VERSION}" || true
-          fi
+          # Idempotent pre-delete — succeeds whether or not the version exists.
+          mike delete --push "${MIKE_VERSION}" 2>/dev/null || true
           mike deploy --push --update-aliases "${MIKE_VERSION}" latest
           mike set-default --push latest
       - name: Build site (PR preview only)
