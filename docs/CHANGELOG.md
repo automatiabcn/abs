@@ -2,6 +2,21 @@
 
 Versiyon kayıtları — her task tek satır, tarih + delta.
 
+## 1.0.4 (2026-05-16) — Sprint 2N.3 docs alias split (v1.0.3 yellow → green)
+
+Tek FAZ: `docs.yml` `MIKE_VERSION` artık `github.ref_name`'den türetiliyor
+(tag → `v1.0.x`, main push → `main`); alias `latest` ayrı kanaldan
+güncelleniyor. Önceki 5 ardışık fail'in (run 25968243819 + öncekiler)
+kök neden olan version+alias çakışması kapandı. docs workflow ilk kez
+GREEN; `docs.automatiabcn.com/v1.0.4/` ve `/` (alias) canlı. Merge
+commit `f433dcb`, run 25968714499.
+
+Tüm v1.0.3 değişiklikleri taşındı; runtime image içeriği aynı (backend
++ landing yeniden push edildi `:1.0.4` + `:latest` tag'leriyle). Müşteri
+upgrade için tek değişiklik `.env` içinde `ABS_VERSION=1.0.4`.
+
+Önceki entry için bkz. v1.0.3.
+
 ## 1.0.3 (2026-05-16) — Sprint 2N.2 hot-patch (release GA, docs gap open)
 
 v1.0.1 ve v1.0.2 release'lerinde release.yml workflow yeşil görünmesine
