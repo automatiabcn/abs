@@ -64,27 +64,53 @@ jobs:
           git config --global user.email "docs@automatiabcn.com"
       - name: Generate static api-reference.md
         run: bash scripts/build_docs.sh
-      - name: Deploy with mike (versioned, idempotent)
-        # Sprint 2N.2 FAZ C: 2N.1 tried `mike list | grep ${VERSION}`
-        # but mike formats aliases inside brackets — `1.0.1 [latest]` —
-        # so the regex never matched `latest` and the conditional
-        # delete was skipped. v1.0.2 push then crashed with
-        # `duplicated version and alias`.
+      - name: Resolve mike version label
+        # Sprint 2N.2 closeout: derive MIKE_VERSION from git ref so the
+        # version label never collides with the `latest` alias. Pre-fix
+        # the workflow defaulted MIKE_VERSION to "latest", which made
+        # `mike deploy --update-aliases latest latest` try to deploy a
+        # version named "latest" with alias "latest". On the second run
+        # that errors `duplicated version and alias`, and the bare
+        # `mike delete latest` only removes the alias, not the version.
         #
-        # Fix: just `mike delete --push` unconditionally with stderr
-        # silenced. Exits 0 on first-run installs (nothing to delete),
-        # exits 0 after a real prior deploy is removed. Then deploy
-        # cleanly. No regex, no fragile output parsing.
+        # Rule now:
+        #   - tag push  → MIKE_VERSION = the tag (e.g. v1.0.3)
+        #   - main push → MIKE_VERSION = "main"
+        #   - release   → MIKE_VERSION = release tag
+        #   - dispatch  → MIKE_VERSION = workflow input
+        # The `latest` alias is updated every run via `--update-aliases`.
+        if: github.event_name != 'pull_request'
+        id: mike_version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -n "$DISPATCH_VERSION" ] && [ "$DISPATCH_VERSION" != "latest" ]; then
+            VERSION="$DISPATCH_VERSION"
+          elif [ "$EVENT_NAME" = "push" ] && [[ "$REF_NAME" == v* ]]; then
+            VERSION="$REF_NAME"
+          elif [ "$EVENT_NAME" = "release" ]; then
+            VERSION="$REF_NAME"
+          else
+            VERSION="main"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+      - name: Deploy with mike (versioned, idempotent)
         if: github.event_name != 'pull_request'
         env:
           ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
           ALGOLIA_SEARCH_KEY: ${{ secrets.ALGOLIA_SEARCH_KEY }}
-          MIKE_VERSION: ${{ inputs.version || 'latest' }}
+          MIKE_VERSION: ${{ steps.mike_version.outputs.version }}
         run: |
           set -euo pipefail
           git fetch origin gh-pages --depth=1 2>/dev/null || true
-          # Idempotent pre-delete — succeeds whether or not the version exists.
-          mike delete --push "${MIKE_VERSION}" 2>/dev/null || true
+          # Idempotent pre-delete — keep stderr visible so a real error
+          # (auth, network) doesn't hide behind `|| true`; a "version
+          # not found" exits non-zero but is expected on first run.
+          mike delete --push "${MIKE_VERSION}" || \
+            echo "==> mike delete: version not present (first run or rerun)"
           mike deploy --push --update-aliases "${MIKE_VERSION}" latest
           mike set-default --push latest
       - name: Build site (PR preview only)
