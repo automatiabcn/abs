@@ -27,7 +27,7 @@
 
 services:
   backend:
-    image: ghcr.io/enzoemir1/abs-backend:${ABS_VERSION:-latest}
+    image: ghcr.io/${ABS_GHCR_NAMESPACE:-automatiabcn}/abs-backend:${ABS_VERSION:-latest}
     pull_policy: always
     env_file: .env
     environment:
@@ -70,7 +70,7 @@ services:
       retries: 6
 
   landing:
-    image: ghcr.io/enzoemir1/abs-landing:${ABS_VERSION:-latest}
+    image: ghcr.io/${ABS_GHCR_NAMESPACE:-automatiabcn}/abs-landing:${ABS_VERSION:-latest}
     pull_policy: always
     env_file: .env
     environment:
@@ -95,7 +95,7 @@ services:
     restart: unless-stopped
 
   email-cron:
-    image: ghcr.io/enzoemir1/abs-backend:${ABS_VERSION:-latest}
+    image: ghcr.io/${ABS_GHCR_NAMESPACE:-automatiabcn}/abs-backend:${ABS_VERSION:-latest}
     pull_policy: always
     env_file: .env
     command: ["sh", "-c", "while true; do python infra/scripts/email_tick.py; sleep 300; done"]

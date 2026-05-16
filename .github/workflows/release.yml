@@ -4,19 +4,12 @@
 # Release entry which then triggers sbom.yml (release: published) to
 # attach the CycloneDX SBOMs as release assets.
 #
-# Distinct from cicd.yml which also runs on tags but targets staging /
-# production Kubernetes deploys that require KUBECONFIG_* secrets and
-# pushes images to ghcr.io/automatiabcn/abs-backend. Customer-facing
-# images live at ghcr.io/enzoemir1/abs-{backend,landing} (per
-# scripts/release.sh) — release.yml only touches GitHub release + SBOM
-# + cosign keyless signature.
-#
-# Cosign keyless attestation is best-effort: signing a package in a
-# different GHCR namespace (enzoemir1/*) from this workflow's identity
-# (github.com/automatiabcn/abs/...) is conditional on package
-# permissions enzoemir1 explicitly grants. If the signature step fails
-# the release still publishes — verifiable provenance comes from the
-# SBOM + the image digest in the GHCR registry.
+# Sprint 2N.2 FAZ B: image namespace aligned to ghcr.io/automatiabcn/abs-*
+# so workflow GITHUB_TOKEN (which is scoped to automatiabcn/abs) can push.
+# The pre-2N.2 enzoemir1 namespace required a founder-supplied PAT and
+# v1.0.2 push failed with `permission_denied: installation does not
+# exist`. Customer compose + scripts/release.sh now default to the same
+# namespace; founders can still override locally via env vars.
 #
 # Security: every interpolation routes through env: blocks. The only
 # refs used are github.ref_name (tag), github.repository, github.actor
@@ -90,8 +83,8 @@ jobs:
             echo
             echo "## Docker images"
             echo
-            echo "- \`ghcr.io/enzoemir1/abs-backend:${VERSION}\`"
-            echo "- \`ghcr.io/enzoemir1/abs-landing:${VERSION}\`"
+            echo "- \`ghcr.io/automatiabcn/abs-backend:${VERSION}\`"
+            echo "- \`ghcr.io/automatiabcn/abs-landing:${VERSION}\`"
             echo
             echo "## Provenance"
             echo
@@ -173,8 +166,8 @@ jobs:
           provenance: true
           sbom: true
           tags: |
-            ghcr.io/enzoemir1/abs-${{ matrix.name }}:${{ steps.version.outputs.version }}
-            ghcr.io/enzoemir1/abs-${{ matrix.name }}:latest
+            ghcr.io/automatiabcn/abs-${{ matrix.name }}:${{ steps.version.outputs.version }}
+            ghcr.io/automatiabcn/abs-${{ matrix.name }}:latest
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,scope=${{ matrix.name }},mode=max
 
@@ -188,7 +181,7 @@ jobs:
           provenance: true
           sbom: true
           tags: |
-            ghcr.io/enzoemir1/abs-${{ matrix.name }}:${{ steps.version.outputs.version }}
+            ghcr.io/automatiabcn/abs-${{ matrix.name }}:${{ steps.version.outputs.version }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,scope=${{ matrix.name }},mode=max
 
@@ -222,8 +215,8 @@ jobs:
           set -euo pipefail
           VERSION="${TAG#v}"
           for IMAGE in \
-            "ghcr.io/enzoemir1/abs-backend:${VERSION}" \
-            "ghcr.io/enzoemir1/abs-landing:${VERSION}"; do
+            "ghcr.io/automatiabcn/abs-backend:${VERSION}" \
+            "ghcr.io/automatiabcn/abs-landing:${VERSION}"; do
             echo "==> Signing $IMAGE"
             # -y accepts the OIDC identity prompt non-interactively.
             # If the image is not accessible from this workflow's
