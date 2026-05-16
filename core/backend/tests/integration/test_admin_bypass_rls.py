@@ -33,6 +33,12 @@ if not (_RAW_POSTGRES_URL and _RAW_ADMIN_URL):
 POSTGRES_URL: str = _RAW_POSTGRES_URL
 ADMIN_URL: str = _RAW_ADMIN_URL
 
+# Sprint 2N.2 FAZ D: data ops use the non-superuser abs_app_rls role so
+# RLS policies enforce on INSERT/SELECT. Migration calls (alembic) keep
+# using POSTGRES_URL (abs_app SUPERUSER).
+_RAW_RLS_URL = os.getenv("ABS_TEST_POSTGRES_RLS_URL")
+RLS_URL: str = _RAW_RLS_URL or POSTGRES_URL
+
 ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
 PROJECT_ROOT = ALEMBIC_INI.parent
 
@@ -60,16 +66,25 @@ def _migrated_database() -> Iterator[None]:
 
 
 def _engine(url: str):
+    # Sprint 2N.2 FAZ D: NullPool — see test_rls_audit_tables for context.
+    # Without it, the prior `with engine.connect()` GUC leaks into the next
+    # connect block and the "blocked without GUC" assertion fails.
     from sqlalchemy import create_engine
+    from sqlalchemy.pool import NullPool
 
-    return create_engine(url, isolation_level="AUTOCOMMIT")
+    return create_engine(url, isolation_level="AUTOCOMMIT", poolclass=NullPool)
 
 
 def test_abs_admin_sees_rows_across_tenants() -> None:
     """Two tenants, two rows; abs_admin SELECT returns both."""
     from sqlalchemy import text
 
-    app_engine = _engine(POSTGRES_URL)
+    # Insert path runs as abs_app_rls so RLS' WITH CHECK gate fires
+    # (FORCE RLS makes the table OWNER subject as well, but only the
+    # role-attribute NOBYPASSRLS path can't bypass — keeping the data
+    # tier on a regular role is the cleanest way to assert the same
+    # contract in CI as in prod).
+    app_engine = _engine(RLS_URL)
     admin_engine = _engine(ADMIN_URL)
 
     marker = uuid.uuid4().hex[:12]
@@ -107,7 +122,8 @@ def test_abs_app_blocked_without_guc() -> None:
     """Regression guard — abs_app must hit the policy even when admin runs above."""
     from sqlalchemy import text
 
-    app_engine = _engine(POSTGRES_URL)
+    # Non-superuser, non-BYPASSRLS engine — RLS policies actually filter.
+    app_engine = _engine(RLS_URL)
 
     marker = uuid.uuid4().hex[:12]
     now = datetime.now(timezone.utc)

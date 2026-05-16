@@ -39,6 +39,13 @@ if not _RAW_POSTGRES_URL:
     )
 POSTGRES_URL: str = _RAW_POSTGRES_URL  # narrowed after the skip guard
 
+# Sprint 2N.2 FAZ D: data ops run as a non-superuser, non-BYPASSRLS role
+# so the RLS policies actually filter. Falls back to POSTGRES_URL when the
+# RLS-specific URL isn't set (legacy single-role test runs continue to
+# work, just don't exercise RLS the same way).
+_RAW_RLS_URL = os.getenv("ABS_TEST_POSTGRES_RLS_URL")
+RLS_URL: str = _RAW_RLS_URL or POSTGRES_URL
+
 ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
 PROJECT_ROOT = ALEMBIC_INI.parent
 
@@ -62,9 +69,22 @@ def _run_alembic(args: list[str]) -> None:
 
 
 def _engine():
+    # Sprint 2N.2 FAZ D: NullPool prevents connection reuse across the
+    # `with engine.connect()` blocks the tests use. Without it, the
+    # second connect() inherits the prior block's SET abs.tenant_id
+    # GUC from the pooled connection and the "no GUC" assertions fail.
     from sqlalchemy import create_engine
+    from sqlalchemy.pool import NullPool
 
-    return create_engine(POSTGRES_URL, isolation_level="AUTOCOMMIT")
+    return create_engine(RLS_URL, isolation_level="AUTOCOMMIT", poolclass=NullPool)
+
+
+def _admin_engine():
+    """Migration-tier connection that retains DDL/role privileges."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.pool import NullPool
+
+    return create_engine(POSTGRES_URL, isolation_level="AUTOCOMMIT", poolclass=NullPool)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -183,6 +203,23 @@ def test_rls_downgrade_restores_global_visibility() -> None:
         conn.execute(text("SET abs.tenant_id = 'tenant_a'"))
         jti = _seed_audit_row(conn, "tenant_a")
 
+    # Sprint 2N.2 FAZ D: migration 0015b's downgrade intentionally runs
+    # `DROP ROLE IF EXISTS abs_admin` without revoking grants first
+    # (prod safety: a live admin connection must not be silently
+    # stripped). CI granted abs_admin SELECT/CONNECT/USAGE, so the
+    # naked DROP fails with DependentObjectsStillExist. REVOKE through
+    # the SUPERUSER admin engine (the grantor) before triggering the
+    # alembic downgrade so 0015b's DROP ROLE succeeds.
+    with _admin_engine().connect() as conn:
+        conn.execute(
+            text(
+                "REVOKE SELECT ON customer_audit_entries, "
+                "webhook_events, vault_audit_entries FROM abs_admin"
+            )
+        )
+        conn.execute(text("REVOKE USAGE ON SCHEMA public FROM abs_admin"))
+        conn.execute(text("REVOKE CONNECT ON DATABASE abs_rls_test FROM abs_admin"))
+
     _run_alembic(["downgrade", "0014b_backfill_tenant_id"])
 
     try:
@@ -198,3 +235,21 @@ def test_rls_downgrade_restores_global_visibility() -> None:
             assert rows == [(jti,)]
     finally:
         _run_alembic(["upgrade", "head"])
+        # Re-grant the abs_admin permissions that the downgrade dropped
+        # so the BYPASSRLS suite that runs after this module still works.
+        # Migration 0015b creates abs_admin WITH NOLOGIN — also re-apply
+        # the LOGIN attribute + password that the CI workflow normally
+        # sets once after the first upgrade. Goes through _admin_engine
+        # because abs_app_rls cannot ALTER ROLE / GRANT.
+        with _admin_engine().connect() as conn:
+            conn.execute(
+                text("ALTER ROLE abs_admin WITH LOGIN PASSWORD 'abs_admin'")
+            )
+            conn.execute(text("GRANT CONNECT ON DATABASE abs_rls_test TO abs_admin"))
+            conn.execute(text("GRANT USAGE ON SCHEMA public TO abs_admin"))
+            conn.execute(
+                text(
+                    "GRANT SELECT ON customer_audit_entries, "
+                    "webhook_events, vault_audit_entries TO abs_admin"
+                )
+            )

@@ -44,10 +44,15 @@ def test_customer_compose_no_build_context():
             f"found build context: {svc.get('build')!r}"
         )
 
+    # Sprint 2N.2 FAZ B: customer compose now parameterizes the GHCR
+    # namespace (ABS_GHCR_NAMESPACE) so the publishing workflow (which
+    # holds `automatiabcn` org scope) and operators pinned to the
+    # pre-2N.2 `enzoemir1` namespace can both pull. Accept the templated
+    # form or either literal as long as the image base is right.
     for app in ("backend", "landing"):
         image = services[app].get("image", "")
-        assert image.startswith("ghcr.io/enzoemir1/abs-"), (
-            f"{app} must pull from ghcr.io/enzoemir1/abs-*, got {image!r}"
+        assert image.startswith("ghcr.io/") and f"/abs-{app}:" in image, (
+            f"{app} must pull from ghcr.io/.../abs-{app}:*, got {image!r}"
         )
 
 
@@ -63,17 +68,23 @@ def test_release_script_atomic_clean_tree_gate():
     )
     # Image refs may interpolate ${GHCR_USER} — accept either literal or
     # template form so long as the registry + repo are unambiguous.
+    # Sprint 2N.2 FAZ B: default GHCR_USER switched from enzoemir1 to
+    # automatiabcn so the publishing workflow's GITHUB_TOKEN can push.
     backend_present = (
-        "ghcr.io/enzoemir1/abs-backend" in text
+        "ghcr.io/automatiabcn/abs-backend" in text
+        or "ghcr.io/enzoemir1/abs-backend" in text
         or "ghcr.io/${GHCR_USER}/abs-backend" in text
     )
     landing_present = (
-        "ghcr.io/enzoemir1/abs-landing" in text
+        "ghcr.io/automatiabcn/abs-landing" in text
+        or "ghcr.io/enzoemir1/abs-landing" in text
         or "ghcr.io/${GHCR_USER}/abs-landing" in text
     )
     assert backend_present, "release.sh must build the abs-backend ghcr image"
     assert landing_present, "release.sh must build the abs-landing ghcr image"
-    assert "enzoemir1" in text, "default GHCR user must be enzoemir1"
+    assert "automatiabcn" in text or "enzoemir1" in text, (
+        "release.sh must reference a known GHCR namespace"
+    )
 
 
 def test_dockerfile_strips_license_source():
