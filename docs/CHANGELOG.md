@@ -2,6 +2,88 @@
 
 Versiyon kayıtları — her task tek satır, tarih + delta.
 
+## 1.0.3 (2026-05-16) — Sprint 2N.2 hot-patch (release GA, docs gap open)
+
+v1.0.1 ve v1.0.2 release'lerinde release.yml workflow yeşil görünmesine
+rağmen ghcr.io'da müşteri image'ı YOKTU — smebes upgrade ve Pilot Batch
+2 HTTP 404 ile bekliyordu. 2N.1 + 2N.2 hot-patch döngüsü 4 + 4 gap'i
+kapattı; v1.0.3 ilk kez gerçek image-ship.
+
+**Açık kalan tek gap:** docs / mike deploy hâlâ `duplicated version and
+alias` hatası veriyor (run 25968243819). Sprint 2N.3 single-fix patch
+chain ile kapatılacak (`docs.yml` resolve-version step + alias/version
+split). docs.automatiabcn.com bu yüzden v1.0.3 sayfasını yansıtmıyor;
+GitHub Release notları + bu CHANGELOG kanonik.
+
+### Fixes — Sprint 2N.1 (3)
+
+- **2N.1-A** Postgres CI: oauth_clients migration `BOOLEAN DEFAULT 0`
+  → `DEFAULT FALSE`; alembic revision id 36 char → 24 char (varchar(32)
+  alembic_version sınırı); env.py legacy revision rewrite shim ile
+  SQLite müşteri geriye uyumlu.
+- **2N.1-B** release.yml `publish-images` job eklendi (cosign-sign
+  hiçbir image yokken imzalıyordu); matrix backend+landing build+push
+  + provenance + SBOM + cosign keyless chain.
+- **2N.1-C** docs mike deploy idempotent ön deneme (2N.2'de iyileştirildi,
+  2N.3'te kapatılacak — `grep` regex `[latest]` bracket eşleşmiyor).
+
+### Fixes — Sprint 2N.2 (3 kapalı + 1 kısmi)
+
+- **2N.2-A** Backend Dockerfile pubkey path → `app/update/manifest_pubkey.pem`
+  (sibling `core/backend/manifest_pubkey.pem` `*.pem` gitignored, CI
+  checkout missing). Release backend GREEN.
+- **2N.2-B** GHCR namespace `enzoemir1` → `automatiabcn` (workflow
+  GITHUB_TOKEN cross-account push edemiyor; `permission_denied:
+  installation does not exist`). Customer compose `ABS_GHCR_NAMESPACE`
+  env var ile parametrize, default `automatiabcn`. Release landing GREEN.
+- **2N.2-C** docs mike pre-delete koşulsuz hale getirildi. Kısmi:
+  `mike delete latest` alias'ı kaldırıyor ama version'ı bırakıyor;
+  sonraki deploy aynı duplicate hatasına düşüyor. Sprint 2N.3'e devredildi.
+- **2N.2-D** CI Postgres RLS 5 test fail — iki rol modeli (`abs_app`
+  SUPERUSER alembic için, `abs_app_rls` NOSUPERUSER NOBYPASSRLS data
+  ops için), NullPool ile GUC leak fix, downgrade test finally'de LOGIN
+  + grants restore. CI Postgres 7/7 GREEN.
+
+### Infra ship (v1.0.3)
+
+- `ghcr.io/automatiabcn/abs-backend:1.0.3` (sha256:459bb68e9ad8b6...)
+- `ghcr.io/automatiabcn/abs-landing:1.0.3` (sha256:8c51aca0d591cf...)
+- Her ikisi `:latest` aynı digest; multi-platform OCI index + cosign
+  keyless attestation.
+
+### CI status (post-v1.0.3 push)
+
+| Workflow | Run id | Conclusion |
+|----------|--------|------------|
+| Release | 25968244147 | success (publish-images + cosign) |
+| SBOM Generation | 25968244153 | success |
+| CI Postgres (RLS) | 25968243828 | success (FAZ D verify) |
+| CodeQL Advanced | 25968243837 | success |
+| docs | 25968243819 | failure (mike duplicate; 2N.3) |
+
+### Pytest
+
+- 2171 passed, 24 skipped, 3 deselected (SQLite baseline korundu)
+- CI Postgres (RLS) 7/7 GREEN, modül sırası bağımsız
+
+### Customer upgrade (founder one-paste)
+
+```
+# Existing v1.0.x customer .env update
+ABS_VERSION=1.0.3
+ABS_GHCR_NAMESPACE=automatiabcn
+
+docker compose -f infra/docker-compose.customer.yml pull
+docker compose -f infra/docker-compose.customer.yml up -d
+curl -sf https://${ABS_PUBLIC_HOSTNAME}/healthz
+curl -sf https://${ABS_PUBLIC_HOSTNAME}/readyz
+```
+
+Pre-2N.2 `enzoemir1` namespace'inde kalmak isteyen müşteriler
+`ABS_GHCR_NAMESPACE=enzoemir1` ile pin'li çalışabilir; founder
+`GHCR_USER=enzoemir1 ./scripts/release.sh 1.0.3` ile manuel dual
+publish yapabilir.
+
 ## 1.0.1 (2026-05-14) — Sprint 2N hot-fix patch
 
 Sprint 2M Customer E2E Audit'in 4 P0 + 6 P1 bulgusu + smebes (ilk pilot)
