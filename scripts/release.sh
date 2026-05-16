@@ -9,7 +9,8 @@
 #
 # Required env:
 #   GHCR_PAT — personal access token with write:packages, OR `gh auth token`
-#              must work (gh CLI authenticated as enzoemir1).
+#              must work for the active GHCR_USER (default automatiabcn —
+#              the org that hosts the published abs images).
 #
 # Hard gates:
 #   - working tree must be clean (no `git status --porcelain` output)
@@ -19,7 +20,7 @@
 set -euo pipefail
 
 VERSION="${1:?version required (e.g. 1.0.0)}"
-GHCR_USER="${GHCR_USER:-enzoemir1}"
+GHCR_USER="${GHCR_USER:-automatiabcn}"
 BACKEND_IMAGE="ghcr.io/${GHCR_USER}/abs-backend"
 LANDING_IMAGE="ghcr.io/${GHCR_USER}/abs-landing"
 
