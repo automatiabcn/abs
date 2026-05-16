@@ -66,9 +66,38 @@ jobs:
             -c "GRANT USAGE ON SCHEMA public TO abs_admin;"
           psql -h localhost -U abs_app -d abs_rls_test \
             -c "GRANT SELECT ON customer_audit_entries, webhook_events, vault_audit_entries TO abs_admin;"
+      - name: Create abs_app_rls — non-superuser role for RLS data ops
+        # Sprint 2N.2 FAZ D: postgres:15 creates POSTGRES_USER (abs_app)
+        # with SUPERUSER + BYPASSRLS, which lets it skip every RLS
+        # policy the suite is verifying. The 5 audit RLS tests all
+        # failed with `assert [(1,)] == []` because abs_app saw rows
+        # the policy was meant to hide.
+        #
+        # Fix: keep abs_app as SUPERUSER (alembic needs it for
+        # `CREATE ROLE abs_admin WITH BYPASSRLS` in migration 0015b),
+        # but spin up a second login role abs_app_rls without
+        # SUPERUSER/BYPASSRLS for the actual test data operations.
+        # The test module reads ABS_TEST_POSTGRES_RLS_URL for its data
+        # engine and continues to use ABS_TEST_POSTGRES_URL for
+        # alembic-only paths (downgrade/upgrade fixture).
+        env:
+          PGPASSWORD: abs_app
+        run: |
+          psql -h localhost -U abs_app -d abs_rls_test -c "
+            CREATE ROLE abs_app_rls
+              WITH LOGIN PASSWORD 'abs_app_rls'
+              NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB;
+            GRANT CONNECT ON DATABASE abs_rls_test TO abs_app_rls;
+            GRANT USAGE ON SCHEMA public TO abs_app_rls;
+            GRANT SELECT, INSERT, UPDATE, DELETE
+              ON customer_audit_entries, webhook_events, vault_audit_entries
+              TO abs_app_rls;
+            GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO abs_app_rls;
+          "
       - name: Run postgres_only suite
         env:
           ABS_TEST_POSTGRES_ADMIN_URL: postgresql://abs_admin:abs_admin@localhost:5432/abs_rls_test
+          ABS_TEST_POSTGRES_RLS_URL: postgresql://abs_app_rls:abs_app_rls@localhost:5432/abs_rls_test
         run: |
           pytest -q -m postgres_only \
             tests/integration/test_rls_audit_tables.py \
