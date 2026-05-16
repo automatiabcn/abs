@@ -1,0 +1,16 @@
+FAZ A — Backend Dockerfile pubkey path fix
+=== BEFORE ===
+COPY manifest_pubkey.pem /etc/abs/manifest_pubkey.pem
+(file gitignored at core/backend/manifest_pubkey.pem — CI checkout missing)
+
+=== AFTER ===
+COPY app/update/manifest_pubkey.pem /etc/abs/manifest_pubkey.pem
+(file tracked, exception in .gitignore)
+
+=== LOCAL DOCKER BUILD ===
+docker buildx build -f core/backend/Dockerfile core/backend → DONE
+Image pubkey verified: identical to source file
+
+=== EVIDENCE ===
+Date: 2026-05-16T16:28:29Z
+
