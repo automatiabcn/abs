@@ -55,7 +55,7 @@ so they can \`docker compose pull\` the pre-built images.
 2. Configure:
    - Token name: ${PAT_NAME}
    - Expiration: 30 days (renew at next invoice cycle)
-   - Resource owner: enzoemir1
+   - Resource owner: automatiabcn (or enzoemir1 if pinned to a pre-2N.2 image)
    - Repository access: "Public repositories (read-only)" is sufficient
    - Permissions → Account → "Packages": **Read-only**
 3. Copy the token value (starts with \`github_pat_\`) into

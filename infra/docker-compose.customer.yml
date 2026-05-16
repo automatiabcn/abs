@@ -20,10 +20,15 @@
 #                          Next.js needs this for absolute links + canonical.
 #   ABS_ACME_EMAIL       — Let's Encrypt contact email for cert renewal
 #                          notices. Required by Caddy ACME defaults.
-#   ABS_VERSION          — image tag, default 1.0.1 (Sprint 2N). Don't
-#                          change unless your support contact tells you.
-#                          See .env.example for the per-release changelog
-#                          embedded next to ABS_VERSION.
+#   ABS_VERSION          — image tag, default latest (most recent stable).
+#                          Pin to a known-good semver (e.g. 1.0.3) for
+#                          deterministic deploys. See .env.example for
+#                          the per-release changelog.
+#   ABS_GHCR_NAMESPACE   — GHCR org/user that hosts the images. Defaults
+#                          to `automatiabcn`. Set to `enzoemir1` only if
+#                          you are pinned to the pre-2N.2 image namespace
+#                          (Sprint 2N.2 unified release publication on
+#                          ghcr.io/automatiabcn/abs-*).
 #   ABS_VAULT_KEY        — 32-byte base64 secret encrypting the local vault
 #                          (provider keys, OAuth state). Generate once with
 #                          `openssl rand -base64 32` then keep it backed up.
@@ -44,7 +49,7 @@ services:
   # port 8000 only; Caddy proxies /v1/*, /auth/*, /setup*, /healthz, /mcp*.
   # ---------------------------------------------------------------------------
   backend:
-    image: ghcr.io/enzoemir1/abs-backend:${ABS_VERSION:-latest}
+    image: ghcr.io/${ABS_GHCR_NAMESPACE:-automatiabcn}/abs-backend:${ABS_VERSION:-latest}
     pull_policy: always
     env_file: .env
     environment:
@@ -125,7 +130,7 @@ services:
   # Caddy routes everything that isn't a backend path here.
   # ---------------------------------------------------------------------------
   landing:
-    image: ghcr.io/enzoemir1/abs-landing:${ABS_VERSION:-latest}
+    image: ghcr.io/${ABS_GHCR_NAMESPACE:-automatiabcn}/abs-landing:${ABS_VERSION:-latest}
     pull_policy: always
     env_file: .env
     environment:
@@ -163,7 +168,7 @@ services:
   # Reuses the backend image so license + vault unlock work identically.
   # ---------------------------------------------------------------------------
   email-cron:
-    image: ghcr.io/enzoemir1/abs-backend:${ABS_VERSION:-latest}
+    image: ghcr.io/${ABS_GHCR_NAMESPACE:-automatiabcn}/abs-backend:${ABS_VERSION:-latest}
     pull_policy: always
     env_file: .env
     command: ["sh", "-c", "while true; do python infra/scripts/email_tick.py; sleep 300; done"]
