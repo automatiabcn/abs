@@ -87,7 +87,11 @@ COPY --from=builder /tmp/verifier.hash /etc/abs.verifier.hash
 # key on ai-pc) verify against this same pubkey on every customer install.
 # Pre-fix every container generated its own keypair on first boot, which
 # meant every customer rejected the founder's mint with "signature invalid".
-COPY manifest_pubkey.pem /etc/abs/manifest_pubkey.pem
+# Sprint 2N.2 FAZ A: copy from the tracked path under app/update/.
+# Sibling core/backend/manifest_pubkey.pem is gitignored (`*.pem` rule),
+# so it was present locally but missing on CI checkout, breaking
+# release.yml publish-images.
+COPY app/update/manifest_pubkey.pem /etc/abs/manifest_pubkey.pem
 RUN chmod 644 /etc/abs/manifest_pubkey.pem
 ENV ABS_PUBLIC_KEY_PATH=/etc/abs/manifest_pubkey.pem
 
