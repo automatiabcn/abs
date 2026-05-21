@@ -32,24 +32,30 @@ output ONLY a JSON object that conforms to the ABS Workflow schema. No prose,
 no markdown fences, no commentary before or after the JSON. Use abs.* tool
 names where appropriate.
 
-REQUIRED SHAPE (any extra keys are dropped by the validator):
+REQUIRED SHAPE (match field names EXACTLY — validator is strict):
 
   {
     "id": "<slug-id>",
     "name": "<short title>",
+    "description": "<one-line summary>",
+    "trigger": {"id": "trigger-1", "kind": "manual", "description": "..."},
     "nodes": [
-      {"id": "<node-id>", "tool": "abs.<tool>", "params": { ... }, "next": "<id|null>"}
+      {"id": "<node-id>", "kind": "llm_call|api_request|conditional|loop|hitl",
+       "name": "<human-readable step name>",
+       "config": {"prompt_template": "...", "tool_name": "abs.<tool>"}}
     ],
-    "edges": [{"from": "<id>", "to": "<id>"}]
+    "edges": [{"source": "<node-id>", "target": "<node-id>"}]
   }
 
 RULES:
   1. Respond with EXACTLY ONE JSON object. No prose. No markdown.
-  2. Every node must reference a real abs.* tool from the examples below.
-  3. `nodes` and `edges` must be non-empty.
-  4. Pick the smallest set of nodes that satisfies the intent — do not
+  2. `trigger` is REQUIRED — kind must be one of: manual, webhook, cron, event.
+  3. Every node MUST have: id, kind, name (kind from allowed enum).
+  4. Edges use `source`/`target` keys — NOT `from`/`to`.
+  5. `nodes` and `edges` must be non-empty.
+  6. Pick the smallest set of nodes that satisfies the intent — do not
      invent steps the user did not ask for.
-  5. If the intent maps to multiple integrations (e.g. Slack + Linear),
+  7. If the intent maps to multiple integrations (e.g. Slack + Linear),
      wire them in dependency order via `edges`."""
 
 
@@ -86,6 +92,74 @@ def build_prompt(intent: str, *, locale: str = "en") -> str:
 
 
 _JSON_OBJECT_RE = re.compile(r"\{.*\}", re.DOTALL)
+_SLUG_FALLBACK = re.compile(r"[^a-z0-9-]+")
+
+
+def _slugify(text: str, fallback: str = "workflow") -> str:
+    s = _SLUG_FALLBACK.sub("-", (text or "").lower()).strip("-")
+    return s[:48] if s else fallback
+
+
+def _normalize_llm_workflow(data: Any) -> Any:
+    """Best-effort fix for common LLM schema drift before strict validation."""
+    if not isinstance(data, dict):
+        return data
+    if "trigger" not in data or not isinstance(data.get("trigger"), dict):
+        data["trigger"] = {"id": "trigger-1", "kind": "manual",
+                           "description": "auto-added"}
+    else:
+        t = data["trigger"]
+        t.setdefault("id", "trigger-1")
+        t.setdefault("kind", "manual")
+        if t.get("kind") not in ("manual", "webhook", "cron", "event"):
+            t["kind"] = "manual"
+    data.setdefault("id", _slugify(data.get("name", "")))
+    data.setdefault("name", data.get("id", "Synthesized Workflow"))
+    nodes = data.get("nodes")
+    if isinstance(nodes, list):
+        for i, n in enumerate(nodes):
+            if not isinstance(n, dict):
+                continue
+            n.setdefault("id", f"n{i + 1}")
+            n.setdefault("name", n.get("id", f"Step {i + 1}").replace("-", " ").title())
+            kind = n.get("kind")
+            if kind not in ("llm_call", "api_request", "conditional", "loop", "hitl"):
+                tool = (n.get("tool") or n.get("config", {}).get("tool_name") or "")
+                if "request" in tool or "http" in tool or "api" in tool:
+                    n["kind"] = "api_request"
+                elif tool.startswith("abs.hitl") or "approval" in tool:
+                    n["kind"] = "hitl"
+                else:
+                    n["kind"] = "llm_call"
+            if "tool" in n and "config" not in n:
+                n["config"] = {"tool_name": n["tool"]}
+            elif "tool" in n and isinstance(n.get("config"), dict):
+                n["config"].setdefault("tool_name", n["tool"])
+            cfg = n.get("config")
+            if isinstance(cfg, dict):
+                if "prompt_template" in cfg and "prompt" not in cfg:
+                    cfg["prompt"] = cfg.pop("prompt_template")
+                _allowed_cfg = {
+                    "model", "prompt", "method", "url", "tool_name",
+                    "tool_args", "condition_expr", "approval_role",
+                    "script", "output_template",
+                }
+                for k in list(cfg.keys()):
+                    if k not in _allowed_cfg:
+                        cfg.pop(k, None)
+            for k in list(n.keys()):
+                if k not in {"id", "kind", "name", "config", "retry_max", "timeout_s"}:
+                    n.pop(k, None)
+    edges = data.get("edges")
+    if isinstance(edges, list):
+        for e in edges:
+            if not isinstance(e, dict):
+                continue
+            if "source" not in e and "from" in e:
+                e["source"] = e.pop("from")
+            if "target" not in e and "to" in e:
+                e["target"] = e.pop("to")
+    return data
 
 
 def extract_json(text: str) -> str:
@@ -118,6 +192,7 @@ async def synthesize(
         raw = await synth_fn(full_prompt)
         try:
             data = json.loads(extract_json(raw))
+            data = _normalize_llm_workflow(data)
             wf = Workflow.model_validate(data)
             return SynthesisResult(workflow=wf, raw_json=raw, revisions=attempt)
         except Exception as exc:  # parse OR validation error
