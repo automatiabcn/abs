@@ -21,7 +21,7 @@ import json
 import logging
 import time
 from datetime import datetime, timezone
-from typing import AsyncGenerator, Dict, List, Literal, Optional
+from typing import Any, AsyncGenerator, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
@@ -123,7 +123,7 @@ class ChatMessageOut(BaseModel):
     role: str
     content: str
     provider: Optional[str]
-    tool_calls: Optional[Dict]
+    tool_calls: Any = []
     tokens_used: Optional[int]
     latency_ms: Optional[int]
     created_at: datetime
@@ -467,7 +467,15 @@ def list_messages(
                 role=m.role,
                 content=m.content,
                 provider=m.provider,
-                tool_calls=json.loads(m.tool_calls) if m.tool_calls else None,
+                tool_calls=(
+                    (
+                        json.loads(m.tool_calls)
+                        if isinstance(json.loads(m.tool_calls), list)
+                        else [json.loads(m.tool_calls)]
+                    )
+                    if m.tool_calls
+                    else []
+                ),
                 tokens_used=m.tokens_used,
                 latency_ms=m.latency_ms,
                 created_at=m.created_at,
