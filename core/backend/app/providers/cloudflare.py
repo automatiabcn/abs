@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from typing import Any, Optional
 
@@ -92,6 +93,11 @@ class CloudflareProvider(BaseProvider):
         result = data.get("result") or {}
         text = result.get("response") or ""
         usage = result.get("usage") or {}
+        # Sprint 2N.4 — Cloudflare Workers AI sometimes returns a dict
+        # (e.g. structured JSON output for workflow synth). ProviderResponse
+        # expects str → coerce non-string to JSON to avoid ValidationError.
+        if not isinstance(text, str):
+            text = json.dumps(text, ensure_ascii=False)
         return ProviderResponse(
             text=text,
             model=model,
