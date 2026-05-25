@@ -12,7 +12,7 @@
 // embedder warming up, Qdrant unreachable) and act on them.
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CloudUpload,
@@ -71,6 +71,30 @@ export default function RagPage() {
   const [hits, setHits] = useState<RagHit[]>([]);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load the real indexed corpus on mount so a reload reflects what's stored
+  // in Qdrant (BUG-27 follow-up) — not just docs uploaded this session.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/v1/rag/documents", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data: { documents?: IngestedDoc[] } = await res.json();
+        if (!cancelled && Array.isArray(data.documents)) {
+          setDocs(data.documents);
+        }
+      } catch {
+        /* keep empty inventory on transport error */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const onDrop = useCallback(
     async (files: FileList) => {

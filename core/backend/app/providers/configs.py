@@ -26,8 +26,15 @@ def _default_dir() -> Path:
     override = os.environ.get("ABS_PROVIDER_CONFIGS_DIR")
     if override:
         return Path(override)
-    # core/backend/app/providers/configs.py → parents[4] = abs-server-product
-    return Path(__file__).resolve().parents[4] / "infra" / "provider-configs"
+    here = Path(__file__).resolve()
+    # Dev layout: core/backend/app/providers/configs.py → parents[4] = repo root.
+    # In the slim container the app lives at /app/app/... so parents[4] would
+    # IndexError; guard it and fall back to the conventional container mount so
+    # load_all() degrades gracefully (dir-not-found → {}) instead of crashing
+    # boot when ABS_PROVIDER_CONFIGS_DIR is unset.
+    if len(here.parents) > 4:
+        return here.parents[4] / "infra" / "provider-configs"
+    return Path("/provider-configs")
 
 
 _loaded: Dict[str, dict] = {}

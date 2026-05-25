@@ -179,6 +179,8 @@ async def cypher(
     auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
 ) -> Dict[str, Any]:
     tenant = _resolve_tenant(auth)
+    if not (body.cypher or "").strip():
+        raise HTTPException(status_code=422, detail="empty_cypher")
     if _is_destructive(body.cypher) and not body.params.get("_confirm_destructive"):
         raise HTTPException(
             status_code=400,
@@ -243,18 +245,43 @@ async def seed(
     return {"tenant_id": tenant, "counts": counts}
 
 
+def _extract_json_obj(text: str) -> str:
+    """Best-effort extraction of a JSON object from an LLM response that may be
+    wrapped in a ```json … ``` fence and/or surrounded by prose. Free-tier
+    models are less strict about JSON-only output, so we (1) strip a markdown
+    fence, then (2) fall back to the first balanced {…} block. The caller still
+    runs json.loads on the result."""
+    s = (text or "").strip()
+    if s.startswith("```"):
+        s = s.split("\n", 1)[-1] if "\n" in s else s[3:]
+        if s.rstrip().endswith("```"):
+            s = s.rstrip()[:-3]
+        s = s.strip()
+    if s.startswith("{"):
+        return s
+    i, j = s.find("{"), s.rfind("}")
+    if i != -1 and j > i:
+        return s[i : j + 1]
+    return s
+
+
 @router.post("/nl-query")
 async def nl_query(
     body: NLQueryRequest,
     auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
 ) -> Dict[str, Any]:
     tenant = _resolve_tenant(auth)
-    # Lazy-import cascade to keep router importable without provider stack.
-    # Some Q7 deployments ship without `cascade_call`; degrade to 422 so the
-    # client can route the NL through an external translator instead of 503.
+    if not (body.intent or "").strip():
+        raise HTTPException(status_code=422, detail="empty_intent")
+    # Lazy-import the cascade stack to keep the router importable on minimal
+    # deployments. When the provider stack is absent OR no key is configured we
+    # degrade to 422 so the client can route the NL through an external
+    # translator (or POST a hand-written cypher to /v1/graph/cypher).
     try:
-        from app.providers.cascade import cascade_call  # type: ignore[attr-defined]
-    except (ImportError, AttributeError) as exc:
+        from app.cascade.orchestrator import call_with_cascade
+        from app.providers.cascade import get_active_providers
+        from app.providers.schemas import ProviderError
+    except ImportError as exc:
         raise HTTPException(
             status_code=422,
             detail={
@@ -263,24 +290,60 @@ async def nl_query(
                 "hint": "Provide an LLM-translated cypher via POST /v1/graph/cypher.",
             },
         )
+    active = get_active_providers()
+    if not active:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "nl_translator_unavailable",
+                "reason": "no_providers_configured",
+                "hint": "Configure a provider key, or POST a cypher to /v1/graph/cypher.",
+            },
+        )
     prompt = (
         "Convert this natural language to a Neo4j Cypher query for tenant "
         f"'{tenant}'. Always include WHERE n.tenant_id = $tenant_id (and the "
         "same on relationships) so cross-tenant rows cannot leak. "
-        "Return JSON ONLY with shape "
+        "Output the raw JSON object ONLY — no markdown fences, no prose — "
+        "with shape "
         "{\"cypher\": \"...\", \"params\": {...}, \"explanation\": \"...\"}. "
         "Schema hint: nodes use :Person, :Org, :Project, :Ticket; "
         "relations: WORKS_AT, OWNS, MANAGES, ASSIGNED_TO.\n\n"
         f"NL: {body.intent}\nLocale: {body.locale}"
     )
-    response = await cascade_call(prompt=prompt)
-    completion = response.get("completion") or response.get("text") or "{}"
-    try:
-        parsed = json.loads(completion)
-    except json.JSONDecodeError:
+    primary, *rest = active
+
+    def _parse(resp):
+        raw = _extract_json_obj(getattr(resp, "text", "") or "")
+        try:
+            obj = json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+        return obj if isinstance(obj, dict) and "cypher" in obj else None
+
+    async def _call(p, cache=True):
+        try:
+            return await call_with_cascade(
+                p, primary=primary, fallbacks=tuple(rest),
+                tenant_id=tenant, use_cache=cache,
+            )
+        except ProviderError as exc:
+            raise HTTPException(
+                502, f"nl_translation_failed: {exc.message or str(exc)}"
+            ) from exc
+
+    parsed = _parse(await _call(prompt))
+    if parsed is None:
+        # Free-tier model returned prose / invalid JSON — retry once with a
+        # stricter instruction (cache off so we don't replay the bad answer).
+        parsed = _parse(
+            await _call(
+                prompt + "\n\nIMPORTANT: respond with the raw JSON object ONLY.",
+                cache=False,
+            )
+        )
+    if parsed is None:
         raise HTTPException(502, "llm_returned_non_json")
-    if "cypher" not in parsed:
-        raise HTTPException(502, "llm_returned_no_cypher")
     if _is_destructive(parsed["cypher"]):
         raise HTTPException(400, "destructive_nl_query_rejected")
     params = dict(parsed.get("params") or {})

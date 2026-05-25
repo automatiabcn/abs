@@ -16,6 +16,7 @@ Qdrant wrapper (T-009). Cerbos resource-level policy is added in T-012.
 
 from __future__ import annotations
 
+import datetime as _dt
 import logging
 import time
 from typing import Any
@@ -315,3 +316,47 @@ def query(
         )
     )
     return QueryResponse(query=body.query, hits=hits, elapsed_ms=elapsed)
+
+
+@router.get("/documents")
+@observe(name="rag.documents")
+def list_documents(
+    rag: RAGAuth = Depends(rag_action_dep("query")),
+) -> dict[str, Any]:
+    """Document inventory for the caller's tenant — groups stored chunks by
+    ``doc_id``. Powers the admin RAG page so a reload shows the real indexed
+    corpus (not just this session's uploads). Tolerant of a missing
+    collection / Qdrant outage → empty inventory rather than 5xx.
+    """
+    auth = rag.auth
+    collection = _tenant_collection(auth)
+    try:
+        raw = qc.list_documents(
+            collection=collection, tenant_id=auth.tenant_id or ""
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("rag_documents_unavailable: %s", exc)
+        raw = []
+    documents = [
+        {
+            "id": d["doc_id"],
+            "filename": d["filename"] or d["doc_id"],
+            "chunks": int(d["chunks"]),
+            "size_bytes": int(d["bytes"]),
+            "ingested_at": (
+                _dt.datetime.fromtimestamp(
+                    d["created_at"], _dt.timezone.utc
+                ).isoformat()
+                if d.get("created_at")
+                else None
+            ),
+        }
+        for d in raw
+    ]
+    return {
+        "collection": collection,
+        "documents": documents,
+        "doc_count": len(documents),
+        "chunk_count": sum(d["chunks"] for d in documents),
+        "total_bytes": sum(d["size_bytes"] for d in documents),
+    }

@@ -2,6 +2,26 @@
 
 Versiyon kayıtları — her task tek satır, tarih + delta.
 
+## 1.0.6 (2026-05-25) — 5-tur denetim hardening (11 fix)
+
+Opus full-system audit (5 lens: render/fonksiyon, tasarım-niyeti, güvenlik,
+dayanıklılık, E2E). Düzeltmeler:
+- **cascade default FREE-FIRST** — `PROVIDER_ORDER_DEFAULT` (Groq→…→Anthropic
+  son fallback), `ABS_HYBRID_TIER_PROMISE`'e hizalandı; chat + cascade + workflows
+  artık ücretsiz-yol default. UI `providers_status` aynı sıraya geldi.
+- **graph NL→Cypher** `cascade_call` (yok) → `call_with_cascade` + JSON-fence strip.
+- **versiyon tek-kaynak** `settings.version` (ABS_VERSION) → status/main/footer/pyproject.
+- **configs.py `_default_dir()`** `parents[4]` IndexError guard (env'siz cold-deploy crash).
+- **graph/cypher boş** 500→422, **graph/nl-query boş intent** 502→422.
+- **panel cascade** `providers_active` + `timeseries` döndürüyor (panel "0" bug).
+- **admin/usage** canlı DB `usage_log` merge + `cerebras` FREE_PROVIDERS'e eklendi.
+- **RAG** `GET /v1/rag/documents` + `qc.list_documents` (sayfa depoyu gösterir).
+- Kota header overlap (flex-wrap), /admin/audit React #418 (timeZone pin).
+
+Güvenlik (R3) temiz: auth-required sweep 401, tenant izolasyon, rate-limit 429,
+destructive cypher 400, forged MCP token 401, secret sızıntısı yok. Bilinen açık
+uçlar: admin paneli i18n değil (TR-only), GitHub Smart Link placeholder OAuth.
+
 ## 1.0.4 (2026-05-16) — Sprint 2N.3 docs alias split (v1.0.3 yellow → green)
 
 Tek FAZ: `docs.yml` `MIKE_VERSION` artık `github.ref_name`'den türetiliyor

@@ -104,24 +104,37 @@ def test_health_endpoint(admin_client):
 
 @pytest.mark.skipif(not LIVE, reason="ABS_NEO4J_LIVE!=1 — skipping live Neo4j test")
 def test_nl_query_mocked(admin_client, monkeypatch):
-    """Monkeypatch cascade_call → fixed Cypher response; verify pass-through."""
-    import app.providers.cascade as cascade_mod
+    """Monkeypatch the cascade → fixed Cypher response; verify pass-through.
 
-    async def _fake_cascade_call(prompt: str, **_):
-        return {
-            "completion": json.dumps(
+    nl-query routes through `call_with_cascade` (orchestrator) + the active
+    provider chain, then returns `{cypher, explanation, rows, tenant_id}`.
+    """
+    import app.cascade.orchestrator as orch_mod
+    import app.providers.cascade as cascade_mod
+    from app.providers.schemas import ProviderResponse
+
+    monkeypatch.setattr(
+        cascade_mod, "get_active_providers", lambda *a, **k: ["groq"], raising=False
+    )
+
+    async def _fake_call_with_cascade(prompt, *, primary=None, **_):
+        return ProviderResponse(
+            text=json.dumps(
                 {
                     "cypher": (
                         "MATCH (p:Person)-[:WORKS_AT]->"
-                        "(c:Company {name: \"DemoCo\"}) RETURN p"
+                        "(c:Org {name: \"DemoCo\"}) RETURN p"
                     ),
                     "params": {},
+                    "explanation": "stub",
                 }
-            )
-        }
+            ),
+            provider="groq",
+            model="stub",
+        )
 
     monkeypatch.setattr(
-        cascade_mod, "cascade_call", _fake_cascade_call, raising=False
+        orch_mod, "call_with_cascade", _fake_call_with_cascade, raising=False
     )
 
     r = admin_client.post(
@@ -131,4 +144,4 @@ def test_nl_query_mocked(admin_client, monkeypatch):
     assert r.status_code == 200, r.text
     body = r.json()
     assert "cypher" in body
-    assert len(body["data"]) == 2
+    assert "rows" in body

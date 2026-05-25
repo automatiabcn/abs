@@ -108,8 +108,10 @@ def test_free_first_chain_groq_leads_no_paid():
     )
 
 
-def test_get_active_providers_skip_paid_drops_anthropic(monkeypatch):
-    """BUG-7 unit — skip_paid=True drops anthropic and reorders to groq-first."""
+def test_get_active_providers_default_free_first_anthropic_last(monkeypatch):
+    """Default (skip_paid=False) is free-first with anthropic as the last-resort
+    premium fallback (PROVIDER_ORDER_DEFAULT, per ABS_HYBRID_TIER_PROMISE);
+    skip_paid=True drops anthropic entirely and stays groq-first."""
     from app.config import settings
 
     for attr in (
@@ -122,10 +124,12 @@ def test_get_active_providers_skip_paid_drops_anthropic(monkeypatch):
     ):
         monkeypatch.setattr(settings, attr, REAL_KEY, raising=False)
 
-    paid = get_active_providers(skip_paid=False)
+    default = get_active_providers(skip_paid=False)
     free = get_active_providers(skip_paid=True)
 
-    assert paid[0] == "anthropic", paid
+    # Free-first: groq leads, anthropic present but last (quota-protected lane).
+    assert default[0] == "groq", default
+    assert default[-1] == "anthropic", default
     assert "anthropic" not in free, free
     assert free[0] == "groq", free
     # All 5 free providers configured + ordered.
@@ -187,14 +191,20 @@ def test_cascade_skip_paid_routes_to_free_provider(all_keys_admin, monkeypatch):
     assert routed[0] == "groq", f"free chain primary should be groq, got {routed[0]}"
 
 
-def test_cascade_skip_paid_false_keeps_anthropic_primary(all_keys_admin, monkeypatch):
-    """BUG-7 — default (skip_paid=False) preserves anthropic primary."""
+def test_cascade_default_routes_to_free_primary_anthropic_last(all_keys_admin, monkeypatch):
+    """Default (skip_paid=False) is free-first — groq leads, anthropic stays in
+    the chain only as the quota-protected last-resort fallback
+    (ABS_HYBRID_TIER_PROMISE: "Free path first … 95%+ of the work on free")."""
+
+    seen: dict = {}
 
     async def _capture(prompt, *, primary, model=None, fallbacks=(), **kw):
+        seen["primary"] = primary
+        seen["fallbacks"] = tuple(fallbacks)
         return ProviderResponse(
-            text="paid",
+            text="free",
             provider=primary,
-            model=model or "claude-haiku-4-5",
+            model=model or "llama-3.3-70b",
             elapsed_ms=10,
             tokens_in=2,
             tokens_out=3,
@@ -207,7 +217,10 @@ def test_cascade_skip_paid_false_keeps_anthropic_primary(all_keys_admin, monkeyp
         json={"prompt": "default chain", "max_tokens": 8},
     )
     assert r.status_code == 200, r.text
-    assert r.json()["provider"] == "anthropic"
+    assert r.json()["provider"] == "groq"
+    assert seen["primary"] == "groq", seen
+    # Anthropic present but pushed to the very end of the fallback chain.
+    assert seen["fallbacks"][-1] == "anthropic", seen
 
 
 def test_cascade_skip_paid_no_free_providers_returns_503(paid_only_admin):

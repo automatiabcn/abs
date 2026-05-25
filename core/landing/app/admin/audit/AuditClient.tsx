@@ -230,7 +230,12 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
                       {e.action}
                     </Badge>
                     <span className="text-muted-foreground">
-                      {new Date(e.ts).toLocaleString("tr-TR")}
+                      {/* Pin timeZone so SSR (UTC container) and the client
+                          render the same string — avoids React #418 hydration
+                          mismatch on timestamps. */}
+                      {new Date(e.ts).toLocaleString("tr-TR", {
+                        timeZone: "Europe/Istanbul",
+                      })}
                     </span>
                     <span className="font-mono text-muted-foreground">
                       {e.actor}
