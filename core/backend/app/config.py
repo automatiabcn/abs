@@ -121,6 +121,10 @@ class Settings(BaseSettings):
     provider_mock: bool = False  # forces app.providers.mock for live calls
     demo_seed_version: str = "v1"
 
+    # Release version — single source of truth surfaced by /v1/status,
+    # /v1/admin/status/full and the panel footer. Overridable via ABS_VERSION.
+    version: str = "1.0.6"
+
     # DB
     database_url: str = "sqlite:////app/data/abs.db"
 

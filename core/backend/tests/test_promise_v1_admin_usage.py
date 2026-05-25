@@ -61,6 +61,12 @@ def _empty_usage_log(tmp_path, monkeypatch):
         "_ledger_path",
         lambda: quota_log,
     )
+    # /v1/admin/usage now merges the live DB usage_log table (cascade write
+    # path) on top of the JSONL ledger, so a deterministic "cold install"
+    # also needs the DB table empty.
+    from app.services import usage_log as _usage_log
+
+    _usage_log.reset_for_tests()
     return empty, quota_log
 
 

@@ -61,12 +61,49 @@ def _synthesise_from_audit(limit: int) -> list[dict]:
     return out
 
 
+def _timeseries_24h(flows: list[dict]) -> list[dict]:
+    """Hourly cascade-call buckets for the last 24h → [{ts, count}, …].
+
+    Empty when there is no activity (panel shows a clean "Veri yok" instead
+    of a flat-zero chart). Shape matches the frontend `CascadePoint`.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    buckets: dict[str, int] = {}
+    for f in flows:
+        raw = f.get("ts")
+        if not raw:
+            continue
+        try:
+            ts = datetime.fromisoformat(raw)
+        except ValueError:
+            continue
+        ts = _norm(ts)
+        if ts is None or ts < cutoff:
+            continue
+        hour = ts.replace(minute=0, second=0, microsecond=0)
+        key = hour.isoformat()
+        buckets[key] = buckets.get(key, 0) + 1
+    return [{"ts": k, "count": buckets[k]} for k in sorted(buckets)]
+
+
+def _active_provider_count() -> int:
+    """Currently configured cascade providers (free-first default chain)."""
+    try:
+        from app.providers.cascade import get_active_providers
+
+        return len(get_active_providers())
+    except Exception:
+        return 0
+
+
 @router.get("/recent")
 async def recent_cascade(limit: int = 100) -> dict:
     flows = _synthesise_from_audit(limit)
     return {
         "count": len(flows),
         "flows": flows,
+        "providers_active": _active_provider_count(),
+        "timeseries": _timeseries_24h(flows),
         "providers_seen": sorted(
             {p for f in flows for p in (f.get("cascade_path") or [])}
         ),

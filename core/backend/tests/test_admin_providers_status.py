@@ -55,7 +55,9 @@ def test_providers_status_lists_six_canonical_providers(client, monkeypatch):
     assert isinstance(items, list)
 
     ids = [item["id"] for item in items]
-    assert ids == ["groq", "cerebras", "cloudflare", "gemini", "cohere", "anthropic"]
+    # Mirrors cascade.PROVIDER_ORDER_DEFAULT (free-first, Anthropic last) so
+    # the Providers page cascade visual matches the real runtime order.
+    assert ids == ["groq", "cerebras", "gemini", "cohere", "cloudflare", "anthropic"]
 
     labels = {item["id"]: item["label"] for item in items}
     assert labels == {

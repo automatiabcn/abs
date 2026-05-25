@@ -267,6 +267,63 @@ def count(*, collection: str, tenant_id: str) -> int:
     )
 
 
+def list_documents(
+    *, collection: str, tenant_id: str, max_points: int = 5000
+) -> list[dict[str, Any]]:
+    """Group the tenant's stored chunks by ``doc_id`` into a document
+    inventory: ``[{doc_id, filename, chunks, bytes, created_at}, …]`` newest
+    first. Scrolls payloads only (no vectors); caps at ``max_points`` chunks so
+    a large collection can't stall the admin RAG page.
+    """
+    tenant = _require_tenant(tenant_id)
+    client = get_qdrant()
+    tenant_filter = _tenant_filter(tenant)
+    docs: dict[str, dict[str, Any]] = {}
+    scanned = 0
+    scroll_offset = None
+    while True:
+        batch, scroll_offset = client.scroll(
+            collection_name=collection,
+            scroll_filter=tenant_filter,
+            limit=512,
+            offset=scroll_offset,
+            with_payload=True,
+            with_vectors=False,
+        )
+        for pt in batch:
+            payload = pt.payload or {}
+            doc_id = str(payload.get("doc_id") or payload.get("chunk_id") or pt.id)
+            entry = docs.get(doc_id)
+            if entry is None:
+                entry = {
+                    "doc_id": doc_id,
+                    "filename": payload.get("filename")
+                    or payload.get("source")
+                    or "",
+                    "chunks": 0,
+                    "bytes": 0,
+                    "created_at": payload.get("created_at"),
+                }
+                docs[doc_id] = entry
+            entry["chunks"] += 1
+            entry["bytes"] += len((payload.get("text") or "").encode("utf-8"))
+            if not entry["filename"]:
+                entry["filename"] = (
+                    payload.get("filename") or payload.get("source") or ""
+                )
+            ca = payload.get("created_at")
+            if ca is not None and (
+                entry["created_at"] is None or ca < entry["created_at"]
+            ):
+                entry["created_at"] = ca
+        scanned += len(batch)
+        if not scroll_offset or scanned >= max_points:
+            break
+    return sorted(
+        docs.values(), key=lambda d: d.get("created_at") or 0, reverse=True
+    )
+
+
 def close() -> None:
     global _client
     if _client is None:

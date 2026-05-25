@@ -31,7 +31,7 @@ router = APIRouter(tags=["status"])
 
 # Process boot time for uptime calculation
 _BOOT_TIME = time.time()
-_VERSION = "0.1.0"
+_VERSION = settings.version
 
 _STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 

@@ -264,7 +264,7 @@ export default function QuotaPage() {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
-        className="mb-6 flex items-start justify-between"
+        className="mb-6 flex flex-wrap items-start justify-between gap-4"
       >
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
@@ -277,13 +277,13 @@ export default function QuotaPage() {
               : "Sağlayıcı kullanımı, eşik uyarıları, free-path oranı."}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <QuotaDateRangePicker
             value={range}
             onValueChange={setRange}
             data-test="quota-date-range"
             enableSelect
-            className="w-72"
+            className="w-[22rem] max-w-full"
           />
           <Link href="/admin/settings" passHref>
             <Button variant="outline" size="sm">

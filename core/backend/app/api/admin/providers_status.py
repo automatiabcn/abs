@@ -48,12 +48,15 @@ router = APIRouter(prefix="/v1/admin/providers", tags=["admin", "providers"])
 # webhook payload) stays consistent; this also makes the wire payload the
 # single source of truth instead of duplicating a label map in the React
 # component.
+#
+# Order MUST mirror `cascade.PROVIDER_ORDER_DEFAULT` (free-first, Anthropic
+# last) so the Providers page cascade visual matches the real runtime order.
 _PROVIDERS: List[Dict[str, str]] = [
     {"id": "groq", "label": "Groq", "attr": "groq_api_key"},
     {"id": "cerebras", "label": "Cerebras", "attr": "cerebras_api_key"},
-    {"id": "cloudflare", "label": "Cloudflare", "attr": "cf_api_token"},
     {"id": "gemini", "label": "Gemini", "attr": "gemini_api_key"},
     {"id": "cohere", "label": "Cohere", "attr": "cohere_api_key"},
+    {"id": "cloudflare", "label": "Cloudflare", "attr": "cf_api_token"},
     {"id": "anthropic", "label": "Anthropic", "attr": "anthropic_api_key"},
 ]
 
