@@ -168,7 +168,7 @@ export function PanelSidebar() {
         })}
       </nav>
       <div className="mt-auto rounded-md border border-border bg-background/40 p-3 text-[11px] text-muted-foreground">
-        <div className="font-mono text-foreground">v1.0.0-rc1</div>
+        <div className="font-mono text-foreground">v{process.env.NEXT_PUBLIC_ABS_VERSION ?? "1.0.6"}</div>
         <div>self-host AI orchestration</div>
       </div>
     </aside>

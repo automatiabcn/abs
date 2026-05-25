@@ -29,9 +29,10 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
-# Cascade order matches the customer-facing brief: paid first, then free
-# providers in approximate quality order. `provider_id` aligns with the
-# names used in `quota_monitor.QUOTAS` and `usage_log.append`.
+# Explicit quality-first chain (Anthropic first). NOT the runtime default —
+# kept for callers that deliberately opt into paid-first ordering. The default
+# cascade is `PROVIDER_ORDER_DEFAULT` (free-first), see below. `provider_id`
+# aligns with the names used in `quota_monitor.QUOTAS` and `usage_log.append`.
 PROVIDER_ORDER_PAID_FIRST: tuple[str, ...] = (
     "anthropic",
     "groq",
@@ -53,7 +54,22 @@ PROVIDER_ORDER_FREE_FIRST: tuple[str, ...] = (
     "cloudflare",
 )
 
-# Back-compat alias — modules + tests still import `PROVIDER_ORDER`.
+# Default cascade chain — free providers first, paid Anthropic appended as the
+# last-resort premium fallback. This is the authoritative behaviour from
+# `docs/ABS_HYBRID_TIER_PROMISE.md` (Founder + ABS engineering sign-off):
+# "Free path first … cascade … none of those paths touch Anthropic … 95%+ of
+# the work on free providers." Anthropic stays reachable as the quota-protected
+# premium lane (quota_monitor warns @80%, hard-blocks @95% → falls to Groq) so
+# quality is preserved while the default keeps spend at $0. Callers opt into
+# Claude per-request via `prefer="anthropic"`, explicit model, or a pipeline.
+PROVIDER_ORDER_DEFAULT: tuple[str, ...] = (
+    *PROVIDER_ORDER_FREE_FIRST,
+    "anthropic",
+)
+
+# Back-compat alias — modules + tests still import `PROVIDER_ORDER`. Points at
+# the explicit paid-first chain for callers that want quality-first ordering on
+# purpose; the runtime DEFAULT is `PROVIDER_ORDER_DEFAULT` (free-first).
 PROVIDER_ORDER: tuple[str, ...] = PROVIDER_ORDER_PAID_FIRST
 
 # Providers that cost money per token. `skip_paid_providers=true` filters
@@ -102,11 +118,13 @@ def get_active_providers(
     """Return the ordered cascade chain of *configured* providers.
     Empty list = no providers at all (caller should 503).
 
-    `prefer`, when supplied and configured, moves that provider to the front
-    of the chain. `skip_paid=True` swaps to the free-first chain and drops
-    paid providers entirely (founder-test Round 3 BUG-7 + BUG-8).
+    Default ordering is free-first with Anthropic as the last-resort premium
+    fallback (`PROVIDER_ORDER_DEFAULT`, per ABS_HYBRID_TIER_PROMISE). `prefer`,
+    when supplied and configured, moves that provider to the front of the chain.
+    `skip_paid=True` swaps to the free-only chain and drops paid providers
+    entirely (founder-test Round 3 BUG-7 + BUG-8).
     """
-    base_order = PROVIDER_ORDER_FREE_FIRST if skip_paid else PROVIDER_ORDER_PAID_FIRST
+    base_order = PROVIDER_ORDER_FREE_FIRST if skip_paid else PROVIDER_ORDER_DEFAULT
     active = [p for p in base_order if is_configured(p)]
     if skip_paid:
         active = [p for p in active if p not in PAID_PROVIDERS]

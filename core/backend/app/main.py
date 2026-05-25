@@ -308,7 +308,9 @@ async def lifespan(_app: FastAPI):
             pass
 
 
-app = FastAPI(title="Automatia ABS", version="0.1.0", lifespan=lifespan)
+from app.config import settings as _app_settings  # noqa: E402
+
+app = FastAPI(title="Automatia ABS", version=_app_settings.version, lifespan=lifespan)
 install_rate_limit(app)  # 028 — must run before include_router so decorators work
 
 # Sprint 2K — convert RLS write-side violations (Postgres SQLSTATE 42501)
