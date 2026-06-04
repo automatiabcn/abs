@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -132,6 +133,7 @@ class JobRecord:
     started_at: Optional[float] = None
     completed_at: Optional[float] = None
     error: Optional[str] = None
+    node_outputs: Dict[str, Any] = field(default_factory=dict)
 
 
 _JOBS: Dict[str, JobRecord] = {}
@@ -205,22 +207,94 @@ async def enqueue(workflow: Dict[str, Any], tenant_slug: str = "default") -> str
         job_id,
         len(workflow.get("nodes", [])),
     )
-    # Schedule a faux completion to mimic eventual consistency.
-    asyncio.create_task(_simulate_run(job_id))
+    # Phase-1.5 — real linear execution: llm_call nodes hit the cascade for
+    # real; other kinds are recorded (hitl/abs_tool/api_request are noted as
+    # pending for the durable engine follow-up).
+    asyncio.create_task(_execute_run(job_id))
     return job_id
 
 
-async def _simulate_run(job_id: str) -> None:
+_TEMPLATE_RE = re.compile(r"\{\{\s*([^}]+?)\s*\}\}")
+
+
+def _node_text(out: Any) -> str:
+    """Best-effort text of a prior node's output for templating."""
+    if isinstance(out, dict):
+        return str(out.get("text") or out.get("error") or out.get("skipped") or "")
+    return str(out or "")
+
+
+def _render(template: str, outputs: Dict[str, Any]) -> str:
+    """Substitute `{{node_id}}` placeholders with that node's prior output.
+    Unknown placeholders are left intact so a bad ref doesn't silently vanish."""
+    def repl(m: "re.Match[str]") -> str:
+        key = m.group(1).strip()
+        # accept `id`, `steps.id`, `steps.id.output` shapes → take the id token
+        token = key.split(".")[1] if key.startswith("steps.") else key
+        if token in outputs:
+            return _node_text(outputs[token])
+        return m.group(0)
+    return _TEMPLATE_RE.sub(repl, template)
+
+
+async def _run_node(
+    node: Dict[str, Any], kind: str, outputs: Dict[str, Any], tenant: str
+) -> Dict[str, Any]:
+    config = node.get("config") or {}
+    if kind == "llm_call":
+        from app.cascade.orchestrator import call_with_cascade
+
+        prompt = _render(
+            str(config.get("prompt_template") or config.get("prompt") or node.get("name") or ""),
+            outputs,
+        )
+        if not prompt.strip():
+            return {"skipped": kind, "note": "empty prompt_template"}
+        provider = str(config.get("provider") or node.get("provider") or "groq")
+        model = config.get("model") or node.get("model")
+        resp = await call_with_cascade(
+            prompt, primary=provider, model=model, tenant_id=tenant or "default"
+        )
+        return {"text": getattr(resp, "text", None) or str(resp), "provider": provider}
+    if kind == "trigger":
+        # Trigger carries the workflow's initial input so downstream
+        # {{trigger-id}} references resolve to something.
+        text = str(
+            config.get("input") or config.get("payload") or node.get("description") or ""
+        )
+        return {"text": text, "kind": "trigger"}
+    if kind in ("output", "transform", "conditional"):
+        # Pass-through — surface a templated body if one is configured.
+        body = config.get("template") or config.get("body") or ""
+        return {"text": _render(str(body), outputs), "passthrough": kind}
+    # hitl / abs_tool / api_request / loop — not run by the linear v1 engine.
+    return {"skipped": kind, "note": "not executed by the linear v1 engine (durable engine follow-up)"}
+
+
+async def _execute_run(job_id: str) -> None:
     record = _JOBS.get(job_id)
     if record is None:
         return
     record.state = "running"
     record.started_at = time.time()
-    # Simulate the planned work duration capped at 1 s for tests.
-    plan_steps = plan(record.workflow)
-    delay = min(estimate(plan_steps), 1.0)
-    await asyncio.sleep(delay)
-    record.state = "done"
+    try:
+        steps = plan(record.workflow)
+        for step in steps:
+            nid = step.get("node_id")
+            kind = str(step.get("kind") or "unknown")
+            node = step.get("node") or {}
+            try:
+                record.node_outputs[nid] = await _run_node(
+                    node, kind, record.node_outputs, record.tenant_slug
+                )
+            except Exception as exc:  # one node failing must not abort the run
+                logger.warning("workflow node %s (%s) failed: %s", nid, kind, exc)
+                record.node_outputs[nid] = {"error": str(exc)[:300]}
+        record.state = "done"
+    except Exception as exc:  # pragma: no cover — planner/setup failure
+        logger.warning("workflow run %s failed: %s", job_id, exc)
+        record.state = "error"
+        record.error = str(exc)[:300]
     record.completed_at = time.time()
 
 
@@ -236,6 +310,7 @@ def status(job_id: str) -> Optional[Dict[str, Any]]:
         "started_at": record.started_at,
         "completed_at": record.completed_at,
         "error": record.error,
+        "node_outputs": record.node_outputs,
     }
 
 
