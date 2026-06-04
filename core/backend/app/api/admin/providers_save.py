@@ -119,6 +119,16 @@ def _persist_secret(
             f"env_write_failed:{type(exc).__name__}"
         ) from exc
 
+    if not vault_ok and not env_ok:
+        # UAT-012 hardening: neither vault nor .env accepted the write (vault
+        # uninitialised — init_vault.sh not run — AND no writable .env). The
+        # previous code returned silently here, so save_provider replied 200
+        # "configured" while the key was actually persisted NOWHERE and lost on
+        # the next restart. Fail loud so the panel surfaces a real error.
+        raise _PersistError(
+            "no_persistence_target: vault uninitialised (run scripts/init_vault.sh) "
+            "and .env not writable"
+        )
     return {"vault": vault_ok, "env": env_ok}
 
 

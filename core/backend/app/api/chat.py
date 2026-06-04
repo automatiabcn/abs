@@ -516,6 +516,20 @@ def _assert_license_ok() -> None:
     if os.environ.get("ABS_LICENSE_GATE_DISABLED") == "1":
         return
 
+    # Demo mode (ABS_DEMO_MODE) — allow chat so a showcase install can exercise
+    # the playground, consistent with the MCP gate (app/mcp/gate.py already
+    # treats demo_active as allowed). Without this the demo could delegate via
+    # /mcp but the panel chat returned 403 license_not_activated — an
+    # inconsistent, confusing demo experience. Real customers run with a
+    # license (demo off), so the license path below still applies to them.
+    try:
+        from app.licensing.demo import is_active as _demo_active
+
+        if _demo_active():
+            return
+    except Exception:
+        pass
+
     state = get_cached_license_state()
     age = cache_age_seconds()
     if not state or age is None or age > _LICENSE_GATE_STALE_SECS:
