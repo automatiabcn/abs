@@ -11,6 +11,7 @@
 // Settings, Audit, Users) are appended as phases land.
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -20,15 +21,18 @@ import {
   Database,
   LayoutDashboard,
   Layers,
+  Menu,
   MessageSquare,
   Mic,
   Settings,
+  KeyRound,
   ShieldCheck,
   Sliders,
   Store,
   Users,
   Workflow,
   Wrench,
+  X,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -69,6 +73,7 @@ const NAV: NavItem[] = [
   // ── Yönetim ────────────────────────────────────
   { href: "/admin/settings", label: "Ayarlar", icon: Settings, group: "Yönetim" },
   { href: "/admin/users", label: "Kullanıcılar", icon: Users, group: "Yönetim" },
+  { href: "/admin/mcp-tokens", label: "MCP Token", icon: KeyRound, group: "Yönetim" },
   { href: "/admin/audit", label: "Denetim", icon: ShieldCheck, group: "Yönetim" },
 ];
 
@@ -111,13 +116,15 @@ function isActive(href: string, pathname: string): boolean {
   return false;
 }
 
-export function PanelSidebar() {
-  const pathname = usePathname() ?? "";
+function NavBody({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+}) {
   return (
-    <aside
-      data-test="panel-sidebar"
-      className="hidden w-60 shrink-0 border-r border-border bg-card/50 p-4 lg:flex lg:flex-col"
-    >
+    <>
       <div className="mb-8 flex items-center gap-2 px-2">
         <div className="h-8 w-8 rounded-md bg-primary/20 ring-1 ring-primary/30" />
         <div className="flex flex-col leading-tight">
@@ -129,7 +136,7 @@ export function PanelSidebar() {
           </span>
         </div>
       </div>
-      <nav className="space-y-4">
+      <nav aria-label="Panel menüsü" className="space-y-4">
         {GROUP_ORDER.map((group) => {
           const items = NAV.filter((n) => n.group === group);
           if (items.length === 0) return null;
@@ -149,6 +156,7 @@ export function PanelSidebar() {
                       <Link
                         href={href}
                         data-active={active}
+                        onClick={onNavigate}
                         className={cn(
                           "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
                           active
@@ -171,6 +179,65 @@ export function PanelSidebar() {
         <div className="font-mono text-foreground">v{process.env.NEXT_PUBLIC_ABS_VERSION ?? "1.0.6"}</div>
         <div>self-host AI orchestration</div>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export function PanelSidebar() {
+  const pathname = usePathname() ?? "";
+  const [open, setOpen] = useState(false);
+
+  // Close the mobile drawer on every route change (i.e. after a nav click).
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  return (
+    <>
+      {/* Desktop static rail (≥ lg). */}
+      <aside
+        data-test="panel-sidebar"
+        className="hidden w-60 shrink-0 border-r border-border bg-card/50 p-4 lg:flex lg:flex-col"
+      >
+        <NavBody pathname={pathname} />
+      </aside>
+
+      {/* Mobile: floating nav button (bottom-right FAB avoids the header's
+          left breadcrumb + right action icons → no overlap). */}
+      <button
+        type="button"
+        aria-label="Menü"
+        data-test="panel-nav-toggle"
+        onClick={() => setOpen(true)}
+        className="fixed bottom-5 right-5 z-50 rounded-full border border-border bg-card p-3 text-foreground shadow-lg lg:hidden"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {/* Mobile slide-out drawer + backdrop. */}
+      {open && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+          <aside
+            data-test="panel-sidebar-mobile"
+            className="absolute left-0 top-0 flex h-full w-64 flex-col overflow-y-auto border-r border-border bg-card p-4 shadow-xl"
+          >
+            <button
+              type="button"
+              aria-label="Menüyü kapat"
+              onClick={() => setOpen(false)}
+              className="mb-2 self-end rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <NavBody pathname={pathname} onNavigate={() => setOpen(false)} />
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

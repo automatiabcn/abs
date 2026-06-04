@@ -159,6 +159,12 @@ class Settings(BaseSettings):
 
     # MCP
     mcp_require_license: bool = False  # MVP: kapalı, 008'de aç
+    # Enforce the minted abs_mcp_ bearer token on every /mcp transport request.
+    # Default ON: without it the streamable-http endpoint serves all tools to
+    # any caller that passes the host allowlist (no per-user auth). Set
+    # ABS_MCP_AUTH_ENFORCE=false ONLY for a trusted, network-isolated dev box;
+    # boot logs a loud warning when disabled.
+    mcp_auth_enforce: bool = True
 
     # Hooks (007)
     hooks_enabled: bool = True

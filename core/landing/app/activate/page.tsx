@@ -5,7 +5,11 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q3 P2 — magic-link claim landing page.
+// Magic-link / invite activation page. Lives at /activate (NOT /auth/magic):
+// Caddy routes /auth/* straight to the backend, so a page under /auth would
+// never be served (the user would see raw JSON). It claims via
+// /v1/auth/magic-claim, which the Next.js rewrite + Caddy always forward to the
+// backend without the path colliding with this page.
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
@@ -19,7 +23,7 @@ interface ClaimPayload {
   role: string;
 }
 
-function MagicClaimInner() {
+function ActivateInner() {
   const params = useSearchParams();
   const token = params?.get("token") ?? "";
   const [state, setState] = useState<ClaimState>("idle");
@@ -33,9 +37,6 @@ function MagicClaimInner() {
     }
     let cancelled = false;
     setState("submitting");
-    // Claim via /v1 (always reaches the backend); /auth/magic would hit this
-    // page itself. New invite links point to /activate; this legacy page stays
-    // functional for any in-flight /auth/magic links.
     fetch(`/v1/auth/magic-claim?token=${encodeURIComponent(token)}`, {
       method: "GET",
       credentials: "include",
@@ -48,7 +49,7 @@ function MagicClaimInner() {
           setState("ok");
         } else if (res.status === 410) {
           setState("expired");
-          setMessage("Bağlantının süresi doldu — lütfen yeniden kayıt olun.");
+          setMessage("Bağlantının süresi doldu — lütfen yöneticinizden yeni davet isteyin.");
         } else if (res.status === 404) {
           setState("error");
           setMessage("Token bulunamadı veya zaten kullanıldı.");
@@ -70,7 +71,7 @@ function MagicClaimInner() {
 
   return (
     <main
-      data-page="auth-magic"
+      data-page="activate"
       data-state={state}
       className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-6 py-12 text-zinc-900 dark:text-zinc-100"
     >
@@ -78,26 +79,22 @@ function MagicClaimInner() {
 
       {state === "submitting" && (
         <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-          Magic-link doğrulanıyor…
+          Aktivasyon bağlantısı doğrulanıyor…
         </p>
       )}
 
       {state === "missing" && (
-        <p
-          role="alert"
-          className="mt-4 text-sm text-rose-700 dark:text-rose-300"
-        >
-          Token eksik. Sign-up sonrasında aldığın e-postadaki bağlantıyı
-          tıkla.
+        <p role="alert" className="mt-4 text-sm text-rose-700 dark:text-rose-300">
+          Token eksik. Yöneticinizin paylaştığı aktivasyon bağlantısını tıklayın.
         </p>
       )}
 
       {state === "ok" && data && (
         <section className="mt-4 rounded border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
           <p>
-            Hesabın oluşturuldu.{" "}
-            <strong className="font-mono">{data.email}</strong> kullanıcı
-            olarak <strong className="font-mono">{data.tenant_slug}</strong>{" "}
+            Hesabın etkinleştirildi.{" "}
+            <strong className="font-mono">{data.email}</strong> olarak{" "}
+            <strong className="font-mono">{data.tenant_slug}</strong>{" "}
             tenant&apos;ına bağlandın.
           </p>
           <p className="mt-3">
@@ -119,10 +116,10 @@ function MagicClaimInner() {
           {message || "Bilinmeyen hata."}
           <p className="mt-3">
             <a
-              href="/signup"
+              href="/login"
               className="text-xs underline hover:text-rose-900 dark:hover:text-rose-100"
             >
-              Yeniden kayıt ol
+              Girişe dön
             </a>
           </p>
         </section>
@@ -131,7 +128,7 @@ function MagicClaimInner() {
   );
 }
 
-export default function MagicClaimPage() {
+export default function ActivatePage() {
   return (
     <Suspense
       fallback={
@@ -140,7 +137,7 @@ export default function MagicClaimPage() {
         </main>
       }
     >
-      <MagicClaimInner />
+      <ActivateInner />
     </Suspense>
   );
 }

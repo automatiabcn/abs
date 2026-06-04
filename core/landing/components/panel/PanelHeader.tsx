@@ -36,7 +36,10 @@ export function PanelHeader() {
   const pathname = usePathname() ?? "/panel";
   const trail = crumbs(pathname);
   return (
-    <header
+    // A11y — a plain <div>, not <header>: the global site <Header> is already
+    // the page banner landmark; a second top-level <header> would create a
+    // duplicate (and non-unique) banner on every panel/admin route.
+    <div
       data-test="panel-header"
       className="flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur"
     >
@@ -74,6 +77,6 @@ export function PanelHeader() {
           <User className="h-4 w-4" />
         </Button>
       </div>
-    </header>
+    </div>
   );
 }

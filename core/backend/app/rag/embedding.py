@@ -28,7 +28,24 @@ def _base_url() -> str:
 
 
 async def embed(text: str, *, timeout: float = 15.0) -> List[float]:
-    """Tek metin için embedding (768-dim nomic). Liste boşsa Ollama down."""
+    """Tek metin için embedding. Backend ``ABS_EMBEDDING_BACKEND`` ile seçilir.
+
+    Müşteri compose default'u ``mock`` (sha256-türevli, $0, Ollama gerektirmez)
+    — "zero-dep first boot" sözünün gereği. Pre-fix bu fonksiyon her zaman
+    Ollama nomic'e gidiyordu, dolayısıyla mock/bge backend'lerde RAG index+query
+    "Ollama embed bağlantı: All connection attempts failed" ile patlıyordu.
+    Artık yalnızca ``backend == "ollama"`` Ollama'ya gider; mock /
+    sentence_transformers / onnx, backend-aware BGE embedder'a delege edilir
+    (sync + CPU-bound olduğu için thread'de).
+    """
+    backend = (getattr(settings, "embedding_backend", "mock") or "mock").lower()
+    if backend != "ollama":
+        import asyncio
+
+        from app.rag.embedding_bge import get_embedder
+
+        return await asyncio.to_thread(get_embedder().embed_one, text)
+
     url = f"{_base_url()}/api/embeddings"
     body = {"model": _MODEL, "prompt": text[:8000]}
     try:

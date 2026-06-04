@@ -337,19 +337,9 @@ type ProviderStatus = {
   configured: boolean;
 };
 
-const PROVIDER_PLACEHOLDER: Record<string, string> = {
-  groq: "Groq API anahtarı (gsk_...)",
-  cerebras: "Cerebras API anahtarı",
-  cloudflare: "Cloudflare Workers AI API token",
-  gemini: "Google AI Studio API key (AIza...)",
-  cohere: "Cohere API key",
-  anthropic: "Anthropic API key (sk-ant-...)",
-};
-
 function ProvidersTab() {
   const [providers, setProviders] = useState<ProviderStatus[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [testState, setTestState] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -372,10 +362,6 @@ function ProvidersTab() {
     };
   }, []);
 
-  function handleTest(id: string) {
-    setTestState((prev) => ({ ...prev, [id]: "Henüz uygulanmadı" }));
-  }
-
   if (error) {
     return (
       <p className="text-sm text-destructive" data-test="providers-error">
@@ -392,22 +378,39 @@ function ProvidersTab() {
     );
   }
 
+  // No-duplicate-widgets: key entry + live test + cascade order all live on
+  // the canonical /admin/providers page (ProviderConfigModal). This tab is a
+  // read-only status overview that links there, instead of a half-built
+  // duplicate with an inert "Test" button + an unsaved key input.
   return (
-    <ul className="space-y-3">
-      {providers.map((p) => (
-        <li
-          key={p.id}
-          data-test="provider-config-row"
-          data-provider={p.id}
-          className="grid grid-cols-1 items-center gap-2 rounded-md border border-border bg-card/40 p-3 sm:grid-cols-[180px_1fr_auto_auto]"
+    <div className="space-y-3">
+      <div className="flex flex-col items-start justify-between gap-2 rounded-md border border-border bg-card/40 p-3 text-xs text-muted-foreground sm:flex-row sm:items-center">
+        <span>
+          Anahtar girişi, canlı test ve cascade sırası için Sağlayıcılar
+          sayfasını kullanın.
+        </span>
+        <a
+          href="/admin/providers"
+          data-test="providers-manage-link"
+          className="inline-flex shrink-0 items-center rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-accent"
         >
-          <div className="flex flex-col gap-1">
+          Sağlayıcıları Yönet →
+        </a>
+      </div>
+      <ul className="space-y-2">
+        {providers.map((p) => (
+          <li
+            key={p.id}
+            data-test="provider-config-row"
+            data-provider={p.id}
+            className="flex items-center justify-between rounded-md border border-border bg-card/40 p-3"
+          >
             <span className="text-sm font-medium">{p.label}</span>
             <Badge
               data-test={`provider-status-${p.id}`}
               variant={p.configured ? "default" : "outline"}
               className={cn(
-                "w-fit text-[10px]",
+                "text-[10px]",
                 p.configured
                   ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
                   : "border-amber-500/40 text-amber-200",
@@ -415,31 +418,10 @@ function ProvidersTab() {
             >
               {p.configured ? "Yapılandırıldı" : "Eksik"}
             </Badge>
-          </div>
-          <Input
-            type="password"
-            aria-label={`${p.label} API anahtarı`}
-            placeholder={PROVIDER_PLACEHOLDER[p.id] ?? `${p.label} API anahtarı`}
-            className="font-mono text-xs"
-            data-test={`provider-input-${p.id}`}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleTest(p.id)}
-            data-test={`provider-test-${p.id}`}
-          >
-            Test
-          </Button>
-          <span
-            className="text-[10px] text-muted-foreground"
-            data-test={`provider-test-result-${p.id}`}
-          >
-            {testState[p.id] ?? ""}
-          </span>
-        </li>
-      ))}
-    </ul>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

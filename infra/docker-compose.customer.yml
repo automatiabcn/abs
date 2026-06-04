@@ -44,6 +44,46 @@
 
 services:
   # ---------------------------------------------------------------------------
+  # vault-init — one-shot master-key bootstrap. Generates the age master key
+  # in the abs-vault-key volume on first boot IF it is missing, then exits 0.
+  # Runs (and must complete) before backend, so provider-key persistence
+  # always has a vault recipient. Previously this required a manual
+  # `infra/scripts/init_vault.sh` step; skipping it left the vault
+  # uninitialised and the panel reported provider keys "saved" while they
+  # were silently lost on the next restart (UAT-012). The backend mounts
+  # abs-vault-key read-only — only THIS container has write access, so the
+  # "a compromised backend cannot rewrite the master key" guarantee holds.
+  # ---------------------------------------------------------------------------
+  vault-init:
+    image: ghcr.io/${ABS_GHCR_NAMESPACE:-automatiabcn}/abs-backend:${ABS_VERSION:-latest}
+    pull_policy: always
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        # Mount at /app/vault-key (NOT /vault-key): the image creates+chowns
+        # /app/vault-key to the non-root `abs` user (uid 1000), so a fresh
+        # named volume mounted there inherits abs:abs ownership and age-keygen
+        # can write. Mounting at an arbitrary path yields a root-owned volume
+        # and age-keygen fails with EACCES under USER abs.
+        if [ -f /app/vault-key/age.key ]; then
+          echo "[vault-init] age.key present — nothing to do"
+          exit 0
+        fi
+        echo "[vault-init] no master key found — generating age key..."
+        age-keygen -o /app/vault-key/age.key
+        chmod 600 /app/vault-key/age.key
+        echo "[vault-init] master key created at /app/vault-key/age.key"
+        echo "[vault-init] WARNING: BACK THIS UP OFFSITE. Losing it makes every"
+        echo "[vault-init] stored provider key unrecoverable. Copy it with:"
+        echo "[vault-init]   docker run --rm -v abs-vault-key:/k alpine cat /k/age.key > age.key.backup"
+    volumes:
+      # RW (deliberately NOT :ro) — this is the ONLY writer of the master key.
+      # Path matches the backend's mount so ownership + key path line up.
+      - abs-vault-key:/app/vault-key
+    restart: "no"
+
+  # ---------------------------------------------------------------------------
   # backend — FastAPI app (auth, MCP gateway, RAG, billing, admin API).
   # Runs the license verifier on boot and pre-warms Cerbos PDP. Internal
   # port 8000 only; Caddy proxies /v1/*, /auth/*, /setup*, /healthz, /mcp*.
@@ -96,6 +136,10 @@ services:
       # Mounted read-only; the backend doesn't need to rotate it at runtime.
       - abs-vault-key:/app/vault-key:ro
     depends_on:
+      vault-init:
+        # Master age key must exist before the backend boots; otherwise the
+        # vault loads empty and provider-key saves can't be persisted.
+        condition: service_completed_successfully
       postgres:
         # Sprint 2N FAZ C — wait for Postgres before backend boot.
         # Backend entrypoint runs `alembic upgrade head` so the schema
@@ -113,8 +157,9 @@ services:
     restart: unless-stopped
     healthcheck:
       # Python urllib probe — `curl`/`wget` are stripped from the image to
-      # shrink IP surface. /healthz returns 200 only after license + DB
-      # + Cerbos pre-warm succeed, so this gates downstream services.
+      # shrink IP surface. /healthz runs a live DB readiness ping (SELECT 1)
+      # and returns 503 if the database is unreachable, so this gates
+      # downstream services on a backend that can actually serve requests.
       test:
         - "CMD"
         - "python"

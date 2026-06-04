@@ -265,7 +265,9 @@ def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
     )
     assert r_a.status_code == 201, r_a.text
     link_a = r_a.json()["magic_link"]
-    assert link_a.startswith("/auth/magic?token=")
+    # Q12 honesty round: magic_link points at /activate (backend claim GET
+    # /auth/magic below is unchanged).
+    assert link_a.startswith("/activate?token=")
     token_a = link_a.split("token=", 1)[1]
 
     r_b = client.post(

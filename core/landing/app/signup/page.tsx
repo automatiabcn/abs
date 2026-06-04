@@ -36,8 +36,14 @@ export default function SignupPage() {
         body: JSON.stringify({ email, tenant_slug: tenantSlug }),
       });
       if (res.status === 201 || res.status === 200) {
+        const body = await res.json().catch(() => ({}));
         setState("ok");
-        setMessage("Magic-link gonderildi. E-postani kontrol et.");
+        // Honesty: self-signup no longer auto-emails a link. Surface the
+        // backend's activation_note (guides the user to ask their admin).
+        setMessage(
+          body.activation_note ??
+            "Kaydiniz alindi (beklemede). Hesabinizi etkinlestirmek icin yoneticinizle iletisime gecin.",
+        );
       } else {
         const body = await res.json().catch(() => ({}));
         setState("error");
@@ -58,8 +64,8 @@ export default function SignupPage() {
         ABS hesabi olustur
       </h1>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-        E-posta adresine magic-link gonderecegiz. Tenant slug, ekibinin URL
-        kismidir (<code>{tenantSlug || "ornek-co"}</code>.abs.local).
+        Kaydin beklemede olusturulur; hesabini yoneticin etkinlestirir. Tenant
+        slug, ekibinin URL kismidir (<code>{tenantSlug || "ornek-co"}</code>.abs.local).
       </p>
 
       <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
@@ -87,7 +93,10 @@ export default function SignupPage() {
             value={tenantSlug}
             onChange={(event) => setTenantSlug(event.target.value.toLowerCase())}
             placeholder="ornek-co"
-            pattern="[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?"
+            // No HTML `pattern` attr: browsers compile it with the RegExp `v`
+            // flag, where a literal `-` in a char class is a syntax error
+            // ("Invalid character in character class"). The submit handler's
+            // SLUG_PATTERN.test() + the backend already validate the slug.
             className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:ring-zinc-50"
             autoComplete="off"
           />
@@ -97,7 +106,7 @@ export default function SignupPage() {
           disabled={state === "submitting"}
           className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
-          {state === "submitting" ? "Gonderiliyor..." : "Magic-link gonder"}
+          {state === "submitting" ? "Gonderiliyor..." : "Kayit ol"}
         </button>
       </form>
 

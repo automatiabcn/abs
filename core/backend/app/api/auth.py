@@ -604,7 +604,14 @@ def _persist_user_pending(
                         email=email,
                         password_hash=password_hash,
                         tenant_slug=tenant_slug,
-                        role="admin",
+                        # Security: public self-signup must NOT mint an admin.
+                        # admin_required now treats an active role=="admin"
+                        # users row as a real console admin (multi-admin), so a
+                        # hard-coded "admin" here would let anyone who can reach
+                        # /auth/signup self-escalate. The bootstrap admin (setup
+                        # wizard) or an explicit admin INVITE are the only paths
+                        # to the admin role.
+                        role="member",
                         status="pending",
                         magic_token=magic_token,
                         magic_expires_at=expires,
@@ -709,18 +716,31 @@ def signup(body: SignupRequest) -> Dict:
         body.tenant_slug,
         token[:6],
     )
+    # Honesty fix — self-signup does NOT dispatch its own email. The previous
+    # hard-coded `magic_link_sent: True` / `check_email: True` told the user a
+    # mail was on the way that never came (no sender call here, and SMTP is
+    # unset by default on self-host). Activation is delivered by an admin
+    # invite (panel → copy link, or the invite email when SMTP is configured),
+    # so we report the truth and point the user at that path.
+    email_configured = bool(settings.smtp_host)
+    response: Dict = {
+        "status": "pending",
+        "magic_link_sent": False,
+        "email_configured": email_configured,
+        "check_email": False,
+        "tenant_slug": body.tenant_slug,
+        "activation_note": (
+            "Kaydınız alındı (beklemede). Hesabınızı etkinleştirmek için "
+            "yöneticinizden sizi panelden davet etmesini veya aktivasyon "
+            "bağlantısını paylaşmasını isteyin."
+        ),
+    }
     # Sprint 2I UAT-045 — production never echoes the magic_link in the
     # response body (access logs + APM trace storage retain it for 24h
     # which equals a working credential). Dev / test (env != "prod")
     # keep it so the existing harness can claim without an SMTP capture.
-    response: Dict = {
-        "status": "pending",
-        "magic_link_sent": True,
-        "check_email": True,
-        "tenant_slug": body.tenant_slug,
-    }
     if settings.env != "prod":
-        response["magic_link"] = f"/auth/magic?token={token}"
+        response["magic_link"] = f"/activate?token={token}"
     return response
 
 
@@ -884,6 +904,20 @@ def magic_claim(token: str, request: Request, response: Response) -> Dict:
         "tenant_slug": result["tenant_slug"],
         "role": result.get("role", "admin"),
     }
+
+
+# /v1-prefixed alias for the SPA claim page. The frontend claim page lives at
+# /activate (NOT /auth/magic) because Caddy routes /auth/* straight to the
+# backend, which would otherwise hide the friendly page and show raw JSON. The
+# page claims through this /v1 path so the Next.js rewrite (/v1/:path*) AND the
+# Caddy backend route both reach the backend without colliding with any page.
+claim_v1_router = APIRouter(prefix="/v1/auth", tags=["auth"])
+
+
+@claim_v1_router.get("/magic-claim")
+def magic_claim_v1(token: str, request: Request, response: Response) -> Dict:
+    """Identical to GET /auth/magic; exposed under /v1 for the /activate page."""
+    return magic_claim(token, request, response)
 
 
 @router.get("/me")

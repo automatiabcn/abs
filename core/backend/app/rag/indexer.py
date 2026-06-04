@@ -96,6 +96,53 @@ async def _embed_one(text: str) -> Optional[List[float]]:
         return None
 
 
+# Security (CWE-22 path traversal) — rag_index accepts a server-side path from
+# a (remote) MCP client. Without confinement a token holder could index the
+# master vault key (/app/vault-key/age.key), the SQLite DB (*.db), secrets.yaml
+# or /etc/* and then exfiltrate the contents via rag_query. Reject any path
+# whose RESOLVED realpath (symlinks + .. collapsed) touches a secret/system
+# location. Legitimate document indexing (text/markdown/code under a docs dir)
+# is unaffected.
+_RAG_BLOCKED_DIRS = ("/etc", "/proc", "/sys", "/root", "/app/vault-key")
+_RAG_BLOCKED_SUFFIXES = (
+    ".key", ".pem", ".age", ".env", ".db", ".sqlite", ".sqlite3",
+)
+_RAG_BLOCKED_NAMES = (
+    "secrets.yaml", "age.key", "private.pem", "public.pem",
+    ".env", "admin_credentials.json", "demo_license.jwt",
+)
+
+
+def _unsafe_index_path(p: Path) -> Optional[str]:
+    """Return a reason string if ``p`` (as-given OR resolved) touches a
+    secret/system path, else None.
+
+    Both the literal path and its realpath are checked: the realpath defeats
+    symlink/`..` evasion (a symlink to the vault key resolves to it), while the
+    literal catches cosmetic symlinks like macOS `/etc -> /private/etc` where
+    resolving would otherwise mask a blocked prefix.
+    """
+    try:
+        resolved = str(p.resolve())
+    except Exception:
+        return "path_unresolvable"
+    candidates = {str(p), resolved}
+    names = {p.name, Path(resolved).name}
+    suffixes = {p.suffix.lower(), Path(resolved).suffix.lower()}
+
+    for s in candidates:
+        for d in _RAG_BLOCKED_DIRS:
+            if s == d or s.startswith(d + "/"):
+                return f"blocked_dir:{d}"
+        if "/.ssh/" in s:
+            return "blocked_ssh"
+    if names & set(_RAG_BLOCKED_NAMES):
+        return f"blocked_file:{names & set(_RAG_BLOCKED_NAMES)}"
+    if suffixes & set(_RAG_BLOCKED_SUFFIXES):
+        return f"blocked_suffix:{suffixes & set(_RAG_BLOCKED_SUFFIXES)}"
+    return None
+
+
 async def index_path(
     path: str,
     project: str = "default",
@@ -110,8 +157,20 @@ async def index_path(
     if not root.exists():
         return {"error": f"yol yok: {path}", "indexed": 0, "skipped": 0}
 
+    # CWE-22 guard — refuse to index secret/system paths.
+    unsafe = _unsafe_index_path(root)
+    if unsafe:
+        return {
+            "error": f"güvenlik: bu yol indekslenemez ({unsafe})",
+            "indexed": 0,
+            "skipped": 0,
+        }
+
     exts = list(extensions) if extensions else list(_DEFAULT_EXTS)
     files = [root] if root.is_file() else list(_walk_files(root, exts))
+    # Defense-in-depth: a directory walk must also skip any sensitive file it
+    # happens to contain (symlinks, stray .env/.key in a docs tree).
+    files = [fp for fp in files if not _unsafe_index_path(fp)]
 
     coll = _collection()
     indexed = 0

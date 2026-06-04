@@ -20,10 +20,15 @@ def test_signup_response_strips_magic_link_in_prod(client, monkeypatch):
     )
     assert r.status_code in (200, 201), r.text
     body = r.json()
+    # Security property (the point of UAT-045): the token never leaks into the
+    # response body in prod — it can only reach the user out-of-band.
     assert "magic_link" not in body
     assert body["status"] == "pending"
-    assert body["magic_link_sent"] is True
-    assert body["check_email"] is True
+    # Honesty fix: self-signup does not email the link, so it must NOT claim it
+    # did. Activation comes via an admin invite (panel copy-link / invite email).
+    assert body["magic_link_sent"] is False
+    assert body["check_email"] is False
+    assert "activation_note" in body
 
 
 def test_signup_response_retains_magic_link_in_dev(client):
@@ -37,7 +42,9 @@ def test_signup_response_retains_magic_link_in_dev(client):
     )
     assert r.status_code in (200, 201), r.text
     body = r.json()
-    assert body.get("magic_link", "").startswith("/auth/magic?token=")
+    # Q12 honesty round: the dev-mode magic_link now points at the /activate
+    # SPA page (the backend claim endpoint /auth/magic is unchanged).
+    assert body.get("magic_link", "").startswith("/activate?token=")
 
 
 @pytest.mark.skip(

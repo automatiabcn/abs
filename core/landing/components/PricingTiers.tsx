@@ -83,7 +83,7 @@ const TIERS: readonly Tier[] = [
 
 export default function PricingTiers() {
   return (
-    <section
+    <main
       id="pricing-tiers"
       data-testid="pricing-tiers"
       className="border-t border-border/60 bg-background py-16"
@@ -151,6 +151,6 @@ export default function PricingTiers() {
           ))}
         </div>
       </div>
-    </section>
+    </main>
   );
 }
