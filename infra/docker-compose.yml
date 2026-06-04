@@ -31,24 +31,28 @@ services:
       ABS_EMBEDDING_BACKEND: "${ABS_EMBEDDING_BACKEND:-ollama}"
       ABS_EMBEDDING_MODEL: "${ABS_EMBEDDING_MODEL:-bge-m3}"          # 1024-dim, multilingual
       ABS_OLLAMA_URL: "${ABS_OLLAMA_URL:-http://ollama:11434}"
+      # cross-encoder rerank via Cohere (pkg in image). Real when a Cohere
+      # provider key is entered; get_reranker() degrades to mock otherwise.
+      ABS_RERANK_BACKEND: "${ABS_RERANK_BACKEND:-cohere}"
       ABS_TRANSCRIBE_BACKEND: "${ABS_TRANSCRIBE_BACKEND:-whisperx}"  # Meetings → real ASR
       ABS_WHISPERX_URL: "${ABS_WHISPERX_URL:-http://whisperx:9000}"
       ABS_NEO4J_URI: "${ABS_NEO4J_URI:-bolt://neo4j:7687}"           # Knowledge Graph
       ABS_NEO4J_USER: "${ABS_NEO4J_USER:-neo4j}"
       ABS_NEO4J_PASSWORD: "${ABS_NEO4J_PASSWORD:-AbsNeo2026!}"
       ABS_CERBOS_HOST: "${ABS_CERBOS_HOST:-http://cerbos:3592}"      # fine-grained authz
+      ABS_QDRANT_URL: "${ABS_QDRANT_URL:-http://qdrant:6333}"        # /v1/rag/* vector store
     expose:
       - "8000"
     volumes:
       - abs-data:/app/data
       - abs-vault-key:/app/vault-key:ro    # 013 — master key ayrı volume, read-only
+    # Only vault-init is a hard prerequisite (vault must load before provider
+    # saves). neo4j/cerbos/qdrant/ollama/whisperx are reached lazily with their
+    # own retry + graceful-503 wrappers, so a hiccup in one feature service must
+    # NOT block the whole panel from booting (matches the customer compose).
     depends_on:
       vault-init:
         condition: service_completed_successfully
-      neo4j:
-        condition: service_healthy
-      cerbos:
-        condition: service_healthy
     healthcheck:
       test:
         - "CMD"
@@ -203,6 +207,17 @@ services:
       retries: 12
     restart: unless-stopped
 
+  # ── qdrant — vector store for the /v1/rag/* API (newer RAG path) ───────────
+  # No healthcheck — the image has no curl/wget/nc; backend uses qdrant_client
+  # retry + /v1/rag/* graceful-503 wrappers instead.
+  qdrant:
+    image: qdrant/qdrant:v1.10.0
+    expose:
+      - "6333"
+    volumes:
+      - abs-qdrant-data:/qdrant/storage
+    restart: unless-stopped
+
 volumes:
   abs-data:
   abs-vault-key:           # 013 — master age key (asla secrets ile aynı volume'da olmaz)
@@ -211,3 +226,4 @@ volumes:
   abs-ollama:
   abs-whisper-cache:
   abs-neo4j-data:
+  abs-qdrant-data:
