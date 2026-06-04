@@ -14,6 +14,56 @@ This runbook covers full or partial loss of:
 
 It does **not** cover code-level rollbacks (use `helm rollback abs <prev-rev>`).
 
+## Deployment modes
+
+ABS ships in two datastore topologies. **Pick the section that matches yours.**
+
+- **Default / zero-config (SQLite)** — `docker compose up`, no `ABS_DATABASE_URL`.
+  All relational data lives in a single file, `/app/data/abs.db`. This is what
+  most self-host customers run. See **SQLite default deployment** below.
+- **Scaled (Postgres + Qdrant + ClickHouse + NATS)** — Helm/K8s with external
+  managed datastores. See **Backup Strategy** and **Restore Procedures** below.
+
+## SQLite default deployment
+
+The default install keeps tenants, users, OAuth and the audit chain in
+`/app/data/abs.db`, plus the age-encrypted `secrets.yaml`, on the `abs-data`
+Docker volume.
+
+> **Do not** back this up by `tar`-ing the live volume — a copy taken mid-write
+> (or with an un-checkpointed WAL) can restore corrupt. Use the scripts below,
+> which take a transactionally consistent online snapshot (`SQLite .backup`).
+
+**Backup** (RPO = your cron interval; the file is small, so back up often):
+
+```bash
+# host:
+docker compose exec -T backend env ABS_BACKUP_DIR=/app/data/backups \
+  bash -s < scripts/dr/backup_sqlite.sh
+# → /app/data/backups/abs-sqlite-<UTC>.tar.gz  (abs.db + secrets.yaml)
+```
+
+Copy the resulting bundle off-box (S3, another host) — set `ABS_DR_S3_BUCKET`
+to have the script upload it for you.
+
+**Restore** (RTO = minutes):
+
+```bash
+docker compose stop backend          # SQLite is single-writer
+docker compose exec -T backend bash -s -- /app/data/backups/abs-sqlite-<UTC>.tar.gz \
+  < scripts/dr/restore_sqlite.sh     # snapshots current DB to .pre-restore-* first
+docker compose start backend
+curl -fsS http://localhost:8000/healthz   # expect 200 {"db":"up"}
+```
+
+**Vault key (critical):** `secrets.yaml` is age-encrypted and decrypts **only**
+with the vault key (`vault-key/age.key`). The backup deliberately does **not**
+bundle that key — back it up **separately and securely**. Without it, a restored
+`secrets.yaml` cannot be decrypted; the system falls back to plaintext `.env`.
+
+**Drill:** `core/backend/tests/test_dr_sqlite_drill.py` round-trips a real DB
+(backup → wipe → restore) and asserts the data survives with integrity intact.
+
 ## Backup Strategy
 
 | Layer | Mechanism | Frequency | Retention | Owner |

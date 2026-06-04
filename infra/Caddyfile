@@ -7,6 +7,16 @@
 abs.local {
 	tls internal
 
+	# Security hardening headers (parity with Caddyfile.customer). CSP omitted
+	# to avoid breaking the Next.js panel chunks.
+	header {
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
 	# Brief 4 R3 — route split:
 	#   API + setup wizard + auth + MCP transport → backend (FastAPI 8000)
 	#   Everything else (landing pages + admin Next.js) → landing (Next 3000)

@@ -112,8 +112,11 @@ ABS, sistemin durumu ve performansı hakkında detaylı bilgi sağlamak için ç
 
 ABS, self-host bir ürün olduğu için yedekleme sorumluluğu müşteriye aittir.
 
-- **Veri**: ABS, SQLite veritabanını ve `age-encrypted secrets volume`'u kullanır.
-- **Araçlar**: Müşterilere, Docker volume'lerini yedeklemek için opsiyonel bir yedekleme scripti sağlanır.
+- **Veri**: Varsayılan kurulum SQLite veritabanını (`/app/data/abs.db` — kiracı, kullanıcı, OAuth ve denetim zinciri) ve `age-encrypted secrets` dosyasını (`/app/data/secrets.yaml`) kullanır.
+- **Araç (yedekle)**: `scripts/dr/backup_sqlite.sh` — çalışan veritabanından **tutarlı** bir anlık görüntü alır (SQLite `.backup` API'si; volume'ün `tar`'lanması yarım yazılmış sayfa → bozuk geri-yükleme riski taşır) ve `abs.db` + `secrets.yaml`'ı zaman damgalı bir `.tar.gz`'ye paketler. Container içinden veya host'tan çalışır (`docker compose exec backend ...`).
+- **Araç (geri-yükle)**: `scripts/dr/restore_sqlite.sh <bundle>` — geri-yüklemeden önce mevcut DB'yi `abs.db.pre-restore-<tarih>`'e kopyalar, bütünlük kontrolü yapar, canlı DB'yi (`-wal/-shm`) tespit edip korumasız geri-yüklemeyi reddeder.
+- **Vault anahtarı**: `secrets.yaml` şifreli kalır; çözmek için age vault anahtarı gerekir. Bu anahtarı **ayrı ve güvenli** yedekleyin — şifreli secrets'ın yanına koymak şifrelemeyi anlamsız kılar.
+- **Detaylı runbook**: `docs/dr-runbook.md` (SQLite varsayılan kurulum + Postgres ölçekli kurulum).
 
 ## 10. Destek Kanalı
 
