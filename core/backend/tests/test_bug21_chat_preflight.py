@@ -26,6 +26,11 @@ def tmp_state(tmp_path, monkeypatch):
     # Disable test-mode bypass so the gate actually runs.
     monkeypatch.delenv("ABS_TEST_MODE", raising=False)
     monkeypatch.delenv("ABS_LICENSE_GATE_DISABLED", raising=False)
+    # _assert_license_ok() short-circuits when demo mode is active. The session
+    # boots with an empty license → demo auto-on, and demo-state can leak in
+    # from earlier tests, which would silently bypass the license gate these
+    # tests exercise. Pin demo OFF so the license path always runs (isolation).
+    monkeypatch.setattr("app.licensing.demo.is_active", lambda: False)
     return state_path
 
 

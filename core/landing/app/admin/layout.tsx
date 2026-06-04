@@ -9,6 +9,7 @@
 // landing nav doesn't double up on auth'd pages (UX_BUGS MT1 + MP1).
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 // Sprint 21 / Faz D — cmdk palette deferred via the same client shim
@@ -45,10 +46,51 @@ async function _probeBackendHealthy(): Promise<boolean> {
   }
 }
 
+// Page-level RBAC gate. middleware.ts only checks "logged in" (/auth/me), so a
+// non-admin member could load the admin chrome (every data call then 401s —
+// backend is secure, but it's a confusing shell). Probe the admin-only
+// /v1/admin/me with the caller's cookies: a definitive 401/403 means
+// not-an-admin → render an access-denied notice instead of the console.
+// Fail-open on network errors so a transient hiccup never locks out a real
+// admin (the backend still gates the actual data).
+async function _isAdmin(): Promise<boolean> {
+  try {
+    const cookieHeader = (await cookies()).toString();
+    const res = await fetch(`${BACKEND_URL}/v1/admin/me`, {
+      cache: "no-store",
+      headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+      signal: AbortSignal.timeout(2500),
+    });
+    if (res.status === 401 || res.status === 403) return false;
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const healthy = await _probeBackendHealthy();
   if (!healthy) {
     redirect("/login?reason=backend-unreachable");
+  }
+  const admin = await _isAdmin();
+  if (!admin) {
+    // Inline notice (no redirect → no loop for a logged-in non-admin).
+    return (
+      <main className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-background p-6 text-center text-foreground">
+        <h1 className="text-xl font-semibold">Yönetici yetkisi gerekli</h1>
+        <p className="max-w-md text-sm text-muted-foreground">
+          Bu alan yalnızca yönetici hesapları içindir. Yöneticinizden sizi admin
+          yapmasını isteyin ya da bir yönetici hesabıyla giriş yapın.
+        </p>
+        <a
+          href="/login"
+          className="rounded-md border border-border px-4 py-2 text-sm hover:bg-accent"
+        >
+          Giriş sayfası
+        </a>
+      </main>
+    );
   }
   return (
     <PanelThemeProvider>

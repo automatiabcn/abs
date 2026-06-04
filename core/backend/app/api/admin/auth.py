@@ -117,10 +117,43 @@ def verify_admin_jwt(token: str) -> dict:
     return payload
 
 
+def _is_active_admin_user(email: str) -> bool:
+    """Multi-admin RBAC — true when ``email`` belongs to an active users-table
+    row whose role is ``admin``. This is what makes the panel's role dropdown
+    (promote/demote) actually grant or revoke admin powers: pre-fix only the
+    bootstrap admin (admin_credentials.json) could reach /v1/admin/*, so
+    promoting a second user to "admin" changed a label but nothing else.
+
+    Security: only ``status == "active"`` AND ``role == "admin"`` qualifies.
+    Public self-signup deliberately creates ``role="member"`` rows (see
+    app/api/auth._persist_user_pending), so this cannot be self-escalated;
+    the admin role is reachable only via the bootstrap admin or an explicit
+    admin invite that the recipient has claimed.
+    """
+    if not email:
+        return False
+    try:
+        from sqlmodel import Session, select
+
+        from app.db.models import User
+        from app.db.session import get_engine
+
+        with Session(get_engine()) as db:
+            user = db.exec(select(User).where(User.email == email)).first()
+            return bool(
+                user and user.role == "admin" and user.status == "active"
+            )
+    except Exception as exc:  # pragma: no cover — defensive only
+        logger.debug("active-admin lookup skipped (non-fatal): %s", exc)
+        return False
+
+
 def _try_panel_session(request: Request) -> Optional[dict]:
-    """CJ-010 — fallback: panel session JWT (abs_session) bootstrap admin
-    veya admin_credentials.json'da kayitli email ise admin scope ver.
-    Self-host single-admin senaryosunda panel oturumuyla /v1/admin/* erisilebilir.
+    """CJ-010 — fallback: panel session JWT (abs_session) grants admin scope to
+    the bootstrap admin (admin_credentials.json) OR to any active users-table
+    row with role=="admin" (multi-admin, added so the panel role dropdown is
+    authoritative). Self-host single- and multi-admin both reach /v1/admin/*
+    with just their panel login.
     """
     from app.api import auth as panel_auth_mod
 
@@ -132,16 +165,25 @@ def _try_panel_session(request: Request) -> Optional[dict]:
     except HTTPException:
         return None
     sub = payload.get("sub", "")
+    # 1. Bootstrap admin (admin_credentials.json) — single-admin self-host.
     try:
         admin_email, _hash, _source = panel_auth_mod._load_admin_credentials()
     except Exception:
-        return None
+        admin_email = None
     if sub and sub == admin_email:
         return {
             "sub": sub,
             "exp": payload.get("exp"),
             "scope": "admin",
             "via": "panel_session",
+        }
+    # 2. Multi-admin — active users-table row promoted to role=="admin".
+    if sub and _is_active_admin_user(sub):
+        return {
+            "sub": sub,
+            "exp": payload.get("exp"),
+            "scope": "admin",
+            "via": "panel_session_role",
         }
     return None
 
