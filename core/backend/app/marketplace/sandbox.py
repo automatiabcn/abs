@@ -419,8 +419,37 @@ class PluginSandbox:
         return f"abs-plugin-{tenant_id}-{plugin_id}"
 
     def _image(self, plugin_id: str) -> str:
-        # Q7 stub: use busybox stub built locally; real ghcr.io image in Q8.
+        # Local stub image (built from infra/plugins/busybox-stub). Used when a
+        # plugin has no real entry_point image published yet, so the sandbox
+        # still demonstrates a live, isolated container.
         return f"abs-plugin-stub:{plugin_id}"
+
+    def _resolve_image(self, plugin_id: str, entry_point: Optional[str]) -> str:
+        """Prefer the descriptor's real ``entry_point`` image; fall back to the
+        local busybox stub when it is not pullable.
+
+        Q7 hardcoded the stub. The descriptor (e.g. slack-thread-rag.json) ships
+        a real ``entry_point`` like ``ghcr.io/abs-plugins/slack-thread-rag:1.0.0``.
+        We launch that real image when it is available locally or pullable, and
+        degrade to the stub otherwise so a fresh install never hard-fails just
+        because the plugin image hasn't been published to the registry yet.
+        """
+        if not entry_point:
+            return self._image(plugin_id)
+        try:
+            self.client.images.get(entry_point)
+            return entry_point
+        except Exception:  # not present locally — try a one-shot pull
+            try:
+                self.client.images.pull(entry_point)
+                return entry_point
+            except Exception as exc:  # registry miss / offline → stub fallback
+                logger.warning(
+                    "plugin image %s unavailable (%s) — falling back to stub",
+                    entry_point,
+                    exc,
+                )
+                return self._image(plugin_id)
 
     # ---- lifecycle ------------------------------------------------------
     def launch(
@@ -428,6 +457,7 @@ class PluginSandbox:
         plugin_id: str,
         tenant_id: str,
         sandbox_profile: Dict[str, Any],
+        image_ref: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Start (or re-start) a labelled container for *plugin_id* in *tenant_id*.
 
@@ -452,7 +482,7 @@ class PluginSandbox:
         mem_mb = int(sandbox_profile.get("mem_mb", 256))
         cpu_cores = float(sandbox_profile.get("cpu_cores", 0.5))
         container = self.client.containers.run(
-            image=self._image(plugin_id),
+            image=self._resolve_image(plugin_id, image_ref),
             name=name,
             detach=True,
             mem_limit=f"{mem_mb}m",
