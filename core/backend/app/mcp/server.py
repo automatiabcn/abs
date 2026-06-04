@@ -117,11 +117,33 @@ def _build_security() -> TransportSecuritySettings | None:
     )
 
 
+# Server-side delegation guidance. The MCP `initialize` response carries this
+# to every connecting client (Claude Code, Codex, …), so the "delegate to ABS"
+# behaviour is turnkey from the server — no client-side CLAUDE.md required for
+# the basics. English by default (the product ships globally); operators can
+# still add a richer local CLAUDE.md. Keep it short — clients inline it.
+MCP_INSTRUCTIONS = (
+    "Automatia ABS exposes 100+ free / low-cost AI tools across many models, "
+    "running on the operator's own provider keys (no extra Anthropic cost). "
+    "PREFER delegating substantial subtasks to these tools instead of doing "
+    "them yourself — it saves your tokens and often improves quality. Reach "
+    "for them proactively:\n"
+    "- Analysis / research / reasoning -> ask_gptoss (GPT-OSS 120B) or ask_gemini_pro\n"
+    "- Code / a single function or endpoint -> ask_kimi or ask_qwen3_coder\n"
+    "- Translation / non-English prose -> ask_qwen32b\n"
+    "- Fast classification / short factual answers -> ask_groq_fast or ask_scout\n"
+    "- Quality over speed (generate->verify->fix chain) -> qual_code, qual_analysis, qual_translate\n"
+    "- Parallel race, fastest of several models -> race, race_code\n"
+    "- Code review / unit tests / docs -> code_review, write_tests, write_docs\n"
+    "- Project knowledge base -> rag_query.  System health -> system_status."
+)
+
 # streamable_http_path="/" → inner route root'ta; ana app /mcp altına mount eder.
 # host="0.0.0.0" so the auto-localhost-only allowlist is NOT applied
 # (we install our own via transport_security).
 mcp_server = FastMCP(
     "Automatia ABS",
+    instructions=MCP_INSTRUCTIONS,
     streamable_http_path="/",
     host="0.0.0.0",
     transport_security=_build_security(),
