@@ -487,6 +487,17 @@ export default function ProvidersPage() {
         provider={activeConfig}
         open={activeConfig !== null}
         onClose={() => setActiveConfig(null)}
+        onSaved={() => {
+          // A successful key save changes both the configured flag (status
+          // query) and the cascade active set — refetch both so the cards
+          // and chain reflect the new key without a manual reload.
+          void queryClient.invalidateQueries({
+            queryKey: ["admin", "providers"],
+          });
+          void queryClient.invalidateQueries({
+            queryKey: ["admin", "providers", "status"],
+          });
+        }}
       />
     </main>
   );

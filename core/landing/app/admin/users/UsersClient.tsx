@@ -62,12 +62,19 @@ interface InviteResponse {
   tenant_id?: string;
   status: "pending" | "accepted" | "revoked" | "expired";
   expires_at?: string | null;
+  // When SMTP is configured the backend emails the magic-link and these
+  // stay (true / undefined). On a no-SMTP self-host the email can't be
+  // delivered, so the backend returns email_sent:false + the magic_url for
+  // the admin to copy and hand over manually.
+  email_sent?: boolean;
+  magic_url?: string;
+  activation_note?: string;
 }
 
 // Sprint 2B BUG-36 — real invite endpoint. The backend persists a
-// tenant_invites row, hashes the magic-link token (NEVER returned on
-// the wire), and emails the recipient. The operator only sees the
-// invite_id + expiry; the magic URL itself is sent via Resend/SMTP.
+// tenant_invites row and hashes the magic-link token. When SMTP is set it
+// emails the recipient and withholds the URL; when SMTP is unset it returns
+// the magic_url so the admin can deliver the activation link out-of-band.
 async function inviteUser(payload: {
   email: string;
   role: string;
@@ -83,6 +90,31 @@ async function inviteUser(payload: {
     throw new Error(`HTTP ${res.status}: ${detail.slice(0, 200)}`);
   }
   return (await res.json()) as InviteResponse;
+}
+
+// Role / status mutation. Backend guards the last-admin lockout (409
+// last_admin_protected) and refuses cross-tenant ids (404).
+async function updateUser(
+  userId: number | string,
+  body: { role?: string; status?: string },
+): Promise<void> {
+  const res = await fetch(`/v1/admin/users/${encodeURIComponent(String(userId))}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const j = await res.json();
+      const d = j?.detail;
+      msg = (typeof d === "object" ? d?.detail || d?.error : d) || msg;
+    } catch {
+      /* keep generic */
+    }
+    throw new Error(msg);
+  }
 }
 
 interface InvitesListResponse {
@@ -149,7 +181,36 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
   const [lastInvite, setLastInvite] = useState<InviteResponse | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [pendingInvites, setPendingInvites] = useState<InviteResponse[]>([]);
+  const [copied, setCopied] = useState(false);
+  const [rowError, setRowError] = useState<string | null>(null);
+  const [busyUserId, setBusyUserId] = useState<number | string | null>(null);
   const queryClient = useQueryClient();
+
+  async function copyLink(url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  async function handleUserUpdate(
+    userId: number | string,
+    body: { role?: string; status?: string },
+  ) {
+    setRowError(null);
+    setBusyUserId(userId);
+    try {
+      await updateUser(userId, body);
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (exc) {
+      setRowError(exc instanceof Error ? exc.message : "güncelleme başarısız");
+    } finally {
+      setBusyUserId(null);
+    }
+  }
 
   const users = useQuery<UserRow[]>({
     queryKey: ["admin", "users"],
@@ -213,8 +274,9 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
             Kullanıcılar
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Magic-link davet, role atama, oturum iptali. Bootstrap admin
-            tenant başına 1, ek davetler operator/viewer rollü.
+            Davet (kopyalanabilir aktivasyon linki), rol atama, oturum iptali.
+            Bir kullanıcıyı <strong>Admin</strong> yapmak ona panel yönetim
+            yetkisi verir; demote anında geri alır. Son aktif admin korunur.
           </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -246,21 +308,52 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                 className="w-full rounded-md border border-border bg-background p-2 text-sm"
               >
                 <option value="admin">Admin</option>
+                <option value="operator">Operatör</option>
                 <option value="member">Member</option>
+                <option value="viewer">Okur</option>
               </select>
               {lastInvite && (
                 <div
                   data-test="users-invite-success"
                   className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-200"
                 >
-                  Davet gönderildi:{" "}
+                  Davet oluşturuldu:{" "}
                   <strong className="text-emerald-100">{lastInvite.email}</strong>
                   {" — "}
                   <span className="font-mono">{lastInvite.invite_id}</span>
-                  <div className="mt-1 text-emerald-200/80">
-                    Magic-link e-posta ile gönderildi (7 gün ömür). URL backend
-                    log'larına yazılmaz.
-                  </div>
+                  {lastInvite.email_sent ? (
+                    <div className="mt-1 text-emerald-200/80">
+                      Aktivasyon bağlantısı e-posta ile gönderildi (24 saat ömür).
+                    </div>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      <div className="text-amber-200/90">
+                        {lastInvite.activation_note ||
+                          "SMTP yapılandırılmadığı için e-posta gönderilmedi. Bu bağlantıyı kullanıcıya elle iletin (24 saat geçerli)."}
+                      </div>
+                      {lastInvite.magic_url && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            readOnly
+                            value={lastInvite.magic_url}
+                            data-test="users-invite-magic-url"
+                            onFocus={(e) => e.currentTarget.select()}
+                            className="w-full rounded border border-amber-500/30 bg-background px-2 py-1 font-mono text-[11px] text-amber-100"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 shrink-0 text-[11px]"
+                            data-test="users-invite-copy"
+                            onClick={() => void copyLink(lastInvite.magic_url!)}
+                          >
+                            {copied ? "Kopyalandı" : "Kopyala"}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               {inviteError && (
@@ -310,7 +403,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                     <span className="font-mono text-foreground">
                       {inv.email}
                     </span>
-                    <span className="text-muted-foreground">
+                    <span className="text-muted-foreground" suppressHydrationWarning>
                       {inv.role} · {inv.status}
                       {inv.expires_at
                         ? ` · ${new Date(inv.expires_at).toLocaleDateString("tr-TR")}`
@@ -347,6 +440,14 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {rowError && (
+            <div
+              data-test="users-row-error"
+              className="mb-3 rounded-md border border-rose-500/30 bg-rose-500/10 p-2 text-xs text-rose-200"
+            >
+              {rowError}
+            </div>
+          )}
           {users.isLoading && (users.data?.length ?? 0) === 0 ? (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -388,31 +489,60 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                           {STATUS_LABEL[u.status]}
                         </Badge>
                       </td>
-                      <td className="px-3 py-2 text-xs text-muted-foreground">
+                      <td
+                        className="px-3 py-2 text-xs text-muted-foreground"
+                        suppressHydrationWarning
+                      >
                         {u.last_login
                           ? new Date(u.last_login).toLocaleString("tr-TR")
                           : "—"}
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-[11px]"
-                            disabled
+                          <UserCog className="h-3 w-3 text-muted-foreground" />
+                          <select
+                            value={u.role}
+                            disabled={busyUserId === u.id}
+                            data-test="user-role-select"
+                            aria-label={`${u.email} rolü`}
+                            onChange={(e) =>
+                              void handleUserUpdate(u.id, { role: e.target.value })
+                            }
+                            className="h-7 rounded-md border border-border bg-background px-1 text-[11px] disabled:opacity-50"
                           >
-                            <UserCog className="mr-1 h-3 w-3" />
-                            Rol
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-[11px] text-rose-300"
-                            disabled={u.email === "admin@demo-acme.com"}
-                          >
-                            <XCircle className="mr-1 h-3 w-3" />
-                            İptal
-                          </Button>
+                            <option value="admin">Admin</option>
+                            <option value="operator">Operatör</option>
+                            <option value="member">Member</option>
+                            <option value="viewer">Okur</option>
+                          </select>
+                          {u.status === "revoked" ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[11px] text-emerald-300"
+                              disabled={busyUserId === u.id}
+                              data-test="user-activate"
+                              onClick={() =>
+                                void handleUserUpdate(u.id, { status: "active" })
+                              }
+                            >
+                              Aktifleştir
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[11px] text-rose-300"
+                              disabled={busyUserId === u.id}
+                              data-test="user-revoke"
+                              onClick={() =>
+                                void handleUserUpdate(u.id, { status: "revoked" })
+                              }
+                            >
+                              <XCircle className="mr-1 h-3 w-3" />
+                              İptal
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
