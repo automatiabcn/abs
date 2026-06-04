@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_MODELS: List[Tuple[str, str, str]] = [
     ("groq-gptoss", "groq", "openai/gpt-oss-120b"),
     ("cf-kimi", "cloudflare", "@cf/moonshotai/kimi-k2.5"),
-    ("cerebras", "cerebras", "qwen-3-235b-a22b-instruct-2507"),
+    ("cerebras", "cerebras", "gpt-oss-120b"),
 ]
 
 

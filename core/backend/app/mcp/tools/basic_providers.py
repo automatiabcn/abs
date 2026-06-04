@@ -72,7 +72,7 @@ async def ask_cerebras(prompt: str) -> str:
         tool_name="ask_cerebras",
         prompt=prompt,
         primary="cerebras",
-        model="qwen-3-235b-a22b-instruct-2507",
+        model="gpt-oss-120b",
     )
 
 

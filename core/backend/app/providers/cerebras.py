@@ -17,7 +17,7 @@ from .schemas import ProviderResponse
 
 class CerebrasProvider(BaseProvider):
     name = "cerebras"
-    default_model = "qwen-3-235b-a22b-instruct-2507"
+    default_model = "gpt-oss-120b"
 
     async def call(
         self,
