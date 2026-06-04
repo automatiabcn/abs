@@ -26,6 +26,32 @@
 # =============================================================================
 
 services:
+  # vault-init — one-shot master-key bootstrap (see docker-compose.customer.yml
+  # for the full rationale). Generates the age master key in abs-vault-key if
+  # missing, then exits. Backend mounts the volume :ro; this is the only writer.
+  # Removes the manual `infra/scripts/init_vault.sh` prerequisite that, when
+  # skipped, left the vault uninitialised (provider keys silently lost — UAT-012).
+  vault-init:
+    image: ghcr.io/${ABS_GHCR_NAMESPACE:-automatiabcn}/abs-backend:${ABS_VERSION:-latest}
+    pull_policy: always
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        # Mount at /app/vault-key so the fresh volume inherits abs:abs (uid 1000)
+        # ownership from the image; /vault-key would be root-owned → EACCES.
+        if [ -f /app/vault-key/age.key ]; then
+          echo "[vault-init] age.key present — nothing to do"
+          exit 0
+        fi
+        echo "[vault-init] no master key found — generating age key..."
+        age-keygen -o /app/vault-key/age.key
+        chmod 600 /app/vault-key/age.key
+        echo "[vault-init] master key created — BACK IT UP OFFSITE (loss = keys unrecoverable)"
+    volumes:
+      - abs-vault-key:/app/vault-key
+    restart: "no"
+
   backend:
     image: ghcr.io/${ABS_GHCR_NAMESPACE:-automatiabcn}/abs-backend:${ABS_VERSION:-latest}
     pull_policy: always
@@ -49,6 +75,10 @@ services:
       - abs-data:/app/data
       - abs-vault-key:/app/vault-key:ro
     depends_on:
+      vault-init:
+        # Master age key must exist before boot — else vault loads empty
+        # and provider-key saves can't persist (UAT-012).
+        condition: service_completed_successfully
       qdrant:
         # qdrant image has no curl/wget/nc/bash so a /dev/tcp probe always
         # fails; rely on `service_started` + backend's own qdrant_client
