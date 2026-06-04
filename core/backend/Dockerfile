@@ -67,6 +67,11 @@ LABEL abs.build.hash="${BUILD_HASH}" \
 # 013 — sops/age binary'leri builder'dan kopyalanır (apt-install yerine küçük binary)
 RUN apt-get update && apt-get install -y --no-install-recommends patch ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+# Audit R6 — upgrade pip+wheel (build tooling) past CVE-2025-8869 /
+# CVE-2026-1703/3219/6357 (pip) + CVE-2026-24049 (wheel). Build-time only
+# (uvicorn runs the app, pip is not used at runtime) but keeps the image
+# scan clean. App runtime deps had zero advisories.
+RUN pip install --no-cache-dir --upgrade "pip>=26.1" "wheel>=0.46.2"
 COPY --from=builder /usr/local/bin/sops /usr/local/bin/sops
 COPY --from=builder /usr/local/bin/age /usr/local/bin/age
 COPY --from=builder /usr/local/bin/age-keygen /usr/local/bin/age-keygen

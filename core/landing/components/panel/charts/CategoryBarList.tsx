@@ -10,6 +10,7 @@
 // Tremor base out of the panel chrome bundle.
 "use client";
 
+import { useEffect, useRef } from "react";
 import {
   BarList,
   Card as TremorCard,
@@ -21,8 +22,18 @@ import {
 export type CategoryBar = { name: string; value: number };
 
 export default function CategoryBarList({ data }: { data: CategoryBar[] }) {
+  // A11y — Tremor's <BarList> root renders an invalid `aria-sort` attribute
+  // (only allowed on table/grid headers). Strip it to clear the axe
+  // `aria-allowed-attr` critical violation without forking the library.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    rootRef.current
+      ?.querySelectorAll("[aria-sort]")
+      .forEach((el) => el.removeAttribute("aria-sort"));
+  }, [data]);
+
   return (
-    <TremorCard className="border-0 bg-transparent p-0 shadow-none">
+    <TremorCard ref={rootRef} className="border-0 bg-transparent p-0 shadow-none">
       <Flex className="mb-2">
         <Title className="text-xs uppercase tracking-wider text-muted-foreground">
           Kategori
