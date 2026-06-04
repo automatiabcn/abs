@@ -115,6 +115,26 @@ async def stripe_webhook(
             detail=t("errors.signature_missing", lang),
         )
 
+    # Security — Stripe's construct_event uses the secret as the HMAC key with
+    # no special-casing for "", so an UNCONFIGURED secret makes every forged
+    # signature (computed with an empty key) verify successfully. Fail closed
+    # before construct_event — matching billing_v10/webhook_idempotent.py — so
+    # a deployment that never set the webhook secret cannot have forged
+    # checkout.session.completed events mint licences / trigger emails.
+    if not settings.stripe_webhook_secret:
+        emit_event(
+            request,
+            action="webhooks.stripe.signature",
+            outcome="denied",
+            reason="secret_not_configured",
+            status_code=503,
+            provider="stripe",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="webhook_not_configured",
+        )
+
     try:
         event = stripe.Webhook.construct_event(
             payload, sig_header, settings.stripe_webhook_secret
