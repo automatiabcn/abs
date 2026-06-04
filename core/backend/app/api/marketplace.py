@@ -395,7 +395,11 @@ async def install(
     # Q7 Phase B — cosign signature gate (skip-mode by default in dev).
     from app.marketplace.cosign_verify import verify_signature
 
-    image_ref = f"abs-plugin-stub:{body.plugin_id}"
+    # Verify the image we will actually launch. The descriptor's
+    # cosign_signature corresponds to its real entry_point image, so when one
+    # is published we must gate on that ref — not the local stub. Falls back to
+    # the stub ref only when no entry_point is declared (keeps dev/demo working).
+    image_ref = plugin.get("entry_point") or f"abs-plugin-stub:{body.plugin_id}"
     if not verify_signature(image_ref, plugin.get("cosign_signature")):
         logger.warning(
             "marketplace_install_signature_invalid plugin=%s tenant=%s",
