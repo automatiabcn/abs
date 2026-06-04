@@ -242,7 +242,18 @@ def get_reranker() -> Reranker:
     global _reranker
     if _reranker is None:
         backend = getattr(settings, "rerank_backend", "mock") or "mock"
-        _reranker = Reranker(backend)
+        try:
+            _reranker = Reranker(backend)
+        except Exception as exc:
+            # e.g. rerank_backend=cohere but the operator hasn't entered a
+            # Cohere key yet. Degrade to the mock reranker (dense order
+            # preserved) instead of taking the whole RAG path down.
+            logger.warning(
+                "reranker backend %r unavailable (%s) — falling back to mock",
+                backend,
+                exc,
+            )
+            _reranker = Reranker("mock")
     return _reranker
 
 
