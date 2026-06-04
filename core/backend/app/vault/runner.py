@@ -131,7 +131,7 @@ def decrypt_all() -> Dict[str, Any]:
         return {}  # vault bos — fresh install
     try:
         result = subprocess.run(
-            ["sops", "-d", str(secrets_path)],
+            ["sops", "-d", "--input-type", "yaml", "--output-type", "yaml", str(secrets_path)],
             env=_sops_env(),
             capture_output=True,
             text=True,
@@ -148,6 +148,14 @@ def decrypt_all() -> Dict[str, Any]:
         parsed = yaml.safe_load(result.stdout) or {}
         if not isinstance(parsed, dict):
             raise VaultError("vault yaml top-level dict bekleniyor", transient=False)
+        # Backward-compat: a vault written by the pre-fix code (sops binary mode
+        # via the ".yaml.tmp" extension) wraps the whole document under a single
+        # `data:` string. Unwrap it so an upgraded install recovers its old
+        # secrets immediately, without needing the operator to re-enter keys.
+        if set(parsed.keys()) == {"data"} and isinstance(parsed["data"], str):
+            inner = yaml.safe_load(parsed["data"]) or {}
+            if isinstance(inner, dict):
+                return inner
         return parsed
     except yaml.YAMLError as exc:
         raise VaultError(f"yaml parse fail: {exc}", transient=False) from exc
@@ -183,6 +191,17 @@ def encrypt_all(data: Dict[str, Any]) -> None:
                 "sops",
                 "-e",
                 "-i",
+                # Force YAML handling: the temp file ends in ".yaml.tmp", so
+                # sops infers the ".tmp" extension as *binary* and wraps the
+                # whole document under a single `data:` key. That made the
+                # round-trip return {"data": "<yaml string>"} instead of the
+                # flat {key: value} map, so read_secret()/boot_load() found
+                # nothing and every deployment silently fell back to plaintext
+                # .env (no encryption-at-rest). Pinning the types fixes it.
+                "--input-type",
+                "yaml",
+                "--output-type",
+                "yaml",
                 "--age",
                 age_recipient,
                 str(tmp_path),
