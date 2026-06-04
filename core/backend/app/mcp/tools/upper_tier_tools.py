@@ -5,7 +5,7 @@
 
 """030 Modul E — Upper-tier + auto-upgrade alias MCP tools.
 
-  ask_cerebras_qwen     — Cerebras qwen-3-235b-a22b-instruct-2507
+  ask_cerebras_qwen     — Cerebras gpt-oss-120b
   ask_gemini_latest     — gemini-flash-latest (auto-upgrade alias)
   ask_gemini_pro_latest — gemini-pro-latest (auto-upgrade alias)
 """
@@ -47,7 +47,7 @@ async def ask_cerebras_qwen(prompt: str, max_tokens: int = 2000) -> str:
         tool_name="ask_cerebras_qwen",
         prompt=prompt,
         primary="cerebras",
-        model="qwen-3-235b-a22b-instruct-2507",
+        model="gpt-oss-120b",
         max_tokens=max_tokens,
     )
 
