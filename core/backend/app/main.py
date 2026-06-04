@@ -7,7 +7,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -70,7 +70,7 @@ from app.api import stream as stream_router
 from app.api import update as update_router
 from app.api import symbol_graph as symbol_graph_router
 from app.api.webhooks import stripe as stripe_webhook_router
-from app.db.session import init_db
+from app.db.session import get_engine, init_db
 from app.mcp.server import http_app as mcp_http_app
 from app.mcp.server import mcp_server
 from app.middleware.demo_mode import DemoModeMiddleware
@@ -235,6 +235,12 @@ async def lifespan(_app: FastAPI):
     import os
 
     if os.environ.get("ABS_TEST_MODE") == "1":
+        _lf_logger.warning(
+            "⚠️ ABS_TEST_MODE=1 — MCP /mcp session manager, Cerbos pre-warm, "
+            "LangFuse and the health monitor are DISABLED. This must NOT be set "
+            "in any real/customer deployment: it silently breaks the Claude Code "
+            "MCP transport (/mcp → 500). Unset ABS_TEST_MODE for production."
+        )
         yield
         return
 
@@ -338,6 +344,7 @@ install_body_size_limit(app)
 app.add_middleware(RequestIDMiddleware)
 
 app.include_router(auth_router.router)
+app.include_router(auth_router.claim_v1_router)  # /v1/auth/magic-claim (SPA /activate page)
 app.include_router(oauth_router)  # T-003 — OAuth 2.1 + PKCE + JWKS
 app.include_router(v1_projects_router)  # T-005 — MCP gateway v1
 app.include_router(v1_rag_router)       # T-011 — RAG ingest/query
@@ -434,7 +441,21 @@ async def setup_index():
 
 
 # MCP HTTP transport — Claude Code `claude mcp add abs https://abs.local/mcp`
-app.mount("/mcp", mcp_http_app())
+# Wrapped in McpTokenAuthASGI so the minted abs_mcp_ bearer token is enforced
+# on every transport request (FastMCP ships no auth of its own). Pure-ASGI so
+# the streamable-HTTP/SSE responses are not buffered/broken.
+from app.mcp.transport_auth import McpTokenAuthASGI  # noqa: E402
+
+if not getattr(_app_settings, "mcp_auth_enforce", True):
+    import logging as _mcp_auth_log
+
+    _mcp_auth_log.getLogger("app.mcp.transport_auth").warning(
+        "⚠️ ABS_MCP_AUTH_ENFORCE=false — the /mcp transport will serve ALL "
+        "tools to ANY caller that passes the host allowlist, with no per-user "
+        "token. Only acceptable on a trusted, network-isolated dev box. Set "
+        "ABS_MCP_AUTH_ENFORCE=true (default) for any reachable deployment."
+    )
+app.mount("/mcp", McpTokenAuthASGI(mcp_http_app()))
 
 # T-002 — Inngest durable workflow engine. Functions are auto-discovered by the
 # Inngest dev server (`npx inngest-cli@latest dev`) via /api/inngest.
@@ -451,8 +472,34 @@ except Exception as _exc:  # pragma: no cover — keep boot resilient if SDK abs
     _logging.getLogger(__name__).warning("inngest serve skipped: %s", _exc)
 
 
+def _healthz_db_ready() -> bool:
+    """Fast `SELECT 1` readiness ping; any failure swallowed into a False."""
+    import logging
+
+    from sqlalchemy import text
+
+    try:
+        with get_engine().connect() as conn:
+            return conn.execute(text("SELECT 1")).scalar() == 1
+    except Exception:
+        logging.getLogger(__name__).warning("healthz db ping failed", exc_info=True)
+        return False
+
+
 @app.get("/healthz")
-def healthz():
-    return {"status": "ok", "service": "abs-backend"}
+def healthz(response: Response):
+    """Readiness probe wired to the container/orchestrator healthcheck.
+
+    Verifies the one dependency without which the backend cannot serve a
+    single real request — the database. The previous always-"ok" body let
+    docker/k8s keep a backend with a dead DB marked healthy (traffic routed,
+    never restarted); the customer compose healthcheck comment even promised
+    a DB gate this handler never implemented. Kept cheap: one `SELECT 1`,
+    any failure degraded to a 503 (not a 500) so the probe stays well-behaved.
+    """
+    if not _healthz_db_ready():
+        response.status_code = 503
+        return {"status": "degraded", "service": "abs-backend", "db": "down"}
+    return {"status": "ok", "service": "abs-backend", "db": "up"}
 
 
