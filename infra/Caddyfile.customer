@@ -18,6 +18,18 @@
 	# certs once port 80 + 443 are reachable.
 	# tls internal
 
+	# Security hardening headers (defense-in-depth). CSP is intentionally
+	# omitted: a strict policy breaks the Next.js panel's inline/runtime
+	# chunks, and these headers already cover clickjacking, MIME-sniffing,
+	# referrer leakage + force HTTPS. `-Server` strips the software banner.
+	header {
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
 	# Q12 R3 route split. Backend exposes API + setup wizard + auth + MCP
 	# transport on FastAPI (port 8000). Everything else (marketing pages
 	# + Next.js admin panels under /admin/*) goes to the landing image

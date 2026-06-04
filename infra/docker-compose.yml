@@ -1,4 +1,27 @@
 services:
+  # vault-init — one-shot age master-key bootstrap (see customer compose for
+  # full rationale). Generates /vault-key/age.key if missing, then exits.
+  # Backend mounts abs-vault-key :ro; this is the only writer. Replaces the
+  # manual infra/scripts/init_vault.sh prerequisite (UAT-012).
+  vault-init:
+    build: ../core/backend
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        # Mount at /app/vault-key so the fresh volume inherits abs:abs (uid 1000)
+        # ownership from the image; /vault-key would be root-owned → EACCES.
+        if [ -f /app/vault-key/age.key ]; then
+          echo "[vault-init] age.key present — nothing to do"; exit 0
+        fi
+        echo "[vault-init] generating age master key..."
+        age-keygen -o /app/vault-key/age.key
+        chmod 600 /app/vault-key/age.key
+        echo "[vault-init] master key created — BACK IT UP OFFSITE"
+    volumes:
+      - abs-vault-key:/app/vault-key
+    restart: "no"
+
   backend:
     build: ../core/backend
     env_file: .env
@@ -7,6 +30,9 @@ services:
     volumes:
       - abs-data:/app/data
       - abs-vault-key:/app/vault-key:ro    # 013 — master key ayrı volume, read-only
+    depends_on:
+      vault-init:
+        condition: service_completed_successfully
     healthcheck:
       test:
         - "CMD"
