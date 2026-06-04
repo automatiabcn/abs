@@ -5,7 +5,12 @@ from __future__ import annotations
 from app.config import settings
 
 
-def test_demo_mode_default_off(client):
+def test_demo_mode_default_off(client, monkeypatch):
+    # The test harness boots with an empty ABS_LICENSE_KEY, which auto-starts
+    # demo mode (first-run UX). Pin demo OFF explicitly so this exercises the
+    # "off" status path independent of that license-driven default (mirrors
+    # test_demo_mode_status_reports_enabled, which pins it ON).
+    monkeypatch.setattr(settings, "demo_mode", False)
     r = client.get("/v1/demo-mode/status")
     assert r.status_code == 200
     body = r.json()

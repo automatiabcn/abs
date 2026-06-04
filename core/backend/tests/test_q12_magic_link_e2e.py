@@ -87,7 +87,12 @@ def _signup(client: TestClient, email: str, slug: str, password: str = "TestPass
 
 
 def _token_from_link(link: str) -> str:
-    assert link.startswith("/auth/magic?token=")
+    # Q12 honesty round changed the signup `magic_link` to point at the
+    # customer-facing /activate page (the backend claim endpoint /auth/magic
+    # is unchanged and still serves the GET below). Accept either prefix and
+    # extract the token.
+    assert "token=" in link, link
+    assert link.startswith(("/activate?token=", "/auth/magic?token=")), link
     return link.split("token=", 1)[1]
 
 
@@ -163,9 +168,11 @@ def test_two_admins_both_active_in_tenant(client: TestClient):
     link_a = _signup(client, "admin_a_active@r87.local", "r87-pair")
     link_b = _signup(client, "admin_b_active@r87.local", "r87-pair")
 
-    r1 = client.get(link_a)
+    # link_* now points at the /activate SPA page; claim via the backend
+    # endpoint the page calls.
+    r1 = client.get(f"/auth/magic?token={_token_from_link(link_a)}")
     assert r1.status_code == 200, r1.text
-    r2 = client.get(link_b)
+    r2 = client.get(f"/auth/magic?token={_token_from_link(link_b)}")
     assert r2.status_code == 200, r2.text
 
     with Session(get_engine()) as db:
