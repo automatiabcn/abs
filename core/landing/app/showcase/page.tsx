@@ -176,7 +176,7 @@ export default function ShowcasePage() {
                   className="flex h-10 w-full items-center justify-center rounded-md text-sm font-semibold"
                   style={{
                     background: "var(--abs-brand-base)",
-                    color: "var(--abs-surface-base)",
+                    color: "#ffffff",
                   }}
                 >
                   İletişime geç
@@ -199,7 +199,7 @@ export default function ShowcasePage() {
                   className="flex h-10 w-full items-center justify-center rounded-md border text-sm font-semibold"
                   style={{
                     borderColor: "var(--abs-brand-base)",
-                    color: "var(--abs-brand-base)",
+                    color: "var(--abs-brand-text)",
                   }}
                 >
                   Pilot başlat

@@ -14,6 +14,9 @@
   /* Brand */
   --abs-brand-base: oklch(48% 0.16 252);     /* deep ABS blue (#1e57ac equiv) */
   --abs-brand-soft: oklch(72% 0.12 252);     /* hover / accent surface */
+  /* A11y — brand-as-text. brand-base passes WCAG AA on light surfaces but
+   * fails (~2.8:1) on the dark theme; flip to the lighter brand on dark. */
+  --abs-brand-text: var(--abs-brand-base);
   --abs-accent-cyan: oklch(78% 0.16 220);    /* electric cyan */
   --abs-accent-cyan-soft: oklch(92% 0.07 220);
 
@@ -39,6 +42,7 @@
   --abs-surface-raised: oklch(20% 0.025 252);
   --abs-surface-sunken: oklch(10% 0.015 252);
   --abs-foreground: oklch(95% 0.01 252);
+  --abs-brand-text: var(--abs-brand-soft);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -47,6 +51,7 @@
     --abs-surface-raised: oklch(20% 0.025 252);
     --abs-surface-sunken: oklch(10% 0.015 252);
     --abs-foreground: oklch(95% 0.01 252);
+    --abs-brand-text: var(--abs-brand-soft);
   }
 }
 

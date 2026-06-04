@@ -7,17 +7,16 @@
 
 // Sprint 2B BUG-33 — Provider Yapılandır modal.
 //
-// Read-only window over the operator's stored API key (masked, never the
-// full value) plus a "Şimdi test et" button that hits
-// `POST /v1/admin/providers/{id}/test` and renders latency or error.
-// In-place save of the API key is intentionally OUT of scope for rc7;
-// the secondary CTA links to /setup/step/providers where the customer
-// onboard wizard already ships a full save flow. Sprint 2C lands the
-// in-place edit endpoint.
+// Shows the operator's stored API key (masked, never the full value), a
+// "Şimdi test et" button (`POST /v1/admin/providers/{id}/test`), AND an
+// in-place key edit form that POSTs the new key to
+// `POST /v1/admin/providers/{id}` (the Sprint 2C save endpoint). Previously
+// the only edit path was a link to /setup/step/providers, which 404s /
+// redirects to /admin once initial setup is complete — so post-setup the
+// operator had no working way to rotate a provider key from the panel.
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { CheckCircle2, KeyRound, Loader2, XCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +40,8 @@ export interface ProviderConfigModalProps {
   provider: ProviderConfigEntry | null;
   open: boolean;
   onClose: () => void;
+  /** Called after a successful key save so the parent can refetch status. */
+  onSaved?: () => void;
 }
 
 function maskedHint(configured: boolean): string {
@@ -55,16 +56,29 @@ export default function ProviderConfigModal({
   provider,
   open,
   onClose,
+  onSaved,
 }: ProviderConfigModalProps) {
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // In-place key edit state.
+  const [editing, setEditing] = useState(false);
+  const [newKey, setNewKey] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   // Reset transient state whenever the modal target changes.
   useEffect(() => {
     setResult(null);
     setError(null);
     setTesting(false);
+    setEditing(false);
+    setNewKey("");
+    setSaving(false);
+    setSaveErr(null);
+    setSaved(false);
   }, [provider?.id]);
 
   // ESC closes the modal — match MarketplacePanel keyboard contract.
@@ -105,6 +119,37 @@ export default function ProviderConfigModal({
       setError(exc instanceof Error ? exc.message : "bilinmeyen hata");
     } finally {
       setTesting(false);
+    }
+  }
+
+  async function saveKey() {
+    if (!provider || !newKey.trim()) return;
+    setSaving(true);
+    setSaveErr(null);
+    setSaved(false);
+    try {
+      const res = await fetch(
+        `/v1/admin/providers/${encodeURIComponent(provider.id)}`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ api_key: newKey.trim(), enabled: true }),
+        },
+      );
+      if (!res.ok) {
+        const body = await res.text();
+        setSaveErr(`HTTP ${res.status}: ${body.slice(0, 220)}`);
+        return;
+      }
+      setSaved(true);
+      setNewKey("");
+      setEditing(false);
+      onSaved?.();
+    } catch (exc) {
+      setSaveErr(exc instanceof Error ? exc.message : "bilinmeyen hata");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -155,10 +200,52 @@ export default function ProviderConfigModal({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Anahtar tarayıcıya hiçbir zaman gönderilmez. Test yalnızca
-            backend üzerinden tek-tokenlik bir denemedir.
+            Anahtar tarayıcıya hiçbir zaman gönderilmez; yalnızca kaydetmek
+            için backend&apos;e iletilir, orada şifreli vault&apos;a yazılır.
           </p>
         </dl>
+
+        {editing && (
+          <div className="mt-4 space-y-2" data-testid="provider-key-edit">
+            <label
+              htmlFor="provider-new-key"
+              className="block text-xs text-muted-foreground"
+            >
+              Yeni API anahtarı
+              {provider.id === "cloudflare"
+                ? " — Cloudflare API Token (Account ID kurulum sihirbazından / .env)"
+                : ""}
+            </label>
+            <input
+              id="provider-new-key"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={newKey}
+              onChange={(e) => setNewKey(e.target.value)}
+              placeholder="sk-… / gsk_… / yeni anahtar"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm"
+              data-testid="provider-key-input"
+            />
+            {saveErr && (
+              <div
+                className="rounded-md border border-rose-500/30 bg-rose-500/10 p-2 text-xs text-rose-200"
+                data-testid="provider-key-save-error"
+              >
+                Kaydedilemedi: {saveErr}
+              </div>
+            )}
+          </div>
+        )}
+
+        {saved && (
+          <div
+            className="mt-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 text-sm text-emerald-200"
+            data-testid="provider-key-saved"
+          >
+            ✓ Anahtar kaydedildi, test edildi ve vault&apos;a yazıldı.
+          </div>
+        )}
 
         {result && (
           <div
@@ -207,13 +294,52 @@ export default function ProviderConfigModal({
           >
             Kapat
           </Button>
-          <Link
-            href="/setup/step/providers"
-            className="inline-flex items-center justify-center rounded-md border border-border px-3 py-2 text-sm hover:bg-accent"
-            data-testid="provider-config-edit-link"
-          >
-            API anahtarını değiştir
-          </Link>
+
+          {editing ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEditing(false);
+                  setNewKey("");
+                  setSaveErr(null);
+                }}
+                data-testid="provider-key-cancel"
+              >
+                Vazgeç
+              </Button>
+              <Button
+                type="button"
+                onClick={saveKey}
+                disabled={saving || !newKey.trim()}
+                data-testid="provider-key-save"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    Kaydediliyor…
+                  </>
+                ) : (
+                  "Kaydet"
+                )}
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setEditing(true);
+                setSaved(false);
+                setSaveErr(null);
+              }}
+              data-testid="provider-config-edit-link"
+            >
+              API anahtarını değiştir
+            </Button>
+          )}
+
           <Button
             type="button"
             onClick={runTest}

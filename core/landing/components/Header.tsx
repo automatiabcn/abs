@@ -132,7 +132,7 @@ export default function Header() {
           <span className="text-sm">Automatia ABS</span>
         </Link>
 
-        <nav className="flex items-center gap-1 text-sm">
+        <nav aria-label="Ana menü" className="flex items-center gap-1 text-sm">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
