@@ -14,7 +14,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { KeyRound, Copy, Check, Trash2, ShieldAlert } from "lucide-react";
+import { KeyRound, Copy, Check, Trash2, ShieldAlert, FileCode2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +38,28 @@ function mcpUrl(): string {
   if (typeof window === "undefined") return "https://your-abs-host/mcp";
   return `${window.location.origin}/mcp`;
 }
+
+// Copy-paste delegation guidance for the operator's local Claude Code config
+// (~/.claude/CLAUDE.md or a project ./CLAUDE.md). The /mcp server also ships
+// these instructions over the MCP `initialize` response, but a local CLAUDE.md
+// makes the "delegate to ABS" behaviour stronger and explicit. English by
+// default — the product ships globally.
+const CLAUDE_MD_BLOCK = `# Automatia ABS — delegation
+
+ABS is connected as an MCP server with 100+ free AI tools (running on your own
+provider keys, no extra Anthropic cost). Delegate substantial subtasks to ABS
+instead of doing them yourself — it saves tokens and often improves quality:
+
+- Analysis / research / reasoning   -> mcp__abs__ask_gptoss, mcp__abs__ask_gemini_pro
+- Code / a single function or endpoint -> mcp__abs__ask_kimi, mcp__abs__ask_qwen3_coder
+- Translation / non-English prose    -> mcp__abs__ask_qwen32b
+- Fast classification / short answers -> mcp__abs__ask_groq_fast, mcp__abs__ask_scout
+- Quality over speed (generate->verify->fix) -> mcp__abs__qual_code, mcp__abs__qual_analysis
+- Parallel race (fastest of several) -> mcp__abs__race, mcp__abs__race_code
+- Code review / unit tests / docs    -> mcp__abs__code_review, mcp__abs__write_tests, mcp__abs__write_docs
+- Project knowledge base             -> mcp__abs__rag_query
+
+Prefer ABS for these before spending your own tokens.`;
 
 export default function McpTokensPage() {
   const [label, setLabel] = useState("");
@@ -302,6 +324,35 @@ export default function McpTokensPage() {
         </CardContent>
       </Card>
 
+      {/* ── Delegation / CLAUDE.md ─────────────────────── */}
+      <Card className="mb-6 bg-card/70">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FileCode2 className="h-4 w-4 text-primary" />
+            Otomatik delegasyon (CLAUDE.md)
+          </CardTitle>
+          <CardDescription>
+            Token bağlanınca Claude Code ABS&apos;yi <strong>tanır</strong> ama
+            alt görevleri kendiliğinden delege etmesi için bir yönerge ister.
+            Aşağıdaki bloğu kendi makinende{" "}
+            <code>~/.claude/CLAUDE.md</code> (veya proje kökünde{" "}
+            <code>CLAUDE.md</code>) dosyasına yapıştır — Claude artık analiz,
+            kod, çeviri gibi işleri proaktif olarak ABS&apos;ye yönlendirir.
+            (Sunucu bu yönergeyi MCP üzerinden de gönderir; CLAUDE.md onu
+            güçlendirir.)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CopyRow
+            label="CLAUDE.md — delegasyon bloğu"
+            value={CLAUDE_MD_BLOCK}
+            copied={copied === "claudemd"}
+            onCopy={() => copy("claudemd", CLAUDE_MD_BLOCK)}
+            testid="mcp-token-claudemd"
+          />
+        </CardContent>
+      </Card>
+
       <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
@@ -334,7 +385,7 @@ function CopyRow({
         <textarea
           readOnly
           value={value}
-          rows={value.includes("\n") ? 2 : 1}
+          rows={Math.min(Math.max(value.split("\n").length, 1), 16)}
           onFocus={(e) => e.currentTarget.select()}
           data-test={testid}
           className="w-full rounded border border-emerald-500/30 bg-background px-2 py-1 font-mono text-[11px] text-emerald-100"
