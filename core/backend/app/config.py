@@ -230,9 +230,13 @@ class Settings(BaseSettings):
     qdrant_snapshot_dir: str = "/qdrant/snapshots"
 
     # T-010 — BGE-M3 embedding service
-    embedding_backend: str = "mock"  # mock | sentence_transformers | onnx_cuda | onnx_cpu
+    embedding_backend: str = "mock"  # mock | ollama | sentence_transformers | onnx_cuda | onnx_cpu
     embedding_model_path: str = ""   # ONNX backends only
     embedding_device: str = "cpu"    # SentenceTransformers backend only
+    # Ollama embedding model name (when embedding_backend=ollama). bge-m3 is
+    # 1024-dim + multilingual (matches qdrant_default_vector_size); nomic is
+    # 768-dim. ABS_EMBEDDING_MODEL overrides.
+    embedding_model: str = "nomic-embed-text"
     embedding_batch_size: int = 32
     embedding_min_batch: int = 4
 
