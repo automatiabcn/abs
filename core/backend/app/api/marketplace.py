@@ -441,7 +441,12 @@ async def install(
 
         sandbox = PluginSandbox()
         result = sandbox.launch(
-            body.plugin_id, body.tenant, plugin.get("sandbox", {})
+            body.plugin_id,
+            body.tenant,
+            plugin.get("sandbox", {}),
+            # Launch the descriptor's real published image when available;
+            # _resolve_image() degrades to the local busybox stub otherwise.
+            image_ref=plugin.get("entry_point"),
         )
         install_record["container_id"] = result.get("container_id")
         install_record["sandbox_status"] = result.get("status", "running")
