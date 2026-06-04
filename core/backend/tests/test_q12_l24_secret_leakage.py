@@ -114,7 +114,10 @@ class TestQ12L24SignupTokenNotLogged:
         )
         assert r.status_code == 201
         assert "magic_link" in r.json()
-        assert r.json()["magic_link"].startswith("/auth/magic?token=")
+        # Q12 honesty round: link now points at the /activate SPA page; the
+        # security contract here is that the body still SURFACES the link
+        # (SMTP-less installs need it), not which path it targets.
+        assert r.json()["magic_link"].startswith("/activate?token=")
 
 
 # ----------------------------------------------------------------------
