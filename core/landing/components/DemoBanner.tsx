@@ -41,6 +41,8 @@ export default function DemoBanner() {
   return (
     <div
       data-testid="demo-banner"
+      role="region"
+      aria-label="Demo mode notice"
       style={{
         position: "sticky",
         top: 0,

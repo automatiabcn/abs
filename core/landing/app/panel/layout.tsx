@@ -8,6 +8,7 @@
 // Q7 Phase C — premium /panel shell: theme + query + sidebar + header.
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 // Sprint 21 / Faz D — cmdk palette deferred via a client-only shim
@@ -43,10 +44,45 @@ async function _probeBackendHealthy(): Promise<boolean> {
   }
 }
 
+// Page-level RBAC gate — twin of /admin/layout.tsx. Blocks non-admins from the
+// panel chrome (backend already 401s the data; this avoids a confusing shell).
+// Fail-open on network errors so a transient hiccup never locks out an admin.
+async function _isAdmin(): Promise<boolean> {
+  try {
+    const cookieHeader = (await cookies()).toString();
+    const res = await fetch(`${BACKEND_URL}/v1/admin/me`, {
+      cache: "no-store",
+      headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+      signal: AbortSignal.timeout(2500),
+    });
+    if (res.status === 401 || res.status === 403) return false;
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 export default async function PanelLayout({ children }: { children: ReactNode }) {
   const healthy = await _probeBackendHealthy();
   if (!healthy) {
     redirect("/login?reason=backend-unreachable");
+  }
+  if (!(await _isAdmin())) {
+    return (
+      <main className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-background p-6 text-center text-foreground">
+        <h1 className="text-xl font-semibold">Yönetici yetkisi gerekli</h1>
+        <p className="max-w-md text-sm text-muted-foreground">
+          Bu alan yalnızca yönetici hesapları içindir. Yöneticinizden sizi admin
+          yapmasını isteyin ya da bir yönetici hesabıyla giriş yapın.
+        </p>
+        <a
+          href="/login"
+          className="rounded-md border border-border px-4 py-2 text-sm hover:bg-accent"
+        >
+          Giriş sayfası
+        </a>
+      </main>
+    );
   }
   return (
     <PanelThemeProvider>
