@@ -35,20 +35,30 @@ def _synthesise_from_audit(limit: int) -> list[dict]:
     from app.db.models import CustomerAuditEntry
     from app.db.session import get_engine
 
+    capped = max(1, min(int(limit), 500))
     cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     out: list[dict] = []
     with Session(get_engine()) as db:
-        rows = list(db.scalars(select(CustomerAuditEntry)).all())
-    for r in sorted(rows, key=lambda x: x.ts or datetime.min, reverse=True):
-        if r.action != "tool_call":
-            continue
+        # DB-side filter + order + limit. This endpoint is UNAUTHENTICATED and
+        # the audit table grows with every tool call; loading it all into memory
+        # per request was an unbounded memory/CPU DoS. Fetch at most `capped`
+        # most-recent tool_call rows; the 7-day cutoff is a cheap Python filter
+        # over that bounded set.
+        rows = list(db.scalars(
+            select(CustomerAuditEntry)
+            .where(CustomerAuditEntry.action == "tool_call")
+            .order_by(CustomerAuditEntry.ts.desc())
+            .limit(capped)
+        ).all())
+    for r in rows:
         ts = _norm(r.ts)
         if ts is None or ts < cutoff:
             continue
         out.append(
             {
                 "ts": ts.isoformat(),
-                "license_jti": r.license_jti,
+                # license_jti intentionally NOT exposed on this unauthenticated
+                # /v1/panel/* dashboard — it is a per-customer token identifier.
                 "tool": r.resource or "unknown",
                 "cascade_path": ["groq", "cerebras"],
                 "winner": "groq",

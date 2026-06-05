@@ -17,7 +17,9 @@ def test_tool_browser_returns_total_and_categories(client):
     r = client.get("/v1/panel/tools")
     assert r.status_code == 200
     body = r.json()
-    assert body["total"] >= 122
+    # 120 default — preview_patch + apply_patch gated off the MCP surface
+    # (ABS_MCP_EXPOSE_PATCH_TOOLS, default off; arbitrary file read/write).
+    assert body["total"] >= 120
     assert body["filtered_count"] == body["total"]
     assert isinstance(body["category_counts"], dict)
     assert len(body["category_counts"]) >= 5
@@ -93,6 +95,29 @@ def test_cascade_providers_seen_is_sorted_unique(client):
     body = client.get("/v1/panel/cascade/recent").json()
     seen = body["providers_seen"]
     assert seen == sorted(set(seen))
+
+
+def test_panel_endpoints_do_not_leak_license_jti(client):
+    """/v1/panel/* is unauthenticated; it must NOT expose the per-customer
+    license JTI (a token identifier) in its activity flows. tool + ts only."""
+    _seed_cascade_audit("secret_jti_must_not_leak")
+    casc = client.get("/v1/panel/cascade/recent").json()
+    assert casc["flows"], "expected seeded flows"
+    for f in casc["flows"]:
+        assert "license_jti" not in f, f
+        assert "tool" in f and "ts" in f
+    # pipeline endpoint shares the same audit source + leak surface.
+    with Session(get_engine()) as db:
+        db.add(CustomerAuditEntry(
+            license_jti="secret_jti_must_not_leak",
+            action="tool_call", resource="qual_code",
+            ts=datetime.now(timezone.utc)))
+        db.commit()
+    pipe = client.get("/v1/panel/pipeline/recent").json()
+    assert pipe.get("pipeline_runs"), "expected seeded pipeline runs"
+    for f in pipe["pipeline_runs"]:
+        assert "license_jti" not in f, f
+        assert "tool" in f
 
 
 # ---------- H: quality pipeline viewer ----------

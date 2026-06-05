@@ -141,7 +141,8 @@ const TONE: Record<string, string> = {
 interface RecentRun {
   ts: string;
   tool: string;
-  license_jti: string;
+  // license_jti removed: the /v1/panel/pipeline/recent endpoint no longer
+  // exposes the per-customer license token id (unauthenticated dashboard).
   steps: { role: string; model: string; latency_ms: number }[];
 }
 
