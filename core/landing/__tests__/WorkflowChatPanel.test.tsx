@@ -51,7 +51,7 @@ describe("WorkflowChatPanel", () => {
   });
 
   it("synthesize calls synthesizeFn and updates the canvas", async () => {
-    const synth = vi.fn(async () => MUTATED_WORKFLOW);
+    const synth = vi.fn(async (_intent: string, _current?: unknown) => MUTATED_WORKFLOW);
     render(
       <WorkflowChatPanel
         initialWorkflow={SAMPLE_WORKFLOW}
@@ -125,7 +125,7 @@ describe("WorkflowChatPanel", () => {
   });
 
   it("refine button calls synthesizeFn with the refine text", async () => {
-    const synth = vi.fn(async () => MUTATED_WORKFLOW);
+    const synth = vi.fn(async (_intent: string, _current?: unknown) => MUTATED_WORKFLOW);
     render(
       <WorkflowChatPanel
         initialWorkflow={SAMPLE_WORKFLOW}
