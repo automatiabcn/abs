@@ -42,10 +42,14 @@ _PROVIDER_ENABLED_FLAG: Dict[str, Optional[str]] = {
     "anthropic": "anthropic_enabled",
 }
 
+# Provider id → registry name (app.providers.registry.get_provider). 1:1 —
+# cloudflare is registered as "cloudflare"; the old "cloudflare_workers_ai"
+# was unknown to the registry, so the save live-test 503'd and bad Cloudflare
+# credentials were silently accepted instead of rejected.
 _PROVIDER_RUNTIME_NAME: Dict[str, str] = {
     "groq": "groq",
     "cerebras": "cerebras",
-    "cloudflare": "cloudflare_workers_ai",
+    "cloudflare": "cloudflare",
     "gemini": "gemini",
     "cohere": "cohere",
     "anthropic": "anthropic",
