@@ -57,6 +57,9 @@ _TEST_PROMPT = "Reply with the single word OK."
 class ProviderSave(BaseModel):
     api_key: SecretStr = Field(..., min_length=1, max_length=512)
     enabled: bool = True
+    # Cloudflare Workers AI also needs an account id alongside the API token.
+    # Optional + ignored for every other provider (they have no account_id).
+    account_id: Optional[str] = Field(default=None, max_length=128)
 
 
 def _full_mask(provider_id: str) -> str:
@@ -185,26 +188,49 @@ async def _live_test_provider(provider_id: str) -> Dict[str, Any]:
             primary=runtime,
             fallbacks=(),
             use_cache=False,
-            max_tokens=8,
+            # 256 (was 8): reasoning models — e.g. Cerebras' default
+            # gpt-oss-120b — emit no parseable completion under a tiny token
+            # budget, so a *valid* key could fail its own save test. A
+            # connectivity check costs ~nothing extra at 256.
+            max_tokens=256,
         )
         latency_ms = int((time.perf_counter() - started) * 1000)
         return {
             "ok": True,
             "model": getattr(resp, "model", None),
             "latency_ms": latency_ms,
+            "transient": False,
         }
     except ProviderError as exc:
-        latency_ms = int((time.perf_counter() - started) * 1000)
+        # The cascade re-raises a ProviderError ONLY when it is non-transient
+        # (bad key / 4xx / unknown model) — a definitive auth/config failure.
         # Sprint 2D ITEM-2.3 — CodeQL py/stack-trace-exposure (#46). ProviderError
         # carries a curated `.message` (no Python frame), so we can surface it
         # as a short code. Defense-in-depth: cap length, strip newlines.
+        latency_ms = int((time.perf_counter() - started) * 1000)
         safe_msg = (str(exc.message or "") or "provider_error").splitlines()[0][:120]
         return {
             "ok": False,
             "error": safe_msg or "provider_error",
             "latency_ms": latency_ms,
+            "transient": bool(getattr(exc, "transient", False)),
         }
-    except Exception as exc:  # pragma: no cover
+    except HTTPException as exc:
+        # call_with_cascade raises 503 when EVERY attempt failed transiently
+        # (timeout / 5xx / rate-limit / thin unparseable response). The
+        # provider was reachable, so the key may well be valid — mark it
+        # transient so the caller persists it with a soft warning instead of
+        # discarding a good key over a flaky ping.
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        if exc.status_code == 503:
+            return {
+                "ok": False,
+                "error": "provider_unreachable_transient",
+                "latency_ms": latency_ms,
+                "transient": True,
+            }
+        raise
+    except Exception:  # pragma: no cover
         latency_ms = int((time.perf_counter() - started) * 1000)
         # Sprint 2D ITEM-2.3 — opaque request_id pattern: log full trace
         # server-side, return only a correlation id to the caller.
@@ -217,6 +243,7 @@ async def _live_test_provider(provider_id: str) -> Dict[str, Any]:
             "error": "internal_error",
             "request_id": request_id,
             "latency_ms": latency_ms,
+            "transient": False,
         }
 
 
@@ -255,6 +282,14 @@ async def save_provider(
     previous = getattr(settings, attr, "")
     setattr(settings, attr, raw_key)
 
+    # Cloudflare Workers AI needs an account id beside the token. Apply it to
+    # the live settings BEFORE the connectivity test so the ping can reach
+    # /accounts/{id}/ai/run/…; persisted further below next to the token.
+    cf_account_new = (body.account_id or "").strip() if provider_id == "cloudflare" else ""
+    cf_account_prev = getattr(settings, "cf_account_id", "")
+    if provider_id == "cloudflare" and cf_account_new:
+        setattr(settings, "cf_account_id", cf_account_new)
+
     test_result: Dict[str, Any] = {
         "ok": True,
         "latency_ms": 0,
@@ -262,8 +297,16 @@ async def save_provider(
     }
     if raw_key and body.enabled:
         test_result = await _live_test_provider(provider_id)
-        if not test_result.get("ok"):
+        # Reject ONLY on a definitive (non-transient) failure — a bad key /
+        # 4xx / unknown model. A transient failure (timeout / 5xx / rate-limit /
+        # thin reasoning-model response) means the provider was reachable and
+        # the key is probably fine; persist it with a soft warning rather than
+        # discarding a valid key over a flaky ping. (This is why a working
+        # Cerebras key — HTTP 200 upstream — used to 422 and get reverted.)
+        if not test_result.get("ok") and not test_result.get("transient"):
             setattr(settings, attr, previous)
+            if provider_id == "cloudflare" and cf_account_new:
+                setattr(settings, "cf_account_id", cf_account_prev)
             emit_event(
                 request,
                 action="admin.provider.save",
@@ -306,6 +349,18 @@ async def save_provider(
                 "detail": str(exc),
             },
         )
+    # Persist the Cloudflare account id alongside the token (same vault + .env
+    # channels). Best-effort: a failure here is logged but doesn't 500 the save
+    # — the token already landed and the account id stays in live settings.
+    if provider_id == "cloudflare" and cf_account_new:
+        try:
+            from app.api.setup import _persist_encrypted_secret, _persist_env_var
+
+            _persist_encrypted_secret("cf_account_id", cf_account_new)
+            _persist_env_var("ABS_CF_ACCOUNT_ID", cf_account_new)
+        except Exception as exc:  # pragma: no cover
+            logger.warning("cf_account_id persist failed: %s", exc)
+
     enabled_persisted = _persist_enabled_flag(provider_id, body.enabled)
     await _invalidate_caches(provider_id)
 
