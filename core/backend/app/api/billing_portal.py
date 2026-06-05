@@ -29,6 +29,7 @@ from app.config import settings
 from app.db.models import License
 from app.db.session import get_session
 from app.i18n import t
+from app.middleware.rate_limit import limiter
 from app.observability.audit import emit_event  # Q12-L23 sweep 5
 
 router = APIRouter(prefix="/v1/billing", tags=["billing"])
@@ -46,9 +47,10 @@ class PortalResponse(BaseModel):
 
 
 @router.post("/portal", response_model=PortalResponse)
+@limiter.limit("10/minute")
 async def create_portal(
-    body: PortalRequest,
     request: Request,
+    body: PortalRequest,
     db: Session = Depends(get_session),
 ) -> PortalResponse:
     lang = getattr(request.state, "lang", "en")
