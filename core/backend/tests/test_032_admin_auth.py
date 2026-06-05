@@ -61,6 +61,10 @@ def test_ip_whitelist_blocks_non_whitelisted(client, monkeypatch):
 def test_ip_whitelist_allows_whitelisted(client, monkeypatch):
     _set_password(monkeypatch, "s3cret")
     monkeypatch.setattr(settings, "admin_ip_whitelist", "10.0.0.1")
+    # The X-Forwarded-For client IP is honoured ONLY when the immediate hop
+    # is a trusted proxy (UAT-042). TestClient's socket host is "testclient";
+    # trusting it mirrors a real reverse-proxy that fronts the backend.
+    monkeypatch.setattr(settings, "trusted_proxies", "testclient,127.0.0.1,::1")
     r = client.post(
         "/v1/admin/login",
         json={"password": "s3cret"},
