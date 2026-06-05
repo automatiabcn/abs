@@ -494,3 +494,28 @@ class FailedLoginAttempt(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc)
     )
     locked_until: Optional[datetime] = Field(default=None, index=True)
+
+
+class SavedWorkflow(SQLModel, table=True):
+    """A reusable, named workflow definition saved by an operator.
+
+    The synthesize/execute endpoints handle ad-hoc runs + job tracking, but a
+    workflow built in the Workflow Builder could not be PERSISTED for reuse
+    (the panel "Save" button was a no-op). This table stores the workflow JSON
+    definition, tenant-scoped, so it can be listed + reloaded later.
+    """
+
+    __tablename__ = "saved_workflow"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
+    name: str = Field(max_length=200)
+    # The full WorkflowDefinition JSON (nodes/edges/trigger) as a string.
+    definition_json: str = Field(default="{}")
+    created_by: str = Field(max_length=254, default="")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
