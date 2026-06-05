@@ -271,9 +271,11 @@ def ingest_text(
 _DOCX_MIME = (
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+_XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 _EXT_MIME = {
     ".pdf": "application/pdf",
     ".docx": _DOCX_MIME,
+    ".xlsx": _XLSX_MIME,
     ".txt": "text/plain",
     ".md": "text/markdown",
     ".markdown": "text/markdown",
