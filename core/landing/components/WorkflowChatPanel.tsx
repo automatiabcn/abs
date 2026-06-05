@@ -73,6 +73,9 @@ export default function WorkflowChatPanel({
   const [error, setError] = useState<string | null>(null);
   const [dryRunStatus, setDryRunStatus] = useState<DryRunStatus>("idle");
   const [selectedNodeId, setSelectedNodeId] = useState<string | undefined>();
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
 
   const synth = synthesizeFn ?? defaultSynthesize;
 
@@ -115,9 +118,36 @@ export default function WorkflowChatPanel({
     }
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!isAdmin) return;
-    onSave?.(workflow);
+    // If a parent supplies onSave, defer to it (keeps the existing contract).
+    if (onSave) {
+      onSave(workflow);
+      return;
+    }
+    // Otherwise persist directly — the Builder page renders this panel without
+    // an onSave, so previously "Save" was a silent no-op (no saved workflows).
+    setSaveStatus("saving");
+    setError(null);
+    try {
+      const r = await fetch("/v1/workflows/definitions", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: workflow.name?.trim() || "İsimsiz iş akışı",
+          definition: workflow,
+        }),
+      });
+      if (!r.ok) {
+        const detail = await r.text().catch(() => "");
+        throw new Error(`Kaydedilemedi: HTTP ${r.status} ${detail.slice(0, 120)}`);
+      }
+      setSaveStatus("saved");
+    } catch (e) {
+      setSaveStatus("error");
+      setError(e instanceof Error ? e.message : String(e));
+    }
   }
 
   const costCents = estimateCostCents(workflow);
@@ -241,11 +271,19 @@ export default function WorkflowChatPanel({
             type="button"
             data-testid="save-button"
             onClick={handleSave}
-            disabled={!isAdmin}
+            disabled={!isAdmin || saveStatus === "saving"}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:enabled:bg-zinc-200"
           >
-            <FloppyDisk className="size-4" />
-            Kaydet
+            {saveStatus === "saved" ? (
+              <CheckCircle className="size-4 text-emerald-400" />
+            ) : (
+              <FloppyDisk className="size-4" />
+            )}
+            {saveStatus === "saving"
+              ? "Kaydediliyor…"
+              : saveStatus === "saved"
+                ? "Kaydedildi"
+                : "Kaydet"}
           </button>
         </div>
 

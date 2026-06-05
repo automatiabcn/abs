@@ -16,12 +16,17 @@ Auth: panel session (`current_admin`).
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, model_validator
+from sqlmodel import Session, select
+
+from app.db.models import SavedWorkflow
+from app.db.session import get_engine
 
 from app.api.auth import current_admin
 from app.cascade.orchestrator import call_with_cascade
@@ -339,3 +344,103 @@ async def resume_job(
     if "error" in result:
         raise HTTPException(409, result["error"])
     return result
+
+
+# ---------- saved workflow definitions (reusable library) -----------------
+# synthesize/execute/jobs handle ad-hoc runs; these persist a named workflow
+# so the Builder's "Save" actually stores something the operator can reload.
+
+
+class SaveWorkflowBody(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    definition: Dict[str, Any]
+
+
+def _wf_tenant(admin: dict) -> str:
+    # Same tenant resolution as the rest of the panel (users table → slug,
+    # else "default"). Lazy import avoids a circular import at module load.
+    from app.api.chat import _resolve_tenant
+
+    return _resolve_tenant(admin.get("sub", "")) or "default"
+
+
+def _serialize_saved_wf(row: SavedWorkflow) -> Dict[str, Any]:
+    try:
+        defn = json.loads(row.definition_json)
+    except (ValueError, TypeError):
+        defn = {}
+    return {
+        "id": row.id,
+        "name": row.name,
+        "definition": defn,
+        "created_by": row.created_by,
+        "created_at": row.created_at.isoformat(),
+        "updated_at": row.updated_at.isoformat(),
+    }
+
+
+@router.post("/definitions", status_code=201)
+def save_workflow_definition(
+    body: SaveWorkflowBody, admin: dict = Depends(current_admin)
+) -> Dict[str, Any]:
+    """Persist a named workflow definition for the caller's tenant."""
+    tenant = _wf_tenant(admin)
+    row = SavedWorkflow(
+        tenant_slug=tenant,
+        name=body.name.strip(),
+        definition_json=json.dumps(body.definition, ensure_ascii=False),
+        created_by=admin.get("sub", ""),
+    )
+    with Session(get_engine()) as db:
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+        return _serialize_saved_wf(row)
+
+
+@router.get("/definitions")
+def list_workflow_definitions(
+    admin: dict = Depends(current_admin),
+) -> Dict[str, Any]:
+    """List the caller tenant's saved workflows (most-recent first)."""
+    tenant = _wf_tenant(admin)
+    with Session(get_engine()) as db:
+        rows = list(
+            db.exec(
+                select(SavedWorkflow)
+                .where(SavedWorkflow.tenant_slug == tenant)
+                .order_by(SavedWorkflow.updated_at.desc())
+                .limit(200)
+            )
+        )
+        return {
+            "workflows": [_serialize_saved_wf(r) for r in rows],
+            "count": len(rows),
+        }
+
+
+@router.get("/definitions/{wf_id}")
+def get_workflow_definition(
+    wf_id: int, admin: dict = Depends(current_admin)
+) -> Dict[str, Any]:
+    tenant = _wf_tenant(admin)
+    with Session(get_engine()) as db:
+        row = db.get(SavedWorkflow, wf_id)
+        # Tenant gate: never expose another tenant's saved workflow.
+        if row is None or row.tenant_slug != tenant:
+            raise HTTPException(404, "workflow_not_found")
+        return _serialize_saved_wf(row)
+
+
+@router.delete("/definitions/{wf_id}", status_code=204)
+def delete_workflow_definition(
+    wf_id: int, admin: dict = Depends(current_admin)
+) -> None:
+    tenant = _wf_tenant(admin)
+    with Session(get_engine()) as db:
+        row = db.get(SavedWorkflow, wf_id)
+        if row is None or row.tenant_slug != tenant:
+            raise HTTPException(404, "workflow_not_found")
+        db.delete(row)
+        db.commit()
+    return None
