@@ -206,6 +206,16 @@ def enforce_egress(host: str, spec: SandboxSpec) -> None:
       - Wildcard subdomain: "*.example.com" (matches a.example.com, but NOT example.com)
 
     Hostnames are matched case-insensitively.
+
+    ⚠️ SECURITY LIMITATION — this is an APPLICATION-level check, intended to be
+    called by an egress proxy that fronts plugin traffic. It is NOT yet wired to
+    a runtime path, and render_argv only stamps the allowlist as a docker LABEL
+    (labels don't filter traffic). A launched plugin container is therefore on a
+    plain bridge with full outbound access regardless of this allowlist.
+    REAL enforcement (an `internal` network + egress proxy, or per-container
+    iptables / a CNI network policy) is a PRE-GA REQUIREMENT before untrusted
+    third-party plugin images are allowed to run. Today only the local
+    busybox-stub runs, so no untrusted code is live.
     """
     if not isinstance(host, str) or not host.strip():
         raise EgressDeniedError("egress host must be a non-empty string")
@@ -494,6 +504,10 @@ class PluginSandbox:
             detach=True,
             mem_limit=f"{mem_mb}m",
             nano_cpus=int(cpu_cores * 1e9),
+            # ⚠️ Full-egress bridge — the manifest network_egress allowlist is
+            # NOT enforced here (see enforce_egress's note). Acceptable while
+            # only the local busybox-stub runs; real egress filtering is a
+            # pre-GA requirement before untrusted plugin images are launched.
             network_mode="bridge",
             environment={
                 "ABS_TENANT_ID": tenant_id,
