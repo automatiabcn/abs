@@ -32,6 +32,7 @@ dependencies = [
     "docker>=7.1",           # Q7 Phase B — real Docker plugin sandbox launcher
     "pypdf>=5.1",            # RAG file ingest — lightweight PDF text extraction
     "python-docx>=1.1",      # RAG file ingest — lightweight DOCX text extraction
+    "openpyxl>=3.1",         # RAG file ingest — lightweight XLSX (Excel) extraction
 ]
 
 [project.optional-dependencies]
