@@ -21,6 +21,7 @@ from sqlmodel import Session, select
 from app.chat.citations import (
     ChatCitation,
     build_citation_prompt_block,
+    retrieve_citations,
     serialise_citations,
 )
 from app.chat.cost import estimate_call_cost_usd
@@ -261,3 +262,49 @@ def test_chat_assistant_tool_calls_persists_pipeline_metadata(auth_client):
     assert tc["pipeline"] in PIPELINE_OPTIONS
     assert "cost_usd" in tc
     assert "fallback_chain" in tc
+
+
+def test_retrieve_citations_searches_qdrant_tenant(monkeypatch):
+    """'Chat with your documents' must search the tenant Qdrant store (where
+    panel uploads land), NOT the operator Chroma KB. Regression: it queried
+    Chroma → panel-uploaded company docs never produced citations."""
+    import asyncio
+
+    from app.chat import citations as cit
+    from app.rag import embedding_bge
+    from app.rag import qdrant_client as qc
+
+    class _Emb:
+        dim = 1024
+
+        def embed_one(self, t):  # noqa: ANN001
+            return [0.1] * self.dim
+
+    monkeypatch.setattr(embedding_bge, "get_embedder", lambda: _Emb())
+    monkeypatch.setattr(qc, "ensure_collection", lambda *a, **k: None)
+    captured = {}
+
+    def _search(*, collection, tenant_id, query_vector, limit, **kw):
+        captured["tenant"] = tenant_id
+        return [{
+            "id": "c1", "score": 0.72,
+            "payload": {"text": "Kira her ayin 5'inde odenir.", "filename": "kira.docx"},
+        }]
+
+    monkeypatch.setattr(qc, "search", _search)
+
+    cits = asyncio.run(cit.retrieve_citations("kira ne zaman", project="t1", top_k=3))
+    assert captured["tenant"] == "t1"
+    assert len(cits) == 1
+    assert cits[0].source == "kira.docx"
+    assert "Kira" in cits[0].excerpt
+    assert cits[0].relevance_score == 0.72
+
+
+def test_retrieve_citations_empty_without_tenant():
+    import asyncio
+
+    from app.chat import citations as cit
+
+    assert asyncio.run(cit.retrieve_citations("q", project="", top_k=3)) == []
+    assert asyncio.run(cit.retrieve_citations("", project="t1", top_k=3)) == []
