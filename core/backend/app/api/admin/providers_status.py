@@ -90,13 +90,14 @@ async def providers_status(_admin: dict = Depends(admin_required)) -> Dict[str, 
 
 _TEST_PROMPT = "Reply with the single word OK."
 # Provider id → cascade-runtime provider name (matches
-# `app.providers.registry.get_provider`). Most lining up 1:1; cloudflare
-# is the exception (registry name `cloudflare_workers_ai`) so we map it
-# explicitly.
+# `app.providers.registry.get_provider`). These line up 1:1 — the registry
+# registers CloudflareProvider under "cloudflare" (NOT "cloudflare_workers_ai";
+# that stale name made get_provider raise → the live test 503'd → bad creds
+# were silently accepted).
 _PROVIDER_RUNTIME_NAME: Dict[str, str] = {
     "groq": "groq",
     "cerebras": "cerebras",
-    "cloudflare": "cloudflare_workers_ai",
+    "cloudflare": "cloudflare",
     "gemini": "gemini",
     "cohere": "cohere",
     "anthropic": "anthropic",
