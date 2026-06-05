@@ -42,6 +42,23 @@ def test_guard_blocks_non_http_scheme():
         net_guard.assert_safe_url("file:///etc/passwd")
 
 
+@pytest.mark.parametrize(
+    "ip",
+    [
+        "::ffff:127.0.0.1",      # IPv4-mapped loopback
+        "::ffff:169.254.169.254",  # IPv4-mapped cloud metadata
+        "64:ff9b::7f00:1",       # NAT64 of 127.0.0.1
+        "64:ff9b::a00:1",        # NAT64 of 10.0.0.1
+        "2002:7f00:1::",         # 6to4 of 127.0.0.1
+        "2002:0a00:0001::",      # 6to4 of 10.0.0.1
+    ],
+)
+def test_guard_blocks_embedded_ipv4_smuggling(ip):
+    # An IPv6 literal can wrap a private IPv4 (NAT64 / 6to4 / Teredo / mapped);
+    # the guard must extract and reject the inner address.
+    assert net_guard._ip_is_safe(ip) is False
+
+
 # ---- runner api_request -----------------------------------------------------
 
 class _FakeResp:

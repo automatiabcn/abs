@@ -101,6 +101,49 @@ def test_false_branch_taken_true_unreached():
     assert st["node_outputs"]["yes"].get("skipped") == "unreached"
 
 
+def test_diamond_join_reachable_via_any_path():
+    # cond true → b runs, c unreached, but the join d is still reached through
+    # b's unconditional edge (OR semantics — any firing edge reaches a node).
+    wf = {
+        "nodes": [
+            {"id": "a", "kind": "conditional", "config": {"condition_expr": '"x" == "x"'}},
+            {"id": "b", "kind": "output", "config": {"output_template": "B"}},
+            {"id": "c", "kind": "output", "config": {"output_template": "C"}},
+            {"id": "d", "kind": "output", "config": {"output_template": "D"}},
+        ],
+        "edges": [
+            {"source": "a", "target": "b", "condition": "true"},
+            {"source": "a", "target": "c", "condition": "false"},
+            {"source": "b", "target": "d"},
+            {"source": "c", "target": "d"},
+        ],
+    }
+    st = asyncio.run(_run(wf))
+    assert st["node_outputs"]["b"]["text"] == "B"
+    assert st["node_outputs"]["c"].get("skipped") == "unreached"
+    assert st["node_outputs"]["d"]["text"] == "D"  # join still runs
+
+
+def test_cycle_does_not_hang():
+    # a back-edge must not cause re-execution or an infinite loop.
+    wf = {
+        "nodes": [
+            {"id": "t", "kind": "trigger", "config": {"input": "go"}},
+            {"id": "a", "kind": "output", "config": {"output_template": "A"}},
+            {"id": "b", "kind": "output", "config": {"output_template": "B"}},
+        ],
+        "edges": [
+            {"source": "t", "target": "a"},
+            {"source": "a", "target": "b"},
+            {"source": "b", "target": "a"},
+        ],
+    }
+    st = asyncio.run(_run(wf))
+    assert st["state"] == "done"
+    assert st["node_outputs"]["a"]["text"] == "A"
+    assert st["node_outputs"]["b"]["text"] == "B"
+
+
 def test_no_conditions_runs_every_node_backwards_compat():
     wf = {
         "nodes": [
