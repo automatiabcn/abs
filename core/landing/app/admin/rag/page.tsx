@@ -65,6 +65,10 @@ export default function RagPage() {
   const [docs, setDocs] = useState<IngestedDoc[]>(INITIAL_DOCS);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [query, setQuery] = useState("");
   const [topK, setTopK] = useState(5);
   const [hybrid, setHybrid] = useState(false);
@@ -100,6 +104,7 @@ export default function RagPage() {
     async (files: FileList) => {
       setUploading(true);
       setError(null);
+      setUploadProgress({ done: 0, total: files.length });
       // BUG-27 — POST every file to /v1/rag/ingest individually so a single
       // failed upload doesn't poison the rest of the batch. Successful rows
       // are appended with the doc_id + chunk count returned by the backend
@@ -114,7 +119,9 @@ export default function RagPage() {
         if (/\.(txt|md|markdown|json|csv|log)$/.test(name)) return true;
         return f.type.startsWith("text/") || f.type === "application/json";
       };
-      for (const file of Array.from(files)) {
+      const fileArr = Array.from(files);
+      for (let _i = 0; _i < fileArr.length; _i++) {
+        const file = fileArr[_i];
         try {
           let res: Response;
           if (isTextFile(file)) {
@@ -164,6 +171,8 @@ export default function RagPage() {
           failures.push(
             `${file.name}: ${exc instanceof Error ? exc.message : "unknown"}`,
           );
+        } finally {
+          setUploadProgress({ done: _i + 1, total: fileArr.length });
         }
       }
       if (failures.length > 0) {
@@ -173,6 +182,7 @@ export default function RagPage() {
         setDocs((prev) => [...successes, ...prev]);
       }
       setUploading(false);
+      setUploadProgress(null);
     },
     [],
   );
@@ -306,24 +316,50 @@ export default function RagPage() {
                 Dosyaları buraya bırakın
               </p>
               <p className="text-xs text-muted-foreground">veya</p>
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  multiple
-                  className="hidden"
-                  data-test="rag-file-input"
-                  onChange={(e) => {
-                    if (e.target.files?.length) {
-                      void onDrop(e.target.files);
-                    }
-                  }}
-                />
-                <span className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
-                  Dosya seç
-                </span>
-              </label>
+              <div className="flex items-center gap-2">
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    data-test="rag-file-input"
+                    onChange={(e) => {
+                      if (e.target.files?.length) {
+                        void onDrop(e.target.files);
+                      }
+                    }}
+                  />
+                  <span className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
+                    Dosya seç
+                  </span>
+                </label>
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    data-test="rag-folder-input"
+                    ref={(el) => {
+                      // webkitdirectory isn't a typed React prop — set it imperatively
+                      if (el) el.setAttribute("webkitdirectory", "");
+                    }}
+                    onChange={(e) => {
+                      if (e.target.files?.length) {
+                        void onDrop(e.target.files);
+                      }
+                    }}
+                  />
+                  <span className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted">
+                    Klasör seç
+                  </span>
+                </label>
+              </div>
               {uploading && (
-                <p className="text-xs text-muted-foreground">Yükleniyor…</p>
+                <p className="text-xs text-muted-foreground">
+                  {uploadProgress
+                    ? `Yükleniyor… ${uploadProgress.done}/${uploadProgress.total}`
+                    : "Yükleniyor…"}
+                </p>
               )}
             </div>
 
