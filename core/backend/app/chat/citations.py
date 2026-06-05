@@ -54,38 +54,62 @@ async def retrieve_citations(
     if not query or not query.strip():
         return []
 
-    try:
-        from app.rag.query import query as rag_query  # local import: lazy
-    except Exception as exc:  # pragma: no cover — import-time RAG missing
-        logger.debug("rag import failed, skipping citations: %s", exc)
+    # "Chat with your documents" must search the SAME tenant Qdrant store the
+    # panel uploads into (/v1/rag/ingest*), NOT the operator Chroma KB — else
+    # panel-uploaded company docs never produce citations (they were silently
+    # invisible to chat). `project` is the tenant_id (e.g. "default").
+    tenant = (project or "").strip()
+    if not tenant:
         return []
 
+    def _search() -> list[dict]:
+        # Run the embed + Qdrant search on a worker thread: the Cohere
+        # embedder calls asyncio.run() internally, which crashes inside the
+        # async SSE handler's running event loop (same trap that 500'd
+        # /ingest-file). asyncio.to_thread gives it a loop-free context.
+        from app.config import settings
+        from app.rag import qdrant_client as qc
+        from app.rag.embedding_bge import get_embedder
+
+        embedder = get_embedder()
+        collection = settings.qdrant_default_collection
+        qc.ensure_collection(collection, vector_size=embedder.dim)
+        vector = embedder.embed_one(query)
+        return qc.search(
+            collection=collection,
+            tenant_id=tenant,
+            query_vector=vector,
+            limit=top_k,
+        )
+
     try:
-        rows = await rag_query(query, project_filter=project, top_k=top_k)
-    except Exception as exc:
-        logger.info("rag query failed (no citations): %s", exc)
+        import asyncio
+
+        hits = await asyncio.to_thread(_search)
+    except Exception as exc:  # noqa: BLE001 — never break chat over citations
+        logger.info("citation qdrant search failed (no citations): %s", exc)
         return []
 
     citations: list[ChatCitation] = []
-    for idx, row in enumerate(rows):
-        if "error" in row:
-            continue
-        file_path = row.get("file") or ""
-        chunk_idx = row.get("chunk_idx", idx)
-        chunk_hash = row.get("hash") or ""
-        rid = (
-            f"{row.get('project') or 'default'}:{file_path}:"
-            f"{chunk_idx}:{chunk_hash}"
+    for idx, hit in enumerate(hits):
+        payload = hit.get("payload") or {}
+        source = str(
+            payload.get("filename")
+            or payload.get("doc_id")
+            or (payload.get("metadata") or {}).get("filename")
+            or ""
         )
-        score = row.get("score")
+        score = hit.get("score")
         if score is not None:
             score = max(0.0, min(1.0, float(score)))
+        page = payload.get("page") or (payload.get("metadata") or {}).get("page")
         citations.append(
             ChatCitation(
-                chunk_id=rid,
-                source=file_path or row.get("project") or "",
+                chunk_id=str(hit.get("id") or f"{tenant}:{idx}"),
+                source=source,
                 relevance_score=score,
-                excerpt=(row.get("snippet") or "")[:200],
+                excerpt=str(payload.get("text") or "")[:200],
+                page=int(page) if isinstance(page, (int, str)) and str(page).isdigit() else None,
             )
         )
     return citations
