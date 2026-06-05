@@ -72,7 +72,10 @@ def test_node_failure_is_isolated_not_fatal(monkeypatch):
     assert "error" in st["node_outputs"]["n1"]
 
 
-def test_non_llm_kinds_recorded_not_faked():
+def test_hitl_pauses_run_not_faked():
+    # hitl now pauses the run for human approval (see test_workflow_hitl.py)
+    # rather than being silently skipped — a non-llm kind that is honestly
+    # surfaced, never faked as done.
     wf = {
         "nodes": [
             {"id": "h1", "kind": "hitl", "config": {}},
@@ -80,6 +83,18 @@ def test_non_llm_kinds_recorded_not_faked():
         ],
         "edges": [{"source": "h1", "target": "o1"}],
     }
-    st = asyncio.run(_run(wf))
-    assert st["state"] == "done"
-    assert st["node_outputs"]["h1"].get("skipped") == "hitl"
+
+    async def go():
+        runner.reset_for_tests()
+        job_id = await runner.enqueue(wf, "demo")
+        for _ in range(50):
+            await asyncio.sleep(0.02)
+            st = runner.status(job_id)
+            if st and st["state"] in ("done", "error", "awaiting_approval"):
+                return st
+        return runner.status(job_id)
+
+    st = asyncio.run(go())
+    assert st["state"] == "awaiting_approval"
+    assert st["node_outputs"]["h1"].get("awaiting") == "approval"
+    assert "o1" not in st["node_outputs"]  # downstream not run before approval
