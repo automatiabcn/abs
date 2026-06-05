@@ -18,7 +18,7 @@ def test_inline_python_analyze_triggers_nudge():
         "Bash",
         {"command": "python3 -c 'data=[1,2,3]; analyze(data); calculate(data)'"},
     )
-    assert "DELEGATE" in msg
+    assert "ABS delegation" in msg
     assert "gptoss" in msg
 
 
@@ -27,7 +27,7 @@ def test_curl_python_pipe_triggers_nudge():
         "Bash",
         {"command": "curl -s https://api.example/data | python3 -c 'import sys'"},
     )
-    assert "DELEGATE" in msg
+    assert "ABS delegation" in msg
     assert "curl" in msg
 
 
@@ -46,7 +46,7 @@ def test_big_turkish_docs_write_triggers_qwen32b_nudge():
         {"file_path": "/proj/docs/README.md", "content": content},
     )
     assert "qwen32b" in msg
-    assert "Büyük docs" in msg
+    assert "large docs" in msg
 
 
 def test_small_docs_does_not_trigger():
