@@ -272,7 +272,7 @@ export default function RagPage() {
               Doküman yükle
             </CardTitle>
             <CardDescription>
-              PDF · MD · TXT · DOCX (≤ 25 MB). Sürükle-bırak veya seç.
+              PDF · DOCX · XLSX · MD · TXT (≤ 25 MB). Sürükle-bırak veya seç.
             </CardDescription>
           </CardHeader>
           <CardContent>

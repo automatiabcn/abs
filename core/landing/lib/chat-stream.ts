@@ -20,6 +20,14 @@ export interface ToolCall {
   result?: string;
 }
 
+export interface Citation {
+  chunk_id: string;
+  source: string;
+  relevance_score?: number | null;
+  excerpt?: string;
+  page?: number | null;
+}
+
 export interface ChatMessage {
   id?: string | number;
   role: ChatRole;
@@ -30,6 +38,7 @@ export interface ChatMessage {
   latencyMs?: number;
   mock?: boolean;
   createdAt?: string;
+  citations?: Citation[];
 }
 
 export interface MetaEvent {
@@ -54,6 +63,7 @@ export type SessionEvent =
   | { type: "session"; session_id: number; title: string }
   | { type: "tool-call"; name: string; args: ToolCall["args"] }
   | { type: "tool-result"; name: string; result: string }
+  | { type: "citations"; citations: Citation[] }
   | { type: "text"; content: string; provider: string }
   | {
       type: "meta";
@@ -153,6 +163,12 @@ export function useChat({
                     ...(m.toolCalls ?? []),
                     { name: evt.name, args: evt.args },
                   ],
+                }));
+                break;
+              case "citations":
+                updateLastAssistant((m) => ({
+                  ...m,
+                  citations: evt.citations,
                 }));
                 break;
               case "tool-result":

@@ -548,3 +548,58 @@ def test_ingest_file_runs_with_asyncio_embedder(monkeypatch: pytest.MonkeyPatch)
         )
     assert r.status_code == 200, r.text
     assert r.json()["chunks"] >= 1
+
+
+_XLSX_MIME = (
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
+
+
+def test_parse_document_xlsx_roundtrip() -> None:
+    """Company docs include Excel — XLSX cells must extract to searchable text."""
+    import io
+
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Kira"
+    ws.append(["Ay", "Tutar"])
+    ws.append(["Ocak", "1000 euro"])
+    ws.append(["Şubat", "1000 euro"])
+    buf = io.BytesIO()
+    wb.save(buf)
+    doc = pipe.parse_document(buf.getvalue(), mime_type=_XLSX_MIME, filename="kira.xlsx")
+    assert "Kira" in doc.text  # sheet name
+    assert "1000 euro" in doc.text  # cell value
+    assert "Tutar" in doc.text
+
+
+def test_ingest_file_xlsx_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    import io
+
+    import openpyxl
+
+    cid = f"rag-{secrets.token_hex(3)}"
+    _seed_client(cid)
+    monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
+    monkeypatch.setattr(rag_routes.qc, "upsert_points", lambda **k: len(k["points"]))
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    for i in range(20):
+        ws.append([f"satir {i}", f"deger {i}", "ortak metin tekrar"])
+    buf = io.BytesIO()
+    wb.save(buf)
+
+    with TestClient(app) as c:
+        token = _issue_token(
+            c, client_id=cid, user_subject="alice", tenant_id="t1", roles=["member"]
+        )
+        r = c.post(
+            "/v1/rag/ingest-file",
+            files={"file": ("rapor.xlsx", buf.getvalue(), "application/octet-stream")},
+            headers={"Authorization": f"Bearer {token}", "X-ABS-Audience": cid},
+        )
+    assert r.status_code == 200, r.text
+    assert r.json()["chunks"] >= 1
