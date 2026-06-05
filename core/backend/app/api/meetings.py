@@ -26,6 +26,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlmodel import Session, select
 
 from app.api.auth import current_admin
+from app.config import settings
 from app.db.models import Meeting, MeetingSegment
 from app.db.session import get_engine
 from app.services import feature_usage as feature_usage_service
@@ -40,6 +41,76 @@ logger = logging.getLogger(__name__)
 
 MAX_UPLOAD_BYTES = 250 * 1024 * 1024
 DEFAULT_TENANT_SLUG = "default"
+
+
+def _autoindex_meeting_rag(
+    *, meeting_id: int, title: str, uploader_email: str, result: Dict[str, Any]
+) -> int:
+    """Best-effort: index a finished transcript into the tenant's Qdrant
+    document store so the meeting is answerable from panel RAG + MCP rag_query.
+
+    Indexes into `settings.qdrant_default_collection` under the SAME tenant the
+    panel RAG ingest resolves (`_resolve_tenant`) so all three surfaces share
+    one corpus. Never raises — a RAG/embedder/Qdrant hiccup must not fail the
+    upload (the transcript is already persisted in SQL).
+    """
+    import uuid as _uuid
+
+    from qdrant_client.models import PointStruct
+
+    from app.api.chat import _resolve_tenant
+    from app.meeting.rag_index import MeetingRAGIndexer
+    from app.meeting.transcribe import Transcript, TranscriptSegment
+    from app.rag import qdrant_client as qc
+    from app.rag.embedding_bge import get_embedder
+
+    tenant = _resolve_tenant(uploader_email) or DEFAULT_TENANT_SLUG
+    segments = [
+        TranscriptSegment(
+            speaker=str(seg.get("speaker_id", "speaker")),
+            start=float(seg.get("start", 0.0)),
+            end=float(seg.get("end", 0.0)),
+            text=str(seg.get("text", "")),
+        )
+        for seg in result.get("segments", [])
+    ]
+    transcript = Transcript(
+        language=str(result.get("language", "auto")),
+        duration=float(result.get("duration_sec", 0.0)),
+        segments=segments,
+        backend=str(result.get("backend", "whisperx")),
+    )
+
+    embedder = get_embedder()
+
+    def _upsert(*, collection: str, tenant_id: str, points: list) -> int:
+        # Qdrant point IDs must be int/UUID; meeting chunk ids are strings
+        # (`<meeting>-seg-0001`) → map deterministically to UUID5, keep the
+        # original chunk_id in the payload for traceability.
+        structs = [
+            PointStruct(
+                id=str(_uuid.uuid5(_uuid.NAMESPACE_URL, str(p["id"]))),
+                vector=p["vector"],
+                payload=p["payload"],
+            )
+            for p in points
+        ]
+        return qc.upsert_points(
+            collection=collection, tenant_id=tenant_id, points=structs
+        )
+
+    indexer = MeetingRAGIndexer(
+        embed_fn=embedder.embed,
+        upsert_fn=_upsert,
+        ensure_fn=lambda c: qc.ensure_collection(c, vector_size=embedder.dim),
+        collection=settings.qdrant_default_collection,
+    )
+    return indexer.index(
+        transcript,
+        meeting_id=f"meeting-{meeting_id}",
+        title=title,
+        tenant_id=tenant,
+    )
 
 
 def _suffix(filename: str | None) -> str:
@@ -203,6 +274,21 @@ async def upload_meeting(
         )
     except Exception:
         pass
+
+    if settings.meeting_rag_autoindex:
+        try:
+            n = _autoindex_meeting_rag(
+                meeting_id=meeting_id,
+                title=filename,
+                uploader_email=uploader_email,
+                result=result,
+            )
+            logger.info("meeting_rag_autoindex meeting=%s chunks=%d", meeting_id, n)
+        except Exception as exc:  # noqa: BLE001 — best-effort, never fail upload
+            logger.warning(
+                "meeting_rag_autoindex_failed meeting=%s err=%s", meeting_id, exc
+            )
+
     return payload
 
 

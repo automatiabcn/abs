@@ -178,6 +178,16 @@ class Settings(BaseSettings):
     # delegation tokens are handed to team members / external clients.
     mcp_expose_patch_tools: bool = False
 
+    # MCP rag_query store selection. Empty (default) → the operator Chroma KB
+    # (app/rag/, single collection, no tenant scoping). When set to a tenant_id
+    # the MCP rag_query tool instead searches the Qdrant document store for THAT
+    # tenant — so docs uploaded through the panel (/v1/rag/ingest) become
+    # answerable from Claude Code / Codex delegation. Single-tenant deployments
+    # (e.g. one customer org) set this to their tenant_id; multi-tenant SaaS
+    # leaves it empty so a shared delegation token cannot read another tenant's
+    # documents through MCP.
+    mcp_rag_tenant: str = ""
+
     # Hooks (007)
     hooks_enabled: bool = True
     hooks_mode: str = "middleware"  # "middleware" | "native" | "both"
@@ -314,6 +324,11 @@ class Settings(BaseSettings):
     piper_voice_path: str = "/opt/abs/voices/tr-female.onnx"
     meeting_retention_days: int = 90
     meeting_voice_consent_required: bool = True
+    # When true, a finished meeting transcript is auto-indexed into the tenant's
+    # Qdrant document store (settings.qdrant_default_collection) so it becomes
+    # answerable from panel RAG search + MCP rag_query (see mcp_rag_tenant).
+    # Best-effort: a RAG/embedder/Qdrant failure never fails the upload.
+    meeting_rag_autoindex: bool = True
 
     # T-Q03 — SaaS integration env vars (Gmail / Recall / Deepgram / WhisperX / ElevenLabs)
     gmail_oauth_client_id: str = ""
