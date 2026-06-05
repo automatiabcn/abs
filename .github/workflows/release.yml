@@ -163,6 +163,11 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: true
+          # Multi-arch parity with release.sh (QEMU set up above). Without this
+          # the action defaults to the amd64 runner's single platform and
+          # overwrites any multi-arch tag with an amd64-only manifest — a
+          # regression for arm64 customers who pull the GHCR images.
+          platforms: linux/amd64,linux/arm64
           provenance: true
           sbom: true
           tags: |
@@ -178,6 +183,7 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: true
+          platforms: linux/amd64,linux/arm64
           provenance: true
           sbom: true
           tags: |
