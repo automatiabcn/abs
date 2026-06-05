@@ -72,6 +72,26 @@ def test_confirm_destructive_cannot_bypass_forbidden_clause(
     assert r.json()["detail"] == "forbidden_clause"
 
 
+@pytest.mark.parametrize(
+    "cypher",
+    [
+        'LOAD /*x*/ CSV FROM "file:///etc/passwd" AS r RETURN r',  # block-comment split
+        "LOAD // sneaky\n CSV FROM 'x' AS r RETURN r",            # line-comment split
+        "USING/**/PERIODIC/**/COMMIT 500 LOAD/**/CSV FROM 'x' AS r RETURN r",
+        "CA/**/LL",  # cannot split a single token, but ensure no crash
+    ],
+)
+def test_comment_split_clause_not_bypassable(admin_client: TestClient, cypher: str) -> None:
+    """Cypher comments between multi-word clause keywords must NOT slip past the
+    forbidden-clause guard (the parser ignores the comment and executes LOAD CSV)."""
+    # The first three are real LOAD CSV / PERIODIC COMMIT bypasses → must 400.
+    blocked = "LOAD" in cypher.upper() or "PERIODIC" in cypher.upper()
+    r = admin_client.post("/v1/graph/cypher", json={"cypher": cypher, "params": {}})
+    if blocked:
+        assert r.status_code == 400, r.text
+        assert r.json()["detail"] == "forbidden_clause"
+
+
 def test_helper_no_false_positive_on_property_substrings() -> None:
     """Word-boundary matching: 'RECALL'/'FORECASTING' as data must NOT trip."""
     assert graph_routes._has_forbidden_clause("CALL db.labels()") is True
