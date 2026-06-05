@@ -41,12 +41,18 @@ async def recent_pipeline(limit: int = 20) -> dict:
     from app.db.models import CustomerAuditEntry
     from app.db.session import get_engine
 
+    capped = max(1, min(int(limit), 500))
     out: list[dict] = []
     with Session(get_engine()) as db:
-        rows = list(db.scalars(select(CustomerAuditEntry)).all())
-    for r in sorted(rows, key=lambda x: x.ts or datetime.min, reverse=True):
-        if (r.resource or "") not in PIPELINE_TOOLS:
-            continue
+        # DB-side filter/order/limit — UNAUTHENTICATED endpoint must not load the
+        # full (growing) audit table into memory each request.
+        rows = list(db.scalars(
+            select(CustomerAuditEntry)
+            .where(CustomerAuditEntry.resource.in_(list(PIPELINE_TOOLS)))
+            .order_by(CustomerAuditEntry.ts.desc())
+            .limit(capped)
+        ).all())
+    for r in rows:
         ts = _norm(r.ts)
         out.append(
             {
