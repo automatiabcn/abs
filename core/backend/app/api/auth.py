@@ -365,6 +365,41 @@ def _decode_token(token: str) -> Dict:
         raise _SessionInvalid() from exc
 
 
+def _subject_revoked(email: str) -> bool:
+    """Auth/session round — server-side session invalidation.
+
+    A valid, unexpired ``abs_session`` JWT must STILL be rejected once the
+    underlying user is deactivated/revoked in the ``users`` table. Without
+    this, logout is purely client-side and a revoked or demoted admin keeps
+    full panel + ``POST /v1/mcp/tokens`` mint access for the remaining cookie
+    lifetime (up to 7 days) — the cookie is the only thing checked.
+
+    Returns True only when a ``users`` row exists for ``email`` AND its
+    status is not ``"active"``. A missing row (bootstrap admin via
+    admin_credentials.json, or pre-users-table deploys) is NOT treated as
+    revoked — the JSON overlay stays the bootstrap source of truth, so this
+    can never lock the single-admin self-host operator out of their own panel.
+    """
+    if not email:
+        return False
+    try:
+        from sqlmodel import Session, select
+
+        from app.db.models import User
+        from app.db.session import get_engine
+
+        with Session(get_engine()) as db:
+            user = db.execute(
+                select(User).where(User.email == email)
+            ).scalars().first()
+            if user is None:
+                return False
+            return str(user.status) != "active"
+    except Exception as exc:
+        logger.debug("subject-active recheck skipped (non-fatal): %s", exc)
+        return False
+
+
 def _set_cookie(response: Response, token: str) -> None:
     response.set_cookie(
         key=COOKIE_NAME,
@@ -395,7 +430,7 @@ def current_admin(request: Request) -> Dict:
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Oturum yok"
         )
     try:
-        return _decode_token(token)
+        payload = _decode_token(token)
     except _SessionExpired:
         emit_event(
             request,
@@ -414,6 +449,16 @@ def current_admin(request: Request) -> Dict:
             status_code=401,
         )
         raise
+    if _subject_revoked(payload.get("sub", "")):
+        emit_event(
+            request,
+            action="auth.session.check",
+            outcome="denied",
+            reason="subject_revoked",
+            status_code=401,
+        )
+        raise _SessionInvalid()
+    return payload
 
 
 @router.post("/login")
@@ -954,6 +999,15 @@ def me(request: Request) -> Dict:
             status_code=401,
         )
         raise
+    if _subject_revoked(payload.get("sub", "")):
+        emit_event(
+            request,
+            action="auth.session.check",
+            outcome="denied",
+            reason="subject_revoked",
+            status_code=401,
+        )
+        raise _SessionInvalid()
     exp = payload.get("exp")
     exp_iso = (
         datetime.fromtimestamp(exp, tz=timezone.utc).isoformat() if exp else ""
