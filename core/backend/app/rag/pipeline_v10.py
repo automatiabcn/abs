@@ -98,13 +98,13 @@ _TEXT_MIMES = {
     "text/markdown",
     "application/json",
 }
+_DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+_XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 _BINARY_PARSER_MIMES = {
     "application/pdf",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    _DOCX_MIME,
+    _XLSX_MIME,
 }
-
-
-_DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
 def _extract_binary_text(content: bytes, mime_type: str) -> str:
@@ -166,6 +166,35 @@ def _extract_binary_text(content: bytes, mime_type: str) -> str:
         except Exception as exc:  # noqa: BLE001 — surface as clean 422, not 500
             raise RuntimeError(f"docx_parse_failed: {exc}") from exc
         return "\n\n".join(p.text for p in document.paragraphs if p.text.strip())
+
+    if mime_type == _XLSX_MIME:
+        try:
+            import openpyxl  # type: ignore
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError("openpyxl is required for XLSX parsing") from exc
+        try:
+            wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+        except Exception as exc:  # noqa: BLE001 — surface as clean 422, not 500
+            raise RuntimeError(f"xlsx_parse_failed: {exc}") from exc
+        # Flatten each sheet to "Sheet: name" + tab-joined non-empty rows so a
+        # spreadsheet of company records becomes searchable prose.
+        parts: list[str] = []
+        for ws in wb.worksheets:
+            rows = []
+            for row in ws.iter_rows(values_only=True):
+                cells = [str(c) for c in row if c is not None and str(c).strip()]
+                if cells:
+                    rows.append(" \t ".join(cells))
+            if rows:
+                parts.append(f"[Sheet: {ws.title}]\n" + "\n".join(rows))
+        try:
+            wb.close()
+        except Exception:
+            pass
+        text = "\n\n".join(parts)
+        if not text.strip():
+            raise RuntimeError("xlsx_no_extractable_text: the spreadsheet has no readable cells.")
+        return text
 
     raise RuntimeError(f"no_parser_for_mime: {mime_type}")
 
