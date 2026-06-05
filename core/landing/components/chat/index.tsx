@@ -243,6 +243,40 @@ export function MessageBubble({ msg }: { msg: ChatMessage }) {
         {msg.toolCalls?.map((tc, i) => (
           <ToolCallCard key={i} call={tc} />
         ))}
+        {!isUser && msg.citations && msg.citations.length > 0 && (
+          <div
+            className="mt-2 border-t border-border/50 pt-2"
+            data-test="chat-citations"
+          >
+            <div className="mb-1 text-xs font-medium text-muted-foreground">
+              Kaynaklar
+            </div>
+            <ol className="space-y-1">
+              {msg.citations.map((c, i) => (
+                <li
+                  key={c.chunk_id ?? i}
+                  className="text-xs text-muted-foreground"
+                >
+                  <span className="font-mono text-foreground">[{i + 1}]</span>{" "}
+                  <span className="font-medium text-foreground">
+                    {c.source || "kaynak"}
+                  </span>
+                  {c.page != null && <span> · s.{c.page}</span>}
+                  {c.relevance_score != null && (
+                    <span className="ml-1 rounded bg-muted px-1 py-0.5 text-[10px]">
+                      {(c.relevance_score * 100).toFixed(0)}%
+                    </span>
+                  )}
+                  {c.excerpt && (
+                    <div className="mt-0.5 line-clamp-2 opacity-80">
+                      {c.excerpt}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
         {!isUser && (msg.provider || msg.tokensUsed != null || msg.latencyMs != null) && (
           <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-border/50 pt-2">
             <ProviderChip provider={msg.provider} mock={msg.mock} />
