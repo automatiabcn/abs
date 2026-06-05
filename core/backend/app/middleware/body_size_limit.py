@@ -34,7 +34,8 @@ logger = logging.getLogger(__name__)
 # `_default` key supplies the fallback. Tune via settings if tier
 # differentiation is needed in future.
 DEFAULT_CAPS: Mapping[str, int] = {
-    "/v1/rag/ingest": 10 * 1024 * 1024,        # 10 MB — multipart docs allowed
+    "/v1/rag/ingest-file": 40 * 1024 * 1024,   # 40 MB — raw PDF/DOCX uploads
+    "/v1/rag/ingest": 10 * 1024 * 1024,        # 10 MB — JSON text body
     "/v1/marketplace/install": 64 * 1024,      # 64 KB — admin payload
     "/v1/marketplace/uninstall": 16 * 1024,    # 16 KB
     "/v1/workflows/synthesize": 256 * 1024,    # 256 KB

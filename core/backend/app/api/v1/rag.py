@@ -21,7 +21,7 @@ import logging
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
 from qdrant_client.models import PointStruct
 
@@ -220,6 +220,105 @@ def ingest_text(
                 "collection": collection,
                 "chunks": inserted,
                 "filename": body.filename or "",
+            },
+        )
+    )
+    return IngestResponse(
+        doc_id=doc.doc_id,
+        chunks=inserted,
+        tokens_estimated=tokens,
+        collection=collection,
+        elapsed_ms=elapsed,
+    )
+
+
+_DOCX_MIME = (
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+)
+_EXT_MIME = {
+    ".pdf": "application/pdf",
+    ".docx": _DOCX_MIME,
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+    ".markdown": "text/markdown",
+    ".json": "application/json",
+}
+
+
+@router.post("/ingest-file", response_model=IngestResponse)
+@observe(name="rag.ingest_file")
+async def ingest_file(
+    file: UploadFile = File(...),
+    rag: RAGAuth = Depends(rag_action_dep("ingest")),
+) -> IngestResponse:
+    """Ingest a real document (PDF / DOCX / txt / md) sent as raw multipart.
+
+    Binary formats (PDF/DOCX) cannot go through `/ingest` — the browser would
+    have to decode them to text first, which corrupts the bytes. Here the raw
+    payload is parsed server-side (pypdf / python-docx) before chunking.
+    """
+    import os as _os
+
+    auth = rag.auth
+    collection = _tenant_collection(auth)
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="empty_upload")
+
+    # Resolve MIME from the extension first — browsers often send a generic
+    # application/octet-stream for .docx, which the parser can't route.
+    ext = _os.path.splitext(file.filename or "")[1].lower()
+    mime = _EXT_MIME.get(ext) or (file.content_type or "application/octet-stream")
+
+    started = time.perf_counter()
+    try:
+        doc = parse_document(raw, mime_type=mime, filename=file.filename)
+    except RuntimeError as exc:
+        # Parser errors (scanned PDF with no text layer, unsupported type) are
+        # client-actionable — surface a clean 422 the panel can render.
+        logger.warning("rag_ingest_file_parse_failed mime=%s err=%s", mime, exc)
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+
+    chunks = late_chunks(doc)
+    if not chunks:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, detail="no_chunkable_content"
+        )
+
+    inserted = _ingest_chunks(
+        tenant_id=auth.tenant_id or "",
+        collection=collection,
+        chunks=chunks,
+    )
+    elapsed = (time.perf_counter() - started) * 1000.0
+    tokens = estimate_token_count(doc.text)
+    logger.info(
+        "rag_ingest_file tenant=%s doc=%s mime=%s chunks=%d ms=%.1f",
+        auth.tenant_id,
+        doc.doc_id,
+        mime,
+        inserted,
+        elapsed,
+    )
+    get_usage_logger().record(
+        make_event(
+            name="rag.ingest_file",
+            tenant_id=auth.tenant_id,
+            user_subject=auth.subject,
+            request_type="ingest",
+            status="ok",
+            latency_ms=elapsed,
+            input_tokens=tokens,
+            output_tokens=inserted,
+            model_version=f"bge-m3-{settings.embedding_backend}",
+            metadata={
+                "doc_id": doc.doc_id,
+                "collection": collection,
+                "chunks": inserted,
+                "filename": file.filename or "",
+                "mime": mime,
             },
         )
     )
