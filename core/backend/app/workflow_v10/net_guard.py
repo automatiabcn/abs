@@ -34,10 +34,34 @@ class UnsafeUrlError(ValueError):
 _ALLOWED_SCHEMES = frozenset({"http", "https"})
 
 
+_NAT64_PREFIX = ipaddress.ip_network("64:ff9b::/96")
+
+
+def _embedded_ipv4(addr: "ipaddress._BaseAddress"):
+    """Extract any IPv4 smuggled inside an IPv6 address (mapped / 6to4 /
+    Teredo / NAT64), or None. These forms can route a private v4 through an
+    IPv6-looking literal, so the inner address must be validated too."""
+    if not isinstance(addr, ipaddress.IPv6Address):
+        return None
+    if addr.ipv4_mapped:
+        return addr.ipv4_mapped
+    if addr.sixtofour:
+        return addr.sixtofour
+    if addr.teredo:
+        return addr.teredo[1]  # (server, client) → the client v4
+    if addr in _NAT64_PREFIX:
+        return ipaddress.ip_address(int(addr) & 0xFFFFFFFF)
+    return None
+
+
 def _ip_is_safe(ip: str) -> bool:
     try:
         addr = ipaddress.ip_address(ip)
     except ValueError:
+        return False
+    # An IPv6 wrapper is only as safe as the IPv4 it may embed.
+    inner = _embedded_ipv4(addr)
+    if inner is not None and not (inner.is_global and not inner.is_multicast):
         return False
     # is_global is the strict allowlist: everything else (private, loopback,
     # link-local 169.254/fe80, reserved, multicast, unspecified) is rejected.
