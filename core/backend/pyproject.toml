@@ -30,6 +30,8 @@ dependencies = [
     "slowapi>=0.1.9",        # T-Q01 sweep — /v1/* rate limit middleware
     "neo4j>=5.18",           # Q7 Phase A — graph DB Bolt async driver
     "docker>=7.1",           # Q7 Phase B — real Docker plugin sandbox launcher
+    "pypdf>=5.1",            # RAG file ingest — lightweight PDF text extraction
+    "python-docx>=1.1",      # RAG file ingest — lightweight DOCX text extraction
 ]
 
 [project.optional-dependencies]

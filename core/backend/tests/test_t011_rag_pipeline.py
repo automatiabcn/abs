@@ -124,15 +124,46 @@ def test_parse_document_unknown_mime_falls_back_to_text(
     assert any("unknown_mime" in r.getMessage() for r in caplog.records)
 
 
-def test_parse_document_pdf_without_unstructured_raises() -> None:
-    try:
-        import unstructured  # noqa: F401
-        pytest.skip("unstructured present — RuntimeError path can't be exercised")
-    except ImportError:
-        pass
+def test_parse_document_pdf_corrupt_raises_clean_runtimeerror() -> None:
+    # A non-PDF / truncated payload must surface a clean RuntimeError (which the
+    # /ingest-file route maps to 422), never a raw pypdf exception (→ 500).
     with pytest.raises(RuntimeError) as exc:
-        pipe.parse_document(b"%PDF-1.4", mime_type="application/pdf", filename="x.pdf")
-    assert "unstructured" in str(exc.value).lower()
+        pipe.parse_document(b"%PDF-1.4 not really a pdf", mime_type="application/pdf", filename="x.pdf")
+    msg = str(exc.value).lower()
+    assert "pdf_parse_failed" in msg or "pdf_no_extractable_text" in msg
+
+
+def test_parse_document_docx_roundtrip() -> None:
+    import io
+
+    import docx  # python-docx
+
+    buf = io.BytesIO()
+    d = docx.Document()
+    d.add_paragraph("Kira bedeli her ayin 5'inde odenir.")
+    d.add_paragraph("Aidat 250 euro.")
+    d.save(buf)
+    doc = pipe.parse_document(
+        buf.getvalue(),
+        mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename="lease.docx",
+    )
+    assert "Kira bedeli" in doc.text
+    assert "Aidat 250" in doc.text
+
+
+def test_parse_document_pdf_no_text_layer_raises() -> None:
+    import io
+
+    from pypdf import PdfWriter
+
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    buf = io.BytesIO()
+    writer.write(buf)
+    with pytest.raises(RuntimeError) as exc:
+        pipe.parse_document(buf.getvalue(), mime_type="application/pdf", filename="scan.pdf")
+    assert "pdf_no_extractable_text" in str(exc.value)
 
 
 def test_late_chunks_basic_count_and_ordering() -> None:
@@ -233,6 +264,89 @@ def test_ingest_text_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
     assert len(body["doc_id"]) == 16
     assert upserted["tenant_id"] == "tenant-1"
     assert upserted["count"] == body["chunks"]
+
+
+def test_ingest_file_docx_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    import io
+
+    import docx  # python-docx
+
+    cid = f"rag-{secrets.token_hex(3)}"
+    _seed_client(cid)
+
+    upserted: dict = {}
+
+    def fake_upsert(*, collection, tenant_id, points):
+        upserted["tenant_id"] = tenant_id
+        upserted["count"] = len(points)
+        return len(points)
+
+    monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
+    monkeypatch.setattr(rag_routes.qc, "upsert_points", fake_upsert)
+
+    buf = io.BytesIO()
+    d = docx.Document()
+    for _ in range(30):
+        d.add_paragraph("Kira bedeli her ayin 5'inde odenir. Aidat 250 euro. ")
+    d.save(buf)
+
+    with TestClient(app) as c:
+        token = _issue_token(
+            c, client_id=cid, user_subject="alice", tenant_id="tenant-1", roles=["member"]
+        )
+        # Browsers send octet-stream for .docx — the endpoint resolves the MIME
+        # from the .docx extension, so this must still route to the DOCX parser.
+        r = c.post(
+            "/v1/rag/ingest-file",
+            files={"file": ("lease.docx", buf.getvalue(), "application/octet-stream")},
+            headers={"Authorization": f"Bearer {token}", "X-ABS-Audience": cid},
+        )
+
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["chunks"] >= 1
+    assert upserted["tenant_id"] == "tenant-1"
+    assert upserted["count"] == body["chunks"]
+
+
+def test_ingest_file_empty_returns_400() -> None:
+    cid = f"rag-{secrets.token_hex(3)}"
+    _seed_client(cid)
+    with TestClient(app) as c:
+        token = _issue_token(
+            c, client_id=cid, user_subject="alice", tenant_id="tenant-1", roles=["member"]
+        )
+        r = c.post(
+            "/v1/rag/ingest-file",
+            files={"file": ("empty.txt", b"", "text/plain")},
+            headers={"Authorization": f"Bearer {token}", "X-ABS-Audience": cid},
+        )
+    assert r.status_code == 400
+
+
+def test_ingest_file_scanned_pdf_returns_422() -> None:
+    import io
+
+    from pypdf import PdfWriter
+
+    cid = f"rag-{secrets.token_hex(3)}"
+    _seed_client(cid)
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    buf = io.BytesIO()
+    writer.write(buf)
+    with TestClient(app) as c:
+        token = _issue_token(
+            c, client_id=cid, user_subject="alice", tenant_id="tenant-1", roles=["member"]
+        )
+        r = c.post(
+            "/v1/rag/ingest-file",
+            files={"file": ("scan.pdf", buf.getvalue(), "application/pdf")},
+            headers={"Authorization": f"Bearer {token}", "X-ABS-Audience": cid},
+        )
+    # Scanned/no-text PDF → clean 422, not a 500.
+    assert r.status_code == 422, r.text
+    assert "pdf_no_extractable_text" in r.text
 
 
 def test_ingest_text_missing_tenant_returns_403(

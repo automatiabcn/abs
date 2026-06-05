@@ -106,27 +106,46 @@ export default function RagPage() {
       // so the operator sees real chunk math, not estimated `size / 1200`.
       const successes: IngestedDoc[] = [];
       const failures: string[] = [];
+      // Plain-text formats go through /ingest (JSON). Binary docs (PDF/DOCX)
+      // must NOT be read with file.text() — that corrupts the bytes — so they
+      // are sent as raw multipart to /ingest-file for server-side extraction.
+      const isTextFile = (f: File) => {
+        const name = f.name.toLowerCase();
+        if (/\.(txt|md|markdown|json|csv|log)$/.test(name)) return true;
+        return f.type.startsWith("text/") || f.type === "application/json";
+      };
       for (const file of Array.from(files)) {
-        const text = await file.text().catch(() => "");
-        if (!text.trim()) {
-          failures.push(`${file.name}: boş dosya`);
-          continue;
-        }
         try {
-          const res = await fetch("/v1/rag/ingest", {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              text,
-              filename: file.name,
-              mime_type: file.type || "text/plain",
-            }),
-          });
+          let res: Response;
+          if (isTextFile(file)) {
+            const text = await file.text().catch(() => "");
+            if (!text.trim()) {
+              failures.push(`${file.name}: boş dosya`);
+              continue;
+            }
+            res = await fetch("/v1/rag/ingest", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                text,
+                filename: file.name,
+                mime_type: file.type || "text/plain",
+              }),
+            });
+          } else {
+            const form = new FormData();
+            form.append("file", file, file.name);
+            res = await fetch("/v1/rag/ingest-file", {
+              method: "POST",
+              credentials: "include",
+              body: form,
+            });
+          }
           if (!res.ok) {
             const detail = await res.text().catch(() => "");
             failures.push(
-              `${file.name}: HTTP ${res.status} ${detail.slice(0, 120)}`,
+              `${file.name}: HTTP ${res.status} ${detail.slice(0, 160)}`,
             );
             continue;
           }
