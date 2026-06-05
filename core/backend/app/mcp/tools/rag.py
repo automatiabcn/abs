@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from typing import List, Optional
 
+from app.config import settings
 from app.mcp.middleware import with_hooks
 from app.mcp.server import mcp_server
 from app.mcp.tracking import tracker
@@ -19,6 +20,54 @@ from app.rag import query as _query
 from app.rag import status as _status
 
 REGISTERED_TOOLS: List[str] = []
+
+
+async def _query_qdrant_tenant(question: str, top_k: int) -> dict:
+    """Search the panel-facing Qdrant document store for the configured tenant.
+
+    Used when ABS_MCP_RAG_TENANT is set so files uploaded through the panel
+    (/v1/rag/ingest) are answerable from Claude Code / Codex delegation. Runs
+    the same embed → qc.search path the HTTP query endpoint uses, but scoped to
+    settings.mcp_rag_tenant instead of a per-request auth claim.
+    """
+    import asyncio
+
+    from app.rag import qdrant_client as qc
+    from app.rag.embedding_bge import get_embedder
+
+    tenant = settings.mcp_rag_tenant
+    collection = settings.qdrant_default_collection
+
+    def _run() -> dict:
+        embedder = get_embedder()
+        qc.ensure_collection(collection, vector_size=embedder.dim)
+        vector = embedder.embed_one(question)
+        hits = qc.search(
+            collection=collection,
+            tenant_id=tenant,
+            query_vector=vector,
+            limit=top_k,
+        )
+        return {
+            "store": "qdrant",
+            "tenant": tenant,
+            "collection": collection,
+            "count": len(hits),
+            "results": [
+                {
+                    "score": h.get("score"),
+                    "text": (h.get("payload") or {}).get("text", ""),
+                    "metadata": {
+                        k: v
+                        for k, v in (h.get("payload") or {}).items()
+                        if k != "text"
+                    },
+                }
+                for h in hits
+            ],
+        }
+
+    return await asyncio.to_thread(_run)
 
 
 @mcp_server.tool()
@@ -41,9 +90,16 @@ async def rag_query(
     project_filter: Optional[str] = None,
     top_k: int = 5,
 ) -> str:
-    """Index'lenmiş chunk'larda anlam bazlı arama; en yakın top_k snippet döner."""
+    """Index'lenmiş chunk'larda anlam bazlı arama; en yakın top_k snippet döner.
+
+    ABS_MCP_RAG_TENANT ayarlıysa panel'den yüklenen dökümanların (Qdrant) içinde,
+    değilse operatör Chroma bilgi tabanında arar.
+    """
     await tracker.bump("rag_query")
-    res = await _query(question, project_filter=project_filter, top_k=top_k)
+    if settings.mcp_rag_tenant:
+        res = await _query_qdrant_tenant(question, top_k=top_k)
+    else:
+        res = await _query(question, project_filter=project_filter, top_k=top_k)
     return json.dumps(res, ensure_ascii=False, indent=2)
 
 

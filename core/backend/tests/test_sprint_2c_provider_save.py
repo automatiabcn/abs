@@ -163,3 +163,71 @@ def test_save_invalidates_cascade_cache(client, monkeypatch):
     )
     assert r.status_code == 200, r.text
     assert invalidated == ["groq"]
+
+
+def test_save_persists_key_on_transient_test_failure(client, monkeypatch):
+    """A *transient* live-test failure (provider reachable but ping
+    inconclusive — timeout / 5xx / rate-limit / thin reasoning-model response)
+    must NOT discard an otherwise-valid key. Regression: a working Cerebras
+    key (HTTP 200 upstream) used to 422 + get reverted. Now it persists with a
+    soft warning in `last_test`."""
+    from app.api.admin import providers_save
+
+    token = _admin_token(client, monkeypatch)
+    _silence_persistence(monkeypatch)
+
+    async def fake(provider_id):
+        return {
+            "ok": False,
+            "model": None,
+            "latency_ms": 5,
+            "error": "provider_unreachable_transient",
+            "transient": True,
+        }
+
+    monkeypatch.setattr(providers_save, "_live_test_provider", fake)
+
+    r = client.post(
+        "/v1/admin/providers/cerebras",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"api_key": "csk-valid-but-flaky-ping", "enabled": True},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["provider_id"] == "cerebras"
+    assert body["configured"] is True
+    # The soft warning is surfaced, but the key was still saved.
+    assert body["last_test"]["ok"] is False
+    assert body["last_test"]["transient"] is True
+
+
+def test_save_cloudflare_persists_account_id(client, monkeypatch):
+    """Cloudflare Workers AI needs an account id beside the token. The save
+    endpoint must accept `account_id`, apply it to settings, and report the
+    provider configured (token + account id)."""
+    from app.api.admin import providers_save
+    from app.config import settings
+
+    token = _admin_token(client, monkeypatch)
+    _patch_live_test(monkeypatch, ok=True)
+    _silence_persistence(monkeypatch)
+    monkeypatch.setattr(settings, "cf_account_id", "", raising=False)
+    captured = {}
+    monkeypatch.setattr(
+        "app.api.setup._persist_encrypted_secret",
+        lambda attr, val: captured.update({attr: val}) or True,
+    )
+    monkeypatch.setattr("app.api.setup._persist_env_var", lambda k, v: True)
+
+    r = client.post(
+        "/v1/admin/providers/cloudflare",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "api_key": "cf_token_value_xxxx",
+            "enabled": True,
+            "account_id": "1a2b3c4d5e6f",
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert settings.cf_account_id == "1a2b3c4d5e6f"
+    assert captured.get("cf_account_id") == "1a2b3c4d5e6f"

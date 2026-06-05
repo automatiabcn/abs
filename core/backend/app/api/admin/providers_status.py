@@ -68,6 +68,13 @@ async def providers_status(_admin: dict = Depends(admin_required)) -> Dict[str, 
     for spec in _PROVIDERS:
         raw = getattr(settings, spec["attr"], "") or ""
         configured = bool(raw.strip())
+        # Cloudflare Workers AI needs BOTH the API token (cf_api_token) AND the
+        # account id (cf_account_id) — its run URL is /accounts/{id}/ai/run/….
+        # Without this, a token-only save reported "configured" but every call
+        # failed at runtime with "account_id veya api_token tanımlı değil".
+        if spec["id"] == "cloudflare":
+            account = getattr(settings, "cf_account_id", "") or ""
+            configured = configured and bool(account.strip())
         items.append(
             {
                 "id": spec["id"],
