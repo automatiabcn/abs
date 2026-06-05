@@ -120,9 +120,12 @@ services:
       # its vectors are sha256-derived, so RAG only matches byte-identical text;
       # semantically similar queries return effectively-random rankings. RAG
       # search is therefore non-functional until you switch to a real backend:
+      #   ABS_EMBEDDING_BACKEND=cohere  ← RECOMMENDED. Real 1024-dim semantic
+      #     embeddings via your existing Cohere key (the cohere SDK already ships
+      #     in the image); zero extra disk, no GPU, no model download.
       #   ABS_EMBEDDING_BACKEND=sentence_transformers  (pip install
-      #   sentence-transformers; lazy-downloads BAAI/bge-m3 ~2.2 GB on first call)
-      # or point ABS_EMBEDDING_BACKEND=ollama at an ollama host serving bge-m3.
+      #     sentence-transformers; lazy-downloads BAAI/bge-m3 ~2.2 GB on first call)
+      #   ABS_EMBEDDING_BACKEND=ollama  (point at an ollama host serving bge-m3)
       # The backend logs a loud WARNING at startup while mock is active.
       ABS_EMBEDDING_BACKEND: "${ABS_EMBEDDING_BACKEND:-mock}"
       ABS_EMBEDDING_MODEL_PATH: "${ABS_EMBEDDING_MODEL_PATH:-/app/data/models/bge-m3}"

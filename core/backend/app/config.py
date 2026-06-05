@@ -237,8 +237,12 @@ class Settings(BaseSettings):
     qdrant_snapshot_dir: str = "/qdrant/snapshots"
 
     # T-010 — BGE-M3 embedding service
-    embedding_backend: str = "mock"  # mock | ollama | sentence_transformers | onnx_cuda | onnx_cpu
+    embedding_backend: str = "mock"  # mock | cohere | ollama | sentence_transformers | onnx_cuda | onnx_cpu
     embedding_model_path: str = ""   # ONNX backends only
+    # `cohere` backend: real semantic embeddings via the customer's existing
+    # Cohere key (bring-your-own-key), 1024-dim, zero local footprint. The
+    # recommended real backend for self-host (no model download / GPU / ollama).
+    cohere_embed_model: str = "embed-multilingual-v3.0"  # 1024-dim, multilingual
     embedding_device: str = "cpu"    # SentenceTransformers backend only
     # Ollama embedding model name (when embedding_backend=ollama). bge-m3 is
     # 1024-dim + multilingual (matches qdrant_default_vector_size); nomic is
