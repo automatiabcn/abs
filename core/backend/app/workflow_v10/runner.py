@@ -265,6 +265,8 @@ async def _run_node(
         return {"text": text, "kind": "trigger"}
     if kind == "api_request":
         return await _run_api_request(node, config, outputs)
+    if kind == "abs_tool":
+        return await _run_abs_tool(config, outputs, tenant)
     if kind in ("output", "transform", "conditional"):
         # Pass-through — surface a templated body if one is configured.
         body = (
@@ -274,7 +276,7 @@ async def _run_node(
             or ""
         )
         return {"text": _render(str(body), outputs), "passthrough": kind}
-    # hitl / abs_tool / loop — not run by the linear v1 engine.
+    # hitl / loop — not run by the linear v1 engine.
     return {"skipped": kind, "note": "not executed by the linear v1 engine (durable engine follow-up)"}
 
 
@@ -332,6 +334,82 @@ async def _run_api_request(
                 last_exc,
             )
     return {"error": f"request failed after {retry_max + 1} attempt(s): {last_exc}", "kind": "api_request"}
+
+
+# abs_tool names the engine can invoke for real. External / side-effecting
+# integrations (slack_post, gmail_send, ...) are NOT here — those need a
+# marketplace plugin, and abs_tool returns an honest "not available" rather
+# than pretending the side effect happened.
+_RAG_TOOLS = frozenset({"rag_query", "rag.query", "query", "abs.rag_query"})
+_STATUS_TOOLS = frozenset({"system_status", "abs.system_status", "status"})
+
+
+async def _run_abs_tool(
+    config: Dict[str, Any], outputs: Dict[str, Any], tenant: str
+) -> Dict[str, Any]:
+    """Invoke a real, read-only ABS tool by name.
+
+    Supported: RAG query (knowledge base), system status, and any ``ask*`` /
+    delegation name (routed through the cascade). Anything else returns an
+    honest not-available error — the engine never fakes a side effect.
+    """
+    raw_name = str(config.get("tool_name") or "").strip()
+    name = raw_name.lower()
+    short = name.split(".")[-1]
+    args = config.get("tool_args") or {}
+
+    if name in _RAG_TOOLS or short in _RAG_TOOLS:
+        from app.rag import query as rag_query_fn
+
+        question = _render(
+            str(args.get("question") or args.get("query") or config.get("prompt") or ""),
+            outputs,
+        )
+        if not question.strip():
+            return {"skipped": "abs_tool", "note": "rag_query: empty question"}
+        top_k = int(args.get("top_k", 5) or 5)
+        res = await rag_query_fn(question, top_k=top_k)
+        import json as _json
+
+        text = res if isinstance(res, str) else _json.dumps(res, ensure_ascii=False)
+        return {"text": text, "tool": raw_name, "kind": "abs_tool"}
+
+    if name in _STATUS_TOOLS or short in _STATUS_TOOLS:
+        from app.mcp.tools.system import system_status
+
+        import json as _json
+
+        res = await system_status()
+        text = res if isinstance(res, str) else _json.dumps(res, ensure_ascii=False, default=str)
+        return {"text": text, "tool": raw_name, "kind": "abs_tool"}
+
+    if short.startswith("ask") or short in ("llm", "cascade"):
+        from app.cascade.orchestrator import call_with_cascade
+
+        prompt = _render(
+            str(args.get("prompt") or args.get("question") or config.get("prompt") or ""),
+            outputs,
+        )
+        if not prompt.strip():
+            return {"skipped": "abs_tool", "note": f"{raw_name}: empty prompt"}
+        # ask_<provider> → primary provider; bare "ask" → default groq.
+        provider = str(args.get("provider") or (short[4:] if short.startswith("ask_") else "") or "groq")
+        resp = await call_with_cascade(
+            prompt, primary=provider, tenant_id=tenant or "default"
+        )
+        return {
+            "text": getattr(resp, "text", None) or str(resp),
+            "tool": raw_name,
+            "kind": "abs_tool",
+        }
+
+    return {
+        "error": (
+            f"abs_tool {raw_name!r} not available in the workflow engine — "
+            "external/side-effecting tools require a marketplace plugin"
+        ),
+        "kind": "abs_tool",
+    }
 
 
 async def _execute_run(job_id: str) -> None:
