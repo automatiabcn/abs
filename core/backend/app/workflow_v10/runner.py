@@ -263,12 +263,75 @@ async def _run_node(
             config.get("input") or config.get("payload") or node.get("description") or ""
         )
         return {"text": text, "kind": "trigger"}
+    if kind == "api_request":
+        return await _run_api_request(node, config, outputs)
     if kind in ("output", "transform", "conditional"):
         # Pass-through — surface a templated body if one is configured.
-        body = config.get("template") or config.get("body") or ""
+        body = (
+            config.get("output_template")
+            or config.get("template")
+            or config.get("body")
+            or ""
+        )
         return {"text": _render(str(body), outputs), "passthrough": kind}
-    # hitl / abs_tool / api_request / loop — not run by the linear v1 engine.
+    # hitl / abs_tool / loop — not run by the linear v1 engine.
     return {"skipped": kind, "note": "not executed by the linear v1 engine (durable engine follow-up)"}
+
+
+async def _run_api_request(
+    node: Dict[str, Any], config: Dict[str, Any], outputs: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Execute an ``api_request`` node: a real, SSRF-guarded outbound HTTP call.
+
+    URL + body are templated from upstream node outputs. The target is rejected
+    if it resolves to a non-public address (cloud metadata / internal services).
+    Honours the node's ``timeout_s`` and retries up to ``retry_max`` times on
+    transient failure.
+    """
+    import httpx
+
+    from app.workflow_v10.net_guard import UnsafeUrlError, assert_safe_url
+
+    url = _render(str(config.get("url") or ""), outputs).strip()
+    if not url:
+        return {"skipped": "api_request", "note": "no url configured"}
+    method = str(config.get("method") or "GET").upper()
+    # NodeConfig forbids extra fields, so a request body (when present) is
+    # carried in `prompt` and templated like any other text.
+    body = _render(str(config.get("prompt") or ""), outputs)
+    timeout = float(node.get("timeout_s", 60) or 60)
+    retry_max = int(node.get("retry_max", 0) or 0)
+
+    try:
+        assert_safe_url(url)
+    except UnsafeUrlError as exc:
+        return {"error": f"blocked unsafe url: {exc}", "kind": "api_request"}
+
+    last_exc: Optional[str] = None
+    for attempt in range(retry_max + 1):
+        try:
+            async with httpx.AsyncClient(
+                timeout=timeout, follow_redirects=False
+            ) as client:
+                kwargs: Dict[str, Any] = {}
+                if body and method in ("POST", "PUT", "PATCH"):
+                    kwargs["content"] = body
+                resp = await client.request(method, url, **kwargs)
+            return {
+                "text": resp.text[:20000],
+                "status_code": resp.status_code,
+                "kind": "api_request",
+                "attempts": attempt + 1,
+            }
+        except httpx.HTTPError as exc:
+            last_exc = str(exc)[:200]
+            logger.warning(
+                "api_request node %s attempt %d failed: %s",
+                node.get("id"),
+                attempt + 1,
+                last_exc,
+            )
+    return {"error": f"request failed after {retry_max + 1} attempt(s): {last_exc}", "kind": "api_request"}
 
 
 async def _execute_run(job_id: str) -> None:
