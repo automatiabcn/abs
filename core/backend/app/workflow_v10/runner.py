@@ -267,7 +267,16 @@ async def _run_node(
         return await _run_api_request(node, config, outputs)
     if kind == "abs_tool":
         return await _run_abs_tool(config, outputs, tenant)
-    if kind in ("output", "transform", "conditional"):
+    if kind == "conditional":
+        from app.workflow_v10.condition_eval import ConditionError, evaluate
+
+        expr = str(config.get("condition_expr") or config.get("condition") or "")
+        try:
+            result = evaluate(expr, outputs)
+        except ConditionError as exc:
+            return {"error": f"bad condition: {exc}", "kind": "conditional"}
+        return {"result": result, "text": str(result).lower(), "kind": "conditional"}
+    if kind in ("output", "transform"):
         # Pass-through — surface a templated body if one is configured.
         body = (
             config.get("output_template")
@@ -412,6 +421,32 @@ async def _run_abs_tool(
     }
 
 
+_TRUE_LABELS = frozenset({"true", "yes", "1", "y", "t", "ok", "pass"})
+_FALSE_LABELS = frozenset({"false", "no", "0", "n", "f", "fail"})
+
+
+def _edge_fires(edge: Dict[str, Any], source_output: Any) -> bool:
+    """Decide whether *edge* propagates reachability to its target.
+
+    Backwards-compatible: an edge with no ``condition`` always fires (so a
+    workflow without any conditions runs every node, exactly as before). A
+    labelled edge off a ``conditional`` node fires only on the matching branch.
+    """
+    cond = str(edge.get("condition") or "").strip()
+    if not cond:
+        return True
+    result = source_output.get("result") if isinstance(source_output, dict) else None
+    label = cond.lower()
+    if isinstance(result, bool):
+        if label in _TRUE_LABELS:
+            return result is True
+        if label in _FALSE_LABELS:
+            return result is False
+        return False  # labelled edge that doesn't name a known branch
+    # Non-conditional source: treat the label as an equality guard on its text.
+    return cond == _node_text(source_output)
+
+
 async def _execute_run(job_id: str) -> None:
     record = _JOBS.get(job_id)
     if record is None:
@@ -420,17 +455,48 @@ async def _execute_run(job_id: str) -> None:
     record.started_at = time.time()
     try:
         steps = plan(record.workflow)
+        edges = record.workflow.get("edges", []) or []
+        out_edges: Dict[str, List[Dict[str, Any]]] = {}
+        has_incoming: set[str] = set()
+        for e in edges:
+            src = e.get("source") or e.get("from")
+            dst = e.get("target") or e.get("to")
+            if src is None or dst is None:
+                continue
+            out_edges.setdefault(src, []).append(e)
+            has_incoming.add(dst)
+
+        # Roots (no incoming edge) are always reachable. Every other node must
+        # be reached through a firing edge.
+        reachable: set[str] = {
+            nid
+            for s in steps
+            if (nid := s.get("node_id")) is not None and nid not in has_incoming
+        }
+
         for step in steps:
             nid = step.get("node_id")
             kind = str(step.get("kind") or "unknown")
             node = step.get("node") or {}
+            if nid not in reachable:
+                record.node_outputs[nid] = {
+                    "skipped": "unreached",
+                    "note": "branch not taken (upstream condition routed elsewhere)",
+                }
+                continue
             try:
-                record.node_outputs[nid] = await _run_node(
+                output = await _run_node(
                     node, kind, record.node_outputs, record.tenant_slug
                 )
             except Exception as exc:  # one node failing must not abort the run
                 logger.warning("workflow node %s (%s) failed: %s", nid, kind, exc)
-                record.node_outputs[nid] = {"error": str(exc)[:300]}
+                output = {"error": str(exc)[:300]}
+            record.node_outputs[nid] = output
+            for e in out_edges.get(nid, []):
+                if _edge_fires(e, output):
+                    dst = e.get("target") or e.get("to")
+                    if dst is not None:
+                        reachable.add(dst)
         record.state = "done"
     except Exception as exc:  # pragma: no cover — planner/setup failure
         logger.warning("workflow run %s failed: %s", job_id, exc)
