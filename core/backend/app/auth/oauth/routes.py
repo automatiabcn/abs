@@ -45,6 +45,68 @@ def _err_response(exc: OAuthError, status: int = 400) -> JSONResponse:
     )
 
 
+def _resolve_roles(subject: str) -> list[str]:
+    """Roles for an OAuth token minted from an authenticated session.
+
+    Derived from the users-table ``role`` (with a bootstrap-admin overlay),
+    NEVER from a caller-supplied ``roles`` query param. This is what prevents
+    an authenticated low-privilege user from escalating via
+    ``/oauth/authorize?roles=admin``.
+    """
+    try:
+        from sqlmodel import Session as _S
+        from sqlmodel import select
+
+        from app.db.models import User
+        from app.db.session import get_engine
+
+        with _S(get_engine()) as db:
+            u = db.execute(
+                select(User).where(User.email == subject)
+            ).scalars().first()
+            if u is not None and u.role:
+                return [str(u.role)]
+    except Exception:  # pragma: no cover — defensive
+        pass
+    try:
+        from app.api.auth import _load_admin_credentials
+
+        admin_email, _h, _s = _load_admin_credentials()
+        if subject and subject == admin_email:
+            return ["admin"]
+    except Exception:  # pragma: no cover — defensive
+        pass
+    return ["member"]
+
+
+def _session_principal(request: Request):
+    """Resolve ``(subject, tenant, roles)`` from a valid, non-revoked
+    ``abs_session`` panel cookie, or ``None`` when there is no such session.
+
+    This is the authoritative identity source for ``/oauth/authorize``: the
+    subject must be proven by a real login, not asserted by the caller.
+    """
+    from app.api.auth import (
+        COOKIE_NAME,
+        _SessionExpired,
+        _SessionInvalid,
+        _decode_token,
+        _subject_revoked,
+    )
+
+    token = request.cookies.get(COOKIE_NAME)
+    if not token:
+        return None
+    try:
+        claims = _decode_token(token)
+    except (_SessionExpired, _SessionInvalid):
+        return None
+    sub = str(claims.get("sub") or "")
+    if not sub or _subject_revoked(sub):
+        return None
+    return sub, claims.get("tenant"), _resolve_roles(sub)
+
+
 @router.get("/oauth/authorize", include_in_schema=False)
 async def authorize(
     request: Request,
@@ -71,15 +133,38 @@ async def authorize(
     if response_type != "code":
         raise HTTPException(400, detail="unsupported_response_type")
 
-    subject = user_subject or request.headers.get("x-abs-user-sub", "")
+    # SECURITY (auth/session round) — identity must be PROVEN, not asserted.
+    # The pre-fix MVP read subject/tenant/roles straight from the query string
+    # (`user_subject`) or the `x-abs-user-sub` header with no auth dependency,
+    # so anyone who could reach a registered client could mint a token for ANY
+    # user/role/tenant (full auth-bypass + privilege-escalation the moment a
+    # token consumer is wired — deps.get_auth_context already consumes these
+    # RS256 tokens). Resolution order:
+    #   1. Authenticated panel session → subject + tenant + roles from
+    #      server-side state (users table), caller query/header IGNORED.
+    #   2. No session, env=prod → refuse (401). Never trust caller identity.
+    #   3. No session, non-prod → legacy explicit-subject path for the
+    #      login-UI-less demo + the test harness only.
+    principal = _session_principal(request)
+    if principal is not None:
+        subject, final_tenant, final_roles = principal
+    elif settings.env == "prod":
+        raise HTTPException(401, detail="login_required")
+    else:
+        subject = user_subject or request.headers.get("x-abs-user-sub", "")
+        final_tenant = tenant_id
+        final_roles = (
+            [r.strip() for r in roles.split(",") if r.strip()] if roles else None
+        )
+
     if not subject:
         raise HTTPException(401, detail="login_required")
 
     extras: dict[str, object] = {}
-    if tenant_id:
-        extras["tnt"] = tenant_id
-    if roles:
-        extras["roles"] = [r.strip() for r in roles.split(",") if r.strip()]
+    if final_tenant:
+        extras["tnt"] = final_tenant
+    if final_roles:
+        extras["roles"] = final_roles
 
     try:
         record = issue_authorization_code(
