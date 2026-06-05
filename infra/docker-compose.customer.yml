@@ -105,6 +105,11 @@ services:
       # consecutive wrong-password attempts returning 10x 401 with 0x 429.
       ABS_ENV: "${ABS_ENV:-prod}"
       ABS_RATE_LIMIT_ENABLED: "${ABS_RATE_LIMIT_ENABLED:-true}"
+      # Secrets vault — fail fast at boot if sops/age is missing rather than
+      # booting and erroring every secret op. The image ships both binaries;
+      # this is defence-in-depth against a tampered/regressed image. (The vault
+      # never writes plaintext — encrypt + decrypt both hard-require sops/age.)
+      ABS_VAULT_REQUIRE_SOPS: "${ABS_VAULT_REQUIRE_SOPS:-true}"
       # BUG-27 — point RAG/Cerbos at the in-stack services declared below.
       # Customers can override either URL in .env if they front-load their
       # own Qdrant/Cerbos clusters; defaults match the compose service names.
