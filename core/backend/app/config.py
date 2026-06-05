@@ -172,6 +172,11 @@ class Settings(BaseSettings):
     # ABS_MCP_AUTH_ENFORCE=false ONLY for a trusted, network-isolated dev box;
     # boot logs a loud warning when disabled.
     mcp_auth_enforce: bool = True
+    # preview_patch/apply_patch read+write arbitrary existing files (no path
+    # allowlist). Off the network /mcp surface by default — opt in only when an
+    # operator drives their OWN deployment via Claude Code. NEVER enable when
+    # delegation tokens are handed to team members / external clients.
+    mcp_expose_patch_tools: bool = False
 
     # Hooks (007)
     hooks_enabled: bool = True

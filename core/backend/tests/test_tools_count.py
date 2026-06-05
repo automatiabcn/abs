@@ -9,7 +9,10 @@ def test_registered_tool_count_at_least_122():
     from app.mcp.server import mcp_server
 
     tools = asyncio.run(mcp_server.list_tools())
-    assert len(tools) >= 122, f"Tool sayısı düştü: {len(tools)}"
+    # 120 default: preview_patch + apply_patch are now gated off the MCP surface
+    # (ABS_MCP_EXPOSE_PATCH_TOOLS, default off) because they read/write arbitrary
+    # files — see test_patch_tools_gated_off_by_default below.
+    assert len(tools) >= 120, f"Tool sayısı düştü: {len(tools)}"
 
 
 def test_billing_status_tool_registered_017():
@@ -54,7 +57,9 @@ def test_core_tool_names_registered():
         "ask_cohere_command_r", "ask_cohere_embed",
         # 008 Batch E
         "cache_stats", "quota_status", "model_health",
-        "code_fingerprint", "preview_patch", "apply_patch",
+        "code_fingerprint",
+        # preview_patch / apply_patch intentionally NOT here — gated off the
+        # default MCP surface (arbitrary file read/write). See test below.
         # 008 Batch F
         "fullstack", "fullstack_detect", "fullstack_scan", "fullstack_plan",
         # 008 Batch G
@@ -120,3 +125,16 @@ def test_core_tool_names_registered():
     }
     missing = must_have - names
     assert not missing, f"Eksik tool'lar: {sorted(missing)}"
+
+
+def test_patch_tools_gated_off_by_default():
+    """SECURITY: preview_patch + apply_patch read/write arbitrary files on the
+    server (no path allowlist). They must NOT be exposed on the network /mcp
+    surface by default — any delegation token-holder could otherwise read
+    secrets or patch a loaded module (RCE). Opt-in via ABS_MCP_EXPOSE_PATCH_TOOLS.
+    """
+    from app.mcp.server import mcp_server
+
+    names = {t.name for t in asyncio.run(mcp_server.list_tools())}
+    assert "apply_patch" not in names, "apply_patch must be gated off /mcp by default"
+    assert "preview_patch" not in names, "preview_patch must be gated off /mcp by default"
