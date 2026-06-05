@@ -105,18 +105,28 @@ services:
       # consecutive wrong-password attempts returning 10x 401 with 0x 429.
       ABS_ENV: "${ABS_ENV:-prod}"
       ABS_RATE_LIMIT_ENABLED: "${ABS_RATE_LIMIT_ENABLED:-true}"
+      # Secrets vault — fail fast at boot if sops/age is missing rather than
+      # booting and erroring every secret op. The image ships both binaries;
+      # this is defence-in-depth against a tampered/regressed image. (The vault
+      # never writes plaintext — encrypt + decrypt both hard-require sops/age.)
+      ABS_VAULT_REQUIRE_SOPS: "${ABS_VAULT_REQUIRE_SOPS:-true}"
       # BUG-27 — point RAG/Cerbos at the in-stack services declared below.
       # Customers can override either URL in .env if they front-load their
       # own Qdrant/Cerbos clusters; defaults match the compose service names.
       ABS_QDRANT_URL: "${ABS_QDRANT_URL:-http://qdrant:6333}"
       ABS_CERBOS_HOST: "${ABS_CERBOS_HOST:-http://cerbos:3592}"
-      # Default to the deterministic stdlib backend so first boot works
-      # with zero extra disk + no GPU. The mock embedder uses sha256-derived
-      # vectors so identical chunks land near-identical points — semantic
-      # retrieval is approximate but technically real Qdrant results, no
-      # silent UI mocks. Override to `sentence_transformers` after `pip
-      # install sentence-transformers` to unlock proper BGE-M3 semantics
-      # (see env.example for the upgrade recipe).
+      # Default to the deterministic stdlib backend so first boot works with
+      # zero extra disk + no GPU. IMPORTANT: the mock embedder is NOT semantic —
+      # its vectors are sha256-derived, so RAG only matches byte-identical text;
+      # semantically similar queries return effectively-random rankings. RAG
+      # search is therefore non-functional until you switch to a real backend:
+      #   ABS_EMBEDDING_BACKEND=cohere  ← RECOMMENDED. Real 1024-dim semantic
+      #     embeddings via your existing Cohere key (the cohere SDK already ships
+      #     in the image); zero extra disk, no GPU, no model download.
+      #   ABS_EMBEDDING_BACKEND=sentence_transformers  (pip install
+      #     sentence-transformers; lazy-downloads BAAI/bge-m3 ~2.2 GB on first call)
+      #   ABS_EMBEDDING_BACKEND=ollama  (point at an ollama host serving bge-m3)
+      # The backend logs a loud WARNING at startup while mock is active.
       ABS_EMBEDDING_BACKEND: "${ABS_EMBEDDING_BACKEND:-mock}"
       ABS_EMBEDDING_MODEL_PATH: "${ABS_EMBEDDING_MODEL_PATH:-/app/data/models/bge-m3}"
       HF_HOME: "/app/data/models/hf-cache"

@@ -25,11 +25,37 @@ services:
   backend:
     build: ../core/backend
     env_file: .env
+    environment:
+      # Full-feature wiring — turn the headline features ON by default so a
+      # fresh install isn't silently mock-only. .env can still override.
+      ABS_EMBEDDING_BACKEND: "${ABS_EMBEDDING_BACKEND:-ollama}"
+      ABS_EMBEDDING_MODEL: "${ABS_EMBEDDING_MODEL:-bge-m3}"          # 1024-dim, multilingual
+      ABS_OLLAMA_URL: "${ABS_OLLAMA_URL:-http://ollama:11434}"
+      # cross-encoder rerank via Cohere (pkg in image). Real when a Cohere
+      # provider key is entered; get_reranker() degrades to mock otherwise.
+      ABS_RERANK_BACKEND: "${ABS_RERANK_BACKEND:-cohere}"
+      ABS_TRANSCRIBE_BACKEND: "${ABS_TRANSCRIBE_BACKEND:-whisperx}"  # Meetings → real ASR
+      ABS_WHISPERX_URL: "${ABS_WHISPERX_URL:-http://whisperx:9000}"
+      ABS_NEO4J_URI: "${ABS_NEO4J_URI:-bolt://neo4j:7687}"           # Knowledge Graph
+      ABS_NEO4J_USER: "${ABS_NEO4J_USER:-neo4j}"
+      ABS_NEO4J_PASSWORD: "${ABS_NEO4J_PASSWORD:-AbsNeo2026!}"
+      ABS_CERBOS_HOST: "${ABS_CERBOS_HOST:-http://cerbos:3592}"      # fine-grained authz
+      ABS_QDRANT_URL: "${ABS_QDRANT_URL:-http://qdrant:6333}"        # /v1/rag/* vector store
+      # Secrets vault — fail fast at boot if sops/age is missing instead of
+      # booting and silently erroring every secret op. The image always ships
+      # both binaries, so this is defence-in-depth against a tampered/regressed
+      # image. (Vault never writes plaintext — encrypt/decrypt both hard-require
+      # the binaries — this just surfaces a missing-binary regression loudly.)
+      ABS_VAULT_REQUIRE_SOPS: "${ABS_VAULT_REQUIRE_SOPS:-true}"
     expose:
       - "8000"
     volumes:
       - abs-data:/app/data
       - abs-vault-key:/app/vault-key:ro    # 013 — master key ayrı volume, read-only
+    # Only vault-init is a hard prerequisite (vault must load before provider
+    # saves). neo4j/cerbos/qdrant/ollama/whisperx are reached lazily with their
+    # own retry + graceful-503 wrappers, so a hiccup in one feature service must
+    # NOT block the whole panel from booting (matches the customer compose).
     depends_on:
       vault-init:
         condition: service_completed_successfully
@@ -104,8 +130,106 @@ services:
       - caddy-config:/config
     restart: unless-stopped
 
+  # ── ollama — real RAG embeddings (bge-m3, 1024-dim, multilingual) ──────────
+  # Replaces the mock sha256 embedder so RAG does real semantic search.
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - abs-ollama:/root/.ollama
+    expose:
+      - "11434"
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  # one-shot: pull the embedding model so the first RAG request doesn't 404.
+  ollama-init:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: "http://ollama:11434"
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        echo "[ollama-init] pulling ${ABS_EMBEDDING_MODEL:-bge-m3} ..."
+        ollama pull "${ABS_EMBEDDING_MODEL:-bge-m3}"
+        echo "[ollama-init] embedding model ready"
+    restart: "no"
+
+  # ── whisperx — Meetings / transcription (real ASR) ────────────────────────
+  whisperx:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    environment:
+      ASR_MODEL: "${ABS_WHISPERX_MODEL:-small}"
+      ASR_ENGINE: "whisperx"
+    expose:
+      - "9000"
+    volumes:
+      - abs-whisper-cache:/root/.cache
+    restart: unless-stopped
+
+  # ── neo4j — Knowledge Graph backing /v1/graph/* ───────────────────────────
+  neo4j:
+    image: neo4j:5.20-community
+    environment:
+      NEO4J_AUTH: "${ABS_NEO4J_USER:-neo4j}/${ABS_NEO4J_PASSWORD:-AbsNeo2026!}"
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_server_memory_heap_max__size: "512m"
+      NEO4J_server_memory_pagecache_size: "256m"
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
+    expose:
+      - "7687"
+    volumes:
+      - abs-neo4j-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u $${NEO4J_AUTH%/*} -p $${NEO4J_AUTH#*/} 'RETURN 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  # ── cerbos — fine-grained authz (PDP) for /v1/rag/*, /v1/projects/* ────────
+  # ./cerbos (= infra/cerbos in the cloned repo) ships config.yaml + policies.
+  cerbos:
+    image: ghcr.io/cerbos/cerbos:0.40.0
+    command: ["server", "--config=/etc/cerbos/config.yaml"]
+    expose:
+      - "3592"
+      - "3593"
+    volumes:
+      - ./cerbos:/etc/cerbos:ro
+    healthcheck:
+      test: ["CMD", "/cerbos", "healthcheck", "--insecure"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # ── qdrant — vector store for the /v1/rag/* API (newer RAG path) ───────────
+  # No healthcheck — the image has no curl/wget/nc; backend uses qdrant_client
+  # retry + /v1/rag/* graceful-503 wrappers instead.
+  qdrant:
+    image: qdrant/qdrant:v1.10.0
+    expose:
+      - "6333"
+    volumes:
+      - abs-qdrant-data:/qdrant/storage
+    restart: unless-stopped
+
 volumes:
   abs-data:
   abs-vault-key:           # 013 — master age key (asla secrets ile aynı volume'da olmaz)
   caddy-data:
   caddy-config:
+  abs-ollama:
+  abs-whisper-cache:
+  abs-neo4j-data:
+  abs-qdrant-data:

@@ -94,7 +94,13 @@ def _admin_cookie_context(request: Request) -> AuthContext | None:
     """If the request carries a valid `abs_session` admin cookie, build
     an AuthContext from it. Returns `None` when no cookie is present or
     invalid so the caller can fall through to the Bearer error path."""
-    from app.api.auth import COOKIE_NAME, _SessionExpired, _SessionInvalid, _decode_token
+    from app.api.auth import (
+        COOKIE_NAME,
+        _SessionExpired,
+        _SessionInvalid,
+        _decode_token,
+        _subject_revoked,
+    )
 
     token = request.cookies.get(COOKIE_NAME)
     if not token:
@@ -106,6 +112,10 @@ def _admin_cookie_context(request: Request) -> AuthContext | None:
 
     subject = str(claims.get("sub") or "")
     if not subject:
+        return None
+    # Server-side session invalidation: a revoked/deactivated admin must lose
+    # the cookie-fallback path too, not just the Bearer path.
+    if _subject_revoked(subject):
         return None
 
     try:
