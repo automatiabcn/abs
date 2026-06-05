@@ -54,7 +54,18 @@ class _MockBackend:
 
     def __init__(self, dim: int = 1024) -> None:
         self.dim = dim
-        logger.info("embedding_mock_init dim=%d", dim)
+        # Loud, not INFO: with the mock backend RAG semantic search does NOT
+        # work. Vectors are sha256-derived, so only byte-identical text matches;
+        # semantically similar queries return effectively-random rankings. This
+        # must be visible in every deployment that left ABS_EMBEDDING_BACKEND at
+        # its default rather than reading as a normal startup line.
+        logger.warning(
+            "embedding backend=mock — RAG semantic retrieval is NON-FUNCTIONAL "
+            "(sha256 vectors match only identical text). Set "
+            "ABS_EMBEDDING_BACKEND=sentence_transformers (pip install "
+            "sentence-transformers) or =ollama (bge-m3) for real search. dim=%d",
+            dim,
+        )
 
     def _embed_batch(self, texts: list[str]) -> list[list[float]]:
         out: list[list[float]] = []
