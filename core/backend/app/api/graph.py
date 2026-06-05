@@ -73,12 +73,19 @@ _FORBIDDEN_CLAUSE_RE = re.compile(
     r"(?:\bCALL\b|\bLOAD\s+CSV\b|\bFOREACH\b|\bPERIODIC\s+COMMIT\b|\bUSING\s+PERIODIC\b)",
     re.IGNORECASE,
 )
+# Cypher comments: /* block */ and // line. Neo4j ignores them, so an attacker
+# can split a multi-word clause across one (`LOAD /*x*/ CSV`) to slip past the
+# regex while the parser still executes LOAD CSV. Strip comments before the
+# keyword scan. Only used for the SECURITY check — the original cypher is what
+# actually runs — so over-stripping can only over-block (safe), never under-block.
+_CYPHER_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.DOTALL)
 
 
 def _has_forbidden_clause(cypher: str) -> bool:
     """True if the Cypher uses a stored-procedure / data-loading / bulk-iter
     clause that must never run on the tenant-scoped query endpoints."""
-    return bool(_FORBIDDEN_CLAUSE_RE.search(cypher or ""))
+    stripped = _CYPHER_COMMENT_RE.sub(" ", cypher or "")
+    return bool(_FORBIDDEN_CLAUSE_RE.search(stripped))
 
 
 def _resolve_tenant(auth: AuthContext) -> str:

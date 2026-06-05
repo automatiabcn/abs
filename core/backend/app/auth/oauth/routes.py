@@ -156,6 +156,12 @@ async def authorize(
         final_roles = (
             [r.strip() for r in roles.split(",") if r.strip()] if roles else None
         )
+        # Even on the non-prod demo path, a deactivated/revoked user must not
+        # mint a token (defense-in-depth parity with the session path).
+        from app.api.auth import _subject_revoked
+
+        if subject and _subject_revoked(subject):
+            raise HTTPException(401, detail="login_required")
 
     if not subject:
         raise HTTPException(401, detail="login_required")
