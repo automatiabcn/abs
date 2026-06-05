@@ -206,6 +206,16 @@ def enforce_egress(host: str, spec: SandboxSpec) -> None:
       - Wildcard subdomain: "*.example.com" (matches a.example.com, but NOT example.com)
 
     Hostnames are matched case-insensitively.
+
+    ⚠️ SECURITY LIMITATION — this is an APPLICATION-level check, intended to be
+    called by an egress proxy that fronts plugin traffic. It is NOT yet wired to
+    a runtime path, and render_argv only stamps the allowlist as a docker LABEL
+    (labels don't filter traffic). A launched plugin container is therefore on a
+    plain bridge with full outbound access regardless of this allowlist.
+    REAL enforcement (an `internal` network + egress proxy, or per-container
+    iptables / a CNI network policy) is a PRE-GA REQUIREMENT before untrusted
+    third-party plugin images are allowed to run. Today only the local
+    busybox-stub runs, so no untrusted code is live.
     """
     if not isinstance(host, str) or not host.strip():
         raise EgressDeniedError("egress host must be a non-empty string")
@@ -306,6 +316,13 @@ class DockerSandboxLauncher:
                 f"abs.egress.allowlist={','.join(spec.network_allowlist)}",
             ]
         )
+        # Defence in depth: the image is the final positional arg with no `--`
+        # separator, so a value starting with '-' (or with whitespace) would be
+        # parsed by docker as a flag — argv injection. The manifest validator
+        # already enforces a clean OCI ref; re-check here so a SandboxSpec built
+        # directly (bypassing the manifest) still cannot smuggle a flag.
+        if not spec.image or spec.image[0] == "-" or any(c.isspace() for c in spec.image):
+            raise SandboxError(f"refusing to launch unsafe image ref: {spec.image!r}")
         argv.append(spec.image)
         return argv
 
@@ -419,8 +436,37 @@ class PluginSandbox:
         return f"abs-plugin-{tenant_id}-{plugin_id}"
 
     def _image(self, plugin_id: str) -> str:
-        # Q7 stub: use busybox stub built locally; real ghcr.io image in Q8.
+        # Local stub image (built from infra/plugins/busybox-stub). Used when a
+        # plugin has no real entry_point image published yet, so the sandbox
+        # still demonstrates a live, isolated container.
         return f"abs-plugin-stub:{plugin_id}"
+
+    def _resolve_image(self, plugin_id: str, entry_point: Optional[str]) -> str:
+        """Prefer the descriptor's real ``entry_point`` image; fall back to the
+        local busybox stub when it is not pullable.
+
+        Q7 hardcoded the stub. The descriptor (e.g. slack-thread-rag.json) ships
+        a real ``entry_point`` like ``ghcr.io/abs-plugins/slack-thread-rag:1.0.0``.
+        We launch that real image when it is available locally or pullable, and
+        degrade to the stub otherwise so a fresh install never hard-fails just
+        because the plugin image hasn't been published to the registry yet.
+        """
+        if not entry_point:
+            return self._image(plugin_id)
+        try:
+            self.client.images.get(entry_point)
+            return entry_point
+        except Exception:  # not present locally — try a one-shot pull
+            try:
+                self.client.images.pull(entry_point)
+                return entry_point
+            except Exception as exc:  # registry miss / offline → stub fallback
+                logger.warning(
+                    "plugin image %s unavailable (%s) — falling back to stub",
+                    entry_point,
+                    exc,
+                )
+                return self._image(plugin_id)
 
     # ---- lifecycle ------------------------------------------------------
     def launch(
@@ -428,6 +474,7 @@ class PluginSandbox:
         plugin_id: str,
         tenant_id: str,
         sandbox_profile: Dict[str, Any],
+        image_ref: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Start (or re-start) a labelled container for *plugin_id* in *tenant_id*.
 
@@ -452,11 +499,15 @@ class PluginSandbox:
         mem_mb = int(sandbox_profile.get("mem_mb", 256))
         cpu_cores = float(sandbox_profile.get("cpu_cores", 0.5))
         container = self.client.containers.run(
-            image=self._image(plugin_id),
+            image=self._resolve_image(plugin_id, image_ref),
             name=name,
             detach=True,
             mem_limit=f"{mem_mb}m",
             nano_cpus=int(cpu_cores * 1e9),
+            # ⚠️ Full-egress bridge — the manifest network_egress allowlist is
+            # NOT enforced here (see enforce_egress's note). Acceptable while
+            # only the local busybox-stub runs; real egress filtering is a
+            # pre-GA requirement before untrusted plugin images are launched.
             network_mode="bridge",
             environment={
                 "ABS_TENANT_ID": tenant_id,

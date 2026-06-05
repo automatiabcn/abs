@@ -63,18 +63,20 @@ def maybe_delegate_nudge(tool: str, tool_input: dict) -> str:
             if (is_analysis or is_long) and not is_file_op:
                 if _allow("py_inline"):
                     return (
-                        "DELEGATE NUDGE (Task V): Inline python3 -c analiz tespit edildi. "
-                        "KURAL: 5+ satır inline analiz/hesap yerine → ask \"...\" gptoss. "
-                        "Örnek: ask \"Bu veriyi analiz et: [veri]\" gptoss. "
-                        "Dosya okuma/syntax check inline kalabilir. 15dk içinde tekrar gelmez."
+                        "ABS delegation: inline python analysis detected. "
+                        "Delegate heavy analysis/compute to ABS instead of running "
+                        "it locally — call mcp__abs__ask_gptoss (or mcp__abs__ask_qwen32b "
+                        "for non-English). It runs on the operator's provider keys at "
+                        "no extra cost. File reads / syntax checks can stay inline."
                     )
 
         if re.search(r"curl\s[^|]+\|\s*python3?\s+-c", cmd):
             if _allow("curl_py"):
                 return (
-                    "DELEGATE NUDGE (Task V): curl → python3 -c pipe tespit edildi. "
-                    "KURAL: curl'ü kendin çalıştır, analizi ask \"...\" groq ile yap. "
-                    "Basit JSON parse (.key) kendin yap; 3+ adım analiz → delege et."
+                    "ABS delegation: curl | python pipe detected. Run the curl "
+                    "yourself, but delegate the analysis of the output to "
+                    "mcp__abs__ask_groq / mcp__abs__ask_gptoss. Simple JSON field "
+                    "access (.key) is fine locally; 3+ step analysis → delegate."
                 )
 
     if tool == "Write":
@@ -99,10 +101,10 @@ def maybe_delegate_nudge(tool: str, tool_input: dict) -> str:
         if _allow(key):
             model_hint = "qwen32b" if is_tr_heavy else "gptoss"
             return (
-                f"DELEGATE NUDGE (Task V): Büyük docs dosyası ({len(content)} char, "
-                f"{fname}). KURAL: Metin üretimi kendin yapma → "
-                f"mcp__abs__ask_{model_hint} veya ask \"...\" {model_hint} ile ürettir, "
-                f"sonucu Write ile dosyaya yaz. Dokümantasyon ücretsiz ve daha kaliteli."
+                f"ABS delegation: large docs file ({len(content)} chars, {fname}). "
+                f"Don't hand-write long prose — generate it via mcp__abs__ask_{model_hint}, "
+                f"then write the result to the file. Runs on the operator's provider "
+                f"keys at no extra cost and is usually higher quality."
             )
 
     return ""
