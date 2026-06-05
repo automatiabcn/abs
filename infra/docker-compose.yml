@@ -106,6 +106,19 @@ services:
     build: ../core/backend
     env_file: .env
     command: ["sh", "-c", "while true; do python infra/scripts/email_tick.py; sleep 300; done"]
+    # The backend image bakes an HTTP HEALTHCHECK (curl /healthz), but this
+    # service runs the email tick loop, not the HTTP server — so the inherited
+    # probe can never pass and the container shows a false "unhealthy" (the
+    # worker itself runs fine: "sent=0 failed=0" each tick). Override with the
+    # same process probe customer.yml uses: walk /proc/[0-9]*/cmdline for the
+    # email_tick process (POSIX sh + grep; debian:slim has no pgrep/procps).
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "for d in /proc/[0-9]*; do grep -q email_tick \"$$d/cmdline\" 2>/dev/null && exit 0; done; exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 3
     volumes:
       - abs-data:/app/data
       - abs-vault-key:/app/vault-key:ro
