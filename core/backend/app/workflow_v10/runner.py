@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -132,6 +133,9 @@ class JobRecord:
     started_at: Optional[float] = None
     completed_at: Optional[float] = None
     error: Optional[str] = None
+    node_outputs: Dict[str, Any] = field(default_factory=dict)
+    pending_node: Optional[str] = None  # hitl node awaiting human approval
+    warnings: List[str] = field(default_factory=list)  # e.g. unsupported nodes
 
 
 _JOBS: Dict[str, JobRecord] = {}
@@ -205,22 +209,355 @@ async def enqueue(workflow: Dict[str, Any], tenant_slug: str = "default") -> str
         job_id,
         len(workflow.get("nodes", [])),
     )
-    # Schedule a faux completion to mimic eventual consistency.
-    asyncio.create_task(_simulate_run(job_id))
+    # Phase-1.5 — real linear execution: llm_call nodes hit the cascade for
+    # real; other kinds are recorded (hitl/abs_tool/api_request are noted as
+    # pending for the durable engine follow-up).
+    asyncio.create_task(_execute_run(job_id))
     return job_id
 
 
-async def _simulate_run(job_id: str) -> None:
+_TEMPLATE_RE = re.compile(r"\{\{\s*([^}]+?)\s*\}\}")
+
+
+def _node_text(out: Any) -> str:
+    """Best-effort text of a prior node's output for templating."""
+    if isinstance(out, dict):
+        return str(out.get("text") or out.get("error") or out.get("skipped") or "")
+    return str(out or "")
+
+
+def _render(template: str, outputs: Dict[str, Any]) -> str:
+    """Substitute `{{node_id}}` placeholders with that node's prior output.
+    Unknown placeholders are left intact so a bad ref doesn't silently vanish."""
+    def repl(m: "re.Match[str]") -> str:
+        key = m.group(1).strip()
+        # accept `id`, `steps.id`, `steps.id.output` shapes → take the id token
+        token = key.split(".")[1] if key.startswith("steps.") else key
+        if token in outputs:
+            return _node_text(outputs[token])
+        return m.group(0)
+    return _TEMPLATE_RE.sub(repl, template)
+
+
+async def _run_node(
+    node: Dict[str, Any], kind: str, outputs: Dict[str, Any], tenant: str
+) -> Dict[str, Any]:
+    config = node.get("config") or {}
+    if kind == "llm_call":
+        from app.cascade.orchestrator import call_with_cascade
+
+        prompt = _render(
+            str(config.get("prompt_template") or config.get("prompt") or node.get("name") or ""),
+            outputs,
+        )
+        if not prompt.strip():
+            return {"skipped": kind, "note": "empty prompt_template"}
+        provider = str(config.get("provider") or node.get("provider") or "groq")
+        model = config.get("model") or node.get("model")
+        resp = await call_with_cascade(
+            prompt, primary=provider, model=model, tenant_id=tenant or "default"
+        )
+        return {"text": getattr(resp, "text", None) or str(resp), "provider": provider}
+    if kind == "trigger":
+        # Trigger carries the workflow's initial input so downstream
+        # {{trigger-id}} references resolve to something.
+        text = str(
+            config.get("input") or config.get("payload") or node.get("description") or ""
+        )
+        return {"text": text, "kind": "trigger"}
+    if kind == "api_request":
+        return await _run_api_request(node, config, outputs)
+    if kind == "abs_tool":
+        return await _run_abs_tool(config, outputs, tenant)
+    if kind == "conditional":
+        from app.workflow_v10.condition_eval import ConditionError, evaluate
+
+        expr = str(config.get("condition_expr") or config.get("condition") or "")
+        try:
+            result = evaluate(expr, outputs)
+        except ConditionError as exc:
+            return {"error": f"bad condition: {exc}", "kind": "conditional"}
+        return {"result": result, "text": str(result).lower(), "kind": "conditional"}
+    if kind in ("output", "transform"):
+        # Pass-through — surface a templated body if one is configured.
+        body = (
+            config.get("output_template")
+            or config.get("template")
+            or config.get("body")
+            or ""
+        )
+        return {"text": _render(str(body), outputs), "passthrough": kind}
+    if kind == "loop":
+        # The linear v1 engine cannot iterate. Returning a silent "skipped"
+        # here made a workflow containing a loop finish as a clean success
+        # while the loop body ran ZERO times — e.g. the "Each supplier"
+        # template notified nobody yet reported "done". Surface it as an
+        # explicit unsupported error so the run is honestly flagged as
+        # incomplete instead of falsely green. Real iteration is the
+        # durable-engine follow-up.
+        return {
+            "error": (
+                "loop nodes are not executed by the linear engine — the loop "
+                "body runs zero iterations (durable-engine follow-up)"
+            ),
+            "kind": "loop",
+            "unsupported": True,
+        }
+    # any other unhandled kind — recorded, not run.
+    return {"skipped": kind, "note": "not executed by the linear v1 engine (durable engine follow-up)"}
+
+
+async def _run_api_request(
+    node: Dict[str, Any], config: Dict[str, Any], outputs: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Execute an ``api_request`` node: a real, SSRF-guarded outbound HTTP call.
+
+    URL + body are templated from upstream node outputs. The target is rejected
+    if it resolves to a non-public address (cloud metadata / internal services).
+    Honours the node's ``timeout_s`` and retries up to ``retry_max`` times on
+    transient failure.
+    """
+    import httpx
+
+    from app.workflow_v10.net_guard import UnsafeUrlError, assert_safe_url
+
+    url = _render(str(config.get("url") or ""), outputs).strip()
+    if not url:
+        return {"skipped": "api_request", "note": "no url configured"}
+    method = str(config.get("method") or "GET").upper()
+    # NodeConfig forbids extra fields, so a request body (when present) is
+    # carried in `prompt` and templated like any other text.
+    body = _render(str(config.get("prompt") or ""), outputs)
+    timeout = float(node.get("timeout_s", 60) or 60)
+    retry_max = int(node.get("retry_max", 0) or 0)
+
+    try:
+        assert_safe_url(url)
+    except UnsafeUrlError as exc:
+        return {"error": f"blocked unsafe url: {exc}", "kind": "api_request"}
+
+    last_exc: Optional[str] = None
+    for attempt in range(retry_max + 1):
+        try:
+            async with httpx.AsyncClient(
+                timeout=timeout, follow_redirects=False
+            ) as client:
+                kwargs: Dict[str, Any] = {}
+                if body and method in ("POST", "PUT", "PATCH"):
+                    kwargs["content"] = body
+                resp = await client.request(method, url, **kwargs)
+            return {
+                "text": resp.text[:20000],
+                "status_code": resp.status_code,
+                "kind": "api_request",
+                "attempts": attempt + 1,
+            }
+        except httpx.HTTPError as exc:
+            last_exc = str(exc)[:200]
+            logger.warning(
+                "api_request node %s attempt %d failed: %s",
+                node.get("id"),
+                attempt + 1,
+                last_exc,
+            )
+    return {"error": f"request failed after {retry_max + 1} attempt(s): {last_exc}", "kind": "api_request"}
+
+
+# abs_tool names the engine can invoke for real. External / side-effecting
+# integrations (slack_post, gmail_send, ...) are NOT here — those need a
+# marketplace plugin, and abs_tool returns an honest "not available" rather
+# than pretending the side effect happened.
+_RAG_TOOLS = frozenset({"rag_query", "rag.query", "query", "abs.rag_query"})
+_STATUS_TOOLS = frozenset({"system_status", "abs.system_status", "status"})
+
+
+async def _run_abs_tool(
+    config: Dict[str, Any], outputs: Dict[str, Any], tenant: str
+) -> Dict[str, Any]:
+    """Invoke a real, read-only ABS tool by name.
+
+    Supported: RAG query (knowledge base), system status, and any ``ask*`` /
+    delegation name (routed through the cascade). Anything else returns an
+    honest not-available error — the engine never fakes a side effect.
+    """
+    raw_name = str(config.get("tool_name") or "").strip()
+    name = raw_name.lower()
+    short = name.split(".")[-1]
+    args = config.get("tool_args") or {}
+
+    if name in _RAG_TOOLS or short in _RAG_TOOLS:
+        from app.rag import query as rag_query_fn
+
+        question = _render(
+            str(args.get("question") or args.get("query") or config.get("prompt") or ""),
+            outputs,
+        )
+        if not question.strip():
+            return {"skipped": "abs_tool", "note": "rag_query: empty question"}
+        top_k = int(args.get("top_k", 5) or 5)
+        res = await rag_query_fn(question, top_k=top_k)
+        import json as _json
+
+        text = res if isinstance(res, str) else _json.dumps(res, ensure_ascii=False)
+        return {"text": text, "tool": raw_name, "kind": "abs_tool"}
+
+    if name in _STATUS_TOOLS or short in _STATUS_TOOLS:
+        from app.mcp.tools.system import system_status
+
+        import json as _json
+
+        res = await system_status()
+        text = res if isinstance(res, str) else _json.dumps(res, ensure_ascii=False, default=str)
+        return {"text": text, "tool": raw_name, "kind": "abs_tool"}
+
+    if short.startswith("ask") or short in ("llm", "cascade"):
+        from app.cascade.orchestrator import call_with_cascade
+
+        prompt = _render(
+            str(args.get("prompt") or args.get("question") or config.get("prompt") or ""),
+            outputs,
+        )
+        if not prompt.strip():
+            return {"skipped": "abs_tool", "note": f"{raw_name}: empty prompt"}
+        # ask_<provider> → primary provider; bare "ask" → default groq.
+        provider = str(args.get("provider") or (short[4:] if short.startswith("ask_") else "") or "groq")
+        resp = await call_with_cascade(
+            prompt, primary=provider, tenant_id=tenant or "default"
+        )
+        return {
+            "text": getattr(resp, "text", None) or str(resp),
+            "tool": raw_name,
+            "kind": "abs_tool",
+        }
+
+    return {
+        "error": (
+            f"abs_tool {raw_name!r} not available in the workflow engine — "
+            "external/side-effecting tools require a marketplace plugin"
+        ),
+        "kind": "abs_tool",
+    }
+
+
+_TRUE_LABELS = frozenset({"true", "yes", "1", "y", "t", "ok", "pass"})
+_FALSE_LABELS = frozenset({"false", "no", "0", "n", "f", "fail"})
+
+
+def _edge_fires(edge: Dict[str, Any], source_output: Any) -> bool:
+    """Decide whether *edge* propagates reachability to its target.
+
+    Backwards-compatible: an edge with no ``condition`` always fires (so a
+    workflow without any conditions runs every node, exactly as before). A
+    labelled edge off a ``conditional`` node fires only on the matching branch.
+    """
+    cond = str(edge.get("condition") or "").strip()
+    if not cond:
+        return True
+    result = source_output.get("result") if isinstance(source_output, dict) else None
+    label = cond.lower()
+    if isinstance(result, bool):
+        if label in _TRUE_LABELS:
+            return result is True
+        if label in _FALSE_LABELS:
+            return result is False
+        return False  # labelled edge that doesn't name a known branch
+    # Non-conditional source: treat the label as an equality guard on its text.
+    return cond == _node_text(source_output)
+
+
+async def _execute_run(job_id: str) -> None:
     record = _JOBS.get(job_id)
     if record is None:
         return
     record.state = "running"
-    record.started_at = time.time()
-    # Simulate the planned work duration capped at 1 s for tests.
-    plan_steps = plan(record.workflow)
-    delay = min(estimate(plan_steps), 1.0)
-    await asyncio.sleep(delay)
-    record.state = "done"
+    if record.started_at is None:  # preserve original start across resume
+        record.started_at = time.time()
+    try:
+        steps = plan(record.workflow)
+        edges = record.workflow.get("edges", []) or []
+        out_edges: Dict[str, List[Dict[str, Any]]] = {}
+        has_incoming: set[str] = set()
+        for e in edges:
+            src = e.get("source") or e.get("from")
+            dst = e.get("target") or e.get("to")
+            if src is None or dst is None:
+                continue
+            out_edges.setdefault(src, []).append(e)
+            has_incoming.add(dst)
+
+        # Roots (no incoming edge) are always reachable. Every other node must
+        # be reached through a firing edge.
+        reachable: set[str] = {
+            nid
+            for s in steps
+            if (nid := s.get("node_id")) is not None and nid not in has_incoming
+        }
+
+        for step in steps:
+            nid = step.get("node_id")
+            kind = str(step.get("kind") or "unknown")
+            node = step.get("node") or {}
+            if nid not in reachable:
+                record.node_outputs[nid] = {
+                    "skipped": "unreached",
+                    "note": "branch not taken (upstream condition routed elsewhere)",
+                }
+                continue
+
+            prior = record.node_outputs.get(nid)
+
+            # hitl gate — pause the whole run until a human approves/rejects.
+            if kind == "hitl":
+                role = (node.get("config") or {}).get("approval_role")
+                decision = prior if isinstance(prior, dict) else {}
+                if decision.get("rejected") is True:
+                    # rejected: record + do NOT propagate (downstream unreached)
+                    record.node_outputs[nid] = {"rejected": True, "kind": "hitl", "approval_role": role}
+                    continue
+                if decision.get("approved") is not True:
+                    # not yet decided → pause and wait for resume()
+                    record.state = "awaiting_approval"
+                    record.pending_node = nid
+                    record.node_outputs[nid] = {"awaiting": "approval", "kind": "hitl", "approval_role": role}
+                    return
+                output = {"approved": True, "kind": "hitl", "approval_role": role}
+                record.node_outputs[nid] = output
+                for e in out_edges.get(nid, []):
+                    if _edge_fires(e, output):
+                        dst = e.get("target") or e.get("to")
+                        if dst is not None:
+                            reachable.add(dst)
+                continue
+
+            # Resume reuse: a node already executed in a previous pass keeps its
+            # output (never re-run a side effect like api_request/abs_tool). Only
+            # real results are reused — "unreached"/"awaiting" markers re-evaluate.
+            if isinstance(prior, dict) and not prior.get("awaiting") and prior.get("skipped") != "unreached":
+                output = prior
+            else:
+                try:
+                    output = await _run_node(
+                        node, kind, record.node_outputs, record.tenant_slug
+                    )
+                except Exception as exc:  # one node failing must not abort the run
+                    logger.warning("workflow node %s (%s) failed: %s", nid, kind, exc)
+                    output = {"error": str(exc)[:300]}
+            record.node_outputs[nid] = output
+            if isinstance(output, dict) and output.get("unsupported"):
+                record.warnings.append(
+                    f"node {nid} ({kind}) not executed: {output.get('error', 'unsupported')}"
+                )
+            for e in out_edges.get(nid, []):
+                if _edge_fires(e, output):
+                    dst = e.get("target") or e.get("to")
+                    if dst is not None:
+                        reachable.add(dst)
+        record.state = "done"
+        record.pending_node = None
+    except Exception as exc:  # pragma: no cover — planner/setup failure
+        logger.warning("workflow run %s failed: %s", job_id, exc)
+        record.state = "error"
+        record.error = str(exc)[:300]
     record.completed_at = time.time()
 
 
@@ -236,6 +573,40 @@ def status(job_id: str) -> Optional[Dict[str, Any]]:
         "started_at": record.started_at,
         "completed_at": record.completed_at,
         "error": record.error,
+        "node_outputs": record.node_outputs,
+        "pending_node": record.pending_node,
+        "warnings": record.warnings,
+    }
+
+
+async def resume(job_id: str, *, approved: bool, role: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Approve or reject a paused ``hitl`` node and continue the run.
+
+    Returns ``None`` if the job is unknown, an error dict if it is not actually
+    awaiting approval, else a dict echoing the decision. On approval the run
+    resumes (already-executed nodes are reused, the gated node + downstream
+    execute); on rejection the run finishes with the downstream left unreached.
+    """
+    record = _JOBS.get(job_id)
+    if record is None:
+        return None
+    if record.state != "awaiting_approval" or not record.pending_node:
+        return {"error": "job is not awaiting approval", "state": record.state}
+    nid = record.pending_node
+    record.node_outputs[nid] = (
+        {"approved": True, "kind": "hitl", "approved_by": role}
+        if approved
+        else {"rejected": True, "kind": "hitl", "rejected_by": role}
+    )
+    record.pending_node = None
+    record.state = "running"
+    record.completed_at = None
+    await _execute_run(job_id)
+    return {
+        "job_id": job_id,
+        "resumed_node": nid,
+        "approved": approved,
+        "state": record.state,
     }
 
 
@@ -250,5 +621,6 @@ __all__ = [
     "estimate_cost",
     "plan",
     "reset_for_tests",
+    "resume",
     "status",
 ]

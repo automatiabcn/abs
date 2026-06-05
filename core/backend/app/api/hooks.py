@@ -20,12 +20,21 @@ Yanıt: Claude Code hook JSON output spec uyumlu.
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+# Reuse the same bearer+scope gate the sibling /v1/hooks/* endpoints use.
+# /dispatch + /test run the hook dispatcher and were previously UNAUTHENTICATED
+# while reachable through Caddy (@backend path /v1/*) — any caller could drive
+# the hook engine. Gate them like quota-check/audit-log/session-start.
+from app.api.claude_code_hooks import _auth_dependency
 from app.hooks.dispatcher import dispatch_hooks, to_claude_code_hook_output
 
-router = APIRouter(prefix="/v1/hooks", tags=["hooks"])
+router = APIRouter(
+    prefix="/v1/hooks",
+    tags=["hooks"],
+    dependencies=[Depends(_auth_dependency)],
+)
 
 
 class HookRequest(BaseModel):

@@ -53,10 +53,27 @@ def _whitelist_ips() -> list[str]:
 
 
 def _client_ip(request: Request) -> str:
-    fwd = request.headers.get("x-forwarded-for", "")
-    if fwd:
-        return fwd.split(",")[0].strip()
-    return request.client.host if request.client else "0.0.0.0"
+    """Resolve the caller IP for the admin IP-whitelist gate and the
+    in-memory brute-force lockout bucket.
+
+    SECURITY (auth/session round): this MUST NOT blindly trust the
+    client-supplied ``X-Forwarded-For`` header. The previous implementation
+    took ``XFF[0]`` unconditionally, which let any caller:
+      (a) bypass ``admin_ip_whitelist`` by sending
+          ``X-Forwarded-For: <whitelisted-ip>`` from anywhere; and
+      (b) reset the per-IP lockout bucket on every request by rotating the
+          header, turning the bcrypt admin password into an unthrottled
+          brute-force target (``/v1/admin/login`` has no slowapi decorator —
+          ``_too_many_failures`` keyed on this IP is its only throttle).
+
+    We defer to the same trusted-proxy gate the rate-limiter already uses
+    (UAT-042): ``X-Forwarded-For`` is honoured only when the immediate hop
+    (``request.client.host``) is listed in ``ABS_TRUSTED_PROXIES``; otherwise
+    the raw socket address is used and the header is ignored.
+    """
+    from app.middleware.rate_limit import client_ip_for_rate_limit
+
+    return client_ip_for_rate_limit(request)
 
 
 def _ip_allowed(ip: str) -> bool:

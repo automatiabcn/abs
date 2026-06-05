@@ -151,7 +151,7 @@ def quota_check(
                 ),
             }
         }
-    return {
+    out: Dict = {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "allow",
@@ -161,6 +161,20 @@ def quota_check(
             ),
         }
     }
+    # Active delegation nudge — this is the hook customers already wire
+    # (PreToolUse → /v1/hooks/quota-check), so folding the nudge in here makes
+    # delegation work out of the box for any connecting client (Claude Code,
+    # Codex, ...) with no extra hook. Detects inline-analysis / curl|python /
+    # large-docs-write and suggests the matching mcp__abs__ask_* tool.
+    try:
+        from app.hooks.delegate_nudge import maybe_delegate_nudge
+
+        nudge = maybe_delegate_nudge(body.tool_name, body.tool_input or {}) or ""
+    except Exception:  # pragma: no cover — nudge is best-effort, never blocks
+        nudge = ""
+    if nudge:
+        out["hookSpecificOutput"]["additionalContext"] = nudge
+    return out
 
 
 # ───── PostToolUse: audit log append ─────────────────────────────────────

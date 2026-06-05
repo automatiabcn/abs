@@ -79,6 +79,13 @@ class Settings(BaseSettings):
     github_app_id: str = ""
     github_app_private_key: str = ""  # PEM, multi-line OK
     github_app_webhook_secret: str = ""
+    # GitHub OAuth App (smart-link connect + token refresh). These were read
+    # via getattr() by app/api/smart_link.py and app/smart_link/oauth_refresh.py
+    # but never declared, so ABS_GITHUB_CLIENT_ID / ABS_GITHUB_CLIENT_SECRET
+    # were silently ignored and both the initial code exchange and the refresh
+    # sent empty credentials (GitHub rejects → connect/refresh always failed).
+    github_client_id: str = ""
+    github_client_secret: str = ""
 
     # 028 — Rate limiting (slowapi)
     rate_limit_enabled: bool = True
@@ -230,9 +237,17 @@ class Settings(BaseSettings):
     qdrant_snapshot_dir: str = "/qdrant/snapshots"
 
     # T-010 — BGE-M3 embedding service
-    embedding_backend: str = "mock"  # mock | sentence_transformers | onnx_cuda | onnx_cpu
+    embedding_backend: str = "mock"  # mock | cohere | ollama | sentence_transformers | onnx_cuda | onnx_cpu
     embedding_model_path: str = ""   # ONNX backends only
+    # `cohere` backend: real semantic embeddings via the customer's existing
+    # Cohere key (bring-your-own-key), 1024-dim, zero local footprint. The
+    # recommended real backend for self-host (no model download / GPU / ollama).
+    cohere_embed_model: str = "embed-multilingual-v3.0"  # 1024-dim, multilingual
     embedding_device: str = "cpu"    # SentenceTransformers backend only
+    # Ollama embedding model name (when embedding_backend=ollama). bge-m3 is
+    # 1024-dim + multilingual (matches qdrant_default_vector_size); nomic is
+    # 768-dim. ABS_EMBEDDING_MODEL overrides.
+    embedding_model: str = "nomic-embed-text"
     embedding_batch_size: int = 32
     embedding_min_batch: int = 4
 

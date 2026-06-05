@@ -295,11 +295,47 @@ async def execute(
     }
 
 
+def _job_owner_matches(state: Dict[str, Any], admin: dict) -> bool:
+    """A job is owned by the admin identity that enqueued it (execute keys the
+    job by ``admin.sub``). Cross-tenant callers must not read or resume it.
+
+    Backwards-compatible: in single-tenant/dev every admin resolves to the same
+    key ("default" when no sub), so existing single-tenant flows are unaffected;
+    isolation engages once admins carry distinct subjects.
+    """
+    return state.get("tenant_slug") == admin.get("sub", "default")
+
+
 @router.get("/jobs/{job_id}")
 async def job_status(
-    job_id: str, _admin: dict = Depends(current_admin)
+    job_id: str, admin: dict = Depends(current_admin)
 ) -> Dict[str, Any]:
     state = runner.status(job_id)
-    if state is None:
+    # 404 (not 403) on a cross-tenant job so its existence isn't disclosed.
+    if state is None or not _job_owner_matches(state, admin):
         raise HTTPException(404, "job_not_found")
     return state
+
+
+class ResumeRequest(BaseModel):
+    approved: bool
+
+
+@router.post("/jobs/{job_id}/resume")
+async def resume_job(
+    job_id: str, body: ResumeRequest, admin: dict = Depends(current_admin)
+) -> Dict[str, Any]:
+    """Approve or reject a workflow paused at a human-in-the-loop (hitl) node."""
+    # Ownership gate BEFORE resuming — a cross-tenant admin must never be able
+    # to approve/reject another tenant's hitl gate (e.g. a destructive op).
+    state = runner.status(job_id)
+    if state is None or not _job_owner_matches(state, admin):
+        raise HTTPException(404, "job_not_found")
+    result = await runner.resume(
+        job_id, approved=body.approved, role=admin.get("sub")
+    )
+    if result is None:
+        raise HTTPException(404, "job_not_found")
+    if "error" in result:
+        raise HTTPException(409, result["error"])
+    return result
