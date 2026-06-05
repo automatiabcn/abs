@@ -324,27 +324,28 @@ export default function McpTokensPage() {
         </CardContent>
       </Card>
 
-      {/* ── Delegation / CLAUDE.md ─────────────────────── */}
+      {/* ── Delegation / CLAUDE.md + AGENTS.md ─────────────────────── */}
       <Card className="mb-6 bg-card/70">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <FileCode2 className="h-4 w-4 text-primary" />
-            Otomatik delegasyon (CLAUDE.md)
+            Otomatik delegasyon (CLAUDE.md / AGENTS.md)
           </CardTitle>
           <CardDescription>
-            Token bağlanınca Claude Code ABS&apos;yi <strong>tanır</strong> ama
-            alt görevleri kendiliğinden delege etmesi için bir yönerge ister.
-            Aşağıdaki bloğu kendi makinende{" "}
-            <code>~/.claude/CLAUDE.md</code> (veya proje kökünde{" "}
-            <code>CLAUDE.md</code>) dosyasına yapıştır — Claude artık analiz,
-            kod, çeviri gibi işleri proaktif olarak ABS&apos;ye yönlendirir.
-            (Sunucu bu yönergeyi MCP üzerinden de gönderir; CLAUDE.md onu
-            güçlendirir.)
+            Token bağlanınca Claude Code <em>ve</em> Codex ABS&apos;yi{" "}
+            <strong>tanır</strong> (sunucu yönergeyi MCP üzerinden gönderir) ama
+            alt görevleri proaktif delege etmesi için yerel bir yönerge bunu
+            güçlendirir. Aynı bloğu kendi makinende yapıştır:{" "}
+            <strong>Claude Code</strong> →{" "}
+            <code>~/.claude/CLAUDE.md</code>, <strong>Codex</strong> →{" "}
+            <code>~/.codex/AGENTS.md</code> (veya proje kökünde{" "}
+            <code>AGENTS.md</code>). Hangi kullanıcı bağlanırsa bağlansın
+            analiz, kod, çeviri gibi işleri ABS&apos;ye yönlendirir.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <CopyRow
-            label="CLAUDE.md — delegasyon bloğu"
+            label="CLAUDE.md / AGENTS.md — delegasyon bloğu"
             value={CLAUDE_MD_BLOCK}
             copied={copied === "claudemd"}
             onCopy={() => copy("claudemd", CLAUDE_MD_BLOCK)}

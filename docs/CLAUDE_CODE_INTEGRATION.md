@@ -1,13 +1,24 @@
-# Claude Code ↔ ABS Server Integration
+# Claude Code / Codex ↔ ABS Server Integration
 
-ABS Server iki ayrı kanaldan Claude Code (veya başka MCP istemcisi) ile
+ABS Server iki ayrı kanaldan Claude Code, Codex (veya başka MCP istemcisi) ile
 konuşur:
 
-1. **MCP HTTP transport** — `/mcp` endpoint, JSON-RPC 2.0. Claude Code
-   `claude mcp add ...` ile bağlanır, ABS'in 122+ MCP tool'unu listeler.
-2. **Lifecycle hooks** — `/v1/hooks/*` endpoint'leri. Müşterinin
-   `~/.claude/settings.json`'una eklenir, her tool çağrısı ABS'ten
-   izin/audit alır.
+1. **MCP HTTP transport** — `/mcp` endpoint, JSON-RPC 2.0. İstemci bağlanınca
+   ABS'in 122+ MCP tool'unu listeler. Bağlantı sırasında sunucu, MCP
+   `initialize` yanıtında "ABS'ye delege et" yönergesini de gönderir — yani
+   **hangi istemci bağlanırsa bağlansın** temel delegasyon ekstra config
+   olmadan aktif olur.
+   - Claude Code: `claude mcp add --transport http abs <url> --header "Authorization: Bearer <token>"`
+   - Codex: `codex mcp add abs --url <url> --bearer-token-env-var ABS_MCP_TOKEN`
+2. **Lifecycle hooks** — `/v1/hooks/*` endpoint'leri (Claude Code
+   `~/.claude/settings.json`). `PreToolUse → /v1/hooks/quota-check` hem kota
+   gate'i uygular **hem de** delege edilebilir alt görevlerde (`additionalContext`
+   ile) aktif delegasyon nudge'ı döndürür.
+
+**Yerel yönerge (delegasyonu güçlendirir, opsiyonel ama önerilir):** panelin
+`/admin/mcp-tokens` sayfasındaki delegasyon bloğunu yapıştır — Claude Code için
+`~/.claude/CLAUDE.md`, Codex için `~/.codex/AGENTS.md` (veya proje kökünde
+`AGENTS.md`). İçerik aynı; yalnız dosya adı istemciye göre değişir.
 
 İkisi de aynı bearer token ile çalışır: `/v1/mcp/tokens` POST endpoint'i
 tarafından üretilen HMAC imzalı `abs_mcp_<base64>.<base64>` formatında.
