@@ -142,7 +142,19 @@ def _ingest_chunks(
         return 0
     embedder = _ensure_embedder()
     _ensure_qdrant_collection(collection, vector_size=embedder.dim)
-    vectors = embedder.embed([c.text for c in chunks])
+    # Embedding is a network call (Cohere BYOK) — a rate-limit / auth / transient
+    # provider error here must surface as a clean 503 the panel can render, not
+    # an uncaught 500. (This path is shared by /ingest and /ingest-file.)
+    try:
+        vectors = embedder.embed([c.text for c in chunks])
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("rag_embed_failed: %s", exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"embedding_failed: {str(exc)[:160]}",
+        ) from exc
     now = int(time.time())
     points = [
         PointStruct(
@@ -162,9 +174,18 @@ def _ingest_chunks(
         )
         for chunk, vec in zip(chunks, vectors)
     ]
-    return qc.upsert_points(
-        collection=collection, tenant_id=tenant_id, points=points
-    )
+    try:
+        return qc.upsert_points(
+            collection=collection, tenant_id=tenant_id, points=points
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("rag_upsert_failed: %s", exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"qdrant_upsert_failed: {str(exc)[:160]}",
+        ) from exc
 
 
 @router.post("/ingest", response_model=IngestResponse)
@@ -176,9 +197,24 @@ def ingest_text(
     auth = rag.auth
     collection = _tenant_collection(auth)
     started = time.perf_counter()
-    doc = parse_document(
-        body.text.encode("utf-8"), mime_type=body.mime_type, filename=body.filename
-    )
+    # A binary mime (PDF/DOCX) sent through the JSON /ingest path means a stale
+    # frontend POSTed file.text()-corrupted bytes — parsing fails. Surface a
+    # clean 422 (use /ingest-file for binary) instead of an uncaught 500.
+    try:
+        doc = parse_document(
+            body.text.encode("utf-8"),
+            mime_type=body.mime_type,
+            filename=body.filename,
+        )
+    except RuntimeError as exc:
+        logger.warning("rag_ingest_parse_failed mime=%s err=%s", body.mime_type, exc)
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"{str(exc)[:140]} — binary files (PDF/DOCX) must be uploaded "
+                "via /v1/rag/ingest-file, not the text /ingest path."
+            ),
+        ) from exc
     chunks = late_chunks(
         doc,
         target_tokens=body.target_tokens,
@@ -247,7 +283,7 @@ _EXT_MIME = {
 
 @router.post("/ingest-file", response_model=IngestResponse)
 @observe(name="rag.ingest_file")
-async def ingest_file(
+def ingest_file(
     file: UploadFile = File(...),
     rag: RAGAuth = Depends(rag_action_dep("ingest")),
 ) -> IngestResponse:
@@ -256,12 +292,19 @@ async def ingest_file(
     Binary formats (PDF/DOCX) cannot go through `/ingest` — the browser would
     have to decode them to text first, which corrupts the bytes. Here the raw
     payload is parsed server-side (pypdf / python-docx) before chunking.
+
+    MUST stay a SYNC `def` (like /ingest and /query): the embedding path calls
+    `asyncio.run()` for the Cohere backend, which only works off the event loop
+    (FastAPI runs sync routes in a threadpool). An `async def` here crashes with
+    "asyncio.run() cannot be called from a running event loop" — and only with
+    the real cohere backend, not the mock used in unit tests.
     """
     import os as _os
 
     auth = rag.auth
     collection = _tenant_collection(auth)
-    raw = await file.read()
+    # Sync read off the underlying SpooledTemporaryFile (no `await` in a sync route).
+    raw = file.file.read()
     if not raw:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="empty_upload")
 
