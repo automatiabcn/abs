@@ -33,7 +33,7 @@ def test_bash_delegate_and_feature_nudges_compose():
     ctx = out["additional_context"]
     # En az iki farklı nudge var
     assert "FEATURE NUDGE" in ctx
-    assert "DELEGATE NUDGE" in ctx
+    assert "ABS delegation" in ctx
 
 
 def test_mcp_tool_mcp_nudge_path():
