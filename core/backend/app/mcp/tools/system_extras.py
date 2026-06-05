@@ -98,7 +98,6 @@ async def code_fingerprint(code: str) -> str:
     )
 
 
-@mcp_server.tool()
 @with_hooks("preview_patch")
 async def preview_patch(file_path: str, unified_diff: str) -> str:
     """Unified diff'i dry-run uygula, success + reason döndür."""
@@ -106,7 +105,6 @@ async def preview_patch(file_path: str, unified_diff: str) -> str:
     return json.dumps(_preview_patch(file_path, unified_diff), ensure_ascii=False)
 
 
-@mcp_server.tool()
 @with_hooks("apply_patch")
 async def apply_patch(
     file_path: str, unified_diff: str, backup: bool = True
@@ -122,7 +120,18 @@ REGISTERED_TOOLS.extend(
         "quota_status",
         "model_health",
         "code_fingerprint",
-        "preview_patch",
-        "apply_patch",
     ]
 )
+
+# SECURITY: preview_patch / apply_patch read + WRITE arbitrary existing files
+# on the server (the patch engine takes Path(file_path) with no allowlist or
+# traversal guard). Exposed over the network /mcp transport they give ANY
+# token-holder — including turnkey team members who only hold a delegation
+# token — arbitrary file read (secret disclosure) and write (RCE: patch a
+# loaded module or admin_credentials.json). They are operator-local dev tools,
+# so keep them OFF the MCP surface by default. An operator driving their OWN
+# deployment via Claude Code can opt in with ABS_MCP_EXPOSE_PATCH_TOOLS=1.
+if getattr(settings, "mcp_expose_patch_tools", False):
+    preview_patch = mcp_server.tool()(preview_patch)
+    apply_patch = mcp_server.tool()(apply_patch)
+    REGISTERED_TOOLS.extend(["preview_patch", "apply_patch"])
