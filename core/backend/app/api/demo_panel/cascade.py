@@ -48,7 +48,8 @@ def _synthesise_from_audit(limit: int) -> list[dict]:
         out.append(
             {
                 "ts": ts.isoformat(),
-                "license_jti": r.license_jti,
+                # license_jti intentionally NOT exposed on this unauthenticated
+                # /v1/panel/* dashboard — it is a per-customer token identifier.
                 "tool": r.resource or "unknown",
                 "cascade_path": ["groq", "cerebras"],
                 "winner": "groq",
