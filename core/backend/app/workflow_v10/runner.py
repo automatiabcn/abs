@@ -135,6 +135,7 @@ class JobRecord:
     error: Optional[str] = None
     node_outputs: Dict[str, Any] = field(default_factory=dict)
     pending_node: Optional[str] = None  # hitl node awaiting human approval
+    warnings: List[str] = field(default_factory=list)  # e.g. unsupported nodes
 
 
 _JOBS: Dict[str, JobRecord] = {}
@@ -286,7 +287,23 @@ async def _run_node(
             or ""
         )
         return {"text": _render(str(body), outputs), "passthrough": kind}
-    # hitl / loop — not run by the linear v1 engine.
+    if kind == "loop":
+        # The linear v1 engine cannot iterate. Returning a silent "skipped"
+        # here made a workflow containing a loop finish as a clean success
+        # while the loop body ran ZERO times — e.g. the "Each supplier"
+        # template notified nobody yet reported "done". Surface it as an
+        # explicit unsupported error so the run is honestly flagged as
+        # incomplete instead of falsely green. Real iteration is the
+        # durable-engine follow-up.
+        return {
+            "error": (
+                "loop nodes are not executed by the linear engine — the loop "
+                "body runs zero iterations (durable-engine follow-up)"
+            ),
+            "kind": "loop",
+            "unsupported": True,
+        }
+    # any other unhandled kind — recorded, not run.
     return {"skipped": kind, "note": "not executed by the linear v1 engine (durable engine follow-up)"}
 
 
@@ -526,6 +543,10 @@ async def _execute_run(job_id: str) -> None:
                     logger.warning("workflow node %s (%s) failed: %s", nid, kind, exc)
                     output = {"error": str(exc)[:300]}
             record.node_outputs[nid] = output
+            if isinstance(output, dict) and output.get("unsupported"):
+                record.warnings.append(
+                    f"node {nid} ({kind}) not executed: {output.get('error', 'unsupported')}"
+                )
             for e in out_edges.get(nid, []):
                 if _edge_fires(e, output):
                     dst = e.get("target") or e.get("to")
@@ -554,6 +575,7 @@ def status(job_id: str) -> Optional[Dict[str, Any]]:
         "error": record.error,
         "node_outputs": record.node_outputs,
         "pending_node": record.pending_node,
+        "warnings": record.warnings,
     }
 
 
