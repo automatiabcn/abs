@@ -134,6 +134,7 @@ class JobRecord:
     completed_at: Optional[float] = None
     error: Optional[str] = None
     node_outputs: Dict[str, Any] = field(default_factory=dict)
+    pending_node: Optional[str] = None  # hitl node awaiting human approval
 
 
 _JOBS: Dict[str, JobRecord] = {}
@@ -452,7 +453,8 @@ async def _execute_run(job_id: str) -> None:
     if record is None:
         return
     record.state = "running"
-    record.started_at = time.time()
+    if record.started_at is None:  # preserve original start across resume
+        record.started_at = time.time()
     try:
         steps = plan(record.workflow)
         edges = record.workflow.get("edges", []) or []
@@ -484,13 +486,45 @@ async def _execute_run(job_id: str) -> None:
                     "note": "branch not taken (upstream condition routed elsewhere)",
                 }
                 continue
-            try:
-                output = await _run_node(
-                    node, kind, record.node_outputs, record.tenant_slug
-                )
-            except Exception as exc:  # one node failing must not abort the run
-                logger.warning("workflow node %s (%s) failed: %s", nid, kind, exc)
-                output = {"error": str(exc)[:300]}
+
+            prior = record.node_outputs.get(nid)
+
+            # hitl gate — pause the whole run until a human approves/rejects.
+            if kind == "hitl":
+                role = (node.get("config") or {}).get("approval_role")
+                decision = prior if isinstance(prior, dict) else {}
+                if decision.get("rejected") is True:
+                    # rejected: record + do NOT propagate (downstream unreached)
+                    record.node_outputs[nid] = {"rejected": True, "kind": "hitl", "approval_role": role}
+                    continue
+                if decision.get("approved") is not True:
+                    # not yet decided → pause and wait for resume()
+                    record.state = "awaiting_approval"
+                    record.pending_node = nid
+                    record.node_outputs[nid] = {"awaiting": "approval", "kind": "hitl", "approval_role": role}
+                    return
+                output = {"approved": True, "kind": "hitl", "approval_role": role}
+                record.node_outputs[nid] = output
+                for e in out_edges.get(nid, []):
+                    if _edge_fires(e, output):
+                        dst = e.get("target") or e.get("to")
+                        if dst is not None:
+                            reachable.add(dst)
+                continue
+
+            # Resume reuse: a node already executed in a previous pass keeps its
+            # output (never re-run a side effect like api_request/abs_tool). Only
+            # real results are reused — "unreached"/"awaiting" markers re-evaluate.
+            if isinstance(prior, dict) and not prior.get("awaiting") and prior.get("skipped") != "unreached":
+                output = prior
+            else:
+                try:
+                    output = await _run_node(
+                        node, kind, record.node_outputs, record.tenant_slug
+                    )
+                except Exception as exc:  # one node failing must not abort the run
+                    logger.warning("workflow node %s (%s) failed: %s", nid, kind, exc)
+                    output = {"error": str(exc)[:300]}
             record.node_outputs[nid] = output
             for e in out_edges.get(nid, []):
                 if _edge_fires(e, output):
@@ -498,6 +532,7 @@ async def _execute_run(job_id: str) -> None:
                     if dst is not None:
                         reachable.add(dst)
         record.state = "done"
+        record.pending_node = None
     except Exception as exc:  # pragma: no cover — planner/setup failure
         logger.warning("workflow run %s failed: %s", job_id, exc)
         record.state = "error"
@@ -518,6 +553,38 @@ def status(job_id: str) -> Optional[Dict[str, Any]]:
         "completed_at": record.completed_at,
         "error": record.error,
         "node_outputs": record.node_outputs,
+        "pending_node": record.pending_node,
+    }
+
+
+async def resume(job_id: str, *, approved: bool, role: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Approve or reject a paused ``hitl`` node and continue the run.
+
+    Returns ``None`` if the job is unknown, an error dict if it is not actually
+    awaiting approval, else a dict echoing the decision. On approval the run
+    resumes (already-executed nodes are reused, the gated node + downstream
+    execute); on rejection the run finishes with the downstream left unreached.
+    """
+    record = _JOBS.get(job_id)
+    if record is None:
+        return None
+    if record.state != "awaiting_approval" or not record.pending_node:
+        return {"error": "job is not awaiting approval", "state": record.state}
+    nid = record.pending_node
+    record.node_outputs[nid] = (
+        {"approved": True, "kind": "hitl", "approved_by": role}
+        if approved
+        else {"rejected": True, "kind": "hitl", "rejected_by": role}
+    )
+    record.pending_node = None
+    record.state = "running"
+    record.completed_at = None
+    await _execute_run(job_id)
+    return {
+        "job_id": job_id,
+        "resumed_node": nid,
+        "approved": approved,
+        "state": record.state,
     }
 
 
@@ -532,5 +599,6 @@ __all__ = [
     "estimate_cost",
     "plan",
     "reset_for_tests",
+    "resume",
     "status",
 ]

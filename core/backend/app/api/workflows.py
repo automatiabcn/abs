@@ -303,3 +303,22 @@ async def job_status(
     if state is None:
         raise HTTPException(404, "job_not_found")
     return state
+
+
+class ResumeRequest(BaseModel):
+    approved: bool
+
+
+@router.post("/jobs/{job_id}/resume")
+async def resume_job(
+    job_id: str, body: ResumeRequest, admin: dict = Depends(current_admin)
+) -> Dict[str, Any]:
+    """Approve or reject a workflow paused at a human-in-the-loop (hitl) node."""
+    result = await runner.resume(
+        job_id, approved=body.approved, role=admin.get("sub")
+    )
+    if result is None:
+        raise HTTPException(404, "job_not_found")
+    if "error" in result:
+        raise HTTPException(409, result["error"])
+    return result
