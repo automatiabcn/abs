@@ -52,7 +52,10 @@ async def recent_pipeline(limit: int = 20) -> dict:
             {
                 "ts": ts.isoformat() if ts else None,
                 "tool": r.resource,
-                "license_jti": r.license_jti,
+                # license_jti intentionally NOT exposed: /v1/panel/* is
+                # unauthenticated (activity/showcase dashboard), and the license
+                # JTI is a per-customer token identifier — leaking it on a public
+                # endpoint is needless. Display uses tool + timestamp only.
                 "steps": [
                     {"role": "generate", "model": "kimi", "latency_ms": 1200},
                     {"role": "verify", "model": "codellama", "latency_ms": 800},
