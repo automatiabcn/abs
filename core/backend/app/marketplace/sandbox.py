@@ -306,6 +306,13 @@ class DockerSandboxLauncher:
                 f"abs.egress.allowlist={','.join(spec.network_allowlist)}",
             ]
         )
+        # Defence in depth: the image is the final positional arg with no `--`
+        # separator, so a value starting with '-' (or with whitespace) would be
+        # parsed by docker as a flag — argv injection. The manifest validator
+        # already enforces a clean OCI ref; re-check here so a SandboxSpec built
+        # directly (bypassing the manifest) still cannot smuggle a flag.
+        if not spec.image or spec.image[0] == "-" or any(c.isspace() for c in spec.image):
+            raise SandboxError(f"refusing to launch unsafe image ref: {spec.image!r}")
         argv.append(spec.image)
         return argv
 

@@ -50,6 +50,16 @@ _SEMVER_RE = re.compile(
 )
 _DEP_RE = re.compile(r"^[a-z][a-z0-9_-]+@\^?[\d.]+$")
 _HEX64_RE = re.compile(r"^[0-9a-fA-F]{64}$")
+# OCI image reference: optional registry[:port]/, lowercase repo path, optional
+# :tag and/or @sha256 digest. Anchored + first char [a-z0-9] so a value can
+# never start with '-' (which the sandbox would otherwise hand docker as a
+# flag) and can never contain whitespace or shell/flag metacharacters.
+_IMAGE_REF_RE = re.compile(
+    r"^(?:[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?(?::[0-9]+)?/)?"
+    r"[a-z0-9]+(?:[._/-][a-z0-9]+)*"
+    r"(?::[a-zA-Z0-9][a-zA-Z0-9._-]{0,127})?"
+    r"(?:@sha256:[0-9a-f]{64})?$"
+)
 
 
 class PluginPermissions(BaseModel):
@@ -124,6 +134,19 @@ class PluginManifest(BaseModel):
     def _validate_version(cls, v: str) -> str:
         if not _SEMVER_RE.fullmatch(v):
             raise ValueError("version must be valid semver")
+        return v
+
+    @field_validator("entry_point")
+    @classmethod
+    def _validate_entry_point(cls, v: str) -> str:
+        # The entry_point is the container image the sandbox launches. It MUST
+        # be a well-formed OCI ref — never a docker flag (e.g. "--privileged"),
+        # a path, or anything with whitespace — or it becomes argv injection.
+        if not _IMAGE_REF_RE.fullmatch(v):
+            raise ValueError(
+                "entry_point must be a valid OCI image reference "
+                "(registry/repo:tag[@sha256:...]); flag-like or whitespace values are rejected"
+            )
         return v
 
     @field_validator("dependencies", mode="before")
