@@ -41,6 +41,12 @@ services:
       ABS_NEO4J_PASSWORD: "${ABS_NEO4J_PASSWORD:-AbsNeo2026!}"
       ABS_CERBOS_HOST: "${ABS_CERBOS_HOST:-http://cerbos:3592}"      # fine-grained authz
       ABS_QDRANT_URL: "${ABS_QDRANT_URL:-http://qdrant:6333}"        # /v1/rag/* vector store
+      # Secrets vault — fail fast at boot if sops/age is missing instead of
+      # booting and silently erroring every secret op. The image always ships
+      # both binaries, so this is defence-in-depth against a tampered/regressed
+      # image. (Vault never writes plaintext — encrypt/decrypt both hard-require
+      # the binaries — this just surfaces a missing-binary regression loudly.)
+      ABS_VAULT_REQUIRE_SOPS: "${ABS_VAULT_REQUIRE_SOPS:-true}"
     expose:
       - "8000"
     volumes:
