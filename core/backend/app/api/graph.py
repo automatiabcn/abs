@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -58,6 +59,33 @@ class NLQueryRequest(BaseModel):
 def _is_destructive(cypher: str) -> bool:
     upper = cypher.upper()
     return any(kw in upper for kw in _DESTRUCTIVE)
+
+
+# Clauses that step outside "tenant-scoped graph read/write" entirely: stored
+# procedures (CALL apoc.* / dbms.* — SSRF via apoc.load.json, file reads,
+# `CALL dbms.listConfig` info-disclosure, APOC-based destructive writes that
+# the _DESTRUCTIVE blocklist misses), external data loading, and bulk
+# iteration. None are used anywhere in the app or its templates, so blocking
+# them on the user-driven Cypher paths is a pure hardening with no legitimate
+# loss. Unlike _DESTRUCTIVE these are NOT confirm-bypassable — there is no
+# "I'm sure" path to an SSRF primitive on a tenant query endpoint.
+_FORBIDDEN_CLAUSE_RE = re.compile(
+    r"(?:\bCALL\b|\bLOAD\s+CSV\b|\bFOREACH\b|\bPERIODIC\s+COMMIT\b|\bUSING\s+PERIODIC\b)",
+    re.IGNORECASE,
+)
+# Cypher comments: /* block */ and // line. Neo4j ignores them, so an attacker
+# can split a multi-word clause across one (`LOAD /*x*/ CSV`) to slip past the
+# regex while the parser still executes LOAD CSV. Strip comments before the
+# keyword scan. Only used for the SECURITY check — the original cypher is what
+# actually runs — so over-stripping can only over-block (safe), never under-block.
+_CYPHER_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.DOTALL)
+
+
+def _has_forbidden_clause(cypher: str) -> bool:
+    """True if the Cypher uses a stored-procedure / data-loading / bulk-iter
+    clause that must never run on the tenant-scoped query endpoints."""
+    stripped = _CYPHER_COMMENT_RE.sub(" ", cypher or "")
+    return bool(_FORBIDDEN_CLAUSE_RE.search(stripped))
 
 
 def _resolve_tenant(auth: AuthContext) -> str:
@@ -181,6 +209,8 @@ async def cypher(
     tenant = _resolve_tenant(auth)
     if not (body.cypher or "").strip():
         raise HTTPException(status_code=422, detail="empty_cypher")
+    if _has_forbidden_clause(body.cypher):
+        raise HTTPException(status_code=400, detail="forbidden_clause")
     if _is_destructive(body.cypher) and not body.params.get("_confirm_destructive"):
         raise HTTPException(
             status_code=400,
@@ -346,6 +376,10 @@ async def nl_query(
         raise HTTPException(502, "llm_returned_non_json")
     if _is_destructive(parsed["cypher"]):
         raise HTTPException(400, "destructive_nl_query_rejected")
+    if _has_forbidden_clause(parsed["cypher"]):
+        # An injected NL intent could coax the translator into emitting a
+        # CALL apoc.load.json(...) SSRF or a LOAD CSV file read.
+        raise HTTPException(400, "forbidden_clause")
     params = dict(parsed.get("params") or {})
     params.setdefault(_TENANT_PARAM, tenant)
     client = Neo4jClient()

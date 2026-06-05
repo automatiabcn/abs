@@ -20,11 +20,16 @@ import httpx
 from app.config import settings
 
 _DEFAULT_URL = "http://localhost:11434"
-_MODEL = "nomic-embed-text"
 
 
 def _base_url() -> str:
     return (settings.ollama_url or _DEFAULT_URL).rstrip("/")
+
+
+def _model() -> str:
+    # Configurable so a deployment can run bge-m3 (1024-dim, multilingual)
+    # instead of the nomic-embed-text default.
+    return getattr(settings, "embedding_model", "") or "nomic-embed-text"
 
 
 async def embed(text: str, *, timeout: float = 15.0) -> List[float]:
@@ -47,7 +52,7 @@ async def embed(text: str, *, timeout: float = 15.0) -> List[float]:
         return await asyncio.to_thread(get_embedder().embed_one, text)
 
     url = f"{_base_url()}/api/embeddings"
-    body = {"model": _MODEL, "prompt": text[:8000]}
+    body = {"model": _model(), "prompt": text[:8000]}
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             r = await client.post(url, json=body)

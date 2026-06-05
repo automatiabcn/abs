@@ -54,7 +54,18 @@ class _MockBackend:
 
     def __init__(self, dim: int = 1024) -> None:
         self.dim = dim
-        logger.info("embedding_mock_init dim=%d", dim)
+        # Loud, not INFO: with the mock backend RAG semantic search does NOT
+        # work. Vectors are sha256-derived, so only byte-identical text matches;
+        # semantically similar queries return effectively-random rankings. This
+        # must be visible in every deployment that left ABS_EMBEDDING_BACKEND at
+        # its default rather than reading as a normal startup line.
+        logger.warning(
+            "embedding backend=mock — RAG semantic retrieval is NON-FUNCTIONAL "
+            "(sha256 vectors match only identical text). Set "
+            "ABS_EMBEDDING_BACKEND=sentence_transformers (pip install "
+            "sentence-transformers) or =ollama (bge-m3) for real search. dim=%d",
+            dim,
+        )
 
     def _embed_batch(self, texts: list[str]) -> list[list[float]]:
         out: list[list[float]] = []
@@ -69,6 +80,66 @@ class _MockBackend:
             else:
                 out.append([v / norm for v in vec])
         return out
+
+    def close(self) -> None:
+        return None
+
+
+class _CohereBackend:
+    """Cloud embeddings via the customer's Cohere key — bring-your-own-key,
+    zero local footprint, no model download, no GPU.
+
+    ``embed-multilingual-v3.0`` is 1024-dim, matching ``qdrant_default_vector_size``
+    and the bge-m3 default, so switching to it needs no collection migration.
+    The Cohere SDK client is async; ``/v1/rag/*`` routes are sync (FastAPI runs
+    them in a threadpool), so there is no running event loop and ``asyncio.run``
+    is safe here.
+
+    This is the recommended real backend for self-host: customers already
+    provide a Cohere key for the model cascade, so RAG works with one env var
+    (``ABS_EMBEDDING_BACKEND=cohere``) and zero extra footprint.
+    """
+
+    def __init__(self, model: str | None = None) -> None:
+        if not (getattr(settings, "cohere_api_key", "") or ""):
+            raise ValueError(
+                "embedding_backend=cohere requires ABS_COHERE_API_KEY"
+            )
+        try:
+            import cohere  # noqa: F401
+        except ImportError as exc:
+            raise ImportError(
+                "embedding_backend=cohere requires the 'cohere' package"
+            ) from exc
+        self.model = model or getattr(
+            settings, "cohere_embed_model", "embed-multilingual-v3.0"
+        )
+        self.dim = 1024
+        logger.info("embedding_cohere_init model=%s dim=1024", self.model)
+
+    def _embed_batch(self, texts: list[str]) -> list[list[float]]:
+        import asyncio
+
+        import cohere
+
+        async def _run() -> list[list[float]]:
+            client = cohere.AsyncClientV2(
+                api_key=settings.cohere_api_key, timeout=30.0
+            )
+            resp = await client.embed(
+                texts=[t[:8000] for t in texts],
+                model=self.model,
+                input_type="search_document",
+                embedding_types=["float"],
+            )
+            floats = (
+                getattr(resp.embeddings, "float", None)
+                or getattr(resp.embeddings, "float_", None)
+                or []
+            )
+            return [list(v) for v in floats]
+
+        return asyncio.run(_run())
 
     def close(self) -> None:
         return None
@@ -174,6 +245,8 @@ class BGEEmbedder:
         self.backend = backend
         if backend == "mock":
             self._impl = _MockBackend()
+        elif backend == "cohere":
+            self._impl = _CohereBackend()
         elif backend == "sentence_transformers":
             self._impl = _SentenceTransformersBackend(
                 model_name="BAAI/bge-m3",
