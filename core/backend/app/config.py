@@ -79,6 +79,13 @@ class Settings(BaseSettings):
     github_app_id: str = ""
     github_app_private_key: str = ""  # PEM, multi-line OK
     github_app_webhook_secret: str = ""
+    # GitHub OAuth App (smart-link connect + token refresh). These were read
+    # via getattr() by app/api/smart_link.py and app/smart_link/oauth_refresh.py
+    # but never declared, so ABS_GITHUB_CLIENT_ID / ABS_GITHUB_CLIENT_SECRET
+    # were silently ignored and both the initial code exchange and the refresh
+    # sent empty credentials (GitHub rejects → connect/refresh always failed).
+    github_client_id: str = ""
+    github_client_secret: str = ""
 
     # 028 — Rate limiting (slowapi)
     rate_limit_enabled: bool = True
