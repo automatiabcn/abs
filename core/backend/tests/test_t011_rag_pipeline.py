@@ -445,3 +445,106 @@ def test_ingest_empty_text_rejected_by_validation(
     assert r.status_code == 422
     errors = r.json()["detail"]
     assert any(err.get("loc")[-1] == "text" for err in errors)
+
+
+_DOCX_MIME = (
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+)
+
+
+def test_ingest_text_binary_mime_returns_422_not_500(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A stale frontend POSTing a .docx via the JSON /ingest path (file.text()
+    corrupts the bytes) must get a clean 422, never an uncaught 500."""
+    cid = f"rag-{secrets.token_hex(3)}"
+    _seed_client(cid)
+    monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
+    monkeypatch.setattr(rag_routes.qc, "upsert_points", lambda **k: 0)
+    with TestClient(app) as c:
+        token = _issue_token(
+            c, client_id=cid, user_subject="alice", tenant_id="t1", roles=["member"]
+        )
+        r = c.post(
+            "/v1/rag/ingest",
+            json={
+                "text": "PK\x03\x04 not really a docx zip payload",
+                "filename": "Digisfer gelistirmeleri.docx",
+                "mime_type": _DOCX_MIME,
+            },
+            headers={"Authorization": f"Bearer {token}", "X-ABS-Audience": cid},
+        )
+    assert r.status_code == 422, r.text
+    assert "ingest-file" in r.text
+
+
+def test_ingest_embed_failure_returns_503_not_500(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A Cohere embedding error (rate-limit/auth) during ingest must surface as
+    a clean 503, never an uncaught 500."""
+    cid = f"rag-{secrets.token_hex(3)}"
+    _seed_client(cid)
+
+    class _BoomEmbedder:
+        dim = 1024
+
+        def embed(self, texts):  # noqa: ANN001
+            raise RuntimeError("cohere 429: rate limit")
+
+    monkeypatch.setattr(rag_routes, "get_embedder", lambda: _BoomEmbedder())
+    monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
+    monkeypatch.setattr(rag_routes.qc, "upsert_points", lambda **k: 0)
+    with TestClient(app) as c:
+        token = _issue_token(
+            c, client_id=cid, user_subject="alice", tenant_id="t1", roles=["member"]
+        )
+        r = c.post(
+            "/v1/rag/ingest",
+            json={"text": "hello world. " * 50, "filename": "a.txt"},
+            headers={"Authorization": f"Bearer {token}", "X-ABS-Audience": cid},
+        )
+    assert r.status_code == 503, r.text
+    assert "embedding_failed" in r.text
+
+
+def test_ingest_file_runs_with_asyncio_embedder(monkeypatch: pytest.MonkeyPatch) -> None:
+    """REGRESSION: the Cohere embedder calls asyncio.run() internally, which only
+    works off the event loop. /ingest-file must be a SYNC route (threadpool) —
+    when it was `async def`, real DOCX uploads 500'd with 'asyncio.run() cannot
+    be called from a running event loop' (mock embedder hid it; cohere triggered
+    it live on digisfer)."""
+    import asyncio
+    import io
+
+    import docx
+
+    cid = f"rag-{secrets.token_hex(3)}"
+    _seed_client(cid)
+
+    class _AsyncioEmbedder:
+        dim = 1024
+
+        def embed(self, texts):  # noqa: ANN001 — mimics _CohereBackend.embed
+            async def _run():
+                return [[0.05] * self.dim for _ in texts]
+
+            return asyncio.run(_run())  # explodes if called inside a running loop
+
+    monkeypatch.setattr(rag_routes, "get_embedder", lambda: _AsyncioEmbedder())
+    monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
+    monkeypatch.setattr(rag_routes.qc, "upsert_points", lambda **k: k["points"] and len(k["points"]))
+
+    buf = io.BytesIO()
+    d = docx.Document()
+    for _ in range(5):
+        d.add_paragraph("Kira bedeli her ayin 5'inde odenir. Aidat 250 euro. ")
+    d.save(buf)
+
+    with TestClient(app) as c:
+        token = _issue_token(
+            c, client_id=cid, user_subject="alice", tenant_id="t1", roles=["member"]
+        )
+        r = c.post(
+            "/v1/rag/ingest-file",
+            files={"file": ("x.docx", buf.getvalue(), "application/octet-stream")},
+            headers={"Authorization": f"Bearer {token}", "X-ABS-Audience": cid},
+        )
+    assert r.status_code == 200, r.text
+    assert r.json()["chunks"] >= 1
