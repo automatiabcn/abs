@@ -62,11 +62,20 @@ def refresh_github_token(
         http_client = httpx.Client(timeout=10.0)
         own_client = True
 
+    # GitHub's refresh_token grant REQUIRES the OAuth app client_id +
+    # client_secret (same as the initial code exchange in api/smart_link.py).
+    # Omitting them — as this did before — makes GitHub reject every refresh,
+    # so stored tokens silently expired and the integration broke. Pull them
+    # from settings for parity with the connect flow.
+    from app.config import settings
+
     try:
         r = http_client.post(
             "https://github.com/login/oauth/access_token",
             headers={"Accept": "application/json"},
             json={
+                "client_id": getattr(settings, "github_client_id", ""),
+                "client_secret": getattr(settings, "github_client_secret", ""),
                 "grant_type": "refresh_token",
                 "refresh_token": refresh_token,
             },
