@@ -65,9 +65,13 @@ export default function ProviderConfigModal({
   // In-place key edit state.
   const [editing, setEditing] = useState(false);
   const [newKey, setNewKey] = useState("");
+  // Cloudflare Workers AI needs an account id beside the token.
+  const [accountId, setAccountId] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveErr, setSaveErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const isCloudflare = provider?.id === "cloudflare";
 
   // Reset transient state whenever the modal target changes.
   useEffect(() => {
@@ -76,6 +80,7 @@ export default function ProviderConfigModal({
     setTesting(false);
     setEditing(false);
     setNewKey("");
+    setAccountId("");
     setSaving(false);
     setSaveErr(null);
     setSaved(false);
@@ -134,7 +139,13 @@ export default function ProviderConfigModal({
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ api_key: newKey.trim(), enabled: true }),
+          body: JSON.stringify({
+            api_key: newKey.trim(),
+            enabled: true,
+            ...(isCloudflare && accountId.trim()
+              ? { account_id: accountId.trim() }
+              : {}),
+          }),
         },
       );
       if (!res.ok) {
@@ -144,6 +155,7 @@ export default function ProviderConfigModal({
       }
       setSaved(true);
       setNewKey("");
+      setAccountId("");
       setEditing(false);
       onSaved?.();
     } catch (exc) {
@@ -212,9 +224,7 @@ export default function ProviderConfigModal({
               className="block text-xs text-muted-foreground"
             >
               Yeni API anahtarı
-              {provider.id === "cloudflare"
-                ? " — Cloudflare API Token (Account ID kurulum sihirbazından / .env)"
-                : ""}
+              {isCloudflare ? " — Cloudflare API Token" : ""}
             </label>
             <input
               id="provider-new-key"
@@ -227,6 +237,27 @@ export default function ProviderConfigModal({
               className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm"
               data-testid="provider-key-input"
             />
+            {isCloudflare && (
+              <>
+                <label
+                  htmlFor="provider-account-id"
+                  className="block text-xs text-muted-foreground"
+                >
+                  Cloudflare Account ID
+                </label>
+                <input
+                  id="provider-account-id"
+                  type="text"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={accountId}
+                  onChange={(e) => setAccountId(e.target.value)}
+                  placeholder="örn. 1a2b3c4d… (Workers AI hesap kimliği)"
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm"
+                  data-testid="provider-account-id-input"
+                />
+              </>
+            )}
             {saveErr && (
               <div
                 className="rounded-md border border-rose-500/30 bg-rose-500/10 p-2 text-xs text-rose-200"

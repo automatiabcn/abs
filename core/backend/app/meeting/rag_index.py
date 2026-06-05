@@ -37,11 +37,15 @@ def build_chunks_from_transcript(
     for idx, seg in enumerate(transcript.segments):
         if not seg.text.strip():
             continue
+        seg_text = f"[{seg.speaker}] {seg.text.strip()}"
         chunks.append(
             {
                 "id": f"{meeting_id}-seg-{idx:04d}",
-                "text": f"[{seg.speaker}] {seg.text.strip()}",
+                "text": seg_text,
                 "payload": {
+                    # `text` lives in the payload too (mirrors the doc-ingest
+                    # path) so RAG query/search returns the snippet directly.
+                    "text": seg_text,
                     "tenant_id": tenant_id,
                     "doc_id": meeting_id,
                     "chunk_id": f"{meeting_id}-seg-{idx:04d}",
