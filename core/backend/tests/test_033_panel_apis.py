@@ -17,7 +17,9 @@ def test_tool_browser_returns_total_and_categories(client):
     r = client.get("/v1/panel/tools")
     assert r.status_code == 200
     body = r.json()
-    assert body["total"] >= 122
+    # 120 default — preview_patch + apply_patch gated off the MCP surface
+    # (ABS_MCP_EXPOSE_PATCH_TOOLS, default off; arbitrary file read/write).
+    assert body["total"] >= 120
     assert body["filtered_count"] == body["total"]
     assert isinstance(body["category_counts"], dict)
     assert len(body["category_counts"]) >= 5
