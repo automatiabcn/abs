@@ -21,6 +21,16 @@ def _fresh_nudge_rate(monkeypatch, tmp_path):
     from app.config import settings
 
     monkeypatch.setattr(settings, "cache_dir", str(tmp_path))
+    # Reset the in-memory risky-tool counter — under the full suite other tests
+    # accumulate quota-check hits for the same bootstrap tenant, which would
+    # push this tenant past RISKY_HOURLY_LIMIT and flip allow→deny.
+    from app.api import claude_code_hooks as cch
+
+    with cch._risky_lock:
+        cch._risky_window.clear()
+    yield
+    with cch._risky_lock:
+        cch._risky_window.clear()
 
 
 @pytest.fixture()
