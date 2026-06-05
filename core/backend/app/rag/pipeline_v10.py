@@ -104,6 +104,72 @@ _BINARY_PARSER_MIMES = {
 }
 
 
+_DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+def _extract_binary_text(content: bytes, mime_type: str) -> str:
+    """Extract plain text from a PDF/DOCX byte payload.
+
+    Prefers `unstructured` when available (richer layout handling), but falls
+    back to the lightweight, pure-Python `pypdf` / `python-docx` so the
+    customer image stays small and disk-friendly (unstructured pulls GBs of
+    ML layout models). Raises RuntimeError with an actionable message if no
+    parser is available, and surfaces an empty-text hint for scanned PDFs.
+    """
+    # Preferred path: unstructured (only if the operator installed it).
+    try:
+        from unstructured.partition.auto import partition  # type: ignore
+
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+        try:
+            elements = partition(filename=tmp_path)
+            return "\n\n".join(
+                el.text for el in elements if getattr(el, "text", None)
+            )
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+    except ImportError:
+        pass  # fall through to the lightweight parsers
+
+    import io
+
+    if mime_type == "application/pdf":
+        try:
+            from pypdf import PdfReader  # type: ignore
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError("pypdf is required for PDF parsing") from exc
+        try:
+            reader = PdfReader(io.BytesIO(content))
+            pages = [(page.extract_text() or "") for page in reader.pages]
+        except Exception as exc:  # noqa: BLE001 — surface as clean 422, not 500
+            raise RuntimeError(f"pdf_parse_failed: {exc}") from exc
+        text = "\n\n".join(p for p in pages if p.strip())
+        if not text.strip():
+            raise RuntimeError(
+                "pdf_no_extractable_text: the PDF appears to be scanned/image-only "
+                "(no text layer). OCR is required to ingest it."
+            )
+        return text
+
+    if mime_type == _DOCX_MIME:
+        try:
+            import docx  # type: ignore  # python-docx
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError("python-docx is required for DOCX parsing") from exc
+        try:
+            document = docx.Document(io.BytesIO(content))
+        except Exception as exc:  # noqa: BLE001 — surface as clean 422, not 500
+            raise RuntimeError(f"docx_parse_failed: {exc}") from exc
+        return "\n\n".join(p.text for p in document.paragraphs if p.text.strip())
+
+    raise RuntimeError(f"no_parser_for_mime: {mime_type}")
+
+
 def parse_document(
     content: bytes,
     *,
@@ -115,27 +181,7 @@ def parse_document(
         return parse_text(content, mime_type=mime_type, filename=filename)
 
     if mime_type in _BINARY_PARSER_MIMES:
-        try:
-            from unstructured.partition.auto import partition
-        except ImportError as exc:
-            raise RuntimeError(
-                "unstructured is required for PDF/DOCX parsing — "
-                "`pip install 'unstructured[pdf,docx]'`"
-            ) from exc
-
-        with tempfile.NamedTemporaryFile(delete=False) as tmp:
-            tmp.write(content)
-            tmp_path = tmp.name
-        try:
-            elements = partition(filename=tmp_path)
-            joined = "\n\n".join(
-                el.text for el in elements if getattr(el, "text", None)
-            )
-        finally:
-            try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass
+        joined = _extract_binary_text(content, mime_type)
         return parse_text(joined, mime_type=mime_type, filename=filename)
 
     logger.warning(
