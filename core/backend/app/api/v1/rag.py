@@ -21,9 +21,15 @@ import logging
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel, Field
-from qdrant_client.models import FieldCondition, Filter, MatchAny, PointStruct
+from qdrant_client.models import (
+    FieldCondition,
+    Filter,
+    MatchAny,
+    MatchValue,
+    PointStruct,
+)
 
 from app.api.v1.deps import AuthContext, get_auth_context
 from app.config import settings
@@ -97,6 +103,19 @@ class QueryResponse(BaseModel):
     answer: str | None = None
 
 
+def _active_project(request: Request, auth: AuthContext) -> str | None:
+    """MT Phase 1 (B4) — resolve + authorize the X-Project-Id header. Returns
+    the project slug when set + the caller may access it, else None."""
+    from app.api.v1.project_context import resolve_active_project
+
+    return resolve_active_project(
+        request,
+        tenant_slug=auth.tenant_id or "",
+        subject=auth.subject or "",
+        roles=auth.roles or [],
+    )
+
+
 def _tenant_collection(auth: AuthContext) -> str:
     if not auth.tenant_id:
         raise HTTPException(
@@ -131,7 +150,14 @@ def _ensure_embedder():
         ) from exc
 
 
-def _synthesize_answer(query_text: str, hits: list["Hit"], tenant_id: str) -> str | None:
+def _synthesize_answer(
+    query_text: str,
+    hits: list["Hit"],
+    tenant_id: str,
+    *,
+    project_slug: str | None = None,
+    user_subject: str | None = None,
+) -> str | None:
     """Re-interpret the retrieved chunks into a grounded answer (founder
     feedback: returning raw chunks "yarım kalır"). Best-effort: returns None if
     no provider is configured or the cascade fails — the caller still returns
@@ -163,6 +189,8 @@ def _synthesize_answer(query_text: str, hits: list["Hit"], tenant_id: str) -> st
             primary=primary,
             fallbacks=tuple(rest),
             tenant_id=tenant_id or "_global",
+            project_slug=project_slug,
+            user_subject=user_subject,
             max_tokens=700,
             temperature=0.2,
         )
@@ -194,6 +222,7 @@ def _ingest_chunks(
     tenant_id: str,
     collection: str,
     chunks: list[Chunk],
+    project_id: str | None = None,
 ) -> int:
     if not chunks:
         return 0
@@ -227,6 +256,9 @@ def _ingest_chunks(
                 "text": chunk.raw_text,
                 "created_at": now,
                 **chunk.metadata,
+                # MT Phase 1 (B4): per-project isolation, additive — only set
+                # when an active project is selected; legacy chunks omit it.
+                **({"project_id": project_id} if project_id else {}),
             },
         )
         for chunk, vec in zip(chunks, vectors)
@@ -249,10 +281,12 @@ def _ingest_chunks(
 @observe(name="rag.ingest")
 def ingest_text(
     body: IngestTextRequest,
+    request: Request,
     rag: RAGAuth = Depends(rag_action_dep("ingest")),
 ) -> IngestResponse:
     auth = rag.auth
     collection = _tenant_collection(auth)
+    project_id = _active_project(request, auth)
     started = time.perf_counter()
     # A binary mime (PDF/DOCX) sent through the JSON /ingest path means a stale
     # frontend POSTed file.text()-corrupted bytes — parsing fails. Surface a
@@ -289,6 +323,7 @@ def ingest_text(
         tenant_id=auth.tenant_id or "",
         collection=collection,
         chunks=chunks,
+        project_id=project_id,
     )
     elapsed = (time.perf_counter() - started) * 1000.0
     tokens = estimate_token_count(doc.text)
@@ -345,6 +380,7 @@ _EXT_MIME = {
 @router.post("/ingest-file", response_model=IngestResponse)
 @observe(name="rag.ingest_file")
 def ingest_file(
+    request: Request,
     file: UploadFile = File(...),
     rag: RAGAuth = Depends(rag_action_dep("ingest")),
 ) -> IngestResponse:
@@ -391,10 +427,12 @@ def ingest_file(
             status.HTTP_400_BAD_REQUEST, detail="no_chunkable_content"
         )
 
+    project_id = _active_project(request, auth)
     inserted = _ingest_chunks(
         tenant_id=auth.tenant_id or "",
         collection=collection,
         chunks=chunks,
+        project_id=project_id,
     )
     elapsed = (time.perf_counter() - started) * 1000.0
     tokens = estimate_token_count(doc.text)
@@ -439,25 +477,31 @@ def ingest_file(
 @observe(name="rag.query")
 def query(
     body: QueryRequest,
+    request: Request,
     rag: RAGAuth = Depends(rag_action_dep("query")),
 ) -> QueryResponse:
     auth = rag.auth
     collection = _tenant_collection(auth)
+    project_id = _active_project(request, auth)
     started = time.perf_counter()
     embedder = _ensure_embedder()
     _ensure_qdrant_collection(collection, vector_size=embedder.dim)
     vector = embedder.embed_one(body.query)
-    extra_filter = None
+    must: list = []
     if body.doc_ids:
         # Metadata filter (founder feedback: "metadata kullanmazsan sonuçları
         # filtreleyemezsin") — restrict retrieval to the chosen documents.
-        extra_filter = Filter(
-            must=[
-                FieldCondition(
-                    key="doc_id", match=MatchAny(any=[d for d in body.doc_ids if d])
-                )
-            ]
+        must.append(
+            FieldCondition(
+                key="doc_id", match=MatchAny(any=[d for d in body.doc_ids if d])
+            )
         )
+    if project_id:
+        # MT Phase 1 (B4) — scope retrieval to the active project's chunks.
+        must.append(
+            FieldCondition(key="project_id", match=MatchValue(value=project_id))
+        )
+    extra_filter = Filter(must=must) if must else None
     try:
         raw_hits = qc.search(
             collection=collection,
@@ -531,7 +575,13 @@ def query(
         )
     )
     answer = (
-        _synthesize_answer(body.query, hits, auth.tenant_id or "")
+        _synthesize_answer(
+            body.query,
+            hits,
+            auth.tenant_id or "",
+            project_slug=project_id,
+            user_subject=auth.subject,
+        )
         if body.answer
         else None
     )
