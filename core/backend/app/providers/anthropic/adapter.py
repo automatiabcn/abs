@@ -37,7 +37,8 @@ class AnthropicProvider(BaseProvider):
                 provider=self.name,
                 transient=False,
             )
-        if not settings.anthropic_api_key:
+        _key = kwargs.get("api_key") or settings.anthropic_api_key
+        if not _key:
             raise ProviderError(
                 "Anthropic API key tanımlı değil", provider=self.name, transient=False
             )
@@ -63,7 +64,7 @@ class AnthropicProvider(BaseProvider):
                 transient=False,
             ) from exc
 
-        client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+        client = AsyncAnthropic(api_key=_key)
         model = model or self.default_model
         max_tokens = kwargs.get("max_tokens", 1024)
         timeout = kwargs.get("timeout", 60.0)

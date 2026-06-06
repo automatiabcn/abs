@@ -29,7 +29,8 @@ class CohereProvider(BaseProvider):
         model: Optional[str] = None,
         **kwargs: Any,
     ) -> ProviderResponse:
-        if not settings.cohere_api_key:
+        _key = kwargs.get("api_key") or settings.cohere_api_key
+        if not _key:
             raise ProviderError(
                 "Cohere API key tanımlı değil", provider=self.name, transient=False
             )
@@ -44,7 +45,7 @@ class CohereProvider(BaseProvider):
         timeout = kwargs.get("timeout", 60.0)
         max_tokens = kwargs.get("max_tokens", 1024)
 
-        client = cohere.AsyncClientV2(api_key=settings.cohere_api_key, timeout=timeout)
+        client = cohere.AsyncClientV2(api_key=_key, timeout=timeout)
         start = time.monotonic()
         try:
             resp = await client.chat(
