@@ -6,7 +6,7 @@
  */
 
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 
 import WorkflowChatPanel from "@/components/WorkflowChatPanel";
 import { SAMPLE_WORKFLOW } from "@/lib/workflow";
@@ -16,9 +16,32 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+const BACKEND_URL = process.env.ABS_BACKEND_URL ?? "http://localhost:8000";
+
+// The legacy `x-abs-role` request header was NEVER populated (middleware only
+// validates the session, nothing injects the role) — so isAdmin was always
+// false and Çalıştır / Kuru çalıştır / Kaydet were permanently disabled for
+// everyone. Resolve admin the same way the marketplace page does: an
+// authenticated panel user defaults to admin unless /auth/me says otherwise.
+async function resolveIsAdmin(): Promise<boolean> {
+  try {
+    const session = (await cookies()).get("abs_session");
+    if (!session?.value) return false;
+    const res = await fetch(`${BACKEND_URL}/auth/me`, {
+      headers: { cookie: `abs_session=${session.value}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(2000),
+    });
+    if (!res.ok) return false;
+    const me = (await res.json()) as { role?: string } | null;
+    return me != null && (me.role === undefined || me.role === "admin");
+  } catch {
+    return false;
+  }
+}
+
 export default async function Page() {
-  const h = await headers();
-  const isAdmin = h.get("x-abs-role") === "admin";
+  const isAdmin = await resolveIsAdmin();
   return (
     <main className="mx-auto max-w-7xl px-6 py-12">
       <h1 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-50">
