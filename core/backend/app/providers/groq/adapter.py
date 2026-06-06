@@ -27,7 +27,7 @@ class GroqProvider(BaseProvider):
     ) -> ProviderResponse:
         return await openai_compatible_chat(
             url="https://api.groq.com/openai/v1/chat/completions",
-            api_key=settings.groq_api_key,
+            api_key=kwargs.get("api_key") or settings.groq_api_key,
             model=model or self.default_model,
             prompt=prompt,
             provider_name=self.name,
