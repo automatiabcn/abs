@@ -23,9 +23,19 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.api.admin.auth import admin_required
-from app.api.marketplace import _resolve_admin_tenant
 from app.multitenant import provider_keys as pk
 from app.providers.cascade import SETTINGS_KEY_ATTR
+
+
+def _resolve_admin_tenant(admin: dict) -> str:
+    """Resolve the admin's tenant the SAME way the runtime RAG/cascade path does
+    (`auth.tenant_id` ← `_resolve_tenant`). Using the marketplace resolver here
+    diverged (domain heuristic → "digisfer") from the runtime tenant ("default"
+    where the data lives), so panel-stored keys/projects were never found at
+    request time. Aligning both ends keeps BYOK + project scoping consistent."""
+    from app.api.chat import _resolve_tenant
+
+    return _resolve_tenant(str(admin.get("sub") or admin.get("email") or "")) or "default"
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1/admin/provider-keys", tags=["admin", "provider-keys"])
