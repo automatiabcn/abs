@@ -26,7 +26,6 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from app.api.admin.auth import admin_required
-from app.api.marketplace import _resolve_admin_tenant
 from app.db.session import get_engine
 from app.db.tenant_models import Project
 from app.multitenant import project_members as pm
@@ -36,6 +35,14 @@ router = APIRouter(prefix="/v1/admin/projects", tags=["admin", "projects"])
 
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,94}$")
 _CREATOR_ROLES = frozenset({"admin", "manager"})
+
+
+def _resolve_admin_tenant(admin: dict) -> str:
+    """Runtime-consistent tenant (matches RAG/cascade `auth.tenant_id`), so
+    projects live under the same tenant the data + queries use."""
+    from app.api.chat import _resolve_tenant
+
+    return _resolve_tenant(str(admin.get("sub") or admin.get("email") or "")) or "default"
 
 
 def _subject(admin: dict) -> str:
