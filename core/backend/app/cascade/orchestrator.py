@@ -45,6 +45,33 @@ def _breaker_key(tenant_id: str, provider: str) -> str:
     return f"{tenant_id}|{provider}"
 
 
+def _resolve_owner_key(
+    provider: str,
+    *,
+    tenant_id: str,
+    project_slug: Optional[str],
+    user_subject: Optional[str],
+) -> Optional[str]:
+    """MT Phase 1 — per-owner (project→user→org) key override. DB-only
+    (include_global=False): a missing DB key returns None so the adapter falls
+    back to its global ``settings`` key exactly as before. Never raises."""
+    if not (project_slug or user_subject):
+        return None
+    try:
+        from app.multitenant.provider_keys import resolve_provider_key
+
+        return resolve_provider_key(
+            provider,
+            tenant_slug=tenant_id,
+            project_slug=project_slug,
+            user_subject=user_subject,
+            include_global=False,
+        )
+    except Exception as exc:  # pragma: no cover — never block a call on this
+        logger.debug("per-owner key resolve skipped for %s: %s", provider, exc)
+        return None
+
+
 async def call_with_cascade(
     prompt: str,
     *,
@@ -53,6 +80,8 @@ async def call_with_cascade(
     fallbacks: Sequence[str] = (),
     use_cache: bool = True,
     tenant_id: str = "_global",
+    project_slug: Optional[str] = None,
+    user_subject: Optional[str] = None,
     **kwargs,
 ) -> ProviderResponse:
     """Primary provider → fallback zinciri ile çağır.
@@ -61,6 +90,9 @@ async def call_with_cascade(
     - Her provider için CircuitBreaker.allow() (tenant-scoped)
     - ProviderError transient=True ise sıradaki fallback
     - transient=False → direkt raise
+    - MT Phase 1: ``project_slug``/``user_subject`` verilirse provider başına
+      per-owner key (DB) çözümlenir ve adapter'a ``api_key`` olarak geçilir;
+      yoksa global ``settings`` key'i kullanılır (geriye dönük uyumlu).
     """
     chain: List[str] = [primary, *fallbacks]
     cache_key = prompt_hash(prompt, model or "", tenant_id=tenant_id)
@@ -84,8 +116,17 @@ async def call_with_cascade(
             logger.warning("bilinmeyen provider: %s", name)
             continue
         tried.append(name)
+        call_kwargs = kwargs
+        owner_key = _resolve_owner_key(
+            name,
+            tenant_id=tenant_id,
+            project_slug=project_slug,
+            user_subject=user_subject,
+        )
+        if owner_key:
+            call_kwargs = {**kwargs, "api_key": owner_key}
         try:
-            resp = await provider.call(prompt, model=model, **kwargs)
+            resp = await provider.call(prompt, model=model, **call_kwargs)
             await default_breaker.record_success(breaker_id)
             if use_cache:
                 await default_cache.set(cache_key, resp)

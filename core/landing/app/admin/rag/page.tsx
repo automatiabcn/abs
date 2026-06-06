@@ -56,6 +56,14 @@ interface RagHit {
 // actual chunks indexed.
 const INITIAL_DOCS: IngestedDoc[] = [];
 
+// MT Phase 1 (B4/C1) — scope RAG calls to the active project picked on
+// /admin/projects (persisted in localStorage). Absent → tenant-wide (legacy).
+function projectHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const p = window.localStorage.getItem("abs_active_project");
+  return p ? { "X-Project-Id": p } : {};
+}
+
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -137,7 +145,7 @@ export default function RagPage() {
             res = await fetch("/v1/rag/ingest", {
               method: "POST",
               credentials: "include",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", ...projectHeaders() },
               body: JSON.stringify({
                 text,
                 filename: file.name,
@@ -150,6 +158,7 @@ export default function RagPage() {
             res = await fetch("/v1/rag/ingest-file", {
               method: "POST",
               credentials: "include",
+              headers: { ...projectHeaders() },
               body: form,
             });
           }
@@ -201,7 +210,7 @@ export default function RagPage() {
       const res = await fetch("/v1/rag/query", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...projectHeaders() },
         body: JSON.stringify({
           query,
           limit: topK,
