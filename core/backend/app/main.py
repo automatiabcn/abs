@@ -32,6 +32,7 @@ from app.api.admin import tenant as admin_tenant_router  # Sprint 2C ITEM-1
 from app.api.admin import providers_save as admin_providers_save_router  # Sprint 2C ITEM-2
 from app.api.admin import provider_keys as admin_provider_keys_router  # MT Phase 1 — per-owner keys
 from app.api.admin import projects as admin_projects_router  # MT Phase 1 — project CRUD + membership
+from app.api.admin import settings_store as admin_settings_store_router  # /admin/settings persistence
 from app.api import demo_mode as demo_mode_router
 from app.api.demo_panel import cascade as panel_cascade_router
 from app.api.demo_panel import pipeline as panel_pipeline_router
@@ -365,6 +366,7 @@ app.include_router(admin_tenant_router.router)  # Sprint 2C ITEM-1 — /v1/admin
 app.include_router(admin_providers_save_router.router)  # Sprint 2C ITEM-2 — POST /v1/admin/providers/{id}
 app.include_router(admin_provider_keys_router.router)  # MT Phase 1 — /v1/admin/provider-keys
 app.include_router(admin_projects_router.router)  # MT Phase 1 — /v1/admin/projects
+app.include_router(admin_settings_store_router.router)  # /v1/admin/settings/{section}
 app.include_router(beta_portal_router.router)
 app.include_router(beta_admin_router.router)
 app.include_router(demo_mode_router.router)
