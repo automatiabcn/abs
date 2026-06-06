@@ -211,6 +211,37 @@ def resolve_provider_key(
     return _global_key(provider) if include_global else None
 
 
+def tenant_configured_providers(
+    *,
+    tenant_slug: str,
+    project_slug: Optional[str] = None,
+    user_subject: Optional[str] = None,
+) -> set[str]:
+    """Providers that have a per-owner (project/user/org) key for this tenant.
+
+    Used so the cascade can activate a provider that the operator did NOT
+    configure globally but a user/project supplied their own key for (BYOK).
+    DB-only (no global fallback) — global providers are already handled by
+    `is_configured`.
+    """
+    from app.providers.cascade import SETTINGS_KEY_ATTR
+
+    tenant_slug = (tenant_slug or "").strip()
+    if not tenant_slug:
+        return set()
+    out: set[str] = set()
+    for provider in SETTINGS_KEY_ATTR:
+        if resolve_provider_key(
+            provider,
+            tenant_slug=tenant_slug,
+            project_slug=project_slug,
+            user_subject=user_subject,
+            include_global=False,
+        ):
+            out.add(provider)
+    return out
+
+
 def list_provider_keys(*, tenant_slug: str) -> list[dict]:
     """Metadata for a tenant's keys — NEVER returns plaintext."""
     tenant_slug = (tenant_slug or "").strip()
