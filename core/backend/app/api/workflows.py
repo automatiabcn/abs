@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -429,6 +430,26 @@ def get_workflow_definition(
         # Tenant gate: never expose another tenant's saved workflow.
         if row is None or row.tenant_slug != tenant:
             raise HTTPException(404, "workflow_not_found")
+        return _serialize_saved_wf(row)
+
+
+@router.put("/definitions/{wf_id}")
+def update_workflow_definition(
+    wf_id: int, body: SaveWorkflowBody, admin: dict = Depends(current_admin)
+) -> Dict[str, Any]:
+    """Update a saved workflow in place (so re-saving a loaded workflow doesn't
+    create a duplicate row). Tenant-gated."""
+    tenant = _wf_tenant(admin)
+    with Session(get_engine()) as db:
+        row = db.get(SavedWorkflow, wf_id)
+        if row is None or row.tenant_slug != tenant:
+            raise HTTPException(404, "workflow_not_found")
+        row.name = body.name.strip()
+        row.definition_json = json.dumps(body.definition, ensure_ascii=False)
+        row.updated_at = datetime.now(timezone.utc)
+        db.add(row)
+        db.commit()
+        db.refresh(row)
         return _serialize_saved_wf(row)
 
 
