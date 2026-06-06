@@ -175,6 +175,10 @@ async def _run_cascade(
     prompt: str,
     max_tokens: int = 1024,
     skip_paid_providers: bool = False,
+    *,
+    tenant_id: str = "_global",
+    project_slug: Optional[str] = None,
+    user_subject: Optional[str] = None,
 ) -> CascadeResponse:
     """Bypass the FastAPI route's auth dependency and call the cascade
     via the live orchestrator (`call_with_cascade`).
@@ -192,7 +196,23 @@ async def _run_cascade(
     if mock_result is not None:
         return mock_result
 
-    active = get_active_providers(skip_paid=skip_paid_providers)
+    # MT Phase 1 — let per-owner (user/project) keys activate a provider even
+    # if the operator didn't configure it globally (BYOK).
+    extra: frozenset[str] = frozenset()
+    if tenant_id and tenant_id != "_global":
+        try:
+            from app.multitenant.provider_keys import tenant_configured_providers
+
+            extra = frozenset(
+                tenant_configured_providers(
+                    tenant_slug=tenant_id,
+                    project_slug=project_slug,
+                    user_subject=user_subject,
+                )
+            )
+        except Exception:  # noqa: BLE001 — BYOK discovery is best-effort
+            extra = frozenset()
+    active = get_active_providers(skip_paid=skip_paid_providers, extra_configured=extra)
     if not active:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -210,6 +230,9 @@ async def _run_cascade(
             primary=primary,
             fallbacks=tuple(rest),
             max_tokens=max_tokens,
+            tenant_id=tenant_id,
+            project_slug=project_slug,
+            user_subject=user_subject,
         )
     except ProviderError as exc:
         raise HTTPException(
@@ -740,7 +763,12 @@ async def completions(
                     model=pipeline_used,
                 )
             else:
-                cascade_resp = await _run_cascade(prompt_for_cascade)
+                cascade_resp = await _run_cascade(
+                    prompt_for_cascade,
+                    tenant_id=tenant,
+                    project_slug=(request.headers.get("X-Project-Id") or None),
+                    user_subject=admin_email,
+                )
         except HTTPException as exc:
             detail_str = str(exc.detail or "")
             if detail_str.startswith("no_providers_configured"):
