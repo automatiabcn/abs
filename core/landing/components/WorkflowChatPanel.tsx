@@ -7,12 +7,14 @@
  */
 
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle,
   FloppyDisk,
+  FolderOpen,
   PaperPlaneTilt,
   Spinner,
+  Trash,
   WarningCircle,
 } from "@phosphor-icons/react";
 
@@ -25,6 +27,13 @@ import {
 } from "@/lib/workflow";
 
 type DryRunStatus = "idle" | "running" | "ok" | "error";
+
+interface SavedWorkflowRow {
+  id: number;
+  name: string;
+  definition: WorkflowDefinition;
+  updated_at?: string;
+}
 
 type SynthFn = (intent: string, current: WorkflowDefinition) => Promise<WorkflowDefinition>;
 
@@ -76,8 +85,55 @@ export default function WorkflowChatPanel({
   const [saveStatus, setSaveStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
+  // Saved-workflow library — fixes "I saved a workflow, where is it?": the
+  // builder now lists the tenant's saved workflows and can reload/delete them.
+  const [savedList, setSavedList] = useState<SavedWorkflowRow[]>([]);
+  const [loadedId, setLoadedId] = useState<number | null>(null);
 
   const synth = synthesizeFn ?? defaultSynthesize;
+
+  const refreshSaved = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
+      const r = await fetch("/v1/workflows/definitions", {
+        credentials: "include",
+      });
+      if (!r.ok) return;
+      const data = await r.json();
+      setSavedList(Array.isArray(data.workflows) ? data.workflows : []);
+    } catch {
+      /* best-effort — the list is non-critical */
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    void refreshSaved();
+  }, [refreshSaved]);
+
+  function loadSaved(row: SavedWorkflowRow) {
+    setError(null);
+    setSaveStatus("idle");
+    if (isValidWorkflow(row.definition)) {
+      setWorkflow(row.definition);
+      setLoadedId(row.id);
+    } else {
+      setError("Kayıtlı iş akışı bozuk görünüyor (nodes/edges eksik).");
+    }
+  }
+
+  async function deleteSaved(id: number) {
+    try {
+      const r = await fetch(`/v1/workflows/definitions/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!r.ok && r.status !== 204) return;
+      if (loadedId === id) setLoadedId(null);
+      await refreshSaved();
+    } catch {
+      /* best-effort */
+    }
+  }
 
   async function runSynthesize(text: string) {
     if (!text.trim()) return;
@@ -129,9 +185,15 @@ export default function WorkflowChatPanel({
     // an onSave, so previously "Save" was a silent no-op (no saved workflows).
     setSaveStatus("saving");
     setError(null);
+    // Update-in-place when a saved workflow is loaded (no duplicate rows),
+    // otherwise create a new one and remember its id.
+    const url = loadedId
+      ? `/v1/workflows/definitions/${loadedId}`
+      : "/v1/workflows/definitions";
+    const method = loadedId ? "PUT" : "POST";
     try {
-      const r = await fetch("/v1/workflows/definitions", {
-        method: "POST",
+      const r = await fetch(url, {
+        method,
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -143,7 +205,10 @@ export default function WorkflowChatPanel({
         const detail = await r.text().catch(() => "");
         throw new Error(`Kaydedilemedi: HTTP ${r.status} ${detail.slice(0, 120)}`);
       }
+      const saved = await r.json().catch(() => null);
+      if (saved && typeof saved.id === "number") setLoadedId(saved.id);
       setSaveStatus("saved");
+      await refreshSaved();
     } catch (e) {
       setSaveStatus("error");
       setError(e instanceof Error ? e.message : String(e));
@@ -293,6 +358,58 @@ export default function WorkflowChatPanel({
         >
           {DRY_RUN_LABEL[dryRunStatus]}
         </span>
+
+        {/* Saved workflow library — load / delete previously-saved workflows. */}
+        <div
+          data-testid="saved-workflows"
+          className="mt-2 border-t border-zinc-200 pt-3 dark:border-zinc-800"
+        >
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            <FolderOpen className="size-4" />
+            Kayıtlı iş akışları
+            {loadedId && (
+              <span className="ml-auto rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                #{loadedId} yüklü
+              </span>
+            )}
+          </div>
+          {savedList.length === 0 ? (
+            <p className="text-xs text-zinc-400">Henüz kayıtlı iş akışı yok.</p>
+          ) : (
+            <ul className="space-y-1">
+              {savedList.map((w) => (
+                <li
+                  key={w.id}
+                  data-testid="saved-workflow-row"
+                  className={
+                    "flex items-center justify-between rounded-lg border px-2 py-1.5 text-xs " +
+                    (loadedId === w.id
+                      ? "border-emerald-400/50 bg-emerald-500/5"
+                      : "border-zinc-200 dark:border-zinc-800")
+                  }
+                >
+                  <button
+                    type="button"
+                    data-testid="saved-workflow-load"
+                    onClick={() => loadSaved(w)}
+                    className="flex-1 truncate text-left text-zinc-800 hover:text-zinc-950 dark:text-zinc-200 dark:hover:text-white"
+                    title={w.name}
+                  >
+                    {w.name}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`${w.name} sil`}
+                    onClick={() => void deleteSaved(w.id)}
+                    className="ml-2 rounded p-1 text-zinc-400 hover:text-red-500"
+                  >
+                    <Trash className="size-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </aside>
     </div>
   );
