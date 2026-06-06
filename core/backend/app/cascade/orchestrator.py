@@ -94,6 +94,20 @@ async def call_with_cascade(
       per-owner key (DB) çözümlenir ve adapter'a ``api_key`` olarak geçilir;
       yoksa global ``settings`` key'i kullanılır (geriye dönük uyumlu).
     """
+    # MT Phase 1 (W3): when no explicit caller context was passed, fall back to
+    # the MCP request context (set by the transport auth from the bearer token)
+    # so per-owner keys (BYOK) apply to delegated MCP tool calls too. Explicit
+    # callers (panel chat / cascade route) always win.
+    if tenant_id == "_global" and project_slug is None and user_subject is None:
+        try:
+            from app.mcp.context import get_mcp_caller
+
+            _mt, _mu = get_mcp_caller()
+            if _mt != "_global" or _mu:
+                tenant_id, user_subject = _mt, _mu
+        except Exception:  # pragma: no cover — MCP context is optional
+            pass
+
     chain: List[str] = [primary, *fallbacks]
     # MT Phase 1: when a per-owner key may be used, namespace the cache by the
     # owner so one owner's BYOK answer is never served to another in the tenant.
