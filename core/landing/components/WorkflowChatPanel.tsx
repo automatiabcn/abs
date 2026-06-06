@@ -7,13 +7,17 @@
  */
 
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CheckCircle,
+  Clock,
   FloppyDisk,
   FolderOpen,
   PaperPlaneTilt,
+  Play,
   Spinner,
+  ThumbsDown,
+  ThumbsUp,
   Trash,
   WarningCircle,
 } from "@phosphor-icons/react";
@@ -33,6 +37,66 @@ interface SavedWorkflowRow {
   name: string;
   definition: WorkflowDefinition;
   updated_at?: string;
+}
+
+// /v1/workflows/execute response shapes (dry-run plan + queued job).
+interface ExecuteStep {
+  step: number;
+  node_id: string;
+  kind: string;
+  name: string;
+  estimate_s: number;
+}
+
+interface DryRunResult {
+  steps: ExecuteStep[];
+  estimate_s: number;
+  estimated_cost_usd: number;
+}
+
+// /v1/workflows/jobs/{id} poll state.
+interface JobState {
+  job_id: string;
+  state: string; // queued | running | awaiting_approval | done | error
+  node_outputs: Record<string, unknown>;
+  pending_node?: string | null;
+  warnings?: string[];
+  error?: string | null;
+}
+
+type RunPhase =
+  | "idle"
+  | "planning"
+  | "queued"
+  | "running"
+  | "awaiting_approval"
+  | "done"
+  | "error";
+
+const RUN_PHASE_LABEL: Record<RunPhase, string> = {
+  idle: "Hazır",
+  planning: "Planlanıyor…",
+  queued: "Sıraya alındı…",
+  running: "Çalışıyor…",
+  awaiting_approval: "İnsan onayı bekleniyor",
+  done: "Tamamlandı",
+  error: "Hata",
+};
+
+// Best-effort one-line summary of a node's output for the result panel.
+function nodeOutputSummary(out: unknown): string {
+  if (out && typeof out === "object") {
+    const o = out as Record<string, unknown>;
+    if (typeof o.error === "string") return `⚠ ${o.error}`;
+    if (typeof o.skipped === "string")
+      return `↷ atlandı (${o.skipped})${o.note ? ` — ${o.note}` : ""}`;
+    if (o.awaiting) return "⏳ onay bekleniyor";
+    if (o.rejected === true) return "✕ reddedildi";
+    if (o.approved === true) return "✓ onaylandı";
+    if (typeof o.text === "string") return o.text;
+    return JSON.stringify(o).slice(0, 240);
+  }
+  return String(out ?? "");
 }
 
 type SynthFn = (intent: string, current: WorkflowDefinition) => Promise<WorkflowDefinition>;
@@ -63,9 +127,27 @@ async function defaultSynthesize(
     body: JSON.stringify({ intent, current }),
   });
   if (!r.ok) {
+    // 422 = request validation (the backend requires intent ≥ 10 chars). Give
+    // a clear, actionable message instead of a raw status / "load sample".
+    if (r.status === 422) {
+      throw new Error(
+        "İş akışını biraz daha ayrıntılı anlat (en az 10 karakter, tercihen tam bir cümle). Örn: \"Gmail mesajlarını sınıflandır ve satış etiketlilere yanıt taslağı hazırla\".",
+      );
+    }
     throw new Error(`synthesize failed: ${r.status}`);
   }
-  return (await r.json()) as WorkflowDefinition;
+  // The backend returns the SynthesizeResponse envelope
+  // ({ workflow, explanation, warnings, ... }) — NOT the bare workflow.
+  // Unwrap `.workflow`; previously the whole envelope was cast as the
+  // workflow, so `isValidWorkflow` always failed and the panel showed the
+  // "örnek şablon yükle" CTA even on a perfectly good synthesis.
+  const data = (await r.json()) as
+    | { workflow?: WorkflowDefinition }
+    | WorkflowDefinition;
+  if (data && typeof data === "object" && "workflow" in data && data.workflow) {
+    return data.workflow as WorkflowDefinition;
+  }
+  return data as WorkflowDefinition;
 }
 
 export default function WorkflowChatPanel({
@@ -89,6 +171,16 @@ export default function WorkflowChatPanel({
   // builder now lists the tenant's saved workflows and can reload/delete them.
   const [savedList, setSavedList] = useState<SavedWorkflowRow[]>([]);
   const [loadedId, setLoadedId] = useState<number | null>(null);
+  // Execute / run state — turns the builder from "design only" into something
+  // an operator can actually dry-run (plan + cost) and run for real (queued
+  // job → live status polling → per-node output + HITL approval).
+  const [runPhase, setRunPhase] = useState<RunPhase>("idle");
+  const [dryResult, setDryResult] = useState<DryRunResult | null>(null);
+  const [job, setJob] = useState<JobState | null>(null);
+  const [runError, setRunError] = useState<string | null>(null);
+  const [resuming, setResuming] = useState(false);
+  // Guard against overlapping pollers (re-run while a previous one is alive).
+  const pollAbort = useRef(0);
 
   const synth = synthesizeFn ?? defaultSynthesize;
 
@@ -163,14 +255,128 @@ export default function WorkflowChatPanel({
     setWorkflow(SAMPLE_WORKFLOW);
   }
 
+  async function postExecute(dryRun: boolean): Promise<Record<string, unknown>> {
+    const r = await fetch("/v1/workflows/execute", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workflow, dry_run: dryRun }),
+    });
+    if (!r.ok) {
+      const detail = await r.text().catch(() => "");
+      throw new Error(`HTTP ${r.status} ${detail.slice(0, 160)}`);
+    }
+    return (await r.json()) as Record<string, unknown>;
+  }
+
+  // Dry-run: backend plans the DAG + estimates time/cost without executing.
   async function handleDryRun() {
     if (!isAdmin) return;
     setDryRunStatus("running");
+    setRunError(null);
+    setRunPhase("planning");
+    setDryResult(null);
+    setJob(null);
     try {
-      const r = await onDryRun?.(workflow);
-      setDryRunStatus(r?.ok ? "ok" : "error");
-    } catch {
+      // Keep the parent-supplied onDryRun contract (used by tests / embeds);
+      // otherwise hit the backend execute endpoint in dry-run mode.
+      if (onDryRun) {
+        const r = await onDryRun(workflow);
+        setDryRunStatus(r?.ok ? "ok" : "error");
+        setRunPhase(r?.ok ? "done" : "error");
+        return;
+      }
+      const data = await postExecute(true);
+      setDryResult({
+        steps: (data.steps as ExecuteStep[]) ?? [],
+        estimate_s: Number(data.estimate_s ?? 0),
+        estimated_cost_usd: Number(data.estimated_cost_usd ?? 0),
+      });
+      setDryRunStatus("ok");
+      setRunPhase("done");
+    } catch (e) {
       setDryRunStatus("error");
+      setRunPhase("error");
+      setRunError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function pollJob(jobId: string, token: number) {
+    // Poll until terminal (done/error) or paused (awaiting_approval).
+    for (let i = 0; i < 150; i++) {
+      if (pollAbort.current !== token) return; // superseded by a newer run
+      await new Promise((res) => setTimeout(res, 800));
+      if (pollAbort.current !== token) return;
+      let st: JobState;
+      try {
+        const r = await fetch(`/v1/workflows/jobs/${jobId}`, {
+          credentials: "include",
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        st = (await r.json()) as JobState;
+      } catch (e) {
+        setRunError(e instanceof Error ? e.message : String(e));
+        setRunPhase("error");
+        return;
+      }
+      setJob(st);
+      if (st.state === "done") return setRunPhase("done");
+      if (st.state === "error") {
+        setRunError(st.error || "İş akışı hatayla sonlandı.");
+        return setRunPhase("error");
+      }
+      if (st.state === "awaiting_approval")
+        return setRunPhase("awaiting_approval");
+      setRunPhase("running");
+    }
+    setRunError("Zaman aşımı — iş hâlâ çalışıyor olabilir.");
+    setRunPhase("error");
+  }
+
+  // Real run: enqueue → poll live status. LLM/RAG/HTTP/output nodes execute;
+  // side-effecting integrations (gmail_send, slack_post, …) honestly report
+  // "not available" until a marketplace plugin is installed.
+  async function runWorkflow() {
+    if (!isAdmin) return;
+    setRunError(null);
+    setDryResult(null);
+    setJob(null);
+    setRunPhase("queued");
+    const token = ++pollAbort.current;
+    try {
+      const data = await postExecute(false);
+      const jobId = String(data.job_id ?? "");
+      if (!jobId) throw new Error("Sunucu job_id döndürmedi.");
+      setJob({ job_id: jobId, state: "queued", node_outputs: {} });
+      await pollJob(jobId, token);
+    } catch (e) {
+      setRunError(e instanceof Error ? e.message : String(e));
+      setRunPhase("error");
+    }
+  }
+
+  async function resumeJob(approved: boolean) {
+    if (!job?.job_id) return;
+    setResuming(true);
+    const token = ++pollAbort.current;
+    try {
+      const r = await fetch(`/v1/workflows/jobs/${job.job_id}/resume`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approved }),
+      });
+      if (!r.ok) {
+        const detail = await r.text().catch(() => "");
+        throw new Error(`HTTP ${r.status} ${detail.slice(0, 160)}`);
+      }
+      setRunPhase("running");
+      await pollJob(job.job_id, token);
+    } catch (e) {
+      setRunError(e instanceof Error ? e.message : String(e));
+      setRunPhase("error");
+    } finally {
+      setResuming(false);
     }
   }
 
@@ -244,11 +450,17 @@ export default function WorkflowChatPanel({
           className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 ring-1 ring-zinc-900/5 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
         />
 
+        {intent.trim().length > 0 && intent.trim().length < 10 && (
+          <p className="-mt-2 text-xs text-amber-600 dark:text-amber-400">
+            En az 10 karakter — biraz daha ayrıntılı anlat (tam bir cümle).
+          </p>
+        )}
+
         <button
           type="button"
           data-testid="synthesize-button"
           onClick={() => runSynthesize(intent)}
-          disabled={synthesising || intent.trim() === ""}
+          disabled={synthesising || intent.trim().length < 10}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:enabled:bg-zinc-200"
         >
           {synthesising ? (
@@ -325,7 +537,7 @@ export default function WorkflowChatPanel({
             type="button"
             data-testid="dry-run-button"
             onClick={handleDryRun}
-            disabled={!isAdmin || dryRunStatus === "running"}
+            disabled={!isAdmin || runPhase === "planning"}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
           >
             {dryRunStatus === "ok" && <CheckCircle className="size-4 text-emerald-600" />}
@@ -334,23 +546,40 @@ export default function WorkflowChatPanel({
           </button>
           <button
             type="button"
-            data-testid="save-button"
-            onClick={handleSave}
-            disabled={!isAdmin || saveStatus === "saving"}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:enabled:bg-zinc-200"
+            data-testid="run-button"
+            onClick={runWorkflow}
+            disabled={
+              !isAdmin || runPhase === "queued" || runPhase === "running"
+            }
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-emerald-500"
           >
-            {saveStatus === "saved" ? (
-              <CheckCircle className="size-4 text-emerald-400" />
+            {runPhase === "queued" || runPhase === "running" ? (
+              <Spinner className="size-4 animate-spin" />
             ) : (
-              <FloppyDisk className="size-4" />
+              <Play className="size-4" weight="fill" />
             )}
-            {saveStatus === "saving"
-              ? "Kaydediliyor…"
-              : saveStatus === "saved"
-                ? "Kaydedildi"
-                : "Kaydet"}
+            Çalıştır
           </button>
         </div>
+
+        <button
+          type="button"
+          data-testid="save-button"
+          onClick={handleSave}
+          disabled={!isAdmin || saveStatus === "saving"}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:enabled:bg-zinc-200"
+        >
+          {saveStatus === "saved" ? (
+            <CheckCircle className="size-4 text-emerald-400" />
+          ) : (
+            <FloppyDisk className="size-4" />
+          )}
+          {saveStatus === "saving"
+            ? "Kaydediliyor…"
+            : saveStatus === "saved"
+              ? "Kaydedildi"
+              : "Kaydet"}
+        </button>
 
         <span
           data-testid="dry-run-status"
@@ -358,6 +587,105 @@ export default function WorkflowChatPanel({
         >
           {DRY_RUN_LABEL[dryRunStatus]}
         </span>
+
+        {/* Run / dry-run result panel — plan + cost (dry) or live job status. */}
+        {(runPhase !== "idle" || dryResult || job || runError) && (
+          <div
+            data-testid="run-result"
+            className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs dark:border-zinc-800 dark:bg-zinc-900"
+          >
+            <div className="flex items-center gap-2 font-semibold text-zinc-700 dark:text-zinc-200">
+              {runPhase === "running" || runPhase === "queued" ? (
+                <Spinner className="size-4 animate-spin" />
+              ) : runPhase === "done" ? (
+                <CheckCircle className="size-4 text-emerald-600" />
+              ) : runPhase === "error" ? (
+                <WarningCircle className="size-4 text-red-600" />
+              ) : runPhase === "awaiting_approval" ? (
+                <Clock className="size-4 text-amber-500" />
+              ) : (
+                <Clock className="size-4" />
+              )}
+              {RUN_PHASE_LABEL[runPhase]}
+            </div>
+
+            {runError && (
+              <p className="text-red-600 dark:text-red-400">{runError}</p>
+            )}
+
+            {/* Dry-run: plan + cost + time */}
+            {dryResult && (
+              <>
+                <p className="text-zinc-600 dark:text-zinc-300">
+                  {dryResult.steps.length} adım · ~{dryResult.estimate_s}s ·
+                  tahmini ${dryResult.estimated_cost_usd.toFixed(4)}
+                </p>
+                <ol className="space-y-0.5">
+                  {dryResult.steps.map((s) => (
+                    <li
+                      key={s.node_id}
+                      className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300"
+                    >
+                      <span className="text-zinc-400">{s.step}.</span>
+                      <span className="font-medium">{s.name}</span>
+                      <span className="rounded bg-zinc-200 px-1 text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                        {s.kind}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+
+            {/* Real run: per-node outputs */}
+            {job && Object.keys(job.node_outputs ?? {}).length > 0 && (
+              <ul className="space-y-1">
+                {Object.entries(job.node_outputs).map(([nid, out]) => (
+                  <li key={nid} className="flex flex-col gap-0.5">
+                    <span className="font-mono text-[10px] text-zinc-400">
+                      {nid}
+                    </span>
+                    <span className="whitespace-pre-wrap break-words text-zinc-700 dark:text-zinc-200">
+                      {nodeOutputSummary(out).slice(0, 600)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* HITL gate — approve / reject to resume the paused run */}
+            {runPhase === "awaiting_approval" && (
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  data-testid="resume-approve"
+                  onClick={() => void resumeJob(true)}
+                  disabled={resuming}
+                  className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1 font-medium text-white disabled:opacity-50 hover:enabled:bg-emerald-500"
+                >
+                  <ThumbsUp className="size-3.5" /> Onayla
+                </button>
+                <button
+                  type="button"
+                  data-testid="resume-reject"
+                  onClick={() => void resumeJob(false)}
+                  disabled={resuming}
+                  className="inline-flex items-center gap-1 rounded-lg border border-zinc-300 px-3 py-1 font-medium text-zinc-700 disabled:opacity-50 hover:enabled:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:enabled:bg-zinc-800"
+                >
+                  <ThumbsDown className="size-3.5" /> Reddet
+                </button>
+              </div>
+            )}
+
+            {job?.warnings && job.warnings.length > 0 && (
+              <ul className="space-y-0.5 border-t border-zinc-200 pt-1 text-amber-600 dark:border-zinc-800 dark:text-amber-400">
+                {job.warnings.map((w, i) => (
+                  <li key={i}>⚠ {w}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* Saved workflow library — load / delete previously-saved workflows. */}
         <div
