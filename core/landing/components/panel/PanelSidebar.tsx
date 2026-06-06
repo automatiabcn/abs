@@ -19,6 +19,7 @@ import {
   Boxes,
   Brain,
   Database,
+  FolderKanban,
   LayoutDashboard,
   Layers,
   Menu,
@@ -72,6 +73,7 @@ const NAV: NavItem[] = [
   { href: "/admin/transcription", label: "Transcription", icon: Boxes, group: "Toplantılar" },
   // ── Yönetim ────────────────────────────────────
   { href: "/admin/settings", label: "Ayarlar", icon: Settings, group: "Yönetim" },
+  { href: "/admin/projects", label: "Projeler", icon: FolderKanban, group: "Yönetim" },
   { href: "/admin/users", label: "Kullanıcılar", icon: Users, group: "Yönetim" },
   { href: "/admin/mcp-tokens", label: "MCP Token", icon: KeyRound, group: "Yönetim" },
   { href: "/admin/audit", label: "Denetim", icon: ShieldCheck, group: "Yönetim" },

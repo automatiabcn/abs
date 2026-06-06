@@ -31,7 +31,7 @@ class OpenRouterProvider(BaseProvider):
     ) -> ProviderResponse:
         return await openai_compatible_chat(
             url="https://openrouter.ai/api/v1/chat/completions",
-            api_key=settings.openrouter_api_key,
+            api_key=kwargs.get("api_key") or settings.openrouter_api_key,
             model=model or self.default_model,
             prompt=prompt,
             provider_name=self.name,
