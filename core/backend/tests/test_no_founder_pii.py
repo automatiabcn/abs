@@ -89,6 +89,43 @@ def test_no_founder_pii_in_committed_surface(pattern: re.Pattern[str], label: st
     )
 
 
+# Internal-infrastructure references that must not appear in customer-visible
+# files: our private memory store, the founder's home path, and the separate
+# orchestrator ("SERVER") working tree. These leak ops internals even when the
+# literal name doesn't appear (e.g. ".claude/projects/.../memory/...").
+_INTERNAL_INFRA = re.compile(
+    r"\.claude/projects|/Users/eneseserkan|Automatia BCN/SERVER|kendi sistemimiz",
+)
+
+
+def _customer_visible_files() -> list[Path]:
+    files = _iter_scoped_files()
+    claude_md = REPO_ROOT / "CLAUDE.md"
+    if claude_md.is_file():
+        files.append(claude_md)
+    return sorted(set(files))
+
+
+def test_no_internal_infra_refs_in_customer_surface() -> None:
+    """Customer-visible files (panel, docs, README, CLAUDE.md) must not leak
+    internal infra paths (private memory store, home path, the SERVER tree)."""
+    offenders: list[tuple[str, int, str]] = []
+    for path in _customer_visible_files():
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for line_no, line in enumerate(text.splitlines(), start=1):
+            if _INTERNAL_INFRA.search(line):
+                offenders.append(
+                    (str(path.relative_to(REPO_ROOT)), line_no, line.strip())
+                )
+    assert not offenders, (
+        f"internal-infra leak in {len(offenders)} place(s):\n"
+        + "\n".join(f"  {p}:{n}: {s}" for p, n, s in offenders[:25])
+    )
+
+
 def test_test_029_uses_dynamic_repo_root() -> None:
     """Regression: GDPR test must not hardcode ``/Users/eneseserkan/...``.
 
