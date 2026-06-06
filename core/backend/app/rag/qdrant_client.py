@@ -255,6 +255,41 @@ def delete_by_tenant(
     return int(pre)
 
 
+def delete_document(*, collection: str, tenant_id: str, doc_id: str) -> int:
+    """Delete every chunk of one document for a tenant (founder feedback:
+    "yüklenilen dosyaları sil özelliği de olmalı"). Tenant-scoped filter so a
+    caller can only ever delete their own document. Returns the count removed.
+    """
+    tenant = _require_tenant(tenant_id)
+    doc_id = (doc_id or "").strip()
+    if not doc_id:
+        raise ValueError("doc_id is required")
+    client = get_qdrant()
+    doc_filter = _tenant_filter(
+        tenant,
+        extra=Filter(
+            must=[FieldCondition(key="doc_id", match=MatchValue(value=doc_id))]
+        ),
+    )
+    pre = client.count(
+        collection_name=collection, count_filter=doc_filter, exact=True
+    ).count
+    if pre:
+        client.delete(
+            collection_name=collection,
+            points_selector=FilterSelector(filter=doc_filter),
+            wait=True,
+        )
+    logger.info(
+        "qdrant_delete_doc collection=%s tenant=%s doc_id=%s n=%d",
+        collection,
+        tenant,
+        doc_id,
+        pre,
+    )
+    return int(pre)
+
+
 def count(*, collection: str, tenant_id: str) -> int:
     tenant = _require_tenant(tenant_id)
     client = get_qdrant()
@@ -322,6 +357,59 @@ def list_documents(
     return sorted(
         docs.values(), key=lambda d: d.get("created_at") or 0, reverse=True
     )
+
+
+def iter_chunks(
+    *,
+    collection: str,
+    tenant_id: str,
+    doc_id: str | None = None,
+    max_points: int = 5000,
+) -> list[dict[str, Any]]:
+    """Scroll the tenant's stored chunks (payload only) as
+    ``[{chunk_id, doc_id, seq, text, filename}, …]``. Used by GraphRAG build to
+    re-process an already-ingested corpus into the knowledge graph. Optionally
+    restricted to a single ``doc_id``. Caps at ``max_points``.
+    """
+    tenant = _require_tenant(tenant_id)
+    client = get_qdrant()
+    scroll_filter = _tenant_filter(tenant)
+    if doc_id:
+        scroll_filter = _tenant_filter(
+            tenant,
+            extra=Filter(
+                must=[FieldCondition(key="doc_id", match=MatchValue(value=doc_id))]
+            ),
+        )
+    out: list[dict[str, Any]] = []
+    scanned = 0
+    scroll_offset = None
+    while True:
+        batch, scroll_offset = client.scroll(
+            collection_name=collection,
+            scroll_filter=scroll_filter,
+            limit=512,
+            offset=scroll_offset,
+            with_payload=True,
+            with_vectors=False,
+        )
+        for pt in batch:
+            payload = pt.payload or {}
+            out.append(
+                {
+                    "chunk_id": str(payload.get("chunk_id") or pt.id),
+                    "doc_id": str(payload.get("doc_id") or ""),
+                    "seq": int(payload.get("seq") or 0),
+                    "text": str(payload.get("text") or ""),
+                    "filename": str(
+                        payload.get("filename") or payload.get("source") or ""
+                    ),
+                }
+            )
+        scanned += len(batch)
+        if not scroll_offset or scanned >= max_points:
+            break
+    return out
 
 
 def close() -> None:
