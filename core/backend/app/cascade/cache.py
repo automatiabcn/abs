@@ -18,16 +18,23 @@ T = TypeVar("T")
 
 
 def prompt_hash(
-    prompt: str, model: str = "", tenant_id: str = "_global"
+    prompt: str, model: str = "", tenant_id: str = "_global", owner: str = ""
 ) -> str:
     """Sprint 2I UAT-016 — tenant-scoped cache key.
 
     The cache namespace is keyed by ``tenant_id`` so two tenants sending
     the identical prompt+model do not collide. ``"_global"`` is used when
     no tenant context is available (CLI / internal warmup paths).
+
+    MT Phase 1: ``owner`` (project/user identity) further namespaces the key
+    when a per-owner provider key is in play, so a response produced with one
+    owner's BYOK key is never served from cache to a different owner in the
+    same tenant. Empty ``owner`` keeps the legacy tenant-only namespace.
     """
     h = hashlib.sha256()
     h.update(tenant_id.encode("utf-8"))
+    h.update(b"\x00")
+    h.update(owner.encode("utf-8"))
     h.update(b"\x00")
     h.update(model.encode("utf-8"))
     h.update(b"\x00")
