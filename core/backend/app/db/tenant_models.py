@@ -85,6 +85,24 @@ class ProviderKey(SQLModel, table=True):
     last_validated_ok: Optional[bool] = Field(default=None)
 
 
+class TenantSetting(SQLModel, table=True):
+    """Generic per-tenant settings sections (webhooks / alerts / security / …).
+
+    Backs the /admin/settings tabs that previously had dead Save buttons. One
+    row per (tenant_slug, section); ``data_json`` holds the section's fields.
+    Kept generic so a new settings section needs no schema change.
+    """
+
+    __tablename__ = "tenant_settings"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(index=True, max_length=64)
+    section: str = Field(index=True, max_length=48)
+    data_json: str = Field(default="{}")
+    updated_at: datetime
+    updated_by: str = Field(default="", max_length=254)
+
+
 class ProjectMember(SQLModel, table=True):
     """N-N user↔project membership with a per-project role.
 
