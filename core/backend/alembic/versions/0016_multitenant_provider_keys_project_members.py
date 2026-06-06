@@ -1,6 +1,6 @@
 """Multi-tenant Phase 1 — provider_keys + project_members tables.
 
-Revision ID: 0016_mt_provider_keys_project_members
+Revision ID: 0016_mt_keys_members
 Revises: 0015b_abs_admin_role
 Create Date: 2026-06-06
 
@@ -27,7 +27,7 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = "0016_mt_provider_keys_project_members"
+revision: str = "0016_mt_keys_members"
 down_revision: Union[str, None] = "0015b_abs_admin_role"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
