@@ -23,9 +23,15 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from app.api.admin.auth import admin_required
-from app.api.marketplace import _resolve_admin_tenant
 from app.db.session import get_engine
 from app.db.tenant_models import TenantSetting
+
+
+def _resolve_admin_tenant(admin: dict) -> str:
+    """Runtime-consistent tenant (matches RAG/cascade `auth.tenant_id`)."""
+    from app.api.chat import _resolve_tenant
+
+    return _resolve_tenant(str(admin.get("sub") or admin.get("email") or "")) or "default"
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1/admin/settings", tags=["admin", "settings"])
