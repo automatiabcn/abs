@@ -14,6 +14,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 
@@ -33,9 +34,15 @@ class Tenant(SQLModel, table=True):
 
 class Project(SQLModel, table=True):
     __tablename__ = "projects"
+    # MT hardening: project slugs are unique PER TENANT, not globally — two
+    # tenants may each have a "default" / "research" project. (Was a global
+    # unique on slug, which would let tenant A's slug block tenant B.)
+    __table_args__ = (
+        UniqueConstraint("tenant_slug", "slug", name="uq_project_tenant_slug"),
+    )
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    slug: str = Field(index=True, unique=True, max_length=96)
+    slug: str = Field(index=True, max_length=96)
     tenant_slug: str = Field(index=True, max_length=64)
     name: str = Field(default="", max_length=128)
     owner_subject: str = Field(default="", max_length=128)
