@@ -91,6 +91,41 @@ def test_save_list_get_delete_roundtrip(client, panel_admin):
     assert r.status_code == 404
 
 
+def test_update_in_place_no_duplicate(client, panel_admin):
+    r = client.post(
+        "/v1/workflows/definitions",
+        json={"name": "v1", "definition": _WF},
+    )
+    assert r.status_code == 201, r.text
+    wf_id = r.json()["id"]
+
+    before = client.get("/v1/workflows/definitions").json()["count"]
+
+    # update in place (PUT) — name + definition change, same id, no new row
+    upd = dict(_WF)
+    r = client.put(
+        f"/v1/workflows/definitions/{wf_id}",
+        json={"name": "v2-updated", "definition": upd},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["id"] == wf_id
+    assert r.json()["name"] == "v2-updated"
+
+    after = client.get("/v1/workflows/definitions").json()["count"]
+    assert after == before  # no duplicate created
+
+    # the persisted row reflects the update
+    assert client.get(f"/v1/workflows/definitions/{wf_id}").json()["name"] == "v2-updated"
+
+
+def test_update_unknown_or_cross_tenant_404(client, panel_admin):
+    r = client.put(
+        "/v1/workflows/definitions/999999",
+        json={"name": "x", "definition": _WF},
+    )
+    assert r.status_code == 404
+
+
 def test_save_requires_auth(client):
     r = client.post(
         "/v1/workflows/definitions", json={"name": "x", "definition": _WF}

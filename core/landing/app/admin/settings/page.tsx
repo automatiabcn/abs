@@ -91,6 +91,9 @@ function GeneralTab() {
   // than continue to display fake demo identities.
   const [domain, setDomain] = useState<string>("");
   const [sslMode, setSslMode] = useState<string>("internal");
+  const [tenantName, setTenantName] = useState<string>("");
+  const [status, setStatus] = useState<SaveState>("idle");
+  const [saveErr, setSaveErr] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     fetch("/v1/setup/status", { cache: "no-store" })
@@ -103,15 +106,42 @@ function GeneralTab() {
         if (m) setSslMode(m);
       })
       .catch(() => undefined);
+    // Hydrate the real tenant name so it survives reloads.
+    fetch("/v1/admin/tenant", { credentials: "include", cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!cancelled && j?.name) setTenantName(j.name);
+      })
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
   }, []);
 
+  async function saveGeneral() {
+    setStatus("saving");
+    setSaveErr(null);
+    try {
+      const r = await fetch("/v1/admin/tenant", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: tenantName }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setStatus("saved");
+    } catch (e) {
+      setStatus("error");
+      setSaveErr(e instanceof Error ? e.message : "unknown");
+    }
+  }
+
   return (
     <div className="space-y-4">
       <FormRow label="Tenant adı" hint="Müşteri görünür ad">
         <Input
+          value={tenantName}
+          onChange={(e) => setTenantName(e.target.value)}
           placeholder="Henüz yapılandırılmadı"
           data-test="settings-tenant-name"
           aria-label="Tenant adı"
@@ -139,7 +169,16 @@ function GeneralTab() {
           {sslMode === "acme" ? "Otomatik (Let's Encrypt)" : "Internal (self-signed)"}
         </Badge>
       </FormRow>
-      <Button data-test="settings-save-general">Kaydet</Button>
+      <div className="flex items-center gap-3">
+        <Button
+          data-test="settings-save-general"
+          onClick={saveGeneral}
+          disabled={status === "saving"}
+        >
+          {status === "saving" ? "Kaydediliyor…" : status === "saved" ? "Kaydedildi ✓" : "Kaydet"}
+        </Button>
+        {saveErr && <span className="text-xs text-rose-400">{saveErr}</span>}
+      </div>
     </div>
   );
 }
@@ -425,71 +464,204 @@ function ProvidersTab() {
   );
 }
 
+type SaveState = "idle" | "saving" | "saved" | "error";
+
+// Generic /admin/settings/{section} persistence — hydrate on mount + PUT on
+// save. Closes the dead-Save-button gap on Webhooks/Alerts/Security.
+function useSettingsSection<T extends Record<string, unknown>>(
+  section: string,
+  defaults: T,
+) {
+  const [data, setData] = useState<T>(defaults);
+  const [status, setStatus] = useState<SaveState>("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/v1/admin/settings/${section}`, { credentials: "include", cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (cancelled || !j?.data) return;
+        setData((prev) => ({ ...prev, ...j.data }));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [section]);
+
+  const setField = (k: keyof T, v: unknown) =>
+    setData((prev) => ({ ...prev, [k]: v }));
+
+  async function save() {
+    setStatus("saving");
+    setError(null);
+    try {
+      const r = await fetch(`/v1/admin/settings/${section}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setStatus("saved");
+    } catch (e) {
+      setStatus("error");
+      setError(e instanceof Error ? e.message : "unknown");
+    }
+  }
+
+  return { data, setField, save, status, error };
+}
+
+function SaveBar({ status, error, onSave }: { status: SaveState; error: string | null; onSave: () => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Button data-test="settings-save" onClick={onSave} disabled={status === "saving"}>
+        {status === "saving" ? "Kaydediliyor…" : status === "saved" ? "Kaydedildi ✓" : "Kaydet"}
+      </Button>
+      {error && <span className="text-xs text-rose-400">{error}</span>}
+    </div>
+  );
+}
+
 function WebhooksTab() {
+  const { data, setField, save, status, error } = useSettingsSection("webhooks", {
+    slack: "",
+    email: "",
+    discord: "",
+  });
   return (
     <div className="space-y-3 text-sm">
       <FormRow label="Slack incoming" hint="Cascade event'leri">
-        <Input placeholder="https://hooks.slack.com/…" />
+        <Input value={data.slack} onChange={(e) => setField("slack", e.target.value)}
+               placeholder="https://hooks.slack.com/…" />
       </FormRow>
       <FormRow label="Email alerts">
-        <Input type="email" placeholder="ops@acme.com" />
+        <Input type="email" value={data.email} onChange={(e) => setField("email", e.target.value)}
+               placeholder="ops@acme.com" />
       </FormRow>
       <FormRow label="Discord webhook">
-        <Input placeholder="https://discord.com/api/webhooks/…" />
+        <Input value={data.discord} onChange={(e) => setField("discord", e.target.value)}
+               placeholder="https://discord.com/api/webhooks/…" />
       </FormRow>
-      <Button>Kaydet</Button>
+      <SaveBar status={status} error={error} onSave={save} />
     </div>
   );
 }
 
 function AlertsTab() {
+  const { data, setField, save, status, error } = useSettingsSection("alerts", {
+    quota_warn: 80,
+    quota_crit: 95,
+    latency_p95_ms: 1500,
+  });
+  const num = (v: string) => Number(v) || 0;
   return (
     <div className="space-y-3 text-sm">
-      <FormRow
-        label="Quota uyarı eşiği"
-        hint="Yüzde — bu seviyede uyarı tetiklenir"
-      >
-        <Input type="number" defaultValue={80} min={0} max={100} />
+      <FormRow label="Quota uyarı eşiği" hint="Yüzde — bu seviyede uyarı tetiklenir">
+        <Input type="number" min={0} max={100} value={data.quota_warn}
+               onChange={(e) => setField("quota_warn", num(e.target.value))} />
       </FormRow>
       <FormRow label="Quota kritik eşiği">
-        <Input type="number" defaultValue={95} min={0} max={100} />
+        <Input type="number" min={0} max={100} value={data.quota_crit}
+               onChange={(e) => setField("quota_crit", num(e.target.value))} />
       </FormRow>
       <FormRow label="Latency p95 SLO">
-        <Input type="number" defaultValue={1500} />
+        <Input type="number" value={data.latency_p95_ms}
+               onChange={(e) => setField("latency_p95_ms", num(e.target.value))} />
       </FormRow>
-      <Button>Kaydet</Button>
+      <SaveBar status={status} error={error} onSave={save} />
     </div>
   );
 }
 
 function BrandingTab() {
+  // Branding drives the real login page (tenant.primary_color / branding_message),
+  // so it persists via the dedicated /v1/admin/branding endpoint, not the
+  // generic store. Logo URL is stored as a string (no upload backend yet).
+  const [color, setColor] = useState("#6366f1");
+  const [message, setMessage] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [status, setStatus] = useState<SaveState>("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/v1/admin/tenant", { credentials: "include", cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (cancelled || !j) return;
+        if (j.primary_color) setColor(j.primary_color);
+        if (j.branding_message) setMessage(j.branding_message);
+        if (j.logo_url) setLogoUrl(j.logo_url);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function save() {
+    setStatus("saving");
+    setError(null);
+    try {
+      // logo_url + primary_color live on /branding; branding_message on /tenant.
+      const r1 = await fetch("/v1/admin/branding", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ primary_color: color, logo_url: logoUrl }),
+      });
+      if (!r1.ok) throw new Error(`branding HTTP ${r1.status}`);
+      const r2 = await fetch("/v1/admin/tenant", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branding_message: message }),
+      });
+      if (!r2.ok) throw new Error(`tenant HTTP ${r2.status}`);
+      setStatus("saved");
+    } catch (e) {
+      setStatus("error");
+      setError(e instanceof Error ? e.message : "unknown");
+    }
+  }
+
   return (
     <div className="space-y-3 text-sm">
-      <FormRow label="Logo" hint="PNG / SVG, 256x256 önerilen">
-        <Input type="file" accept="image/png,image/svg+xml" />
-      </FormRow>
-      <FormRow label="Favicon">
-        <Input type="file" accept="image/png,image/x-icon" />
+      <FormRow label="Logo URL" hint="Barındırılan logo bağlantısı">
+        <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)}
+               placeholder="https://…/logo.png" />
       </FormRow>
       <FormRow label="Brand renk">
-        <Input type="color" defaultValue="#6366f1" className="h-10 w-24" />
+        <Input type="color" value={color} onChange={(e) => setColor(e.target.value)}
+               className="h-10 w-24" />
       </FormRow>
       <FormRow label="Login sayfası mesajı">
-        <Input placeholder="ABS Panel — özel mesajınızı buraya girin" />
+        <Input value={message} onChange={(e) => setMessage(e.target.value)}
+               placeholder="ABS Panel — özel mesajınızı buraya girin" />
       </FormRow>
-      <Button>Kaydet</Button>
+      <SaveBar status={status} error={error} onSave={save} />
     </div>
   );
 }
 
 function SecurityTab() {
+  const { data, setField, save, status, error } = useSettingsSection("security", {
+    magic_link_ttl_min: 15,
+    session_ttl_hours: 168,
+  });
+  const num = (v: string) => Number(v) || 0;
   return (
     <div className="space-y-3 text-sm">
       <FormRow label="Magic-link ömrü" hint="Dakika">
-        <Input type="number" defaultValue={15} />
+        <Input type="number" value={data.magic_link_ttl_min}
+               onChange={(e) => setField("magic_link_ttl_min", num(e.target.value))} />
       </FormRow>
       <FormRow label="Oturum süresi" hint="Saat">
-        <Input type="number" defaultValue={168} />
+        <Input type="number" value={data.session_ttl_hours}
+               onChange={(e) => setField("session_ttl_hours", num(e.target.value))} />
       </FormRow>
       <FormRow label="2FA" hint="TOTP — Phase Q rollout">
         <Badge variant="outline">yakında</Badge>
@@ -499,7 +671,7 @@ function SecurityTab() {
           aktif
         </Badge>
       </FormRow>
-      <Button>Kaydet</Button>
+      <SaveBar status={status} error={error} onSave={save} />
     </div>
   );
 }
