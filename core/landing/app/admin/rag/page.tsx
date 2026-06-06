@@ -20,6 +20,7 @@ import {
   FileText,
   Search,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +76,9 @@ export default function RagPage() {
   const [hits, setHits] = useState<RagHit[]>([]);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [wantAnswer, setWantAnswer] = useState(true);
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Load the real indexed corpus on mount so a reload reflects what's stored
   // in Qdrant (BUG-27 follow-up) — not just docs uploaded this session.
@@ -192,12 +196,18 @@ export default function RagPage() {
     setSearching(true);
     setError(null);
     setHits([]);
+    setAnswer(null);
     try {
       const res = await fetch("/v1/rag/query", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, limit: topK, rerank: hybrid }),
+        body: JSON.stringify({
+          query,
+          limit: topK,
+          rerank: hybrid,
+          answer: wantAnswer,
+        }),
       });
       if (!res.ok) {
         // BUG-27 — surface the real backend failure instead of rendering a
@@ -211,10 +221,34 @@ export default function RagPage() {
       }
       const data = await res.json();
       setHits(data.hits ?? []);
+      setAnswer(data.answer ?? null);
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : "unknown");
     } finally {
       setSearching(false);
+    }
+  }
+
+  async function deleteDoc(id: string) {
+    setDeletingId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/v1/rag/documents/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => "");
+        setError(
+          `Silme başarısız (${res.status}): ${detail.slice(0, 200) || "boş yanıt"}`,
+        );
+        return;
+      }
+      setDocs((prev) => prev.filter((d) => d.id !== id));
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : "unknown");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -378,9 +412,21 @@ export default function RagPage() {
                       <FileText className="h-3 w-3 text-muted-foreground" />
                       <code className="truncate font-mono">{d.filename}</code>
                     </div>
-                    <span className="ml-2 shrink-0 text-muted-foreground">
-                      {d.chunks} chunk · {formatSize(d.size_bytes)}
-                    </span>
+                    <div className="ml-2 flex shrink-0 items-center gap-2">
+                      <span className="text-muted-foreground">
+                        {d.chunks} chunk · {formatSize(d.size_bytes)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void deleteDoc(d.id)}
+                        disabled={deletingId === d.id}
+                        data-test="rag-doc-delete"
+                        aria-label={`${d.filename} dokümanını sil`}
+                        className="rounded p-1 text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-300 disabled:opacity-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -430,6 +476,15 @@ export default function RagPage() {
                 />
                 <span className="text-muted-foreground">Cross-encoder rerank</span>
               </label>
+              <label className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={wantAnswer}
+                  onChange={(e) => setWantAnswer(e.target.checked)}
+                  data-test="rag-answer-toggle"
+                />
+                <span className="text-muted-foreground">Cevap üret (LLM)</span>
+              </label>
             </div>
             <Button
               type="button"
@@ -443,6 +498,24 @@ export default function RagPage() {
             {error && (
               <div className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200">
                 {error}
+              </div>
+            )}
+
+            {answer && (
+              <div
+                data-test="rag-answer"
+                className="rounded-md border border-primary/30 bg-primary/5 p-3"
+              >
+                <div className="mb-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  <Sparkles className="h-3 w-3" />
+                  Cevap
+                </div>
+                <p className="whitespace-pre-wrap text-xs text-foreground/90">
+                  {answer}
+                </p>
+                <p className="mt-2 text-[10px] text-muted-foreground">
+                  Aşağıdaki kaynaklardan üretildi — numaralar [n] kaynakları gösterir.
+                </p>
               </div>
             )}
 
