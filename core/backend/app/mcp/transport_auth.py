@@ -76,6 +76,11 @@ class McpTokenAuthASGI:
                 if tok_scope not in ("mcp", "all"):
                     reason = f"scope_not_allowed:{tok_scope}"
                 else:
+                    # MT Phase 1 (W3) — stash the caller so MCP tools can apply
+                    # per-owner (BYOK) provider keys to delegated LLM calls.
+                    from app.mcp.context import set_mcp_caller
+
+                    set_mcp_caller(payload.get("tenant"), payload.get("actor"))
                     ok = True
             except Exception as exc:  # HTTPException(401) or any decode error
                 reason = getattr(exc, "detail", None) or "invalid_token"
