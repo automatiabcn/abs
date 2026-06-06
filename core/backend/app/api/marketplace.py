@@ -335,15 +335,11 @@ def _resolve_admin_tenant(admin: dict) -> str:
     except Exception:  # pragma: no cover — credentials path unavailable
         pass
 
-    try:
-        from app.api.auth import _derive_tenant_from_email
-
-        derived = _derive_tenant_from_email(email)
-        if derived:
-            return derived
-    except Exception:  # pragma: no cover
-        pass
-
+    # The email-domain heuristic (admin@demo-acme.com → "demo-acme") was removed
+    # — it diverged from the runtime resolver (`_resolve_tenant` → "default"),
+    # silently storing admin-managed entities under a different tenant than the
+    # data + queries used. A real tenant comes from the JWT claim, the users
+    # table, or admin_credentials.json (steps 1–3); otherwise "default".
     return "default"
 
 

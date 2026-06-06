@@ -212,12 +212,13 @@ def test_bootstrap_admin_resolves_tenant_from_credentials_file(client, tmp_path)
         app.dependency_overrides.pop(live_dep, None)
 
 
-def test_bootstrap_admin_email_domain_heuristic(client):
-    """Round-5 BUG-10 follow-up — even when credentials.json lacks
-    ``tenant_slug`` the resolver falls back to the email-domain first
-    label so customers running fresh setup wizards never see ``default``
-    leaking installs unless their email actually points at a single-label
-    bootstrap host (``admin@local``)."""
+def test_bootstrap_admin_without_explicit_tenant_uses_default(client):
+    """MT resolver unification — the email-domain heuristic was removed because
+    it diverged from the runtime resolver (`_resolve_tenant` → "default"),
+    silently scoping admin-managed entities to a different tenant than the data
+    + queries used. An admin with no explicit tenant source (no users row, no
+    credentials ``tenant_slug``, no JWT claim) now resolves the SAME "default"
+    tenant everywhere — a real tenant comes from those explicit sources."""
     from app.api.marketplace import current_admin as live_dep
     from app.main import app
 
@@ -234,6 +235,8 @@ def test_bootstrap_admin_email_domain_heuristic(client):
         r = client.get("/v1/marketplace/installed")
         assert r.status_code == 200
         body = r.json()
-        assert body["tenant"] == "acme-co", body
+        # No explicit tenant source → consistent "default" (was the divergent
+        # email-domain heuristic "acme-co").
+        assert body["tenant"] == "default", body
     finally:
         app.dependency_overrides.pop(live_dep, None)
