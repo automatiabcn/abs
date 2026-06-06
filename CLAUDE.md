@@ -1,97 +1,50 @@
-# ABS Server Product — Claude Code Worker Instructions
+# ABS Server — Repository Guide
 
-## ⚠️ KALICI DELEGATION KURALLARI (5h context limit koruması)
+ABS (Automatia BCN Self-host) is a self-hostable AI orchestration product:
+a unified gateway over multiple LLM providers with RAG, a knowledge graph,
+meeting transcription, workflows, an admin panel, and an MCP tool surface.
 
-Bu dosya **her Claude Code session başlangıcında** okunur. Worker autonomous mode dahil tüm session'lar için **zorunlu** kurallar:
+The product ships globally — **default language is English**, with TR/ES as
+alternate locales (i18n). Never hard-code a single locale in user-facing copy.
 
-### 1. BÜYÜK MARKDOWN ZORUNLU DELEGATION (HOOK BLOCK)
+## Stack
 
-5000+ karakterlik (~800 kelime) markdown dosyası `Write` tool ile **YAZILAMAZ** (`~/.claude/hooks/hook_modules/delegate_nudge.py` v2 BLOCK eder).
+- **Backend:** FastAPI + SQLModel (SQLite by default; Postgres supported via
+  Alembic migrations), provider cascade, Qdrant (vectors), Neo4j (graph),
+  Cerbos (RBAC), sops/age vault for secrets.
+- **Landing/Panel:** Next.js (App Router) + Tailwind, admin panel under
+  `/admin/*`.
+- **Infra:** Docker Compose + Caddy reverse proxy.
 
-**Yapman gereken:**
+## Layout
+
+```
+core/backend/        FastAPI app (app/), tests (tests/), alembic/ migrations
+core/landing/        Next.js panel + marketing site
+infra/               docker-compose + Caddyfile + deploy scripts
+docs/                product documentation
+```
+
+## Running tests
+
 ```bash
-# CLI:
-ask "Detaylı prompt — ne istediğin, kaç kelime, format, bölümler" gptoss   # EN
-ask "Türkçe doc prompt" qwen32b                                            # TR
-# MCP:
-mcp__abs__ask_gptoss(prompt="...")
-mcp__abs__ask_qwen32b(prompt="...")
+# Backend
+cd core/backend && python -m pytest -q
+
+# Landing
+cd core/landing && npm test            # vitest
+npx tsc --noEmit                        # type-check
 ```
 
-Çıktıyı al → `Write` tool ile dosyaya kaydet. **Self-write YASAK** (5000+ char markdown).
+## Conventions
 
-### 2. ORTA MARKDOWN (3000-5000 char) — NUDGE
-
-Hook uyarı verir (`DELEGATE NUDGE`), izin verir. Yine de delegation tercih et.
-
-### 3. INLINE PYTHON3 -C ANALİZ
-
-5+ satır inline analiz/hesap → `ask "..." gptoss`. Dosya okuma + syntax check inline kalabilir.
-
-### 4. CURL → PYTHON3 -C PIPE
-
-Curl'ü kendin çalıştır, analiz `ask "..." groq`. Basit JSON parse OK.
-
-### 5. KOD ÜRETİMİ
-
-- Tek fonksiyon → `ask "..." kimi`
-- Karmaşık modül → `ask "..." race-code` (3-yol paralel: kimi vs gptoss20 vs cf-coder)
-- Code review → `ask "..." race-code` veya `mcp__abs__code_review`
-
-### 6. TEST FIXTURE / MOCK DATA
-
-Test prompt'ları + fixture data → `ask "..." kimi` (kısa, hızlı).
-
-### 7. LOCALE / ÇEVİRİ
-
-TR/ES/multi-lang → `ask "..." qwen32b` (çok dilli, en iyi).
-
-## DELEGATION HEDEFİ
-
-- **Optimal:** %12-18 delegation oranı
-- **Minimum:** %15
-- **Edit/Write:** maksimum %40 (overage = self-write fazla)
-
-## CONTEXT LİMİT KORUMASI
-
-Claude Pro plan: **5 saat session penceresi**, **44K token / 5h**. Aşılırsa session durur.
-
-Her büyük doc/markdown'ı delegate ettiğinde:
-- ~5000-15000 token tasarruf
-- Context window 5h boyunca yeterli kalır
-- Ücretsiz model (Groq/Gemini) kullanılır
-
-## WORKER AUTONOMOUS MODE
-
-Bu kurallar **autonomous mode'da bile** geçerli:
-- BLOCK threshold (5000 char) override edilemez (hook level)
-- Spec dosyalarındaki "DELEGATION ZORUNLU" notları emir
-- Self-write yapacaksan önce kontrol: doc kuralının dışında mı (test/code/config OK)
-
-## ABS PROJECT CONTEXT
-
-ABS = Automatia BCN Self-host AI orchestration product.
-
-- 110+ MCP tool, 6 cascade provider (Groq, Cerebras, Cloudflare, Gemini, Cohere, OpenRouter)
-- FastAPI + SQLite + Docker Compose + Caddy
-- sops/age vault (013), Stripe billing (011), i18n EN/TR/ES (023)
-- 459+ pytest test, 27 vitest, Lighthouse 100/100/100/100
-
-Ürün globale satılır → **default İngilizce**, TR/ES alternatif locale.
-
-## SERVER (kendi sistemimiz) ile ABS PRODUCT ayrımı
-
-- **Bu repo (abs-server-product/):** Müşteri ürünü, worker buraya yazar
-- **`/Users/eneseserkan/Main/Automatia BCN/SERVER/`:** Bizim orchestrator, **DOKUNMA**
-- **Memory dosyaları:** `~/.claude/projects/.../memory/` — feedback'ler buradan okunur
-
-## ÖZET (kısa hatırlatma)
-
-```
-Markdown ≥ 5000c → BLOCK → ask "..." gptoss/qwen32b → Write
-Markdown 3000-5000c → NUDGE → tercih delege
-Inline analiz → ask "..." gptoss
-Tek fonksiyon → ask "..." kimi
-TR/ES → ask "..." qwen32b
-SERVER klasörüne yazma
-```
+- Migrations: add an Alembic revision under `core/backend/alembic/versions/`
+  for any new table (Postgres deployments run `alembic upgrade head` on boot;
+  SQLite uses `create_all`). Keep revision ids ≤ 32 chars.
+- New features should be additive and opt-in; never regress existing flows.
+- Multi-tenant: data is tenant-scoped (`tenant_id`); per-project scoping uses
+  the `X-Project-Id` header. Provider keys resolve project → user → org →
+  global.
+- Author attribution is collective ("Automatia BCN engineering"); do not put
+  individual names, personal file paths, or internal infrastructure details in
+  committed files.
