@@ -48,6 +48,62 @@ def test_deepgram_requires_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
         t.Transcriber("deepgram")
 
 
+def test_groq_requires_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "groq_api_key", "", raising=False)
+    with pytest.raises(ValueError):
+        t.Transcriber("groq")
+
+
+def test_groq_backend_parses_verbose_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "groq_api_key", "gsk_test", raising=False)
+
+    captured: dict = {}
+
+    class _FakeResp:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict:
+            return {
+                "language": "tr",
+                "duration": 6.5,
+                "segments": [
+                    {"start": 0.0, "end": 3.0, "text": " Merhaba dünya."},
+                    {"start": 3.0, "end": 6.5, "text": " İkinci cümle."},
+                ],
+            }
+
+    class _FakeClient:
+        def __init__(self, *a, **k) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a) -> None:
+            return None
+
+        def post(self, url, *, headers, data, files):
+            captured["url"] = url
+            captured["headers"] = headers
+            captured["data"] = data
+            captured["files"] = files
+            return _FakeResp()
+
+    import httpx
+
+    monkeypatch.setattr(httpx, "Client", _FakeClient)
+
+    out = t.Transcriber("groq").transcribe(b"fake-audio-bytes")
+    assert out.backend == "groq"
+    assert out.language == "tr"
+    assert out.duration == 6.5
+    assert [s.text for s in out.segments] == ["Merhaba dünya.", "İkinci cümle."]
+    assert all(s.speaker == "speaker_1" for s in out.segments)
+    assert captured["headers"]["Authorization"] == "Bearer gsk_test"
+    assert captured["data"]["response_format"] == "verbose_json"
+
+
 def test_singleton_lifecycle(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "transcribe_backend", "mock", raising=False)
     t.close_transcriber()

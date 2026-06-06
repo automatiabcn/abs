@@ -53,3 +53,52 @@ class TenantProject(SQLModel, table=True):
     role: str = Field(default="member", max_length=32)
     granted_at: datetime
     revoked_at: Optional[datetime] = Field(default=None)
+
+
+# ── Multi-tenant Phase 1 (data layer) ─────────────────────────────────────
+# Additive tables; existing single-tenant flows are unchanged. Provider keys
+# stay global (settings/vault) until the resolver is wired — these rows are an
+# OPT-IN override resolved project → user → org → global.
+
+
+class ProviderKey(SQLModel, table=True):
+    """Per-owner (user/project/org) encrypted provider API key.
+
+    Founder decision: each user brings their OWN key (quota/billing theirs).
+    Resolution order at request time: project → user → org → global vault.
+    `owner_id` is the email (user), project_slug (project), or tenant_slug (org).
+    `tenant_slug` always carries the owning org so a row can be tenant-isolated.
+    `encrypted_value` is a versioned ciphertext (see app.multitenant.crypto).
+    """
+
+    __tablename__ = "provider_keys"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(index=True, max_length=64)
+    owner_type: str = Field(index=True, max_length=16)  # user | project | org
+    owner_id: str = Field(index=True, max_length=128)
+    provider: str = Field(index=True, max_length=32)
+    encrypted_value: str = Field(max_length=8192)
+    created_at: datetime
+    updated_at: Optional[datetime] = Field(default=None)
+    last_validated_at: Optional[datetime] = Field(default=None)
+    last_validated_ok: Optional[bool] = Field(default=None)
+
+
+class ProjectMember(SQLModel, table=True):
+    """N-N user↔project membership with a per-project role.
+
+    Distinct from `tenant_projects` (tenant↔project sharing). A user may belong
+    to MULTIPLE projects (founder decision); the active project is selected per
+    request. Roles: owner | editor | viewer.
+    """
+
+    __tablename__ = "project_members"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(index=True, max_length=64)
+    project_slug: str = Field(index=True, max_length=96)
+    user_subject: str = Field(index=True, max_length=128)
+    role: str = Field(default="viewer", max_length=32)
+    granted_at: datetime
+    revoked_at: Optional[datetime] = Field(default=None)

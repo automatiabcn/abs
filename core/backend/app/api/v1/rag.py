@@ -23,7 +23,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
-from qdrant_client.models import PointStruct
+from qdrant_client.models import FieldCondition, Filter, MatchAny, PointStruct
 
 from app.api.v1.deps import AuthContext, get_auth_context
 from app.config import settings
@@ -49,8 +49,12 @@ class IngestTextRequest(BaseModel):
     filename: str | None = None
     mime_type: str = "text/plain"
     contextual_prefix: str | None = Field(default=None, max_length=4_000)
-    target_tokens: int = Field(default=512, ge=64, le=2048)
-    overlap_tokens: int = Field(default=64, ge=0, le=512)
+    # Char-based chunking (founder feedback 2026-06-06: cap ~400 chars).
+    target_chars: int = Field(default=400, ge=80, le=4_000)
+    overlap_chars: int = Field(default=80, ge=0, le=1_000)
+    # Legacy token params still accepted; override char targets when provided.
+    target_tokens: int | None = Field(default=None, ge=16, le=2048)
+    overlap_tokens: int | None = Field(default=None, ge=0, le=512)
 
 
 class IngestResponse(BaseModel):
@@ -67,6 +71,14 @@ class QueryRequest(BaseModel):
     score_threshold: float | None = Field(default=None, ge=0.0, le=1.0)
     rerank: bool = Field(default=False, description="apply T-013 cross-encoder rerank")
     rerank_top_k: int = Field(default=3, ge=1, le=50)
+    # Founder feedback 2026-06-06: re-interpret the vector hits into an answer
+    # ("chunk sonucunu verirsen doğru olmaz, yarım kalır") + metadata filtering.
+    answer: bool = Field(
+        default=False, description="LLM-synthesize an answer from the hits"
+    )
+    doc_ids: list[str] | None = Field(
+        default=None, description="restrict the search to these document ids"
+    )
 
 
 class Hit(BaseModel):
@@ -82,6 +94,7 @@ class QueryResponse(BaseModel):
     query: str
     hits: list[Hit]
     elapsed_ms: float
+    answer: str | None = None
 
 
 def _tenant_collection(auth: AuthContext) -> str:
@@ -116,6 +129,50 @@ def _ensure_embedder():
             status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"embedder_unavailable: {exc}",
         ) from exc
+
+
+def _synthesize_answer(query_text: str, hits: list["Hit"], tenant_id: str) -> str | None:
+    """Re-interpret the retrieved chunks into a grounded answer (founder
+    feedback: returning raw chunks "yarım kalır"). Best-effort: returns None if
+    no provider is configured or the cascade fails — the caller still returns
+    the hits. Runs the async cascade via asyncio.run (safe in the sync RAG
+    route's threadpool, same constraint as the Cohere embedder)."""
+    import asyncio
+
+    from app.cascade.orchestrator import call_with_cascade
+    from app.providers.cascade import get_active_providers
+
+    active = get_active_providers()
+    if not active or not hits:
+        return None
+    numbered = "\n\n".join(
+        f"[{i + 1}] {h.text[:1200]}" for i, h in enumerate(hits)
+    )
+    prompt = (
+        "Answer the question using ONLY the numbered sources below. Cite the "
+        "sources you use inline as [1], [2]. If the sources don't contain the "
+        "answer, say you don't have enough information. Reply in the same "
+        "language as the question.\n\n"
+        f"SOURCES:\n{numbered}\n\nQUESTION: {query_text}"
+    )
+    primary, *rest = active
+
+    async def _run() -> str:
+        resp = await call_with_cascade(
+            prompt,
+            primary=primary,
+            fallbacks=tuple(rest),
+            tenant_id=tenant_id or "_global",
+            max_tokens=700,
+            temperature=0.2,
+        )
+        return getattr(resp, "text", "") or ""
+
+    try:
+        return asyncio.run(_run()) or None
+    except Exception as exc:  # noqa: BLE001 — answer is best-effort
+        logger.info("rag answer synthesis failed (returning hits only): %s", exc)
+        return None
 
 
 def _ensure_qdrant_collection(collection: str, vector_size: int) -> None:
@@ -217,6 +274,8 @@ def ingest_text(
         ) from exc
     chunks = late_chunks(
         doc,
+        target_chars=body.target_chars,
+        overlap_chars=body.overlap_chars,
         target_tokens=body.target_tokens,
         overlap_tokens=body.overlap_tokens,
         contextual_prefix=body.contextual_prefix,
@@ -388,6 +447,17 @@ def query(
     embedder = _ensure_embedder()
     _ensure_qdrant_collection(collection, vector_size=embedder.dim)
     vector = embedder.embed_one(body.query)
+    extra_filter = None
+    if body.doc_ids:
+        # Metadata filter (founder feedback: "metadata kullanmazsan sonuçları
+        # filtreleyemezsin") — restrict retrieval to the chosen documents.
+        extra_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="doc_id", match=MatchAny(any=[d for d in body.doc_ids if d])
+                )
+            ]
+        )
     try:
         raw_hits = qc.search(
             collection=collection,
@@ -395,6 +465,7 @@ def query(
             query_vector=vector,
             limit=body.limit,
             score_threshold=body.score_threshold,
+            extra_filter=extra_filter,
         )
     except Exception as exc:  # noqa: BLE001
         logger.warning("qdrant_search_failed: %s", exc)
@@ -459,7 +530,14 @@ def query(
             },
         )
     )
-    return QueryResponse(query=body.query, hits=hits, elapsed_ms=elapsed)
+    answer = (
+        _synthesize_answer(body.query, hits, auth.tenant_id or "")
+        if body.answer
+        else None
+    )
+    return QueryResponse(
+        query=body.query, hits=hits, elapsed_ms=elapsed, answer=answer
+    )
 
 
 @router.get("/documents")
@@ -504,3 +582,38 @@ def list_documents(
         "chunk_count": sum(d["chunks"] for d in documents),
         "total_bytes": sum(d["size_bytes"] for d in documents),
     }
+
+
+@router.delete("/documents/{doc_id}")
+@observe(name="rag.delete_document")
+def delete_document(
+    doc_id: str,
+    rag: RAGAuth = Depends(rag_action_dep("ingest")),
+) -> dict[str, Any]:
+    """Delete a document (all its chunks) from the caller's tenant collection.
+
+    Founder feedback 2026-06-06: "yüklenilen dosyaları sil özelliği de olmalı".
+    Tenant-scoped via the Qdrant filter, so a caller can only delete their own
+    documents. Idempotent: deleting an unknown doc_id returns deleted=0.
+    """
+    auth = rag.auth
+    collection = _tenant_collection(auth)
+    if not (doc_id or "").strip():
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "doc_id_required")
+    try:
+        removed = qc.delete_document(
+            collection=collection, tenant_id=auth.tenant_id or "", doc_id=doc_id
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("rag_delete_document_failed: %s", exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"qdrant_unavailable: {exc}",
+        ) from exc
+    logger.info(
+        "rag_delete_document tenant=%s doc_id=%s removed=%d",
+        auth.tenant_id,
+        doc_id,
+        removed,
+    )
+    return {"doc_id": doc_id, "deleted": removed}

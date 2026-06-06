@@ -150,6 +150,7 @@ class Settings(BaseSettings):
     # Q4 P7-live — RAGAS evaluator backend toggle: mock | groq
     ragas_backend: str = "mock"
     groq_api_key: str = ""
+    groq_whisper_model: str = "whisper-large-v3"
     cerebras_api_key: str = ""
     gemini_api_key: str = ""
     cf_account_id: str = ""
@@ -305,7 +306,7 @@ class Settings(BaseSettings):
     ragas_max_drop: float = 0.05
 
     # T-025..T-032 — Meeting pipeline
-    transcribe_backend: str = "mock"   # mock | whisperx | deepgram
+    transcribe_backend: str = "mock"   # mock | whisperx | deepgram | groq
     transcribe_device: str = "cuda"
     deepgram_api_key: str = ""
     recall_backend: str = "mock"
@@ -342,7 +343,7 @@ class Settings(BaseSettings):
     meeting_local_runner: str = "meetily"  # "meetily" | "jitsi"
     meeting_local_jobs_dir: str = "/tmp/abs-meetings"
     meeting_recordings_dir: str = "/tmp/abs-meetings/recordings"
-    transcribe_backend: str = "mock"  # "mock" | "whisperx" | "deepgram"
+    transcribe_backend: str = "mock"  # "mock" | "whisperx" | "deepgram" | "groq"
     transcribe_device: str = "cpu"
     deepgram_api_key: str = ""
     deepgram_model: str = "nova-2"
@@ -357,6 +358,19 @@ class Settings(BaseSettings):
     neo4j_uri: str = "bolt://neo4j:7687"
     neo4j_user: str = "neo4j"
     neo4j_password: str = "AbsNeo2026!"
+
+    # Multi-tenant Phase 1 — at-rest encryption for per-owner provider keys.
+    # If set (urlsafe base64 32-byte or any string → sha256-derived), DB-stored
+    # provider keys are Fernet-encrypted. Unset → dev fallback (base64 obfusc.,
+    # logged as insecure). Production MUST set ABS_PROVIDER_KEY_ENCRYPTION_KEY.
+    provider_key_encryption_key: str = ""
+
+    # GraphRAG — knowledge graph over the RAG corpus (Phase 2).
+    # When enabled, ingest best-effort extracts entities/relations into Neo4j;
+    # the /v1/graph-rag/build endpoint can (re)process the existing corpus.
+    graphrag_enabled: bool = False
+    # Max chunks processed per build call (LLM cost / 8GB-safe guardrail).
+    graphrag_build_max_chunks: int = 500
 
     model_config = SettingsConfigDict(
         env_prefix="ABS_",
