@@ -98,17 +98,34 @@ async def create_project(body: ProjectIn, admin: dict = Depends(admin_required))
         raise HTTPException(422, "invalid_slug")
     subject = _subject(admin)
     with Session(get_engine()) as db:
-        if db.exec(select(Project).where(Project.slug == slug)).first():
-            raise HTTPException(409, "project_slug_taken")
-        proj = Project(
-            slug=slug,
-            tenant_slug=tenant,
-            name=body.name or slug,
-            owner_subject=subject,
-            created_at=datetime.now(timezone.utc),
-        )
-        db.add(proj)
-        db.commit()
+        # Tenant-scoped: a slug taken in another tenant is fine. An ARCHIVED
+        # project with the same slug in this tenant is reactivated (the row
+        # persists under the per-tenant unique constraint, so we can't insert a
+        # duplicate) rather than 409'ing the operator out of reusing the name.
+        existing = db.exec(
+            select(Project).where(
+                Project.slug == slug, Project.tenant_slug == tenant
+            )
+        ).first()
+        if existing is not None:
+            if existing.archived_at is None:
+                raise HTTPException(409, "project_slug_taken")
+            existing.archived_at = None
+            existing.name = body.name or slug
+            existing.owner_subject = subject
+            db.add(existing)
+            db.commit()
+        else:
+            db.add(
+                Project(
+                    slug=slug,
+                    tenant_slug=tenant,
+                    name=body.name or slug,
+                    owner_subject=subject,
+                    created_at=datetime.now(timezone.utc),
+                )
+            )
+            db.commit()
     # creator becomes project owner
     pm.add_member(
         tenant_slug=tenant, project_slug=slug, user_subject=subject,
