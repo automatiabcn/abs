@@ -114,6 +114,7 @@ def is_configured(provider: str) -> bool:
 def get_active_providers(
     prefer: Optional[str] = None,
     skip_paid: bool = False,
+    extra_configured: frozenset[str] = frozenset(),
 ) -> List[str]:
     """Return the ordered cascade chain of *configured* providers.
     Empty list = no providers at all (caller should 503).
@@ -123,9 +124,13 @@ def get_active_providers(
     when supplied and configured, moves that provider to the front of the chain.
     `skip_paid=True` swaps to the free-only chain and drops paid providers
     entirely (founder-test Round 3 BUG-7 + BUG-8).
+
+    MT Phase 1: `extra_configured` is a set of providers a caller knows are
+    configured via a per-owner (user/project/org) key even when no global key
+    exists — so BYOK can activate a provider the operator didn't set globally.
     """
     base_order = PROVIDER_ORDER_FREE_FIRST if skip_paid else PROVIDER_ORDER_DEFAULT
-    active = [p for p in base_order if is_configured(p)]
+    active = [p for p in base_order if is_configured(p) or p in extra_configured]
     if skip_paid:
         active = [p for p in active if p not in PAID_PROVIDERS]
     if prefer and prefer in active:

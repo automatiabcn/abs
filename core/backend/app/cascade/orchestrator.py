@@ -95,7 +95,10 @@ async def call_with_cascade(
       yoksa global ``settings`` key'i kullanılır (geriye dönük uyumlu).
     """
     chain: List[str] = [primary, *fallbacks]
-    cache_key = prompt_hash(prompt, model or "", tenant_id=tenant_id)
+    # MT Phase 1: when a per-owner key may be used, namespace the cache by the
+    # owner so one owner's BYOK answer is never served to another in the tenant.
+    owner = f"p:{project_slug}" if project_slug else (f"u:{user_subject}" if user_subject else "")
+    cache_key = prompt_hash(prompt, model or "", tenant_id=tenant_id, owner=owner)
 
     if use_cache:
         cached = await default_cache.get(cache_key)
