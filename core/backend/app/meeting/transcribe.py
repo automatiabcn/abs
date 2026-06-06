@@ -215,6 +215,66 @@ class _DeepgramBackend:
         )
 
 
+class _GroqBackend:
+    """Cloud Whisper via Groq's OpenAI-compatible audio endpoint (BYOK).
+
+    No local GPU/disk: the audio is POSTed to Groq and `verbose_json` returns
+    `segments` (start/end/text) + `duration`. Groq does not diarize, so every
+    segment is attributed to a single speaker.
+    """
+
+    BASE_URL = "https://api.groq.com/openai/v1/audio/transcriptions"
+
+    def __init__(self, *, api_key: str) -> None:
+        if not api_key:
+            raise ValueError("groq backend requires settings.groq_api_key")
+        try:
+            import httpx  # noqa: F401
+        except ImportError as exc:
+            raise ImportError("groq backend requires httpx") from exc
+        self.api_key = api_key
+        self.model = getattr(settings, "groq_whisper_model", "") or "whisper-large-v3"
+        logger.info("transcribe_groq_init model=%s", self.model)
+
+    def transcribe(self, audio_path: bytes | str | Path) -> Transcript:
+        import httpx
+
+        if isinstance(audio_path, (str, Path)):
+            data = Path(audio_path).read_bytes()
+            filename = Path(audio_path).name
+        else:
+            data = audio_path
+            filename = "audio.webm"
+        files = {"file": (filename, data, "application/octet-stream")}
+        form = {"model": self.model, "response_format": "verbose_json"}
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+        with httpx.Client(timeout=180.0) as client:
+            r = client.post(self.BASE_URL, headers=headers, data=form, files=files)
+            r.raise_for_status()
+            payload = r.json()
+
+        segments: list[TranscriptSegment] = []
+        duration = float(payload.get("duration", 0.0))
+        for seg in payload.get("segments", []):
+            start = float(seg.get("start", 0.0))
+            end = float(seg.get("end", start))
+            duration = max(duration, end)
+            segments.append(
+                TranscriptSegment(
+                    speaker=str(seg.get("speaker") or "speaker_1"),
+                    start=start,
+                    end=end,
+                    text=str(seg.get("text", "")).strip(),
+                )
+            )
+        return Transcript(
+            language=str(payload.get("language", "auto")),
+            duration=duration,
+            segments=segments,
+            backend="groq",
+        )
+
+
 class Transcriber:
     backend: str
 
@@ -230,6 +290,10 @@ class Transcriber:
         elif backend == "deepgram":
             self._impl = _DeepgramBackend(
                 api_key=getattr(settings, "deepgram_api_key", "") or "",
+            )
+        elif backend == "groq":
+            self._impl = _GroqBackend(
+                api_key=getattr(settings, "groq_api_key", "") or "",
             )
         else:
             raise ValueError(f"unsupported transcribe backend: {backend}")
