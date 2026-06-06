@@ -55,6 +55,7 @@ from app.api import marketplace as marketplace_router  # CJ-008 — /v1/marketpl
 from app.api import meetings as meetings_router          # S20.4 — /v1/meetings
 from app.api import workflows as workflows_router        # P1 S19 — /v1/workflows
 from app.api import graph as graph_router  # Q7 Phase A — /v1/graph
+from app.api import graph_rag as graph_rag_router  # GraphRAG — /v1/graph-rag
 from app.api import quota as quota_router
 from app.api.system import quota as system_quota_router  # CJ-009 — /v1/system/quota_status
 from app.api.system import feature_usage as system_feature_usage_router  # S20.3
@@ -384,6 +385,7 @@ app.include_router(stream_router.router)
 app.include_router(symbol_graph_router.router)
 app.include_router(quota_router.router)
 app.include_router(graph_router.router)        # Q7 Phase A — /v1/graph
+app.include_router(graph_rag_router.router)    # GraphRAG — /v1/graph-rag
 app.include_router(system_quota_router.router)  # CJ-009
 app.include_router(system_feature_usage_router.router)  # S20.3
 app.include_router(marketplace_router.router)   # CJ-008
