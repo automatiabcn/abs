@@ -86,3 +86,24 @@ logs/
 infra/helm/abs/charts/
 infra/helm/abs/Chart.lock
 infra/.cf-deploy-token
+
+# Internal build evidence — not part of the shipped product (worker task
+# specs, sprint reports/logs). Kept locally, untracked from the customer repo.
+/_agent-tasks/
+/LESSONS.md
+/artifacts/founder_test_fix_1/
+/artifacts/founder_test_fix_2/
+/artifacts/founder_test_fix_3/
+/artifacts/sprint_21/
+/artifacts/sprint_22/
+/artifacts/sprint_hotfix_cj/
+/artifacts/sprint_q10/
+/artifacts/sprint_q11/
+/artifacts/sprint_q12/
+/artifacts/sprint_q1_quality/
+/artifacts/sprint_q2_master/
+/artifacts/sprint_q4/
+/artifacts/sprint_q5/
+/artifacts/sprint_q6/
+/artifacts/sprint_q7/
+/artifacts/sprint_q9/
