@@ -59,9 +59,9 @@ class WhisperXUnavailableError(RuntimeError):
 
 
 def _normalize_speaker(raw: str | None, fallback_idx: int) -> str:
-    """`SPEAKER_00` → `spk_0`; missing → `spk_<idx>`."""
+    """`SPEAKER_00` → `spk_0`; missing → `spk_0` (no diarization = one speaker)."""
     if not raw:
-        return f"spk_{fallback_idx}"
+        return "spk_0"
     if raw.startswith("SPEAKER_"):
         try:
             n = int(raw.split("_", 1)[1])
@@ -114,12 +114,75 @@ def _parse_response(payload: dict) -> dict[str, Any]:
     }
 
 
+_GROQ_WHISPER_URL: Final[str] = "https://api.groq.com/openai/v1/audio/transcriptions"
+_GROQ_WHISPER_MODEL: Final[str] = os.environ.get(
+    "ABS_GROQ_WHISPER_MODEL", "whisper-large-v3"
+)
+
+
+def _transcribe_backend() -> str:
+    """Resolve the active backend at call time (settings may be vault-loaded)."""
+    try:
+        from app.config import settings
+
+        return (getattr(settings, "transcribe_backend", "") or "whisperx").lower()
+    except Exception:  # pragma: no cover
+        return "whisperx"
+
+
+async def _transcribe_via_groq(
+    audio_bytes: bytes, filename: str, language: str | None
+) -> dict[str, Any]:
+    """Cloud Whisper via Groq (BYOK) — no local whisperx container / disk / GPU.
+
+    Groq's OpenAI-compatible audio endpoint returns verbose_json with
+    `segments` (start/end/text) + `duration`; it does NOT diarize, so every
+    segment falls back to a single speaker. Transcript quality is the win;
+    speaker labels are a whisperx-only bonus.
+    """
+    from app.config import settings
+
+    key = (getattr(settings, "groq_api_key", "") or "").strip()
+    if not key:
+        raise WhisperXUnavailableError(
+            "transcribe_backend=groq requires a Groq API key"
+        )
+    model = (getattr(settings, "groq_whisper_model", "") or "").strip() or _GROQ_WHISPER_MODEL
+    data = {"model": model, "response_format": "verbose_json"}
+    if language:
+        data["language"] = language
+    files = {"file": (filename or "audio.webm", audio_bytes, "application/octet-stream")}
+    try:
+        async with httpx.AsyncClient(timeout=WHISPERX_TIMEOUT_SECONDS) as client:
+            resp = await client.post(
+                _GROQ_WHISPER_URL,
+                headers={"Authorization": f"Bearer {key}"},
+                data=data,
+                files=files,
+            )
+        resp.raise_for_status()
+    except (httpx.HTTPError, httpx.TimeoutException) as exc:
+        logger.warning("groq whisper call failed: %s", exc)
+        raise WhisperXUnavailableError(f"groq_whisper: {exc}") from exc
+    try:
+        body = resp.json()
+    except ValueError as exc:
+        raise WhisperXUnavailableError(
+            f"groq whisper non-JSON response: {resp.text[:200]}"
+        ) from exc
+    return _parse_response(body)
+
+
 async def transcribe_path(
     audio_path: Path,
     diarize: bool = True,
     language: str | None = None,
 ) -> dict[str, Any]:
     """Upload `audio_path` to WhisperX and return the normalized payload."""
+    if _transcribe_backend() == "groq":
+        return await _transcribe_via_groq(
+            audio_path.read_bytes(), audio_path.name, language
+        )
     params = {
         "task": "transcribe",
         "output": "json",
@@ -162,6 +225,8 @@ async def transcribe_bytes(
     language: str | None = None,
 ) -> dict[str, Any]:
     """In-memory variant for streaming chunks (no temp file)."""
+    if _transcribe_backend() == "groq":
+        return await _transcribe_via_groq(audio_bytes, filename, language)
     params = {
         "task": "transcribe",
         "output": "json",

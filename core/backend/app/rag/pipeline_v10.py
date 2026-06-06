@@ -10,7 +10,9 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import re
 import tempfile
+import unicodedata
 import uuid
 from dataclasses import dataclass
 
@@ -62,10 +64,63 @@ def estimate_token_count(text: str) -> int:
     return max(1, len(text) // 4 + text.count(" ") // 4)
 
 
+# Zero-width / BOM / word-joiner code points that PDF + DOCX extractors leak
+# into the text and that pollute embeddings without adding meaning.
+_ZERO_WIDTH = dict.fromkeys(
+    map(ord, "​‌‍⁠﻿­"), None
+)
+# Latin typographic ligatures that PDF text layers emit as single glyphs; left
+# as-is they fragment a word ("ﬁnance" ≠ "finance") and hurt recall.
+_LIGATURES = {
+    "ﬀ": "ff",
+    "ﬁ": "fi",
+    "ﬂ": "fl",
+    "ﬃ": "ffi",
+    "ﬄ": "ffl",
+    "ﬅ": "st",
+    "ﬆ": "st",
+}
+_MULTISPACE_RE = re.compile(r"[ \t ]{2,}")
+_TRAILING_WS_RE = re.compile(r"[ \t ]+\n")
+_MANY_NEWLINES_RE = re.compile(r"\n{3,}")
+
+
 def _normalize(text: str) -> str:
     if text.startswith("﻿"):
         text = text[1:]
-    return text.replace("\r\n", "\n")
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _clean_text(text: str) -> str:
+    """Normalize extracted text so the vector store sees clean, consistent
+    content (founder feedback 2026-06-06: "metni chunk yapmadan önce text'e
+    çevirip okunmayan karakterleri temizlemelisin; direk okuduğun gibi atarsan
+    vector yanlış çalışır" + Turkish-character handling).
+
+    Steps, order matters:
+      1. Unicode NFC — composes Turkish letters (i̇/ş/ğ/ç/ö/ü) into single code
+         points so "şirket" embeds identically however the source encoded it.
+      2. Expand Latin ligatures (ﬁ→fi) that PDF layers emit as one glyph.
+      3. Drop zero-width / soft-hyphen / BOM noise.
+      4. Drop the U+FFFD replacement char (the tell-tale of a mis-decoded byte).
+      5. Strip control chars except newline/tab.
+      6. Collapse runs of spaces and 3+ blank lines.
+    """
+    if not text:
+        return ""
+    text = unicodedata.normalize("NFC", text)
+    for glyph, repl in _LIGATURES.items():
+        if glyph in text:
+            text = text.replace(glyph, repl)
+    text = text.translate(_ZERO_WIDTH)
+    text = text.replace("�", "")
+    text = "".join(
+        ch for ch in text if ch in "\n\t" or unicodedata.category(ch)[0] != "C"
+    )
+    text = _TRAILING_WS_RE.sub("\n", text)
+    text = _MULTISPACE_RE.sub(" ", text)
+    text = _MANY_NEWLINES_RE.sub("\n\n", text)
+    return text.strip()
 
 
 def _doc_id(source: str) -> str:
@@ -84,7 +139,7 @@ def parse_text(
     else:
         text = content
         size = len(content.encode("utf-8", errors="replace"))
-    text = _normalize(text)
+    text = _clean_text(_normalize(text))
     return ParsedDocument(
         doc_id=_doc_id(filename or text),
         text=text,
@@ -226,12 +281,23 @@ _DELIMS = (".", "!", "?", "\n\n")
 def late_chunks(
     doc: ParsedDocument,
     *,
-    target_tokens: int = 512,
-    overlap_tokens: int = 64,
+    target_chars: int = 400,
+    overlap_chars: int = 80,
+    target_tokens: int | None = None,
+    overlap_tokens: int | None = None,
     contextual_prefix: str | None = None,
 ) -> list[Chunk]:
-    target_chars = target_tokens * _CHARS_PER_TOKEN
-    overlap_chars = overlap_tokens * _CHARS_PER_TOKEN
+    """Sentence-aware chunking. The primary unit is CHARACTERS (founder
+    feedback 2026-06-06: chunks should cap around ~400 chars — small, precise
+    chunks retrieve better than 2k-char blocks). ``target_tokens`` /
+    ``overlap_tokens`` remain accepted for backward compatibility and, when
+    given, override the char targets (1 token ≈ 4 chars)."""
+    if target_tokens is not None:
+        target_chars = target_tokens * _CHARS_PER_TOKEN
+    if overlap_tokens is not None:
+        overlap_chars = overlap_tokens * _CHARS_PER_TOKEN
+    target_chars = max(1, target_chars)
+    overlap_chars = max(0, min(overlap_chars, target_chars - 1))
     step = max(1, target_chars - overlap_chars)
     text = doc.text
     length = len(text)
@@ -293,8 +359,11 @@ def late_chunks(
         start += step
 
     if chunks and len(chunks) > 1:
-        min_tokens = min(64, max(1, target_tokens // 8))
-        if estimate_token_count(chunks[-1].raw_text) < min_tokens:
+        # Merge a too-small trailing chunk into its predecessor. Threshold is
+        # 1/8 of the target window (char-based; matches the legacy token math
+        # when target_tokens was supplied since target_chars = tokens * 4).
+        min_chars = min(256, max(4, target_chars // 8))
+        if len(chunks[-1].raw_text) < min_chars:
             tail = chunks.pop()
             prev = chunks[-1]
             merged_raw = f"{prev.raw_text} {tail.raw_text}"
