@@ -233,8 +233,15 @@ def _lookup_tenant_slug(email: str) -> Optional[str]:
       1. ``users`` table (active row owns the truth when present).
       2. ``admin_credentials.json`` ``tenant_slug`` field (set by magic-link
          claim path, optionally by setup wizard).
-      3. Email-domain heuristic for bootstrap-only deployments where neither
-         source carries a slug yet.
+      3. None → caller mints with no tenant claim and downstream resolvers fall
+         back to ``"default"``.
+
+    The former email-domain heuristic (``admin@demo-acme.com`` → ``demo-acme``)
+    was removed: it made the admin/login path resolve a different tenant than
+    the runtime RAG/cascade path (``_resolve_tenant`` → ``"default"``), silently
+    splitting where admin-managed entities were stored vs looked up. A real
+    tenant now comes only from an explicit source (users table / credentials /
+    JWT claim).
     """
     if not email:
         return None
@@ -262,7 +269,7 @@ def _lookup_tenant_slug(email: str) -> Optional[str]:
         if slug:
             return str(slug)
 
-    return _derive_tenant_from_email(email)
+    return None
 
 
 def _lookup_user_in_db(email: str) -> Optional[Tuple[str, bytes, str]]:
