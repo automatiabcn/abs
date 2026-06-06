@@ -29,7 +29,8 @@ class GeminiProvider(BaseProvider):
         model: Optional[str] = None,
         **kwargs: Any,
     ) -> ProviderResponse:
-        if not settings.gemini_api_key:
+        _key = kwargs.get("api_key") or settings.gemini_api_key
+        if not _key:
             raise ProviderError(
                 "Gemini API key tanımlı değil", provider=self.name, transient=False
             )
@@ -52,7 +53,7 @@ class GeminiProvider(BaseProvider):
             async with httpx.AsyncClient(timeout=timeout) as client:
                 r = await client.post(
                     url,
-                    headers=gemini_headers(settings.gemini_api_key),
+                    headers=gemini_headers(_key),
                     json=body,
                 )
         except httpx.TimeoutException as exc:

@@ -29,7 +29,8 @@ class CloudflareProvider(BaseProvider):
         model: Optional[str] = None,
         **kwargs: Any,
     ) -> ProviderResponse:
-        if not settings.cf_account_id or not settings.cf_api_token:
+        _token = kwargs.get("api_key") or settings.cf_api_token
+        if not settings.cf_account_id or not _token:
             raise ProviderError(
                 "CloudFlare account_id veya api_token tanımlı değil",
                 provider=self.name,
@@ -42,7 +43,7 @@ class CloudflareProvider(BaseProvider):
             f"{settings.cf_account_id}/ai/run/{model}"
         )
         headers = {
-            "Authorization": f"Bearer {settings.cf_api_token}",
+            "Authorization": f"Bearer {_token}",
             "Content-Type": "application/json",
         }
         body = {
