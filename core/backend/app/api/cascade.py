@@ -27,7 +27,7 @@ from __future__ import annotations
 import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.api.auth import current_admin
@@ -114,9 +114,30 @@ async def _try_mock(
 
 @router.post("/run", response_model=CascadeResponse)
 async def run(
-    body: CascadeRequest, admin: dict = Depends(current_admin)
+    body: CascadeRequest,
+    request: Request,
+    admin: dict = Depends(current_admin),
 ) -> CascadeResponse:
     fallback_chain: List[str] = []
+
+    # MT Phase 1 — per-owner (user/project) key context for BYOK.
+    from app.api.chat import _resolve_tenant
+
+    _user = str(admin.get("sub") or "")
+    _tenant = _resolve_tenant(_user) or "_global"
+    _project = request.headers.get("X-Project-Id") or None
+    _extra: frozenset[str] = frozenset()
+    if _tenant and _tenant != "_global":
+        try:
+            from app.multitenant.provider_keys import tenant_configured_providers
+
+            _extra = frozenset(
+                tenant_configured_providers(
+                    tenant_slug=_tenant, project_slug=_project, user_subject=_user
+                )
+            )
+        except Exception:  # noqa: BLE001
+            _extra = frozenset()
 
     # 1. Try mock if enabled (test-only happy path).
     mock_result = await _try_mock(body, fallback_chain)
@@ -131,7 +152,7 @@ async def run(
 
     # 2. Real cascade gate — needs at least one configured provider.
     active = get_active_providers(
-        prefer=body.prefer, skip_paid=body.skip_paid_providers
+        prefer=body.prefer, skip_paid=body.skip_paid_providers, extra_configured=_extra
     )
     if not active:
         if body.skip_paid_providers:
@@ -160,6 +181,9 @@ async def run(
             fallbacks=tuple(rest),
             use_cache=body.use_cache,
             max_tokens=body.max_tokens,
+            tenant_id=_tenant,
+            project_slug=_project,
+            user_subject=_user or None,
         )
     except ProviderError as exc:
         # All providers in the chain failed (transient or hard fail).
