@@ -127,3 +127,41 @@ class ProjectMember(SQLModel, table=True):
     role: str = Field(default="viewer", max_length=32)
     granted_at: datetime
     revoked_at: Optional[datetime] = Field(default=None)
+
+
+# ── External MCP federation (ABS as MCP *client*) ─────────────────────────
+# Founder direction (2026-06-08): a tenant adds a third-party MCP server
+# (GitHub / Slack / their own) from the panel; ABS connects to it as a client,
+# discovers its tools and (Slice 2) federates them into its own catalog +
+# agents. Credentials are Fernet-encrypted (app.multitenant.crypto); the
+# plaintext auth value is NEVER returned by the API. Tenant-scoped + RLS so one
+# tenant cannot see another's servers.
+
+
+class ExternalMcpServer(SQLModel, table=True):
+    """A third-party MCP server registered by a tenant for tool federation."""
+
+    __tablename__ = "external_mcp_servers"
+    __table_args__ = (
+        UniqueConstraint("tenant_slug", "slug", name="uq_external_mcp_tenant_slug"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(index=True, max_length=64)
+    slug: str = Field(index=True, max_length=64)          # stable id within tenant
+    name: str = Field(default="", max_length=128)         # human label
+    url: str = Field(max_length=2048)                      # transport endpoint
+    transport: str = Field(default="http", max_length=16)  # http | sse
+    auth_type: str = Field(default="none", max_length=16)  # none | bearer | header
+    # Fernet ciphertext of the bearer token / header value (empty when none).
+    encrypted_auth: str = Field(default="", max_length=8192)
+    header_name: str = Field(default="", max_length=64)    # for auth_type=header
+    enabled: bool = Field(default=True)
+    # Discovery / health snapshot from the last test_connection.
+    status: str = Field(default="unconfigured", max_length=24)  # ok|error|unconfigured
+    last_error: Optional[str] = Field(default=None, max_length=512)
+    discovered_tool_count: int = Field(default=0)
+    last_checked_at: Optional[datetime] = Field(default=None)
+    created_at: datetime
+    created_by: str = Field(default="", max_length=254)
+    updated_at: Optional[datetime] = Field(default=None)
