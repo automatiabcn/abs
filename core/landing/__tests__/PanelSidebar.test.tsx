@@ -62,15 +62,12 @@ describe("PanelSidebar — canonical URLs", () => {
 });
 
 describe("next.config redirects — admin → panel back-compat", () => {
-  // Sprint Q12 polish round R3 — /admin/chat, /admin/mcp-tools and
-  // /admin/dashboard now ship as real /admin/* pages (Sprint 2B BUG-19/20/25/26)
-  // so the sidebar links resolve without a 308. Only /admin/meetings,
-  // /admin/transcription (still served by /panel/* pages) and the
-  // /admin/cascade legacy alias keep the redirect.
-  it("declares 308 redirects for the three short /admin/* surfaces that still need them", () => {
+  // /admin/chat, /admin/mcp-tools, /admin/dashboard, /admin/meetings and
+  // /admin/transcription now ship as real /admin/* pages (re-exporting the
+  // /panel/* client component) — the /panel → /admin Caddy deprecation made a
+  // 308 to /panel/* loop forever. Only the /admin/cascade legacy alias redirects.
+  it("declares 308 redirects for the short /admin/* surfaces that still need them", () => {
     const required = [
-      ['/admin/meetings', '/panel/meetings'],
-      ['/admin/transcription', '/panel/transcription'],
       ['/admin/cascade', '/admin/providers'],
     ];
     for (const [src, dst] of required) {
@@ -85,7 +82,7 @@ describe("next.config redirects — admin → panel back-compat", () => {
   });
 
   it("does NOT declare a 308 for short /admin/* hrefs that ship as real pages", () => {
-    const realPageSources = ['/admin/chat', '/admin/mcp-tools', '/admin/dashboard'];
+    const realPageSources = ['/admin/chat', '/admin/mcp-tools', '/admin/dashboard', '/admin/meetings', '/admin/transcription'];
     for (const src of realPageSources) {
       const pattern = new RegExp(`source:\\s*"${src}"`);
       expect(
