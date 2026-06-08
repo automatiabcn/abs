@@ -285,6 +285,22 @@ async def lifespan(_app: FastAPI):
 
     try:
         async with mcp_server.session_manager.run():
+            # External MCP federation — re-publish enabled servers' tools into
+            # /mcp (no-op unless external_mcp_federate_to_mcp is on). Runs as a
+            # detached task so a slow/unreachable upstream cannot delay readiness.
+            async def _federate_bg() -> None:
+                try:
+                    from app.mcp.external.federation import refresh_federation
+
+                    _n = await refresh_federation()
+                    if _n:
+                        _lf_logger.info(
+                            "external MCP federation: %d tool(s) published", _n
+                        )
+                except Exception as exc:
+                    _lf_logger.warning("external MCP federation skipped: %s", exc)
+
+            asyncio.create_task(_federate_bg())
             yield
     finally:
         # BUG-21 — cancel the heartbeat loop before shutdown so a stuck
@@ -400,6 +416,8 @@ app.include_router(workflows_router.router)     # P1 S19 close
 app.include_router(cascade_router.router)       # Q4 P10 — /v1/cascade/*
 app.include_router(chat_router.router)          # Q8 Phase A — /v1/chat/*
 app.include_router(mcp_tokens_router.router)    # Q8 Phase N — /v1/mcp/tokens
+from app.api import external_mcp as external_mcp_router  # External MCP federation
+app.include_router(external_mcp_router.router)  # /v1/admin/external-mcp (flag-gated)
 app.include_router(cc_hooks_router.router)      # Q8 Phase P — /v1/hooks/*
 app.include_router(transcribe_router.router)    # S20.2
 app.include_router(tts_router.router)           # S20.1
