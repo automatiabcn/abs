@@ -25,6 +25,7 @@ import {
   Menu,
   MessageSquare,
   Mic,
+  Server,
   Settings,
   KeyRound,
   ShieldCheck,
@@ -59,6 +60,8 @@ const NAV: NavItem[] = [
   // BUG-V1 — /admin/usage Free path % + Claude budget % widget.
   { href: "/admin/usage", label: "Kullanım", icon: BarChart3, group: "Üretim" },
   { href: "/admin/mcp-tools", label: "MCP Tools", icon: Wrench, group: "Üretim" },
+  // External MCP federation — ABS as MCP client (register 3rd-party servers).
+  { href: "/admin/mcp-servers", label: "Harici MCP", icon: Server, group: "Üretim" },
   { href: "/admin/rag", label: "RAG Bilgi Tabanı", icon: Database, group: "Üretim" },
   { href: "/admin/pipelines", label: "Quality Pipelines", icon: Sliders, group: "Üretim" },
   // ── Operasyon ──────────────────────────────────
