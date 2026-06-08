@@ -189,6 +189,24 @@ class Settings(BaseSettings):
     # documents through MCP.
     mcp_rag_tenant: str = ""
 
+    # External MCP federation (ABS as MCP *client*). A tenant registers a
+    # third-party MCP server from the panel; ABS connects out, discovers its
+    # tools and (Slice 2) federates them. OFF by default — opt-in per
+    # deployment. ``allow_private`` lets the outbound client reach loopback /
+    # private IPs (needed for local dogfood tests); MUST stay False on any
+    # internet-reachable deployment or it becomes an SSRF pivot.
+    external_mcp_enabled: bool = False
+    external_mcp_allow_private: bool = False
+    external_mcp_timeout_seconds: float = 20.0
+    external_mcp_max_tools: int = 200
+    # Re-expose federated external tools through ABS's OWN /mcp transport so the
+    # operator's connected Claude Code/Codex sees them (namespaced ext_<slug>__).
+    # The /mcp server is a single shared FastMCP instance (tools are global), so
+    # this is only tenant-safe on a SINGLE-TENANT deployment (e.g. digisfer,
+    # tenant=default). Leave OFF on multi-tenant SaaS until per-session tool
+    # filtering lands; server-side agent federation stays tenant-scoped regardless.
+    external_mcp_federate_to_mcp: bool = False
+
     # Hooks (007)
     hooks_enabled: bool = True
     hooks_mode: str = "middleware"  # "middleware" | "native" | "both"
