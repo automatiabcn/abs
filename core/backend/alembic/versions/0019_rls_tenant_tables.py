@@ -67,7 +67,11 @@ _DIRECT: dict[str, str] = {
     "tenant_settings": "tenant_slug",
     "project_members": "tenant_slug",
     "chat_sessions": "tenant_slug",
-    "saved_workflow": "tenant_slug",
+    # NOTE: saved_workflow is intentionally NOT here — it has no migration of its
+    # own (created via SQLModel create_all on the SQLite lane only), so on a
+    # Postgres alembic chain the table does not exist at this point and ALTER
+    # would abort the whole migration. A future migration that CREATEs
+    # saved_workflow on Postgres should add its RLS policy there (like 0020-0024).
     "meetings": "tenant_slug",  # write is multi-tenant-aware (api/meetings._admin_tenant)
 }
 
