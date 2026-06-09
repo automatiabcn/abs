@@ -76,6 +76,23 @@ def test_ordered_steps_empty_graph():
     assert ordered_agent_steps({"nodes": [], "edges": []}) == []
 
 
+def test_ordered_steps_ignores_dangling_edges():
+    # an edge pointing at a deleted/non-existent node must not crash or run it
+    a = _known_agents(1)[0]
+    graph = {
+        "nodes": [
+            {"id": "t", "kind": "trigger"},
+            {"id": "a1", "kind": "agent", "agent_id": a},
+        ],
+        "edges": [
+            {"source": "t", "target": "a1"},
+            {"source": "a1", "target": "ghost"},   # 'ghost' was deleted
+            {"source": "missing", "target": "a1"},
+        ],
+    }
+    assert ordered_agent_steps(graph) == [a]
+
+
 def test_ordered_steps_skips_unwired_agent():
     a, b = _known_agents(2)
     graph = {
