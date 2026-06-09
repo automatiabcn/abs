@@ -139,10 +139,16 @@ class ConnectorState(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     tenant_slug: str = Field(max_length=64, index=True, default="default")
     connector_id: str = Field(max_length=48, index=True)
-    status: str = Field(default="connected", max_length=16)   # connected|available
+    status: str = Field(default="connected", max_length=16)   # connected|available|error
     health: int = Field(default=100)                          # 0..100
     connected_at: datetime = Field(default_factory=_now)
     last_sync_at: Optional[datetime] = Field(default=None)
+    # Stage A — real integration: how the tenant authenticated + the encrypted
+    # credential blob (Fernet, app.multitenant.crypto), the last sync outcome.
+    auth_kind: str = Field(default="none", max_length=16)     # none|api_key|oauth|file
+    encrypted_credentials: str = Field(default="", max_length=8192)
+    last_sync_count: int = Field(default=0)
+    last_error: Optional[str] = Field(default=None, max_length=512)
 
 
 class Opportunity(SQLModel, table=True):

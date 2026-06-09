@@ -82,6 +82,8 @@ _LIST: List[Connector] = [
     _c(id="zoominfo", name="ZoomInfo", group=GRP_DATA, kind="read", note="enrichment"),
     _c(id="n8n", name="n8n", group=GRP_DATA, kind="action", note="middleware automation"),
     _c(id="custom_mcp", name="Custom MCP", group=GRP_DATA, kind="action", note="iş-özel tool"),
+    # Stage A — first REAL adapter: CSV/JSON import (no external auth).
+    _c(id="csv_import", name="CSV / JSON İçe Aktar", group=GRP_DATA, kind="read", note="firma+lead içe aktar (gerçek)"),
 ]
 
 CONNECTORS: Dict[str, Connector] = {c.id: c for c in _LIST}
