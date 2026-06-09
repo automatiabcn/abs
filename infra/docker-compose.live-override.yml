@@ -1,0 +1,5 @@
+# Live demo override — caddy local HTTP only (port 8080)
+services:
+  caddy:
+    ports: !reset
+      - "8080:80"

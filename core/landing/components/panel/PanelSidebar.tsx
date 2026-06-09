@@ -39,7 +39,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-type NavGroup = "Üretim" | "Operasyon" | "Toplantılar" | "Yönetim";
+type NavGroup = "Agentic Growth" | "Üretim" | "Operasyon" | "Toplantılar" | "Yönetim";
 
 interface NavItem {
   href: string;
@@ -49,6 +49,17 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
+  // ── Agentic Growth (yeni ürün ekranları) ───────
+  // Canonical /admin/* routes (re-export the /panel/* client components);
+  // Caddy 308s /panel → /admin, so /admin/* is the surface the sidebar links.
+  { href: "/admin/growth", label: "Growth Dashboard", icon: LayoutDashboard, group: "Agentic Growth" },
+  { href: "/admin/agents", label: "Agent Registry", icon: Brain, group: "Agentic Growth" },
+  { href: "/admin/workflows", label: "Workflow Designer", icon: Workflow, group: "Agentic Growth" },
+  { href: "/admin/approvals", label: "Approval Center", icon: ShieldCheck, group: "Agentic Growth" },
+  { href: "/admin/leads", label: "Lead Intelligence", icon: BarChart3, group: "Agentic Growth" },
+  { href: "/admin/graph-context", label: "Context Graph", icon: Boxes, group: "Agentic Growth" },
+  { href: "/admin/inbound", label: "Inbound + Knowledge", icon: MessageSquare, group: "Agentic Growth" },
+  { href: "/admin/connectors", label: "Connectors", icon: Store, group: "Agentic Growth" },
   // ── Üretim ─────────────────────────────────────
   // Sprint 2B BUG-19 — Genel Bakış now lands on the new /admin/dashboard
   // route (5-source aggregated overview) instead of /panel home.
@@ -82,13 +93,14 @@ const NAV: NavItem[] = [
   { href: "/admin/audit", label: "Denetim", icon: ShieldCheck, group: "Yönetim" },
 ];
 
-const GROUP_ORDER: NavGroup[] = ["Üretim", "Operasyon", "Toplantılar", "Yönetim"];
+const GROUP_ORDER: NavGroup[] = ["Agentic Growth", "Üretim", "Operasyon", "Toplantılar", "Yönetim"];
 
 // Polish round R4 — CSS `text-transform: uppercase` runs in the document
 // locale (English by default) and turns Turkish "i" into dotless "I"
 // instead of "İ". Pre-render the labels with `toLocaleUpperCase("tr-TR")`
 // and drop the CSS transform so the dotted İ comes through verbatim.
 const GROUP_LABEL_TR: Record<NavGroup, string> = {
+  "Agentic Growth": "Agentic Growth".toLocaleUpperCase("tr-TR"),
   "Üretim": "Üretim".toLocaleUpperCase("tr-TR"),
   "Operasyon": "Operasyon".toLocaleUpperCase("tr-TR"),
   "Toplantılar": "Toplantılar".toLocaleUpperCase("tr-TR"),

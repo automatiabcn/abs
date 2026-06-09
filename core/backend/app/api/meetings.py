@@ -43,6 +43,23 @@ MAX_UPLOAD_BYTES = 250 * 1024 * 1024
 DEFAULT_TENANT_SLUG = "default"
 
 
+def _admin_tenant(admin: dict) -> str:
+    """Resolve the request admin's tenant (multi-tenant aware).
+
+    Mirrors the tenant the panel RAG ingest + autoindex resolve, so a meeting,
+    its RAG chunks and its graph all land under the same tenant. Falls back to
+    the single-tenant default so self-host (digisfer, tenant=default) behaviour
+    is unchanged — and so the row is writable under the RLS policy (0019), whose
+    GUC the tenant-context middleware pins from this same admin session.
+    """
+    from app.api.chat import _resolve_tenant
+
+    try:
+        return _resolve_tenant(str(admin.get("sub") or "")) or DEFAULT_TENANT_SLUG
+    except Exception:  # noqa: BLE001 — never block on tenant resolution
+        return DEFAULT_TENANT_SLUG
+
+
 def _autoindex_meeting_rag(
     *, meeting_id: int, title: str, uploader_email: str, result: Dict[str, Any]
 ) -> int:
@@ -154,12 +171,12 @@ def _serialize(meeting: Meeting, segments: List[MeetingSegment]) -> Dict[str, An
 
 
 @router.get("")
-async def list_meetings(_admin: dict = Depends(current_admin)) -> Dict[str, Any]:
+async def list_meetings(admin: dict = Depends(current_admin)) -> Dict[str, Any]:
     with Session(get_engine()) as db:
         rows = list(
             db.execute(
                 select(Meeting)
-                .where(Meeting.tenant_slug == DEFAULT_TENANT_SLUG)
+                .where(Meeting.tenant_slug == _admin_tenant(admin))
                 .order_by(Meeting.created_at.desc())
                 .limit(50)
             ).scalars()
@@ -196,7 +213,7 @@ async def upload_meeting(
     filename = audio.filename or f"meeting-{uuid.uuid4().hex}.bin"
 
     meeting = Meeting(
-        tenant_slug=DEFAULT_TENANT_SLUG,
+        tenant_slug=_admin_tenant(admin),
         uploader_email=uploader_email,
         filename=filename,
         status="pending",
@@ -294,11 +311,11 @@ async def upload_meeting(
 
 @router.get("/{meeting_id}")
 async def get_meeting(
-    meeting_id: int, _admin: dict = Depends(current_admin)
+    meeting_id: int, admin: dict = Depends(current_admin)
 ) -> Dict[str, Any]:
     with Session(get_engine()) as db:
         meeting = db.get(Meeting, meeting_id)
-        if meeting is None or meeting.tenant_slug != DEFAULT_TENANT_SLUG:
+        if meeting is None or meeting.tenant_slug != _admin_tenant(admin):
             raise HTTPException(404, "meeting_not_found")
         segments = list(
             db.execute(
