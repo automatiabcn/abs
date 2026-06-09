@@ -154,17 +154,22 @@ export default function WorkflowDesignerPage() {
     try { await save(); } finally { setBusy(false); }
   }
 
-  async function run() {
+  async function run(dry = false) {
     setBusy(true); setErr(null);
     try {
       const steps = await save();
       if (steps.length === 0) { setErr("Çalıştırılacak agent node yok — palette'ten bir agent ekleyin."); return; }
-      await fetch("/v1/agentic-workflows/run", {
+      const r = await fetch("/v1/agentic-workflows/run", {
         method: "POST", credentials: "include",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name, steps, input: "Fiyat öğrenmek istiyorum", trigger: "web form" }),
+        body: JSON.stringify({ name, steps, input: "Fiyat öğrenmek istiyorum", trigger: "web form", dry_run: dry }),
       });
-      loadRuns();
+      if (dry) {
+        const j = await r.json();
+        setSaved(`Dry-run: ${j.steps_run}/${j.step_count} adım çalıştı · ${j.would_open_approvals} onay açılırdı (kalıcı etki yok)`);
+      } else {
+        loadRuns();
+      }
     } finally { setBusy(false); }
   }
 
@@ -182,7 +187,8 @@ export default function WorkflowDesignerPage() {
         <div className="flex items-center gap-2">
           {saved && <span className="text-[11px] text-emerald-300/80">✓ {saved}</span>}
           <button onClick={onSave} disabled={busy} className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50" data-test="wf-save">Kaydet</button>
-          <button onClick={run} disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow disabled:opacity-50" data-test="wf-run">{busy ? "Çalışıyor…" : "▶ Çalıştır"}</button>
+          <button onClick={() => run(true)} disabled={busy} className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50" data-test="wf-dryrun">Dry-run</button>
+          <button onClick={() => run(false)} disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow disabled:opacity-50" data-test="wf-run">{busy ? "Çalışıyor…" : "▶ Çalıştır"}</button>
         </div>
       </div>
       {err && <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">{err}</div>}

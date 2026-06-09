@@ -74,6 +74,7 @@ class RunRequest(BaseModel):
     steps: List[str] = Field(..., min_length=1, max_length=20)
     input: str = Field(..., min_length=1, max_length=8000)
     trigger: str = Field(default="manual", max_length=32)
+    dry_run: bool = Field(default=False)
 
 
 @router.post("/run")
@@ -84,4 +85,5 @@ async def run_endpoint(
     return await run_workflow(
         tenant_slug=_tenant(auth), name=body.name, steps=body.steps,
         input_text=body.input, trigger=body.trigger, actor=auth.subject,
+        dry_run=body.dry_run,
     )

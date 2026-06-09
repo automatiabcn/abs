@@ -162,17 +162,22 @@ def ordered_agent_steps(graph: Dict[str, Any]) -> List[str]:
 
 async def run_workflow(
     *, tenant_slug: str, name: str, steps: List[str], input_text: str,
-    trigger: str = "manual", actor: str = "",
+    trigger: str = "manual", actor: str = "", dry_run: bool = False,
 ) -> Dict[str, Any]:
     """Run an ordered chain of agent steps; risky steps open approvals.
 
     Each step receives the original input plus the previous step's summary, so
     context threads down the chain (multi-agent coordination). Unknown agent ids
-    are skipped (recorded). Always returns a persisted run."""
+    are skipped (recorded).
+
+    ``dry_run`` is a side-effect-free preview: the agents still run (so you see
+    what they'd produce) but NO agent runs are logged, NO approvals open and the
+    run is not persisted — it only reports how many approvals *would* open."""
     tenant_slug = (tenant_slug or "default").strip()
     t0 = time.perf_counter()
     results: List[dict] = []
     approvals_opened = 0
+    would_open = 0
     prev_summary = ""
     status = "done"
 
@@ -200,6 +205,13 @@ async def run_workflow(
             "confidence": res.confidence, "risk": res.risk,
             "requires_approval": res.requires_approval,
         }
+        if dry_run:
+            # preview only: no agent-run log, no approval, just count what would open
+            if res.requires_approval:
+                would_open += 1
+            step["would_open_approval"] = res.requires_approval
+            results.append(step)
+            continue
         # persist run + (risky) approval via the approvals service
         try:
             from app.approvals import create_approval_from_result, log_agent_run
@@ -217,6 +229,15 @@ async def run_workflow(
         results.append(step)
 
     elapsed = int((time.perf_counter() - t0) * 1000)
+    if dry_run:
+        # side-effect-free preview — nothing persisted
+        return {
+            "id": None, "name": name, "status": status, "trigger": "dry-run",
+            "dry_run": True, "step_count": len(steps),
+            "steps_run": len([r for r in results if "summary" in r]),
+            "approvals_opened": 0, "would_open_approvals": would_open,
+            "elapsed_ms": elapsed, "results": results,
+        }
     row = WorkflowRun(
         tenant_slug=tenant_slug, name=name[:200], trigger=trigger[:32],
         steps_json=json.dumps(steps)[:65000],

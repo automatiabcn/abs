@@ -7,12 +7,18 @@
 
 from __future__ import annotations
 
+import pytest
+from sqlmodel import Session, func, select
+
 from app.agentic_workflows import (
     get_definition,
     ordered_agent_steps,
+    run_workflow,
     save_definition,
 )
 from app.agents.registry import AGENTS
+from app.db.growth_models import WorkflowRun
+from app.db.session import get_engine
 
 
 def _known_agents(n: int) -> list[str]:
@@ -136,6 +142,26 @@ def test_save_then_get_roundtrips_positions_and_edges():
     assert out["graph"]["name"] == "Test Akış"
     node = next(n for n in out["graph"]["nodes"] if n["id"] == "a1")
     assert node["x"] == 200 and node["y"] == 40
+
+
+@pytest.mark.asyncio
+async def test_dry_run_persists_nothing():
+    t = "t_wf_dry"
+    a = list(AGENTS.keys())[0]
+
+    def _count():
+        with Session(get_engine()) as db:
+            return db.exec(select(func.count()).select_from(WorkflowRun)
+                           .where(WorkflowRun.tenant_slug == t)).one()
+
+    before = _count()
+    out = await run_workflow(tenant_slug=t, name="Preview", steps=[a],
+                             input_text="merhaba", dry_run=True)
+    assert out["dry_run"] is True
+    assert out["id"] is None
+    assert out["approvals_opened"] == 0
+    assert "would_open_approvals" in out
+    assert _count() == before          # no run row persisted
 
 
 def test_save_is_tenant_isolated():
