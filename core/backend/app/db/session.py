@@ -5,15 +5,18 @@
 
 from __future__ import annotations
 
+import logging
 from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Optional
 
-from sqlalchemy import event
+from sqlalchemy import event, inspect, text
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 _engine = None
 
@@ -96,6 +99,62 @@ def get_engine():
     return _engine
 
 
+def _column_default_literal(col) -> Optional[str]:
+    """A SQL literal for a column's default, for an ``ALTER TABLE ADD COLUMN``."""
+    d = getattr(col, "default", None)
+    if d is not None and getattr(d, "is_scalar", False):
+        v = d.arg
+        if isinstance(v, bool):
+            return "1" if v else "0"
+        if isinstance(v, (int, float)):
+            return str(v)
+        if isinstance(v, str):
+            return "'" + v.replace("'", "''") + "'"
+    sd = getattr(col, "server_default", None)
+    if sd is not None and getattr(sd, "arg", None) is not None:
+        return str(getattr(sd.arg, "text", sd.arg))
+    return None
+
+
+def _reconcile_sqlite_columns(engine) -> None:
+    """SQLite's ``create_all()`` creates missing TABLES but never ALTERs an
+    existing one to add a new column. SQLite deployments skip alembic (the
+    entrypoint only migrates on Postgres), so a model that gains a column would
+    drift from the live table and 500 on read. This adds any model column that
+    is missing from a live SQLite table — idempotent, best-effort, never fatal."""
+    if engine.dialect.name != "sqlite":
+        return
+    try:
+        insp = inspect(engine)
+        live_tables = set(insp.get_table_names())
+    except Exception as exc:  # pragma: no cover — never block startup
+        logger.warning("sqlite reconcile: inspect failed: %s", exc)
+        return
+    for table in SQLModel.metadata.sorted_tables:
+        if table.name not in live_tables:
+            continue                       # create_all just made it — fully fresh
+        try:
+            have = {c["name"] for c in insp.get_columns(table.name)}
+        except Exception:
+            continue
+        for col in table.columns:
+            if col.name in have:
+                continue
+            try:
+                coltype = col.type.compile(engine.dialect)
+                ddl = f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {coltype}'
+                default = _column_default_literal(col)
+                if default is not None:
+                    ddl += f" DEFAULT {default}"   # else added NULLable (SQLite OK)
+                with engine.begin() as conn:
+                    conn.execute(text(ddl))
+                logger.info("sqlite reconcile: added %s.%s", table.name, col.name)
+            except Exception as exc:           # noqa: BLE001 — log + keep going
+                logger.warning(
+                    "sqlite reconcile: skip %s.%s: %s", table.name, col.name, exc
+                )
+
+
 def init_db() -> None:
     """Startup hook — tabloları oluştur."""
     # models'ı import etmek gerekiyor ki SQLModel metadata'sına kaydolsun
@@ -104,7 +163,10 @@ def init_db() -> None:
     from app.db import growth_models  # noqa: F401  # Agentic Growth domain
     from app.auth.oauth import models as _oauth_models  # noqa: F401  # T-003
 
-    SQLModel.metadata.create_all(get_engine())
+    engine = get_engine()
+    SQLModel.metadata.create_all(engine)
+    # SQLite-only: reconcile columns added to existing tables (create_all won't).
+    _reconcile_sqlite_columns(engine)
 
 
 def get_session() -> Iterator[Session]:
