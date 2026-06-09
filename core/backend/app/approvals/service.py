@@ -226,4 +226,26 @@ def decide_approval(
             "approval_decision id=%s status=%s by=%s tenant=%s",
             item_id, status, decided_by, tenant_slug,
         )
-        return _to_dict(row)
+
+    # Stage E — approving/editing fires the action (consent-gated outbox).
+    action = None
+    if status in ("approved", "edited"):
+        try:
+            from app.actions import execute_for_approval
+
+            action = execute_for_approval(row, tenant_slug=tenant_slug)
+            if not note:                       # surface the action outcome on the item
+                with Session(get_engine()) as db2:
+                    r2 = db2.get(ApprovalItem, item_id)
+                    if r2 is not None:
+                        r2.outcome = f"{action['status']}: {action['reason']}"[:512]
+                        db2.add(r2)
+                        db2.commit()
+                        db2.refresh(r2)
+                        row = r2
+        except Exception:  # noqa: BLE001 — action best-effort; decision already saved
+            logger.info("approval action execution skipped", exc_info=True)
+
+    out = _to_dict(row)
+    out["action"] = action
+    return out

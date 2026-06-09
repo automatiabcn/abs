@@ -22,11 +22,26 @@ type Item = {
 };
 type Tier = { low_auto: number; medium_pending: number; high_pending: number; accept_rate: number };
 type Data = { items: Item[]; pending_total: number; by_risk: Record<string, number>; tier_stats?: Tier };
+type Action = {
+  id: number; approval_item_id: number | null; agent_id: string; action_kind: string;
+  channel: string; target_company: string; target_contact: string; status: string;
+  reason: string; created_at: string | null;
+};
+type Outbox = { items: Action[]; total: number; by_status: Record<string, number> };
 
 const RISK: Record<string, string> = {
   low: "border-emerald-500/40 text-emerald-300",
   medium: "border-amber-500/40 text-amber-300",
   high: "border-rose-500/40 text-rose-300",
+};
+const ACTION_STATUS: Record<string, string> = {
+  executed: "border-emerald-500/40 text-emerald-300",
+  queued: "border-sky-500/40 text-sky-300",
+  blocked: "border-rose-500/40 text-rose-300",
+  failed: "border-amber-500/40 text-amber-300",
+};
+const STATUS_LABEL: Record<string, string> = {
+  executed: "✓ uygulandı", queued: "✓ kuyruğa alındı", blocked: "⛔ engellendi", failed: "⚠ hata",
 };
 function trTime(iso: string | null): string {
   if (!iso) return "";
@@ -44,21 +59,29 @@ const EV_TITLE: Record<string, string> = {
 
 export default function ApprovalCenterPage() {
   const [d, setD] = useState<Data | null>(null);
+  const [outbox, setOutbox] = useState<Outbox | null>(null);
+  const [result, setResult] = useState<{ status: string; reason: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(() => {
     fetch("/v1/approvals?status=pending", { credentials: "include", cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((j: Data) => setD(j)).catch((e) => setErr(String(e)));
+    fetch("/v1/approvals/outbox", { credentials: "include", cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((j: Outbox) => setOutbox(j)).catch(() => {});
   }, []);
   useEffect(load, [load]);
 
   async function decide(id: number, decision: "approve" | "reject" | "edit") {
-    await fetch(`/v1/approvals/${id}/decide`, {
+    const r = await fetch(`/v1/approvals/${id}/decide`, {
       method: "POST", credentials: "include",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ decision }),
     });
+    const j = await r.json().catch(() => null);
+    if (j?.action) setResult({ status: j.action.status, reason: j.action.reason });
+    else if (decision === "reject") setResult({ status: "failed", reason: "reddedildi — aksiyon yok" });
     load();
   }
 
@@ -81,6 +104,12 @@ export default function ApprovalCenterPage() {
         )}
       </div>
       {err && <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">Yüklenemedi: {err}</div>}
+      {result && (
+        <div data-test="action-result" className={`mb-4 flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm ${result.status === "blocked" ? "border-rose-500/40 bg-rose-500/5 text-rose-200" : result.status === "failed" ? "border-amber-500/40 bg-amber-500/5 text-amber-200" : "border-emerald-500/40 bg-emerald-500/5 text-emerald-200"}`}>
+          <span><b>Aksiyon:</b> {STATUS_LABEL[result.status] ?? result.status} · {result.reason}</span>
+          <button onClick={() => setResult(null)} className="text-xs opacity-70 hover:opacity-100">kapat</button>
+        </div>
+      )}
       {!d && !err && <div className="h-64 w-full animate-pulse rounded-md bg-muted/40" />}
 
       {d && (
@@ -170,6 +199,42 @@ export default function ApprovalCenterPage() {
                         <td className="py-2.5 pr-3 text-muted-foreground">{it.consent_status || "—"}</td>
                         <td className="py-2.5 pr-3"><span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">{it.policy_result}</span></td>
                         <td className="py-2.5"><button onClick={() => decide(it.id, "approve")} className="rounded-md border px-3 py-1 text-[11px]">İncele</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ── Outbox: onay → aksiyon izi (consent-gated) ─────────── */}
+          {outbox && outbox.total > 0 && (
+            <div className="mt-6 rounded-xl border bg-card/60 p-4" data-test="outbox">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold">⇉ Aksiyon Outbox</span>
+                <span className="text-[11px] text-muted-foreground">onaydan sonra çalışan aksiyonlar · Consent Ledger ile geçitlenir</span>
+                <div className="ml-auto flex gap-1.5">
+                  {Object.entries(outbox.by_status).map(([s, n]) => (
+                    <span key={s} className={`rounded-full border px-2 py-0.5 text-[10px] ${ACTION_STATUS[s] ?? "border-border text-muted-foreground"}`}>{STATUS_LABEL[s] ?? s}: {n}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px]">
+                  <thead><tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <th className="pb-2 pr-3 font-medium">Agent</th><th className="pb-2 pr-3 font-medium">Tür</th>
+                    <th className="pb-2 pr-3 font-medium">Kanal</th><th className="pb-2 pr-3 font-medium">Hedef</th>
+                    <th className="pb-2 pr-3 font-medium">Durum</th><th className="pb-2 font-medium">Gerekçe</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-border">
+                    {outbox.items.map((a) => (
+                      <tr key={a.id}>
+                        <td className="py-2.5 pr-3 font-medium">{a.agent_id}</td>
+                        <td className="py-2.5 pr-3 text-muted-foreground">{a.action_kind === "message_send" ? "mesaj" : "iç aksiyon"}</td>
+                        <td className="py-2.5 pr-3 font-mono text-muted-foreground">{a.channel || "—"}</td>
+                        <td className="py-2.5 pr-3 text-muted-foreground">{a.target_company || "—"}{a.target_contact ? ` · ${a.target_contact}` : ""}</td>
+                        <td className="py-2.5 pr-3"><span className={`rounded-full border px-2 py-0.5 text-[10px] ${ACTION_STATUS[a.status] ?? "border-border"}`}>{STATUS_LABEL[a.status] ?? a.status}</span></td>
+                        <td className="py-2.5 text-[12px] text-muted-foreground">{a.reason}</td>
                       </tr>
                     ))}
                   </tbody>

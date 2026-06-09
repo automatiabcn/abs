@@ -20,9 +20,36 @@ from datetime import datetime, timedelta, timezone
 
 from sqlmodel import Session, select
 
-from app.db.growth_models import Company, Contact, ConnectorState, Lead, Opportunity, WorkflowRun
+from app.db.growth_models import (
+    Company,
+    ConnectorState,
+    ConsentRecord,
+    Contact,
+    Lead,
+    Opportunity,
+    WorkflowRun,
+)
 from app.db.models import AgentRun, ApprovalItem
 from app.db.session import get_engine
+
+
+def _consent_flags(status: str) -> dict | None:
+    """Map a contact's consent label → Consent Ledger channel flags.
+
+    Drives the Stage E action gate: 'izinli/opt-in' → all channels; 'kısmi' →
+    email only; 'yok/opt-out' → none (opted out); blank → no record (fail-closed)."""
+    s = (status or "").strip().lower()
+    if not s:
+        return None
+    if "yok" in s or "opt-out" in s:
+        return {"email_consent": False, "phone_consent": False, "sms_consent": False,
+                "whatsapp_consent": False, "legal_basis": "", "opted_out": True}
+    if "kısmi" in s or "kismi" in s:
+        return {"email_consent": True, "phone_consent": False, "sms_consent": False,
+                "whatsapp_consent": False, "legal_basis": "legitimate_interest", "opted_out": False}
+    # izinli / opt-in / opt-in (İYS)
+    return {"email_consent": True, "phone_consent": True, "sms_consent": True,
+            "whatsapp_consent": True, "legal_basis": "consent", "opted_out": False}
 
 logger = logging.getLogger(__name__)
 
@@ -144,9 +171,9 @@ _APPROVALS = [
     {"agent_id": "social_strategy", "risk": "medium", "consent": "", "policy": "approval",
      "company": "", "channel": "", "mins": 52, "action": "reklam audience önerisi", "rationale": "", "message": "", "evidence": []},
     {"agent_id": "voice_call", "risk": "high", "consent": "kısmi", "policy": "consent check",
-     "company": "", "channel": "voice", "mins": 64, "action": "outbound arama önerisi (10 lead)", "rationale": "", "message": "", "evidence": []},
+     "company": "Tekno Mühendislik", "channel": "voice", "mins": 64, "action": "outbound arama önerisi (10 lead)", "rationale": "", "message": "", "evidence": []},
     {"agent_id": "outbound_draft", "risk": "high", "consent": "opt-in", "policy": "approval+audit",
-     "company": "", "channel": "whatsapp", "mins": 75, "action": "WhatsApp şablon mesajı", "rationale": "", "message": "", "evidence": []},
+     "company": "Mavi Lojistik", "channel": "whatsapp", "mins": 75, "action": "WhatsApp şablon mesajı", "rationale": "", "message": "", "evidence": []},
 ]
 
 _CONNECTORS = ["parasut", "hubspot", "gmail"]
@@ -202,13 +229,26 @@ def seed_growth_demo(tenant_slug: str = "default", *, force: bool = False) -> di
 
             # Buying group: a rich set for the flagship lead, else one contact.
             bg = c.get("buying_group") or [{"name": f"{c['name'].split()[0]} Yetkili", "role": "purchasing"}]
+            flags = _consent_flags(c["consent"])
             for member in bg:
+                email = f"{member['role']}@{c.get('domain', 'example.com')}"
                 db.add(Contact(
                     tenant_slug=tenant, company_id=company.id, name=member["name"],
-                    email=f"{member['role']}@{c.get('domain', 'example.com')}",
-                    role=member["role"], consent_status=c["consent"],
+                    email=email, role=member["role"], consent_status=c["consent"],
                 ))
                 created["contacts"] += 1
+                # Consent Ledger record (Stage E action gate). Absent = fail-closed.
+                if flags is not None:
+                    opted_out = flags.pop("opted_out", False)
+                    db.add(ConsentRecord(
+                        tenant_slug=tenant, contact_email=email,
+                        email_consent=flags["email_consent"], phone_consent=flags["phone_consent"],
+                        sms_consent=flags["sms_consent"], whatsapp_consent=flags["whatsapp_consent"],
+                        legal_basis=flags["legal_basis"], opt_in_source="import",
+                        opt_in_at=None if opted_out else now,
+                        opt_out_at=now if opted_out else None,
+                    ))
+                    flags["opted_out"] = opted_out  # restore for next contact iter
 
             score_json = json.dumps(
                 c.get("score_criteria") or {"icp_fit": c["score"], "buying_signal": c["score"]},

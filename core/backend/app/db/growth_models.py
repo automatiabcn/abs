@@ -151,6 +151,31 @@ class ConnectorState(SQLModel, table=True):
     last_error: Optional[str] = Field(default=None, max_length=512)
 
 
+class ActionExecution(SQLModel, table=True):
+    """Outbox/audit of an action fired after a human approval (Stage E).
+
+    The concrete 'onay → aksiyon' record: when a reviewer approves an item, the
+    executor runs its action — internal effects apply immediately, outbound
+    comms are consent-gated (Consent Ledger) and queued to the channel. Every
+    attempt lands here (executed | queued | blocked | failed) so there is a full
+    after-approval trail. Tenant-scoped."""
+
+    __tablename__ = "action_executions"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
+    approval_item_id: Optional[int] = Field(default=None, index=True)
+    agent_id: str = Field(default="", max_length=64)
+    action_kind: str = Field(default="internal", max_length=32)  # internal|message_send
+    channel: str = Field(default="", max_length=32)
+    target_company: str = Field(default="", max_length=256)
+    target_contact: str = Field(default="", max_length=254)
+    message: str = Field(default="", max_length=2048)
+    status: str = Field(default="executed", max_length=16, index=True)  # executed|queued|blocked|failed
+    reason: str = Field(default="", max_length=256)
+    created_at: datetime = Field(default_factory=_now, index=True)
+
+
 class AgenticWorkflowDef(SQLModel, table=True):
     """Saved Workflow Designer graph (Stage D — interactive editor).
 

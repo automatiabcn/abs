@@ -17,6 +17,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from app.actions import list_actions
 from app.api.v1.deps import AuthContext, get_admin_or_bearer_auth_context
 from app.approvals import decide_approval, get_approval, list_approvals
 
@@ -33,6 +34,14 @@ async def list_approval_items(
     auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
 ) -> dict:
     return list_approvals(tenant_slug=_tenant(auth), status=status)
+
+
+@router.get("/outbox")
+async def list_outbox(
+    auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
+) -> dict:
+    """Action executions fired after approvals — the 'onay → aksiyon' trail."""
+    return list_actions(tenant_slug=_tenant(auth))
 
 
 @router.get("/{item_id}")
