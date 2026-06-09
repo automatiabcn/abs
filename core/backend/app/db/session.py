@@ -101,6 +101,7 @@ def init_db() -> None:
     # models'ı import etmek gerekiyor ki SQLModel metadata'sına kaydolsun
     from app.db import models  # noqa: F401
     from app.db import tenant_models  # noqa: F401  # T-009
+    from app.db import growth_models  # noqa: F401  # Agentic Growth domain
     from app.auth.oauth import models as _oauth_models  # noqa: F401  # T-003
 
     SQLModel.metadata.create_all(get_engine())

@@ -1,0 +1,74 @@
+# Copyright (c) 2026 Automatia BCN. All rights reserved.
+# Licensed under the Business Source License 1.1.
+# Production use requires a Commercial License - see LICENSE.
+# Change Date: 2030-05-07 -> Apache License, Version 2.0
+
+"""/v1/approvals — Approval Center API.
+
+Lists the risky agent actions awaiting human approval (with each agent's
+rationale + evidence + risk + consent + policy result) and records the
+reviewer's decision. Tenant from the authenticated principal only.
+"""
+
+from __future__ import annotations
+
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+
+from app.api.v1.deps import AuthContext, get_admin_or_bearer_auth_context
+from app.approvals import decide_approval, get_approval, list_approvals
+
+router = APIRouter(prefix="/v1/approvals", tags=["approvals"])
+
+
+def _tenant(auth: AuthContext) -> str:
+    return (auth.tenant_id or "default").strip() or "default"
+
+
+@router.get("")
+async def list_approval_items(
+    status: str = "pending",
+    auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
+) -> dict:
+    return list_approvals(tenant_slug=_tenant(auth), status=status)
+
+
+@router.get("/{item_id}")
+async def get_approval_item(
+    item_id: int,
+    auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
+) -> dict:
+    row = get_approval(tenant_slug=_tenant(auth), item_id=item_id)
+    if row is None:
+        raise HTTPException(404, "approval_not_found")
+    return row
+
+
+class DecisionRequest(BaseModel):
+    decision: str = Field(..., pattern="^(approve|reject|edit)$")
+    note: str = Field(default="", max_length=512)
+    edited_message: str = Field(default="", max_length=8192)
+
+
+@router.post("/{item_id}/decide")
+async def decide_approval_item(
+    item_id: int,
+    body: DecisionRequest,
+    auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
+) -> dict:
+    try:
+        row = decide_approval(
+            tenant_slug=_tenant(auth),
+            item_id=item_id,
+            decision=body.decision,
+            decided_by=auth.subject,
+            note=body.note,
+            edited_message=body.edited_message,
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    if row is None:
+        raise HTTPException(404, "approval_not_found")
+    return row

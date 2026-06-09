@@ -64,6 +64,7 @@ class McpTokenAuthASGI:
 
         ok = False
         reason = "missing_token"
+        mcp_tenant: str | None = None
         if token:
             try:
                 from app.api.mcp_tokens import verify_token
@@ -81,6 +82,7 @@ class McpTokenAuthASGI:
                     from app.mcp.context import set_mcp_caller
 
                     set_mcp_caller(payload.get("tenant"), payload.get("actor"))
+                    mcp_tenant = str(payload.get("tenant") or "").strip() or None
                     ok = True
             except Exception as exc:  # HTTPException(401) or any decode error
                 reason = getattr(exc, "detail", None) or "invalid_token"
@@ -103,4 +105,18 @@ class McpTokenAuthASGI:
             await response(scope, receive, send)
             return
 
-        await self.app(scope, receive, send)
+        # Sprint 2L — bridge the MCP caller's tenant into the RLS ContextVar so
+        # the Postgres RLS policies scope every DB access a tool makes. HTTP
+        # routes get this from TenantContextMiddleware; the /mcp transport is a
+        # mounted sub-app authenticated by an ``abs_mcp_`` token (not an OAuth
+        # JWT the HTTP middleware can read), so the same ContextVar is pinned
+        # here instead. Reset on the way out so a reused context cannot bleed
+        # the slug into a later call. Inert on SQLite (listener no-ops).
+        from app.db.session import current_tenant
+
+        cv_token = current_tenant.set(mcp_tenant) if mcp_tenant else None
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            if cv_token is not None:
+                current_tenant.reset(cv_token)
