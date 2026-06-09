@@ -95,6 +95,15 @@ jobs:
             GRANT SELECT, INSERT, UPDATE, DELETE
               ON ALL TABLES IN SCHEMA public TO abs_app_rls;
             GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO abs_app_rls;
+            -- The RLS test modules downgrade to 0018 then re-upgrade to head
+            -- between modules, RECREATING the 0019-0026 tables/sequences. The
+            -- one-time grants above don't cover objects created afterwards, so
+            -- abs_app (the alembic owner) must default-grant future objects too
+            -- — else a recreated table/sequence is 'permission denied'.
+            ALTER DEFAULT PRIVILEGES FOR ROLE abs_app IN SCHEMA public
+              GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO abs_app_rls;
+            ALTER DEFAULT PRIVILEGES FOR ROLE abs_app IN SCHEMA public
+              GRANT USAGE, SELECT ON SEQUENCES TO abs_app_rls;
           "
       - name: Run postgres_only suite
         env:
