@@ -1,0 +1,26 @@
+# Optional GitHub-native deploy to digisfer — runs on a SELF-HOSTED runner that
+# lives on the EC2 box, so there is NO inbound SSH and port 22 stays closed
+# (the runner connects OUT to GitHub over 443). Primary auto-CD is Jenkins
+# (infra/jenkins/Jenkinsfile); this is a manual fallback that runs the SAME
+# deploy script, so the two never diverge.
+#
+# To enable: register a self-hosted runner on the box with the label `digisfer`
+# (Settings → Actions → Runners). No repo secrets needed — the deploy runs
+# locally on the box. If no such runner is registered, simply don't use this.
+name: Deploy digisfer (self-hosted)
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-digisfer
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, digisfer]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy (backup → pull → build → health)
+        run: bash infra/scripts/deploy_digisfer.sh

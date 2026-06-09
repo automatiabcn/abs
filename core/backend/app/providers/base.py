@@ -45,6 +45,7 @@ async def openai_compatible_chat(
     temperature: float = 0.3,
     timeout: float = 30.0,
     extra_headers: Optional[Dict[str, str]] = None,
+    response_format: Optional[dict] = None,
 ) -> ProviderResponse:
     """OpenAI uyumlu /chat/completions endpoint'i için ortak çağrı.
 
@@ -68,6 +69,10 @@ async def openai_compatible_chat(
         "max_tokens": max_tokens,
         "temperature": temperature,
     }
+    # Optional structured-output enforcement (OpenAI/Groq json_object mode).
+    # Default None → body unchanged, so existing chat/qual callers are unaffected.
+    if response_format:
+        body["response_format"] = response_format
 
     start = time.monotonic()
     try:

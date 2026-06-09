@@ -13,7 +13,7 @@ steps and gets the table via SQLModel ``create_all``.
 
 Chains off 0018 (the deployed digisfer head) as a self-contained change — the
 RLS-extension and agentic-growth migrations are separate workstreams that are
-not part of this deployment.
+not part of this deployment. They converge again at the 0025 merge.
 """
 
 from __future__ import annotations

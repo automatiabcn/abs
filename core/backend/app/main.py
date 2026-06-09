@@ -14,6 +14,15 @@ from fastapi.staticfiles import StaticFiles
 from app.api import auth as auth_router
 from app.api.v1.projects import router as v1_projects_router
 from app.api.v1.rag import router as v1_rag_router
+from app.api.v1.agents import router as v1_agents_router  # Agentic core
+from app.api.v1.approvals import router as v1_approvals_router  # Approval Center
+from app.api.v1.inbound import router as v1_inbound_router  # MVP: Inbound + Knowledge
+from app.api.v1.dashboard import router as v1_dashboard_router  # Growth Dashboard
+from app.api.v1.leads import router as v1_leads_router  # Lead Intelligence
+from app.api.v1.context_graph import router as v1_context_graph_router  # Context Graph + ER
+from app.api.v1.connectors import router as v1_connectors_router  # Connector Marketplace
+from app.api.v1.agentic_workflows import router as v1_agentic_wf_router  # Workflow Designer
+from app.api.v1.consent import router as v1_consent_router  # Consent Ledger
 from app.auth.oauth.routes import router as oauth_router
 from app.api import beta_admin as beta_admin_router
 from app.api import beta_portal as beta_portal_router
@@ -95,6 +104,21 @@ async def lifespan(_app: FastAPI):
 
     init_db()
     _lf_logger = logging.getLogger("app.lifespan")
+
+    # Agentic Growth — seed the demo dataset so every Growth screen renders the
+    # populated mockup experience. Demo-mode only (never touches a real tenant's
+    # data) and idempotent. Best-effort: a seed failure must not block boot.
+    from app.config import settings as _seed_settings
+
+    if getattr(_seed_settings, "demo_mode", False):
+        try:
+            from app.growth_seed import seed_growth_demo
+
+            _seed = seed_growth_demo("default")
+            if not _seed.get("skipped"):
+                _lf_logger.info("growth demo seeded: %s", _seed)
+        except Exception as exc:
+            _lf_logger.warning("growth demo seed skipped: %s", exc)
 
     # Sprint 2E ITEM-A — install secret-bearing query-param sanitizer on
     # httpx / uvicorn-access loggers so a regression elsewhere can't re-leak
@@ -359,6 +383,15 @@ app.add_middleware(DemoModeMiddleware)
 from app.middleware.body_size_limit import install_body_size_limit
 
 install_body_size_limit(app)
+# Sprint 2L — pin the request's tenant to the RLS ContextVar so the Postgres
+# RLS policies (0015 audit tables + 0019 tenant tables) actually engage in the
+# live request path. Sprint 2K shipped the policies + GUC listener but never
+# attached a populator, so the GUC stayed unset outside the postgres_only
+# tests. Pure-ASGI so the ContextVar reaches the endpoint + DB session listener;
+# inert on SQLite (no RLS engine). Best-effort + fail-open.
+from app.middleware.tenant_context import install_tenant_context
+
+install_tenant_context(app)
 # Q12-L23 — outermost so request_id is set before all other middleware run.
 # Starlette wraps LIFO: the last add_middleware call is the outermost.
 app.add_middleware(RequestIDMiddleware)
@@ -368,6 +401,15 @@ app.include_router(auth_router.claim_v1_router)  # /v1/auth/magic-claim (SPA /ac
 app.include_router(oauth_router)  # T-003 — OAuth 2.1 + PKCE + JWKS
 app.include_router(v1_projects_router)  # T-005 — MCP gateway v1
 app.include_router(v1_rag_router)       # T-011 — RAG ingest/query
+app.include_router(v1_agents_router)    # Agentic Growth — Agent Registry + Runtime
+app.include_router(v1_approvals_router) # Agentic Growth — Approval Center
+app.include_router(v1_inbound_router)   # Agentic Growth — Inbound + Knowledge MVP
+app.include_router(v1_dashboard_router) # Agentic Growth — Growth Dashboard
+app.include_router(v1_leads_router)     # Agentic Growth — Lead Intelligence
+app.include_router(v1_context_graph_router)  # Agentic Growth — Context Graph + ER
+app.include_router(v1_connectors_router)     # Agentic Growth — Connector Marketplace
+app.include_router(v1_agentic_wf_router)      # Agentic Growth — Workflow Designer
+app.include_router(v1_consent_router)         # Agentic Growth — Consent Ledger
 app.include_router(admin_auth_router.router)
 app.include_router(admin_dashboard_router.router)
 app.include_router(admin_analytics_router.router)

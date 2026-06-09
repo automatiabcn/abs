@@ -316,6 +316,23 @@ export default function RagPage() {
         })}
       </section>
 
+      {/* RAG quality gates (mockup 06 — RAGAS-style; demo/configured values). */}
+      <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {[
+          { label: "Faithfulness", value: "0.91", hint: "RAGAS CI gate · eşik 0.85" },
+          { label: "Citation correctness", value: "96%", hint: "her cevap kaynak gösterir" },
+          { label: "Hallucination", value: "2.1%", hint: "guard · 3 revize" },
+        ].map((s) => (
+          <Card key={s.label} className="bg-card/60">
+            <CardContent className="py-3">
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
+              <div className="mt-0.5 font-mono text-xl font-semibold">{s.value}</div>
+              <div className="mt-0.5 text-[10px] text-muted-foreground">{s.hint}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* ─── Ingest panel ────────────────────────────── */}
         <Card className="bg-card/70">
@@ -558,6 +575,40 @@ export default function RagPage() {
                 ))}
               </ul>
             ) : null}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Ingestion sources · Pipeline · Security (mockup 06) ── */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="bg-card/60">
+          <CardHeader className="pb-2"><CardTitle className="text-base">↓ İngestion Kaynakları</CardTitle></CardHeader>
+          <CardContent className="space-y-1.5 text-[12px] text-muted-foreground">
+            {[
+              "Manual upload · Drive · SharePoint", "Website crawler (ToS-güvenli)",
+              "CRM notes · Support tickets", "Call transcripts · Meeting notes",
+              "Email threads · Notion · Confluence", "ERP product catalog · Proposal archive",
+            ].map((s) => (<div key={s} className="flex items-start gap-2"><span className="text-emerald-400">✓</span><span>{s}</span></div>))}
+          </CardContent>
+        </Card>
+        <Card className="bg-card/60">
+          <CardHeader className="pb-2"><CardTitle className="text-base">⚙ Pipeline</CardTitle></CardHeader>
+          <CardContent>
+            <ol className="space-y-1.5 text-[12px] text-muted-foreground">
+              {[
+                "Extract (PDF/Word/Excel/HTML)", "Clean + PII detection + dil tespit",
+                "Chunk (400c) + contextual prefix", "Embed (BGE-M3 GPU) + keyword index",
+                "Graph linking + entity tag", "Quality validation + publish",
+              ].map((s, i) => (<li key={s} className="flex gap-2"><span className="font-mono text-primary">{i + 1}</span><span>{s}</span></li>))}
+            </ol>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/60">
+          <CardHeader className="pb-2"><CardTitle className="text-base">⛨ RAG Güvenlik</CardTitle></CardHeader>
+          <CardContent>
+            <p className="text-[12px] leading-relaxed text-muted-foreground">
+              tenant + role + department + sensitivity + PII + agent-allowed-source kontrolü → agentin görmemesi gereken doküman sonuca girmez.
+            </p>
           </CardContent>
         </Card>
       </div>

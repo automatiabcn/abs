@@ -1,0 +1,50 @@
+// Jenkins CD for digisfer (AWS EC2 · docker-compose · SQLite).
+//
+// Why Jenkins here: the agent runs ON the box / inside the VPC, so the deploy
+// needs NO inbound SSH — port 22 stays closed. (A GitHub-hosted runner would
+// force opening 22 to dynamic IPs; a self-hosted runner or Jenkins avoids that.)
+//
+// The deploy logic lives in infra/scripts/deploy_digisfer.sh so Jenkins, a
+// GitHub self-hosted runner and SSM all run the exact same steps. Point a
+// Jenkins Pipeline job at this file (SCM: github.com/automatiabcn/abs, main).
+//
+// Trigger: GitHub push webhook (githubPush) or SCM polling — whichever the box
+// networking allows. Concurrency disabled so two deploys never overlap.
+//
+// Box prerequisites: the Jenkins agent user has passwordless `sudo git` (or owns
+// /opt/abs) and is in the `docker` group.
+pipeline {
+  agent any
+
+  options {
+    disableConcurrentBuilds()
+    timeout(time: 20, unit: 'MINUTES')
+  }
+
+  triggers {
+    githubPush()
+    // Fallback if no inbound webhook: poll every 3 min.
+    // pollSCM('H/3 * * * *')
+  }
+
+  stages {
+    stage('Deploy digisfer') {
+      when { branch 'main' }
+      steps {
+        // Runs the workspace copy; the script itself targets /opt/abs (the live
+        // install) — so a first-time box without the script still deploys.
+        sh 'bash infra/scripts/deploy_digisfer.sh'
+      }
+    }
+  }
+
+  post {
+    success { echo 'digisfer deploy OK' }
+    failure {
+      echo 'digisfer deploy FAILED — backend likely still on the previous image.'
+      echo 'Rollback: restore the latest /opt/abs/backups/abs.<ts>.db into the'
+      echo 'infra_abs-data volume, `git reset --hard` to the prior commit, then'
+      echo '`docker compose -f infra/docker-compose.yml up -d --build`.'
+    }
+  }
+}

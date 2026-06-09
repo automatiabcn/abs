@@ -34,4 +34,5 @@ class GroqProvider(BaseProvider):
             max_tokens=kwargs.get("max_tokens", 1024),
             temperature=kwargs.get("temperature", 0.3),
             timeout=kwargs.get("timeout", 30.0),
+            response_format=kwargs.get("response_format"),
         )
