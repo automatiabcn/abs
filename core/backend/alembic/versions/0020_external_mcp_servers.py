@@ -1,18 +1,19 @@
 """External MCP federation — external_mcp_servers table (+ RLS).
 
 Revision ID: 0020_external_mcp
-Revises: 0019_rls_tenant_tables
+Revises: 0018_project_slug_per_tenant
 Create Date: 2026-06-08
 
 A tenant registers a third-party MCP server (GitHub / Slack / their own) from
 the panel; ABS connects to it as an MCP *client* and federates its tools. The
 ``encrypted_auth`` column holds a Fernet ciphertext of the bearer/header value
-(app.multitenant.crypto) — never the plaintext. Tenant-scoped; RLS like
-0019-0024. SQLite (digisfer self-host + the test lane) no-ops the RLS steps and
-gets the table via SQLModel ``create_all``.
+(app.multitenant.crypto) — never the plaintext. Tenant-scoped; RLS like the
+audit-table policies. SQLite (digisfer self-host + the test lane) no-ops the RLS
+steps and gets the table via SQLModel ``create_all``.
 
-Chains off 0019 (the deployed digisfer head) — NOT the agentic-growth line —
-so it can ship to digisfer as an independent change.
+Chains off 0018 (the deployed digisfer head) as a self-contained change — the
+RLS-extension and agentic-growth migrations are separate workstreams that are
+not part of this deployment. They converge again at the 0025 merge.
 """
 
 from __future__ import annotations
@@ -24,7 +25,7 @@ from alembic import op
 
 
 revision: str = "0020_external_mcp"
-down_revision: Union[str, None] = "0019_rls_tenant_tables"
+down_revision: Union[str, None] = "0018_project_slug_per_tenant"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
