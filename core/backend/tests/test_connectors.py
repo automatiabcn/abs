@@ -54,3 +54,20 @@ async def test_connect_disconnect_per_tenant() -> None:
 async def test_unknown_connector() -> None:
     assert await connect(tenant_slug="tC", connector_id="nope") is None
     assert disconnect(tenant_slug="tC", connector_id="nope") is None
+
+
+async def test_csv_import_dedups_within_file() -> None:
+    from app.connectors.adapters.csv_import import CsvImportAdapter
+
+    adp = CsvImportAdapter()
+    csv = "company,score\nAkme A.Ş.,0.8\nAkme A.Ş.,0.9\nBeta Ltd,0.4"
+    res = await adp.sync("tCsv", {"format": "csv", "data": csv})
+    assert res.companies == 2          # 'Akme' deduped despite two rows
+    assert res.leads == 2
+
+
+def test_csv_import_caps_rows() -> None:
+    from app.connectors.adapters.csv_import import _MAX_ROWS, _parse_rows
+
+    big = "company\n" + "\n".join(f"Firma {i}" for i in range(_MAX_ROWS + 50))
+    assert len(_parse_rows(big, "csv")) == _MAX_ROWS

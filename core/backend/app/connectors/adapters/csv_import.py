@@ -42,6 +42,10 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+# Safety bound on a single manual upload (the imported count is surfaced).
+_MAX_ROWS = 5000
+
+
 def _norm(s: str) -> str:
     return (s or "").strip().lower()
 
@@ -66,6 +70,8 @@ def _parse_rows(data: str, fmt: str) -> list[dict]:
                 canon[ck] = str(v).strip()
         if canon.get("company"):
             out.append(canon)
+        if len(out) >= _MAX_ROWS:           # bound a single upload
+            break
     return out
 
 
@@ -115,13 +121,15 @@ class CsvImportAdapter(ConnectorAdapter):
             res.error = f"ayrıştırılamadı: {str(exc)[:160]}"
             return res
         with Session(get_engine()) as db:
+            # Build the case-insensitive name→Company index ONCE (not per row) and
+            # keep it current as we insert — dedup stays O(n) over the upload.
+            by_name = {
+                _norm(c.name): c
+                for c in db.exec(select(Company).where(Company.tenant_slug == tenant_slug)).all()
+            }
             for row in rows:
                 cname = row["company"][:256]
-                # dedup company by case-insensitive name within tenant
-                existing = db.exec(
-                    select(Company).where(Company.tenant_slug == tenant_slug)
-                ).all()
-                company = next((c for c in existing if _norm(c.name) == _norm(cname)), None)
+                company = by_name.get(_norm(cname))
                 if company is None:
                     company = Company(
                         tenant_slug=tenant_slug, name=cname,
@@ -131,6 +139,7 @@ class CsvImportAdapter(ConnectorAdapter):
                     db.add(company)
                     db.commit()
                     db.refresh(company)
+                    by_name[_norm(cname)] = company    # so later rows dedup too
                     res.companies += 1
                 else:
                     if row.get("sector"):
