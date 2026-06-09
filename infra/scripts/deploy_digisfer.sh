@@ -26,21 +26,27 @@ HEALTH_URL="${ABS_HEALTH_URL:-http://localhost/healthz}"
 
 log() { echo "[deploy-digisfer] $*"; }
 
+# Use sudo only when the agent user can't write the install dir itself. The
+# recommended setup chowns /opt/abs to the Jenkins user → SUDO stays empty (no
+# broad sudo needed); a root-owned dir falls back to passwordless `sudo git`.
+SUDO=""
+[ -w "$INSTALL_DIR" ] || SUDO="sudo"
+
 cd "$INSTALL_DIR"
 
 log "1/4 backup SQLite (abs.db)"
-sudo mkdir -p "$INSTALL_DIR/backups"
+$SUDO mkdir -p "$INSTALL_DIR/backups"
 docker run --rm -v "${DATA_VOLUME}:/d" -v "$INSTALL_DIR/backups:/b" alpine \
   sh -c 'cp -f /d/abs.db /b/abs.$(date +%s).db' || log "backup skipped (db not present yet)"
 # retain the 10 most recent backups
-sudo sh -c "ls -1t '$INSTALL_DIR'/backups/abs.*.db 2>/dev/null | tail -n +11 | xargs -r rm -f" || true
+$SUDO sh -c "ls -1t '$INSTALL_DIR'/backups/abs.*.db 2>/dev/null | tail -n +11 | xargs -r rm -f" || true
 
 log "2/4 update $INSTALL_DIR to origin/$BRANCH (preserve local Caddyfile + .env)"
-sudo git stash push -- infra/Caddyfile 2>/dev/null || true   # box-local domain edit
-sudo git fetch origin "$BRANCH"
-sudo git reset --hard "origin/$BRANCH"
-sudo git stash pop 2>/dev/null || true                       # .env is untracked → untouched
-DEPLOYED="$(sudo git rev-parse --short HEAD)"
+$SUDO git stash push -- infra/Caddyfile 2>/dev/null || true   # box-local domain edit
+$SUDO git fetch origin "$BRANCH"
+$SUDO git reset --hard "origin/$BRANCH"
+$SUDO git stash pop 2>/dev/null || true                       # .env is untracked → untouched
+DEPLOYED="$($SUDO git rev-parse --short HEAD)"
 
 log "3/4 rebuild + restart stack ($DEPLOYED)"
 docker compose -f "$COMPOSE" up -d --build --remove-orphans
