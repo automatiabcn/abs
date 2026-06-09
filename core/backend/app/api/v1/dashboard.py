@@ -28,6 +28,12 @@ from app.approvals.service import list_approvals, recent_agent_runs
 from app.connectors import list_connectors
 from app.db.models import AgentRun
 from app.db.session import get_engine
+from app.growth_metrics import (
+    aeo_from_payload,
+    compute_buying_signals,
+    compute_campaign,
+    compute_crm_health,
+)
 from app.leads import list_leads
 
 router = APIRouter(prefix="/v1/dashboard", tags=["dashboard"])
@@ -82,10 +88,13 @@ async def dashboard(
     hot_accounts = sum(1 for ln in lead_items if ln.get("intent") == "high")
     active_agents = len({a["agent_id"] for a in activity})
 
-    aeo = payloads.get("aeo_visibility", {})
-    campaign = payloads.get("campaign_attribution", {})
-    crm = payloads.get("crm_hygiene", {})
-    signals = payloads.get("buying_signal", {})
+    # Stage F — metrics computed from the real records (move with the data),
+    # except AEO which legitimately needs an external answer-engine probe.
+    with Session(get_engine()) as db:
+        campaign = compute_campaign(db, tenant)
+        crm = compute_crm_health(db, tenant)
+        signals = compute_buying_signals(db, tenant)
+    aeo = aeo_from_payload(payloads.get("aeo_visibility"))
 
     # Connector health = mean of connected states' health (catalog from registry).
     healths = [
@@ -108,26 +117,14 @@ async def dashboard(
         "activity": activity,
         "activity_count": len(activity),
         "buying_signals": {
-            "items": signals.get("signals", []),
-            "signal_types": signals.get("signal_types", 16),
+            "items": signals["signals"],
+            "signal_types": signals["signal_types"],
         },
         "account_priority": lead_items[:6],
-        "aeo": {
-            "visibility_pct": aeo.get("visibility_pct"),
-            "down_categories": aeo.get("down_categories", 0),
-            "categories_total": aeo.get("categories_total", 8),
-        },
-        "campaign": {
-            "attributed_revenue": campaign.get("attributed_revenue"),
-            "currency": campaign.get("currency", "₺"),
-            "top_channel": campaign.get("top_channel", ""),
-            "period": campaign.get("period", ""),
-        },
+        "aeo": aeo,
+        "campaign": campaign,
         "inbound_today": _inbound_today(tenant),
-        "crm_health": {
-            "health_pct": crm.get("health_pct"),
-            "fix_suggestions": crm.get("fix_suggestions", 0),
-        },
+        "crm_health": crm,
         "connectors": {
             "connected": connectors["connected_total"],
             "catalog": connectors["catalog_total"],
