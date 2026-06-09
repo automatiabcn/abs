@@ -129,11 +129,14 @@ def ordered_agent_steps(graph: Dict[str, Any]) -> List[str]:
     by_id = {n.get("id"): n for n in nodes if n.get("id")}
     indeg = {nid: 0 for nid in by_id}
     adj: Dict[str, List[str]] = {nid: [] for nid in by_id}
+    wired: set[str] = set()                 # nodes that touch ≥1 edge
     for e in edges:
         s, t = e.get("source"), e.get("target")
         if s in by_id and t in by_id:
             adj[s].append(t)
             indeg[t] += 1
+            wired.add(s)
+            wired.add(t)
 
     order: List[str] = []
     queue = [nid for nid in by_id if indeg[nid] == 0]
@@ -147,13 +150,13 @@ def ordered_agent_steps(graph: Dict[str, Any]) -> List[str]:
     if len(order) != len(by_id):           # cycle → fall back to insertion order
         order = list(by_id.keys())
 
+    # Only WIRED agent nodes run — a node dropped from the palette but not yet
+    # connected is not part of the flow, so it must not execute.
     steps: List[str] = []
     for nid in order:
         n = by_id[nid]
-        if n.get("kind") == "agent":
-            aid = n.get("agent_id")
-            if aid in AGENTS:
-                steps.append(aid)
+        if n.get("kind") == "agent" and nid in wired and n.get("agent_id") in AGENTS:
+            steps.append(n["agent_id"])
     return steps
 
 

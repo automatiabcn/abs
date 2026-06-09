@@ -76,6 +76,20 @@ def test_ordered_steps_empty_graph():
     assert ordered_agent_steps({"nodes": [], "edges": []}) == []
 
 
+def test_ordered_steps_skips_unwired_agent():
+    a, b = _known_agents(2)
+    graph = {
+        "nodes": [
+            {"id": "t", "kind": "trigger"},
+            {"id": "wired", "kind": "agent", "agent_id": a},
+            {"id": "orphan", "kind": "agent", "agent_id": b},  # no edges
+        ],
+        "edges": [{"source": "t", "target": "wired"}],
+    }
+    # the unwired 'orphan' must not run; only the connected agent does
+    assert ordered_agent_steps(graph) == [a]
+
+
 # ── get / save definition ────────────────────────────────────────────────────
 def test_get_definition_returns_default_when_unsaved():
     out = get_definition(tenant_slug="t_wf_default", key="default")

@@ -41,7 +41,8 @@ const ACTION_STATUS: Record<string, string> = {
   failed: "border-amber-500/40 text-amber-300",
 };
 const STATUS_LABEL: Record<string, string> = {
-  executed: "✓ uygulandı", queued: "✓ kuyruğa alındı", blocked: "⛔ engellendi", failed: "⚠ hata",
+  executed: "✓ uygulandı", queued: "✓ kuyruğa alındı", blocked: "⛔ engellendi",
+  failed: "⚠ hata", rejected: "✕ reddedildi",
 };
 function trTime(iso: string | null): string {
   if (!iso) return "";
@@ -81,7 +82,7 @@ export default function ApprovalCenterPage() {
     });
     const j = await r.json().catch(() => null);
     if (j?.action) setResult({ status: j.action.status, reason: j.action.reason });
-    else if (decision === "reject") setResult({ status: "failed", reason: "reddedildi — aksiyon yok" });
+    else if (decision === "reject") setResult({ status: "rejected", reason: "aksiyon tetiklenmedi" });
     load();
   }
 
@@ -105,7 +106,7 @@ export default function ApprovalCenterPage() {
       </div>
       {err && <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">Yüklenemedi: {err}</div>}
       {result && (
-        <div data-test="action-result" className={`mb-4 flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm ${result.status === "blocked" ? "border-rose-500/40 bg-rose-500/5 text-rose-200" : result.status === "failed" ? "border-amber-500/40 bg-amber-500/5 text-amber-200" : "border-emerald-500/40 bg-emerald-500/5 text-emerald-200"}`}>
+        <div data-test="action-result" className={`mb-4 flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm ${result.status === "blocked" ? "border-rose-500/40 bg-rose-500/5 text-rose-200" : result.status === "failed" ? "border-amber-500/40 bg-amber-500/5 text-amber-200" : result.status === "rejected" ? "border-border bg-muted/20 text-muted-foreground" : "border-emerald-500/40 bg-emerald-500/5 text-emerald-200"}`}>
           <span><b>Aksiyon:</b> {STATUS_LABEL[result.status] ?? result.status} · {result.reason}</span>
           <button onClick={() => setResult(null)} className="text-xs opacity-70 hover:opacity-100">kapat</button>
         </div>

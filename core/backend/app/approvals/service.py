@@ -212,6 +212,7 @@ def decide_approval(
         row = db.get(ApprovalItem, item_id)
         if row is None or row.tenant_slug != tenant_slug:
             return None
+        prev_status = row.status            # to fire the action at most once
         row.status = status
         row.decided_by = decided_by or ""
         row.decided_at = _now()
@@ -223,13 +224,14 @@ def decide_approval(
         db.commit()
         db.refresh(row)
         logger.info(
-            "approval_decision id=%s status=%s by=%s tenant=%s",
-            item_id, status, decided_by, tenant_slug,
+            "approval_decision id=%s status=%s by=%s tenant=%s prev=%s",
+            item_id, status, decided_by, tenant_slug, prev_status,
         )
 
-    # Stage E — approving/editing fires the action (consent-gated outbox).
+    # Stage E — the FIRST approve/edit fires the action (consent-gated outbox);
+    # re-deciding an already-decided item never re-fires it (idempotent).
     action = None
-    if status in ("approved", "edited"):
+    if status in ("approved", "edited") and prev_status == "pending":
         try:
             from app.actions import execute_for_approval
 

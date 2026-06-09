@@ -83,6 +83,29 @@ def test_outbound_blocked_when_recipient_unresolved():
     assert "çözümlenemedi" in out["reason"]
 
 
+# ── idempotency: re-deciding must not re-fire the action ─────────────────────
+def test_decide_fires_action_at_most_once():
+    from app.approvals import decide_approval
+    from app.db.models import ApprovalItem
+
+    t = "t_act_idem"
+    _company_with_contact(t, "Tekrar A.Ş.", "y@tekrar.com")
+    set_consent(tenant_slug=t, contact_email="y@tekrar.com", email_consent=True)
+    with Session(get_engine()) as db:
+        ap = ApprovalItem(tenant_slug=t, agent_id="outbound_draft", action="email gönder",
+                          target_company="Tekrar A.Ş.", channel="email", status="pending")
+        db.add(ap)
+        db.commit()
+        db.refresh(ap)
+        ap_id = ap.id
+
+    d1 = decide_approval(tenant_slug=t, item_id=ap_id, decision="approve", decided_by="u")
+    d2 = decide_approval(tenant_slug=t, item_id=ap_id, decision="approve", decided_by="u")
+    assert d1["action"] is not None        # first decision fires
+    assert d2["action"] is None            # re-decide does not re-fire
+    assert list_actions(tenant_slug=t)["total"] == 1
+
+
 # ── outbox listing ───────────────────────────────────────────────────────────
 def test_list_actions_tallies_by_status():
     t = "t_act_list"
