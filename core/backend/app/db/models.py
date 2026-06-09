@@ -496,6 +496,69 @@ class FailedLoginAttempt(SQLModel, table=True):
     locked_until: Optional[datetime] = Field(default=None, index=True)
 
 
+class AgentRun(SQLModel, table=True):
+    """Agentic Growth — one agent execution (audit + activity feed source).
+
+    Every `run_agent` call is logged here so the dashboard activity feed, the
+    Agent Registry "running" state and the audit trail share one record.
+    Tenant-scoped (RLS-enrolled in 0020).
+    """
+
+    __tablename__ = "agent_runs"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
+    agent_id: str = Field(max_length=64, index=True)
+    task: str = Field(max_length=8000)
+    summary: str = Field(default="", max_length=4096)
+    confidence: float = Field(default=0.0)
+    risk: str = Field(max_length=16, default="low")
+    requires_approval: bool = Field(default=False)
+    provider: str = Field(default="", max_length=64)
+    evidence_json: str = Field(default="[]")
+    payload_json: str = Field(default="{}")
+    elapsed_ms: int = Field(default=0)
+    actor: str = Field(default="", max_length=254)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+
+
+class ApprovalItem(SQLModel, table=True):
+    """Agentic Growth — a risky agent action awaiting human approval.
+
+    Replaces the in-memory ledger (`workflow_v10/approval.py`) for the
+    Approval Center. Carries the agent's rationale + evidence + risk + consent +
+    policy result so the reviewer decides with full context. Tenant-scoped.
+    """
+
+    __tablename__ = "approval_items"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
+    agent_id: str = Field(default="", max_length=64, index=True)
+    agent_run_id: Optional[int] = Field(default=None, index=True)
+    action: str = Field(max_length=1024)
+    target_company: str = Field(default="", max_length=256)
+    target_person: str = Field(default="", max_length=256)
+    channel: str = Field(default="", max_length=64)
+    rationale: str = Field(default="", max_length=4096)
+    evidence_json: str = Field(default="[]")
+    proposed_message: str = Field(default="", max_length=8192)
+    risk: str = Field(default="medium", max_length=16)
+    consent_status: str = Field(default="", max_length=32)
+    policy_result: str = Field(default="requires_approval", max_length=64)
+    # pending | approved | rejected | edited
+    status: str = Field(default="pending", max_length=16, index=True)
+    decided_by: str = Field(default="", max_length=254)
+    decided_at: Optional[datetime] = Field(default=None)
+    outcome: str = Field(default="", max_length=512)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+    escalate_at: Optional[datetime] = Field(default=None)
+
+
 class SavedWorkflow(SQLModel, table=True):
     """A reusable, named workflow definition saved by an operator.
 

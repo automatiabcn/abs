@@ -89,10 +89,21 @@ jobs:
               NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB;
             GRANT CONNECT ON DATABASE abs_rls_test TO abs_app_rls;
             GRANT USAGE ON SCHEMA public TO abs_app_rls;
+            -- The runtime app role legitimately has DML on every table; RLS
+            -- (NOBYPASSRLS) is what isolates tenants. Granting ALL TABLES (vs
+            -- enumerating) keeps this lane correct as 0019 adds RLS tables.
             GRANT SELECT, INSERT, UPDATE, DELETE
-              ON customer_audit_entries, webhook_events, vault_audit_entries
-              TO abs_app_rls;
+              ON ALL TABLES IN SCHEMA public TO abs_app_rls;
             GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO abs_app_rls;
+            -- The RLS test modules downgrade to 0018 then re-upgrade to head
+            -- between modules, RECREATING the 0019-0026 tables/sequences. The
+            -- one-time grants above don't cover objects created afterwards, so
+            -- abs_app (the alembic owner) must default-grant future objects too
+            -- — else a recreated table/sequence is 'permission denied'.
+            ALTER DEFAULT PRIVILEGES FOR ROLE abs_app IN SCHEMA public
+              GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO abs_app_rls;
+            ALTER DEFAULT PRIVILEGES FOR ROLE abs_app IN SCHEMA public
+              GRANT USAGE, SELECT ON SEQUENCES TO abs_app_rls;
           "
       - name: Run postgres_only suite
         env:
@@ -101,4 +112,5 @@ jobs:
         run: |
           pytest -q -m postgres_only \
             tests/integration/test_rls_audit_tables.py \
+            tests/integration/test_rls_tenant_tables.py \
             tests/integration/test_admin_bypass_rls.py

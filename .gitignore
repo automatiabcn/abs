@@ -107,3 +107,12 @@ infra/.cf-deploy-token
 /artifacts/sprint_q6/
 /artifacts/sprint_q7/
 /artifacts/sprint_q9/
+
+# Local-only dev run artifacts (savepoint exclusions — never committed)
+.localrun/
+**/.localrun/
+core/landing/.localrun_frontend.sh
+core/landing/.localrun_*.mjs
+*.bak
+.env.bak.*
+infra/*.bak
