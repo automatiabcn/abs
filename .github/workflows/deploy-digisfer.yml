@@ -1,0 +1,80 @@
+# Auto-deploy to the digisfer customer box (AWS EC2, docker-compose, SQLite).
+#
+# Triggers after the "CI" workflow succeeds on main (so we never ship a red
+# build to a live customer), or manually via the Actions tab. The box builds
+# its images locally — no registry pull. Schema is self-healing on boot
+# (create_all + the SQLite column reconciler), so there is no migration step.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   DIGISFER_SSH_KEY  — the EC2 private key (ABS_Server.pem contents)
+#   DIGISFER_HOST     — 3.72.131.53
+#   DIGISFER_USER     — ubuntu
+name: Deploy digisfer
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-digisfer
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # manual run, or only when CI went green on main
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Guard — secrets present
+        env:
+          HOST: ${{ secrets.DIGISFER_HOST }}
+          KEY: ${{ secrets.DIGISFER_SSH_KEY }}
+        run: |
+          if [ -z "$HOST" ] || [ -z "$KEY" ]; then
+            echo "::error::DIGISFER_HOST / DIGISFER_SSH_KEY not set — add them in repo secrets."
+            exit 1
+          fi
+
+      - name: SSH deploy (pull → build → up → health)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DIGISFER_HOST }}
+          username: ${{ secrets.DIGISFER_USER }}
+          key: ${{ secrets.DIGISFER_SSH_KEY }}
+          command_timeout: 18m
+          script: |
+            set -euo pipefail
+            cd /opt/abs
+
+            echo "== 1/4 backup SQLite (abs.db) =="
+            sudo mkdir -p /opt/abs/backups
+            docker run --rm -v infra_abs-data:/d -v /opt/abs/backups:/b alpine \
+              sh -c 'cp -f /d/abs.db /b/abs.$(date +%s).db' || echo "backup skipped"
+            # keep only the 10 most recent backups
+            sudo sh -c 'ls -1t /opt/abs/backups/abs.*.db 2>/dev/null | tail -n +11 | xargs -r rm -f' || true
+
+            echo "== 2/4 update /opt/abs to origin/main (preserve local Caddyfile + .env) =="
+            sudo git stash push -- infra/Caddyfile 2>/dev/null || true   # box-local domain edit
+            sudo git fetch origin main
+            sudo git reset --hard origin/main
+            sudo git stash pop 2>/dev/null || true                       # .env is untracked → untouched
+
+            echo "== 3/4 rebuild + restart stack =="
+            docker compose -f infra/docker-compose.yml up -d --build --remove-orphans
+
+            echo "== 4/4 health gate (/healthz) =="
+            ok=0
+            for i in $(seq 1 36); do
+              if curl -fsS http://localhost/healthz >/dev/null 2>&1; then ok=1; break; fi
+              sleep 5
+            done
+            if [ "$ok" != "1" ]; then
+              echo "::error::/healthz not reachable after ~3m"
+              docker compose -f infra/docker-compose.yml logs --tail=60 backend || true
+              exit 1
+            fi
+            echo "deploy OK — $(sudo git rev-parse --short HEAD)"
