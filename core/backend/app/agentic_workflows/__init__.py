@@ -10,6 +10,16 @@ agentic path: trigger → agent → agent → … where each step is an Agent Ru
 execution and risky steps open Approval Center items (Workflow Designer screen).
 """
 
-from app.agentic_workflows.service import list_runs, palette, run_workflow
+from app.agentic_workflows.service import (
+    get_definition,
+    list_runs,
+    ordered_agent_steps,
+    palette,
+    run_workflow,
+    save_definition,
+)
 
-__all__ = ["run_workflow", "list_runs", "palette"]
+__all__ = [
+    "run_workflow", "list_runs", "palette",
+    "get_definition", "save_definition", "ordered_agent_steps",
+]

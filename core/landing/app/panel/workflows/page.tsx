@@ -5,28 +5,39 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Agentic Growth — Workflow Designer. Faithful to mockup 03: a spatial node
-// flow canvas (trigger → agent → retrieval → gate → agent → check → pause →
-// action), a run-history table below, and a right rail with the node inspector,
-// node palette and engine capabilities. Header runs the chain. GET palette +
-// agents + runs, POST run.
+// Agentic Growth — Workflow Designer (Stage D: real interactive editor).
+// The canvas is a live xyflow graph: drag nodes, drag handle→handle to wire or
+// rewire, Delete to remove, click an agent node to inspect. "Kaydet" persists
+// the graph (positions + edges); "Çalıştır" saves then runs the agent chain in
+// the graph's topological order. GET/PUT /definition, GET palette/agents/runs,
+// POST run.
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  addEdge,
+  useEdgesState,
+  useNodesState,
+  type Connection,
+  type Edge,
+  type Node,
+} from "@xyflow/react";
+
+import AgenticFlowCanvas, { type FlowNodeData } from "@/components/AgenticFlowCanvas";
 
 type AgentDetail = {
   id: string; name: string; model: string; tools: string[];
   risk: string; output_kind: string; requires_approval: boolean;
 };
-type Palette = { node_kinds: string[] };
+type PaletteAgent = { id: string; name: string; risk: string };
+type Palette = { node_kinds: string[]; agents: Record<string, PaletteAgent[]> };
 type Run = {
   id: number; name: string; trigger: string; status: string;
   step_count: number; approvals_opened: number; elapsed_ms: number; created_at: string | null;
 };
-
-// The canonical demo chain shown in the canvas; the two agent nodes are
-// selectable to drive the inspector.
-const CHAIN = ["inbound_triage", "knowledge_base"];
+type GraphNode = { id: string; kind: string; name: string; desc: string; x: number; y: number; agent_id: string | null };
+type GraphEdge = { source: string; target: string };
+type Definition = { key: string; name: string; graph: { name: string; nodes: GraphNode[]; edges: GraphEdge[] }; ordered_steps: string[] };
 
 const KIND_CHIP: Record<string, string> = {
   trigger: "border-sky-500/40 text-sky-300", agent: "border-primary/50 text-primary",
@@ -35,28 +46,6 @@ const KIND_CHIP: Record<string, string> = {
   action: "border-emerald-500/40 text-emerald-300", branch: "border-border text-muted-foreground",
   sub_workflow: "border-pink-500/40 text-pink-300",
 };
-const NODE_ACCENT: Record<string, string> = {
-  agent: "border-[rgba(58,157,255,.45)] shadow-[0_0_14px_rgba(58,157,255,.12)]",
-  amber: "border-[rgba(210,153,34,.5)]", green: "border-[rgba(63,185,80,.45)]",
-};
-const KIND_TEXT: Record<string, string> = { amber: "text-amber-300", green: "text-emerald-300" };
-
-function FlowNode({ left, top, kind, name, desc, accent, active, onClick }: {
-  left: number; top: number; kind: string; name: string; desc: string;
-  accent?: string; active?: boolean; onClick?: () => void;
-}) {
-  return (
-    <div
-      onClick={onClick}
-      className={`absolute w-[140px] rounded-[10px] border bg-[#131920] px-3 py-2.5 ${accent ? NODE_ACCENT[accent] : "border-border"} ${onClick ? "cursor-pointer" : ""} ${active ? "ring-2 ring-primary/60" : ""}`}
-      style={{ left, top }}
-    >
-      <div className={`font-mono text-[9px] uppercase tracking-wider ${accent ? KIND_TEXT[accent] ?? "text-sky-300/80" : "text-muted-foreground"}`}>{kind}</div>
-      <div className="mt-0.5 text-[12px] font-semibold">{name}</div>
-      <div className="text-[10px] text-muted-foreground">{desc}</div>
-    </div>
-  );
-}
 
 const ENGINE = [
   "State checkpoint (SQLite)", "Retry + timeout + compensation",
@@ -64,18 +53,40 @@ const ENGINE = [
   "LangGraph (multi-agent) · gerektiğinde",
 ];
 
+const KIND_LABEL: Record<string, string> = {
+  trigger: "Tetikleyici", retrieval: "RAG/Graph", connector: "Connector",
+  policy: "Policy Gate", approval: "Onay Geçidi", action: "Aksiyon",
+  branch: "Dallanma", sub_workflow: "Alt-akış",
+};
+
+function toFlowNodes(g: Definition["graph"]): Node<FlowNodeData>[] {
+  return g.nodes.map((n) => ({
+    id: n.id, type: "agentic", position: { x: n.x, y: n.y },
+    data: { kind: n.kind, name: n.name, desc: n.desc, agent_id: n.agent_id },
+  }));
+}
+function toFlowEdges(g: Definition["graph"]): Edge[] {
+  return g.edges.map((e) => ({ id: `e-${e.source}-${e.target}`, source: e.source, target: e.target }));
+}
+
 export default function WorkflowDesignerPage() {
   const [agents, setAgents] = useState<Record<string, AgentDetail>>({});
   const [palette, setPalette] = useState<Palette | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
-  const [selected, setSelected] = useState<string>("knowledge_base");
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowNodeData>>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [name, setName] = useState("Inbound → Cevap Taslağı");
   const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const idc = useRef(0);
 
   const loadRuns = useCallback(() => {
     fetch("/v1/agentic-workflows/runs", { credentials: "include", cache: "no-store" })
       .then((r) => r.json()).then((j: { runs: Run[] }) => setRuns(j.runs)).catch(() => {});
   }, []);
+
   useEffect(() => {
     fetch("/v1/agents", { credentials: "include", cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
@@ -86,58 +97,111 @@ export default function WorkflowDesignerPage() {
       }).catch((e) => setErr(String(e)));
     fetch("/v1/agentic-workflows/palette", { credentials: "include", cache: "no-store" })
       .then((r) => r.json()).then((j: Palette) => setPalette(j)).catch(() => {});
+    fetch("/v1/agentic-workflows/definition", { credentials: "include", cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d: Definition) => {
+        setName(d.graph.name || d.name);
+        setNodes(toFlowNodes(d.graph));
+        setEdges(toFlowEdges(d.graph));
+        const firstAgent = d.graph.nodes.find((n) => n.kind === "agent");
+        setSelected(firstAgent?.id ?? null);
+      }).catch((e) => setErr(String(e)));
     loadRuns();
-  }, [loadRuns]);
+  }, [loadRuns, setNodes, setEdges]);
 
-  const agentName = (id: string) => agents[id]?.name ?? id;
-  const sel = agents[selected];
+  const onConnect = useCallback((c: Connection) => {
+    setEdges((eds) => addEdge({ ...c, id: `e-${c.source}-${c.target}` }, eds));
+    setSaved(null);
+  }, [setEdges]);
+
+  const onNodeClick = useCallback((id: string) => setSelected(id), []);
+
+  function addNode(kind: string, agent_id: string | null, label: string, desc: string) {
+    const id = `${kind}-${(idc.current += 1)}`;
+    setNodes((nds) => nds.concat({
+      id, type: "agentic",
+      position: { x: 120 + (nds.length % 4) * 30, y: 360 + (nds.length % 3) * 20 },
+      data: { kind, name: label, desc, agent_id },
+    }));
+    setSelected(agent_id ? id : selected);
+    setSaved(null);
+  }
+
+  function currentGraph() {
+    return {
+      name,
+      nodes: nodes.map((n) => ({
+        id: n.id, kind: n.data.kind, name: n.data.name, desc: n.data.desc,
+        x: Math.round(n.position.x), y: Math.round(n.position.y), agent_id: n.data.agent_id,
+      })),
+      edges: edges.map((e) => ({ source: e.source, target: e.target })),
+    };
+  }
+
+  async function save(): Promise<string[]> {
+    const r = await fetch("/v1/agentic-workflows/definition", {
+      method: "PUT", credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ key: "default", name, graph: currentGraph() }),
+    });
+    const j = await r.json();
+    setSaved(`${j.node_count} node · ${j.edge_count} bağlantı kaydedildi`);
+    return j.ordered_steps ?? [];
+  }
+
+  async function onSave() {
+    setBusy(true);
+    try { await save(); } finally { setBusy(false); }
+  }
 
   async function run() {
-    setBusy(true);
+    setBusy(true); setErr(null);
     try {
+      const steps = await save();
+      if (steps.length === 0) { setErr("Çalıştırılacak agent node yok — palette'ten bir agent ekleyin."); return; }
       await fetch("/v1/agentic-workflows/run", {
         method: "POST", credentials: "include",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: "Inbound → Cevap Taslağı", steps: CHAIN, input: "Fiyat öğrenmek istiyorum", trigger: "web form" }),
+        body: JSON.stringify({ name, steps, input: "Fiyat öğrenmek istiyorum", trigger: "web form" }),
       });
       loadRuns();
     } finally { setBusy(false); }
   }
 
+  const flowNodes = nodes.map((n) => ({ ...n, selected: n.id === selected }));
+  const sel = selected ? agents[nodes.find((n) => n.id === selected)?.data.agent_id ?? ""] : undefined;
+  const selNode = nodes.find((n) => n.id === selected);
+
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-8">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Workflow Designer · <span className="text-muted-foreground">&quot;Inbound → Cevap Taslağı&quot;</span></h1>
-          <p className="mt-1 text-[12px] text-muted-foreground">event-triggered · human-approval-pause · state + retry + rollback</p>
+          <h1 className="text-xl font-semibold tracking-tight">Workflow Designer · <span className="text-muted-foreground">&quot;{name}&quot;</span></h1>
+          <p className="mt-1 text-[12px] text-muted-foreground">interaktif · sürükle-bağla · event-triggered · human-approval-pause · state + retry + rollback</p>
         </div>
-        <button onClick={run} disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow disabled:opacity-50">{busy ? "Çalışıyor…" : "▶ Çalıştır"}</button>
+        <div className="flex items-center gap-2">
+          {saved && <span className="text-[11px] text-emerald-300/80">✓ {saved}</span>}
+          <button onClick={onSave} disabled={busy} className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50" data-test="wf-save">Kaydet</button>
+          <button onClick={run} disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow disabled:opacity-50" data-test="wf-run">{busy ? "Çalışıyor…" : "▶ Çalıştır"}</button>
+        </div>
       </div>
-      {err && <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">Yüklenemedi: {err}</div>}
+      {err && <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">{err}</div>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* ── Main: canvas + run history ─────────── */}
+        {/* ── Main: interactive canvas + run history ─────────── */}
         <div className="space-y-6 lg:col-span-2">
           <div className="rounded-xl border bg-card/60 p-4">
-            <div className="overflow-x-auto">
-              <div className="relative h-[300px] min-w-[800px] rounded-xl border"
-                style={{ background: "radial-gradient(circle at 30% 20%, rgba(58,157,255,.06), transparent 60%)" }}>
-                <svg className="pointer-events-none absolute inset-0 h-full w-full" style={{ overflow: "visible" }}>
-                  <defs><linearGradient id="wfe" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#1e57ac" /><stop offset="100%" stopColor="#3a9dff" /></linearGradient></defs>
-                  {[[146,145,162,143],[302,143,320,113],[302,143,320,233],[460,113,478,123],[460,233,478,235],[618,123,636,123],[618,235,636,235]].map(([x1,y1,x2,y2],i)=>(
-                    <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="url(#wfe)" strokeWidth={2} opacity={0.55} />
-                  ))}
-                </svg>
-                <FlowNode left={6} top={118} kind="Trigger" name="Inbound talep" desc="form · email · WhatsApp" />
-                <FlowNode left={162} top={116} kind="⚡ Agent" name={agentName("inbound_triage")} desc="intent sınıflandırma" accent="agent" active={selected === "inbound_triage"} onClick={() => setSelected("inbound_triage")} />
-                <FlowNode left={320} top={86} kind="Retrieval" name="RAG + Graph" desc="hybrid · cite" />
-                <FlowNode left={320} top={206} kind="Gate" name="Policy Engine" desc="Cerbos · risk" />
-                <FlowNode left={478} top={96} kind="⚡ Agent" name={agentName("knowledge_base")} desc="kaynak-gösteren taslak" accent="agent" active={selected === "knowledge_base"} onClick={() => setSelected("knowledge_base")} />
-                <FlowNode left={478} top={208} kind="Check" name="Consent Ledger" desc="kanal izni" />
-                <FlowNode left={636} top={96} kind="⏸ Human Pause" name="Approval Gate" desc="orta-risk → onay" accent="amber" />
-                <FlowNode left={636} top={208} kind="Action" name="CRM Note + Route" desc="yönlendir" accent="green" />
-              </div>
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-sm font-semibold">◆ Canvas <span className="font-normal text-muted-foreground">· sürükle · handle&apos;dan handle&apos;a bağla · Delete ile sil</span></div>
             </div>
+            <AgenticFlowCanvas
+              nodes={flowNodes}
+              edges={edges}
+              onNodesChange={(c) => { onNodesChange(c); if (c.some((x) => x.type === "position" || x.type === "remove")) setSaved(null); }}
+              onEdgesChange={(c) => { onEdgesChange(c); if (c.some((x) => x.type === "remove")) setSaved(null); }}
+              onConnect={onConnect}
+              onNodeClick={onNodeClick}
+            />
           </div>
 
           <div className="rounded-xl border bg-card/60 p-4">
@@ -168,29 +232,45 @@ export default function WorkflowDesignerPage() {
         {/* ── Right rail: inspector + palette + engine ── */}
         <div className="space-y-6">
           <div className="rounded-xl border bg-card/60 p-4" style={{ boxShadow: "inset 0 2px 0 0 rgba(58,157,255,.5)" }}>
-            <div className="mb-3 text-sm font-semibold">⚡ Node: {sel?.name ?? selected}</div>
-            <div className="space-y-0 text-[12px]">
-              {[
-                ["Tür", "Agent step"],
-                ["Model", sel?.model ?? "—"],
-                ["Allowed tools", (sel?.tools ?? []).join(" · ") || "—"],
-                ["Output schema", sel?.output_kind ?? "—"],
-                ["Risk", sel?.risk ?? "—"],
-                ["Onay kuralı", sel?.requires_approval ? "gönderim öncesi" : "otomatik"],
-              ].map(([k, v]) => (
-                <div key={k} className="flex justify-between border-b border-border py-1.5 last:border-0">
-                  <span className="text-muted-foreground">{k}</span><span className="font-mono text-right">{v}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 text-[10px] text-muted-foreground">Canvas&apos;ta bir agent node&apos;una tıklayın</div>
+            <div className="mb-3 text-sm font-semibold">⚡ Node: {selNode?.data.name ?? "—"}</div>
+            {selNode?.data.kind === "agent" && sel ? (
+              <div className="space-y-0 text-[12px]">
+                {[
+                  ["Tür", "Agent step"],
+                  ["Model", sel.model || "—"],
+                  ["Allowed tools", (sel.tools ?? []).join(" · ") || "—"],
+                  ["Output schema", sel.output_kind || "—"],
+                  ["Risk", sel.risk || "—"],
+                  ["Onay kuralı", sel.requires_approval ? "gönderim öncesi" : "otomatik"],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex justify-between border-b border-border py-1.5 last:border-0">
+                    <span className="text-muted-foreground">{k}</span><span className="font-mono text-right">{v}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-[11px] text-muted-foreground">
+                {selNode ? `${KIND_LABEL[selNode.data.kind] ?? selNode.data.kind} node — ${selNode.data.desc}` : "Canvas'ta bir node'a tıklayın."}
+              </div>
+            )}
           </div>
 
           <div className="rounded-xl border bg-card/60 p-4">
-            <div className="mb-3 text-sm font-semibold">⊞ Node Paleti</div>
+            <div className="mb-2 text-sm font-semibold">⊞ Node Ekle</div>
+            <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Yapı</div>
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {(palette?.node_kinds ?? []).filter((k) => k !== "agent").map((k) => (
+                <button key={k} onClick={() => addNode(k, null, KIND_LABEL[k] ?? k, "")}
+                  className={`rounded-md border px-2 py-1 text-[11px] capitalize hover:bg-muted/40 ${KIND_CHIP[k] ?? "border-border text-muted-foreground"}`}
+                  data-test={`palette-${k}`}>+ {k.replace("_", "-")}</button>
+              ))}
+            </div>
+            <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Agent</div>
             <div className="flex flex-wrap gap-1.5">
-              {(palette?.node_kinds ?? []).map((k) => (
-                <span key={k} className={`rounded-md border px-2 py-1 text-[11px] capitalize ${KIND_CHIP[k] ?? "border-border text-muted-foreground"}`}>{k.replace("_", "-")}</span>
+              {Object.values(palette?.agents ?? {}).flat().slice(0, 10).map((a) => (
+                <button key={a.id} onClick={() => addNode("agent", a.id, a.name, a.risk + " risk")}
+                  className="rounded-md border border-primary/40 px-2 py-1 text-[11px] text-primary hover:bg-primary/10"
+                  data-test={`palette-agent-${a.id}`}>+ {a.name}</button>
               ))}
             </div>
           </div>

@@ -151,6 +151,24 @@ class ConnectorState(SQLModel, table=True):
     last_error: Optional[str] = Field(default=None, max_length=512)
 
 
+class AgenticWorkflowDef(SQLModel, table=True):
+    """Saved Workflow Designer graph (Stage D — interactive editor).
+
+    One canonical graph per (tenant, key). ``graph_json`` holds the node list
+    (id/kind/name/desc/x/y/agent_id) plus the edge list (source/target), so the
+    designer's drag-reposition, rewire and palette-add all persist. The run
+    order is derived from this graph (topological over the agent nodes)."""
+
+    __tablename__ = "agentic_workflow_defs"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
+    key: str = Field(max_length=64, default="default", index=True)
+    name: str = Field(default="", max_length=200)
+    graph_json: str = Field(default="{}")           # {nodes:[...], edges:[...]}
+    updated_at: datetime = Field(default_factory=_now)
+
+
 class Opportunity(SQLModel, table=True):
     """A revenue opportunity (CRM/ERP-mirrored) for campaign attribution."""
 

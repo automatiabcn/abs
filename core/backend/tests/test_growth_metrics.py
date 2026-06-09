@@ -69,9 +69,10 @@ def test_crm_health_counts_missing_fields():
 
 # ── Campaign attribution ─────────────────────────────────────────────────────
 def test_campaign_none_when_no_opportunities():
-    out_db = compute_campaign(Session(get_engine()), "t_camp_empty")
-    assert out_db["attributed_revenue"] is None
-    assert out_db["top_channel"] == ""
+    with Session(get_engine()) as db:
+        out = compute_campaign(db, "t_camp_empty")
+    assert out["attributed_revenue"] is None
+    assert out["top_channel"] == ""
 
 
 def test_campaign_sums_attributed_and_picks_top_channel():
