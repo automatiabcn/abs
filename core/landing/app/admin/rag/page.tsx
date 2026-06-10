@@ -333,6 +333,98 @@ export default function RagPage() {
         ))}
       </section>
 
+      {/* ── Doküman Lifecycle (mockup 06) — versioning · chunk-quality ── */}
+      <section data-test="rag-lifecycle" className="mb-6">
+        <Card className="bg-card/70">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileText className="h-4 w-4 text-primary" />
+              Doküman Lifecycle
+            </CardTitle>
+            <CardDescription>
+              Tür · versiyon · indeksli chunk · chunk-kalite (hedef ~400 karakter).
+              Eski/iri chunk'lar tekrar-indeksleme önerir.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {docs.length === 0 ? (
+              <p className="py-4 text-center text-xs text-muted-foreground">
+                Henüz doküman yok — yukarıdan yükleyin.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <tr className="border-b border-border">
+                      <th className="py-2 pr-3 font-medium">Doküman</th>
+                      <th className="py-2 pr-3 font-medium">Tür</th>
+                      <th className="py-2 pr-3 font-medium">Versiyon</th>
+                      <th className="py-2 pr-3 font-medium">Durum</th>
+                      <th className="py-2 pr-3 text-right font-medium">Chunk</th>
+                      <th className="py-2 pr-3 font-medium">Kalite</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {docs.map((d) => {
+                      const ext = (d.filename.split(".").pop() || "").toLowerCase();
+                      const tur =
+                        ext === "pdf" ? "PDF"
+                          : ext === "docx" || ext === "doc" ? "Word"
+                          : ext === "xlsx" || ext === "xls" ? "Excel"
+                          : ext === "txt" || ext === "log" ? "Metin"
+                          : ext === "md" || ext === "markdown" ? "Markdown"
+                          : ext === "json" || ext === "csv" ? ext.toUpperCase()
+                          : (ext || "?").toUpperCase();
+                      // Real, explainable chunk-quality signal: avg bytes/chunk.
+                      // ~400-char target ⇒ ≲1100 bytes/chunk (UTF-8 TR). Larger
+                      // means the doc was indexed with oversized chunks (the old
+                      // 2048-char default) and benefits from re-ingestion.
+                      const avg = d.chunks > 0 ? d.size_bytes / d.chunks : 0;
+                      const oversized = avg > 1600;
+                      return (
+                        <tr
+                          key={d.id}
+                          data-test="rag-lifecycle-row"
+                          className="border-b border-border/40 last:border-0"
+                        >
+                          <td className="max-w-[18rem] truncate py-2 pr-3 font-mono text-foreground/90">
+                            {d.filename}
+                          </td>
+                          <td className="py-2 pr-3 text-muted-foreground">{tur}</td>
+                          <td className="py-2 pr-3 font-mono text-muted-foreground">v1</td>
+                          <td className="py-2 pr-3">
+                            <Badge
+                              variant="outline"
+                              className="border-emerald-500/40 text-[10px] text-emerald-300"
+                            >
+                              güncel
+                            </Badge>
+                          </td>
+                          <td className="py-2 pr-3 text-right font-mono">{d.chunks}</td>
+                          <td className="py-2 pr-3">
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px]",
+                                oversized
+                                  ? "border-amber-500/40 text-amber-300"
+                                  : "border-emerald-500/40 text-emerald-300",
+                              )}
+                            >
+                              {oversized ? "tekrar-chunk" : "iyi"}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* ─── Ingest panel ────────────────────────────── */}
         <Card className="bg-card/70">
