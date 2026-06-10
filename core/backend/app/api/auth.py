@@ -725,11 +725,29 @@ def _claim_user_by_token(magic_token: str) -> Optional[Dict]:
                     ),
                     encoding="utf-8",
                 )
-            return {
-                "email": user.email,
-                "tenant_slug": user.tenant_slug,
-                "role": user.role,
-            }
+            claimed_email = user.email
+            claimed_tenant = user.tenant_slug
+            claimed_role = user.role
+
+        # Self-serve provisioning (MT Faz0 #3) — a claimed self-signup now gets
+        # a real workspace: tenant + default project + owner membership. Runs
+        # OUTSIDE the activation session, best-effort so it can never block the
+        # claim; idempotent so replays / already-provisioned tenants are no-ops.
+        if claimed_tenant:
+            try:
+                from app.multitenant.provisioning import ensure_tenant_provisioned
+
+                ensure_tenant_provisioned(
+                    claimed_tenant, owner_subject=claimed_email
+                )
+            except Exception:  # noqa: BLE001 — provisioning is best-effort
+                logger.info("self-serve provisioning skipped", exc_info=True)
+
+        return {
+            "email": claimed_email,
+            "tenant_slug": claimed_tenant,
+            "role": claimed_role,
+        }
     except Exception as exc:
         logger.warning("claim flow failed: %s", exc)
         return None
