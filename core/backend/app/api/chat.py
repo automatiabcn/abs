@@ -190,7 +190,16 @@ async def _run_cascade(
     bypasses the route layer, so it stayed stubbed until Round 4.
     """
     fallback_chain: List[str] = []
-    cascade_req = CascadeRequest(prompt=prompt, max_tokens=max_tokens)
+    # `cascade_req` only feeds the mock helper below; the real cascade call
+    # (further down) passes the raw augmented prompt straight to the
+    # orchestrator. The chat path augments the user message (≤8000 chars) with a
+    # RAG grounding preamble + retrieved context, so the combined prompt can
+    # legitimately exceed CascadeRequest's user-facing 8000-char DoS cap — a
+    # 8000-char message + RAG injection would otherwise 500 on this validation
+    # (the user limit is enforced on ChatMessageIn.content, not the augmented
+    # system prompt). Clamp only the validation/mock copy; the orchestrator call
+    # below still receives the full augmented prompt.
+    cascade_req = CascadeRequest(prompt=prompt[:8000], max_tokens=max_tokens)
 
     mock_result = await _try_mock(cascade_req, fallback_chain)
     if mock_result is not None:
