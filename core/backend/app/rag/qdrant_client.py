@@ -255,22 +255,33 @@ def delete_by_tenant(
     return int(pre)
 
 
-def delete_document(*, collection: str, tenant_id: str, doc_id: str) -> int:
+def delete_document(
+    *,
+    collection: str,
+    tenant_id: str,
+    doc_id: str,
+    project_id: str | None = None,
+) -> int:
     """Delete every chunk of one document for a tenant (founder feedback:
     "yüklenilen dosyaları sil özelliği de olmalı"). Tenant-scoped filter so a
     caller can only ever delete their own document. Returns the count removed.
+
+    When ``project_id`` is given the delete is additionally scoped to that
+    project — the same isolation the list/query paths apply — so a project
+    workspace cannot delete a document that belongs to a sibling project (no
+    header ⇒ tenant-wide, unchanged).
     """
     tenant = _require_tenant(tenant_id)
     doc_id = (doc_id or "").strip()
     if not doc_id:
         raise ValueError("doc_id is required")
     client = get_qdrant()
-    doc_filter = _tenant_filter(
-        tenant,
-        extra=Filter(
-            must=[FieldCondition(key="doc_id", match=MatchValue(value=doc_id))]
-        ),
-    )
+    must = [FieldCondition(key="doc_id", match=MatchValue(value=doc_id))]
+    if project_id:
+        must.append(
+            FieldCondition(key="project_id", match=MatchValue(value=project_id))
+        )
+    doc_filter = _tenant_filter(tenant, extra=Filter(must=must))
     pre = client.count(
         collection_name=collection, count_filter=doc_filter, exact=True
     ).count
@@ -303,16 +314,35 @@ def count(*, collection: str, tenant_id: str) -> int:
 
 
 def list_documents(
-    *, collection: str, tenant_id: str, max_points: int = 5000
+    *,
+    collection: str,
+    tenant_id: str,
+    project_id: str | None = None,
+    max_points: int = 5000,
 ) -> list[dict[str, Any]]:
     """Group the tenant's stored chunks by ``doc_id`` into a document
     inventory: ``[{doc_id, filename, chunks, bytes, created_at}, …]`` newest
     first. Scrolls payloads only (no vectors); caps at ``max_points`` chunks so
     a large collection can't stall the admin RAG page.
+
+    When ``project_id`` is given the inventory is scoped to that project — the
+    same filter the query path applies — so a project workspace lists only its
+    own documents (no header ⇒ tenant-wide, unchanged).
     """
     tenant = _require_tenant(tenant_id)
     client = get_qdrant()
-    tenant_filter = _tenant_filter(tenant)
+    extra = (
+        Filter(
+            must=[
+                FieldCondition(
+                    key="project_id", match=MatchValue(value=project_id)
+                )
+            ]
+        )
+        if project_id
+        else None
+    )
+    tenant_filter = _tenant_filter(tenant, extra=extra)
     docs: dict[str, dict[str, Any]] = {}
     scanned = 0
     scroll_offset = None
