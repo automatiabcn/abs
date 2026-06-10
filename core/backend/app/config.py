@@ -383,6 +383,21 @@ class Settings(BaseSettings):
     # logged as insecure). Production MUST set ABS_PROVIDER_KEY_ENCRYPTION_KEY.
     provider_key_encryption_key: str = ""
 
+    # Multi-tenant strict isolation. OFF (default) = single-tenant self-host
+    # (digisfer): tenant derives from the operator's session and a few flows
+    # accept a client-supplied tenant for backwards-compat. ON = real
+    # multi-tenant SaaS (1 instance, N customers): tenant is ALWAYS derived
+    # from the authenticated principal, never trusted from request input, and
+    # surfaces that cannot be tenant-scoped safely (raw Cypher) are refused.
+    # Closes two latent fail-open paths that are harmless on single-tenant but
+    # would leak across tenants on shared SaaS:
+    #   • marketplace install/uninstall/list — a claim-less admin can no longer
+    #     install under an arbitrary `tenant=` body value (forced to its own).
+    #   • graph /cypher + /nl-query — raw Cypher can RETURN scalar/aliased
+    #     properties with no tenant_id key, slipping past the row filter; strict
+    #     mode refuses raw Cypher (the templated graph endpoints stay open).
+    multi_tenant_strict: bool = False
+
     # GraphRAG — knowledge graph over the RAG corpus (Phase 2).
     # When enabled, ingest best-effort extracts entities/relations into Neo4j;
     # the /v1/graph-rag/build endpoint can (re)process the existing corpus.
