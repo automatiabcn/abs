@@ -593,18 +593,25 @@ def query(
 @router.get("/documents")
 @observe(name="rag.documents")
 def list_documents(
+    request: Request,
     rag: RAGAuth = Depends(rag_action_dep("query")),
 ) -> dict[str, Any]:
     """Document inventory for the caller's tenant — groups stored chunks by
     ``doc_id``. Powers the admin RAG page so a reload shows the real indexed
     corpus (not just this session's uploads). Tolerant of a missing
     collection / Qdrant outage → empty inventory rather than 5xx.
+
+    Project-scoped via ``X-Project-Id`` — consistent with the query path — so a
+    project workspace lists only its own documents (no header ⇒ tenant-wide).
     """
     auth = rag.auth
     collection = _tenant_collection(auth)
+    project_id = _active_project(request, auth)
     try:
         raw = qc.list_documents(
-            collection=collection, tenant_id=auth.tenant_id or ""
+            collection=collection,
+            tenant_id=auth.tenant_id or "",
+            project_id=project_id,
         )
     except Exception as exc:  # noqa: BLE001
         logger.warning("rag_documents_unavailable: %s", exc)
@@ -636,7 +643,8 @@ def list_documents(
 
 @router.delete("/documents/{doc_id}")
 @observe(name="rag.delete_document")
-def delete_document(
+async def delete_document(
+    request: Request,
     doc_id: str,
     rag: RAGAuth = Depends(rag_action_dep("ingest")),
 ) -> dict[str, Any]:
@@ -644,15 +652,29 @@ def delete_document(
 
     Founder feedback 2026-06-06: "yüklenilen dosyaları sil özelliği de olmalı".
     Tenant-scoped via the Qdrant filter, so a caller can only delete their own
-    documents. Idempotent: deleting an unknown doc_id returns deleted=0.
+    documents. Project-scoped via ``X-Project-Id`` (consistent with the
+    list/query paths) so a project workspace cannot delete a sibling project's
+    document. Idempotent: deleting an unknown doc_id returns deleted=0.
+
+    Async so the GraphRAG purge can ``await`` the module-singleton Neo4j async
+    driver on the SAME loop it was bound to (a sync route + ``asyncio.run`` hits
+    a "future attached to a different loop" error). The sync Qdrant delete runs
+    in a worker thread.
     """
+    import asyncio
+
     auth = rag.auth
     collection = _tenant_collection(auth)
     if not (doc_id or "").strip():
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "doc_id_required")
+    project_id = _active_project(request, auth)
     try:
-        removed = qc.delete_document(
-            collection=collection, tenant_id=auth.tenant_id or "", doc_id=doc_id
+        removed = await asyncio.to_thread(
+            qc.delete_document,
+            collection=collection,
+            tenant_id=auth.tenant_id or "",
+            doc_id=doc_id,
+            project_id=project_id,
         )
     except Exception as exc:  # noqa: BLE001
         logger.warning("rag_delete_document_failed: %s", exc)
@@ -666,4 +688,23 @@ def delete_document(
         doc_id,
         removed,
     )
-    return {"doc_id": doc_id, "deleted": removed}
+    # GraphRAG consistency — a deleted document must not leave orphan chunks /
+    # entities behind in the knowledge graph (they would otherwise surface in
+    # graph-rag answers and bloat Neo4j). Best-effort + flag-gated: a missing or
+    # unreachable Neo4j never fails the (already-committed) Qdrant delete. Only
+    # purge when the Qdrant delete actually removed chunks — a project-scoped
+    # no-op delete must not purge another project's graph.
+    graph_purged: bool | None = None
+    if settings.graphrag_enabled and removed > 0:
+        try:
+            from app.graph_rag.store import purge_doc_graph
+            from app.integrations.neo4j_client import Neo4jClient
+
+            await purge_doc_graph(
+                Neo4jClient(), tenant_id=auth.tenant_id or "", doc_id=doc_id
+            )
+            graph_purged = True
+        except Exception as exc:  # noqa: BLE001 — graph purge is best-effort
+            logger.warning("rag_delete_graph_purge_failed doc=%s: %s", doc_id, exc)
+            graph_purged = False
+    return {"doc_id": doc_id, "deleted": removed, "graph_purged": graph_purged}
