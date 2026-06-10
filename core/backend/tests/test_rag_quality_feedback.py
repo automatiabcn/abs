@@ -165,9 +165,10 @@ def test_delete_document_route(monkeypatch: pytest.MonkeyPatch) -> None:
     _seed_client(cid)
     captured: dict = {}
 
-    def fake_delete(*, collection, tenant_id, doc_id):
+    def fake_delete(*, collection, tenant_id, doc_id, project_id=None):
         captured["tenant_id"] = tenant_id
         captured["doc_id"] = doc_id
+        captured["project_id"] = project_id
         return 7
 
     monkeypatch.setattr(rag_routes.qc, "delete_document", fake_delete)
@@ -175,8 +176,68 @@ def test_delete_document_route(monkeypatch: pytest.MonkeyPatch) -> None:
         h = _headers(c, cid=cid, tenant_id="tnt-del")
         r = c.delete("/v1/rag/documents/abc123", headers=h)
     assert r.status_code == 200, r.text
-    assert r.json() == {"doc_id": "abc123", "deleted": 7}
-    assert captured == {"tenant_id": "tnt-del", "doc_id": "abc123"}
+    # graph_purged is None when GraphRAG is disabled (the default test env); when
+    # enabled, deleting a doc also purges its knowledge-graph chunks/entities so
+    # the graph never retains orphans for a document removed from the corpus.
+    assert r.json() == {"doc_id": "abc123", "deleted": 7, "graph_purged": None}
+    # no X-Project-Id header ⇒ tenant-wide delete (project_id None), unchanged
+    assert captured == {"tenant_id": "tnt-del", "doc_id": "abc123", "project_id": None}
+
+
+def test_delete_document_purges_graph_when_graphrag_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Lock the orphan fix: with GraphRAG enabled, deleting a RAG document must
+    also purge its knowledge-graph chunks/entities so Neo4j never retains
+    orphans for a document removed from the corpus."""
+    import app.graph_rag.store as gr_store
+    from app.config import settings as _settings
+
+    cid = f"rag-{secrets.token_hex(3)}"
+    _seed_client(cid)
+    monkeypatch.setattr(_settings, "graphrag_enabled", True)
+    monkeypatch.setattr(
+        rag_routes.qc,
+        "delete_document",
+        lambda *, collection, tenant_id, doc_id, project_id=None: 5,
+    )
+    purged: dict = {}
+
+    async def fake_purge(client, *, tenant_id, doc_id):
+        purged["tenant_id"] = tenant_id
+        purged["doc_id"] = doc_id
+
+    monkeypatch.setattr(gr_store, "purge_doc_graph", fake_purge)
+    with TestClient(app) as c:
+        h = _headers(c, cid=cid, tenant_id="tnt-g")
+        r = c.delete("/v1/rag/documents/docXYZ", headers=h)
+    assert r.status_code == 200, r.text
+    assert r.json()["graph_purged"] is True
+    assert purged == {"tenant_id": "tnt-g", "doc_id": "docXYZ"}
+
+
+def test_list_documents_scopes_inventory_by_active_project(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Lock the project-scope consistency fix: the document inventory honours
+    the active project (X-Project-Id) the same way the query path does, so a
+    project workspace lists only its own documents (no header ⇒ tenant-wide)."""
+    cid = f"rag-{secrets.token_hex(3)}"
+    _seed_client(cid)
+    captured: dict = {}
+
+    def fake_list(*, collection, tenant_id, project_id=None, max_points=5000):
+        captured["project_id"] = project_id
+        return []
+
+    monkeypatch.setattr(rag_routes.qc, "list_documents", fake_list)
+    # bypass project-membership resolution to isolate the route→qc wiring
+    monkeypatch.setattr(rag_routes, "_active_project", lambda request, auth: "proj-x")
+    with TestClient(app) as c:
+        h = _headers(c, cid=cid, tenant_id="tnt-p")
+        r = c.get("/v1/rag/documents", headers=h)
+    assert r.status_code == 200, r.text
+    assert captured["project_id"] == "proj-x"
 
 
 def test_query_synthesizes_answer(monkeypatch: pytest.MonkeyPatch) -> None:

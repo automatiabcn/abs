@@ -350,8 +350,18 @@ def _enforce_tenant_match(
 
     If the admin token has no tenant claim (legacy / single-tenant dev), we
     skip the check so existing flows keep working.
+
+    Strict multi-tenant SaaS (``ABS_MULTI_TENANT_STRICT``) closes that
+    fail-open: when the principal carries no explicit ``tenant`` claim we
+    resolve its canonical tenant from identity (``_resolve_admin_tenant`` —
+    users row / credentials / "default") and compare against THAT, so a
+    claim-less admin can no longer install/list under an arbitrary
+    client-supplied ``tenant=`` value. Single-tenant deployments leave the
+    flag off and keep the legacy skip.
     """
     claim = admin.get("tenant")
+    if not claim and settings.multi_tenant_strict:
+        claim = _resolve_admin_tenant(admin)
     if claim and claim != tenant:
         if request is not None:
             emit_event(

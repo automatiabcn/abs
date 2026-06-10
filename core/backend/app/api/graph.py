@@ -207,6 +207,13 @@ async def cypher(
     auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
 ) -> Dict[str, Any]:
     tenant = _resolve_tenant(auth)
+    # Strict multi-tenant SaaS: raw Cypher cannot be safely tenant-scoped — a
+    # query that RETURNs scalar/aliased properties (e.g. `RETURN n.email AS e`)
+    # carries no tenant_id key and slips past `_filter_rows_by_tenant`. Refuse
+    # the raw surface; the templated endpoints (schema/ego/paths/resolve) stay
+    # open. Single-tenant (flag off) keeps the raw console.
+    if settings.multi_tenant_strict:
+        raise HTTPException(status_code=403, detail="raw_cypher_disabled_strict_mt")
     if not (body.cypher or "").strip():
         raise HTTPException(status_code=422, detail="empty_cypher")
     if _has_forbidden_clause(body.cypher):
@@ -301,6 +308,11 @@ async def nl_query(
     auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
 ) -> Dict[str, Any]:
     tenant = _resolve_tenant(auth)
+    # Strict multi-tenant SaaS: NL→Cypher emits raw Cypher that flows through
+    # the same scalar-bypassable row filter as /cypher, so refuse it too. The
+    # templated graph endpoints remain the safe multi-tenant surface.
+    if settings.multi_tenant_strict:
+        raise HTTPException(status_code=403, detail="raw_cypher_disabled_strict_mt")
     if not (body.intent or "").strip():
         raise HTTPException(status_code=422, detail="empty_intent")
     # Lazy-import the cascade stack to keep the router importable on minimal
