@@ -89,7 +89,7 @@ COPY --from=builder /tmp/verifier.hash /etc/abs.verifier.hash
 # BUG-12 — image-baked manifest pubkey (founder-shared). When this file
 # is present, the entrypoint skips self-generation of /app/data/{pub,priv}.pem
 # so that licenses minted by the founder (signed with the founder's private
-# key on ai-pc) verify against this same pubkey on every customer install.
+# key, held offline) verify against this same pubkey on every customer install.
 # Pre-fix every container generated its own keypair on first boot, which
 # meant every customer rejected the founder's mint with "signature invalid".
 # Sprint 2N.2 FAZ A: copy from the tracked path under app/update/.

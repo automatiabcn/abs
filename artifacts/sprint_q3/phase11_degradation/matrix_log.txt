@@ -1,9 +1,0 @@
-  PASS  all_configured                   chain=6 primary=anthropic
-  PASS  no_anthropic_paid_skip           chain=5 primary=groq
-  PASS  free_only_full                   chain=5 primary=groq
-  PASS  minimal_two_provider             chain=2 primary=groq
-  PASS  single_provider_groq             chain=1 primary=groq
-  PASS  single_provider_gemini           chain=1 primary=gemini
-  PASS  no_providers_configured          chain=0 primary=None
-
-PASS=7 FAIL=0
