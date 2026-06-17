@@ -1,4 +1,4 @@
-"""017 — docs/billing-runbook.md ve docs/first-customer-playbook.md guard."""
+"""017 — docs/billing-runbook.md guard."""
 
 from __future__ import annotations
 
@@ -18,18 +18,3 @@ def test_billing_runbook_exists_and_min_500_words():
     # En az 6 ana bölüm (## ile başlayan)
     sections = [line for line in text.splitlines() if line.startswith("## ")]
     assert len(sections) >= 6, f"6 ana bölüm bulunamadı: {len(sections)}"
-
-
-def test_first_customer_playbook_exists_and_min_600_words():
-    doc = _docs_dir() / "first-customer-playbook.md"
-    assert doc.is_file(), f"playbook eksik: {doc}"
-    text = doc.read_text(encoding="utf-8")
-    word_count = len(text.split())
-    assert word_count >= 600, f"playbook < 600 kelime: {word_count}"
-    # En az 4 faz
-    phases = [
-        line
-        for line in text.splitlines()
-        if line.startswith("## Faz ") or line.startswith("## Faz")
-    ]
-    assert len(phases) >= 4, f"4 faz bulunamadı: {len(phases)}"

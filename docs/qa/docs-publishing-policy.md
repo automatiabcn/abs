@@ -68,12 +68,16 @@ CI runs `mkdocs build --strict` for PRs. Any broken link, missing nav reference,
 The mkdocs.yml `nav:` block is the shipped table of contents. Sections shipped today:
 
 - Setup Guide / Quickstart / Architecture / API Reference (Scalar + static)
-- Operations runbooks (billing, first-customer, troubleshooting, DR, vault, webhook rotation, performance)
+- Operations runbooks (billing, troubleshooting, DR, vault, webhook rotation, performance)
 - Security (scope, OWASP+RAG checklist, OAuth pen-test, HackerOne)
-- Design (decisions, vision, open questions)
-- Launch (GA checklist, press kit, copy, A/B, crisis comm)
-- QA & Policy (perf budget, i18n policy, fs-scan allowlist, bug reports, bundle reports)
-- FAQ + CHANGELOG + Research
+- Design (decisions)
+- QA & Policy (perf budget, i18n policy, fs-scan allowlist, beta E2E)
+- FAQ + CHANGELOG
+
+Internal go-to-market material (strategy/vision, market research, launch &
+marketing copy, sales playbooks, beta templates) is intentionally NOT shipped:
+it lives outside the customer-facing repo so the deploy that fast-forwards a
+customer box never carries it.
 
 Adding a new doc: drop the `.md` under `docs/`, append it to `nav:`, run `mkdocs build --strict` locally, ship the PR.
 
