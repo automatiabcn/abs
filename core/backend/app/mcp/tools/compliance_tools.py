@@ -78,7 +78,14 @@ def _data_export_counts() -> dict:
         with Session(get_engine()) as s:
             for r in s.scalars(select(DataExportJob)).all():
                 key = r.status if r.status in out else "queued"
-                if r.expires_at and r.expires_at < now:
+                # SQLite returns tz-naive datetimes; normalize to UTC before the
+                # compare (as billing_tools / me_data_export already do). Without
+                # this, `naive < aware` raises TypeError — silently swallowed by
+                # the outer try/except, so the counts came out wrong.
+                exp = r.expires_at
+                if exp is not None and exp.tzinfo is None:
+                    exp = exp.replace(tzinfo=timezone.utc)
+                if exp and exp < now:
                     out["expired"] += 1
                 else:
                     out[key] = out.get(key, 0) + 1
