@@ -11,8 +11,7 @@
 // scene) was retired in favour of the founder-approved `mockup_2` design:
 // single brand palette, glass-morphism nodes, prefers-reduced-motion
 // fallback, ARIA-labelled wrapper. See
-// `components/CosmosGraph/index.tsx` for the live implementation and
-// `artifacts/cosmos_redesign/approval.md` for the founder approval.
+// `components/CosmosGraph/index.tsx` for the live implementation.
 
 "use client";
 
