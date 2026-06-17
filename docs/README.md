@@ -8,7 +8,6 @@ meeting transcription, workflows, an admin panel, and an MCP tool surface.
 
 - `api-reference.md` — HTTP API reference
 - `CLAUDE_CODE_INTEGRATION.md` — connecting a Claude Code / MCP client
-- `vision.md` — product vision
 - `dr-runbook.md`, `vault-recovery-runbook.md`, `webhook-rotation-runbook.md`,
   `billing-runbook.md` — operational runbooks
 - `operations/` — onboarding and operations guides

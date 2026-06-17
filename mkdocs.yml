@@ -73,7 +73,6 @@ nav:
       - Scalar (interactive): api-reference.md
   - Design:
       - Decisions: design-decisions.md
-      - Vision: vision.md
       - Open Questions: open-questions.md
   - FAQ: faq.md
   - CHANGELOG: CHANGELOG.md
