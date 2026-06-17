@@ -470,6 +470,27 @@ class MintedTokenBlacklist(SQLModel, table=True):
     reason: Optional[str] = Field(default=None, max_length=256)
 
 
+class MintedTokenRecord(SQLModel, table=True):
+    """Issuance ledger for MCP integration tokens — metadata only (digest, never
+    the raw token). Tokens stay HMAC-stateless for verification; this table lets
+    the panel LIST and individually revoke MULTIPLE active tokens. Revocation
+    status is derived by joining ``minted_token_blacklist`` on ``token_digest``.
+    """
+
+    __tablename__ = "minted_token_record"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    token_digest: str = Field(max_length=64, index=True, unique=True)
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
+    label: str = Field(max_length=64, default="")
+    scope: str = Field(max_length=64, default="all")
+    issued_by: str = Field(max_length=254, default="")
+    issued_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+    expires_at: Optional[datetime] = Field(default=None, index=True)
+
+
 class FailedLoginAttempt(SQLModel, table=True):
     """Sprint 2I UAT-041 — per-email backoff state for /auth/login.
 
