@@ -22,8 +22,8 @@ from app.db.session import get_engine
 
 logger = logging.getLogger(__name__)
 
-NODE_KINDS = ["trigger", "agent", "retrieval", "connector",
-              "policy", "approval", "action", "branch", "sub_workflow"]
+NODE_KINDS = ["trigger", "agent", "custom_ai", "retrieval", "connector",
+              "policy", "consent", "approval", "action", "branch", "sub_workflow"]
 
 
 def palette() -> Dict[str, Any]:
@@ -210,6 +210,7 @@ async def run_workflow_graph(
         n = by_id[nid]
         kind = n.get("kind")
         nm = n.get("name") or kind or "node"
+        cfg = n.get("config") if isinstance(n.get("config"), dict) else {}
 
         if kind == "trigger":
             results.append({"kind": kind, "name": nm, "status": "started"})
@@ -266,10 +267,46 @@ async def run_workflow_graph(
             results.append(step)
             continue
 
+        if kind == "custom_ai":
+            # Free-form AI step: the operator describes (in natural language) what
+            # this node should do; it runs on the provider cascade with the prior
+            # summary + retrieved context threaded in. No code sandbox — safer and
+            # native to an AI-orchestration product.
+            instruction = (cfg.get("instruction") or n.get("desc") or nm).strip()
+            ctx = f"\n\nÖnceki adım çıktısı: {prev_summary}" if prev_summary else ""
+            if context_snippets:
+                ctx += "\n\nİlgili bağlam:\n- " + "\n- ".join(context_snippets[:5])
+            prompt = f"{instruction}{ctx}"
+            try:
+                from app.cascade.orchestrator import call_with_cascade
+                from app.providers.cascade import PROVIDER_ORDER_DEFAULT
+                order_p = list(PROVIDER_ORDER_DEFAULT)
+                resp = await call_with_cascade(
+                    prompt[:8000], primary=order_p[0], fallbacks=tuple(order_p[1:]),
+                    tenant_id=tenant_slug, user_subject=actor,
+                )
+                out_text = (getattr(resp, "text", "") or "").strip()
+            except Exception as exc:  # noqa: BLE001 — provider failure → partial, continue
+                logger.info("workflow custom_ai step failed: %s", exc)
+                results.append({"kind": kind, "name": nm, "error": str(exc)[:200]})
+                status = "partial"
+                continue
+            prev_summary = out_text or prev_summary
+            results.append({
+                "kind": kind, "name": nm, "status": "done",
+                "summary": out_text[:600],
+                "provider": getattr(resp, "provider", ""),
+                "model": getattr(resp, "model", ""),
+            })
+            executed += 1
+            continue
+
         if kind == "retrieval":
+            top_k = cfg.get("top_k") if isinstance(cfg.get("top_k"), int) else 5
+            query_text = (cfg.get("query") or "").strip() or prev_summary or input_text
             try:
                 from app.rag.hybrid import query_hybrid
-                hits = await query_hybrid(prev_summary or input_text, top_k=5)
+                hits = await query_hybrid(query_text, top_k=max(1, min(top_k, 20)))
             except Exception as exc:  # noqa: BLE001 — retrieval failure → skip, continue
                 results.append({"kind": kind, "name": nm, "status": "skipped",
                                 "error": str(exc)[:160]})
@@ -287,26 +324,34 @@ async def run_workflow_graph(
             continue
 
         if kind == "policy":
-            decision = "review" if risk_seen == "high" else "allow"
+            threshold = (cfg.get("risk_threshold") or "high").strip()
+            block = _RISK_RANK.get(risk_seen, 0) >= _RISK_RANK.get(threshold, 2)
             results.append({"kind": kind, "name": nm, "status": "done",
-                            "decision": decision, "risk_seen": risk_seen})
+                            "decision": "review" if block else "allow",
+                            "risk_seen": risk_seen, "threshold": threshold})
             executed += 1
             continue
 
         if kind == "consent":
+            channel = (cfg.get("channel") or "").strip()
             results.append({"kind": kind, "name": nm, "status": "done",
+                            "channel": channel or "any",
                             "note": "channel-consent checkpoint"})
             executed += 1
             continue
 
         if kind == "approval":
+            role = (cfg.get("role") or "").strip()
             results.append({"kind": kind, "name": nm, "status": "gate",
-                            "note": "human-approval gate"})
+                            "role": role or "admin", "note": "human-approval gate"})
             executed += 1
             continue
 
         if kind == "action":
+            action_type = (cfg.get("action_type") or "").strip()
+            target = (cfg.get("target") or "").strip()
             results.append({"kind": kind, "name": nm, "status": "executed",
+                            "action_type": action_type or "note", "target": target,
                             "note": "outbound action"})
             executed += 1
             continue
