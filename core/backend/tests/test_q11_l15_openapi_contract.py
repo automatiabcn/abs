@@ -52,10 +52,18 @@ class TestQ11L15McpTokenRoutes:
         assert "RevokeTokenRequest" in schemas
         body = schemas["RevokeTokenRequest"]
         props = body["properties"]
+        # Revoke accepts a raw token (legacy/paste) OR a digest (panel list).
         assert "token" in props
+        assert "token_digest" in props
         assert "reason" in props
-        # token field has min_length=16 (mints prefix abs_mcp_)
-        assert props["token"].get("minLength") == 16
+
+        # token still enforces min_length=16 — now optional, so the constraint
+        # lives directly or inside the anyOf (string | null) union.
+        def _min_len(p):
+            if p.get("minLength") == 16:
+                return True
+            return any(v.get("minLength") == 16 for v in p.get("anyOf", []))
+        assert _min_len(props["token"])
 
     def test_revoked_token_info_schema(self, openapi):
         schemas = openapi["components"]["schemas"]
