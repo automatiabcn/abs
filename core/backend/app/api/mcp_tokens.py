@@ -39,7 +39,7 @@ from sqlmodel import select
 from app.api.auth import current_admin
 from app.api.chat import _resolve_tenant
 from app.config import settings
-from app.db.models import MintedTokenBlacklist
+from app.db.models import MintedTokenBlacklist, MintedTokenRecord
 from app.db.session import get_session_sync
 
 
@@ -146,6 +146,19 @@ def mint_token(
         "actor": admin["sub"],
     }
     token = _sign(payload)
+    # Record issuance (digest only — never the raw token) so the panel can list
+    # and individually revoke multiple active tokens. Best-effort: a ledger
+    # failure must not block handing the operator their token.
+    try:
+        with get_session_sync() as db:
+            db.add(MintedTokenRecord(
+                token_digest=_token_digest(token), tenant_slug=tenant,
+                label=body.label, scope=body.scope, issued_by=admin["sub"],
+                issued_at=issued_at, expires_at=expires_at,
+            ))
+            db.commit()
+    except Exception:  # noqa: BLE001 — ledger is best-effort
+        logger.info("mcp_token issuance-ledger write skipped", exc_info=True)
     logger.info(
         "mcp_token_issued tenant=%s scope=%s label=%s expires=%s",
         tenant,
@@ -185,7 +198,10 @@ def verify_endpoint(
 
 
 class RevokeTokenRequest(BaseModel):
-    token: str = Field(..., min_length=16)
+    # Revoke by raw token (legacy / paste) OR by digest. The raw token is shown
+    # only once at mint, so the panel's multi-token list revokes by digest.
+    token: Optional[str] = Field(default=None, min_length=16)
+    token_digest: Optional[str] = Field(default=None, min_length=16, max_length=64)
     reason: Optional[str] = Field(default=None, max_length=256)
 
 
@@ -209,22 +225,37 @@ def revoke_token(
     Decoding is best-effort; an unrecognised payload still gets recorded
     so a leaked token can be killed even if its body has drifted.
     """
-    digest = _token_digest(body.token)
     tenant = _resolve_tenant(admin["sub"])
     label = ""
     expires_at: Optional[datetime] = None
-    try:
-        payload = verify_token(body.token)
-        tenant = str(payload.get("tenant", tenant))
-        label = str(payload.get("label", ""))
-        if "exp" in payload:
-            expires_at = datetime.fromtimestamp(
-                payload["exp"], tz=timezone.utc
-            )
-    except HTTPException:
-        # token already invalid (expired/malformed) — still allow blacklist
-        # so the digest is logged for audit + future regression checks.
-        pass
+    if body.token:
+        digest = _token_digest(body.token)
+        try:
+            payload = verify_token(body.token)
+            tenant = str(payload.get("tenant", tenant))
+            label = str(payload.get("label", ""))
+            if "exp" in payload:
+                expires_at = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+        except HTTPException:
+            # token already invalid (expired/malformed) — still allow blacklist
+            # so the digest is logged for audit + future regression checks.
+            pass
+    elif body.token_digest:
+        # Panel list revoke: resolve metadata from this tenant's issuance ledger.
+        digest = body.token_digest.strip()
+        with get_session_sync() as db:
+            rec = db.exec(
+                select(MintedTokenRecord).where(
+                    MintedTokenRecord.token_digest == digest,
+                    MintedTokenRecord.tenant_slug == tenant,
+                )
+            ).first()
+        if rec is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "token_not_found")
+        label = rec.label
+        expires_at = rec.expires_at
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "token_or_digest_required")
 
     with get_session_sync() as db:
         existing = db.exec(
@@ -280,6 +311,57 @@ def list_revoked_tokens(
     ]
 
 
+class ActiveTokenInfo(BaseModel):
+    token_digest: str
+    label: str
+    scope: str
+    issued_by: str
+    issued_at: datetime
+    expires_at: Optional[datetime]
+    status: str  # "active" | "revoked" | "expired"
+
+
+@router.get("/tokens", response_model=list[ActiveTokenInfo])
+def list_tokens(admin: dict = Depends(current_admin)) -> list[ActiveTokenInfo]:
+    """Issued MCP tokens for the admin's tenant (newest first), each with a
+    derived status. Lets the operator manage MULTIPLE tokens — the raw token is
+    only shown once at mint, so the list keys off the digest for revoke."""
+    tenant = _resolve_tenant(admin["sub"])
+    now = datetime.now(timezone.utc)
+    with get_session_sync() as db:
+        rows = db.exec(
+            select(MintedTokenRecord)
+            .where(MintedTokenRecord.tenant_slug == tenant)
+            .order_by(MintedTokenRecord.issued_at.desc())  # type: ignore[attr-defined]
+        ).all()
+        revoked = {
+            r.token_digest for r in db.exec(
+                select(MintedTokenBlacklist).where(
+                    MintedTokenBlacklist.tenant_slug == tenant
+                )
+            ).all()
+        }
+    out: list[ActiveTokenInfo] = []
+    for r in rows:
+        # SQLite returns tz-naive datetimes; treat them as UTC so the comparison
+        # with the tz-aware `now` doesn't raise (and doesn't 500 the list).
+        exp = r.expires_at
+        if exp is not None and exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if r.token_digest in revoked:
+            st = "revoked"
+        elif exp is not None and exp <= now:
+            st = "expired"
+        else:
+            st = "active"
+        out.append(ActiveTokenInfo(
+            token_digest=r.token_digest, label=r.label, scope=r.scope,
+            issued_by=r.issued_by, issued_at=r.issued_at,
+            expires_at=r.expires_at, status=st,
+        ))
+    return out
+
+
 __all__ = [
     "router",
     "verify_token",
@@ -287,4 +369,5 @@ __all__ = [
     "MintedToken",
     "RevokeTokenRequest",
     "RevokedTokenInfo",
+    "ActiveTokenInfo",
 ]
