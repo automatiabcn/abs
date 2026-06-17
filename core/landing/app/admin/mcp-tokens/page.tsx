@@ -12,7 +12,7 @@
 // value is shown exactly once and must be copied immediately.
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { KeyRound, Copy, Check, Trash2, ShieldAlert, FileCode2 } from "lucide-react";
 
@@ -32,6 +32,16 @@ interface MintedToken {
   scope: string;
   tenant_slug: string;
   expires_at: string;
+}
+
+interface ActiveToken {
+  token_digest: string;
+  label: string;
+  scope: string;
+  issued_by: string;
+  issued_at: string;
+  expires_at: string | null;
+  status: string; // active | revoked | expired
 }
 
 function mcpUrl(): string {
@@ -74,6 +84,40 @@ export default function McpTokensPage() {
   const [revoking, setRevoking] = useState(false);
   const [revokeMsg, setRevokeMsg] = useState<string | null>(null);
 
+  // Multiple-token management: the issuance ledger (digest only) so the operator
+  // sees and revokes every issued token without re-pasting the raw string.
+  const [tokens, setTokens] = useState<ActiveToken[]>([]);
+  const [tokensLoading, setTokensLoading] = useState(true);
+  const [revokingDigest, setRevokingDigest] = useState<string | null>(null);
+
+  const loadTokens = useCallback(async () => {
+    setTokensLoading(true);
+    try {
+      const res = await fetch("/v1/mcp/tokens", { credentials: "include", cache: "no-store" });
+      if (res.ok) setTokens((await res.json()) as ActiveToken[]);
+    } catch {
+      /* leave the list as-is on a transient error */
+    } finally {
+      setTokensLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void loadTokens(); }, [loadTokens]);
+
+  async function revokeByDigest(digest: string) {
+    setRevokingDigest(digest);
+    try {
+      await fetch("/v1/mcp/tokens/revoke", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token_digest: digest }),
+      });
+      await loadTokens();
+    } finally {
+      setRevokingDigest(null);
+    }
+  }
+
   async function copy(key: string, text: string) {
     try {
       await navigator.clipboard.writeText(text);
@@ -107,6 +151,7 @@ export default function McpTokensPage() {
       }
       setMinted((await res.json()) as MintedToken);
       setLabel("");
+      void loadTokens();   // new token shows up in the list below
     } catch (exc) {
       setMintError(exc instanceof Error ? exc.message : "bilinmeyen hata");
     } finally {
@@ -128,6 +173,7 @@ export default function McpTokensPage() {
       if (res.status === 204 || res.ok) {
         setRevokeMsg("✓ Token iptal edildi (blacklist'e eklendi). Artık /mcp reddedecek.");
         setRevokeToken("");
+        void loadTokens();
       } else {
         setRevokeMsg(`Hata: HTTP ${res.status}`);
       }
@@ -282,12 +328,80 @@ export default function McpTokensPage() {
         </CardContent>
       </Card>
 
-      {/* ── Revoke ───────────────────────────────────── */}
+      {/* ── Issued tokens (multiple) ─────────────────── */}
+      <Card className="mb-6 bg-card/70">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Üretilmiş token&apos;lar</CardTitle>
+          <CardDescription>
+            Birden çok token üretebilirsin (her cihaz/servis için ayrı). Raw token
+            yalnızca üretimde gösterilir; buradan etiketiyle görür ve tek tıkla
+            iptal edersin.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {tokensLoading ? (
+            <p className="text-xs text-muted-foreground">Yükleniyor…</p>
+          ) : tokens.length === 0 ? (
+            <p className="text-xs text-muted-foreground" data-test="mcp-tokens-empty">
+              Henüz token üretilmedi.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs" data-test="mcp-tokens-list">
+                <thead className="text-muted-foreground">
+                  <tr className="border-b border-border">
+                    <th className="py-1.5 pr-3 font-medium">Etiket</th>
+                    <th className="py-1.5 pr-3 font-medium">Scope</th>
+                    <th className="py-1.5 pr-3 font-medium">Üretim</th>
+                    <th className="py-1.5 pr-3 font-medium">Bitiş</th>
+                    <th className="py-1.5 pr-3 font-medium">Durum</th>
+                    <th className="py-1.5 font-medium" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {tokens.map((t) => (
+                    <tr key={t.token_digest} className="border-b border-border/60 last:border-0">
+                      <td className="py-1.5 pr-3 font-medium">{t.label || "—"}</td>
+                      <td className="py-1.5 pr-3 font-mono">{t.scope}</td>
+                      <td className="py-1.5 pr-3" suppressHydrationWarning>
+                        {new Date(t.issued_at).toLocaleDateString("tr-TR")}
+                      </td>
+                      <td className="py-1.5 pr-3" suppressHydrationWarning>
+                        {t.expires_at ? new Date(t.expires_at).toLocaleDateString("tr-TR") : "—"}
+                      </td>
+                      <td className="py-1.5 pr-3">
+                        <span className={
+                          t.status === "active" ? "text-emerald-300"
+                            : t.status === "revoked" ? "text-rose-300" : "text-amber-300"
+                        }>{t.status}</span>
+                      </td>
+                      <td className="py-1.5 text-right">
+                        {t.status === "active" && (
+                          <button
+                            onClick={() => revokeByDigest(t.token_digest)}
+                            disabled={revokingDigest === t.token_digest}
+                            data-test={`mcp-token-revoke-${t.token_digest.slice(0, 8)}`}
+                            className="rounded-md border border-rose-500/40 px-2 py-1 text-[11px] text-rose-300 hover:bg-rose-500/10 disabled:opacity-50"
+                          >
+                            {revokingDigest === t.token_digest ? "…" : "İptal"}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Revoke by raw token (paste) ──────────────── */}
       <Card className="mb-6 bg-card/70">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Trash2 className="h-4 w-4 text-rose-400" />
-            Token iptal et
+            Token iptal et (yapıştırarak)
           </CardTitle>
           <CardDescription>
             Sızan/eski bir token&apos;ı kara listeye alın. Bundan sonra{" "}
