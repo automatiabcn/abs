@@ -33,6 +33,7 @@ export type FlowNodeData = {
   name: string;
   desc: string;
   agent_id: string | null;
+  config?: Record<string, string | number | boolean>;
   active?: boolean;
 };
 
@@ -40,6 +41,8 @@ export type FlowNodeData = {
 const TONE: Record<string, { border: string; label: string }> = {
   trigger: { border: "#38bdf8", label: "text-sky-300" },
   agent: { border: "#3a9dff", label: "text-primary" },
+  custom_ai: { border: "#3a9dff", label: "text-primary" },
+  consent: { border: "#d29922", label: "text-amber-300" },
   retrieval: { border: "#a78bfa", label: "text-violet-300" },
   connector: { border: "#3a4452", label: "text-muted-foreground" },
   policy: { border: "#d29922", label: "text-amber-300" },
