@@ -35,6 +35,9 @@ async def list_lead_priority(
 class CreateLeadRequest(BaseModel):
     company_name: str = Field(..., min_length=1, max_length=256)
     sector: str = Field(default="", max_length=96)
+    domain: str = Field(default="", max_length=128)
+    location: str = Field(default="", max_length=128)
+    size: str = Field(default="", max_length=32)
     source: str = Field(default="manual", max_length=64)
     consent_status: str = Field(default="", max_length=32)
 
@@ -47,7 +50,8 @@ async def create_lead_endpoint(
     tenant = _tenant(auth)
     company_id = create_company(
         tenant_slug=tenant, name=body.company_name, sector=body.sector,
-        source=body.source,
+        source=body.source, domain=body.domain or None,
+        location=body.location, size=body.size,
     )
     return create_lead(
         tenant_slug=tenant, company_id=company_id, source=body.source,
