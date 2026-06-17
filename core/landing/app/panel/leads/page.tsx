@@ -41,6 +41,14 @@ export default function LeadIntelligencePage() {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [name, setName] = useState("");
+  // Manual lead entry — a discoverable form (not just a single field).
+  const [showForm, setShowForm] = useState(false);
+  const [sector, setSector] = useState("");
+  const [domain, setDomain] = useState("");
+  const [location, setLocation] = useState("");
+  const [size, setSize] = useState("");
+  const [consent, setConsent] = useState("");
+  const [creating, setCreating] = useState(false);
 
   const load = useCallback(() => {
     fetch("/v1/leads", { credentials: "include", cache: "no-store" })
@@ -59,12 +67,22 @@ export default function LeadIntelligencePage() {
   }
   async function create() {
     if (!name.trim()) return;
-    await fetch("/v1/leads", {
-      method: "POST", credentials: "include",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ company_name: name, source: "manual" }),
-    });
-    setName(""); load();
+    setCreating(true);
+    try {
+      await fetch("/v1/leads", {
+        method: "POST", credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          company_name: name.trim(), sector, domain, location, size,
+          consent_status: consent, source: "manual",
+        }),
+      });
+      setName(""); setSector(""); setDomain(""); setLocation(""); setSize(""); setConsent("");
+      setShowForm(false);
+      load();
+    } finally {
+      setCreating(false);
+    }
   }
   async function score(id: number) {
     await fetch(`/v1/leads/${id}/score`, { method: "POST", credentials: "include" });
@@ -80,12 +98,75 @@ export default function LeadIntelligencePage() {
           <h1 className="text-xl font-semibold tracking-tight">Lead Intelligence</h1>
           <p className="mt-1 text-[12px] text-muted-foreground">Account priority · Lead Scoring Agent (15 kriter + top-3 kanıt + buying group)</p>
         </div>
-        <div className="flex gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Yeni firma adı…"
-            className="rounded-md border bg-background px-3 py-2 text-sm" />
-          <button onClick={create} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">+ Lead</button>
-        </div>
+        <button
+          onClick={() => setShowForm((s) => !s)}
+          data-test="lead-add-toggle"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+        >
+          {showForm ? "× Kapat" : "+ Lead Ekle"}
+        </button>
       </div>
+
+      {/* ── Manual lead entry form ───────────────── */}
+      {showForm && (
+        <div className="mb-6 rounded-xl border bg-card/60 p-4" data-test="lead-add-form">
+          <div className="mb-3 text-sm font-semibold">Yeni lead ekle</div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <label className="space-y-1 text-[12px]">
+              <span className="text-muted-foreground">Firma adı *</span>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Örn. Demirel Yapı A.Ş."
+                data-test="lead-field-name"
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
+            </label>
+            <label className="space-y-1 text-[12px]">
+              <span className="text-muted-foreground">Sektör</span>
+              <input value={sector} onChange={(e) => setSector(e.target.value)} placeholder="İnşaat, SaaS…"
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
+            </label>
+            <label className="space-y-1 text-[12px]">
+              <span className="text-muted-foreground">Web sitesi / domain</span>
+              <input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="ornek.com"
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
+            </label>
+            <label className="space-y-1 text-[12px]">
+              <span className="text-muted-foreground">Konum</span>
+              <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="İstanbul"
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
+            </label>
+            <label className="space-y-1 text-[12px]">
+              <span className="text-muted-foreground">Büyüklük</span>
+              <select value={size} onChange={(e) => setSize(e.target.value)}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm">
+                <option value="">—</option>
+                <option value="1-10">1-10</option>
+                <option value="11-50">11-50</option>
+                <option value="51-200">51-200</option>
+                <option value="200+">200+</option>
+              </select>
+            </label>
+            <label className="space-y-1 text-[12px]">
+              <span className="text-muted-foreground">İzin (consent)</span>
+              <select value={consent} onChange={(e) => setConsent(e.target.value)}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm">
+                <option value="">—</option>
+                <option value="opted_in">opted_in</option>
+                <option value="pending">pending</option>
+                <option value="opted_out">opted_out</option>
+              </select>
+            </label>
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <button onClick={create} disabled={!name.trim() || creating}
+              data-test="lead-create-submit"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+              {creating ? "Ekleniyor…" : "Lead oluştur"}
+            </button>
+            <span className="text-[11px] text-muted-foreground">
+              Oluşturduktan sonra &quot;Skorla&quot; ile Lead Scoring Agent puanlar.
+            </span>
+          </div>
+        </div>
+      )}
       {err && <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">Yüklenemedi: {err}</div>}
       {!items && !err && <div className="h-64 w-full animate-pulse rounded-md bg-muted/40" />}
 
