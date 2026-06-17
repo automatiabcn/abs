@@ -23,6 +23,8 @@ from __future__ import annotations
 import json
 import logging
 import re
+import asyncio
+import os
 import shutil
 import tempfile
 import time
@@ -615,19 +617,54 @@ async def step_providers(body: ProvidersBody, request: Request) -> Dict[str, Any
     return {"ok": True, "current_step": state["current_step"], "configured": configured}
 
 
-async def _run_provider_tests() -> Dict[str, Any]:
-    """Adim 6 — configured provider'lara test ping. Hatalar 'fail' olarak isaretlenir.
+# Provider key field → cascade provider name. cf_account_id is not an
+# independently pingable key (Cloudflare is validated via cf_api_token).
+_FIELD_TO_PROVIDER: Dict[str, str] = {
+    "groq_api_key": "groq",
+    "gemini_api_key": "gemini",
+    "cerebras_api_key": "cerebras",
+    "cohere_api_key": "cohere",
+    "anthropic_api_key": "anthropic",
+    "cf_api_token": "cloudflare",
+}
 
-    Network erisimi zorunlu degil; test'te monkeypatch ile tamamen mock edilebilir.
+
+async def _run_provider_tests() -> Dict[str, Any]:
+    """Adim 6 — ping each configured provider with the just-entered key so the
+    operator sees IN the wizard whether their keys actually work (not later).
+
+    A failed ping is recorded as ``fail`` but never blocks completion. Skipped
+    under ``ABS_TEST_MODE=1`` (no network in tests) and for non-pingable fields,
+    so the existing setup-wizard test suite stays deterministic.
     """
     results: Dict[str, Any] = {}
     state = read_state()
-    configured = state.get("data", {}).get("providers_configured", []) or []
+    configured = list(state.get("data", {}).get("providers_configured", []) or [])
     if state.get("data", {}).get("anthropic_configured"):
         configured = ["anthropic_api_key", *configured]
 
+    live = os.environ.get("ABS_TEST_MODE") != "1"
     for field_name in configured:
-        results[field_name] = {"status": "skipped", "reason": "live ping disabled in setup"}
+        provider = _FIELD_TO_PROVIDER.get(field_name)
+        if provider is None:
+            results[field_name] = {"status": "skipped", "reason": "not a pingable key"}
+            continue
+        if not live:
+            results[field_name] = {"status": "skipped", "reason": "live ping disabled in test mode"}
+            continue
+        try:
+            from app.cascade.orchestrator import call_with_cascade
+            resp = await asyncio.wait_for(
+                call_with_cascade("ping", primary=provider, fallbacks=(), use_cache=False),
+                timeout=8.0,
+            )
+            ok = bool(getattr(resp, "text", ""))
+            results[field_name] = (
+                {"status": "ok", "provider": provider} if ok
+                else {"status": "fail", "provider": provider, "reason": "empty response"}
+            )
+        except Exception as exc:  # noqa: BLE001 — a failed ping must not block setup
+            results[field_name] = {"status": "fail", "provider": provider, "reason": str(exc)[:160]}
     return results
 
 
