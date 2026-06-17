@@ -6,8 +6,8 @@
 # BUG-12 (2026-05-09) — when the image-baked founder pubkey is present
 # at /etc/abs/manifest_pubkey.pem, both the keypair self-generation and
 # the demo-license mint are skipped. Production customer images bake
-# the founder's pubkey, the founder holds the matching private key on
-# ai-pc, and licenses are minted out-of-band via scripts/_mint_license.py.
+# the founder's pubkey, the founder holds the matching private key
+# offline, and licenses are minted out-of-band by the founder.
 # Pre-fix every customer container generated its own keypair on first
 # boot and rejected the founder's mint with "signature invalid".
 set -euo pipefail
