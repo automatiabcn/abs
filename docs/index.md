@@ -12,7 +12,6 @@ Self-host AI orchestration for Claude Code — kendi sunucunda 100+ MCP tool, 6 
 | **Mimari** — Bileşenler, akışlar, lisans modeli | [Architecture](architecture.md) | 8 dk |
 | **MCP Tool Reference** — 100+ aracın tam listesi | [API Reference](api-reference.md) | tarafından |
 | **Operasyon** — Stripe billing, refund, dispute | [Billing Runbook](billing-runbook.md) | 12 dk |
-| **İlk Müşteri** — outreach + launch playbook | [First Customer Playbook](first-customer-playbook.md) | 18 dk |
 | **Sorun Giderme** — Yaygın hatalar | [Troubleshooting](troubleshooting.md) | tarafından |
 | **SSS** — Kısa cevaplar | [FAQ](faq.md) | 5 dk |
 
