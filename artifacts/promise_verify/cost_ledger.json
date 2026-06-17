@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-05-07T11:52:04+00:00",
-  "source_latency_json": "/Users/eneseserkan/Main/abs-server-product/artifacts/promise_verify/latency_benchmark.json",
+  "source_latency_json": "artifacts/promise_verify/latency_benchmark.json",
   "ledger": {
     "n_prompts": 100,
     "groq_total_tokens": {
