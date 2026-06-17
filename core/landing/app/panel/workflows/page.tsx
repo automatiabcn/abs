@@ -35,7 +35,8 @@ type Run = {
   id: number; name: string; trigger: string; status: string;
   step_count: number; approvals_opened: number; elapsed_ms: number; created_at: string | null;
 };
-type GraphNode = { id: string; kind: string; name: string; desc: string; x: number; y: number; agent_id: string | null };
+type NodeConfig = Record<string, string | number | boolean>;
+type GraphNode = { id: string; kind: string; name: string; desc: string; x: number; y: number; agent_id: string | null; config?: NodeConfig };
 type GraphEdge = { source: string; target: string };
 type Definition = { key: string; name: string; graph: { name: string; nodes: GraphNode[]; edges: GraphEdge[] }; ordered_steps: string[] };
 
@@ -44,7 +45,8 @@ const KIND_CHIP: Record<string, string> = {
   retrieval: "border-violet-500/40 text-violet-300", connector: "border-border text-muted-foreground",
   policy: "border-amber-500/40 text-amber-300", approval: "border-rose-500/40 text-rose-300",
   action: "border-emerald-500/40 text-emerald-300", branch: "border-border text-muted-foreground",
-  sub_workflow: "border-pink-500/40 text-pink-300",
+  sub_workflow: "border-pink-500/40 text-pink-300", custom_ai: "border-primary/50 text-primary",
+  consent: "border-amber-500/40 text-amber-300",
 };
 
 const ENGINE = [
@@ -55,14 +57,40 @@ const ENGINE = [
 
 const KIND_LABEL: Record<string, string> = {
   trigger: "Tetikleyici", retrieval: "RAG/Graph", connector: "Connector",
-  policy: "Policy Gate", approval: "Onay Geçidi", action: "Aksiyon",
-  branch: "Dallanma", sub_workflow: "Alt-akış",
+  policy: "Policy Gate", consent: "Consent", approval: "Onay Geçidi", action: "Aksiyon",
+  branch: "Dallanma", sub_workflow: "Alt-akış", custom_ai: "Custom AI",
+};
+
+// Per-kind editable config fields rendered in the inspector. `as` picks the
+// input control; options are for selects. Empty for kinds with no config.
+type CfgField = { key: string; label: string; as?: "text" | "textarea" | "number" | "select"; options?: string[]; placeholder?: string };
+const CONFIG_FIELDS: Record<string, CfgField[]> = {
+  custom_ai: [
+    { key: "instruction", label: "Talimat (doğal dil)", as: "textarea", placeholder: "Bu adım ne yapsın? Örn: Müşteriye kaynak-gösteren bir teklif taslağı yaz." },
+  ],
+  retrieval: [
+    { key: "query", label: "Sorgu (boşsa önceki adım)", as: "text", placeholder: "fiyat listesi" },
+    { key: "top_k", label: "top_k", as: "number", placeholder: "5" },
+  ],
+  policy: [
+    { key: "risk_threshold", label: "Risk eşiği", as: "select", options: ["low", "medium", "high"] },
+  ],
+  consent: [
+    { key: "channel", label: "Kanal", as: "select", options: ["any", "email", "whatsapp", "sms"] },
+  ],
+  approval: [
+    { key: "role", label: "Onaylayan rol", as: "select", options: ["admin", "manager", "owner"] },
+  ],
+  action: [
+    { key: "action_type", label: "Aksiyon tipi", as: "select", options: ["note", "email", "route", "crm_update"] },
+    { key: "target", label: "Hedef", as: "text", placeholder: "CRM / kanal / alıcı" },
+  ],
 };
 
 function toFlowNodes(g: Definition["graph"]): Node<FlowNodeData>[] {
   return g.nodes.map((n) => ({
     id: n.id, type: "agentic", position: { x: n.x, y: n.y },
-    data: { kind: n.kind, name: n.name, desc: n.desc, agent_id: n.agent_id },
+    data: { kind: n.kind, name: n.name, desc: n.desc, agent_id: n.agent_id, config: n.config ?? {} },
   }));
 }
 function toFlowEdges(g: Definition["graph"]): Edge[] {
@@ -118,12 +146,22 @@ export default function WorkflowDesignerPage() {
 
   function addNode(kind: string, agent_id: string | null, label: string, desc: string) {
     const id = `${kind}-${(idc.current += 1)}`;
+    const config: NodeConfig = {};
+    (CONFIG_FIELDS[kind] ?? []).forEach((f) => { config[f.key] = f.as === "number" ? 0 : (f.options?.[0] ?? ""); });
     setNodes((nds) => nds.concat({
       id, type: "agentic",
       position: { x: 120 + (nds.length % 4) * 30, y: 360 + (nds.length % 3) * 20 },
-      data: { kind, name: label, desc, agent_id },
+      data: { kind, name: label, desc, agent_id, config },
     }));
-    setSelected(agent_id ? id : selected);
+    setSelected(id);   // open the inspector so the new node can be configured
+    setSaved(null);
+  }
+
+  // Patch the selected node's config (editable inspector) — live state update.
+  function updateNodeConfig(id: string, key: string, value: string | number) {
+    setNodes((nds) => nds.map((n) => n.id === id
+      ? { ...n, data: { ...n.data, config: { ...(n.data.config ?? {}), [key]: value } } }
+      : n));
     setSaved(null);
   }
 
@@ -133,6 +171,7 @@ export default function WorkflowDesignerPage() {
       nodes: nodes.map((n) => ({
         id: n.id, kind: n.data.kind, name: n.data.name, desc: n.data.desc,
         x: Math.round(n.position.x), y: Math.round(n.position.y), agent_id: n.data.agent_id,
+        config: n.data.config ?? {},
       })),
       edges: edges.map((e) => ({ source: e.source, target: e.target })),
     };
@@ -265,9 +304,37 @@ export default function WorkflowDesignerPage() {
                   </div>
                 ))}
               </div>
+            ) : selNode && (CONFIG_FIELDS[selNode.data.kind]?.length ?? 0) > 0 ? (
+              <div className="space-y-3 text-[12px]">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {KIND_LABEL[selNode.data.kind] ?? selNode.data.kind} · ayarlar
+                </div>
+                {CONFIG_FIELDS[selNode.data.kind].map((f) => {
+                  const val = (selNode.data.config ?? {})[f.key] ?? "";
+                  const cls = "w-full rounded-md border border-border bg-background px-2 py-1 text-[12px]";
+                  return (
+                    <label key={f.key} className="block space-y-1">
+                      <span className="text-muted-foreground">{f.label}</span>
+                      {f.as === "textarea" ? (
+                        <textarea className={`${cls} min-h-[72px]`} placeholder={f.placeholder} value={String(val)}
+                          onChange={(e) => updateNodeConfig(selNode.id, f.key, e.target.value)} data-test={`cfg-${f.key}`} />
+                      ) : f.as === "select" ? (
+                        <select className={cls} value={String(val)}
+                          onChange={(e) => updateNodeConfig(selNode.id, f.key, e.target.value)} data-test={`cfg-${f.key}`}>
+                          {(f.options ?? []).map((o) => (<option key={o} value={o}>{o}</option>))}
+                        </select>
+                      ) : (
+                        <input type={f.as === "number" ? "number" : "text"} className={cls} placeholder={f.placeholder} value={String(val)}
+                          onChange={(e) => updateNodeConfig(selNode.id, f.key, f.as === "number" ? Number(e.target.value) : e.target.value)} data-test={`cfg-${f.key}`} />
+                      )}
+                    </label>
+                  );
+                })}
+                <p className="text-[10px] text-muted-foreground">Kaydet → ayarlar workflow ile saklanır; Çalıştır'da motor bunları kullanır.</p>
+              </div>
             ) : (
               <div className="text-[11px] text-muted-foreground">
-                {selNode ? `${KIND_LABEL[selNode.data.kind] ?? selNode.data.kind} node — ${selNode.data.desc}` : "Canvas'ta bir node'a tıklayın."}
+                {selNode ? `${KIND_LABEL[selNode.data.kind] ?? selNode.data.kind} node — ${selNode.data.desc || "yapılandırma gerektirmez"}` : "Canvas'ta bir node'a tıklayın."}
               </div>
             )}
           </div>
