@@ -128,3 +128,56 @@ async def test_run_graph_skips_unconnected_nodes(_stub, monkeypatch) -> None:
         tenant_slug="tO", name="x", graph=graph, input_text="hi", actor="a@x.io",
     )
     assert out["step_count"] == 1          # only the wired agent; orphan skipped
+
+
+async def test_run_graph_custom_ai_and_node_config(monkeypatch) -> None:
+    """A 'custom_ai' node runs the operator's natural-language instruction on the
+    cascade, and a retrieval node honours its per-node config (query + top_k)."""
+    captured: dict = {}
+
+    async def _fake_cascade(prompt, **kw):
+        captured["prompt"] = prompt
+
+        class _R:
+            text = "özel adım çıktısı"
+            provider = "groq"
+            model = "gpt-oss-120b"
+
+        return _R()
+
+    async def _fake_hits(question, top_k=5, **kw):
+        captured["top_k"] = top_k
+        captured["q"] = question
+        return [{"text": "doc snippet"}]
+
+    monkeypatch.setattr("app.cascade.orchestrator.call_with_cascade", _fake_cascade)
+    monkeypatch.setattr("app.rag.hybrid.query_hybrid", _fake_hits)
+
+    graph = {
+        "name": "config pipeline",
+        "nodes": [
+            {"id": "trg", "kind": "trigger", "name": "T"},
+            {"id": "ret", "kind": "retrieval", "name": "RAG",
+             "config": {"top_k": 3, "query": "fiyat listesi"}},
+            {"id": "ai", "kind": "custom_ai", "name": "Draft",
+             "config": {"instruction": "Bir teklif taslağı yaz"}},
+            {"id": "pol", "kind": "policy", "name": "Policy",
+             "config": {"risk_threshold": "medium"}},
+        ],
+        "edges": [
+            {"source": "trg", "target": "ret"}, {"source": "ret", "target": "ai"},
+            {"source": "ai", "target": "pol"},
+        ],
+    }
+    out = await run_workflow_graph(
+        tenant_slug="tC", name="config pipeline", graph=graph,
+        input_text="Merhaba", actor="a@x.io",
+    )
+    assert out["status"] == "done"
+    assert out["step_count"] == 3                     # retrieval + custom_ai + policy
+    assert captured["top_k"] == 3                     # retrieval config honoured
+    assert captured["q"] == "fiyat listesi"
+    assert "Bir teklif taslağı yaz" in captured["prompt"]   # custom_ai instruction ran
+    ai_step = next(r for r in out["results"] if r["kind"] == "custom_ai")
+    assert ai_step["summary"] == "özel adım çıktısı"
+    assert ai_step["provider"] == "groq"
