@@ -117,12 +117,12 @@ def save_definition(
             "ordered_steps": ordered_agent_steps(clean)}
 
 
-def ordered_agent_steps(graph: Dict[str, Any]) -> List[str]:
-    """Topological order of the graph's agent nodes → agent_id run sequence.
+def _topo_order(graph: Dict[str, Any]):
+    """Kahn topological sort over a designer graph.
 
-    Kahn's algorithm over all nodes (stable to insertion order on ties), then
-    keep only agent-kind nodes that resolve to a known agent_id. Cyclic or
-    malformed graphs fall back to node insertion order so a run is still possible.
+    Returns ``(order, by_id, wired)``: the ordered node ids (insertion-order
+    stable on ties; a cycle falls back to insertion order so a run is still
+    possible), the id→node map, and the set of nodes that touch ≥1 edge.
     """
     nodes = graph.get("nodes", []) if isinstance(graph, dict) else []
     edges = graph.get("edges", []) if isinstance(graph, dict) else []
@@ -149,15 +149,200 @@ def ordered_agent_steps(graph: Dict[str, Any]) -> List[str]:
                 queue.append(nxt)
     if len(order) != len(by_id):           # cycle → fall back to insertion order
         order = list(by_id.keys())
+    return order, by_id, wired
 
-    # Only WIRED agent nodes run — a node dropped from the palette but not yet
-    # connected is not part of the flow, so it must not execute.
+
+def ordered_agent_steps(graph: Dict[str, Any]) -> List[str]:
+    """Topological order of the graph's agent nodes → agent_id run sequence.
+
+    Only WIRED agent nodes that resolve to a known agent_id run — a node dropped
+    on the canvas but not yet connected is not part of the flow.
+    """
+    order, by_id, wired = _topo_order(graph)
     steps: List[str] = []
     for nid in order:
         n = by_id[nid]
         if n.get("kind") == "agent" and nid in wired and n.get("agent_id") in AGENTS:
             steps.append(n["agent_id"])
     return steps
+
+
+_RISK_RANK = {"low": 0, "medium": 1, "high": 2}
+
+
+async def run_workflow_graph(
+    *, tenant_slug: str, name: str, graph: Dict[str, Any], input_text: str,
+    trigger: str = "manual", actor: str = "", dry_run: bool = False,
+) -> Dict[str, Any]:
+    """Execute the FULL designer graph — every wired node runs in topological
+    order, dispatched by kind (not only agent nodes):
+
+      agent      → Agent Runtime call (threads the prior summary + retrieved
+                   context); risky results open Approval Center items.
+      retrieval  → hybrid RAG query; snippets thread into the next agent's prompt.
+      policy     → risk checkpoint over the accumulated step risk.
+      consent    → channel-consent checkpoint.
+      approval   → human-approval gate marker.
+      action     → outbound action marker (CRM note / route).
+      trigger / branch / sub_workflow / connector → structural, recorded.
+
+    ``step_count`` counts every executed (non-trigger) node, so a run mirrors the
+    pipeline drawn on the canvas instead of only its agent nodes. ``dry_run``
+    still runs agents + retrieval for a preview but persists nothing and opens
+    no approvals.
+    """
+    tenant_slug = (tenant_slug or "default").strip()
+    t0 = time.perf_counter()
+    order, by_id, wired = _topo_order(graph)
+    multi = len(by_id) > 1
+    results: List[dict] = []
+    approvals_opened = 0
+    would_open = 0
+    prev_summary = ""
+    context_snippets: List[str] = []
+    risk_seen = "low"
+    status = "done"
+    executed = 0
+
+    for nid in order:
+        if multi and nid not in wired:
+            continue                         # unconnected node is not part of the flow
+        n = by_id[nid]
+        kind = n.get("kind")
+        nm = n.get("name") or kind or "node"
+
+        if kind == "trigger":
+            results.append({"kind": kind, "name": nm, "status": "started"})
+            continue
+
+        if kind == "agent":
+            agent_id = n.get("agent_id")
+            if agent_id not in AGENTS:
+                results.append({"kind": kind, "name": nm, "skipped": "unknown_agent"})
+                status = "partial"
+                continue
+            task = input_text if not prev_summary else (
+                f"{input_text}\n\nÖnceki adım çıktısı: {prev_summary}"
+            )
+            if context_snippets:
+                task += "\n\nİlgili bağlam:\n- " + "\n- ".join(context_snippets[:5])
+            try:
+                res = await run_agent(
+                    agent_id, task, tenant_id=tenant_slug, user_subject=actor
+                )
+            except Exception as exc:  # noqa: BLE001 — one bad step → partial, continue
+                logger.info("workflow agent %s failed: %s", agent_id, exc)
+                results.append({"kind": kind, "name": nm, "agent_id": agent_id,
+                                "error": str(exc)[:200]})
+                status = "partial"
+                continue
+            prev_summary = res.summary
+            if _RISK_RANK.get(res.risk, 0) > _RISK_RANK.get(risk_seen, 0):
+                risk_seen = res.risk
+            step = {
+                "kind": kind, "name": nm, "agent_id": agent_id, "summary": res.summary,
+                "confidence": res.confidence, "risk": res.risk,
+                "requires_approval": res.requires_approval,
+            }
+            executed += 1
+            if dry_run:
+                if res.requires_approval:
+                    would_open += 1
+                step["would_open_approval"] = res.requires_approval
+                results.append(step)
+                continue
+            try:
+                from app.approvals import create_approval_from_result, log_agent_run
+                run_id = log_agent_run(res, tenant_slug=tenant_slug, actor=actor, task=task)
+                step["run_id"] = run_id
+                if res.requires_approval:
+                    ap = create_approval_from_result(
+                        res, tenant_slug=tenant_slug, requester=actor, agent_run_id=run_id
+                    )
+                    step["approval_id"] = ap["id"]
+                    approvals_opened += 1
+            except Exception:  # noqa: BLE001 — persistence best-effort
+                logger.info("workflow step persistence skipped", exc_info=True)
+            results.append(step)
+            continue
+
+        if kind == "retrieval":
+            try:
+                from app.rag.hybrid import query_hybrid
+                hits = await query_hybrid(prev_summary or input_text, top_k=5)
+            except Exception as exc:  # noqa: BLE001 — retrieval failure → skip, continue
+                results.append({"kind": kind, "name": nm, "status": "skipped",
+                                "error": str(exc)[:160]})
+                executed += 1
+                continue
+            snippets = [
+                (h.get("text") or h.get("document") or "")
+                for h in hits if isinstance(h, dict) and not h.get("error")
+            ]
+            snippets = [s for s in snippets if s]
+            context_snippets.extend(snippets[:5])
+            results.append({"kind": kind, "name": nm, "status": "done",
+                            "retrieved": len(snippets)})
+            executed += 1
+            continue
+
+        if kind == "policy":
+            decision = "review" if risk_seen == "high" else "allow"
+            results.append({"kind": kind, "name": nm, "status": "done",
+                            "decision": decision, "risk_seen": risk_seen})
+            executed += 1
+            continue
+
+        if kind == "consent":
+            results.append({"kind": kind, "name": nm, "status": "done",
+                            "note": "channel-consent checkpoint"})
+            executed += 1
+            continue
+
+        if kind == "approval":
+            results.append({"kind": kind, "name": nm, "status": "gate",
+                            "note": "human-approval gate"})
+            executed += 1
+            continue
+
+        if kind == "action":
+            results.append({"kind": kind, "name": nm, "status": "executed",
+                            "note": "outbound action"})
+            executed += 1
+            continue
+
+        # connector / branch / sub_workflow / unknown → structural checkpoint
+        results.append({"kind": kind, "name": nm, "status": "done"})
+        executed += 1
+
+    elapsed = int((time.perf_counter() - t0) * 1000)
+    steps_run = len([r for r in results
+                     if "summary" in r or r.get("retrieved") is not None])
+    if dry_run:
+        return {
+            "id": None, "name": name, "status": status, "trigger": "dry-run",
+            "dry_run": True, "step_count": executed, "steps_run": steps_run,
+            "approvals_opened": 0, "would_open_approvals": would_open,
+            "elapsed_ms": elapsed, "results": results,
+        }
+    run_ids = [nid for nid in order if not (multi and nid not in wired)]
+    row = WorkflowRun(
+        tenant_slug=tenant_slug, name=name[:200], trigger=trigger[:32],
+        steps_json=json.dumps(run_ids)[:65000],
+        result_json=json.dumps(results)[:65000],
+        status=status, step_count=executed, approvals_opened=approvals_opened,
+        elapsed_ms=elapsed, actor=actor,
+    )
+    with Session(get_engine()) as db:
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+        rid = int(row.id)
+    return {
+        "id": rid, "name": name, "status": status, "trigger": trigger,
+        "step_count": executed, "steps_run": steps_run,
+        "approvals_opened": approvals_opened, "elapsed_ms": elapsed, "results": results,
+    }
 
 
 async def run_workflow(

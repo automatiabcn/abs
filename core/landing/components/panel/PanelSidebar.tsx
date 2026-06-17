@@ -67,7 +67,10 @@ const NAV: NavItem[] = [
   // Sprint 2B BUG-20 — /admin/chat is now a real page (not a 308 to
   // /panel/chat). Same for /admin/mcp-tools and /admin/quota below.
   { href: "/admin/chat", label: "Sohbet", icon: MessageSquare, group: "Üretim" },
-  { href: "/admin/workflow-builder", label: "Workflow", icon: Workflow, group: "Üretim" },
+  // Workflow lives in ONE place — the visual "Workflow Designer" under Agentic
+  // Growth. The old /admin/workflow-builder (natural-language synth) used a
+  // different node model and a duplicate "Workflow" entry here; it now redirects
+  // to the Designer so there is a single, coherent Workflow experience.
   // BUG-V1 — /admin/usage Free path % + Claude budget % widget.
   { href: "/admin/usage", label: "Kullanım", icon: BarChart3, group: "Üretim" },
   { href: "/admin/mcp-tools", label: "MCP Tools", icon: Wrench, group: "Üretim" },

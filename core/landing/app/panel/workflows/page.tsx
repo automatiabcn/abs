@@ -157,12 +157,23 @@ export default function WorkflowDesignerPage() {
   async function run(dry = false) {
     setBusy(true); setErr(null);
     try {
-      const steps = await save();
-      if (steps.length === 0) { setErr("Çalıştırılacak agent node yok — palette'ten bir agent ekleyin."); return; }
+      await save();
+      const graph = currentGraph();
+      const wired = new Set<string>();
+      graph.edges.forEach((e) => { wired.add(e.source); wired.add(e.target); });
+      const runnable = graph.nodes.filter(
+        (n) => n.kind !== "trigger" && (graph.nodes.length === 1 || wired.has(n.id)),
+      );
+      if (runnable.length === 0) {
+        setErr("Çalıştırılacak node yok — palette'ten bir node ekleyip bağlayın.");
+        return;
+      }
+      // Send the whole graph: the engine runs every wired node (agent, retrieval,
+      // policy, consent, approval, action), not only the agent nodes.
       const r = await fetch("/v1/agentic-workflows/run", {
         method: "POST", credentials: "include",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name, steps, input: "Fiyat öğrenmek istiyorum", trigger: "web form", dry_run: dry }),
+        body: JSON.stringify({ name, graph, input: "Fiyat öğrenmek istiyorum", trigger: "web form", dry_run: dry }),
       });
       if (dry) {
         const j = await r.json();
