@@ -1,0 +1,3376 @@
+
+<!doctype html>
+<html lang="tr" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Self-host AI orchestration for Claude Code — 100+ MCP tools, 6 provider cascade, RAG hybrid, Türkçe quality pipeline.">
+      
+      
+        <meta name="author" content="Automatia BCN">
+      
+      
+        <link rel="canonical" href="https://docs.automatiabcn.com/latest/CUSTOMER_USER_GUIDE/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Automatia ABS — Customer User Guide - Automatia ABS Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#automatia-abs-customer-user-guide" class="md-skip">
+          Ana içeriğe geç
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Başlık">
+    <a href=".." title="Automatia ABS Documentation" class="md-header__button md-logo" aria-label="Automatia ABS Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Automatia ABS Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Automatia ABS — Customer User Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Karanlık moda geç"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Karanlık moda geç" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Aydınlık moda geç"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Aydınlık moda geç" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Ara" placeholder="Ara" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Ara">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Temizle" aria-label="Temizle" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Arama başlatılıyor
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/automatiabcn/abs" title="Depoya git" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Sekmeler" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Ana Sayfa
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../setup-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Setup Guide
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart-30min/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quickstart (30 min)
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api-reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../billing-runbook/" class="md-tabs__link">
+          
+  
+  
+  Operations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../security/scope/" class="md-tabs__link">
+          
+  
+  
+  Security
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../launch/" class="md-tabs__link">
+          
+  
+  
+  Launch
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../qa/bundle-reports/2026-04-29-summary/" class="md-tabs__link">
+          
+  
+  
+  QA & Policy
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api-reference/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../design-decisions/" class="md-tabs__link">
+          
+  
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../CHANGELOG/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CHANGELOG
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../research/market/" class="md-tabs__link">
+          
+  
+  
+  Research
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigasyon" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Automatia ABS Documentation" class="md-nav__button md-logo" aria-label="Automatia ABS Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Automatia ABS Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/automatiabcn/abs" title="Depoya git" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ana Sayfa
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart-30min/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart (30 min)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../billing-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Billing Runbook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../first-customer-playbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    First Customer Playbook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dr-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Disaster Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vault-recovery-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vault Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-rotation-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook Rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/owasp_rag_checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OWASP + RAG Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/oauth_pentest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OAuth Pen-Test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/hackerone_program/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HackerOne Program
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Launch
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Launch
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../launch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../launch/ga-launch-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GA Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../launch/press-kit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Press Kit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../launch/launch-copy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Launch Copy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../launch/landing-ab-test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Landing A/B
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../launch/crisis-comm-playbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Crisis Comm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QA & Policy
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    QA & Policy
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/bundle-reports/2026-04-29-summary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bundle Reports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/perf-budget-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Perf Budget
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/i18n-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    i18n Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/fs-scan-allowlist-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    fs-scan Allowlist Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/docs-publishing-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docs Publishing Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/beta-e2e-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beta E2E Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/bug_report_2026-04-28/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bug Reports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../open-questions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Open Questions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CHANGELOG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CHANGELOG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/market/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Market
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/competitive-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Competitive
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/dual-distribution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dual Distribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/free-tier-limits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Free Tier Limits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/landing-onboarding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Landing Onboarding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/one-time-license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    One-Time License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="İçindekiler">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      İçindekiler
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#icindekiler-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        İçindekiler / Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hos-geldiniz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hoş geldiniz
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-satn-alma-aks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Satın alma akışı
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Satın alma akışı">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-urun-sayfas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Ürün sayfası
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-odeme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Ödeme
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-onay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Onay
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-vps-hazrlama" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. VPS hazırlama
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. VPS hazırlama">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-onerilen-saglayclar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Önerilen sağlayıcılar
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-sunucu-olusturma-genel-admlar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Sunucu oluşturma (genel adımlar)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-abs-kurulumu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. ABS kurulumu
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. ABS kurulumu">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-docker-kurulumu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Docker kurulumu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-abs-deposu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 ABS deposu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-ortam-dosyas-env" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Ortam dosyası (.env)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-stack-baslatma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Stack başlatma
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-saglk-kontrolu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Sağlık kontrolü
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-ilk-yaplandrma-setup-wizard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. İlk yapılandırma (Setup Wizard)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. İlk yapılandırma (Setup Wizard)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adm-1-yonetici-hesab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adım 1 — Yönetici hesabı
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adm-2-lisans" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adım 2 — Lisans
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adm-3-domain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adım 3 — Domain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adm-4-anthropic-api-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adım 4 — Anthropic API key
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adm-5-diger-saglayclar-opsiyonel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adım 5 — Diğer sağlayıcılar (opsiyonel)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adm-6-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adım 6 — Test
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-saglayc-api-anahtarlar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Sağlayıcı API anahtarları
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Sağlayıcı API anahtarları">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-anthropic-claude-onerilir-primary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Anthropic Claude (önerilir, primary)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-groq-ucretsiz-tier-hzl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Groq (ücretsiz tier, hızlı)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-google-gemini-ucretsiz-tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Google Gemini (ücretsiz tier)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-cerebras-ultra-hzl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Cerebras (ultra hızlı)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#55-cohere-ucretsiz-trial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.5 Cohere (ücretsiz trial)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#56-cloudflare-workers-ai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.6 Cloudflare Workers AI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-ilk-sohbet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. İlk sohbet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. İlk sohbet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-sohbet-baslatma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Sohbet başlatma
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-pipeline-secimi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Pipeline seçimi
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-rag-bilgi-taban" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. RAG bilgi tabanı
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. RAG bilgi tabanı">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-dokuman-yukleme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Doküman yükleme
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-sorgu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Sorgu
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-quality-pipelines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Quality Pipelines
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-workflow-builder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Workflow Builder
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Workflow Builder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-workflow-olusturma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Workflow oluşturma
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-knowledge-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Knowledge Graph
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Knowledge Graph">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-cypher-editor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Cypher editor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-dogal-dil-sorgu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Doğal dil sorgu
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-plugin-marketplace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Plugin Marketplace
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Plugin Marketplace">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-plugin-kurma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 Plugin kurma
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-filtreleme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 Filtreleme
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-yonetim-ayarlar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Yönetim ayarları
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-lisans-iade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Lisans &amp; İade
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="13. Lisans &amp; İade">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#131-14-gun-kosulsuz-iade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.1 14 gün koşulsuz iade
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#132-yenileme-maintenance-pack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.2 Yenileme (Maintenance Pack)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#133-lisans-aktarm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.3 Lisans aktarımı
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-sorun-giderme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Sorun giderme
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#yasal-uyarlar-marka-bildirimi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Yasal uyarılar &amp; marka bildirimi
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="automatia-abs-customer-user-guide">Automatia ABS — Customer User Guide<a class="headerlink" href="#automatia-abs-customer-user-guide" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Self-hosted AI orchestrator. Automate the chaos on your own server.</strong></p>
+<p>Version: 1.0 · Last updated: 2026-05-09 · License: BSL 1.1</p>
+</blockquote>
+<hr />
+<h2 id="icindekiler-contents">İçindekiler / Contents<a class="headerlink" href="#icindekiler-contents" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#hoşgeldiniz">Hoş geldiniz</a></li>
+<li><a href="#1-satın-alma-akışı">Satın alma akışı</a></li>
+<li><a href="#2-vps-hazırlama">VPS hazırlama</a></li>
+<li><a href="#3-abs-kurulumu">ABS kurulumu</a></li>
+<li><a href="#4-i̇lk-yapılandırma-setup-wizard">İlk yapılandırma (Setup Wizard)</a></li>
+<li><a href="#5-sağlayıcı-api-anahtarları">Sağlayıcı API anahtarları</a></li>
+<li><a href="#6-i̇lk-sohbet">İlk sohbet</a></li>
+<li><a href="#7-rag-bilgi-tabanı">RAG bilgi tabanı</a></li>
+<li><a href="#8-quality-pipelines">Quality Pipelines</a></li>
+<li><a href="#9-workflow-builder">Workflow Builder</a></li>
+<li><a href="#10-knowledge-graph">Knowledge Graph</a></li>
+<li><a href="#11-plugin-marketplace">Plugin Marketplace</a></li>
+<li><a href="#12-yönetim-ayarları">Yönetim ayarları</a></li>
+<li><a href="#13-lisans--i̇ade">Lisans &amp; iade</a></li>
+<li><a href="#14-sorun-giderme">Sorun giderme</a></li>
+<li><a href="#yasal-uyarılar--marka-bildirimi">Yasal uyarılar &amp; marka bildirimi</a></li>
+</ol>
+<hr />
+<h2 id="hos-geldiniz">Hoş geldiniz<a class="headerlink" href="#hos-geldiniz" title="Permanent link">&para;</a></h2>
+<p>ABS (Automation Backbone System), kendi sunucunuzda çalışan bir AI orkestratördür. 100+ MCP tool, 6 sağlayıcılı cascade router (Anthropic, Groq, Cerebras, Gemini, Cloudflare, Cohere) ve hibrit RAG ile kurumsal AI altyapısı sunar.</p>
+<p><strong>Kullanım hakları:</strong> Müşteri olarak ABS'yi kendi sunucunuzda <strong>production</strong> ortamında kullanma hakkına sahipsiniz. BSL 1.1 lisansı 4 yıl sonra (2030-05-07) Apache 2.0'a otomatik dönüşür.</p>
+<p><strong>Bu rehberin kapsamı:</strong> Satın aldıktan sonra kuruluma kadar geçen 30 dakikalık akış + temel kullanım. İleri seviye konular için <a href="../api-reference/">docs/api-reference.md</a> ve <a href="runbooks/">docs/runbooks/</a>.</p>
+<hr />
+<h2 id="1-satn-alma-aks">1. Satın alma akışı<a class="headerlink" href="#1-satn-alma-aks" title="Permanent link">&para;</a></h2>
+<h3 id="11-urun-sayfas">1.1 Ürün sayfası<a class="headerlink" href="#11-urun-sayfas" title="Permanent link">&para;</a></h3>
+<p><a href="https://automatiabcn.com/products/abs">automatiabcn.com/products/abs</a> — 3 tier seçeneği:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Fiyat</th>
+<th>Kapsam</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Self-Host</td>
+<td>$299 (tek seferlik)</td>
+<td>1 seat · 1 deployment · email destek (48h)</td>
+</tr>
+<tr>
+<td>Team 5</td>
+<td>$1,196/yıl</td>
+<td>5 seat · priority email (24h) · onboarding call</td>
+</tr>
+<tr>
+<td>Team 10</td>
+<td>$2,093/yıl</td>
+<td>10 seat · 24h SLA · founder hotline</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Her tier 14 gün koşulsuz iade garantilidir. İade için bkz. <a href="#13-lisans--i̇ade">Bölüm 13</a>.</p>
+</blockquote>
+<p><strong>Ekran</strong>: <code>faz_c_phase1_1_landing_en.png</code> — Hero, özellikler, fiyatlandırma kartları, FAQ.</p>
+<h3 id="12-odeme">1.2 Ödeme<a class="headerlink" href="#12-odeme" title="Permanent link">&para;</a></h3>
+<p>"Buy now" butonu sizi güvenli ödeme sayfasına yönlendirir (3D Secure desteklenir). Bilgi formu:</p>
+<ul>
+<li>E-posta (lisans bu adrese gönderilir — doğru girin)</li>
+<li>Kart numarası, son kullanma, CVC</li>
+<li>Kart sahibi adı + ülke</li>
+</ul>
+<p><strong>Ekran</strong>: <code>faz_c_phase1_2_stripe_filled.png</code> — Çoklu ödeme yöntemi (kart, Link, Amazon Pay) + güvenli sandbox işlem.</p>
+<h3 id="13-onay">1.3 Onay<a class="headerlink" href="#13-onay" title="Permanent link">&para;</a></h3>
+<p>Ödeme onaylandıktan sonra "Thanks for your payment" sayfası görünür ve:</p>
+<ol>
+<li><strong>Welcome email</strong> (sipariş + kurulum 7 adımı) ~1 dakika içinde geldiği e-postaya iletilir.</li>
+<li><strong>Founder bildirimi</strong> Automatia BCN ekibine düşer.</li>
+<li><strong>Lisans JWT</strong> founder tarafından mint edilip ayrı bir e-postayla 24 saat içinde gönderilir.</li>
+</ol>
+<p><strong>Ekran</strong>: <code>faz_c_phase1_2b_stripe_paid.png</code> — Ödeme tamamlandı bildirimi.</p>
+<blockquote>
+<p><strong>Email ulaşmadı mı?</strong> Spam klasörünü kontrol edin. Hâlâ yoksa <code>info@automatiabcn.com</code> adresine sipariş ID'nizle yazın.</p>
+</blockquote>
+<hr />
+<h2 id="2-vps-hazrlama">2. VPS hazırlama<a class="headerlink" href="#2-vps-hazrlama" title="Permanent link">&para;</a></h2>
+<p>ABS herhangi bir Linux x86_64 / ARM64 sunucusunda çalışır. <strong>Minimum gereksinim:</strong> 2 vCPU, 4 GB RAM, 40 GB SSD, Ubuntu 22.04 LTS önerilir.</p>
+<h3 id="21-onerilen-saglayclar">2.1 Önerilen sağlayıcılar<a class="headerlink" href="#21-onerilen-saglayclar" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Sağlayıcı</th>
+<th>Plan</th>
+<th>Aylık</th>
+<th>Bölge</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hetzner Cloud</td>
+<td>CPX22 (AMD, 2vCPU, 4GB, 80GB NVMe)</td>
+<td>≈ €4.99</td>
+<td>Almanya/Finlandiya/ABD</td>
+</tr>
+<tr>
+<td>DigitalOcean</td>
+<td>Basic 4GB</td>
+<td>≈ $24</td>
+<td>Frankfurt/Amsterdam/NYC</td>
+</tr>
+<tr>
+<td>Linode (Akamai)</td>
+<td>Linode 4GB</td>
+<td>≈ $24</td>
+<td>global</td>
+</tr>
+<tr>
+<td>Vultr</td>
+<td>Cloud Compute 4GB</td>
+<td>≈ $24</td>
+<td>global</td>
+</tr>
+<tr>
+<td>Kendi sunucunuz</td>
+<td>Bare-metal / Proxmox VM</td>
+<td>—</td>
+<td>yerel</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Bu liste yalnızca yönlendiricidir; satışa aracılık etmiyoruz. Ürün adları ilgili şirketlerin tescilli markalarıdır.</p>
+</blockquote>
+<h3 id="22-sunucu-olusturma-genel-admlar">2.2 Sunucu oluşturma (genel adımlar)<a class="headerlink" href="#22-sunucu-olusturma-genel-admlar" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Sağlayıcının web panelinde yeni sunucu oluşturun: 2 vCPU + 4 GB RAM minimum.</li>
+<li>İmaj: <strong>Ubuntu 22.04 LTS</strong>.</li>
+<li>SSH anahtarınızı yükleyin (yoksa <code>ssh-keygen -t ed25519 -C "abs-customer"</code> ile oluşturun, public anahtarı paneline yapıştırın).</li>
+<li>Sunucu oluştuğunda <strong>public IPv4</strong> adresini not alın.</li>
+<li>SSH ile bağlanın: <code>ssh -i ~/.ssh/abs-customer root@&lt;IPv4&gt;</code>.</li>
+</ol>
+<blockquote>
+<p><strong>Domain isteğe bağlıdır.</strong> Domain yoksa <code>&lt;IPv4&gt;.sslip.io</code> formatı (örn. <code>203-0-113-7.sslip.io</code>) Caddy'nin Let's Encrypt sertifikasını otomatik üretmesini sağlar. DNS kaydı eklemenize gerek kalmaz.</p>
+</blockquote>
+<hr />
+<h2 id="3-abs-kurulumu">3. ABS kurulumu<a class="headerlink" href="#3-abs-kurulumu" title="Permanent link">&para;</a></h2>
+<h3 id="31-docker-kurulumu">3.1 Docker kurulumu<a class="headerlink" href="#31-docker-kurulumu" title="Permanent link">&para;</a></h3>
+<p>Ubuntu 22.04 üzerinde:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>apt-get<span class="w"> </span>update
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>docker.io<span class="w"> </span>docker-compose-v2<span class="w"> </span>docker-buildx
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>docker
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>docker<span class="w"> </span>--version<span class="w">          </span><span class="c1"># 24+ olmalı</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>version<span class="w">    </span><span class="c1"># v2.20+ olmalı</span>
+</span></code></pre></div>
+<h3 id="32-abs-deposu">3.2 ABS deposu<a class="headerlink" href="#32-abs-deposu" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/automatiabcn/abs.git<span class="w"> </span>/opt/abs
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>/opt/abs
+</span></code></pre></div>
+<blockquote>
+<p>Repo herkese açıktır (BSL 1.1). Kaynak kod inceleyebilir, ancak ticari kullanım için lisans gerekir.</p>
+</blockquote>
+<h3 id="33-ortam-dosyas-env">3.3 Ortam dosyası (.env)<a class="headerlink" href="#33-ortam-dosyas-env" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cp<span class="w"> </span>.env.example<span class="w"> </span>.env
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>nano<span class="w"> </span>.env
+</span></code></pre></div>
+<p>Doldurulması gereken alanlar (welcome email'inde örnekleri var):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ABS_LICENSE_KEY=&lt;lisans-jwt-mailden&gt;
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>ABS_PUBLIC_HOSTNAME=&lt;domain veya 203-0-113-7.sslip.io&gt;
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>ABS_PUBLIC_URL=https://${ABS_PUBLIC_HOSTNAME}
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>ABS_ACME_EMAIL=&lt;sertifika-bildirim-adresiniz&gt;
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>ABS_VAULT_KEY=$(openssl rand -base64 32)
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>ABS_VERSION=1.0.0-rc4
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>ANTHROPIC_API_KEY=sk-ant-...   # Bölüm 5&#39;te alacaksınız
+</span></code></pre></div>
+<h3 id="34-stack-baslatma">3.4 Stack başlatma<a class="headerlink" href="#34-stack-baslatma" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>ps<span class="w">          </span><span class="c1"># 4 container &quot;healthy&quot; durumunda olmalı (≈30 sn)</span>
+</span></code></pre></div>
+<p>İlk başlangıçta arka uç GHCR'dan yaklaşık 1.3 GB indirir.</p>
+<h3 id="35-saglk-kontrolu">3.5 Sağlık kontrolü<a class="headerlink" href="#35-saglk-kontrolu" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>https://<span class="si">${</span><span class="nv">ABS_PUBLIC_HOSTNAME</span><span class="si">}</span>/healthz
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># beklenen yanıt: {&quot;status&quot;:&quot;ok&quot;,&quot;service&quot;:&quot;abs-backend&quot;}</span>
+</span></code></pre></div>
+<blockquote>
+<p>Caddy ilk açılışta ~30 sn içinde Let's Encrypt sertifikasını üretir. Tarayıcıda ilk istek bu süreyi bekleyebilir.</p>
+</blockquote>
+<hr />
+<h2 id="4-ilk-yaplandrma-setup-wizard">4. İlk yapılandırma (Setup Wizard)<a class="headerlink" href="#4-ilk-yaplandrma-setup-wizard" title="Permanent link">&para;</a></h2>
+<p>Tarayıcıda <code>https://&lt;ABS_PUBLIC_HOSTNAME&gt;/setup</code> adresini açın. 6 adımlı sihirbaz karşılar.</p>
+<p><strong>Ekran</strong>: <code>faz_c_phase3_5_setup_wizard_landed.png</code> — Adım listesi sol nav, "Automate the Chaos" markası.</p>
+<h3 id="adm-1-yonetici-hesab">Adım 1 — Yönetici hesabı<a class="headerlink" href="#adm-1-yonetici-hesab" title="Permanent link">&para;</a></h3>
+<p>Panel girişi yapacak ana hesabı tanımlayın:
+- E-posta (örn. <code>admin@şirketiniz.com</code>)
+- Parola (en az 8 karakter)</p>
+<h3 id="adm-2-lisans">Adım 2 — Lisans<a class="headerlink" href="#adm-2-lisans" title="Permanent link">&para;</a></h3>
+<p>Mailden gelen JWT token'ını yapıştırın → "Aktive et". Backend imzayı doğrular.</p>
+<h3 id="adm-3-domain">Adım 3 — Domain<a class="headerlink" href="#adm-3-domain" title="Permanent link">&para;</a></h3>
+<p>Mode seçimi:
+- <strong>IP</strong>: tek seferlik smoke test (<code>&lt;IP&gt;.sslip.io</code>).
+- <strong>Domain</strong>: kendi alanınız (önerilen).</p>
+<p>SSL modu: <strong>ACME</strong> (Let's Encrypt) varsayılan.</p>
+<h3 id="adm-4-anthropic-api-key">Adım 4 — Anthropic API key<a class="headerlink" href="#adm-4-anthropic-api-key" title="Permanent link">&para;</a></h3>
+<p>Anthropic Console'dan (<a href="https://console.anthropic.com/">console.anthropic.com</a>) bir API anahtarı oluşturup yapıştırın. Anahtar <code>sk-ant-</code> ile başlamalıdır. Detaylı sağlayıcı kayıt akışı için <a href="#5-sağlayıcı-api-anahtarları">Bölüm 5</a>.</p>
+<h3 id="adm-5-diger-saglayclar-opsiyonel">Adım 5 — Diğer sağlayıcılar (opsiyonel)<a class="headerlink" href="#adm-5-diger-saglayclar-opsiyonel" title="Permanent link">&para;</a></h3>
+<p>Cascade router için ek sağlayıcılar:
+- Groq (<code>gsk_...</code>)
+- Gemini / Google AI (<code>AIza...</code>)
+- Cerebras (<code>csk-...</code>)
+- Cohere (<code>...</code>)
+- Cloudflare Workers AI (Account ID + API Token)</p>
+<p>Hangisini girerseniz fallback zincirine eklenir.</p>
+<h3 id="adm-6-test">Adım 6 — Test<a class="headerlink" href="#adm-6-test" title="Permanent link">&para;</a></h3>
+<p>Yapılandırılan sağlayıcılar için ping testi sonuçlarını gösterir. PASS olunca sihirbaz tamamlanır.</p>
+<hr />
+<h2 id="5-saglayc-api-anahtarlar">5. Sağlayıcı API anahtarları<a class="headerlink" href="#5-saglayc-api-anahtarlar" title="Permanent link">&para;</a></h2>
+<p>ABS, sağlayıcı API'lerini <strong>siz kendi hesabınızdan</strong> alır ve yine <strong>kendi hesabınızdan</strong> ücretlendirilirsiniz. ABS aracı ücreti almaz.</p>
+<h3 id="51-anthropic-claude-onerilir-primary">5.1 Anthropic Claude (önerilir, primary)<a class="headerlink" href="#51-anthropic-claude-onerilir-primary" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="https://console.anthropic.com/">console.anthropic.com</a> → Settings → API Keys → "Create Key"</li>
+<li>İsim: <code>abs-orchestrator-prod</code></li>
+<li>Workspace: kendi varsayılanınız</li>
+<li>Anahtar bir kez gösterilir — güvenli yere kaydedin (<code>sk-ant-api03-...</code>)</li>
+<li>Setup Wizard Adım 4'e yapıştırın</li>
+</ol>
+<blockquote>
+<p><strong>Maliyet:</strong> Claude API kullanım başına faturalanır (token bazlı). Pro plan $20/ay aboneliği API faturasını kapsar.</p>
+</blockquote>
+<h3 id="52-groq-ucretsiz-tier-hzl">5.2 Groq (ücretsiz tier, hızlı)<a class="headerlink" href="#52-groq-ucretsiz-tier-hzl" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="https://console.groq.com/keys">console.groq.com</a> → "Create API Key" </li>
+<li>Anahtar <code>gsk_</code> ile başlar</li>
+<li>Setup Wizard Adım 5</li>
+</ol>
+<blockquote>
+<p>Ücretsiz tier yüksek hız (Llama 3.3 70B) için mükemmel. Rate limit: 30 req/dk.</p>
+</blockquote>
+<h3 id="53-google-gemini-ucretsiz-tier">5.3 Google Gemini (ücretsiz tier)<a class="headerlink" href="#53-google-gemini-ucretsiz-tier" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="https://aistudio.google.com/app/apikey">aistudio.google.com</a> → "Create API key"</li>
+<li>Anahtar <code>AIza</code> ile başlar</li>
+<li>Setup Wizard Adım 5</li>
+</ol>
+<blockquote>
+<p>Gemini 2.5 Flash ücretsiz limit yüksek. Pro plan opsiyonel.</p>
+</blockquote>
+<h3 id="54-cerebras-ultra-hzl">5.4 Cerebras (ultra hızlı)<a class="headerlink" href="#54-cerebras-ultra-hzl" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="https://cloud.cerebras.ai/">cloud.cerebras.ai</a> → API Keys</li>
+<li>Anahtar <code>csk-</code> ile başlar</li>
+<li>Setup Wizard Adım 5</li>
+</ol>
+<blockquote>
+<p>Cerebras WSE-3 ile saniyeler yerine milisaniyeler.</p>
+</blockquote>
+<h3 id="55-cohere-ucretsiz-trial">5.5 Cohere (ücretsiz trial)<a class="headerlink" href="#55-cohere-ucretsiz-trial" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="https://dashboard.cohere.com/api-keys">dashboard.cohere.com</a> → "API Keys"</li>
+<li>Trial key başlar</li>
+<li>Setup Wizard Adım 5</li>
+</ol>
+<h3 id="56-cloudflare-workers-ai">5.6 Cloudflare Workers AI<a class="headerlink" href="#56-cloudflare-workers-ai" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="https://dash.cloudflare.com/">dash.cloudflare.com</a> → AI → Workers AI</li>
+<li>Account ID: sağ alt köşeden kopyalayın</li>
+<li>API Token: My Profile → API Tokens → Workers AI Read template</li>
+</ol>
+<blockquote>
+<p><strong>Marka uyarısı:</strong> Anthropic, Claude, Groq, Gemini, Cerebras, Cohere ve Cloudflare ilgili şirketlerin tescilli markalarıdır. ABS bu hizmetlerin müşteri tarafı entegrasyonunu sağlar; resmi ortaklık veya destek anlamına gelmez.</p>
+</blockquote>
+<hr />
+<h2 id="6-ilk-sohbet">6. İlk sohbet<a class="headerlink" href="#6-ilk-sohbet" title="Permanent link">&para;</a></h2>
+<p>Panel girişi: <code>https://&lt;domain&gt;/login</code> → Setup Wizard'da tanımladığınız admin email/parola.</p>
+<p><strong>Ekran</strong>: <code>faz_c_phase4_admin_dashboard.png</code> — Sol nav: Sohbet, Workflow, Kullanım, MCP Tools, RAG, Quality Pipelines.</p>
+<h3 id="61-sohbet-baslatma">6.1 Sohbet başlatma<a class="headerlink" href="#61-sohbet-baslatma" title="Permanent link">&para;</a></h3>
+<p>Sol navdan <strong>Sohbet</strong> → Yeni sohbet → mesajınızı yazın. Yanıt cascade router'dan gelir.</p>
+<p><code>meta</code> blokunda yanıt veren sağlayıcı (<code>provider: anthropic</code>), token sayısı ve gecikme görünür.</p>
+<h3 id="62-pipeline-secimi">6.2 Pipeline seçimi<a class="headerlink" href="#62-pipeline-secimi" title="Permanent link">&para;</a></h3>
+<p>Standart sohbet <code>auto_direct</code> pipeline kullanır. İleri seviye pipeline'lar:</p>
+<table>
+<thead>
+<tr>
+<th>Pipeline</th>
+<th>Amaç</th>
+<th>Süre</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auto_direct</code></td>
+<td>Tek model hızlı yanıt</td>
+<td>~1-3 sn</td>
+</tr>
+<tr>
+<td><code>qual_code</code></td>
+<td>Kod üretimi (üret→doğrula→düzelt)</td>
+<td>~3-8 sn</td>
+</tr>
+<tr>
+<td><code>qual_tr</code></td>
+<td>Türkçe metin (üret→kontrol→cilala)</td>
+<td>~3-8 sn</td>
+</tr>
+<tr>
+<td><code>qual_translate</code></td>
+<td>Çeviri (çevir→geri-çevir→doğrula)</td>
+<td>~3-8 sn</td>
+</tr>
+<tr>
+<td><code>qual_analysis</code></td>
+<td>3-perspektif analiz + sentez</td>
+<td>~10-15 sn</td>
+</tr>
+<tr>
+<td><code>race_code</code></td>
+<td>3 model yarışı, en hızlı kazanır</td>
+<td>~2-5 sn</td>
+</tr>
+</tbody>
+</table>
+<p>Pipeline UI'da kart olarak görünür. Tıklayıp prompt yazın → Çalıştır.</p>
+<p><strong>Ekran</strong>: <code>faz_c_test_admin_pipelines.png</code>, <code>faz_c_test_pipelines_qual_code_run.png</code>.</p>
+<hr />
+<h2 id="7-rag-bilgi-taban">7. RAG bilgi tabanı<a class="headerlink" href="#7-rag-bilgi-taban" title="Permanent link">&para;</a></h2>
+<p>Sol nav → <strong>RAG Bilgi Tabanı</strong>.</p>
+<p><strong>Ekran</strong>: <code>faz_c_phase4_rag.png</code> — Doküman sayısı, chunk, toplam boyut, top-K ayarı.</p>
+<h3 id="71-dokuman-yukleme">7.1 Doküman yükleme<a class="headerlink" href="#71-dokuman-yukleme" title="Permanent link">&para;</a></h3>
+<p>PDF · MD · TXT · DOCX formatları (≤ 25 MB). Sürükle-bırak veya "Dosya seç". BGE-M3 dense embedding ile otomatik chunk + index.</p>
+<h3 id="72-sorgu">7.2 Sorgu<a class="headerlink" href="#72-sorgu" title="Permanent link">&para;</a></h3>
+<p>"Sorgu test" alanına Türkçe veya İngilizce soru yazın → "Sorguyu çalıştır". Top-K (varsayılan 5) sonuç + skor.</p>
+<blockquote>
+<p><strong>Veri güvenliği:</strong> RAG indeksi tamamen sunucunuzda (ChromaDB + Qdrant). Anthropic'e veya başka bir sağlayıcıya doküman içeriği iletilmez — yalnızca sorgu + retrieved chunks LLM'e geçer (yanıt oluşturma için).</p>
+</blockquote>
+<hr />
+<h2 id="8-quality-pipelines">8. Quality Pipelines<a class="headerlink" href="#8-quality-pipelines" title="Permanent link">&para;</a></h2>
+<p>Tek model değil, zincir: ABS kalite imzası — üret → doğrula → düzelt veya yarış (en hızlı kazanır).</p>
+<p>9 pipeline mevcut. Detay <a href="#62-pipeline-seçimi">Bölüm 6.2</a>.</p>
+<p><strong>Ekran</strong>: <code>faz_c_test_admin_pipelines.png</code>.</p>
+<blockquote>
+<p>Pipeline'lar Anthropic + diğer sağlayıcıları paralel kullanır; çıktı kalitesi tek modele göre artar, maliyet ölçülü kalır (cascade Claude düşerken Groq devreye girer).</p>
+</blockquote>
+<hr />
+<h2 id="9-workflow-builder">9. Workflow Builder<a class="headerlink" href="#9-workflow-builder" title="Permanent link">&para;</a></h2>
+<p>Doğal dilde anlattığınız iş akışını otomatik n8n-uyumlu node grafiğine dönüştürür.</p>
+<p><strong>Ekran</strong>: <code>faz_c_test_admin_workflow.png</code> — RAG-grounded customer chat örneği: Cerbos check → RAG query → Compose answer → Return JSON.</p>
+<h3 id="91-workflow-olusturma">9.1 Workflow oluşturma<a class="headerlink" href="#91-workflow-olusturma" title="Permanent link">&para;</a></h3>
+<ol>
+<li>"Workflow'unu anlat" alanına Türkçe açıklama yazın (örn. "Gelen Gmail mesajlarını sınıflandır ve satış etiketli e-postalara yanıt taslağı hazırla").</li>
+<li><strong>Sentezle</strong> → ABS LLM ile JSON workflow üretir.</li>
+<li>Düzenle → HITL (insan onayı) adımı ekleyebilirsiniz.</li>
+<li><strong>Kuru çalıştır</strong> → simülasyon.</li>
+<li><strong>Kaydet</strong> → tenant workflow listesine eklenir, n8n'e export edilebilir.</li>
+</ol>
+<blockquote>
+<p>Çalıştırma başına tahmini maliyet panelde gösterilir.</p>
+</blockquote>
+<hr />
+<h2 id="10-knowledge-graph">10. Knowledge Graph<a class="headerlink" href="#10-knowledge-graph" title="Permanent link">&para;</a></h2>
+<p>Neo4j 5 üzerine kurulu kurum graph'ı: Person, Org, Project, Ticket node'ları + WORKS_AT, OWNS, MANAGES, ASSIGNED_TO ilişki tipleri.</p>
+<p><strong>Ekran</strong>: <code>faz_c_test_admin_graph.png</code> — Schema, hazır sorgular, Cypher editörü, doğal dil sorgu.</p>
+<h3 id="101-cypher-editor">10.1 Cypher editor<a class="headerlink" href="#101-cypher-editor" title="Permanent link">&para;</a></h3>
+<p>Read-only kullanıcılar yalnızca MATCH/RETURN çalıştırabilir. Örnek:</p>
+<div class="language-cypher highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">MATCH</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="p">:</span><span class="n">Person</span><span class="p">)</span><span class="o">-[</span><span class="p">:</span><span class="n">WORKS_AT</span><span class="o">]-&gt;</span><span class="p">(</span><span class="n">o</span><span class="p">:</span><span class="n">Org</span><span class="w"> </span><span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="s">&quot;Acme&quot;</span><span class="p">})</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">RETURN</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">email</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="m">25</span>
+</span></code></pre></div>
+<h3 id="102-dogal-dil-sorgu">10.2 Doğal dil sorgu<a class="headerlink" href="#102-dogal-dil-sorgu" title="Permanent link">&para;</a></h3>
+<p>"Acme şirketinde çalışan tüm kişileri bul" → Cypher üretir → Çalıştır.</p>
+<blockquote>
+<p>Neo4j Bolt protokolü Inc. Cypher Neo4j Inc. tescilli markasıdır. Kullanım Neo4j Community Edition lisansına tabidir.</p>
+</blockquote>
+<hr />
+<h2 id="11-plugin-marketplace">11. Plugin Marketplace<a class="headerlink" href="#11-plugin-marketplace" title="Permanent link">&para;</a></h2>
+<p>Sol nav → <strong>Marketplace</strong>. ABS ekosistemi: LLM sağlayıcıları, RAG kaynakları, MCP araçları, workflow şablonları.</p>
+<p><strong>Ekran</strong>: <code>faz_c_test_admin_marketplace.png</code> — Slack Receiver, Gmail Archiver, Linear Bridge, Notion Sync, Postgres Mirror.</p>
+<h3 id="111-plugin-kurma">11.1 Plugin kurma<a class="headerlink" href="#111-plugin-kurma" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Plugin kartında <strong>Kur</strong> → "Review permissions" modal açılır.</li>
+<li>Network egress, mount'lar, secrets, kaynak kullanımı (CPU/RAM), tenant kapsamı listelenir.</li>
+<li>Onay kutusunu işaretleyin → <strong>Onayla &amp; Kur</strong>.</li>
+<li>Plugin sandbox cgroup içinde başlatılır, audit'e düşer.</li>
+</ol>
+<p><strong>Ekran</strong>: <code>faz_c_test_marketplace_install.png</code> — Slack Receiver permission review.</p>
+<h3 id="112-filtreleme">11.2 Filtreleme<a class="headerlink" href="#112-filtreleme" title="Permanent link">&para;</a></h3>
+<p>Üstteki kategori chip'leri (LLM Sağlayıcı / RAG Kaynağı / MCP Aracı / Workflow Şablonu) + arama kutusu.</p>
+<blockquote>
+<p>Slack, Gmail, Linear, Notion, Postgres ilgili şirketlerin tescilli markalarıdır. Plugin'ler bu hizmetlerin müşteri tarafı API'lerini kullanır.</p>
+</blockquote>
+<hr />
+<h2 id="12-yonetim-ayarlar">12. Yönetim ayarları<a class="headerlink" href="#12-yonetim-ayarlar" title="Permanent link">&para;</a></h2>
+<p>Sol nav → <strong>Ayarlar</strong>. 7 sub-tab:</p>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>İçerik</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Genel</td>
+<td>Tenant adı, slug, domain, SSL</td>
+</tr>
+<tr>
+<td>Lisans</td>
+<td>Aktif lisans durumu, JWT yenileme</td>
+</tr>
+<tr>
+<td>Sağlayıcılar</td>
+<td>Cascade sırası, mock mode, her sağlayıcı için "Yapılandır"</td>
+</tr>
+<tr>
+<td>Webhook'lar</td>
+<td>Slack, e-posta, Discord webhook URL'leri</td>
+</tr>
+<tr>
+<td>Uyarılar</td>
+<td>Quota uyarı eşiği, latency p95 SLO</td>
+</tr>
+<tr>
+<td>Marka</td>
+<td>Logo, favicon, brand renk, login mesajı</td>
+</tr>
+<tr>
+<td>Güvenlik</td>
+<td>Magic-link ömrü, oturum süresi, audience kontrolü</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ekran</strong>: <code>faz_c_test_admin_settings.png</code>, <code>faz_c_test_settings_after_rc3.png</code>, <code>faz_c_test_webhook_save.png</code>.</p>
+<blockquote>
+<p>Her değişiklik tenant başına izole edilir, audit log'a düşer (Bölüm 14'e bakın: Denetim).</p>
+</blockquote>
+<hr />
+<h2 id="13-lisans-iade">13. Lisans &amp; İade<a class="headerlink" href="#13-lisans-iade" title="Permanent link">&para;</a></h2>
+<h3 id="131-14-gun-kosulsuz-iade">13.1 14 gün koşulsuz iade<a class="headerlink" href="#131-14-gun-kosulsuz-iade" title="Permanent link">&para;</a></h3>
+<p>Self-Host: 14 gün içinde iade talep ederseniz tam ücret iade edilir, lisansınız Cloudflare Worker'da revoke edilir, ABS örneğiniz bir sonraki heartbeat'te (≤60 sn) chat çağrılarını reddetmeye başlar.</p>
+<p><strong>İade prosedürü:</strong></p>
+<ol>
+<li><code>info@automatiabcn.com</code> adresine sipariş ID'nizi yazın.</li>
+<li>5 iş günü içinde Stripe iade işlemi başlar (kartınıza geri 5-10 iş günü sürebilir, bankaya bağlı).</li>
+<li>Lisans token'ınız revoke edilir; backend <code>license_state.valid = False</code> durumuna geçer.</li>
+<li>Yeni chat çağrıları 403 ile reddedilir; mevcut local config (admin parolası, RAG indeksi) bozulmaz.</li>
+</ol>
+<h3 id="132-yenileme-maintenance-pack">13.2 Yenileme (Maintenance Pack)<a class="headerlink" href="#132-yenileme-maintenance-pack" title="Permanent link">&para;</a></h3>
+<p>12 ay sonra <strong>isteğe bağlı</strong> $49/yıl Maintenance Pack ile güncellemeler + email destek devam eder. Almazsanız ABS o anki sürümde sınırsız çalışmaya devam eder, ancak yeni image güncellemelerine erişim kapanır.</p>
+<h3 id="133-lisans-aktarm">13.3 Lisans aktarımı<a class="headerlink" href="#133-lisans-aktarm" title="Permanent link">&para;</a></h3>
+<p>Donanım fingerprint binding <strong>opsiyonel</strong> yapılandırmadır (CJ-005). Founder mintinde fingerprint atanmadıysa (<code>machine_fp: null</code>), lisansı başka makineye taşıyabilirsiniz; CF Worker activation o anda yeni IP/fingerprint'i kaydeder.</p>
+<hr />
+<h2 id="14-sorun-giderme">14. Sorun giderme<a class="headerlink" href="#14-sorun-giderme" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Belirti</th>
+<th>Çözüm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docker compose up -d</code> "exec format error"</td>
+<td>Image rc4+ multi-arch — eski tag (rc1/rc2) Apple Silicon'da çalışmaz. <code>ABS_VERSION=1.0.0-rc4</code> set edin.</td>
+</tr>
+<tr>
+<td>Caddy 502 / TLS hatası</td>
+<td>Port 80+443 firewall'da açık olmalı (Let's Encrypt HTTP-01). <code>ufw allow 80,443/tcp</code>.</td>
+</tr>
+<tr>
+<td>Setup Wizard "License signature invalid"</td>
+<td>Founder mint imzası container public key ile uyumsuz olabilir; founder ile iletişime geçin.</td>
+</tr>
+<tr>
+<td>Chat "license_invalid" 403</td>
+<td>Heartbeat lisansı revoke gördü. Lisans email'inizi kontrol edin veya yenileyin.</td>
+</tr>
+<tr>
+<td>RAG sorgu boş sonuç</td>
+<td>Doküman henüz indekslenmedi. <code>docker compose logs backend</code> → "embedding done" mesajı bekleyin.</td>
+</tr>
+<tr>
+<td>Knowledge Graph "Internal Server Error"</td>
+<td>Neo4j tenant init eksik olabilir. <code>docker compose restart</code> deneyin, sonra founder destek.</td>
+</tr>
+<tr>
+<td>Email gelmedi</td>
+<td>Spam klasörünü kontrol; SMTP relay yapılandırmanız varsa Settings → Webhook'lar → Email alerts.</td>
+</tr>
+<tr>
+<td>Yüksek RAM kullanımı</td>
+<td>Whisper/TTS modelleri opsiyonel; <code>.env</code>'de <code>ABS_DISABLE_TTS=1</code> ile kapatın.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Cevap bulamazsanız <code>info@automatiabcn.com</code> (24h yanıt) veya kendi support kanalınız.</p>
+</blockquote>
+<hr />
+<h2 id="yasal-uyarlar-marka-bildirimi">Yasal uyarılar &amp; marka bildirimi<a class="headerlink" href="#yasal-uyarlar-marka-bildirimi" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Automatia ABS™</strong> Automatia BCN'in tescilli markasıdır.</li>
+<li><strong>Anthropic®, Claude®, Cohere®, Cerebras®, Groq®, Gemini™, Cloudflare®, Stripe®, Hetzner®, DigitalOcean®, Linode®, Vultr®, Slack®, Gmail™, Linear®, Notion®, PostgreSQL®, Neo4j®, Docker®, Caddy®, Let's Encrypt®</strong> ilgili şirketlerin tescilli markalarıdır. Bu rehberdeki referanslar yalnızca müşteri tarafı entegrasyon bilgisidir; resmi ortaklık veya destek anlamına gelmez.</li>
+<li>Sağlayıcı API kullanımı <strong>müşterinin kendi hesabından</strong> ücretlendirilir. Automatia BCN bu ücretlerden pay almaz, fatura kesmez.</li>
+<li>Bu rehberdeki ekran görüntüleri Automatia BCN'in kendi UI'sıdır. Üçüncü taraf hizmet UI'larının (sağlayıcı konsolları, ödeme akışı dış kısımları) ekran görüntüleri rehbere dahil edilmemiştir; ilgili sağlayıcının dokümantasyonuna başvurun.</li>
+<li>ABS, BSL 1.1 lisansı kapsamında dağıtılır (<code>LICENSE</code> dosyası). 2030-05-07 itibariyle Apache License 2.0'a otomatik geçer.</li>
+<li>GDPR / KVKK kapsamında veri işleyici sıfatınızla <strong>siz kendi sunucunuzda</strong> kişisel verileri işlersiniz. Automatia BCN bu verilere erişmez. Veri saklama süreleri için Settings → Güvenlik.</li>
+</ul>
+<hr />
+<p><strong>Son güncelleme:</strong> 2026-05-09 · v1.0<br />
+<strong>İletişim:</strong> info@automatiabcn.com<br />
+<strong>Source:</strong> <a href="https://github.com/automatiabcn/abs">github.com/automatiabcn/abs</a><br />
+<strong>Made in Barcelona</strong> 🇪🇸 — <em>Automate the chaos</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Başa dön
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.expand", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Kopyaland\u0131", "clipboard.copy": "Kopyala", "search.result.more.one": "Bu sayfada 1 tane daha", "search.result.more.other": "Bu sayfada # tane daha", "search.result.none": "E\u015fle\u015fen dok\u00fcman bulunamad\u0131", "search.result.one": "1 dok\u00fcman bulundu", "search.result.other": "# dok\u00fcman bulundu", "search.result.placeholder": "Aramaya ba\u015flamak i\u00e7in yaz\u0131n", "search.result.term.missing": "Eksik", "select.version": "Versiyon se\u00e7"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
