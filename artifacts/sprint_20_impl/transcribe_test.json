@@ -1,1 +1,0 @@
-{"id":1,"filename":"meeting_demo.wav","duration_sec":10.0,"speaker_count":1,"status":"done","summary":"Thanks for watching!","error_message":null,"speakers":[{"id":"spk_0","name":"Speaker 1"}],"segments":[{"speaker_id":"spk_0","start":0.0,"end":10.0,"text":"Thanks for watching!"}],"created_at":"2026-04-29T18:05:34.337592","completed_at":"2026-04-29T18:05:39.758384"}

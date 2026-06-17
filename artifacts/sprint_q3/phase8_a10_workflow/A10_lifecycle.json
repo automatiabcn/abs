@@ -1,8 +1,0 @@
-{
-  "pass": 9,
-  "fail": 0,
-  "intent": "Slack #support kanal\u0131na yeni mesaj geldi\u011finde Linear'da issue olu\u015ftur ve \u00f6zetini Coqui TTS ile seslendir.",
-  "nodes_seen": 4,
-  "schema_issues": [],
-  "job_state": "done"
-}
