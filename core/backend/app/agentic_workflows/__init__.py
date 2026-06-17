@@ -16,10 +16,11 @@ from app.agentic_workflows.service import (
     ordered_agent_steps,
     palette,
     run_workflow,
+    run_workflow_graph,
     save_definition,
 )
 
 __all__ = [
-    "run_workflow", "list_runs", "palette",
+    "run_workflow", "run_workflow_graph", "list_runs", "palette",
     "get_definition", "save_definition", "ordered_agent_steps",
 ]
