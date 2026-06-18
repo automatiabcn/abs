@@ -8,7 +8,7 @@
 // Brief 2 R3 — `NeuralGraph` is now a thin alias for `CosmosGraph`.
 //
 // The previous implementation (rainbow-per-provider react-force-graph-3d
-// scene) was retired in favour of the founder-approved `mockup_2` design:
+// scene) was retired in favour of the `mockup_2` design:
 // single brand palette, glass-morphism nodes, prefers-reduced-motion
 // fallback, ARIA-labelled wrapper. See
 // `components/CosmosGraph/index.tsx` for the live implementation.

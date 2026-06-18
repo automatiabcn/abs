@@ -15,7 +15,7 @@
 //   2. **Long (gated by LONG_RUNNING_PLAYWRIGHT=1)** — full 30-minute
 //      idle with the same shape, 50 MB drift bound. Skipped by default
 //      because the headed-Chromium runtime alone burns 30+ minutes of
-//      CI budget; founder runs locally before perf-sweep cuts.
+//      CI budget; run locally before perf-sweep cuts.
 //
 // The smoke variant is the *real* regression guard: a leak that grows
 // 25 MB in 90 s would balloon to 8 GB in 30 minutes. The long variant

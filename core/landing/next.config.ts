@@ -83,7 +83,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // T-Q06 — silence the multi-lockfile root-inference warning seen in dev.
   outputFileTracingRoot: __dirname,
-  // FOUNDER_FIX_1 / BUG-2 — barrel imports from icon + animation libs were
+  // BUG-2 — barrel imports from icon + animation libs were
   // pulling ~8k modules into /admin/marketplace's first compile (21s) and
   // similar workflow pages. `optimizePackageImports` rewrites named imports
   // to deep entry points so dev compiles only touch the icons we actually
