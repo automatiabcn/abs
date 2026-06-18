@@ -83,7 +83,14 @@ class CloudflareProvider(BaseProvider):
                 transient=False,
             )
 
-        data = r.json()
+        try:
+            data = r.json()
+        except ValueError as exc:
+            # A 2xx with a malformed body must fail over to the next provider,
+            # not crash the whole cascade with an uncaught JSONDecodeError.
+            raise ProviderError(
+                "CloudFlare JSON parse error", provider=self.name, transient=True
+            ) from exc
         if not data.get("success", False):
             errs = data.get("errors") or []
             msg = errs[0].get("message") if errs else "unknown error"
