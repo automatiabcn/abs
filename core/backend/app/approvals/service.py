@@ -148,7 +148,10 @@ def list_approvals(*, tenant_slug: str, status: str = "pending", limit: int = 10
             )
         ).all()
     approved = sum(1 for x in decided if x.status in ("approved", "edited"))
-    accept_rate = round(approved / len(decided) * 100) if decided else 91
+    # 3rd-eye audit — with no decided items there is no accept rate; emit None so
+    # the panel shows "—". The old `else 91` fabricated a 91% rate that rendered
+    # as a real scorecard number on every fresh/empty install.
+    accept_rate = round(approved / len(decided) * 100) if decided else None
 
     return {
         "items": [_to_dict(r) for r in rows],
