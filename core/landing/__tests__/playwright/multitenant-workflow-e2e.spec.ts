@@ -1,5 +1,5 @@
 // E3 — E2E for the multi-tenant + settings + workflow-library work.
-// Mirrors founder-test-fix-1: log in once via API, reuse the warm cookie,
+// Warm-cookie auth pattern: log in once via API, reuse the warm cookie,
 // then drive the new pages. Not a CI gate (no playwright job); run locally
 // against a live stack: PLAYWRIGHT_BASE_URL + the backend reachable via the
 // /v1 rewrite. Verifies the gaps we just closed don't silently regress.
