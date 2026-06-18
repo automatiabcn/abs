@@ -20,7 +20,7 @@ type Item = {
   consent_status: string; policy_result: string; status: string;
   target_company: string; channel: string; created_at: string | null;
 };
-type Tier = { low_auto: number; medium_pending: number; high_pending: number; accept_rate: number };
+type Tier = { low_auto: number; medium_pending: number; high_pending: number; accept_rate: number | null };
 type Data = { items: Item[]; pending_total: number; by_risk: Record<string, number>; tier_stats?: Tier };
 type Action = {
   id: number; approval_item_id: number | null; agent_id: string; action_kind: string;
@@ -121,7 +121,7 @@ export default function ApprovalCenterPage() {
               ["Düşük (otomatik)", String(t?.low_auto ?? 0), "iç rapor · CRM okuma · brief"],
               ["Orta (insan)", String(t?.medium_pending ?? 0), "email taslağı · CRM update"],
               ["Yüksek (onay+audit)", String(t?.high_pending ?? 0), "outbound · WhatsApp"],
-              ["Onay kabul oranı", `%${t?.accept_rate ?? 0}`, "risk-bazlı akıllı eşik · batch"],
+              ["Onay kabul oranı", t?.accept_rate != null ? `%${t.accept_rate}` : "—", "risk-bazlı akıllı eşik · batch"],
             ].map(([l, v, h]) => (
               <div key={l} className="rounded-xl border bg-card/60 p-4">
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{l}</div>
