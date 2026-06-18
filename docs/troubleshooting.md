@@ -221,9 +221,8 @@ jq '.categories | {perf:.performance.score, a11y:.accessibility.score, bp:."best
    artifacts/lighthouse/2026-05-09T02-*.json
 ```
 
-4 × 1.0 (perf/a11y/bp/seo) bekleniyor. < 0.9 düşerse bug aç ve handoff'u
-durdur. Review template:
-`artifacts/sprint_q12/round_90_lighthouse_artifact_review.md`.
+4 × 1.0 (perf/a11y/bp/seo) bekleniyor. Bir kategori < 0.9 düşerse performans
+regresyonu var demektir; ilgili sayfayı/bileşeni gözden geçirin.
 
 ## Bilinmeyen hatalar
 
