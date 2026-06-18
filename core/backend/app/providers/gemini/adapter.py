@@ -82,7 +82,14 @@ class GeminiProvider(BaseProvider):
                 transient=False,
             )
 
-        data = r.json()
+        try:
+            data = r.json()
+        except ValueError as exc:
+            # A 2xx with a malformed body must fail over to the next provider,
+            # not crash the whole cascade with an uncaught JSONDecodeError.
+            raise ProviderError(
+                "Gemini JSON parse error", provider=self.name, transient=True
+            ) from exc
         try:
             candidates = data["candidates"]
             parts = candidates[0]["content"]["parts"]
