@@ -8,8 +8,12 @@ const STEPS = ["admin", "license", "domain", "anthropic", "providers", "test"];
 const I18N = {
   en: {}, // canonical — falls back to the data-i18n text already in the DOM
   tr: {
-    tagline: "Kaosu Otomatikleştir", lang_label: "Dil",
+    tagline: "Kendi Sunucunda AI Orkestrasyonu", lang_label: "Dil",
     s1: "Yönetici", s2: "Lisans", s3: "Domain", s4: "Premium", s5: "Provider'lar", s6: "Test",
+    d1: "Panel giriş hesabını oluşturun", d2: "Lisansı veya demoyu etkinleştirin",
+    d3: "IP veya domain + SSL seçin", d4: "Opsiyonel — ücretli AI anahtarı",
+    d5: "Ücretsiz sağlayıcı anahtarları", d6: "Her şeyin bağlandığını doğrulayın",
+    rail_foot: "Çalıştırması ücretsiz · ücretli AI opsiyonel · kendi sunucunda",
     step1_h: "Yönetici Hesabı", step1_help: "Panel girişini bu hesap kullanacak.",
     f_email: "Email", f_password: "Şifre", btn_next: "İleri", btn_back: "Geri",
     step2_h: "Lisans Anahtarı",
@@ -29,8 +33,12 @@ const I18N = {
     btn_finish: "Kurulumu Bitir",
   },
   es: {
-    tagline: "Automate the Chaos", lang_label: "Idioma",
+    tagline: "Orquestación de IA autoalojada", lang_label: "Idioma",
     s1: "Administrador", s2: "Licencia", s3: "Dominio", s4: "Premium", s5: "Proveedores", s6: "Prueba",
+    d1: "Cree la cuenta de acceso al panel", d2: "Active su licencia o demo",
+    d3: "Elija IP o dominio + SSL", d4: "Opcional — clave de IA de pago",
+    d5: "Añada sus claves gratuitas", d6: "Verifique que todo conecta",
+    rail_foot: "Gratis de ejecutar · IA de pago opcional · autoalojado",
     step1_h: "Cuenta de administrador", step1_help: "Esta cuenta iniciará sesión en el panel.",
     f_email: "Correo electrónico", f_password: "Contraseña", btn_next: "Siguiente", btn_back: "Atrás",
     step2_h: "Clave de licencia",
