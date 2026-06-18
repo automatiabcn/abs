@@ -49,7 +49,7 @@ def test_setup_js_bundles_tr_and_es_dictionaries(client):
     assert "applyI18n" in js
     assert "persistLang" in js
     # TR + ES sample strings present
-    assert "Kaosu Otomatikleştir" in js  # tagline TR
+    assert "Kurulumu Bitir" in js  # btn_finish TR
     assert "Comenzar gratis" in js or "proveedores gratuitos" in js  # ES
     # free-first toggle logic present
     assert "initSkipToggle" in js
