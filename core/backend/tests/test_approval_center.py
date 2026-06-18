@@ -53,6 +53,26 @@ def test_log_run_create_and_decide() -> None:
     assert decided["outcome"] == "ok"
 
 
+def test_accept_rate_is_none_until_a_decision_exists() -> None:
+    """3rd-eye audit — with no decided items the accept rate is unknown, not a
+    fabricated 91%. It must be None (panel shows "—") and only become a real
+    number once at least one item is decided."""
+    res = _result()
+    rid = service.log_agent_run(res, tenant_slug="tRate", actor="")
+    item = service.create_approval_from_result(
+        res, tenant_slug="tRate", requester="", agent_run_id=rid,
+    )
+    fresh = service.list_approvals(tenant_slug="tRate")
+    assert fresh["tier_stats"]["accept_rate"] is None  # was a hardcoded 91
+
+    service.decide_approval(
+        tenant_slug="tRate", item_id=item["id"], decision="approve",
+        decided_by="boss@x.io",
+    )
+    after = service.list_approvals(tenant_slug="tRate")
+    assert after["tier_stats"]["accept_rate"] == 100  # 1/1 approved
+
+
 def test_approval_tenant_isolation() -> None:
     res = _result()
     rid = service.log_agent_run(res, tenant_slug="tX", actor="")
