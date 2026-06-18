@@ -23,8 +23,11 @@ pipeline {
 
   triggers {
     githubPush()
-    // Fallback if no inbound webhook: poll every 3 min.
-    // pollSCM('H/3 * * * *')
+    // Safety net: a locked-down box (port 22 closed, restricted inbound) often
+    // can't receive GitHub's webhook, which silently strands it on an old image.
+    // Poll every 3 min so a green `main` always deploys even if githubPush never
+    // fires. Harmless when the webhook works (a no-op git ls-remote).
+    pollSCM('H/3 * * * *')
   }
 
   stages {
