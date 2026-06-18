@@ -1,5 +1,5 @@
-// FOUNDER_FIX_1 — round 1 regressions for the 3 bugs + page-title sweep
-// surfaced by the founder's headed Playwright walkthrough on 2026-05-05.
+// Regression suite for 3 bugs + page-title sweep surfaced by a headed
+// Playwright walkthrough.
 //
 //   BUG-1  HIGH  /login submit must land on /panel
 //   BUG-2  HIGH  /admin/marketplace must render under 5s (warm)
@@ -25,7 +25,7 @@ async function apiLogin(page: Page) {
   expect(res.ok()).toBeTruthy();
 }
 
-test.describe("FOUNDER_FIX_1 — login redirect (BUG-1)", () => {
+test.describe("login redirect (BUG-1)", () => {
   test("login form lands on /panel within 10s", async ({ page }) => {
     await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded" });
     // Wait for React hydration; the submit button is gated on it so a
@@ -44,7 +44,7 @@ test.describe("FOUNDER_FIX_1 — login redirect (BUG-1)", () => {
   });
 });
 
-test.describe("FOUNDER_FIX_1 — marketplace render (BUG-2)", () => {
+test.describe("marketplace render (BUG-2)", () => {
   test("/admin/marketplace renders within 5s warm", async ({ page }) => {
     await apiLogin(page);
     // First visit warms the dev compile cache; second visit is the budget.
@@ -62,7 +62,7 @@ test.describe("FOUNDER_FIX_1 — marketplace render (BUG-2)", () => {
   });
 });
 
-test.describe("FOUNDER_FIX_1 — chat send button a11y (BUG-3)", () => {
+test.describe("chat send button a11y (BUG-3)", () => {
   test("send button exposes aria-label + data-testid", async ({ page }) => {
     await apiLogin(page);
     await page.goto(`${BASE}/panel/chat`, { waitUntil: "domcontentloaded" });
@@ -72,7 +72,7 @@ test.describe("FOUNDER_FIX_1 — chat send button a11y (BUG-3)", () => {
   });
 });
 
-test.describe("FOUNDER_FIX_1 — page title sweep", () => {
+test.describe("page title sweep", () => {
   const TITLES: Array<[string, RegExp]> = [
     ["/panel", /Genel Bakış — ABS Panel/],
     ["/panel/chat", /Sohbet — ABS Panel/],

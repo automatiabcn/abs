@@ -88,5 +88,5 @@ ABS lets the customer keep their Claude Plus subscription as a fixed-cost premiu
 
 ## Sign-off
 
-> Author: Founder + ABS engineering · Sprint 20 T-F04 · 2026-04-29.
+> Author: Automatia BCN engineering · 2026-04-29.
 > v1.3 amendment: Sprint Q12 latency/cost/redundancy rewrite · 2026-05-07.

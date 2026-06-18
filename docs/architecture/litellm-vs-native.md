@@ -61,7 +61,7 @@ Option C accepts the maintenance penalty of dual paths in exchange for retaining
 
 ## Decision
 
-**We keep native ABS adapters as the canonical path and ship a `LiteLLMProxyProvider` opt-in adapter behind the `ABS_LITELLM_PROXY_URL` env var. Activation requires founder approval (Sprint 19 manual gate).** The default code path continues to exercise the hexagonal native adapters, ensuring that latency, cost attribution, and vendor-specific features remain under ABS control. LiteLLM integration is treated as a compatibility bridge for specific enterprise constraints, not as the primary runtime.
+**We keep native ABS adapters as the canonical path and ship a `LiteLLMProxyProvider` opt-in adapter behind the `ABS_LITELLM_PROXY_URL` env var. Activation requires Automatia BCN approval (manual gate).** The default code path continues to exercise the hexagonal native adapters, ensuring that latency, cost attribution, and vendor-specific features remain under ABS control. LiteLLM integration is treated as a compatibility bridge for specific enterprise constraints, not as the primary runtime.
 
 ## Rollback / Activation Plan
 

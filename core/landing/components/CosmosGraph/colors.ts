@@ -9,8 +9,8 @@
 // State (not identity) drives colour: every provider node shares the
 // same hue family, distinguished only by luminance + saturation.
 //
-// Approved by founder 2026-05-07 (mockup_2). Rainbow-per-provider is
-// banned per brief §11.
+// Single-brand palette (mockup_2). Rainbow-per-provider is intentionally
+// not used.
 
 export const PALETTE = {
   bg: "#0a0e1a",

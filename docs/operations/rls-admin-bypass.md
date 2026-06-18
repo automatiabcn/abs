@@ -1,6 +1,6 @@
 # RLS Admin Bypass — Operations Runbook
 
-**Audience:** Founder / on-call operator running production deploys.
+**Audience:** On-call operator running production deploys.
 **Owner:** Sprint 2K (Postgres RLS migration).
 **Last updated:** 2026-05-14.
 
@@ -25,7 +25,7 @@ with `BYPASSRLS NOLOGIN NOINHERIT`. The login + grant step is
 intentionally manual so an unfinished deploy cannot become a route to
 admin DB access.
 
-## One-time production setup (founder action)
+## One-time production setup (operator action)
 
 Run on the Hetzner Postgres cluster after `alembic upgrade head`
 completes for the first time.
