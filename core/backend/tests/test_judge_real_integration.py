@@ -4,11 +4,17 @@ from __future__ import annotations
 
 
 def test_build_judge_returns_real_signal_when_aggregate_works(monkeypatch):
-    """Judge feed `judge.stats.aggregate()` veriyorsa real:True döner."""
+    """Judge feed `judge.stats.aggregate()` veriyorsa real:True döner.
+
+    Uses the keys aggregate() actually emits (avg_combined / count /
+    outcome_counts). The old fake used total_count/avg_score/accept_rate — keys
+    aggregate never returns — so it validated the buggy consumer instead of the
+    real contract; the feed always showed score=None / 0% in production.
+    """
     fake_stats = {
-        "total_count": 12,
-        "avg_score": 7.4,
-        "accept_rate": 0.83,
+        "count": 12,
+        "avg_combined": 7.4,
+        "outcome_counts": {"accept": 10, "reject": 2},  # 10/12 ≈ %83
     }
 
     import app.api.stream as stream_mod

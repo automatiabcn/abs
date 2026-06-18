@@ -109,13 +109,20 @@ def _build_judge_placeholder() -> dict:
         from app.judge.stats import aggregate as judge_aggregate
 
         s = judge_aggregate()
-        avg = s.get("avg_score") or s.get("avg")
-        total = s.get("total_count", s.get("count", 0))
-        accept_rate = s.get("accept_rate", s.get("accepted_pct", 0)) or 0
+        # Read the keys aggregate() actually returns: avg_combined / count /
+        # outcome_counts ("accept"|"reject"). The old code read avg_score/avg
+        # and accept_rate/accepted_pct — none of which aggregate() emits — so
+        # the panel judge feed showed score=None and 0% accept-rate on every
+        # render even with real judgments.
+        avg = s.get("avg_combined")
+        total = s.get("count", 0)
+        outcomes = s.get("outcome_counts") or {}
+        accepted = outcomes.get("accept", 0)
+        accept_rate = (accepted / total) if total else 0
         out = {
             "score": round(avg, 1) if isinstance(avg, (int, float)) else None,
             "summary": (
-                f"Son {total} patch — kabul oranı %{int(accept_rate * 100) if accept_rate <= 1 else int(accept_rate)}"
+                f"Son {total} patch — kabul oranı %{int(accept_rate * 100)}"
                 if total
                 else "Judge: henüz veri yok — judge_diff sonrası dolacak."
             ),
