@@ -1,4 +1,4 @@
-// Brief 2 R5 — vitest contract for the founder-approved Cosmos 3D
+// vitest contract for the Cosmos 3D
 // system map (mockup_2 — force-directed graph). The 3D ForceGraph3D
 // renderer is dynamic-imported with `ssr: false`, so the jsdom path
 // only exercises the static / reduced-motion fallback. We assert:

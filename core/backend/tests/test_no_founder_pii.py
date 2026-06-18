@@ -97,6 +97,15 @@ _INTERNAL_INFRA = re.compile(
     r"\.claude/projects|/Users/eneseserkan|Automatia BCN/SERVER|kendi sistemimiz",
 )
 
+# Internal release-process narrative that must not ship inside the customer
+# product: our pre-handoff QA workflow, founder-run checklists, handoff tags.
+# The "Founder Action Items" + "Tester Handoff Checklist" docs were removed;
+# this guards against re-introduction of that vocabulary.
+_INTERNAL_PROCESS = re.compile(
+    r"Founder Action Items|tester handoff|founder host|handoff/v1",
+    re.IGNORECASE,
+)
+
 
 def _customer_visible_files() -> list[Path]:
     files = _iter_scoped_files()
@@ -122,6 +131,27 @@ def test_no_internal_infra_refs_in_customer_surface() -> None:
                 )
     assert not offenders, (
         f"internal-infra leak in {len(offenders)} place(s):\n"
+        + "\n".join(f"  {p}:{n}: {s}" for p, n, s in offenders[:25])
+    )
+
+
+def test_no_internal_release_process_in_customer_surface() -> None:
+    """Customer-visible files must not leak our internal release process
+    (Founder Action Items / tester-handoff checklist / founder-host runs /
+    handoff/v1 tags) — that's our working style, not product documentation."""
+    offenders: list[tuple[str, int, str]] = []
+    for path in _customer_visible_files():
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for line_no, line in enumerate(text.splitlines(), start=1):
+            if _INTERNAL_PROCESS.search(line):
+                offenders.append(
+                    (str(path.relative_to(REPO_ROOT)), line_no, line.strip())
+                )
+    assert not offenders, (
+        f"internal release-process leak in {len(offenders)} place(s):\n"
         + "\n".join(f"  {p}:{n}: {s}" for p, n, s in offenders[:25])
     )
 
