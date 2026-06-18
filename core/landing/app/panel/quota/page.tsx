@@ -17,7 +17,6 @@ import { motion } from "framer-motion";
 import {
   AlertTriangle,
   BarChart3,
-  CircleDollarSign,
   Layers,
   Settings,
   Zap,
@@ -91,7 +90,6 @@ interface Slice {
   percent: number;
   label: string;
   configured?: boolean;
-  cost_usd?: number;
 }
 
 interface QuotaPayload {
@@ -239,10 +237,12 @@ export default function QuotaPage() {
     (sum, [, s]) => sum + (s?.used ?? 0),
     0,
   );
-  const totalCost = allSlices.reduce(
-    (sum, [, s]) => sum + (s?.cost_usd ?? 0),
-    0,
-  );
+  // 3rd-eye audit — the backend QuotaSlice has no `cost_usd` field, so the old
+  // "Tahmini maliyet" tile summed undefined → always $0.00. Quota tracks
+  // rate-limit usage, not spend (cost lives on /admin/usage + billing). The
+  // tile now surfaces a real, on-topic signal already in the payload: the
+  // count of active threshold warnings.
+  const warningCount = data?.warnings?.length ?? 0;
   const configuredCount = allSlices.filter(([, s]) => s?.configured !== false).length;
   const freePathPct =
     allSlices.length > 0
@@ -307,9 +307,9 @@ export default function QuotaPage() {
             tone: "indigo",
           },
           {
-            label: "Tahmini maliyet",
-            value: `$${totalCost.toFixed(2)}`,
-            icon: CircleDollarSign,
+            label: "Eşik uyarısı",
+            value: fmtNumber(warningCount),
+            icon: AlertTriangle,
             tone: "emerald",
           },
           {
