@@ -9,7 +9,10 @@ def test_setup_index_serves_html(client):
     assert "text/html" in r.headers["content-type"]
     body = r.text
     assert 'data-step="1"' in body
-    assert "Automatia ABS" in body
+    # Customer-facing wizard carries only the "ABS" product name — the
+    # "Automatia" vendor name must never leak into the shipped install flow.
+    assert "<h1>ABS</h1>" in body
+    assert "Automatia" not in body
     assert 'data-step-key="admin"' in body
     assert 'data-step-key="test"' in body
 
