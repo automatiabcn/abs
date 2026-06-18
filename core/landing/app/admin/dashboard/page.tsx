@@ -113,11 +113,39 @@ export default function AdminDashboardPage() {
     };
   }, []);
 
+  // BUG (3rd-eye audit) — these four cards read keys the producer tools never
+  // emit, so every render showed 0 / — regardless of real state:
+  //   beta.active_signups   → beta_metrics emits pending / approved / signups_*
+  //   compliance.soc2_score → compliance_status emits overall_status + docs
+  //   security.findings_count → security_audit emits overall_score + integrity
+  //   vault.secrets_count   → vault audit stats() emits total_entries / entries_24h
+  // Now each card reads a real key the producer actually returns.
   const billing = data?.billing ?? {};
-  const beta = (data?.beta ?? {}) as { active_signups?: number };
-  const compliance = (data?.compliance ?? {}) as { soc2_score?: number };
-  const security = (data?.security ?? {}) as { findings_count?: number };
-  const vault = (data?.vault ?? {}) as { secrets_count?: number };
+  const beta = (data?.beta ?? {}) as { pending?: number; approved?: number };
+  const compliance = (data?.compliance ?? {}) as {
+    overall_status?: "ok" | "warn" | "gap";
+  };
+  // security_audit.overall_score is a STATUS string (ok|warn|danger), not a
+  // 0-100 number — render it as a labelled status, not "<n>/100".
+  const security = (data?.security ?? {}) as {
+    overall_score?: "ok" | "warn" | "danger";
+  };
+  const vault = (data?.vault ?? {}) as {
+    total_entries?: number;
+    audit_chain_integrity?: boolean;
+  };
+
+  const betaCount = (beta.pending ?? 0) + (beta.approved ?? 0);
+  const COMPLIANCE_LABEL: Record<string, string> = {
+    ok: "Tamam",
+    warn: "Uyarı",
+    gap: "Eksik",
+  };
+  const SECURITY_LABEL: Record<string, string> = {
+    ok: "İyi",
+    warn: "Uyarı",
+    danger: "Riskli",
+  };
 
   return (
     <main
@@ -162,30 +190,40 @@ export default function AdminDashboardPage() {
             />
             <StatCard
               title="Beta kayıt"
-              value={beta.active_signups ?? 0}
-              description="Onay bekleyen + aktif beta hesapları"
+              value={betaCount}
+              description="Onay bekleyen + onaylı beta hesapları"
               icon={Users}
             />
             <StatCard
-              title="Uyumluluk skoru"
+              title="Uyumluluk"
               value={
-                compliance.soc2_score !== undefined
-                  ? `${compliance.soc2_score}%`
+                compliance.overall_status
+                  ? COMPLIANCE_LABEL[compliance.overall_status] ??
+                    compliance.overall_status
                   : "—"
               }
-              description="SOC2 audit chain durumu"
+              description="DPA / gizlilik / saklama doküman durumu"
               icon={CheckCircle2}
             />
             <StatCard
-              title="Güvenlik bulgu"
-              value={security.findings_count ?? 0}
-              description="Açık (high+critical) tarama bulgusu"
+              title="Güvenlik durumu"
+              value={
+                security.overall_score
+                  ? SECURITY_LABEL[security.overall_score] ??
+                    security.overall_score
+                  : "—"
+              }
+              description="SecOps audit (TLS · rotasyon · zincir bütünlüğü)"
               icon={AlertCircle}
             />
             <StatCard
-              title="Vault secret"
-              value={vault.secrets_count ?? 0}
-              description="Kayıtlı encrypted secret sayısı"
+              title="Vault audit"
+              value={vault.total_entries ?? 0}
+              description={
+                vault.audit_chain_integrity === false
+                  ? "⚠ Zincir bütünlüğü bozuk"
+                  : "Audit zinciri kayıt sayısı"
+              }
               icon={Lock}
             />
             <StatCard
