@@ -96,7 +96,7 @@ operate as the `abs_admin` role for cross-tenant infra jobs.
   postgres CI lane catching regressions before merge.
 - `_unknown` rows pre-existing in the audit tables before the
   backfill ran: manual review during initial production deploy
-  (founder action, runbook step 4).
+  (operator action, runbook step 4).
 
 ## Linked artefacts
 

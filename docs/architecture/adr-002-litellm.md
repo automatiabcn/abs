@@ -22,7 +22,7 @@ ABS today ships **17 native provider integrations** (5 hex-restructured in T-S02
 
 This corresponds to **Option C** in the trade-off matrix.
 
-The `LiteLLMProxyProvider` class in `app/providers/litellm_proxy.py` ships in mainline code so customers can flip the env var without a redeploy, but no default routing exists. Activation requires founder approval per Sprint 19's manual-gate list.
+The `LiteLLMProxyProvider` class in `app/providers/litellm_proxy.py` ships in mainline code so customers can flip the env var without a redeploy, but no default routing exists. Activation requires Automatia BCN approval via a manual gate.
 
 ## Rationale
 
@@ -52,7 +52,7 @@ The `LiteLLMProxyProvider` class in `app/providers/litellm_proxy.py` ships in ma
 - ✅ `app/providers/litellm_proxy.py` — opt-in adapter (`is_enabled()` reads `ABS_LITELLM_PROXY_URL`).
 - ✅ `docs/architecture/litellm-vs-native.md` — trade-off matrix + activation runbook.
 - ✅ This ADR.
-- ⏸️ No default cascade routing through LiteLLM. Activation per-tenant requires founder sign-off.
+- ⏸️ No default cascade routing through LiteLLM. Activation per-tenant requires Automatia BCN sign-off.
 
 ## Re-Review Triggers
 
@@ -67,7 +67,7 @@ Re-open this decision when **any** of:
 
 | Role | Name | Decision | Date |
 |------|------|----------|------|
-| Founder / Approver | Automatia BCN engineering | ✅ Accepted (Option C — native canonical, LiteLLM opt-in) | 2026-04-29 |
+| Approver | Automatia BCN engineering | ✅ Accepted (Option C — native canonical, LiteLLM opt-in) | 2026-04-29 |
 | Engineering | ABS platform team | ✅ Implemented as designed | 2026-04-29 |
 
 This ADR is the controlling document; the trade-off doc is informational background.

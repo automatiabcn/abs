@@ -29,9 +29,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [state, setState] = useState<LoginState>("idle");
   const [message, setMessage] = useState<string>("");
-  // FOUNDER_FIX_1 / BUG-1 — gate the submit button until React hydrates
+  // BUG-1 — gate the submit button until React hydrates
   // so a fast click can't trigger a native GET form submission to /login?
-  // (which is what Playwright + the founder were observing — the browser
+  // (which is what Playwright was observing — the browser
   // POST never reached our handler because hydration hadn't run yet).
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       if (res.ok) {
-        // FOUNDER_FIX_1 / BUG-1 — explicit App Router push so the URL flips
+        // BUG-1 — explicit App Router push so the URL flips
         // synchronously inside the click handler (Playwright was racing the
         // old `window.location.href` assign and reading `/login`). We keep a
         // hard-nav fallback in case `router.push` is no-op (e.g., when the

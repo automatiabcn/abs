@@ -1,5 +1,5 @@
-// Polish round R8 — sample prompt audit. The earlier set leaked the
-// founder's internal Slack channel ("#ürün") and a CTO-only doc.
+// Sample prompt audit. An earlier set leaked an internal team channel
+// reference and an internal-only doc.
 // FAZ B (2026-05-08) — SAMPLE_PROMPTS retired in favour of the
 // 48-prompt library; EmptyState now hydrates hero prompts from
 // lib/prompt-library.ts via HERO_PROMPT_IDS. The retired-leak invariant
@@ -18,7 +18,7 @@ const CHAT_INDEX = readFileSync(
 );
 
 describe("Chat EmptyState — sample prompts", () => {
-  it("does not reference the founder's internal Slack channel", () => {
+  it("does not reference any internal team channel", () => {
     expect(CHAT_INDEX).not.toContain("#ürün");
     expect(CHAT_INDEX).not.toContain("Slack #");
   });
