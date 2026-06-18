@@ -232,14 +232,25 @@ def revoke_token(
         digest = _token_digest(body.token)
         try:
             payload = verify_token(body.token)
-            tenant = str(payload.get("tenant", tenant))
+        except HTTPException:
+            # token already invalid (expired/malformed) — still allow blacklist
+            # under the admin's own tenant so the digest is logged for audit +
+            # future regression checks.
+            payload = None
+        if payload is not None:
+            # An admin may only revoke tokens minted for THEIR OWN tenant. The
+            # old code overwrote `tenant` with the token's self-asserted claim,
+            # so presenting another tenant's token blacklisted it under that
+            # tenant's slug with this admin as `revoked_by` — a cross-tenant
+            # isolation break. Reject the mismatch instead of trusting the claim.
+            tok_tenant = str(payload.get("tenant", tenant))
+            if tok_tenant != tenant:
+                raise HTTPException(
+                    status.HTTP_403_FORBIDDEN, "cross_tenant_revoke_forbidden"
+                )
             label = str(payload.get("label", ""))
             if "exp" in payload:
                 expires_at = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
-        except HTTPException:
-            # token already invalid (expired/malformed) — still allow blacklist
-            # so the digest is logged for audit + future regression checks.
-            pass
     elif body.token_digest:
         # Panel list revoke: resolve metadata from this tenant's issuance ledger.
         digest = body.token_digest.strip()
