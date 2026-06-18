@@ -25,7 +25,7 @@ import { MOCK_AUDIT, type AuditEntry } from "./types";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// FOUNDER_FIX_1 / SWEEP — unique <title> per panel/admin page.
+// SWEEP — unique <title> per panel/admin page.
 import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Denetim — ABS Admin",

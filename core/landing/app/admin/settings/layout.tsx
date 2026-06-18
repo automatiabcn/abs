@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// FOUNDER_FIX_1 / SWEEP — server sibling, metadata-only.
+// SWEEP — server sibling, metadata-only.
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
