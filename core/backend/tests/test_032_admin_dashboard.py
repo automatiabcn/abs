@@ -80,6 +80,34 @@ def test_dashboard_billing_summary_shape(client, monkeypatch):
         assert key in billing
 
 
+def test_dashboard_sources_emit_keys_the_panel_reads(client, monkeypatch):
+    """3rd-eye audit regression — the /admin/dashboard panel cards read these
+    exact keys. They previously read phantom keys (active_signups / soc2_score
+    / findings_count / secrets_count) that NO producer emits, so four of six
+    cards showed 0 / — on every render. Lock the producer→consumer contract so
+    a future rename on either side fails loudly here instead of silently
+    zeroing the dashboard.
+    """
+    token = _login(client, monkeypatch)
+    body = client.get(
+        "/v1/admin/dashboard?refresh=true",
+        headers={"Authorization": f"Bearer {token}"},
+    ).json()
+
+    # beta card → pending + approved
+    assert "pending" in body["beta"] and "approved" in body["beta"]
+    # compliance card → overall_status (ok|warn|gap)
+    assert "overall_status" in body["compliance"]
+    # security card → overall_score
+    assert "overall_score" in body["security"]
+    # vault card → total_entries
+    assert "total_entries" in body["vault"]
+
+    # the phantom keys must NOT be what we rely on (guard against reintroduction)
+    assert "active_signups" not in body["beta"]
+    assert "soc2_score" not in body["compliance"]
+
+
 def test_dashboard_resilient_to_partial_source_failure(client, monkeypatch):
     """If one source raises, dashboard still returns 200 with empty default."""
     from app.mcp.tools import beta_tools
