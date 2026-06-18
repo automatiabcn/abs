@@ -242,17 +242,23 @@ def _mrr_estimate_usd() -> int:
 
         # Heuristic share of seat-pack list price counted per active license per
         # month. Defaults are 0.0 — operator configures via env to surface MRR.
-        TIER_MONTHLY: dict[str, float] = {
-            "self-host": _s.abs_seat_price_self_host / 12.0,
-            "team-5": _s.abs_seat_price_team_5 / 12.0,
-            "team-10": _s.abs_seat_price_team_10 / 12.0,
+        # Keyed by (tier, seat_count) — the License.tier value is "self-host" /
+        # "team" (seat_count distinguishes the 5- vs 10-pack), NOT "team-5".
+        # The old "team-5"/"team-10" string keys never matched a real tier, so
+        # every team licence silently contributed $0 to MRR. Matches the
+        # (tier, seat_count) convention in billing_tools / status_tools.
+        TIER_MONTHLY: dict[tuple[str, int], float] = {
+            ("self-host", 1): _s.abs_seat_price_self_host / 12.0,
+            ("team", 5): _s.abs_seat_price_team_5 / 12.0,
+            ("team", 10): _s.abs_seat_price_team_10 / 12.0,
         }
         with Session(get_engine()) as db:
             rows = list(db.scalars(select(License)).all())
         total = 0.0
         for r in rows:
-            if r.tier in TIER_MONTHLY and r.revoked_at is None and r.purged_at is None:
-                total += TIER_MONTHLY[r.tier]
+            key = (r.tier, r.seat_count)
+            if key in TIER_MONTHLY and r.revoked_at is None and r.purged_at is None:
+                total += TIER_MONTHLY[key]
         return int(round(total))
     except Exception:
         return 0
