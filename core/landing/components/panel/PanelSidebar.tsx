@@ -18,6 +18,8 @@ import {
   BarChart3,
   Boxes,
   Brain,
+  ChevronsLeft,
+  ChevronsRight,
   Database,
   FolderKanban,
   LayoutDashboard,
@@ -38,6 +40,9 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+
+// Desktop rail collapse state persists across sessions/routes.
+const COLLAPSE_KEY = "abs.sidebar.collapsed";
 
 type NavGroup = "Agentic Growth" | "Üretim" | "Operasyon" | "Toplantılar" | "Yönetim";
 
@@ -139,35 +144,70 @@ function isActive(href: string, pathname: string): boolean {
 function NavBody({
   pathname,
   onNavigate,
+  collapsed = false,
+  onToggleCollapse,
 }: {
   pathname: string;
   onNavigate?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   return (
     <>
-      <div className="mb-8 flex items-center gap-2 px-2">
-        <div className="h-8 w-8 rounded-md bg-primary/20 ring-1 ring-primary/30" />
-        <div className="flex flex-col leading-tight">
-          <span className="font-mono text-sm tracking-tight text-foreground">
-            Automatia ABS
-          </span>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Operator
-          </span>
-        </div>
+      <div
+        className={cn(
+          "mb-6 flex items-center gap-2",
+          collapsed ? "flex-col" : "px-1",
+        )}
+      >
+        <img
+          src="/abs-logo.png"
+          alt="ABS"
+          width={36}
+          height={36}
+          className="h-9 w-9 shrink-0 rounded-lg ring-1 ring-primary/30 shadow-[0_4px_16px_rgba(129,140,248,0.28)]"
+        />
+        {!collapsed && (
+          <div className="flex min-w-0 flex-1 flex-col leading-tight">
+            <span className="bg-gradient-to-r from-foreground to-primary bg-clip-text font-mono text-base font-bold tracking-[0.2em] text-transparent">
+              ABS
+            </span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Operator
+            </span>
+          </div>
+        )}
+        {onToggleCollapse && (
+          <button
+            type="button"
+            data-test="panel-collapse-toggle"
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? "Menüyü genişlet" : "Menüyü daralt"}
+            title={collapsed ? "Genişlet" : "Daralt"}
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            {collapsed ? (
+              <ChevronsRight className="h-4 w-4" />
+            ) : (
+              <ChevronsLeft className="h-4 w-4" />
+            )}
+          </button>
+        )}
       </div>
-      <nav aria-label="Panel menüsü" className="space-y-4">
+      <nav aria-label="Panel menüsü" className={cn(collapsed ? "space-y-2" : "space-y-4")}>
         {GROUP_ORDER.map((group) => {
           const items = NAV.filter((n) => n.group === group);
           if (items.length === 0) return null;
           return (
             <div key={group}>
-              <div
-                lang="tr"
-                className="mb-1 px-2 text-[10px] font-semibold tracking-wider text-muted-foreground"
-              >
-                {GROUP_LABEL_TR[group]}
-              </div>
+              {!collapsed && (
+                <div
+                  lang="tr"
+                  className="mb-1 px-2 text-[10px] font-semibold tracking-wider text-muted-foreground"
+                >
+                  {GROUP_LABEL_TR[group]}
+                </div>
+              )}
               <ul className="space-y-1">
                 {items.map(({ href, label, icon: Icon }) => {
                   const active = isActive(href, pathname);
@@ -177,15 +217,23 @@ function NavBody({
                         href={href}
                         data-active={active}
                         onClick={onNavigate}
+                        title={collapsed ? label : undefined}
                         className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                          "relative flex items-center rounded-md text-sm transition-colors",
+                          collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2",
                           active
-                            ? "bg-primary/10 text-primary"
+                            ? "bg-gradient-to-r from-primary/15 to-primary/5 text-primary"
                             : "text-muted-foreground hover:bg-accent hover:text-foreground",
                         )}
                       >
-                        <Icon className="h-4 w-4" />
-                        <span>{label}</span>
+                        {active && !collapsed && (
+                          <span
+                            aria-hidden="true"
+                            className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary"
+                          />
+                        )}
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!collapsed && <span className="truncate">{label}</span>}
                       </Link>
                     </li>
                   );
@@ -195,10 +243,12 @@ function NavBody({
           );
         })}
       </nav>
-      <div className="mt-auto rounded-md border border-border bg-background/40 p-3 text-[11px] text-muted-foreground">
-        <div className="font-mono text-foreground">v{process.env.NEXT_PUBLIC_ABS_VERSION ?? "1.0.6"}</div>
-        <div>self-host AI orchestration</div>
-      </div>
+      {!collapsed && (
+        <div className="mt-auto rounded-md border border-border bg-background/40 p-3 text-[11px] text-muted-foreground">
+          <div className="font-mono text-foreground">v{process.env.NEXT_PUBLIC_ABS_VERSION ?? "1.0.6"}</div>
+          <div>self-host AI orchestration</div>
+        </div>
+      )}
     </>
   );
 }
@@ -206,20 +256,50 @@ function NavBody({
 export function PanelSidebar() {
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   // Close the mobile drawer on every route change (i.e. after a nav click).
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
+  // Restore the persisted desktop collapse preference (client-only).
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(COLLAPSE_KEY) === "1") setCollapsed(true);
+    } catch {
+      /* localStorage unavailable — default expanded */
+    }
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((c) => {
+      const next = !c;
+      try {
+        localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }
+
   return (
     <>
-      {/* Desktop static rail (≥ lg). */}
+      {/* Desktop rail (≥ lg) — collapsible to an icon-only strip. */}
       <aside
         data-test="panel-sidebar"
-        className="hidden w-60 shrink-0 border-r border-border bg-card/50 p-4 lg:flex lg:flex-col"
+        data-collapsed={collapsed}
+        className={cn(
+          "hidden shrink-0 border-r border-border bg-card/50 transition-[width] duration-200 ease-out lg:flex lg:flex-col",
+          collapsed ? "w-[68px] px-2 py-4" : "w-60 p-4",
+        )}
       >
-        <NavBody pathname={pathname} />
+        <NavBody
+          pathname={pathname}
+          collapsed={collapsed}
+          onToggleCollapse={toggleCollapsed}
+        />
       </aside>
 
       {/* Mobile: floating nav button (bottom-right FAB avoids the header's
