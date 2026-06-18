@@ -104,7 +104,7 @@ trigger to graduate panel from TR-first to EN/TR/ES is:
 
 - ≥ 1 paying non-TR customer requests EN/ES admin
 - OR an enterprise contract makes EN admin a hard requirement
-- OR product strategy decides TR-first is no longer the founder bet
+- OR product strategy decides TR-first is no longer the chosen direction
 
 When that trigger fires:
 

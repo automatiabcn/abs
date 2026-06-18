@@ -70,7 +70,7 @@ up automatically.
 
 ## Promoting from mock → live (post-GA)
 
-When the founder approves real-customer engagement (Caveat #13 / #14):
+When promoting to real-customer (live) integrations:
 
 1. Provision a sandbox Google Cloud project; mint an OAuth refresh token
    for `gmail.modify`. Drop it into the production vault (`app.vault.cache`),

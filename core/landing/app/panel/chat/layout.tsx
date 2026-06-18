@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// FOUNDER_FIX_1 / SWEEP — server-component sibling that gives this client
+// SWEEP — server-component sibling that gives this client
 // route a unique <title>. The parent /panel layout still owns the chrome;
 // this file only contributes metadata. Do not add UI here.
 import type { Metadata } from "next";

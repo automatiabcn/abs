@@ -7,7 +7,7 @@
 
 // Brief 2 R3..R4 — Cosmos 3D system map (force-directed graph).
 //
-// Approved variant: `mockup_2` (founder 2026-05-07).
+// Design variant: `mockup_2`.
 //
 // Tech stack:
 //   * react-force-graph-3d (d3-force-3d under Three.js) for layout
