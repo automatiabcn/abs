@@ -53,6 +53,58 @@ def test_log_run_create_and_decide() -> None:
     assert decided["outcome"] == "ok"
 
 
+def test_claim_pending_transition_wins_exactly_once() -> None:
+    """Concurrency guard — the outbound action behind an approval must fire at
+    most once. Two decides racing on the same pending item both read
+    status='pending' before either commits; the atomic claim lets exactly one
+    win. A plain read-then-write gate would fire the action twice."""
+    from sqlmodel import Session
+
+    from app.db.session import get_engine
+
+    res = _result()
+    rid = service.log_agent_run(res, tenant_slug="tClaim", actor="")
+    item = service.create_approval_from_result(
+        res, tenant_slug="tClaim", requester="", agent_run_id=rid,
+    )
+    iid = item["id"]
+    with Session(get_engine()) as db:  # first claimant wins
+        assert service._claim_pending_transition(
+            db, item_id=iid, tenant_slug="tClaim", new_status="approved"
+        ) is True
+        db.commit()
+    with Session(get_engine()) as db:  # second sees non-pending → loses
+        assert service._claim_pending_transition(
+            db, item_id=iid, tenant_slug="tClaim", new_status="approved"
+        ) is False
+
+
+def test_decide_fires_action_at_most_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    """End-to-end: re-deciding an already-decided item never re-fires the
+    consent-gated outbound action (the won_transition gate, not prev_status)."""
+    import app.actions as actions_mod
+
+    res = _result()
+    rid = service.log_agent_run(res, tenant_slug="tFire", actor="")
+    item = service.create_approval_from_result(
+        res, tenant_slug="tFire", requester="", agent_run_id=rid,
+        target_company="Kaya", channel="email", consent_status="opt-in",
+    )
+    calls = {"n": 0}
+
+    def _fake_exec(row, *, tenant_slug):  # noqa: ANN001
+        calls["n"] += 1
+        return {"status": "queued", "reason": "ok"}
+
+    monkeypatch.setattr(actions_mod, "execute_for_approval", _fake_exec)
+    for _ in range(2):
+        service.decide_approval(
+            tenant_slug="tFire", item_id=item["id"], decision="approve",
+            decided_by="b@x.io",
+        )
+    assert calls["n"] == 1
+
+
 def test_accept_rate_is_none_until_a_decision_exists() -> None:
     """3rd-eye audit — with no decided items the accept rate is unknown, not a
     fabricated 91%. It must be None (panel shows "—") and only become a real
