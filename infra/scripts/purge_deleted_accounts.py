@@ -6,11 +6,21 @@ Cron (daily):
 Behaviour:
 - License rows with `scheduled_delete_at <= now AND purged_at IS NULL` are
   fully erased: customer_email/customer_id_stripe blanked, related rows
-  (CustomerAuditEntry, EmailQueue, Consent, ConnectedSecret, DataExportJob)
-  hard-deleted.
+  (CustomerAuditEntry, EmailQueue, Consent, DataExportJob) hard-deleted.
 - License row stays (referential integrity for billing history) but PII is
   zeroed and `purged_at` is stamped.
 - Idempotent: a second run finds nothing.
+
+NOT purged here (deliberate):
+- ConnectedSecret — a deployment-global integration secret store (key_name /
+  provider / encrypted_value). It carries no license_jti / tenant / owner, so
+  it is not the deleted customer's PII; it belongs to the operator. (The old
+  code queried `ConnectedSecret.license_jti`, a field that doesn't exist, and
+  swallowed the resulting AttributeError every run — dead code, now removed.)
+- VaultAuditEntry — an HMAC-chained, tamper-evident vault-operation log whose
+  `actor` is operator/system ("system"/"admin-api"/"admin"), not customer PII.
+  Deleting or rewriting rows would break the chain; its retention rests on the
+  security-audit legitimate-interest basis.
 """
 
 from __future__ import annotations
@@ -26,7 +36,6 @@ def _purge_one(db, license_row) -> dict:
     from sqlmodel import select
 
     from app.db.models import (
-        ConnectedSecret,
         Consent,
         CustomerAuditEntry,
         DataExportJob,
@@ -34,7 +43,7 @@ def _purge_one(db, license_row) -> dict:
     )
 
     jti = license_row.jti
-    counts = {"audit": 0, "email": 0, "consent": 0, "secret": 0, "export": 0}
+    counts = {"audit": 0, "email": 0, "consent": 0, "export": 0}
 
     for row in db.scalars(
         select(CustomerAuditEntry).where(CustomerAuditEntry.license_jti == jti)
@@ -51,14 +60,6 @@ def _purge_one(db, license_row) -> dict:
     ).all():
         db.delete(row)
         counts["consent"] += 1
-    try:
-        for row in db.scalars(
-            select(ConnectedSecret).where(ConnectedSecret.license_jti == jti)
-        ).all():
-            db.delete(row)
-            counts["secret"] += 1
-    except Exception:
-        pass
     for row in db.scalars(
         select(DataExportJob).where(DataExportJob.license_jti == jti)
     ).all():
