@@ -97,7 +97,7 @@ def _main(argv: list[str] | None = None) -> int:
     """CLI helper: ``python -m app.licensing.fingerprint --print``.
 
     Customer runs this on their server and copy-pastes the hex digest
-    to the founder during onboarding so the license can be minted with
+    to the vendor during onboarding so the license can be minted with
     matching ``machine_fp``.
     """
 

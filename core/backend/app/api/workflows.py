@@ -198,7 +198,7 @@ _llm_synth_fn = _cascade_synth_fn
 async def synthesize(
     body: SynthesizeRequest, admin: dict = Depends(current_admin)
 ) -> SynthesizeResponse:
-    # Founder Tester Round 2 (BUG-5) — LLM-first via cascade. Disable only
+    # LLM-first via cascade. Disable only
     # when the operator explicitly opts out (`ABS_WORKFLOW_LLM_ENABLED=false`)
     # or when the cascade chain is empty; the latter check happens inside
     # `_cascade_synth_fn` and surfaces as `SynthesisError`.

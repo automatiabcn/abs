@@ -3,9 +3,9 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""RSA keypair I/O + image-baked founder pubkey resolution.
+"""RSA keypair I/O + image-baked vendor pubkey resolution.
 
-BUG-12 (2026-05-09) — customer images bake the founder's manifest
+BUG-12 (2026-05-09) — customer images bake the vendor's manifest
 pubkey at ``/etc/abs/manifest_pubkey.pem`` (set via ``ABS_PUBLIC_KEY_PATH``
 env in the Dockerfile). Verification reads that pubkey through
 ``settings.public_key_path``. Mint, however, used to read whatever
@@ -15,10 +15,10 @@ in-container ``generate_license`` call produced a JWT the verifier
 rejected with "License signature invalid".
 
 The Phase 1 entrypoint patch already skips first-boot keypair
-generation when the founder pubkey is baked, but stale ``data/private.pem``
+generation when the vendor pubkey is baked, but stale ``data/private.pem``
 files from earlier rc images linger on persisted volumes. To make the
 failure mode safe and obvious we now refuse to mint when the configured
-private key does not derive the image-baked public key. The founder's
+private key does not derive the image-baked public key. The vendor's
 shared private key (held offline on Mac/PC, never inside any image)
 remains the only viable mint source. Dev / test environments without an
 image-baked pubkey keep their previous behaviour so the unit suite
@@ -36,7 +36,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 logger = logging.getLogger(__name__)
 
-# Image-baked founder public key. Dockerfile copies the founder's PEM
+# Image-baked vendor public key. Dockerfile copies the vendor's PEM
 # into this exact path and points ``ABS_PUBLIC_KEY_PATH`` at it.
 IMAGE_BAKED_PUBLIC_KEY = Path("/etc/abs/manifest_pubkey.pem")
 
@@ -100,15 +100,15 @@ def _normalised_pem(raw: bytes) -> bytes:
 
 def assert_mint_keypair_pairs() -> None:
     """Refuse to mint when the configured private key does not match the
-    image-baked founder pubkey.
+    image-baked vendor pubkey.
 
     Behaviour:
       * No image-baked pubkey on disk → no-op (dev/test).
-      * ``ABS_LICENSE_MINT_INSECURE=1`` → no-op (founder local-machine
+      * ``ABS_LICENSE_MINT_INSECURE=1`` → no-op (vendor local-machine
         bootstraps before the shared key is provisioned).
       * Image-baked pubkey present + private key derives a different
         public key → ``RuntimeError`` with explicit guidance to set
-        ``ABS_PRIVATE_KEY_PATH`` to the founder's shared key.
+        ``ABS_PRIVATE_KEY_PATH`` to the vendor's shared key.
     """
 
     if os.environ.get("ABS_LICENSE_MINT_INSECURE") == "1":
@@ -124,7 +124,7 @@ def assert_mint_keypair_pairs() -> None:
         raise RuntimeError(
             "license_mint_no_private_key — image-baked pubkey is present at "
             f"{IMAGE_BAKED_PUBLIC_KEY} but no private key was found at "
-            f"{settings.private_key_path!r}. Mint requires the founder's "
+            f"{settings.private_key_path!r}. Mint requires the vendor's "
             "shared private key. Set ABS_PRIVATE_KEY_PATH to the matching "
             "PEM (held offline on Mac/PC) and retry."
         ) from exc
@@ -147,7 +147,7 @@ def assert_mint_keypair_pairs() -> None:
             "license_mint_pair_mismatch — the configured private key "
             f"({settings.private_key_path!r}) does not pair with the "
             f"image-baked public key ({IMAGE_BAKED_PUBLIC_KEY}). Mint must "
-            "use the founder's shared private key (offline Mac/PC). Set "
+            "use the vendor's shared private key (offline Mac/PC). Set "
             "ABS_PRIVATE_KEY_PATH to that PEM, or set "
             "ABS_LICENSE_MINT_INSECURE=1 only for a dev pair-bootstrap."
         )
