@@ -168,3 +168,43 @@ def test_edit_updates_message() -> None:
     )
     assert edited["status"] == "edited"
     assert edited["proposed_message"] == "Düzenlenmiş mesaj."
+
+
+def test_escalation_due_surfaced_for_overdue_pending() -> None:
+    """3rd-eye — escalate_at was a dead field (set, never read/exposed). It is
+    now in the payload + a computed escalation_due: a pending item past its 4h
+    SLA flags overdue; a fresh one doesn't; a decided one never does."""
+    from datetime import timedelta
+
+    from sqlmodel import Session
+
+    from app.db.models import ApprovalItem
+    from app.db.session import get_engine
+
+    res = _result()
+    rid = service.log_agent_run(res, tenant_slug="tEsc", actor="")
+    item = service.create_approval_from_result(
+        res, tenant_slug="tEsc", requester="", agent_run_id=rid,
+    )
+
+    fresh = service.get_approval(tenant_slug="tEsc", item_id=item["id"])
+    assert fresh["escalate_at"] is not None       # exposed (was absent)
+    assert fresh["escalation_due"] is False        # +4h SLA not yet passed
+    assert service.list_approvals(tenant_slug="tEsc")["escalations_due"] == 0
+
+    with Session(get_engine()) as db:  # force the SLA into the past
+        row = db.get(ApprovalItem, item["id"])
+        row.escalate_at = service._now() - timedelta(hours=1)
+        db.add(row)
+        db.commit()
+
+    overdue = service.get_approval(tenant_slug="tEsc", item_id=item["id"])
+    assert overdue["escalation_due"] is True
+    assert service.list_approvals(tenant_slug="tEsc")["escalations_due"] == 1
+
+    service.decide_approval(
+        tenant_slug="tEsc", item_id=item["id"], decision="approve",
+        decided_by="b@x.io",
+    )
+    decided = service.get_approval(tenant_slug="tEsc", item_id=item["id"])
+    assert decided["escalation_due"] is False      # decided items never escalate
