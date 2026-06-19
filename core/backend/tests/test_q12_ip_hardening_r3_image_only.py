@@ -21,10 +21,23 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+
+# release.sh + customer_onboard.sh are founder-only ops tooling (.gitignored);
+# present on the operator host but never in a clean checkout. Tests that read
+# them skip where they're absent instead of hard-failing CI.
+_needs_release = pytest.mark.skipif(
+    not (REPO_ROOT / "scripts" / "release.sh").exists(),
+    reason="founder-only release.sh (gitignored); operator host only",
+)
+_needs_onboard = pytest.mark.skipif(
+    not (REPO_ROOT / "scripts" / "customer_onboard.sh").exists(),
+    reason="founder-only customer_onboard.sh (gitignored); operator host only",
+)
 
 
 def _read(rel: str) -> str:
@@ -56,6 +69,7 @@ def test_customer_compose_no_build_context():
         )
 
 
+@_needs_release
 def test_release_script_atomic_clean_tree_gate():
     text = _read("scripts/release.sh")
     assert "set -euo pipefail" in text
@@ -114,6 +128,7 @@ def test_dockerfile_carries_build_hash_label():
     )
 
 
+@_needs_onboard
 def test_customer_onboard_email_uses_ghcr_pull():
     text = _read("scripts/customer_onboard.sh")
     # Old SSH+git-clone flow must be gone.
