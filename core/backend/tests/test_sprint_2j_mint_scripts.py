@@ -33,6 +33,16 @@ import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
+# mint_and_email.sh + customer_onboard.sh are founder-only ops tooling and are
+# .gitignored (see repo .gitignore "Founder-only ops tooling"). They exist on
+# the operator host but never in a clean checkout, so this guardrail module is
+# skipped wherever they're absent (CI / fresh clone) instead of hard-failing.
+pytestmark = pytest.mark.skipif(
+    not (_REPO_ROOT / "scripts" / "mint_and_email.sh").exists()
+    or not (_REPO_ROOT / "scripts" / "customer_onboard.sh").exists(),
+    reason="founder-only ops scripts (gitignored); present only on the operator host",
+)
+
 
 def _read(rel: str) -> str:
     return (_REPO_ROOT / rel).read_text(encoding="utf-8")
