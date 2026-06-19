@@ -96,8 +96,10 @@ def test_promise_v1_cold_install_zero_payload(
     assert claude["used_pct"] == 0.0
     assert claude["over_warn"] is False
     assert claude["over_block"] is False
-    # Free path tile (PROMISE.md "Free path: X %").
+    # Free path tile (PROMISE.md "Free path: X %"). With zero calls there is no
+    # ratio — pct_24h is None (tile shows "—"), not a fabricated 100 %.
     assert body["free_path"]["calls_24h"] == 0
+    assert body["free_path"]["pct_24h"] is None
     # 7-day trend always returns 7 dense buckets so the chart never empties.
     assert isinstance(body["daily_trend"], list)
     assert len(body["daily_trend"]) == 7

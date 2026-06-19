@@ -41,14 +41,16 @@ export type UsagePayload = {
     over_block: boolean;
     banner: string | null;
   };
-  free_path: { calls_24h: number; pct_24h: number };
+  free_path: { calls_24h: number; pct_24h: number | null };
   paid_path: { calls_24h: number };
   total_calls_24h: number;
   provider_mix_24h: Record<string, number>;
   daily_trend: Array<{ day: string; claude_tokens: number }>;
 };
 
-function formatPct(v: number): string {
+function formatPct(v: number | null): string {
+  // No traffic yet → no ratio. Show an em dash instead of a fabricated 100 %.
+  if (v == null) return "—";
   return `${(v * 100).toFixed(1)} %`;
 }
 

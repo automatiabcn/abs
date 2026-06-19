@@ -219,9 +219,14 @@ async def get_usage(_admin: dict = Depends(admin_required)) -> dict[str, Any]:
     """
     quota = quota_monitor.status()
     scan = _scan_usage()
-    free_pct = 1.0
-    if scan["total_calls_24h"] > 0:
-        free_pct = scan["free_path_count_24h"] / scan["total_calls_24h"]
+    # 3rd-eye audit — with zero calls there is no free-path ratio; emit None so
+    # the tile shows "—". The old default of 1.0 rendered a fabricated "100.0 %"
+    # free-path metric on every fresh install that had logged no traffic yet.
+    free_pct = (
+        scan["free_path_count_24h"] / scan["total_calls_24h"]
+        if scan["total_calls_24h"] > 0
+        else None
+    )
     return {
         "month": quota.month,
         "claude": {
@@ -234,7 +239,7 @@ async def get_usage(_admin: dict = Depends(admin_required)) -> dict[str, Any]:
         },
         "free_path": {
             "calls_24h": scan["free_path_count_24h"],
-            "pct_24h": round(free_pct, 4),
+            "pct_24h": round(free_pct, 4) if free_pct is not None else None,
         },
         "paid_path": {
             "calls_24h": scan["paid_path_count_24h"],
