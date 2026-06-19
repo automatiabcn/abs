@@ -107,6 +107,18 @@ def create_approval_from_result(
         return _to_dict(row)
 
 
+def _is_escalation_due(r: ApprovalItem) -> bool:
+    """A pending item is overdue for escalation once its `escalate_at` (set to
+    +4h at creation) has passed. tz-naive timestamps (SQLite) are treated as
+    UTC. Decided items never escalate."""
+    esc = r.escalate_at
+    if esc is None or r.status != "pending":
+        return False
+    if esc.tzinfo is None:
+        esc = esc.replace(tzinfo=timezone.utc)
+    return esc <= _now()
+
+
 def _to_dict(r: ApprovalItem) -> dict:
     return {
         "id": r.id,
@@ -126,6 +138,11 @@ def _to_dict(r: ApprovalItem) -> dict:
         "decided_by": r.decided_by,
         "decided_at": r.decided_at.isoformat() if r.decided_at else None,
         "outcome": r.outcome,
+        # escalate_at was set at creation but never surfaced or read — a dead
+        # field. Expose it + a computed `escalation_due` so the panel can flag
+        # pending items past their 4h SLA. (Notification/cron is a follow-up.)
+        "escalate_at": r.escalate_at.isoformat() if r.escalate_at else None,
+        "escalation_due": _is_escalation_due(r),
         "created_at": r.created_at.isoformat() if r.created_at else None,
     }
 
@@ -174,9 +191,12 @@ def list_approvals(*, tenant_slug: str, status: str = "pending", limit: int = 10
     # as a real scorecard number on every fresh/empty install.
     accept_rate = round(approved / len(decided) * 100) if decided else None
 
+    escalations_due = sum(1 for p in pending if _is_escalation_due(p))
+
     return {
         "items": [_to_dict(r) for r in rows],
         "pending_total": len(pending),
+        "escalations_due": escalations_due,
         "by_risk": buckets,
         "tier_stats": {
             "low_auto": low_auto,
