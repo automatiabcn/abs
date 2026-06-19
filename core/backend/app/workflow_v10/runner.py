@@ -547,6 +547,14 @@ async def _execute_run(job_id: str) -> None:
                 record.warnings.append(
                     f"node {nid} ({kind}) not executed: {output.get('error', 'unsupported')}"
                 )
+            elif isinstance(output, dict) and output.get("error"):
+                # A node that raised must not abort the run (best-effort), but
+                # its failure must NOT be silent: surface it in warnings so the
+                # caller/panel sees it instead of a green "done" hiding an error
+                # buried in node_outputs.
+                record.warnings.append(
+                    f"node {nid} ({kind}) failed: {output['error']}"
+                )
             for e in out_edges.get(nid, []):
                 if _edge_fires(e, output):
                     dst = e.get("target") or e.get("to")
