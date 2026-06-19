@@ -13,6 +13,7 @@ from sqlmodel import Session, select
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 from app.db.models import (
+    ConnectedSecret,
     Consent,
     CustomerAuditEntry,
     DataExportJob,
@@ -228,3 +229,42 @@ def test_purge_script_executes_and_zeros_pii():
             db.scalars(select(Consent).where(Consent.license_jti == jti)).first()
             is None
         )
+
+
+def test_purge_leaves_global_connected_secrets_untouched():
+    """ConnectedSecret is a deployment-global integration store (no license_jti),
+    not the deleted customer's PII. A per-account purge must leave it alone — and
+    must not crash on it the way the old `where(ConnectedSecret.license_jti==...)`
+    AttributeError-swallow dead query implied it was purging something."""
+    _, jti = _issue_token_with_db_row(email="purge3@example.com")
+    past = datetime.now(timezone.utc) - timedelta(days=1)
+    with Session(get_engine()) as db:
+        row = db.scalars(select(License).where(License.jti == jti)).first()
+        row.scheduled_delete_at = past
+        db.add(row)
+        db.add(
+            ConnectedSecret(
+                key_name="global-slack-token-purge-test",
+                provider="slack",
+                encrypted_value="enc::xxx",
+            )
+        )
+        db.commit()
+
+    out = subprocess.run(
+        [sys.executable, f"{REPO_ROOT}/infra/scripts/purge_deleted_accounts.py"],
+        capture_output=True,
+        text=True,
+        cwd=f"{REPO_ROOT}/core/backend",
+    )
+    assert out.returncode == 0, out.stderr
+
+    with Session(get_engine()) as db:
+        purged = db.scalars(select(License).where(License.jti == jti)).first()
+        assert purged is not None and purged.purged_at is not None  # account erased
+        secret = db.scalars(
+            select(ConnectedSecret).where(
+                ConnectedSecret.key_name == "global-slack-token-purge-test"
+            )
+        ).first()
+        assert secret is not None, "global connected secret must survive an account purge"
