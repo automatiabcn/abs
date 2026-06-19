@@ -43,6 +43,11 @@ def test_compose_yml_valid_via_docker_config():
     """
     if not shutil.which("docker"):
         return
+    # The compose file declares `env_file: infra/.env`, which is .gitignored
+    # (secrets) and absent in a clean checkout — `docker compose config` would
+    # fail validating it. Only the operator host has it; skip elsewhere.
+    if not (_compose_file().parent / ".env").exists():
+        return
     proc = subprocess.run(
         ["docker", "compose", "-f", str(_compose_file()), "config"],
         capture_output=True,
