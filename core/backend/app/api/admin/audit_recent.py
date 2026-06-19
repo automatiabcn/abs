@@ -38,24 +38,74 @@ def _norm(dt: Optional[datetime]) -> Optional[datetime]:
     return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
 
 
-def _encode_cursor(ts: datetime, row_id: str | int) -> str:
-    raw = f"{ts.isoformat()}|{row_id}".encode("utf-8")
+# Stable cross-source ordering: at an identical timestamp, vault rows sort
+# before customer before webhook (matches the append order of the merge below).
+# The cursor carries this source so the next page can resume *within* a tied
+# timestamp instead of skipping every row that shares the boundary ts.
+_SOURCE_RANK = {"vault": 0, "customer": 1, "webhook": 2}
+
+
+def _encode_cursor(ts: datetime, source: str, row_id: str | int) -> str:
+    raw = f"{ts.isoformat()}|{source}|{row_id}".encode("utf-8")
     return base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
 
 
-def _decode_cursor(token: Optional[str]) -> Optional[datetime]:
+def _decode_cursor(token: Optional[str]) -> Optional[tuple[datetime, Optional[str], Optional[str]]]:
+    """Return (ts, source, row_id) or None. Back-compatible with the old
+    ``ts|id`` (2-field) cursors, which decode to source=None and fall back to
+    the plain ts boundary for that one in-flight page."""
     if not token:
         return None
     try:
         padded = token + "=" * (-len(token) % 4)
         raw = base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8")
-        ts_iso, _id = raw.split("|", 1)
+        parts = raw.split("|", 2)
+        if len(parts) == 3:
+            ts_iso, source, row_id = parts
+        elif len(parts) == 2:  # legacy ts|id cursor
+            ts_iso, source, row_id = parts[0], None, parts[1]
+        else:
+            raise ValueError("cursor must have at least ts|id")
         dt = datetime.fromisoformat(ts_iso)
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
-        return dt
+        return (dt, source, row_id)
     except Exception as exc:
         raise HTTPException(400, f"invalid_cursor:{type(exc).__name__}") from exc
+
+
+def _keyset(ts_col, id_col, source: str, anchor):
+    """Build the WHERE clause that returns rows strictly *after* the cursor
+    anchor in the (ts DESC, source-rank ASC, id DESC) total order, for one
+    source. None when there is no cursor.
+
+    Fixes the silent row-skip: the old code filtered every source by
+    ``ts < cursor_ts``, so any rows sharing the boundary timestamp that hadn't
+    been shown yet were dropped from pagination forever."""
+    from sqlalchemy import and_, or_
+
+    if anchor is None:
+        return None
+    ts_a, source_a, id_a = anchor
+    if source_a is None:  # legacy cursor — no source/id tiebreaker available
+        return ts_col < ts_a
+    rank = _SOURCE_RANK.get(source, 99)
+    rank_a = _SOURCE_RANK.get(source_a, 99)
+    if rank < rank_a:
+        # this source sorts before the anchor at ts_a → its ts_a rows were shown
+        return ts_col < ts_a
+    if rank > rank_a:
+        # this source sorts after the anchor at ts_a → none of its ts_a rows shown
+        return ts_col <= ts_a
+    # same source as the anchor → resume within the tied ts using the id.
+    # webhook's PK (event_id) is a string; vault/customer ids are ints.
+    id_typed: object = id_a
+    if source != "webhook":
+        try:
+            id_typed = int(id_a)
+        except (TypeError, ValueError):
+            id_typed = id_a
+    return or_(ts_col < ts_a, and_(ts_col == ts_a, id_col < id_typed))
 
 
 @router.get("/recent")
@@ -87,15 +137,18 @@ async def recent_audit(
             "entries": [],
         }
     effective_limit = min(limit, MAX_LIMIT)
-    cursor_ts = _decode_cursor(cursor)
+    anchor = _decode_cursor(cursor)
 
     out: list[dict] = []
     with Session(get_engine()) as db:
         if source in {"vault", "all"}:
             stmt = select(VaultAuditEntry)
-            if cursor_ts is not None:
-                stmt = stmt.where(VaultAuditEntry.ts < cursor_ts)
-            stmt = stmt.order_by(VaultAuditEntry.ts.desc()).limit(effective_limit)
+            kc = _keyset(VaultAuditEntry.ts, VaultAuditEntry.id, "vault", anchor)
+            if kc is not None:
+                stmt = stmt.where(kc)
+            stmt = stmt.order_by(
+                VaultAuditEntry.ts.desc(), VaultAuditEntry.id.desc()
+            ).limit(effective_limit)
             for r in db.scalars(stmt).all():
                 ts = _norm(r.ts)
                 out.append(
@@ -111,9 +164,14 @@ async def recent_audit(
                 )
         if source in {"customer", "all"}:
             stmt = select(CustomerAuditEntry)
-            if cursor_ts is not None:
-                stmt = stmt.where(CustomerAuditEntry.ts < cursor_ts)
-            stmt = stmt.order_by(CustomerAuditEntry.ts.desc()).limit(effective_limit)
+            kc = _keyset(
+                CustomerAuditEntry.ts, CustomerAuditEntry.id, "customer", anchor
+            )
+            if kc is not None:
+                stmt = stmt.where(kc)
+            stmt = stmt.order_by(
+                CustomerAuditEntry.ts.desc(), CustomerAuditEntry.id.desc()
+            ).limit(effective_limit)
             for r in db.scalars(stmt).all():
                 ts = _norm(r.ts)
                 out.append(
@@ -128,9 +186,14 @@ async def recent_audit(
                 )
         if source in {"webhook", "all"}:
             stmt = select(WebhookEvent)
-            if cursor_ts is not None:
-                stmt = stmt.where(WebhookEvent.received_at < cursor_ts)
-            stmt = stmt.order_by(WebhookEvent.received_at.desc()).limit(effective_limit)
+            kc = _keyset(
+                WebhookEvent.received_at, WebhookEvent.event_id, "webhook", anchor
+            )
+            if kc is not None:
+                stmt = stmt.where(kc)
+            stmt = stmt.order_by(
+                WebhookEvent.received_at.desc(), WebhookEvent.event_id.desc()
+            ).limit(effective_limit)
             for r in db.scalars(stmt).all():
                 ts = _norm(r.received_at)
                 out.append(
@@ -154,7 +217,7 @@ async def recent_audit(
         last = page[-1]
         if last["ts"]:
             next_cursor = _encode_cursor(
-                datetime.fromisoformat(last["ts"]), last["id"]
+                datetime.fromisoformat(last["ts"]), last["source"], last["id"]
             )
     return {
         "source": source,
