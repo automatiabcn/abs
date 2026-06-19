@@ -81,7 +81,7 @@ def get_auth_context(
     )
 
 
-# Founder Tester Round 2 (BUG-6) — `/admin/rag` console runs against
+# `/admin/rag` console runs against
 # `/v1/rag/*` which historically required a Bearer JWT. The single-tenant
 # operator UX (cookie-based admin session) had no way to ship that token,
 # so ingest/query 401'd. We expose a *secondary* dep that accepts either
