@@ -105,6 +105,21 @@ async def lifespan(_app: FastAPI):
     init_db()
     _lf_logger = logging.getLogger("app.lifespan")
 
+    # 014 — restore persisted circuit-breaker state on boot. The breaker writes
+    # every open/half-open transition to disk (persist.py) so a provider that
+    # tripped before a deploy/restart stays isolated instead of being hammered
+    # again on the first post-restart request. The restore method existed but
+    # was never wired into startup, so the documented "open state survives
+    # restart" guarantee silently never fired. Best-effort: never block boot.
+    try:
+        from app.cascade.breaker import default_breaker
+
+        _restored = default_breaker.restore_state()
+        if _restored:
+            _lf_logger.info("circuit-breaker state restored: %s provider(s)", _restored)
+    except Exception as exc:
+        _lf_logger.warning("circuit-breaker restore skipped: %s", exc)
+
     # Agentic Growth — seed the demo dataset so every Growth screen renders the
     # populated mockup experience. Demo-mode only (never touches a real tenant's
     # data) and idempotent. Best-effort: a seed failure must not block boot.
