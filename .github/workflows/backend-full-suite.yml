@@ -1,0 +1,44 @@
+name: Backend Full Suite
+
+# Runs the WHOLE backend test suite on every PR + main push. The existing
+# `test-postgres` check only runs `-m postgres_only` (the RLS subset), so a
+# regression anywhere else in the suite never blocked a merge — five stale
+# tests were red on main for a while before anyone noticed. This job closes
+# that gap; once it's reporting green it should be added to the branch's
+# required status checks.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: backend-full-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-full:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: core/backend
+    env:
+      # Deterministic SQLite test lane (matches how the suite is run locally);
+      # the Postgres/RLS-specific cases keep their own `test-postgres` job.
+      ABS_TEST_MODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+      - name: Run full backend test suite
+        run: pytest -q --ignore=tests/integration
