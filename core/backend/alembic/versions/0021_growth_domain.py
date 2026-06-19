@@ -5,7 +5,7 @@ Revises: 0020_agentic_tables
 Create Date: 2026-06-08
 
 The SQL home for the Growth Context Graph entities. Tenant-scoped; RLS-enrolled
-like 0019/0020. SQLite (tests + digisfer) creates them via create_all and the
+like 0019/0020. SQLite (tests + self-host) creates them via create_all and the
 RLS steps no-op there.
 """
 

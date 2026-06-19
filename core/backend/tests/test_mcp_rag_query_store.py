@@ -43,7 +43,7 @@ def test_rag_query_uses_chroma_when_tenant_unset(monkeypatch: pytest.MonkeyPatch
 
 
 def test_rag_query_searches_qdrant_when_tenant_set(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(settings, "mcp_rag_tenant", "digisfer", raising=False)
+    monkeypatch.setattr(settings, "mcp_rag_tenant", "acme", raising=False)
     monkeypatch.setattr(settings, "qdrant_default_collection", "abs_documents", raising=False)
     monkeypatch.setattr(embedding_bge, "get_embedder", lambda: _StubEmbedder())
     monkeypatch.setattr(qc, "ensure_collection", lambda *a, **k: None)
@@ -64,8 +64,8 @@ def test_rag_query_searches_qdrant_when_tenant_set(monkeypatch: pytest.MonkeyPat
 
     out = json.loads(asyncio.run(rag_tool.rag_query("when is rent due", top_k=4)))
     assert out["store"] == "qdrant"
-    assert out["tenant"] == "digisfer"
-    assert captured == {"collection": "abs_documents", "tenant_id": "digisfer", "limit": 4}
+    assert out["tenant"] == "acme"
+    assert captured == {"collection": "abs_documents", "tenant_id": "acme", "limit": 4}
     assert out["count"] == 1
     hit = out["results"][0]
     assert hit["text"] == "rent due on the 5th"
