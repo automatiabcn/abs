@@ -5,7 +5,7 @@
 
 """Panel route — legacy `/panel` deprecated 2026-05-07.
 
-Founder kararı: legacy ABS HTML panel (Cosmos balls + monolithic
+Tasarım kararı: legacy ABS HTML panel (Cosmos balls + monolithic
 index.html) müşteriye gitmiyor. Tek frontend = Next.js admin under
 `/admin/*`. Bu modül artık sadece geriye dönük uyumluluk için redirect
 sağlar; login sayfası `/admin/login`'a, panel ana sayfası
