@@ -55,7 +55,7 @@ class IngestTextRequest(BaseModel):
     filename: str | None = None
     mime_type: str = "text/plain"
     contextual_prefix: str | None = Field(default=None, max_length=4_000)
-    # Char-based chunking (founder feedback 2026-06-06: cap ~400 chars).
+    # Char-based chunking, capped at ~400 chars.
     target_chars: int = Field(default=400, ge=80, le=4_000)
     overlap_chars: int = Field(default=80, ge=0, le=1_000)
     # Legacy token params still accepted; override char targets when provided.
@@ -77,8 +77,8 @@ class QueryRequest(BaseModel):
     score_threshold: float | None = Field(default=None, ge=0.0, le=1.0)
     rerank: bool = Field(default=False, description="apply T-013 cross-encoder rerank")
     rerank_top_k: int = Field(default=3, ge=1, le=50)
-    # Founder feedback 2026-06-06: re-interpret the vector hits into an answer
-    # ("chunk sonucunu verirsen doğru olmaz, yarım kalır") + metadata filtering.
+    # Re-interpret the vector hits into a complete answer (returning raw chunks
+    # leaves the response truncated) + metadata filtering.
     answer: bool = Field(
         default=False, description="LLM-synthesize an answer from the hits"
     )
@@ -158,8 +158,8 @@ def _synthesize_answer(
     project_slug: str | None = None,
     user_subject: str | None = None,
 ) -> str | None:
-    """Re-interpret the retrieved chunks into a grounded answer (founder
-    feedback: returning raw chunks "yarım kalır"). Best-effort: returns None if
+    """Re-interpret the retrieved chunks into a grounded answer (returning raw
+    chunks leaves the response truncated). Best-effort: returns None if
     no provider is configured or the cascade fails — the caller still returns
     the hits. Runs the async cascade via asyncio.run (safe in the sync RAG
     route's threadpool, same constraint as the Cohere embedder)."""
@@ -489,8 +489,8 @@ def query(
     vector = embedder.embed_one(body.query)
     must: list = []
     if body.doc_ids:
-        # Metadata filter (founder feedback: "metadata kullanmazsan sonuçları
-        # filtreleyemezsin") — restrict retrieval to the chosen documents.
+        # Metadata filter — restrict retrieval to the chosen documents so
+        # results can be scoped instead of searching the whole collection.
         must.append(
             FieldCondition(
                 key="doc_id", match=MatchAny(any=[d for d in body.doc_ids if d])
@@ -650,7 +650,7 @@ async def delete_document(
 ) -> dict[str, Any]:
     """Delete a document (all its chunks) from the caller's tenant collection.
 
-    Founder feedback 2026-06-06: "yüklenilen dosyaları sil özelliği de olmalı".
+    Lets a tenant remove uploaded documents from their own collection.
     Tenant-scoped via the Qdrant filter, so a caller can only delete their own
     documents. Project-scoped via ``X-Project-Id`` (consistent with the
     list/query paths) so a project workspace cannot delete a sibling project's
