@@ -48,7 +48,7 @@ def _admin_tenant(admin: dict) -> str:
 
     Mirrors the tenant the panel RAG ingest + autoindex resolve, so a meeting,
     its RAG chunks and its graph all land under the same tenant. Falls back to
-    the single-tenant default so self-host (digisfer, tenant=default) behaviour
+    the single-tenant default so self-host (tenant=default) behaviour
     is unchanged — and so the row is writable under the RLS policy (0019), whose
     GUC the tenant-context middleware pins from this same admin session.
     """

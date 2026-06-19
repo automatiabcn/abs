@@ -467,7 +467,7 @@ def test_ingest_text_binary_mime_returns_422_not_500(monkeypatch: pytest.MonkeyP
             "/v1/rag/ingest",
             json={
                 "text": "PK\x03\x04 not really a docx zip payload",
-                "filename": "Digisfer gelistirmeleri.docx",
+                "filename": "Proje gelistirmeleri.docx",
                 "mime_type": _DOCX_MIME,
             },
             headers={"Authorization": f"Bearer {token}", "X-ABS-Audience": cid},
@@ -509,7 +509,7 @@ def test_ingest_file_runs_with_asyncio_embedder(monkeypatch: pytest.MonkeyPatch)
     works off the event loop. /ingest-file must be a SYNC route (threadpool) —
     when it was `async def`, real DOCX uploads 500'd with 'asyncio.run() cannot
     be called from a running event loop' (mock embedder hid it; cohere triggered
-    it live on digisfer)."""
+    it live on a real deployment)."""
     import asyncio
     import io
 

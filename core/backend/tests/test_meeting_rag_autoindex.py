@@ -20,7 +20,7 @@ def test_autoindex_uses_default_collection_and_resolved_tenant(
     from app.config import settings
 
     monkeypatch.setattr(settings, "qdrant_default_collection", "abs_documents", raising=False)
-    monkeypatch.setattr("app.api.chat._resolve_tenant", lambda email: "digisfer")
+    monkeypatch.setattr("app.api.chat._resolve_tenant", lambda email: "acme")
 
     class _Emb:
         dim = 1024
@@ -54,18 +54,18 @@ def test_autoindex_uses_default_collection_and_resolved_tenant(
         ],
     }
     n = meetings_mod._autoindex_meeting_rag(
-        meeting_id=42, title="Q3 sync.mp3", uploader_email="admin@digisfer", result=result
+        meeting_id=42, title="Q3 sync.mp3", uploader_email="admin@acme", result=result
     )
 
     assert n == 2
     assert captured["collection"] == "abs_documents"
-    assert captured["tenant_id"] == "digisfer"
+    assert captured["tenant_id"] == "acme"
     pt = captured["points"][0]
     # PointStruct id must be a UUID (not the raw `meeting-42-seg-0000` chunk id).
     import uuid
 
     uuid.UUID(str(pt.id))  # raises if not a valid UUID
-    assert pt.payload["tenant_id"] == "digisfer"
+    assert pt.payload["tenant_id"] == "acme"
     assert pt.payload["kind"] == "meeting_transcript"
     assert pt.payload["doc_id"] == "meeting-42"
     assert "kira" in pt.payload["text"]
