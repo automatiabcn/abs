@@ -30,7 +30,7 @@ from app.providers.cascade import SETTINGS_KEY_ATTR
 def _resolve_admin_tenant(admin: dict) -> str:
     """Resolve the admin's tenant the SAME way the runtime RAG/cascade path does
     (`auth.tenant_id` ← `_resolve_tenant`). Using the marketplace resolver here
-    diverged (domain heuristic → "digisfer") from the runtime tenant ("default"
+    diverged (domain heuristic → a per-domain slug) from the runtime tenant ("default"
     where the data lives), so panel-stored keys/projects were never found at
     request time. Aligning both ends keeps BYOK + project scoping consistent."""
     from app.api.chat import _resolve_tenant

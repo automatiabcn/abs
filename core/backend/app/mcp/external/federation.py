@@ -11,7 +11,7 @@ Two consumers:
     FastMCP server as ``ext_<slug>__<tool>`` so the operator's connected Claude
     Code / Codex sees it. The FastMCP instance is GLOBAL (tools are not
     per-session), so this is gated behind ``external_mcp_federate_to_mcp`` and is
-    only tenant-safe on a single-tenant deployment (digisfer, tenant=default).
+    only tenant-safe on a single-tenant deployment (a self-host box, tenant=default).
 
   * server-side agents — ``call_federated`` lets an agent invoke an external
     tool with an explicit tenant, so agent use stays tenant-scoped even when the
