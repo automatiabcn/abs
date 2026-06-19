@@ -40,7 +40,7 @@ path was made multi-tenant-aware — ``api/meetings._admin_tenant`` now writes t
 resolved tenant inside the authenticated upload request, where the middleware
 has pinned the GUC — so they are now included above.)
 
-SQLite (digisfer self-host + the default test lane) has no RLS engine, so
+SQLite (self-host + the default test lane) has no RLS engine, so
 ``upgrade()``/``downgrade()`` no-op there exactly like 0015.
 """
 

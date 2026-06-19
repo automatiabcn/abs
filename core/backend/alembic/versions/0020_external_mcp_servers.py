@@ -8,10 +8,10 @@ A tenant registers a third-party MCP server (GitHub / Slack / their own) from
 the panel; ABS connects to it as an MCP *client* and federates its tools. The
 ``encrypted_auth`` column holds a Fernet ciphertext of the bearer/header value
 (app.multitenant.crypto) — never the plaintext. Tenant-scoped; RLS like the
-audit-table policies. SQLite (digisfer self-host + the test lane) no-ops the RLS
+audit-table policies. SQLite (self-host + the test lane) no-ops the RLS
 steps and gets the table via SQLModel ``create_all``.
 
-Chains off 0018 (the deployed digisfer head) as a self-contained change — the
+Chains off 0018 (the deployed self-host head) as a self-contained change — the
 RLS-extension and agentic-growth migrations are separate workstreams that are
 not part of this deployment. They converge again at the 0025 merge.
 """

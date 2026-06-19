@@ -8,7 +8,7 @@ Creates the two agentic-core tables (`agent_runs` = every agent execution,
 `approval_items` = the DB-backed Approval Center) and enrols both in the same
 tenant RLS policy as 0019. Both are written only inside an authenticated
 request, where the tenant-context middleware has pinned the GUC. SQLite (tests +
-digisfer self-host) creates the tables via `SQLModel.metadata.create_all`; the
+self-host) creates the tables via `SQLModel.metadata.create_all`; the
 RLS steps no-op there.
 """
 

@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 """Regression locks for the 2026-06-05 live-ops session.
 
-Each test pins a fix made while bringing digisfer up, so the incident cannot
+Each test pins a fix made while bringing a self-host customer up, so the incident cannot
 silently recur:
   * RAG file ingest: /v1/rag/ingest-file body cap (40 MB) + longest-prefix wins
     over /v1/rag/ingest (10 MB).
