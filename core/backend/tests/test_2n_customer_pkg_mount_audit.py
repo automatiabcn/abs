@@ -18,12 +18,22 @@ import pathlib
 import re
 import stat
 
+import pytest
+
 BACKEND_ROOT = pathlib.Path(__file__).resolve().parents[1]
 REPO_ROOT = BACKEND_ROOT.parents[1]
 
 COMPOSE = REPO_ROOT / "infra" / "docker-compose.customer.yml"
 ONBOARD_SH = REPO_ROOT / "scripts" / "customer_onboard.sh"
 BUILDER_SH = REPO_ROOT / "scripts" / "build_customer_pkg.sh"
+
+# customer_onboard.sh is founder-only ops tooling (.gitignored); present on the
+# operator host but never in a clean checkout. Onboard-script assertions skip
+# where it's absent instead of hard-failing CI.
+_needs_onboard = pytest.mark.skipif(
+    not ONBOARD_SH.exists(),
+    reason="founder-only customer_onboard.sh (gitignored); operator host only",
+)
 
 
 def _host_bind_mounts() -> list[tuple[str, str]]:
@@ -42,6 +52,7 @@ def test_compose_has_at_least_three_host_bind_mounts() -> None:
     )
 
 
+@_needs_onboard
 def test_onboard_copies_every_host_bind_mount_source() -> None:
     """For every `- ./xxx:/...` in compose, onboard.sh must materialise xxx."""
     onboard_raw = ONBOARD_SH.read_text()
@@ -89,6 +100,7 @@ def test_builder_uses_tar_gz_single_file_pattern() -> None:
     assert ".tar.gz" in raw
 
 
+@_needs_onboard
 def test_onboard_email_template_documents_tarball_extract() -> None:
     raw = ONBOARD_SH.read_text()
     assert "tar -xzvf" in raw, (
@@ -100,6 +112,7 @@ def test_onboard_email_template_documents_tarball_extract() -> None:
     assert "customer-pkg-" in raw
 
 
+@_needs_onboard
 def test_onboard_email_lists_scripts_directory() -> None:
     """smebes incident pattern: scripts/ host mount not mentioned in email."""
     raw = ONBOARD_SH.read_text()
