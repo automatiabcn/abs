@@ -56,7 +56,7 @@ PROVIDER_ORDER_FREE_FIRST: tuple[str, ...] = (
 
 # Default cascade chain — free providers first, paid Anthropic appended as the
 # last-resort premium fallback. This is the authoritative behaviour from
-# `docs/ABS_HYBRID_TIER_PROMISE.md` (Founder + ABS engineering sign-off):
+# `docs/ABS_HYBRID_TIER_PROMISE.md` (ABS engineering sign-off):
 # "Free path first … cascade … none of those paths touch Anthropic … 95%+ of
 # the work on free providers." Anthropic stays reachable as the quota-protected
 # premium lane (quota_monitor warns @80%, hard-blocks @95% → falls to Groq) so
@@ -123,7 +123,7 @@ def get_active_providers(
     fallback (`PROVIDER_ORDER_DEFAULT`, per ABS_HYBRID_TIER_PROMISE). `prefer`,
     when supplied and configured, moves that provider to the front of the chain.
     `skip_paid=True` swaps to the free-only chain and drops paid providers
-    entirely (founder-test Round 3 BUG-7 + BUG-8).
+    entirely.
 
     MT Phase 1: `extra_configured` is a set of providers a caller knows are
     configured via a per-owner (user/project/org) key even when no global key
