@@ -92,17 +92,21 @@ def resolve_companies(*, tenant_slug: str) -> Dict[str, Any]:
             members.sort(key=lambda m: (m.created_at or datetime.now(timezone.utc)))
             survivor = members[0]
             dups = members[1:]
+            dup_ids = [d.id for d in dups]
+            # All dups in a block fold into the same survivor, so reassign their
+            # children in one query per model (batched .in_) instead of one query
+            # per (dup × model) — same result, no N+1 on the merge path.
+            for model in (Contact, Lead, Opportunity):
+                rows = list(
+                    db.exec(select(model).where(
+                        model.tenant_slug == tenant_slug,
+                        model.company_id.in_(dup_ids),  # type: ignore[attr-defined]
+                    ))
+                )
+                for r in rows:
+                    r.company_id = survivor.id
+                    db.add(r)
             for dup in dups:
-                for model in (Contact, Lead, Opportunity):
-                    rows = list(
-                        db.exec(select(model).where(
-                            model.tenant_slug == tenant_slug,
-                            model.company_id == dup.id,
-                        ))
-                    )
-                    for r in rows:
-                        r.company_id = survivor.id
-                        db.add(r)
                 dup.canonical = False
                 db.add(dup)
                 survivor.merged_count += 1
