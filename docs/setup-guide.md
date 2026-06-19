@@ -150,7 +150,7 @@ ABS update channel signature ile imza doğrular (014). Bozuk imzayı reddeder.
 ## Fresh Install — test/QA verilerini temizle
 
 Repo'da geliştirme + QA sırasında üretilmiş test admin'leri, sohbet geçmişi
-ve örnek RAG dosyaları bulunabilir (örnek: `l24scan@test.local`, `tester-…@digisfer.local`).
+ve örnek RAG dosyaları bulunabilir (örnek: `l24scan@test.local`, `tester-…@test.local`).
 Production handoff'tan önce bu verileri temizle:
 
 ```bash

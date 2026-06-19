@@ -202,7 +202,7 @@ class Settings(BaseSettings):
     # Re-expose federated external tools through ABS's OWN /mcp transport so the
     # operator's connected Claude Code/Codex sees them (namespaced ext_<slug>__).
     # The /mcp server is a single shared FastMCP instance (tools are global), so
-    # this is only tenant-safe on a SINGLE-TENANT deployment (e.g. digisfer,
+    # this is only tenant-safe on a SINGLE-TENANT deployment (a self-host box,
     # tenant=default). Leave OFF on multi-tenant SaaS until per-session tool
     # filtering lands; server-side agent federation stays tenant-scoped regardless.
     external_mcp_federate_to_mcp: bool = False
@@ -383,8 +383,8 @@ class Settings(BaseSettings):
     # logged as insecure). Production MUST set ABS_PROVIDER_KEY_ENCRYPTION_KEY.
     provider_key_encryption_key: str = ""
 
-    # Multi-tenant strict isolation. OFF (default) = single-tenant self-host
-    # (digisfer): tenant derives from the operator's session and a few flows
+    # Multi-tenant strict isolation. OFF (default) = single-tenant self-host:
+    # tenant derives from the operator's session and a few flows
     # accept a client-supplied tenant for backwards-compat. ON = real
     # multi-tenant SaaS (1 instance, N customers): tenant is ALWAYS derived
     # from the authenticated principal, never trusted from request input, and
