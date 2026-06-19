@@ -5,7 +5,7 @@
 
 """Project CRUD + membership management (multi-tenant Phase 1).
 
-Founder decisions:
+Design decisions:
   * Project creation is restricted to org ``admin`` or ``manager`` (not every
     member).
   * A user can belong to MULTIPLE projects (N-N), with a per-project role
@@ -50,7 +50,7 @@ def _subject(admin: dict) -> str:
 
 
 def _require_creator(admin: dict) -> None:
-    """Project creation gate — admin or manager only (founder decision).
+    """Project creation gate — admin or manager only (by design).
 
     admin_required already enforces admin-level access; bootstrap/admin tokens
     have no explicit role and are allowed. A non-admin principal carrying a

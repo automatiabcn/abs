@@ -5,7 +5,7 @@
 
 """ABS feature usage tracker (Sprint 20 T-F05).
 
-Counts every MCP tool / pipeline / cascade invocation so the founder can
+Counts every MCP tool / pipeline / cascade invocation so operators can
 spot ABS features that ship but never run. Append-only JSON-line ledger
 with 30-day rolling aggregation, idle detection, and an admin dashboard
 feed at `/admin/feature-usage`.

@@ -17,8 +17,8 @@ import uuid
 from dataclasses import dataclass
 
 
-# Founder Tester Round 2 (BUG-6, infra fix) — Qdrant point IDs must be
-# unsigned ints or RFC-4122 UUIDs. The previous chunk_id format
+# Qdrant point IDs must be unsigned ints or RFC-4122 UUIDs. The previous
+# chunk_id format
 # (`<doc_id>-<seq:04d>`) failed Qdrant validation with "is not a valid
 # point ID". We derive a deterministic UUID5 from doc_id+seq so reruns
 # remain idempotent and `id` is still inspectable from a known doc.
@@ -93,9 +93,9 @@ def _normalize(text: str) -> str:
 
 def _clean_text(text: str) -> str:
     """Normalize extracted text so the vector store sees clean, consistent
-    content (founder feedback 2026-06-06: "metni chunk yapmadan önce text'e
-    çevirip okunmayan karakterleri temizlemelisin; direk okuduğun gibi atarsan
-    vector yanlış çalışır" + Turkish-character handling).
+    content. Text must be converted and stripped of unreadable characters
+    BEFORE chunking — feeding raw extracted bytes makes the embeddings
+    unreliable (+ Turkish-character handling).
 
     Steps, order matters:
       1. Unicode NFC — composes Turkish letters (i̇/ş/ğ/ç/ö/ü) into single code
@@ -287,9 +287,9 @@ def late_chunks(
     overlap_tokens: int | None = None,
     contextual_prefix: str | None = None,
 ) -> list[Chunk]:
-    """Sentence-aware chunking. The primary unit is CHARACTERS (founder
-    feedback 2026-06-06: chunks should cap around ~400 chars — small, precise
-    chunks retrieve better than 2k-char blocks). ``target_tokens`` /
+    """Sentence-aware chunking. The primary unit is CHARACTERS — chunks cap
+    around ~400 chars because small, precise chunks retrieve better than
+    2k-char blocks. ``target_tokens`` /
     ``overlap_tokens`` remain accepted for backward compatibility and, when
     given, override the char targets (1 token ≈ 4 chars)."""
     if target_tokens is not None:
