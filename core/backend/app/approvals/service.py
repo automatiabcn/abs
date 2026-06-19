@@ -16,6 +16,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy import update as sa_update
 from sqlmodel import Session, select
 
 from app.db.models import AgentRun, ApprovalItem
@@ -24,6 +25,26 @@ from app.db.session import get_engine
 logger = logging.getLogger(__name__)
 
 _DECISIONS = {"approve": "approved", "reject": "rejected", "edit": "edited"}
+
+
+def _claim_pending_transition(
+    db: Session, *, item_id: int, tenant_slug: str, new_status: str
+) -> bool:
+    """Atomically move an approval item out of ``pending``.
+
+    Returns True only for the caller whose UPDATE actually performed the
+    transition (rowcount 1). Concurrent decides (double-click / two browser
+    tabs) both read ``status == "pending"`` before either commits, so a plain
+    read-then-write gate fires the action twice; this conditional UPDATE lets
+    exactly one caller win. Mirrors the OAuth refresh atomic-rotation claim."""
+    claim = (
+        sa_update(ApprovalItem)
+        .where(ApprovalItem.id == item_id)
+        .where(ApprovalItem.tenant_slug == tenant_slug)
+        .where(ApprovalItem.status == "pending")
+        .values(status=new_status)
+    )
+    return (db.execute(claim).rowcount or 0) == 1
 
 
 def _now() -> datetime:
@@ -216,6 +237,15 @@ def decide_approval(
         if row is None or row.tenant_slug != tenant_slug:
             return None
         prev_status = row.status            # to fire the action at most once
+        # Claim the pending→decided transition atomically so the action fires
+        # at most once even under concurrent decides (a read-then-write check on
+        # prev_status races). Only the winner gets won_transition=True.
+        won_transition = False
+        if prev_status == "pending":
+            won_transition = _claim_pending_transition(
+                db, item_id=item_id, tenant_slug=tenant_slug, new_status=status
+            )
+            db.expire(row, ["status"])
         row.status = status
         row.decided_by = decided_by or ""
         row.decided_at = _now()
@@ -232,9 +262,10 @@ def decide_approval(
         )
 
     # Stage E — the FIRST approve/edit fires the action (consent-gated outbox);
-    # re-deciding an already-decided item never re-fires it (idempotent).
+    # re-deciding an already-decided item — or losing the concurrent claim —
+    # never re-fires it (idempotent).
     action = None
-    if status in ("approved", "edited") and prev_status == "pending":
+    if status in ("approved", "edited") and won_transition:
         try:
             from app.actions import execute_for_approval
 
