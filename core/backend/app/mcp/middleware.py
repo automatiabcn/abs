@@ -20,6 +20,15 @@ from app.hooks.dispatcher import dispatch_hooks
 
 logger = logging.getLogger(__name__)
 
+# Shown when the license gate cannot be evaluated while `mcp_require_license` is
+# on. We fail CLOSED there: an error checking the license must never grant
+# access to an unlicensed/expired caller.
+_GATE_ERROR_MESSAGE = (
+    "[LICENSE REQUIRED] License/demo status could not be verified right now, so "
+    "the request was refused for safety. Retry shortly, or check your license/"
+    "demo at https://abs.automatiabcn.com/"
+)
+
 
 def _extract_input_for_hooks(tool_name: str, args: tuple, kwargs: dict) -> dict:
     """MCP tool argümanlarını hook `tool_input` formatına dönüştür.
@@ -105,10 +114,14 @@ def with_hooks(tool_name: str) -> Callable:
                 try:
                     from app.mcp.gate import _BLOCK_MESSAGE, _gate_status
 
-                    if not _gate_status()["allowed"]:
-                        return _BLOCK_MESSAGE
+                    allowed = _gate_status()["allowed"]
                 except Exception as exc:
-                    logger.info("gate check skipped: %s", exc)
+                    # Fail CLOSED: with require_license on, an error evaluating
+                    # the gate must NOT let an unlicensed/expired caller through.
+                    logger.warning("license gate errored; failing closed: %s", exc)
+                    return _GATE_ERROR_MESSAGE
+                if not allowed:
+                    return _BLOCK_MESSAGE
 
             if settings.hooks_enabled and settings.hooks_mode in ("middleware", "both"):
                 try:
