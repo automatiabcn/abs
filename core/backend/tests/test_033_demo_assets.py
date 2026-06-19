@@ -9,7 +9,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
 SCREENSHOT_SCRIPT = REPO / "infra" / "scripts" / "generate_demo_screenshots.py"
-VIDEO_SCRIPT = REPO / "docs" / "demo" / "video-script.md"
+# NOTE: docs/demo/video-script.md was intentionally removed (commit fe38c21 —
+# "remove internal GTM/strategy material from customer surface"). The demo MCP
+# tool still reports its presence honestly (False); we no longer require it.
 
 
 # ---------- J: screenshot generator script ----------
@@ -30,18 +32,6 @@ def test_screenshot_script_is_importable_and_defines_screens():
     assert hasattr(mod, "run") and callable(mod.run)
 
 
-# ---------- K: video script ----------
-
-
-def test_video_script_present_and_long_enough():
-    assert VIDEO_SCRIPT.exists(), f"missing video script at {VIDEO_SCRIPT}"
-    body = VIDEO_SCRIPT.read_text(encoding="utf-8")
-    assert len(body.split()) >= 400, "video script too short"
-    lower = body.lower()
-    for kw in ("0:00", "5:00", "loom"):
-        assert kw in lower, f"missing keyword: {kw}"
-
-
 # ---------- L: demo_readiness_status MCP ----------
 
 
@@ -60,7 +50,9 @@ def test_demo_readiness_status_payload_shape():
     ):
         assert key in out
     assert out["seed_script_present"] is True
-    assert out["video_script_present"] is True
+    # video_script_present is reported honestly; the asset was intentionally
+    # removed from the customer surface, so it is simply a bool, not required.
+    assert isinstance(out["video_script_present"], bool)
 
 
 def test_demo_readiness_status_registered_in_server():
