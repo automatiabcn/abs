@@ -45,7 +45,7 @@ def generate_license(
         İmzalanmış JWT token (str).
     """
     # BUG-12 — refuse to mint with a private key that does not pair with
-    # the image-baked founder pubkey. No-op in dev/test (no baked pubkey).
+    # the image-baked vendor pubkey. No-op in dev/test (no baked pubkey).
     assert_mint_keypair_pairs()
 
     if valid_days > _EXCESSIVE_VALID_DAYS:

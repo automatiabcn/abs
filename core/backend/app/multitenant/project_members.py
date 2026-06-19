@@ -5,7 +5,7 @@
 
 """N-N user↔project membership store (multi-tenant Phase 1, data layer).
 
-A user can belong to multiple projects (founder decision). Roles:
+A user can belong to multiple projects (design decision). Roles:
 owner | editor | viewer. Additive + opt-in: no request path enforces these yet;
 a later round wires an active-project selector + access checks.
 """

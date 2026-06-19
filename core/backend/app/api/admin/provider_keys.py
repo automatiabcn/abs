@@ -10,8 +10,8 @@ Lets an admin store/list/delete provider API keys scoped to an owner —
 (tenant-wide). Keys are encrypted at rest (app.multitenant.crypto) and resolved
 at request time project → user → org → global by app.multitenant.provider_keys.
 
-This is the management surface for the founder decision "her kullanıcı kendi
-key'ini getirir". Tenant-scoped: a caller only ever touches their own tenant's
+This is the management surface for the BYOK model — each user brings their own
+key. Tenant-scoped: a caller only ever touches their own tenant's
 rows. Plaintext is never returned.
 """
 
