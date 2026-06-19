@@ -5,7 +5,7 @@
 
 """SQLite column reconciler — the create_all-doesn't-ALTER deploy guard.
 
-Simulates a live SQLite deployment (digisfer) whose ``connector_states`` predates
+Simulates a live SQLite deployment (a self-host box) whose ``connector_states`` predates
 the Stage A credential columns: on the next boot the reconciler must ADD them so
 reads don't 500. Idempotent on a second run."""
 

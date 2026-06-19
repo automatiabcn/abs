@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 """ABS_MULTI_TENANT_STRICT — strict-isolation gate for shared SaaS.
 
-Two latent fail-open paths are harmless on single-tenant self-host (digisfer)
+Two latent fail-open paths are harmless on single-tenant self-host
 but would leak across tenants on a shared multi-tenant SaaS instance. They are
 closed *only* when the operator opts into strict mode, so single-tenant
 behaviour (and its existing tests) stay byte-identical:
