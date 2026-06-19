@@ -102,6 +102,45 @@ def test_cursor_round_trip(client, monkeypatch):
     assert body2["count"] > 0
 
 
+def test_pagination_no_skip_on_identical_timestamps(client, monkeypatch):
+    """3rd-eye regression — rows sharing the boundary timestamp must NOT be
+    skipped. The old cursor filtered every source by ``ts < cursor_ts``, so any
+    same-ts rows past the page boundary were dropped from pagination forever
+    (audit-trail incompleteness). Seed 25 rows at ONE timestamp, walk with
+    limit=10, and assert all 25 appear exactly once."""
+    same_ts = datetime.now(timezone.utc) - timedelta(hours=3)
+    with Session(get_engine()) as db:
+        for r in db.scalars(
+            __import__("sqlmodel").select(CustomerAuditEntry)
+        ).all():
+            db.delete(r)
+        for i in range(25):
+            db.add(
+                CustomerAuditEntry(
+                    license_jti=f"same{i}", action="seed", ts=same_ts
+                )
+            )
+        db.commit()
+
+    token = _admin_token(client, monkeypatch)
+    seen: list[int] = []
+    cursor = None
+    for _ in range(12):  # bound guards against an infinite cursor loop
+        url = "/v1/admin/audit/recent?source=customer&limit=10"
+        if cursor:
+            url += f"&cursor={cursor}"
+        body = client.get(
+            url, headers={"Authorization": f"Bearer {token}"}
+        ).json()
+        seen.extend(e["id"] for e in body["entries"])
+        cursor = body["cursor"]
+        if not cursor:
+            break
+
+    assert len(seen) == 25, f"expected all 25 rows, saw {len(seen)} (rows skipped)"
+    assert len(set(seen)) == 25, "rows duplicated across pages"
+
+
 def test_invalid_cursor_returns_400(client, monkeypatch):
     token = _admin_token(client, monkeypatch)
     r = client.get(
