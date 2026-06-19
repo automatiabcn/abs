@@ -8,12 +8,17 @@ without exposing a single individual.
 Scope (matches brief §2 "Replacement strategy"):
 
 * ``core/landing/`` ``*.tsx`` / ``*.ts``
+* ``core/backend/app/`` ``*.py`` — shipped application code (comments and
+  docstrings are part of the customer-readable surface). NOT the test tree,
+  which intentionally carries fixtures (``@digisfer.local``) and references the
+  founder's name as regex literals here.
 * ``docs/`` ``*.md``
 * top-level ``README.md``
 
 Out of scope:
 
 * ``CLAUDE.md`` — local operator instructions, not customer-visible.
+* ``core/backend/tests/`` — fixtures + this guard's own pattern literals.
 * ``artifacts/`` — historical sprint logs, only swept opportunistically.
 * Anything under ``.git/`` — git author config is fine.
 """
@@ -50,6 +55,13 @@ def _iter_scoped_files() -> list[Path]:
                 for p in landing.rglob(ext)
                 if "node_modules" not in p.parts and ".next" not in p.parts
             )
+
+    # Shipped backend application code — comments + docstrings ride along to the
+    # customer. The test tree is deliberately excluded (it owns the fixtures and
+    # this module's own pattern literals).
+    backend_app = REPO_ROOT / "core" / "backend" / "app"
+    if backend_app.is_dir():
+        targets.extend(backend_app.rglob("*.py"))
 
     docs = REPO_ROOT / "docs"
     if docs.is_dir():
@@ -102,7 +114,13 @@ _INTERNAL_INFRA = re.compile(
 # The "Founder Action Items" + "Tester Handoff Checklist" docs were removed;
 # this guards against re-introduction of that vocabulary.
 _INTERNAL_PROCESS = re.compile(
-    r"Founder Action Items|tester handoff|founder host|handoff/v1",
+    r"Founder Action Items|tester handoff|founder host|handoff/v1"
+    # Internal QA cadence + founder-attributed design notes that leaked into
+    # backend comments/docstrings (our working style, not product docs). These
+    # are specific phrases — the customer-facing workflow template literally
+    # named "Founder investor update" / "Founder review" stays legitimate.
+    r"|Founder Tester|founder[- ]test"
+    r"|founder feedback|founder decision|founder direction|founder kararı",
     re.IGNORECASE,
 )
 

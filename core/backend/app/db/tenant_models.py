@@ -71,7 +71,7 @@ class TenantProject(SQLModel, table=True):
 class ProviderKey(SQLModel, table=True):
     """Per-owner (user/project/org) encrypted provider API key.
 
-    Founder decision: each user brings their OWN key (quota/billing theirs).
+    Design decision: each user brings their OWN key (quota/billing theirs).
     Resolution order at request time: project → user → org → global vault.
     `owner_id` is the email (user), project_slug (project), or tenant_slug (org).
     `tenant_slug` always carries the owning org so a row can be tenant-isolated.
@@ -114,7 +114,7 @@ class ProjectMember(SQLModel, table=True):
     """N-N user↔project membership with a per-project role.
 
     Distinct from `tenant_projects` (tenant↔project sharing). A user may belong
-    to MULTIPLE projects (founder decision); the active project is selected per
+    to MULTIPLE projects (design decision); the active project is selected per
     request. Roles: owner | editor | viewer.
     """
 
@@ -130,7 +130,7 @@ class ProjectMember(SQLModel, table=True):
 
 
 # ── External MCP federation (ABS as MCP *client*) ─────────────────────────
-# Founder direction (2026-06-08): a tenant adds a third-party MCP server
+# Design direction (2026-06-08): a tenant adds a third-party MCP server
 # (GitHub / Slack / their own) from the panel; ABS connects to it as a client,
 # discovers its tools and (Slice 2) federates them into its own catalog +
 # agents. Credentials are Fernet-encrypted (app.multitenant.crypto); the

@@ -262,9 +262,8 @@ def delete_document(
     doc_id: str,
     project_id: str | None = None,
 ) -> int:
-    """Delete every chunk of one document for a tenant (founder feedback:
-    "yüklenilen dosyaları sil özelliği de olmalı"). Tenant-scoped filter so a
-    caller can only ever delete their own document. Returns the count removed.
+    """Delete every chunk of one document for a tenant. Tenant-scoped filter so
+    a caller can only ever delete their own document. Returns the count removed.
 
     When ``project_id`` is given the delete is additionally scoped to that
     project — the same isolation the list/query paths apply — so a project
