@@ -39,6 +39,29 @@ def test_entity_resolution_merges_by_vkn() -> None:
     assert any(e["source"] == f"company:{a}" and e["rel"] == "lead" for e in graph["edges"])
 
 
+def test_entity_resolution_merges_three_dups_reassigns_all_children() -> None:
+    """Multi-dup block: 3 companies share a VKN, each carries a lead. The
+    survivor (oldest) must absorb ALL duplicates' children — guards the batched
+    (.in_) reassignment so a duplicate's lead can't be left orphaned."""
+    a = leads.create_company(tenant_slug="t3", name="Akın Yapı A.Ş.", vkn="9998887776")
+    b = leads.create_company(tenant_slug="t3", name="Akin Yapi", vkn="9998887776")
+    c = leads.create_company(tenant_slug="t3", name="AKIN YAPI LTD", vkn="9998887776")
+    leads.create_lead(tenant_slug="t3", company_id=b, source="crm")
+    leads.create_lead(tenant_slug="t3", company_id=c, source="web")
+
+    report = resolve_companies(tenant_slug="t3")
+    assert report["merged_count"] == 2          # b and c both folded into a
+    assert all(m["survivor_id"] == a for m in report["merges"])
+
+    graph = context_graph_view(tenant_slug="t3")
+    company_nodes = [n for n in graph["nodes"] if n["type"] == "company"]
+    assert [n["id"] for n in company_nodes] == [f"company:{a}"]   # only survivor
+    # both reassigned leads now edge off the survivor
+    lead_edges = [e for e in graph["edges"] if e["rel"] == "lead"]
+    assert len(lead_edges) == 2
+    assert all(e["source"] == f"company:{a}" for e in lead_edges)
+
+
 def test_entity_resolution_merges_by_normalized_name() -> None:
     leads.create_company(tenant_slug="tN", name="Kaya İnşaat A.Ş.")
     leads.create_company(tenant_slug="tN", name="Kaya Insaat")
