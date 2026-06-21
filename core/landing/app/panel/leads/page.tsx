@@ -62,14 +62,20 @@ export default function LeadIntelligencePage() {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
   async function select(id: number) {
-    const r = await fetch(`/v1/leads/${id}`, { credentials: "include", cache: "no-store" });
-    if (r.ok) setDetail(await r.json());
+    try {
+      const r = await fetch(`/v1/leads/${id}`, { credentials: "include", cache: "no-store" });
+      if (!r.ok) { setErr(`Lead detayı yüklenemedi (HTTP ${r.status})`); return; }
+      setDetail(await r.json());
+      setErr(null);
+    } catch {
+      setErr("Lead detayı yüklenemedi — ağ bağlantısını kontrol edin.");
+    }
   }
   async function create() {
     if (!name.trim()) return;
     setCreating(true);
     try {
-      await fetch("/v1/leads", {
+      const r = await fetch("/v1/leads", {
         method: "POST", credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -77,16 +83,28 @@ export default function LeadIntelligencePage() {
           consent_status: consent, source: "manual",
         }),
       });
+      // Only clear the form + refresh when the backend actually accepted it —
+      // otherwise the user sees a "saved" UI for a lead that was never created.
+      if (!r.ok) { setErr(`Lead oluşturulamadı (HTTP ${r.status})`); return; }
       setName(""); setSector(""); setDomain(""); setLocation(""); setSize(""); setConsent("");
       setShowForm(false);
+      setErr(null);
       load();
+    } catch {
+      setErr("Lead oluşturulamadı — ağ bağlantısını kontrol edin.");
     } finally {
       setCreating(false);
     }
   }
   async function score(id: number) {
-    await fetch(`/v1/leads/${id}/score`, { method: "POST", credentials: "include" });
-    load(); void select(id);
+    try {
+      const r = await fetch(`/v1/leads/${id}/score`, { method: "POST", credentials: "include" });
+      if (!r.ok) { setErr(`Skorlama başarısız (HTTP ${r.status})`); return; }
+      setErr(null);
+      load(); void select(id);
+    } catch {
+      setErr("Skorlama başarısız — ağ bağlantısını kontrol edin.");
+    }
   }
 
   const crits = detail ? Object.entries(detail.score_breakdown).filter(([, v]) => typeof v === "number") : [];
