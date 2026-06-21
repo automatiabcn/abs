@@ -113,7 +113,17 @@ def _check_admin(
             status_code=401,
         )
         raise HTTPException(401, "Authorization header missing")
-    token = authorization.split(None, 1)[1].strip()
+    parts = authorization.split(None, 1)
+    token = parts[1].strip() if len(parts) > 1 else ""
+    if not token:
+        emit_event(
+            request,
+            action="smart_link.admin.gate",
+            outcome="denied",
+            reason="empty_bearer",
+            status_code=401,
+        )
+        raise HTTPException(401, "Authorization header missing")
     if not settings.admin_token or token != settings.admin_token:
         emit_event(
             request,
