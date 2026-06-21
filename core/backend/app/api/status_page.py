@@ -286,7 +286,10 @@ def _require_admin(authorization: Optional[str], request=None) -> None:
         return
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(401, "admin_bearer_required")
-    token = authorization.split(None, 1)[1].strip()
+    parts = authorization.split(None, 1)
+    token = parts[1].strip() if len(parts) > 1 else ""
+    if not token:
+        raise HTTPException(401, "admin_bearer_required")
     expected = settings.beta_admin_token or ""
     if not expected or not hmac.compare_digest(token, expected):
         raise HTTPException(403, "admin_token_invalid")

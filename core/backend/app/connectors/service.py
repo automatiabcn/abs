@@ -159,7 +159,16 @@ async def sync(
         with Session(get_engine()) as db:
             row = _get_row(db, tenant_slug, connector_id)
             blob = row.encrypted_credentials if row else ""
-        creds = json.loads(decrypt_secret_value(blob)) if blob else {}
+        decrypted = decrypt_secret_value(blob) if blob else ""
+        if blob and not decrypted:
+            # stored a credential blob but it decrypts to nothing (key
+            # rotation / corrupted row) — fail cleanly instead of running a
+            # sync with empty creds or crashing on json.loads("").
+            return {"ok": False, "error": "credentials_unreadable"}
+        try:
+            creds = json.loads(decrypted) if decrypted else {}
+        except (json.JSONDecodeError, ValueError):
+            return {"ok": False, "error": "credentials_unreadable"}
 
     result = await adp.sync(tenant_slug, creds)
     with Session(get_engine()) as db:
