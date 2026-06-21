@@ -101,6 +101,12 @@ def test_test_stored_key_ok_and_persists_validation(client, monkeypatch):
     row = next(k for k in lr.json()["keys"] if k["provider"] == "groq")
     assert row["last_validated_ok"] is True
 
+    # CLEAN UP — the provider_keys table is shared across the full suite; a
+    # leftover groq key makes later cascade/degradation tests see groq as
+    # "configured" and fail. Delete what this test stored.
+    client.request("DELETE", "/v1/admin/provider-keys", headers=h,
+                   json={"provider": "groq", "owner_type": "org"})
+
 
 def test_test_raw_value_before_save_does_not_persist(client, monkeypatch):
     tok = _admin_token(client, monkeypatch)
