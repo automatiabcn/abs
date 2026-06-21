@@ -31,6 +31,24 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 
+# hitl approval-role hierarchy. A node's ``approval_role`` requires AT LEAST
+# this rank; the approver's resolved role must meet or exceed it. "tenant_owner"
+# (what every shipped template uses) and "admin"/"owner" are the top tier — in
+# a single-tenant deploy the bootstrap admin IS the owner. An unknown required
+# role fails closed to the top tier so a typo can't accidentally open the gate.
+_ROLE_RANK = {"member": 1, "manager": 2, "admin": 3, "owner": 3, "tenant_owner": 3}
+
+
+def _role_satisfies(caller_role: Optional[str], required_role: Optional[str]) -> bool:
+    """True when ``caller_role`` is allowed to approve a gate requiring
+    ``required_role``. No required role → no gate (legacy hitl nodes)."""
+    if not required_role:
+        return True
+    req = _ROLE_RANK.get(str(required_role).strip().lower(), 3)
+    have = _ROLE_RANK.get(str(caller_role or "").strip().lower(), 0)
+    return have >= req
+
+
 _PER_KIND_ESTIMATE_S: Dict[str, float] = {
     "trigger": 0.05,
     "llm_call": 1.5,
@@ -303,8 +321,14 @@ async def _run_node(
             "kind": "loop",
             "unsupported": True,
         }
-    # any other unhandled kind — recorded, not run.
-    return {"skipped": kind, "note": "not executed by the linear v1 engine (durable engine follow-up)"}
+    # Any kind the engine doesn't implement. Surfacing it as an explicit
+    # unsupported error (like `loop`) keeps an unknown/typo'd node from
+    # finishing the run as a false green — the same honesty fix applied above.
+    return {
+        "error": f"node kind '{kind}' is not executed by the linear engine",
+        "kind": kind,
+        "unsupported": True,
+    }
 
 
 async def _run_api_request(
@@ -511,8 +535,13 @@ async def _execute_run(job_id: str) -> None:
                 role = (node.get("config") or {}).get("approval_role")
                 decision = prior if isinstance(prior, dict) else {}
                 if decision.get("rejected") is True:
-                    # rejected: record + do NOT propagate (downstream unreached)
-                    record.node_outputs[nid] = {"rejected": True, "kind": "hitl", "approval_role": role}
+                    # rejected: record + do NOT propagate (downstream unreached).
+                    # Preserve the approver identity recorded by resume() — re-
+                    # executing the gate must not wipe the audit trail.
+                    record.node_outputs[nid] = {
+                        "rejected": True, "kind": "hitl", "approval_role": role,
+                        "rejected_by": decision.get("rejected_by"),
+                    }
                     continue
                 if decision.get("approved") is not True:
                     # not yet decided → pause and wait for resume()
@@ -520,7 +549,10 @@ async def _execute_run(job_id: str) -> None:
                     record.pending_node = nid
                     record.node_outputs[nid] = {"awaiting": "approval", "kind": "hitl", "approval_role": role}
                     return
-                output = {"approved": True, "kind": "hitl", "approval_role": role}
+                output = {
+                    "approved": True, "kind": "hitl", "approval_role": role,
+                    "approved_by": decision.get("approved_by"),
+                }
                 record.node_outputs[nid] = output
                 for e in out_edges.get(nid, []):
                     if _edge_fires(e, output):
@@ -587,13 +619,21 @@ def status(job_id: str) -> Optional[Dict[str, Any]]:
     }
 
 
-async def resume(job_id: str, *, approved: bool, role: Optional[str] = None) -> Optional[Dict[str, Any]]:
+async def resume(
+    job_id: str,
+    *,
+    approved: bool,
+    role: Optional[str] = None,
+    actor: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
     """Approve or reject a paused ``hitl`` node and continue the run.
 
-    Returns ``None`` if the job is unknown, an error dict if it is not actually
-    awaiting approval, else a dict echoing the decision. On approval the run
-    resumes (already-executed nodes are reused, the gated node + downstream
-    execute); on rejection the run finishes with the downstream left unreached.
+    ``role`` is the approver's resolved role and is enforced against the gated
+    node's ``approval_role`` — a member cannot approve a gate that requires an
+    owner. ``actor`` (the approver's identity, e.g. email) is recorded for the
+    audit trail. Returns ``None`` if the job is unknown, an error dict if it is
+    not awaiting approval or the role is insufficient, else a dict echoing the
+    decision.
     """
     record = _JOBS.get(job_id)
     if record is None:
@@ -601,10 +641,20 @@ async def resume(job_id: str, *, approved: bool, role: Optional[str] = None) -> 
     if record.state != "awaiting_approval" or not record.pending_node:
         return {"error": "job is not awaiting approval", "state": record.state}
     nid = record.pending_node
+    pending = record.node_outputs.get(nid)
+    required_role = pending.get("approval_role") if isinstance(pending, dict) else None
+    if not _role_satisfies(role, required_role):
+        # do NOT record a decision or resume — the gate stays pending so an
+        # authorised approver can still act.
+        return {
+            "error": "approval_role_required",
+            "required_role": required_role,
+            "role": role,
+        }
     record.node_outputs[nid] = (
-        {"approved": True, "kind": "hitl", "approved_by": role}
+        {"approved": True, "kind": "hitl", "approved_by": actor or role, "approval_role": required_role}
         if approved
-        else {"rejected": True, "kind": "hitl", "rejected_by": role}
+        else {"rejected": True, "kind": "hitl", "rejected_by": actor or role, "approval_role": required_role}
     )
     record.pending_node = None
     record.state = "running"
