@@ -98,7 +98,14 @@ def _read_used(*, ledger: pathlib.Path | None = None, month: str | None = None) 
             except json.JSONDecodeError:
                 continue
             if row.get("month") == target_month:
-                used += int(row.get("tokens", 0))
+                try:
+                    tok = int(row.get("tokens", 0))
+                except (TypeError, ValueError):
+                    continue
+                # a corrupted/negative ledger row must not shrink the
+                # running total (which would silently widen the quota).
+                if tok > 0:
+                    used += tok
     return used
 
 

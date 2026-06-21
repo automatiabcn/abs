@@ -35,7 +35,9 @@ def append(
     cost_usd: float = 0.0,
     request_id: Optional[str] = None,
 ) -> None:
-    if tokens < 0 or not provider:
+    if tokens < 0 or cost_usd < 0 or not provider:
+        # negative tokens/cost would corrupt the metering aggregate that
+        # quota gating reads — drop the row rather than let it through.
         return
     row = UsageLog(
         provider=provider,
