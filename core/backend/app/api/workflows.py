@@ -26,7 +26,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, model_validator
 from sqlmodel import Session, select
 
-from app.db.models import SavedWorkflow
+from app.db.models import SavedWorkflow, User
 from app.db.session import get_engine
 
 from app.api.auth import current_admin
@@ -301,6 +301,33 @@ async def execute(
     }
 
 
+def _resolve_admin_role(admin: dict) -> str:
+    """Resolve the caller's effective role for hitl approval gating.
+
+    Order: explicit ``role`` claim (future tokens carry it) → the users-table
+    row for this email → "admin". The "admin" fallback is deliberate: the
+    bootstrap / setup-wizard admin (admin_credentials.json, no users row) is the
+    deployment owner and must be able to clear owner-level gates. Invited
+    managers/members DO have a users row, so they are gated correctly.
+    """
+    claim = admin.get("role")
+    if claim:
+        return str(claim)
+    try:
+        with Session(get_engine()) as db:
+            user = db.exec(
+                select(User).where(
+                    User.email == str(admin.get("sub") or ""),
+                    User.status == "active",
+                )
+            ).first()
+            if user and user.role:
+                return str(user.role)
+    except Exception as exc:  # pragma: no cover — boot before users table
+        logger.debug("admin role resolution fell back to admin: %s", exc)
+    return "admin"
+
+
 def _job_owner_matches(state: Dict[str, Any], admin: dict) -> bool:
     """A job is owned by the admin identity that enqueued it (execute keys the
     job by ``admin.sub``). Cross-tenant callers must not read or resume it.
@@ -338,10 +365,19 @@ async def resume_job(
     if state is None or not _job_owner_matches(state, admin):
         raise HTTPException(404, "job_not_found")
     result = await runner.resume(
-        job_id, approved=body.approved, role=admin.get("sub")
+        job_id,
+        approved=body.approved,
+        role=_resolve_admin_role(admin),
+        actor=admin.get("sub"),
     )
     if result is None:
         raise HTTPException(404, "job_not_found")
+    if result.get("error") == "approval_role_required":
+        # caller's role is below the gate's required approval_role
+        raise HTTPException(
+            403,
+            f"approval_role_required: needs '{result.get('required_role')}'",
+        )
     if "error" in result:
         raise HTTPException(409, result["error"])
     return result
