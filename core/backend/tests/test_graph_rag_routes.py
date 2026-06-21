@@ -155,7 +155,7 @@ def test_build_422_when_no_providers(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_query_returns_answer_and_subgraph(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.graph_rag.retrieve import GraphCitation, GraphRagResult
 
-    async def _fake_query(query, *, tenant_id, top_k, synthesize):
+    async def _fake_query(query, *, tenant_id, top_k, synthesize, depth=1):
         assert tenant_id == "tenantA"
         return GraphRagResult(
             answer="cevap [1]",
