@@ -347,6 +347,45 @@ async def run_workflow_graph(
             executed += 1
             continue
 
+        if kind == "connector":
+            # Real execution: run the configured connector's adapter sync into
+            # the growth tables (companies/contacts/leads). dry-run previews
+            # without firing the side-effecting sync.
+            connector_id = (cfg.get("connector_id") or cfg.get("connector") or "").strip()
+            if not connector_id:
+                results.append({"kind": kind, "name": nm, "status": "skipped",
+                                "note": "no connector_id configured"})
+                status = "partial"
+                executed += 1
+                continue
+            if dry_run:
+                results.append({"kind": kind, "name": nm, "status": "preview",
+                                "connector_id": connector_id,
+                                "note": "sync skipped in dry-run"})
+                executed += 1
+                continue
+            try:
+                from app.connectors.service import sync as connector_sync
+                sres = await connector_sync(
+                    tenant_slug=tenant_slug, connector_id=connector_id
+                )
+            except Exception as exc:  # noqa: BLE001 — one bad step → partial
+                results.append({"kind": kind, "name": nm, "status": "skipped",
+                                "connector_id": connector_id, "error": str(exc)[:160]})
+                status = "partial"
+                executed += 1
+                continue
+            ok = bool(sres.get("ok"))
+            results.append({"kind": kind, "name": nm,
+                            "status": "done" if ok else "partial",
+                            "connector_id": connector_id,
+                            "synced": sres.get("total"),
+                            "error": sres.get("error")})
+            if not ok:
+                status = "partial"
+            executed += 1
+            continue
+
         if kind == "action":
             action_type = (cfg.get("action_type") or "").strip()
             target = (cfg.get("target") or "").strip()
@@ -356,8 +395,14 @@ async def run_workflow_graph(
             executed += 1
             continue
 
-        # connector / branch / sub_workflow / unknown → structural checkpoint
-        results.append({"kind": kind, "name": nm, "status": "done"})
+        # branch / sub_workflow / unknown → not executed by this engine. These
+        # previously fell through to a bare {"status": "done"} with no note — a
+        # silent false green for a node the user dropped on the canvas. Mark it
+        # honestly so the run is flagged partial instead of pretending the node
+        # ran (matches the linear-engine honesty fix in workflow_v10.runner).
+        results.append({"kind": kind, "name": nm, "status": "skipped",
+                        "note": f"'{kind}' is not executed by the agentic engine yet"})
+        status = "partial"
         executed += 1
 
     elapsed = int((time.perf_counter() - t0) * 1000)

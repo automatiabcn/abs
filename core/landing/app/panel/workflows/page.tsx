@@ -85,6 +85,9 @@ const CONFIG_FIELDS: Record<string, CfgField[]> = {
     { key: "action_type", label: "Aksiyon tipi", as: "select", options: ["note", "email", "route", "crm_update"] },
     { key: "target", label: "Hedef", as: "text", placeholder: "CRM / kanal / alıcı" },
   ],
+  connector: [
+    { key: "connector_id", label: "Connector", as: "text", placeholder: "hubspot · parasut · csv_import …" },
+  ],
 };
 
 function toFlowNodes(g: Definition["graph"]): Node<FlowNodeData>[] {
