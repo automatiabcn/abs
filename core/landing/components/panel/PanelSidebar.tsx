@@ -86,6 +86,7 @@ const NAV: NavItem[] = [
   // ── Operasyon ──────────────────────────────────
   // Polish round R2 — label aligned with route ("Sağlayıcılar" not "Cascade").
   { href: "/admin/providers", label: "Sağlayıcılar", icon: Layers, group: "Operasyon" },
+  { href: "/admin/provider-keys", label: "Sağlayıcı Anahtarları", icon: KeyRound, group: "Operasyon" },
   { href: "/admin/marketplace", label: "Marketplace", icon: Store, group: "Operasyon" },
   // Sprint 2B BUG-25 — /admin/quota is the canonical kota route now.
   { href: "/admin/quota", label: "Kota", icon: BarChart3, group: "Operasyon" },
