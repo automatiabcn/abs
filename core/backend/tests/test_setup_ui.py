@@ -27,3 +27,13 @@ def test_setup_assets_served(client):
     assert r_css.status_code == 200
     assert "css" in r_css.headers["content-type"]
     assert "--brand-primary" in r_css.text
+
+
+def test_test_step_renders_readable_results_not_raw_json(client):
+    """Step 6 ping results are rendered as a readable per-provider list
+    (renderTestResults) instead of dumping raw JSON into the box."""
+    js = client.get("/setup/assets/setup.js").text
+    assert "renderTestResults" in js
+    assert "PROVIDER_LABELS" in js
+    # the old raw dump is gone
+    assert "JSON.stringify(data.test_results" not in js
