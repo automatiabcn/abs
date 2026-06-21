@@ -65,6 +65,10 @@ class GraphRagQueryRequest(BaseModel):
     synthesize: bool = Field(
         default=True, description="run LLM synthesis over chunks + subgraph"
     )
+    depth: int = Field(
+        default=1, ge=1, le=3,
+        description="graph traversal depth (1=immediate edges, up to 3 hops)",
+    )
 
 
 @router.post("/build", response_model=BuildResponse)
@@ -185,6 +189,7 @@ async def query(
             tenant_id=rag.tenant_id,
             top_k=body.limit,
             synthesize=body.synthesize,
+            depth=body.depth,
         )
     except ImportError as exc:  # embedder backend missing
         raise HTTPException(
