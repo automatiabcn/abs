@@ -17,10 +17,23 @@ const IMAGE_HIT = {
   metadata: { kind: "image", source_filename: "invoice.png" },
 };
 
-function installFetch(captured: { body?: any }) {
+function installFetch(captured: { body?: any; imageQueryUrl?: string }) {
   return vi.fn((url: string | URL | Request, init?: RequestInit) => {
     const u = String(url);
     const method = (init?.method ?? "GET").toUpperCase();
+    if (u.includes("/v1/rag/query-by-image") && method === "POST") {
+      captured.imageQueryUrl = u;
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            description: "a pricing table screenshot",
+            hits: [IMAGE_HIT],
+            elapsed_ms: 2,
+          }),
+          { status: 200 },
+        ),
+      );
+    }
     if (u.includes("/v1/rag/query") && method === "POST") {
       captured.body = JSON.parse(String(init?.body ?? "{}"));
       return Promise.resolve(
@@ -37,7 +50,7 @@ function installFetch(captured: { body?: any }) {
 }
 
 describe("RAG panel — unified image/text UX", () => {
-  let captured: { body?: any };
+  let captured: { body?: any; imageQueryUrl?: string };
   beforeEach(() => {
     captured = {};
     vi.stubGlobal("fetch", installFetch(captured));
@@ -63,6 +76,25 @@ describe("RAG panel — unified image/text UX", () => {
     expect(screen.getByTestId("rag-hit-kind").textContent).toContain("Görsel");
     expect(screen.getByTestId("rag-hit-kind").textContent).toContain("invoice.png");
     expect(captured.body.kinds).toEqual(["image"]);
+  });
+
+  it("image-as-query uploads to /query-by-image and shows the description", async () => {
+    render(<RagPage />);
+    const input = (await screen.findByTestId(
+      "rag-image-query-input",
+    )) as HTMLInputElement;
+    const file = new File([new Uint8Array([1, 2, 3])], "q.png", { type: "image/png" });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("rag-image-desc")).toBeTruthy(),
+    );
+    expect(screen.getByTestId("rag-image-desc").textContent).toContain(
+      "pricing table",
+    );
+    expect(captured.imageQueryUrl).toContain("/v1/rag/query-by-image");
+    // the image hit is rendered
+    expect(screen.getByTestId("rag-hit-kind").textContent).toContain("Görsel");
   });
 
   it("'Tümü' filter sends no kinds (docs + images)", async () => {
