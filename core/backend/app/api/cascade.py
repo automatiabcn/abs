@@ -199,7 +199,9 @@ async def run(
         usage_log.append(
             resp.provider or primary,
             tokens=tokens_used,
-            tenant_slug=admin.get("sub", "default"),
+            # _tenant (resolved above for BYOK) is the real tenant slug;
+            # admin["sub"] is an email and bucketed usage under the wrong key.
+            tenant_slug=_tenant if _tenant != "_global" else "default",
         )
     except Exception:
         pass
