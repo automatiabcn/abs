@@ -67,6 +67,79 @@ def test_set_list_delete_provider_key(client, monkeypatch):
     assert dr.json()["deleted"] is True
 
 
+def _stub_ping(monkeypatch, *, text: str):
+    """Override the cascade so the key 'ping' returns a controlled response,
+    capturing the api_key the endpoint forwarded."""
+    captured: dict = {}
+
+    async def _fake(prompt, *, primary, fallbacks=(), use_cache=True,
+                    tenant_id="_global", api_key=None, **kw):
+        captured["api_key"] = api_key
+        from app.providers.schemas import ProviderResponse
+
+        return ProviderResponse(text=text, provider=primary)
+
+    monkeypatch.setattr("app.cascade.orchestrator.call_with_cascade", _fake)
+    return captured
+
+
+def test_test_stored_key_ok_and_persists_validation(client, monkeypatch):
+    tok = _admin_token(client, monkeypatch)
+    h = {"Authorization": f"Bearer {tok}"}
+    client.post("/v1/admin/provider-keys", headers=h,
+                json={"provider": "groq", "value": "gsk_stored", "owner_type": "org"})
+    cap = _stub_ping(monkeypatch, text="pong")
+
+    r = client.post("/v1/admin/provider-keys/test", headers=h,
+                    json={"provider": "groq", "owner_type": "org"})
+    assert r.status_code == 200, r.text
+    assert r.json()["ok"] is True
+    assert cap["api_key"] == "gsk_stored"  # the stored key was used
+
+    # validation state was persisted onto the row
+    lr = client.get("/v1/admin/provider-keys", headers=h)
+    row = next(k for k in lr.json()["keys"] if k["provider"] == "groq")
+    assert row["last_validated_ok"] is True
+
+
+def test_test_raw_value_before_save_does_not_persist(client, monkeypatch):
+    tok = _admin_token(client, monkeypatch)
+    h = {"Authorization": f"Bearer {tok}"}
+    cap = _stub_ping(monkeypatch, text="pong")
+    # use a provider no other test stores, so a pre-save probe leaving nothing
+    # behind is verifiable regardless of test order
+    r = client.post("/v1/admin/provider-keys/test", headers=h,
+                    json={"provider": "gemini", "owner_type": "org", "value": "probe_key"})
+    assert r.status_code == 200 and r.json()["ok"] is True
+    assert cap["api_key"] == "probe_key"
+    # nothing stored → the probed provider must not appear in the list
+    lr = client.get("/v1/admin/provider-keys", headers=h)
+    assert not any(k["provider"] == "gemini" for k in lr.json()["keys"])
+
+
+def test_test_bad_key_returns_ok_false(client, monkeypatch):
+    tok = _admin_token(client, monkeypatch)
+    h = {"Authorization": f"Bearer {tok}"}
+    cap = _stub_ping(monkeypatch, text="")  # empty response → not ok
+    r = client.post("/v1/admin/provider-keys/test", headers=h,
+                    json={"provider": "groq", "owner_type": "org", "value": "gsk_bad"})
+    assert r.status_code == 200
+    assert r.json()["ok"] is False
+    assert cap["api_key"] == "gsk_bad"
+
+
+def test_test_no_stored_key_is_404(client, monkeypatch):
+    tok = _admin_token(client, monkeypatch)
+    h = {"Authorization": f"Bearer {tok}"}
+    r = client.post("/v1/admin/provider-keys/test", headers=h,
+                    json={"provider": "cohere", "owner_type": "org"})
+    assert r.status_code == 404
+
+
+def test_test_requires_admin(client):
+    assert client.post("/v1/admin/provider-keys/test", json={}).status_code in (401, 403)
+
+
 def test_set_unknown_provider_rejected(client, monkeypatch):
     tok = _admin_token(client, monkeypatch)
     r = client.post(
