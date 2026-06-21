@@ -62,6 +62,36 @@ class ProviderKeyDel(BaseModel):
     owner_id: str | None = Field(default=None, max_length=128)
 
 
+class ProviderKeyTest(BaseModel):
+    provider: str = Field(..., min_length=2, max_length=32)
+    owner_type: str = Field(default=pk.OWNER_USER)
+    owner_id: str | None = Field(default=None, max_length=128)
+    # Optional: validate a raw key BEFORE saving it. When omitted, the stored
+    # key for this owner is tested.
+    value: str | None = Field(default=None, max_length=8192)
+
+
+async def _ping_provider(provider: str, key: str, tenant: str) -> tuple[bool, str | None]:
+    """Live one-shot ping of a provider with a SPECIFIC key (api_key override).
+    Returns (ok, reason). Never raises — a bad key is a result, not a 500."""
+    import asyncio
+
+    try:
+        from app.cascade.orchestrator import call_with_cascade
+
+        resp = await asyncio.wait_for(
+            call_with_cascade(
+                "ping", primary=provider, fallbacks=(), use_cache=False,
+                tenant_id=tenant or "_global", api_key=key, max_tokens=4,
+            ),
+            timeout=12.0,
+        )
+        text = getattr(resp, "text", "") or ""
+        return (bool(text), None if text else "empty response")
+    except Exception as exc:  # noqa: BLE001 — bad key / timeout → fail result
+        return (False, str(exc)[:160])
+
+
 def _resolve_owner(admin: dict, tenant: str, owner_type: str, owner_id: str | None) -> str:
     owner_type = (owner_type or "").strip()
     if owner_type == pk.OWNER_ORG:
@@ -108,6 +138,37 @@ async def set_key(body: ProviderKeyIn, admin: dict = Depends(admin_required)) ->
         "owner_id": owner_id,
         "provider": body.provider,
     }
+
+
+@router.post("/test")
+async def test_key(body: ProviderKeyTest, admin: dict = Depends(admin_required)) -> dict:
+    """Live-validate a BYOK provider key — either a raw value (pre-save check)
+    or the stored key for this owner. On a stored key, the result is persisted
+    to last_validated_ok/at so the panel can show a freshness badge."""
+    if body.provider not in _VALID_PROVIDERS:
+        raise HTTPException(422, f"unknown_provider: {body.provider}")
+    tenant = _resolve_admin_tenant(admin)
+    owner_id = _resolve_owner(admin, tenant, body.owner_type, body.owner_id)
+    raw = (body.value or "").strip()
+    key = raw or pk.get_owner_key(
+        tenant_slug=tenant, owner_type=body.owner_type,
+        owner_id=owner_id, provider=body.provider,
+    )
+    if not key:
+        raise HTTPException(404, "no_key_to_test")
+    ok, reason = await _ping_provider(body.provider, key, tenant)
+    if not raw:
+        # only persist validation state for a STORED key (not a pre-save probe)
+        pk.mark_key_validated(
+            tenant_slug=tenant, owner_type=body.owner_type, owner_id=owner_id,
+            provider=body.provider, ok=ok,
+        )
+    logger.info(
+        "provider_key_test tenant=%s owner=%s:%s provider=%s ok=%s by=%s",
+        tenant, body.owner_type, owner_id, body.provider, ok, _admin_subject(admin),
+    )
+    return {"ok": ok, "provider": body.provider, "reason": reason,
+            "owner_type": body.owner_type, "owner_id": owner_id}
 
 
 @router.delete("")

@@ -118,6 +118,44 @@ def delete_provider_key(
     return True
 
 
+def get_owner_key(
+    *, tenant_slug: str, owner_type: str, owner_id: str, provider: str
+) -> Optional[str]:
+    """Decrypted key for ONE specific owner row (not the resolution cascade).
+    Used by the 'test this key' endpoint to ping with exactly that stored key."""
+    with Session(get_engine()) as db:
+        return _lookup(
+            db,
+            tenant_slug=_normalize(tenant_slug, "tenant_slug"),
+            owner_type=_normalize(owner_type, "owner_type"),
+            owner_id=_normalize(owner_id, "owner_id"),
+            provider=_normalize(provider, "provider"),
+        )
+
+
+def mark_key_validated(
+    *, tenant_slug: str, owner_type: str, owner_id: str, provider: str, ok: bool
+) -> bool:
+    """Record the outcome of a live key test (populates last_validated_ok/at —
+    previously a dead column). Returns False if no such key row exists."""
+    with Session(get_engine()) as db:
+        row = db.exec(
+            select(ProviderKey).where(
+                ProviderKey.tenant_slug == _normalize(tenant_slug, "tenant_slug"),
+                ProviderKey.owner_type == _normalize(owner_type, "owner_type"),
+                ProviderKey.owner_id == _normalize(owner_id, "owner_id"),
+                ProviderKey.provider == _normalize(provider, "provider"),
+            )
+        ).first()
+        if row is None:
+            return False
+        row.last_validated_ok = ok
+        row.last_validated_at = _now()
+        db.add(row)
+        db.commit()
+    return True
+
+
 def _lookup(
     db: Session, *, tenant_slug: str, owner_type: str, owner_id: str, provider: str
 ) -> Optional[str]:
