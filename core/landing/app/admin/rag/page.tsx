@@ -48,7 +48,12 @@ interface RagHit {
   score: number;
   text: string;
   doc_id: string;
+  // unified index: image chunks carry kind="image" + the source filename so
+  // a hit can be badged 🖼️ vs 📄 without a separate query.
+  metadata?: { kind?: string; source_filename?: string; image_mime?: string };
 }
+
+type KindFilter = "all" | "docs" | "images";
 
 // BUG-27 — local-only inventory; docs are appended after a real
 // `/v1/rag/ingest-file` POST returns 200. We no longer pre-seed with mock
@@ -87,6 +92,8 @@ export default function RagPage() {
   const [wantAnswer, setWantAnswer] = useState(true);
   const [answer, setAnswer] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // unified-index modality filter: all docs+images, docs only, or images only.
+  const [kindFilter, setKindFilter] = useState<KindFilter>("all");
 
   // Load the real indexed corpus on mount so a reload reflects what's stored
   // in Qdrant (BUG-27 follow-up) — not just docs uploaded this session.
@@ -131,6 +138,14 @@ export default function RagPage() {
         if (/\.(txt|md|markdown|json|csv|log)$/.test(name)) return true;
         return f.type.startsWith("text/") || f.type === "application/json";
       };
+      // Images go to /ingest-image: Gemini vision describes them and the
+      // description is embedded into the SAME index (kind="image"), so they
+      // are searchable by the normal query.
+      const isImageFile = (f: File) => {
+        const name = f.name.toLowerCase();
+        if (/\.(png|jpe?g|webp|gif)$/.test(name)) return true;
+        return f.type.startsWith("image/");
+      };
       const fileArr = Array.from(files);
       for (let _i = 0; _i < fileArr.length; _i++) {
         const file = fileArr[_i];
@@ -151,6 +166,15 @@ export default function RagPage() {
                 filename: file.name,
                 mime_type: file.type || "text/plain",
               }),
+            });
+          } else if (isImageFile(file)) {
+            const form = new FormData();
+            form.append("file", file, file.name);
+            res = await fetch("/v1/rag/ingest-image", {
+              method: "POST",
+              credentials: "include",
+              headers: { ...projectHeaders() },
+              body: form,
             });
           } else {
             const form = new FormData();
@@ -216,6 +240,13 @@ export default function RagPage() {
           limit: topK,
           rerank: hybrid,
           answer: wantAnswer,
+          // unified-index modality scope (None = docs + images)
+          kinds:
+            kindFilter === "images"
+              ? ["image"]
+              : kindFilter === "docs"
+                ? ["text"]
+                : undefined,
         }),
       });
       if (!res.ok) {
@@ -434,7 +465,8 @@ export default function RagPage() {
               Doküman yükle
             </CardTitle>
             <CardDescription>
-              PDF · DOCX · XLSX · MD · TXT (≤ 25 MB). Sürükle-bırak veya seç.
+              PDF · DOCX · XLSX · MD · TXT · 🖼️ PNG/JPG/WEBP (≤ 25 MB).
+              Görseller Gemini ile betimlenip aynı index'e eklenir. Sürükle-bırak veya seç.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -603,6 +635,33 @@ export default function RagPage() {
                 />
                 <span className="text-muted-foreground">Cevap üret (LLM)</span>
               </label>
+              {/* Unified-index modality filter — one search spans docs + images;
+                  scope it here without a separate query. */}
+              <div
+                className="inline-flex overflow-hidden rounded-md border border-border"
+                data-test="rag-kind-filter"
+              >
+                {([
+                  ["all", "Tümü"],
+                  ["docs", "📄 Doküman"],
+                  ["images", "🖼️ Görsel"],
+                ] as [KindFilter, string][]).map(([k, label]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setKindFilter(k)}
+                    data-test={`rag-kind-${k}`}
+                    className={cn(
+                      "px-2 py-1 text-[11px] transition-colors",
+                      kindFilter === k
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
             <Button
               type="button"
@@ -651,7 +710,27 @@ export default function RagPage() {
                     data-test="rag-hit-row"
                     className="rounded-md border border-border bg-background/40 p-3"
                   >
-                    <div className="mb-1 flex items-center gap-2">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      {h.metadata?.kind === "image" ? (
+                        <Badge
+                          variant="outline"
+                          className="border-violet-500/40 text-[10px] text-violet-300"
+                          data-test="rag-hit-kind"
+                        >
+                          🖼️ Görsel
+                          {h.metadata.source_filename
+                            ? ` · ${h.metadata.source_filename}`
+                            : ""}
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="border-sky-500/40 text-[10px] text-sky-300"
+                          data-test="rag-hit-kind"
+                        >
+                          📄 Doküman
+                        </Badge>
+                      )}
                       <Badge variant="outline" className="font-mono text-[10px]">
                         {h.doc_id}
                       </Badge>
@@ -662,7 +741,14 @@ export default function RagPage() {
                         score {h.score.toFixed(2)}
                       </Badge>
                     </div>
-                    <p className="text-xs text-foreground/90">{h.text}</p>
+                    <p className="text-xs text-foreground/90">
+                      {h.metadata?.kind === "image" ? (
+                        <span className="mr-1 text-[10px] uppercase tracking-wider text-violet-300/80">
+                          görsel açıklaması:
+                        </span>
+                      ) : null}
+                      {h.text}
+                    </p>
                   </li>
                 ))}
               </ul>
