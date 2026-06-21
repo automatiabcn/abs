@@ -170,9 +170,13 @@ def ordered_agent_steps(graph: Dict[str, Any]) -> List[str]:
 _RISK_RANK = {"low": 0, "medium": 1, "high": 2}
 
 
+_MAX_SUBWORKFLOW_DEPTH = 3
+
+
 async def run_workflow_graph(
     *, tenant_slug: str, name: str, graph: Dict[str, Any], input_text: str,
     trigger: str = "manual", actor: str = "", dry_run: bool = False,
+    _depth: int = 0,
 ) -> Dict[str, Any]:
     """Execute the FULL designer graph — every wired node runs in topological
     order, dispatched by kind (not only agent nodes):
@@ -195,6 +199,34 @@ async def run_workflow_graph(
     t0 = time.perf_counter()
     order, by_id, wired = _topo_order(graph)
     multi = len(by_id) > 1
+    # edge maps for branch routing: a branch node prunes the downstream of the
+    # edges it does NOT select; a node stays alive if any incoming edge comes
+    # from a non-pruned source (so a merge after the taken branch survives).
+    edges = graph.get("edges", []) if isinstance(graph, dict) else []
+    out_edges: Dict[str, List[dict]] = {}
+    in_sources: Dict[str, List[str]] = {}
+    for e in edges:
+        s, t = e.get("source"), e.get("target")
+        if s in by_id and t in by_id:
+            out_edges.setdefault(s, []).append(e)
+            in_sources.setdefault(t, []).append(s)
+    pruned: set[str] = set()              # nodes a branch routed away from
+    dead_edges: set[tuple] = set()        # (source,target) edges that won't fire
+    node_outputs: Dict[str, dict] = {}
+
+    def _is_reachable(t: str) -> bool:
+        """A node with incoming edges runs only if at least one of them FIRES:
+        its source is not pruned and the edge is not a non-selected branch edge.
+        Root nodes (no incoming edge) always run. Processed in topo order, so a
+        branch upstream has already marked its dead edges by the time we get
+        here — this also handles merges (alive if the taken branch reaches it)."""
+        srcs = in_sources.get(t, [])
+        if not srcs:
+            return True
+        return any(
+            s not in pruned and (s, t) not in dead_edges for s in srcs
+        )
+
     results: List[dict] = []
     approvals_opened = 0
     would_open = 0
@@ -207,6 +239,13 @@ async def run_workflow_graph(
     for nid in order:
         if multi and nid not in wired:
             continue                         # unconnected node is not part of the flow
+        if not _is_reachable(nid):
+            # no incoming edge fires → an upstream branch routed away from here
+            pruned.add(nid)
+            results.append({"kind": by_id[nid].get("kind"),
+                            "name": by_id[nid].get("name") or nid,
+                            "status": "skipped", "note": "branch not taken"})
+            continue
         n = by_id[nid]
         kind = n.get("kind")
         nm = n.get("name") or kind or "node"
@@ -238,6 +277,7 @@ async def run_workflow_graph(
                 status = "partial"
                 continue
             prev_summary = res.summary
+            node_outputs[nid] = {"text": res.summary, "risk": res.risk}
             if _RISK_RANK.get(res.risk, 0) > _RISK_RANK.get(risk_seen, 0):
                 risk_seen = res.risk
             step = {
@@ -292,6 +332,7 @@ async def run_workflow_graph(
                 status = "partial"
                 continue
             prev_summary = out_text or prev_summary
+            node_outputs[nid] = {"text": out_text}
             results.append({
                 "kind": kind, "name": nm, "status": "done",
                 "summary": out_text[:600],
@@ -395,11 +436,83 @@ async def run_workflow_graph(
             executed += 1
             continue
 
-        # branch / sub_workflow / unknown → not executed by this engine. These
-        # previously fell through to a bare {"status": "done"} with no note — a
-        # silent false green for a node the user dropped on the canvas. Mark it
-        # honestly so the run is flagged partial instead of pretending the node
-        # ran (matches the linear-engine honesty fix in workflow_v10.runner).
+        if kind == "branch":
+            # Conditional routing: evaluate the node's condition over upstream
+            # outputs ({{node_id}} refs), then prune the downstream of the edges
+            # that don't match. Outgoing edges carry when="true"/"false";
+            # unlabelled edges always fire.
+            expr = (cfg.get("condition_expr") or cfg.get("condition") or "").strip()
+            try:
+                from app.workflow_v10.condition_eval import ConditionError, evaluate
+                decision = evaluate(expr, node_outputs) if expr else True
+            except ConditionError as exc:
+                results.append({"kind": kind, "name": nm, "status": "error",
+                                "error": f"bad condition: {exc}"[:160]})
+                status = "partial"
+                executed += 1
+                continue
+            want = "true" if decision else "false"
+            for e in out_edges.get(nid, []):
+                when = (e.get("when") or "").strip().lower()
+                if when in ("true", "false") and when != want:
+                    dead_edges.add((nid, e.get("target")))
+            node_outputs[nid] = {"text": want}
+            results.append({"kind": kind, "name": nm, "status": "done",
+                            "decision": want, "condition": expr or "(empty→true)"})
+            executed += 1
+            continue
+
+        if kind == "sub_workflow":
+            # Run a saved workflow nested inside this one (depth-guarded so a
+            # self/cyclic reference terminates).
+            key = (cfg.get("workflow_key") or cfg.get("key") or "").strip()
+            if not key:
+                results.append({"kind": kind, "name": nm, "status": "skipped",
+                                "note": "no workflow_key configured"})
+                status = "partial"
+                executed += 1
+                continue
+            if _depth >= _MAX_SUBWORKFLOW_DEPTH:
+                results.append({"kind": kind, "name": nm, "status": "skipped",
+                                "key": key,
+                                "note": f"max sub-workflow depth {_MAX_SUBWORKFLOW_DEPTH}"})
+                status = "partial"
+                executed += 1
+                continue
+            sub_def = get_definition(tenant_slug=tenant_slug, key=key)
+            if not sub_def.get("saved"):
+                results.append({"kind": kind, "name": nm, "status": "skipped",
+                                "key": key, "note": "workflow_key not found"})
+                status = "partial"
+                executed += 1
+                continue
+            try:
+                sub = await run_workflow_graph(
+                    tenant_slug=tenant_slug, name=sub_def.get("name") or key,
+                    graph=sub_def.get("graph") or {},
+                    input_text=prev_summary or input_text,
+                    trigger="sub_workflow", actor=actor, dry_run=dry_run,
+                    _depth=_depth + 1,
+                )
+            except Exception as exc:  # noqa: BLE001 — one bad sub-run → partial
+                results.append({"kind": kind, "name": nm, "status": "skipped",
+                                "key": key, "error": str(exc)[:160]})
+                status = "partial"
+                executed += 1
+                continue
+            if sub.get("status") != "done":
+                status = "partial"
+            sub_sums = [r.get("summary") for r in sub.get("results", []) if r.get("summary")]
+            if sub_sums:
+                prev_summary = sub_sums[-1]
+                node_outputs[nid] = {"text": sub_sums[-1]}
+            results.append({"kind": kind, "name": nm,
+                            "status": sub.get("status") or "done", "key": key,
+                            "sub_steps": sub.get("step_count", 0)})
+            executed += 1
+            continue
+
+        # unknown kind → honest skip (was a silent false green).
         results.append({"kind": kind, "name": nm, "status": "skipped",
                         "note": f"'{kind}' is not executed by the agentic engine yet"})
         status = "partial"
