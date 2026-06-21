@@ -152,7 +152,13 @@ async function postStep(stepKey, body) {
   });
   if (!r.ok) {
     const j = await r.json().catch(() => ({}));
-    throw new Error(j.detail || `HTTP ${r.status}`);
+    const d = j.detail;
+    // Structured key-format error: detail = {error, fields:{field: reason}}.
+    if (d && typeof d === "object" && d.fields) {
+      const lines = Object.entries(d.fields).map(([f, why]) => `• ${f}: ${why}`);
+      throw new Error(lines.join("\n"));
+    }
+    throw new Error((typeof d === "string" && d) || `HTTP ${r.status}`);
   }
   return r.json();
 }
