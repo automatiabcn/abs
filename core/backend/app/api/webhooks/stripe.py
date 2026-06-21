@@ -173,7 +173,12 @@ async def stripe_webhook(
 
     # 017 — idempotency claim: aynı event_id tekrar gelirse 200 + duplicate döner.
     event_id = (event.get("id") if isinstance(event, dict) else None) or ""
-    event_type = event["type"]
+    event_type = (event.get("type") if isinstance(event, dict) else None) or ""
+    if not event_type:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=t("errors.signature_invalid", lang),
+        )
     evt_row = None
     if event_id:
         try:
