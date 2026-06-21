@@ -380,6 +380,29 @@ class ProvidersBody(BaseModel):
     cf_api_token: Optional[str] = None
 
 
+# Offline format checks for the providers step. These catch the common
+# self-serve mistakes — a key pasted into the wrong field, surrounding
+# whitespace, or obviously-truncated text — BEFORE the key is stored and the
+# operator only discovers it's wrong at runtime. groq/gemini have very stable
+# prefixes (high-value cross-paste guard); cerebras keeps its prefix optional
+# and the rest fall back to a charset+length sanity check so a real key is
+# never falsely rejected. The step-6 live ping remains the source of truth.
+_PROVIDER_KEY_RULES: Dict[str, "tuple[re.Pattern[str], str]"] = {
+    "groq_api_key": (re.compile(r"^gsk_[A-Za-z0-9]{6,}$"),
+                     "Groq anahtarları 'gsk_' ile başlar"),
+    "gemini_api_key": (re.compile(r"^AIza[0-9A-Za-z_\-]{10,}$"),
+                       "Google/Gemini anahtarları 'AIza' ile başlar"),
+    "cerebras_api_key": (re.compile(r"^(csk-)?[A-Za-z0-9_\-]{16,}$"),
+                         "Cerebras anahtarı geçersiz görünüyor"),
+    "cohere_api_key": (re.compile(r"^[A-Za-z0-9_\-]{16,}$"),
+                       "Cohere anahtarı 16+ url-güvenli karakter olmalı"),
+    "cf_account_id": (re.compile(r"^[0-9a-fA-F]{32}$"),
+                      "Cloudflare hesap ID'si 32 hex karakterdir"),
+    "cf_api_token": (re.compile(r"^[A-Za-z0-9_\-]{20,}$"),
+                     "Cloudflare API token'ı geçersiz görünüyor"),
+}
+
+
 # ---------- endpoints ------------------------------------------------------
 
 
@@ -588,8 +611,32 @@ async def step_providers(body: ProvidersBody, request: Request) -> Dict[str, Any
             "cf_account_id",
             "cf_api_token",
         )
+        # Validate format BEFORE persisting anything so a malformed key never
+        # reaches the vault/.env (and the step stays atomic — all or nothing).
+        key_errors: Dict[str, str] = {}
+        for field_name in provider_fields:
+            raw = getattr(body, field_name)
+            if not raw or not str(raw).strip():
+                continue
+            value = str(raw).strip()
+            rule = _PROVIDER_KEY_RULES.get(field_name)
+            if rule and not rule[0].match(value):
+                key_errors[field_name] = rule[1]
+        if key_errors:
+            emit_event(
+                request,
+                action="setup.step.providers",
+                outcome="denied",
+                reason="invalid_key_format",
+                status_code=400,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail={"error": "invalid_provider_key_format", "fields": key_errors},
+            )
         for field_name in provider_fields:
             value = getattr(body, field_name)
+            value = value.strip() if value else value
             if value:
                 setattr(settings, field_name, value)
                 _persist_encrypted_secret(field_name, value)
