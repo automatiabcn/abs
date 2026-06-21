@@ -84,7 +84,9 @@ async def test_connector_without_id_is_skipped_and_partial():
     assert out["status"] == "partial"
 
 
-@pytest.mark.parametrize("kind", ["branch", "sub_workflow", "frobnicate"])
+# branch + sub_workflow are now really executed (see test_agentic_branch_subworkflow);
+# only a genuinely-unknown kind should hit the honest catch-all.
+@pytest.mark.parametrize("kind", ["frobnicate", "teleport"])
 async def test_unimplemented_kind_is_honest_not_false_green(kind):
     graph = {
         "nodes": [
