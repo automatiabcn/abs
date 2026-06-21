@@ -64,15 +64,36 @@ class GraphRagResult:
         }
 
 
-_SUBGRAPH_CYPHER = """
-MATCH (e:GraphEntity {tenant_id: $tenant_id})-[:MENTIONED_IN]->(c:GraphChunk {tenant_id: $tenant_id})
+_MAX_HOP_DEPTH = 3
+_MAX_SUBGRAPH_EDGES = 300
+
+
+def _subgraph_cypher(depth: int) -> str:
+    """k-hop subgraph Cypher. The variable-length upper bound (`*1..N`) and the
+    edge LIMIT cannot be Cypher parameters, so the (clamped int) depth/limit are
+    inlined — safe, never user strings. Tenant isolation is enforced on EVERY
+    hop via ``all(rr IN relationships(p) WHERE rr.tenant_id=$tenant_id)``. The
+    OPTIONAL match + null-edge UNWIND keeps the old behaviour of always
+    surfacing seed entities even when they have no outgoing relations.
+    depth=1 reproduces the original 1-hop result shape."""
+    depth = max(1, min(int(depth), _MAX_HOP_DEPTH))
+    return f"""
+MATCH (e:GraphEntity {{tenant_id: $tenant_id}})-[:MENTIONED_IN]->(c:GraphChunk {{tenant_id: $tenant_id}})
 WHERE c.id IN $chunk_ids
 WITH collect(DISTINCT e) AS seeds
-UNWIND seeds AS e
-OPTIONAL MATCH (e)-[r:REL {tenant_id: $tenant_id}]->(e2:GraphEntity {tenant_id: $tenant_id})
-RETURN e.id AS src_id, e.name AS src_name, e.type AS src_type,
-       r.type AS rel_type,
-       e2.id AS dst_id, e2.name AS dst_name, e2.type AS dst_type
+UNWIND seeds AS seed
+OPTIONAL MATCH p = (seed)-[:REL*1..{depth}]->(e2:GraphEntity {{tenant_id: $tenant_id}})
+WHERE p IS NULL OR all(rr IN relationships(p) WHERE rr.tenant_id = $tenant_id)
+UNWIND (CASE WHEN p IS NULL THEN [null] ELSE relationships(p) END) AS r
+RETURN seed.id AS seed_id, seed.name AS seed_name, seed.type AS seed_type,
+       CASE WHEN r IS NULL THEN null ELSE startNode(r).id END AS src_id,
+       CASE WHEN r IS NULL THEN null ELSE startNode(r).name END AS src_name,
+       CASE WHEN r IS NULL THEN null ELSE startNode(r).type END AS src_type,
+       CASE WHEN r IS NULL THEN null ELSE r.type END AS rel_type,
+       CASE WHEN r IS NULL THEN null ELSE endNode(r).id END AS dst_id,
+       CASE WHEN r IS NULL THEN null ELSE endNode(r).name END AS dst_name,
+       CASE WHEN r IS NULL THEN null ELSE endNode(r).type END AS dst_type
+LIMIT {_MAX_SUBGRAPH_EDGES}
 """
 
 
@@ -113,14 +134,15 @@ def _hits_to_citations(hits: list[dict[str, Any]]) -> list[GraphCitation]:
 
 
 async def _fetch_subgraph(
-    client: Any, tenant_id: str, chunk_ids: list[str]
+    client: Any, tenant_id: str, chunk_ids: list[str], depth: int = 1
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """1-hop subgraph around entities mentioned in `chunk_ids`. Best-effort."""
+    """k-hop subgraph around entities mentioned in `chunk_ids` (depth 1..3).
+    Best-effort — a Neo4j error degrades to a chunks-only answer."""
     if not chunk_ids:
         return [], []
     try:
         rows = await client.query(
-            _SUBGRAPH_CYPHER, {"tenant_id": tenant_id, "chunk_ids": chunk_ids}
+            _subgraph_cypher(depth), {"tenant_id": tenant_id, "chunk_ids": chunk_ids}
         )
     except Exception as exc:  # Neo4j down / query error → chunks-only
         logger.info("graphrag subgraph query failed (degrading): %s", exc)
@@ -128,21 +150,19 @@ async def _fetch_subgraph(
 
     entities: dict[str, dict[str, Any]] = {}
     relations: dict[tuple[str, str, str], dict[str, Any]] = {}
+
+    def _add_entity(eid: Any, name: Any, etype: Any) -> None:
+        if eid and eid not in entities:
+            entities[eid] = {"id": eid, "name": name, "type": etype}
+
     for row in rows or []:
+        # seed is always surfaced (it has at least one mentioned chunk), even
+        # when it has no outgoing relations within `depth`.
+        _add_entity(row.get("seed_id"), row.get("seed_name"), row.get("seed_type"))
         src_id = row.get("src_id")
-        if src_id and src_id not in entities:
-            entities[src_id] = {
-                "id": src_id,
-                "name": row.get("src_name"),
-                "type": row.get("src_type"),
-            }
         dst_id = row.get("dst_id")
-        if dst_id and dst_id not in entities:
-            entities[dst_id] = {
-                "id": dst_id,
-                "name": row.get("dst_name"),
-                "type": row.get("dst_type"),
-            }
+        _add_entity(src_id, row.get("src_name"), row.get("src_type"))
+        _add_entity(dst_id, row.get("dst_name"), row.get("dst_type"))
         rel_type = row.get("rel_type")
         if src_id and dst_id and rel_type:
             key = (src_id, dst_id, rel_type)
@@ -202,6 +222,7 @@ async def graph_rag_query(
     tenant_id: str,
     top_k: int = 5,
     synthesize: bool = True,
+    depth: int = 1,
     neo4j_client: Any = None,
 ) -> GraphRagResult:
     """Hybrid GraphRAG query. `tenant_id` scopes both Qdrant and Neo4j."""
@@ -220,7 +241,7 @@ async def graph_rag_query(
 
         neo4j_client = Neo4jClient()
     chunk_ids = [c.chunk_id for c in citations if c.chunk_id]
-    entities, relations = await _fetch_subgraph(neo4j_client, tenant, chunk_ids)
+    entities, relations = await _fetch_subgraph(neo4j_client, tenant, chunk_ids, depth)
 
     answer: str | None = None
     if synthesize:
