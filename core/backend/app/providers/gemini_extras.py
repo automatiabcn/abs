@@ -198,6 +198,51 @@ async def gemini_image_edit(prompt: str, image_base64: str) -> ProviderResponse:
     )
 
 
+_DESCRIBE_PROMPT = (
+    "Describe this image in detail for semantic search and retrieval. Cover the "
+    "main subject, any visible text (verbatim), objects, people, layout, colours, "
+    "charts/numbers, and the apparent purpose. Write a single dense paragraph, no "
+    "preamble."
+)
+
+
+async def describe_image(
+    image_base64: str,
+    mime_type: str = "image/png",
+    *,
+    prompt: str | None = None,
+    model: str = "gemini-2.5-flash",
+) -> ProviderResponse:
+    """Vision-describe an image so it can be embedded into the (text) RAG index.
+
+    Gemini has no native image-embedding endpoint (only Vertex AI does), so the
+    pragmatic path is: Gemini vision produces a rich textual description, which
+    the existing text embedder turns into a vector. Returns the description in
+    ``ProviderResponse.text``.
+    """
+    key = _require_key()
+    body = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt or _DESCRIBE_PROMPT},
+                    {"inlineData": {"mimeType": mime_type, "data": image_base64}},
+                ]
+            }
+        ]
+    }
+    start = time.monotonic()
+    data = await _post(
+        f"{_BASE}/models/{model}:generateContent", body, key=key, timeout=90.0
+    )
+    return ProviderResponse(
+        text=_collect_text(data),
+        model=model,
+        provider="gemini",
+        elapsed_ms=int((time.monotonic() - start) * 1000),
+    )
+
+
 async def gemini_video(prompt: str) -> ProviderResponse:
     """Video generation job başlat. `operation` name döner (sonra gemini_video_status ile sorgu)."""
     key = _require_key()
