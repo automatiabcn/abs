@@ -166,3 +166,50 @@ def test_complete_step_sets_completed_flag(isolated_setup, client):
     state = json.loads((isolated_setup["data"] / "setup_state.json").read_text())
     assert state["completed"] is True
     assert state["completed_at"] is not None
+
+
+def _advance_to_providers(client) -> None:
+    client.post(
+        "/v1/setup/step/admin", json={"email": "x@y.co", "password": "longSecret123"}
+    )
+    client.post(
+        "/v1/setup/step/license",
+        json={"license_key": generate_license("cust_fmt", valid_days=30)},
+    )
+    client.post("/v1/setup/step/domain", json={"mode": "ip", "ssl_mode": "internal"})
+    client.post(
+        "/v1/setup/step/anthropic", json={"anthropic_api_key": "sk-ant-test12345"}
+    )
+
+
+def test_providers_step_rejects_malformed_key(isolated_setup, client):
+    """A key pasted into the wrong field (no 'gsk_' prefix) is rejected with a
+    400 + per-field reason, and nothing is persisted (step stays at 5)."""
+    _advance_to_providers(client)
+    r = client.post(
+        "/v1/setup/step/providers", json={"groq_api_key": "sk-this-is-an-openai-key"}
+    )
+    assert r.status_code == 400, r.text
+    detail = r.json()["detail"]
+    assert detail["error"] == "invalid_provider_key_format"
+    assert "groq_api_key" in detail["fields"]
+    # step did not advance — the malformed key was not stored
+    assert client.get("/v1/setup/status").json()["current_step"] == 5
+
+
+def test_providers_step_strips_whitespace_and_accepts_valid(isolated_setup, client):
+    _advance_to_providers(client)
+    r = client.post(
+        "/v1/setup/step/providers", json={"groq_api_key": "  gsk_validlookingkey123  "}
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["configured"] == ["groq_api_key"]
+
+
+def test_providers_step_rejects_bad_cf_account_id(isolated_setup, client):
+    _advance_to_providers(client)
+    r = client.post(
+        "/v1/setup/step/providers", json={"cf_account_id": "not-32-hex"}
+    )
+    assert r.status_code == 400, r.text
+    assert "cf_account_id" in r.json()["detail"]["fields"]
