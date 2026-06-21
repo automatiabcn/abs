@@ -603,6 +603,58 @@ def ingest_image(
     )
 
 
+def _rag_extra_filter(
+    *,
+    project_id: str | None,
+    kinds: list[str] | None,
+    doc_ids: list[str] | None = None,
+) -> Filter | None:
+    """Shared metadata filter for /query and /query-by-image.
+
+    Scopes retrieval to the chosen docs + active project, and applies the
+    unified-index modality filter (images/text live in one collection; legacy
+    text has no `kind`, so "text only" = must_not kind=image).
+    """
+    must: list = []
+    must_not: list = []
+    if doc_ids:
+        must.append(
+            FieldCondition(key="doc_id", match=MatchAny(any=[d for d in doc_ids if d]))
+        )
+    if project_id:
+        must.append(
+            FieldCondition(key="project_id", match=MatchValue(value=project_id))
+        )
+    if kinds:
+        want = {k.strip().lower() for k in kinds if k}
+        if want == {"image"}:
+            must.append(FieldCondition(key="kind", match=MatchValue(value="image")))
+        elif want and "image" not in want:
+            must_not.append(
+                FieldCondition(key="kind", match=MatchValue(value="image"))
+            )
+    if not must and not must_not:
+        return None
+    return Filter(must=must or None, must_not=must_not or None)
+
+
+def _raw_to_hits(raw_hits: list) -> list["Hit"]:
+    """Map Qdrant payloads to Hit, surfacing all metadata except text/tenant_id."""
+    return [
+        Hit(
+            chunk_id=str(h["payload"].get("chunk_id") or h["id"]),
+            score=h["score"],
+            text=str(h["payload"].get("text", "")),
+            doc_id=str(h["payload"].get("doc_id", "")),
+            seq=int(h["payload"].get("seq", 0)),
+            metadata={
+                k: v for k, v in h["payload"].items() if k not in {"text", "tenant_id"}
+            },
+        )
+        for h in raw_hits
+    ]
+
+
 @router.post("/query", response_model=QueryResponse)
 @observe(name="rag.query")
 def query(
@@ -617,34 +669,9 @@ def query(
     embedder = _ensure_embedder()
     _ensure_qdrant_collection(collection, vector_size=embedder.dim)
     vector = embedder.embed_one(body.query)
-    must: list = []
-    if body.doc_ids:
-        # Metadata filter — restrict retrieval to the chosen documents so
-        # results can be scoped instead of searching the whole collection.
-        must.append(
-            FieldCondition(
-                key="doc_id", match=MatchAny(any=[d for d in body.doc_ids if d])
-            )
-        )
-    if project_id:
-        # MT Phase 1 (B4) — scope retrieval to the active project's chunks.
-        must.append(
-            FieldCondition(key="project_id", match=MatchValue(value=project_id))
-        )
-    # Unified index kind filter: images and text live in the same collection
-    # (an image is stored as its vision-description), so the panel can scope a
-    # query to one modality without a separate index. Legacy text chunks have
-    # no `kind`, so "text only" is expressed as must_not kind=image.
-    must_not: list = []
-    if body.kinds:
-        want = {k.strip().lower() for k in body.kinds if k}
-        if want == {"image"}:
-            must.append(FieldCondition(key="kind", match=MatchValue(value="image")))
-        elif want and "image" not in want:
-            must_not.append(
-                FieldCondition(key="kind", match=MatchValue(value="image"))
-            )
-    extra_filter = Filter(must=must or None, must_not=must_not or None) if (must or must_not) else None
+    extra_filter = _rag_extra_filter(
+        project_id=project_id, kinds=body.kinds, doc_ids=body.doc_ids
+    )
     try:
         raw_hits = qc.search(
             collection=collection,
@@ -677,21 +704,7 @@ def query(
         ]
 
     elapsed = (time.perf_counter() - started) * 1000.0
-    hits = [
-        Hit(
-            chunk_id=str(h["payload"].get("chunk_id") or h["id"]),
-            score=h["score"],
-            text=str(h["payload"].get("text", "")),
-            doc_id=str(h["payload"].get("doc_id", "")),
-            seq=int(h["payload"].get("seq", 0)),
-            metadata={
-                k: v
-                for k, v in h["payload"].items()
-                if k not in {"text", "tenant_id"}
-            },
-        )
-        for h in raw_hits
-    ]
+    hits = _raw_to_hits(raw_hits)
     logger.info(
         "rag_query tenant=%s q_len=%d hits=%d ms=%.1f",
         auth.tenant_id,
@@ -730,6 +743,115 @@ def query(
     )
     return QueryResponse(
         query=body.query, hits=hits, elapsed_ms=elapsed, answer=answer
+    )
+
+
+class ImageQueryResponse(BaseModel):
+    description: str  # what Gemini saw — the text actually searched
+    hits: list[Hit]
+    elapsed_ms: float
+
+
+@router.post("/query-by-image", response_model=ImageQueryResponse)
+@observe(name="rag.query_by_image")
+def query_by_image(
+    request: Request,
+    file: UploadFile = File(...),
+    limit: int = 5,
+    kinds: str | None = None,
+    rag: RAGAuth = Depends(rag_action_dep("query")),
+) -> ImageQueryResponse:
+    """Search the knowledge base USING an image as the query.
+
+    The image is vision-described by Gemini, and that description is embedded
+    and searched against the unified index — so an uploaded photo/screenshot
+    finds related docs AND other images. ``kinds`` is an optional comma list
+    ('image' / 'text') to scope the modality, same as /query. SYNC def for the
+    same asyncio.run reason as the other image/embedding routes.
+    """
+    import asyncio
+    import base64
+    import os as _os
+
+    from app.providers import gemini_extras
+    from app.providers.schemas import ProviderError
+
+    auth = rag.auth
+    collection = _tenant_collection(auth)
+    project_id = _active_project(request, auth)
+    raw = file.file.read()
+    if not raw:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="empty_upload")
+    if len(raw) > _MAX_IMAGE_BYTES:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="image_too_large")
+    ext = _os.path.splitext(file.filename or "")[1].lower()
+    ctype = (file.content_type or "").lower()
+    mime = _IMAGE_EXT_MIME.get(ext) or (ctype if ctype.startswith("image/") else None)
+    if not mime:
+        raise HTTPException(
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="unsupported_image_type (png/jpg/webp/gif)",
+        )
+
+    started = time.perf_counter()
+    b64 = base64.b64encode(raw).decode("ascii")
+    try:
+        resp = asyncio.run(gemini_extras.describe_image(b64, mime))
+    except ProviderError as exc:
+        logger.warning("rag_query_by_image_describe_failed: %s", exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"image_describe_unavailable: {str(exc)[:160]}",
+        ) from exc
+    description = (resp.text or "").strip()
+    if not description:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, detail="image_not_describable"
+        )
+
+    embedder = _ensure_embedder()
+    _ensure_qdrant_collection(collection, vector_size=embedder.dim)
+    vector = embedder.embed_one(description)
+    kind_list = [k for k in (kinds.split(",") if kinds else []) if k.strip()]
+    extra_filter = _rag_extra_filter(
+        project_id=project_id, kinds=kind_list or None
+    )
+    try:
+        raw_hits = qc.search(
+            collection=collection,
+            tenant_id=auth.tenant_id or "",
+            query_vector=vector,
+            limit=max(1, min(limit, 50)),
+            extra_filter=extra_filter,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("qdrant_search_failed: %s", exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"qdrant_search_failed: {exc}",
+        ) from exc
+    hits = _raw_to_hits(raw_hits)
+    elapsed = (time.perf_counter() - started) * 1000.0
+    logger.info(
+        "rag_query_by_image tenant=%s mime=%s hits=%d ms=%.1f",
+        auth.tenant_id, mime, len(hits), elapsed,
+    )
+    get_usage_logger().record(
+        make_event(
+            name="rag.query_by_image",
+            tenant_id=auth.tenant_id,
+            user_subject=auth.subject,
+            request_type="query",
+            status="ok",
+            latency_ms=elapsed,
+            input_tokens=estimate_token_count(description),
+            output_tokens=len(hits),
+            model_version=f"gemini-vision+{settings.embedding_backend}",
+            metadata={"hits": len(hits), "kind": "image_query"},
+        )
+    )
+    return ImageQueryResponse(
+        description=description, hits=hits, elapsed_ms=elapsed
     )
 
 
