@@ -94,6 +94,9 @@ export default function RagPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   // unified-index modality filter: all docs+images, docs only, or images only.
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
+  // image-as-query: upload an image, Gemini describes it, the description is
+  // searched against the same index. `imgDesc` shows what was searched.
+  const [imgDesc, setImgDesc] = useState<string | null>(null);
 
   // Load the real indexed corpus on mount so a reload reflects what's stored
   // in Qdrant (BUG-27 follow-up) — not just docs uploaded this session.
@@ -224,12 +227,49 @@ export default function RagPage() {
     [],
   );
 
+  async function runImageQuery(file: File) {
+    setSearching(true);
+    setError(null);
+    setHits([]);
+    setAnswer(null);
+    setImgDesc(null);
+    try {
+      const form = new FormData();
+      form.append("file", file, file.name);
+      const scope =
+        kindFilter === "images" ? "?kinds=image"
+          : kindFilter === "docs" ? "?kinds=text"
+            : "";
+      const res = await fetch(`/v1/rag/query-by-image${scope}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { ...projectHeaders() },
+        body: form,
+      });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => "");
+        setError(
+          `Backend /v1/rag/query-by-image döndü ${res.status}: ${detail.slice(0, 280) || "boş yanıt"}`,
+        );
+        return;
+      }
+      const data = await res.json();
+      setHits(data.hits ?? []);
+      setImgDesc(data.description ?? null);
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : "unknown");
+    } finally {
+      setSearching(false);
+    }
+  }
+
   async function runQuery() {
     if (!query.trim()) return;
     setSearching(true);
     setError(null);
     setHits([]);
     setAnswer(null);
+    setImgDesc(null);
     try {
       const res = await fetch("/v1/rag/query", {
         method: "POST",
@@ -663,14 +703,46 @@ export default function RagPage() {
                 ))}
               </div>
             </div>
-            <Button
-              type="button"
-              onClick={runQuery}
-              disabled={searching || !query.trim()}
-              data-test="rag-run-query"
-            >
-              {searching ? "Sorgulanıyor…" : "Sorguyu çalıştır"}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                onClick={runQuery}
+                disabled={searching || !query.trim()}
+                data-test="rag-run-query"
+              >
+                {searching ? "Sorgulanıyor…" : "Sorguyu çalıştır"}
+              </Button>
+              {/* image-as-query: search the index using an uploaded image */}
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  data-test="rag-image-query-input"
+                  disabled={searching}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void runImageQuery(f);
+                    e.target.value = "";
+                  }}
+                />
+                <span className="inline-flex items-center rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted">
+                  🖼️ Görselle ara
+                </span>
+              </label>
+            </div>
+
+            {imgDesc && (
+              <div
+                data-test="rag-image-desc"
+                className="rounded-md border border-violet-500/30 bg-violet-500/5 p-3 text-xs"
+              >
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-violet-300">
+                  Görselden çıkarılan sorgu
+                </div>
+                <p className="text-foreground/90">{imgDesc}</p>
+              </div>
+            )}
 
             {error && (
               <div className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200">
