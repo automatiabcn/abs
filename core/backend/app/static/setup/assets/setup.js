@@ -222,11 +222,75 @@ document.querySelectorAll(".setup-back").forEach((btn) => {
   });
 });
 
+// Human-readable provider field labels for the test step (was raw JSON).
+const PROVIDER_LABELS = {
+  anthropic_api_key: "Anthropic (Claude)",
+  groq_api_key: "Groq",
+  gemini_api_key: "Gemini",
+  cerebras_api_key: "Cerebras",
+  cohere_api_key: "Cohere",
+  cf_api_token: "Cloudflare",
+  cf_account_id: "Cloudflare Account",
+};
+const STATUS_STYLE = {
+  ok: { icon: "✓", color: "#16a34a" },
+  fail: { icon: "✗", color: "#dc2626" },
+  skipped: { icon: "–", color: "#9ca3af" },
+};
+
+// Render the per-provider ping result as a readable list instead of raw JSON.
+// XSS-safe: every value goes through textContent, never innerHTML.
+function renderTestResults(box, results) {
+  box.textContent = "";
+  const entries = Object.entries(results || {});
+  if (entries.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "setup-help";
+    empty.textContent = "Test edilecek yapılandırılmış sağlayıcı yok.";
+    box.appendChild(empty);
+    return;
+  }
+  const list = document.createElement("ul");
+  list.className = "setup-test-list";
+  for (const [field, res] of entries) {
+    const status = (res && res.status) || "skipped";
+    const style = STATUS_STYLE[status] || STATUS_STYLE.skipped;
+    const li = document.createElement("li");
+    li.style.display = "flex";
+    li.style.alignItems = "baseline";
+    li.style.gap = "8px";
+    li.style.padding = "4px 0";
+
+    const dot = document.createElement("span");
+    dot.textContent = style.icon;
+    dot.style.color = style.color;
+    dot.style.fontWeight = "700";
+
+    const name = document.createElement("span");
+    name.textContent = PROVIDER_LABELS[field] || field;
+    name.style.fontWeight = "600";
+
+    li.appendChild(dot);
+    li.appendChild(name);
+    if (res && res.reason) {
+      const reason = document.createElement("span");
+      reason.textContent = "— " + String(res.reason);
+      reason.style.color = "#9ca3af";
+      reason.style.fontSize = "12px";
+      li.appendChild(reason);
+    }
+    list.appendChild(li);
+  }
+  box.appendChild(list);
+}
+
 document.querySelector(".setup-finish").addEventListener("click", async () => {
   try {
     const data = await postStep("test", {});
-    const box = document.getElementById("setup-test-results");
-    box.textContent = JSON.stringify(data.test_results || {}, null, 2);
+    renderTestResults(
+      document.getElementById("setup-test-results"),
+      data.test_results,
+    );
     if (data.completed) {
       setTimeout(() => (window.location.href = "/panel/login"), 1500);
     }
