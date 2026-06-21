@@ -85,6 +85,14 @@ class QueryRequest(BaseModel):
     doc_ids: list[str] | None = Field(
         default=None, description="restrict the search to these document ids"
     )
+    kinds: list[str] | None = Field(
+        default=None,
+        description=(
+            "filter by chunk kind for the unified index: ['image'] = images "
+            "only, ['text'] = exclude images (legacy text chunks have no kind), "
+            "None/both = everything"
+        ),
+    )
 
 
 class Hit(BaseModel):
@@ -473,6 +481,128 @@ def ingest_file(
     )
 
 
+_IMAGE_EXT_MIME = {
+    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".webp": "image/webp", ".gif": "image/gif",
+}
+_MAX_IMAGE_BYTES = 8 * 1024 * 1024  # 8 MiB
+
+
+@router.post("/ingest-image", response_model=IngestResponse)
+@observe(name="rag.ingest_image")
+def ingest_image(
+    request: Request,
+    file: UploadFile = File(...),
+    rag: RAGAuth = Depends(rag_action_dep("ingest")),
+) -> IngestResponse:
+    """Ingest an IMAGE into the same RAG index as text.
+
+    Gemini has no native image-embedding endpoint, so the image is vision-
+    described by Gemini and that description is run through the normal text
+    pipeline (embed → Qdrant) tagged ``kind="image"``. The image then becomes
+    retrievable by the EXISTING text /query — one unified index, no separate
+    vector space — and results carry the image metadata so the panel can badge
+    or filter them (see QueryRequest.kinds).
+
+    SYNC `def` for the same reason as /ingest-file (the embedder calls
+    asyncio.run for the Cohere backend, which needs to be off the event loop);
+    the Gemini describe call is driven with asyncio.run from this threadpool.
+    """
+    import asyncio
+    import base64
+    import os as _os
+
+    from app.providers import gemini_extras
+    from app.providers.schemas import ProviderError
+
+    auth = rag.auth
+    collection = _tenant_collection(auth)
+    raw = file.file.read()
+    if not raw:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="empty_upload")
+    if len(raw) > _MAX_IMAGE_BYTES:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="image_too_large")
+    ext = _os.path.splitext(file.filename or "")[1].lower()
+    ctype = (file.content_type or "").lower()
+    mime = _IMAGE_EXT_MIME.get(ext) or (ctype if ctype.startswith("image/") else None)
+    if not mime:
+        raise HTTPException(
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="unsupported_image_type (png/jpg/webp/gif)",
+        )
+
+    started = time.perf_counter()
+    b64 = base64.b64encode(raw).decode("ascii")
+    try:
+        resp = asyncio.run(gemini_extras.describe_image(b64, mime))
+    except ProviderError as exc:
+        # No Gemini key / vision call failed — describe is the only embed path
+        # for images, so surface a clean 503 the panel can render.
+        logger.warning("rag_ingest_image_describe_failed: %s", exc)
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"image_describe_unavailable: {str(exc)[:160]}",
+        ) from exc
+    desc = (resp.text or "").strip()
+    if not desc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, detail="image_not_describable"
+        )
+
+    # Reuse the text pipeline so the image-description gets the same chunking,
+    # deterministic doc/chunk ids and embedding as any other document.
+    doc = parse_document(
+        desc.encode("utf-8"), mime_type="text/plain", filename=file.filename or "image"
+    )
+    chunks = late_chunks(doc)
+    if not chunks:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, detail="image_not_describable"
+        )
+    for c in chunks:
+        c.metadata["kind"] = "image"
+        c.metadata["source_filename"] = file.filename or ""
+        c.metadata["image_mime"] = mime
+
+    project_id = _active_project(request, auth)
+    inserted = _ingest_chunks(
+        tenant_id=auth.tenant_id or "",
+        collection=collection,
+        chunks=chunks,
+        project_id=project_id,
+    )
+    elapsed = (time.perf_counter() - started) * 1000.0
+    tokens = estimate_token_count(desc)
+    logger.info(
+        "rag_ingest_image tenant=%s doc=%s mime=%s chunks=%d ms=%.1f",
+        auth.tenant_id, doc.doc_id, mime, inserted, elapsed,
+    )
+    get_usage_logger().record(
+        make_event(
+            name="rag.ingest_image",
+            tenant_id=auth.tenant_id,
+            user_subject=auth.subject,
+            request_type="ingest",
+            status="ok",
+            latency_ms=elapsed,
+            input_tokens=tokens,
+            output_tokens=inserted,
+            model_version=f"gemini-vision+{settings.embedding_backend}",
+            metadata={
+                "doc_id": doc.doc_id, "collection": collection,
+                "chunks": inserted, "filename": file.filename or "", "kind": "image",
+            },
+        )
+    )
+    return IngestResponse(
+        doc_id=doc.doc_id,
+        chunks=inserted,
+        tokens_estimated=tokens,
+        collection=collection,
+        elapsed_ms=elapsed,
+    )
+
+
 @router.post("/query", response_model=QueryResponse)
 @observe(name="rag.query")
 def query(
@@ -501,7 +631,20 @@ def query(
         must.append(
             FieldCondition(key="project_id", match=MatchValue(value=project_id))
         )
-    extra_filter = Filter(must=must) if must else None
+    # Unified index kind filter: images and text live in the same collection
+    # (an image is stored as its vision-description), so the panel can scope a
+    # query to one modality without a separate index. Legacy text chunks have
+    # no `kind`, so "text only" is expressed as must_not kind=image.
+    must_not: list = []
+    if body.kinds:
+        want = {k.strip().lower() for k in body.kinds if k}
+        if want == {"image"}:
+            must.append(FieldCondition(key="kind", match=MatchValue(value="image")))
+        elif want and "image" not in want:
+            must_not.append(
+                FieldCondition(key="kind", match=MatchValue(value="image"))
+            )
+    extra_filter = Filter(must=must or None, must_not=must_not or None) if (must or must_not) else None
     try:
         raw_hits = qc.search(
             collection=collection,
