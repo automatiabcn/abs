@@ -12,16 +12,21 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends
 
 from app.api.auth import current_admin
+from app.api.chat import _resolve_tenant
 from app.services import feature_usage as feature_usage_service
 
 router = APIRouter(prefix="/v1/system", tags=["system"])
 
 
 @router.get("/feature_usage")
-async def feature_usage(_admin: dict = Depends(current_admin)) -> Dict[str, Any]:
-    rows = feature_usage_service.get_usage(tenant_slug="default")
+async def feature_usage(admin: dict = Depends(current_admin)) -> Dict[str, Any]:
+    # Was hardcoded to "default" — every admin saw the default tenant's
+    # counters. Resolve the caller's own tenant (falls back to "default"
+    # for single-tenant deploys).
+    tenant = _resolve_tenant(str(admin.get("sub") or "")) or "default"
+    rows = feature_usage_service.get_usage(tenant_slug=tenant)
     return {
-        "tenant_slug": "default",
+        "tenant_slug": tenant,
         "feature_count": len(feature_usage_service.FEATURE_IDS),
         "features": rows,
     }
