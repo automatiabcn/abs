@@ -76,6 +76,23 @@ def _make_proxy_tool(
         async def run(self, arguments, context=None, convert_result=False):  # type: ignore[override]
             from mcp.types import TextContent
 
+            # The FastMCP registry is global, so every tenant's federated
+            # proxies are visible to every authenticated MCP caller. Pin each
+            # proxy to its owning tenant: a caller whose resolved tenant
+            # differs from this tool's tenant cannot reach the upstream (and
+            # its credentials). "_global" = no tenant context (internal/admin
+            # token) and is allowed, matching prior behaviour.
+            from app.mcp.context import get_mcp_caller
+
+            caller_tenant, _ = get_mcp_caller()
+            if caller_tenant != "_global" and caller_tenant != self._tenant:
+                return [
+                    TextContent(
+                        type="text",
+                        text="[external MCP tool: cross-tenant access denied]",
+                    )
+                ]
+
             conn = service.connection_params(self._tenant, self._slug)
             if not conn or not conn.get("enabled"):
                 return [TextContent(type="text", text="[external MCP server unavailable]")]
