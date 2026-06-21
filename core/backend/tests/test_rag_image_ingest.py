@@ -164,6 +164,65 @@ def test_query_kinds_image_adds_kind_filter(monkeypatch):
     assert any(getattr(fc, "key", None) == "kind" for fc in (flt.must or []))
 
 
+def test_query_by_image_describes_then_searches(monkeypatch):
+    """Upload an image as the QUERY: it is vision-described, the description is
+    embedded + searched, and the hits + description come back."""
+    captured: dict = {}
+    monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
+
+    def _search(**k):
+        captured["filter"] = k.get("extra_filter")
+        return [
+            {
+                "id": "c9",
+                "score": 0.77,
+                "payload": {"doc_id": "d9", "chunk_id": "c9", "seq": 0,
+                            "text": "matching policy doc", "tenant_id": k["tenant_id"]},
+            }
+        ]
+
+    monkeypatch.setattr(rag_routes.qc, "search", _search)
+    embedder = MagicMock()
+    embedder.dim = 4
+    embedder.embed_one.return_value = [0.1, 0.2, 0.3, 0.4]
+    monkeypatch.setattr(rag_routes, "get_embedder", lambda: embedder)
+
+    async def _fake_describe(b64, mime, **kw):
+        return SimpleNamespace(text="a screenshot of a pricing table")
+
+    monkeypatch.setattr(gx, "describe_image", _fake_describe)
+
+    with TestClient(app) as c:
+        _login(c)
+        r = c.post(
+            "/v1/rag/query-by-image?kinds=image",
+            files={"file": ("q.png", b"\x89PNGfake", "image/png")},
+        )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["description"] == "a screenshot of a pricing table"
+    assert len(body["hits"]) == 1 and body["hits"][0]["doc_id"] == "d9"
+    # kinds=image scoped the search
+    flt = captured["filter"]
+    assert any(getattr(fc, "key", None) == "kind" for fc in (flt.must or []))
+
+
+def test_query_by_image_without_gemini_is_503(monkeypatch):
+    monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
+
+    async def _boom(b64, mime, **kw):
+        raise ProviderError("no key", provider="gemini", transient=False)
+
+    monkeypatch.setattr(gx, "describe_image", _boom)
+    with TestClient(app) as c:
+        _login(c)
+        r = c.post(
+            "/v1/rag/query-by-image",
+            files={"file": ("q.png", b"\x89PNGfake", "image/png")},
+        )
+    assert r.status_code == 503
+
+
 def test_query_kinds_text_excludes_images(monkeypatch):
     captured: dict = {}
     monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
