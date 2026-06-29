@@ -158,7 +158,7 @@ async def recent_audit(
                         "ts": ts.isoformat() if ts else None,
                         "action": r.action,
                         "actor": r.actor,
-                        "target": r.target_key,
+                        "resource": r.target_key,
                         "detail": r.detail,
                     }
                 )
@@ -180,7 +180,12 @@ async def recent_audit(
                         "id": r.id,
                         "ts": ts.isoformat() if ts else None,
                         "action": r.action,
+                        # Customer-attributed events (license tool calls) carry no
+                        # human/operator identity — surface a stable "customer"
+                        # actor so the panel's required actor field is never null.
+                        "actor": "customer",
                         "license_jti": r.license_jti,
+                        "resource": r.resource,
                         "detail": r.detail,
                     }
                 )
@@ -202,7 +207,13 @@ async def recent_audit(
                         "id": r.event_id,
                         "ts": ts.isoformat() if ts else None,
                         "action": r.event_type,
+                        # Inbound provider webhooks are automated — attribute them
+                        # to "system" (also drives the panel's system highlight).
+                        "actor": "system",
                         "license_jti": r.license_jti,
+                        # Surface the failure reason under the shared "detail" key
+                        # the panel renders; keep "error" for existing consumers.
+                        "detail": r.error,
                         "error": r.error,
                     }
                 )
