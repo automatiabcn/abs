@@ -309,6 +309,19 @@ export default function RagPage() {
     }
   }
 
+  // Deleting a doc removes all of its vector chunks for the tenant and can't
+  // be undone — confirm first (the trash icon sits inline in a dense list,
+  // one mis-tap from the filename).
+  function confirmDelete(d: { id: string; filename: string; chunks: number }) {
+    if (
+      window.confirm(
+        `"${d.filename}" silinecek (${d.chunks} chunk). Bu işlem geri alınamaz. Emin misiniz?`,
+      )
+    ) {
+      void deleteDoc(d.id);
+    }
+  }
+
   async function deleteDoc(id: string) {
     setDeletingId(id);
     setError(null);
@@ -387,21 +400,34 @@ export default function RagPage() {
         })}
       </section>
 
-      {/* RAG quality gates (mockup 06 — RAGAS-style; demo/configured values). */}
-      <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {[
-          { label: "Faithfulness", value: "0.91", hint: "RAGAS CI gate · eşik 0.85" },
-          { label: "Citation correctness", value: "96%", hint: "her cevap kaynak gösterir" },
-          { label: "Hallucination", value: "2.1%", hint: "guard · 3 revize" },
-        ].map((s) => (
-          <Card key={s.label} className="bg-card/60">
-            <CardContent className="py-3">
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
-              <div className="mt-0.5 font-mono text-xl font-semibold">{s.value}</div>
-              <div className="mt-0.5 text-[10px] text-muted-foreground">{s.hint}</div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* RAG quality targets — the CONFIGURED gate thresholds, not a live
+          per-tenant measurement. We previously showed fabricated "current"
+          numbers (0.91 / 96% / 2.1%) styled identically to the real,
+          doc-derived stat cards above, which read as measured quality.
+          Surfaced as explicit targets until a RAGAS eval pipeline feeds real
+          values. */}
+      <section className="mb-6">
+        <div className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+          Kalite hedefleri · yapılandırılmış eşikler (canlı ölçüm değil)
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {[
+            { label: "Faithfulness", target: "≥ 0.85", hint: "RAGAS CI eşiği" },
+            { label: "Citation correctness", target: "100%", hint: "her cevap kaynak göstermeli" },
+            { label: "Hallucination", target: "≤ 3%", hint: "grounding guard hedefi" },
+          ].map((s) => (
+            <Card key={s.label} className="border-dashed bg-card/40">
+              <CardContent className="py-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
+                  <span className="rounded-full border border-border px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-muted-foreground">hedef</span>
+                </div>
+                <div className="mt-0.5 font-mono text-xl font-semibold text-muted-foreground">{s.target}</div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground">{s.hint}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </section>
 
       {/* ── Doküman Lifecycle (mockup 06) — versioning · chunk-quality ── */}
@@ -608,7 +634,7 @@ export default function RagPage() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => void deleteDoc(d.id)}
+                        onClick={() => confirmDelete(d)}
                         disabled={deletingId === d.id}
                         data-test="rag-doc-delete"
                         aria-label={`${d.filename} dokümanını sil`}
