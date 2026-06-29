@@ -52,7 +52,15 @@ async def _post(url: str, body: dict, *, key: str, timeout: float = 90.0) -> dic
             provider="gemini",
             transient=False,
         )
-    return r.json()
+    try:
+        return r.json()
+    except ValueError as exc:
+        # 2xx with a malformed body — raise the same ProviderError(transient)
+        # the main gemini adapter uses, so a caller wrapping this for
+        # resilience can fail over instead of seeing a bare ValueError.
+        raise ProviderError(
+            "Gemini JSON parse error", provider="gemini", transient=True
+        ) from exc
 
 
 def _collect_text(data: dict) -> str:
