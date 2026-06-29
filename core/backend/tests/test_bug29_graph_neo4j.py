@@ -156,6 +156,34 @@ def test_cypher_post_filters_cross_tenant_rows(
     assert body["filtered_out"] == 1
 
 
+def test_cypher_elapsed_ms_is_measured_not_hardcoded(
+    admin_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    admin_ctx: AuthContext,
+) -> None:
+    """Regression: the handler used to return a hardcoded `elapsed_ms: 0.0`,
+    so the panel always showed "0 ms" regardless of real query time. It must
+    now reflect the actual wall time of the query."""
+    import asyncio
+
+    async def _slow_query(self, cypher: str, params: dict | None = None):
+        await asyncio.sleep(0.02)
+        return [{"n": {"tenant_id": admin_ctx.tenant_id, "id": "p-anna"}}]
+
+    monkeypatch.setattr(
+        graph_routes.Neo4jClient, "query", _slow_query, raising=True
+    )
+    r = admin_client.post(
+        "/v1/graph/cypher",
+        json={"cypher": "MATCH (n:Person) RETURN n", "params": {}},
+    )
+    assert r.status_code == 200, r.text
+    elapsed = r.json()["elapsed_ms"]
+    assert isinstance(elapsed, (int, float))
+    # The stubbed query sleeps 20ms — a real measurement must be clearly > 0.
+    assert elapsed > 5, f"elapsed_ms not measured: {elapsed}"
+
+
 def test_cypher_neo4j_unavailable_returns_503(
     admin_client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
