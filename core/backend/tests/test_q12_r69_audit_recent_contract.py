@@ -219,7 +219,7 @@ def test_q12_r69_per_source_keys_present(client, monkeypatch, _seed_three_source
         marker = (
             row.get("license_jti")
             or row.get("id")
-            or row.get("target")
+            or row.get("resource")
             or ""
         )
         if isinstance(marker, str) and suffix in marker:
@@ -227,16 +227,76 @@ def test_q12_r69_per_source_keys_present(client, monkeypatch, _seed_three_source
 
     if "vault" in rows_by_source:
         assert rows_by_source["vault"]["action"] == "r69_rotate"
-        assert rows_by_source["vault"]["target"].endswith(suffix)
+        assert rows_by_source["vault"]["resource"].endswith(suffix)
+        assert rows_by_source["vault"]["actor"] == "admin"
     if "customer" in rows_by_source:
         assert rows_by_source["customer"]["license_jti"].endswith(suffix)
         assert rows_by_source["customer"]["action"] == "r69_tool_call"
+        # Every source must carry a non-null actor — the panel's CSV export
+        # and actor filter call string methods on it (would crash on None).
+        assert rows_by_source["customer"]["actor"] == "customer"
     if "webhook" in rows_by_source:
         assert rows_by_source["webhook"]["id"].endswith(suffix)
         assert (
             rows_by_source["webhook"]["action"]
             == "r69.checkout.session.completed"
         )
+        assert rows_by_source["webhook"]["actor"] == "system"
+
+
+def test_q12_audit_actor_present_all_sources(
+    client, monkeypatch, _seed_three_sources
+):
+    """Regression: customer + webhook entries used to omit `actor`, so the
+    panel CSV export (`actor.replace(...)`) and actor filter crashed on
+    undefined. Every row, regardless of source, must expose a string actor."""
+    token = _login(client, monkeypatch)
+    body = client.get(
+        "/v1/admin/audit/recent",
+        headers={"Authorization": f"Bearer {token}"},
+    ).json()
+    for row in body["entries"]:
+        assert isinstance(row.get("actor"), str) and row["actor"], (
+            f"missing actor on {row.get('source')} entry: {row}"
+        )
+
+
+def test_q12_audit_customer_resource_and_webhook_detail_passthrough(
+    client, monkeypatch
+):
+    """Customer `resource` and webhook `error` columns exist on the models but
+    were dropped by the feed; the panel reads `resource`/`detail`. Assert they
+    now surface so the audit trail isn't silently blank."""
+    suffix = uuid.uuid4().hex[:10]
+    with Session(get_engine()) as db:
+        db.add(
+            CustomerAuditEntry(
+                license_jti=f"res_jti_{suffix}",
+                action="data_export",
+                resource=f"export/{suffix}",
+            )
+        )
+        db.add(
+            WebhookEvent(
+                event_id=f"err_evt_{suffix}",
+                event_type="invoice.payment_failed",
+                error=f"card_declined_{suffix}",
+            )
+        )
+        db.commit()
+    token = _login(client, monkeypatch)
+    body = client.get(
+        "/v1/admin/audit/recent",
+        headers={"Authorization": f"Bearer {token}"},
+    ).json()
+    by_id = {r.get("id"): r for r in body["entries"]}
+    cust = next(
+        (r for r in body["entries"] if r.get("license_jti") == f"res_jti_{suffix}"),
+        None,
+    )
+    assert cust is not None and cust["resource"] == f"export/{suffix}"
+    wh = by_id.get(f"err_evt_{suffix}")
+    assert wh is not None and wh["detail"] == f"card_declined_{suffix}"
 
 
 def test_q12_r69_unauthenticated_returns_401(client):
