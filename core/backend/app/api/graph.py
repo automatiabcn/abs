@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import time
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -229,11 +230,13 @@ async def cypher(
     # can simulate cross-tenant attempts.
     params.setdefault(_TENANT_PARAM, tenant)
     client = Neo4jClient()
+    _t0 = time.monotonic()
     rows = await _safe_query(client, body.cypher, params)
+    elapsed_ms = round((time.monotonic() - _t0) * 1000, 1)
     safe_rows = _filter_rows_by_tenant(rows, tenant)
     return {
         "rows": safe_rows,
-        "elapsed_ms": 0.0,
+        "elapsed_ms": elapsed_ms,
         "tenant_id": tenant,
         "filtered_out": len(rows) - len(safe_rows),
     }
