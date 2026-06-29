@@ -68,7 +68,7 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
     let list = audit.data ?? [];
     if (actor.trim())
       list = list.filter((e) =>
-        e.actor.toLowerCase().includes(actor.trim().toLowerCase()),
+        (e.actor ?? "").toLowerCase().includes(actor.trim().toLowerCase()),
       );
     if (action.trim())
       list = list.filter((e) =>
@@ -83,7 +83,7 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
       ...filtered.map((e) => [
         String(e.id),
         e.ts,
-        e.actor,
+        e.actor ?? "",
         e.action,
         e.resource ?? "",
         (e.detail ?? "").replace(/[\r\n]/g, " "),

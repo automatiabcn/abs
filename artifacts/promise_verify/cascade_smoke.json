@@ -1,7 +1,7 @@
 {
-  "started_at": "2026-06-29T15:57:30+00:00",
-  "finished_at": "2026-06-29T15:57:30+00:00",
-  "duration_s": 0.226,
+  "started_at": "2026-06-29T15:31:54+00:00",
+  "finished_at": "2026-06-29T15:31:55+00:00",
+  "duration_s": 0.161,
   "report": {
     "chain": [
       "anthropic",
@@ -26,7 +26,7 @@
         "actual_answerer": "anthropic",
         "pass": true,
         "error": null,
-        "elapsed_ms": 0.84
+        "elapsed_ms": 0.7
       },
       {
         "killed": "anthropic",
@@ -106,7 +106,7 @@
         "actual_answerer": "anthropic",
         "pass": true,
         "error": null,
-        "elapsed_ms": 0.14
+        "elapsed_ms": 0.13
       },
       {
         "killed": "cohere",

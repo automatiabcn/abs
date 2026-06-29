@@ -1,6 +1,6 @@
 # Cascade redundancy smoke
 
-> Generated: 2026-06-29T15:57:30+00:00 · duration: 0.23s · `7/7` rounds green
+> Generated: 2026-06-29T15:31:55+00:00 · duration: 0.16s · `7/7` rounds green
 
 Each round monkey-patches the provider registry: every provider in the chain is a stub that either returns `ok:<provider>` or raises a transient `ProviderError`. **No real API calls** — this is a contract smoke for the cascade orchestrator's fallthrough logic, executed against the production `app.cascade.orchestrator.call_with_cascade` code path.
 
@@ -10,12 +10,12 @@ Chain under test (paid-first): `anthropic → groq → cerebras → gemini → c
 
 | Killed | Chain | Expected answerer | Actual answerer | Elapsed (ms) | Pass |
 |---|---|---|---|---|---|
-| `—` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.84 | ✅ |
+| `—` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.7 | ✅ |
 | `anthropic` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `groq` | `groq` | 0.36 | ✅ |
 | `groq` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.15 | ✅ |
 | `cerebras` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.14 | ✅ |
 | `gemini` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.14 | ✅ |
-| `cloudflare` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.14 | ✅ |
+| `cloudflare` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.13 | ✅ |
 | `cohere` | anthropic → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.13 | ✅ |
 
 ## Customer interpretation
