@@ -184,6 +184,25 @@ def test_cypher_elapsed_ms_is_measured_not_hardcoded(
     assert elapsed > 5, f"elapsed_ms not measured: {elapsed}"
 
 
+def test_schema_empty_graph_returns_empty_not_placeholders(
+    admin_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regression: the schema endpoint used to substitute hardcoded
+    Person/Org/… + WORKS_AT/… labels when the tenant graph was empty, so a
+    fresh (or wrong-tenant) graph looked populated. An empty graph must
+    report empty label/relationship lists."""
+
+    async def _empty(self, cypher: str, params: dict | None = None):
+        return []
+
+    monkeypatch.setattr(graph_routes.Neo4jClient, "query", _empty, raising=True)
+    r = admin_client.get("/v1/graph/schema")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["node_labels"] == []
+    assert body["relationship_types"] == []
+
+
 def test_cypher_neo4j_unavailable_returns_503(
     admin_client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
