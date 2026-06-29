@@ -71,8 +71,16 @@ class CohereProvider(BaseProvider):
                 t = getattr(item, "text", None)
                 if t:
                     text_parts.append(t)
-        except Exception:
-            pass
+        except Exception as exc:
+            # Don't swallow a malformed/unexpected response shape into an empty
+            # success — that would record_success() + cache an empty answer and
+            # poison later identical prompts. Surface it as transient so the
+            # cascade fails over to the next provider.
+            raise ProviderError(
+                f"Cohere response parse error: {type(exc).__name__}",
+                provider=self.name,
+                transient=True,
+            ) from exc
         text = "".join(text_parts)
 
         try:
