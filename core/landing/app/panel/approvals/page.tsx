@@ -63,6 +63,9 @@ export default function ApprovalCenterPage() {
   const [outbox, setOutbox] = useState<Outbox | null>(null);
   const [result, setResult] = useState<{ status: string; reason: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  // Id whose decision is in flight — disables that row's buttons so a
+  // double-click can't fire the (often irreversible, outbound) action twice.
+  const [pendingId, setPendingId] = useState<number | null>(null);
 
   const load = useCallback(() => {
     fetch("/v1/approvals?status=pending", { credentials: "include", cache: "no-store" })
@@ -75,15 +78,34 @@ export default function ApprovalCenterPage() {
   useEffect(load, [load]);
 
   async function decide(id: number, decision: "approve" | "reject" | "edit") {
-    const r = await fetch(`/v1/approvals/${id}/decide`, {
-      method: "POST", credentials: "include",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ decision }),
-    });
-    const j = await r.json().catch(() => null);
-    if (j?.action) setResult({ status: j.action.status, reason: j.action.reason });
-    else if (decision === "reject") setResult({ status: "rejected", reason: "aksiyon tetiklenmedi" });
-    load();
+    if (pendingId !== null) return; // a decision is already in flight
+    setPendingId(id);
+    setErr(null);
+    try {
+      const r = await fetch(`/v1/approvals/${id}/decide`, {
+        method: "POST", credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ decision }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json().catch(() => null);
+      if (j?.action) setResult({ status: j.action.status, reason: j.action.reason });
+      else if (decision === "reject") setResult({ status: "rejected", reason: "aksiyon tetiklenmedi" });
+      load();
+    } catch (e) {
+      setErr(`Karar gönderilemedi: ${String(e)}`);
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  // Approving fires the (often outbound: email/WhatsApp/CRM) action. Confirm
+  // first so a stray click on a dense queue row can't silently send.
+  function confirmApprove(it: Item) {
+    const where = it.channel ? ` ${it.channel} ile gönderilecek` : "";
+    if (window.confirm(`"${it.action}" onaylanacak${where}. Emin misiniz?`)) {
+      decide(it.id, "approve");
+    }
   }
 
   const detailed = (d?.items ?? []).filter((i) => i.rationale);
@@ -169,9 +191,9 @@ export default function ApprovalCenterPage() {
                       </div>
                     </div>
                     <div className="flex w-[150px] shrink-0 flex-col gap-2">
-                      <button onClick={() => decide(it.id, "approve")} className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">✓ {it.channel === "email" ? "Onayla & Gönder" : "Onayla"}</button>
-                      <button onClick={() => decide(it.id, "edit")} className="rounded-md border px-3 py-1.5 text-xs">✎ Düzenle</button>
-                      <button onClick={() => decide(it.id, "reject")} className="rounded-md border px-3 py-1.5 text-xs text-rose-300">✕ Reddet</button>
+                      <button onClick={() => decide(it.id, "approve")} disabled={pendingId === it.id} className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">✓ {pendingId === it.id ? "Gönderiliyor…" : it.channel === "email" ? "Onayla & Gönder" : "Onayla"}</button>
+                      <button onClick={() => decide(it.id, "edit")} disabled={pendingId === it.id} className="rounded-md border px-3 py-1.5 text-xs disabled:opacity-50">✎ Düzenle</button>
+                      <button onClick={() => decide(it.id, "reject")} disabled={pendingId === it.id} className="rounded-md border px-3 py-1.5 text-xs text-rose-300 disabled:opacity-50">✕ Reddet</button>
                       {it.risk === "high" && <div className="text-center text-[10px] text-muted-foreground">⏱ 4s sonra escalate</div>}
                     </div>
                   </div>
@@ -199,7 +221,7 @@ export default function ApprovalCenterPage() {
                         <td className="py-2.5 pr-3"><span className={`rounded-full border px-2 py-0.5 text-[10px] ${RISK[it.risk] ?? ""}`}>{it.risk}</span></td>
                         <td className="py-2.5 pr-3 text-muted-foreground">{it.consent_status || "—"}</td>
                         <td className="py-2.5 pr-3"><span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">{it.policy_result}</span></td>
-                        <td className="py-2.5"><button onClick={() => decide(it.id, "approve")} className="rounded-md border px-3 py-1 text-[11px]">İncele</button></td>
+                        <td className="py-2.5"><button onClick={() => confirmApprove(it)} disabled={pendingId === it.id} className="rounded-md border px-3 py-1 text-[11px] disabled:opacity-50">{pendingId === it.id ? "…" : "Onayla"}</button></td>
                       </tr>
                     ))}
                   </tbody>
