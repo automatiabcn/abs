@@ -62,3 +62,55 @@ def test_cloudflare_malformed_json_raises_transient_provider_error(monkeypatch) 
     with pytest.raises(ProviderError) as ei:
         asyncio.run(provider.call("merhaba"))
     assert ei.value.transient is True
+
+
+@respx.mock
+def test_ollama_malformed_json_raises_transient_provider_error(monkeypatch) -> None:
+    """Same class as gemini/cloudflare: ollama called r.json() unguarded, so a
+    2xx with a malformed body crashed the cascade instead of failing over."""
+    from app.providers.ollama import OllamaProvider
+
+    monkeypatch.setattr(
+        "app.providers.ollama.settings.ollama_url",
+        "http://ollama.local:11434",
+        raising=False,
+    )
+    respx.post("http://ollama.local:11434/api/chat").mock(
+        return_value=httpx.Response(200, content=b"<<<not json>>>")
+    )
+
+    with pytest.raises(ProviderError) as ei:
+        asyncio.run(OllamaProvider().call("merhaba"))
+    assert ei.value.transient is True
+
+
+def test_cohere_malformed_response_raises_transient_not_empty(monkeypatch) -> None:
+    """The cohere adapter swallowed a bad response shape into an empty success,
+    which the cascade would record_success() + cache. A malformed response
+    (here resp.message is None) must raise ProviderError(transient=True) so the
+    cascade fails over instead of caching an empty answer."""
+    from app.providers.cohere.adapter import CohereProvider
+
+    monkeypatch.setattr(
+        "app.providers.cohere.adapter.settings.cohere_api_key",
+        "co-test",
+        raising=False,
+    )
+
+    class _FakeResp:
+        message = None  # `resp.message.content` → AttributeError
+
+    class _FakeClient:
+        def __init__(self, *a, **k) -> None:  # noqa: D401
+            pass
+
+        async def chat(self, **kwargs):
+            return _FakeResp()
+
+    import cohere
+
+    monkeypatch.setattr(cohere, "AsyncClientV2", _FakeClient, raising=False)
+
+    with pytest.raises(ProviderError) as ei:
+        asyncio.run(CohereProvider().call("merhaba"))
+    assert ei.value.transient is True
