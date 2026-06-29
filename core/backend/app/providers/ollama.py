@@ -68,7 +68,16 @@ class OllamaProvider(BaseProvider):
                 transient=(r.status_code >= 500),
             )
 
-        data = r.json()
+        try:
+            data = r.json()
+        except ValueError as exc:
+            # A 2xx with a malformed/empty body is transient infra noise — a
+            # ValueError here is neither a ProviderError nor a recognised
+            # transient infra exception, so it would crash the cascade with a
+            # 500 instead of failing over to the next provider.
+            raise ProviderError(
+                "Ollama JSON parse error", provider=self.name, transient=True
+            ) from exc
         msg = data.get("message") or {}
         text = msg.get("content", "")
         return ProviderResponse(
