@@ -162,9 +162,10 @@ async def health(
 async def schema(
     auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
 ) -> Dict[str, Any]:
-    """Return live schema scoped to the caller's tenant. Falls back to the
-    seeded label/relationship hints if Neo4j is empty so the UI never
-    renders a blank sidebar."""
+    """Return live schema scoped to the caller's tenant. Reflects the real
+    graph — an empty tenant returns empty label/relationship lists (the UI
+    renders an honest "no nodes/relationships yet" hint) rather than seeded
+    placeholder labels that would imply data exists when it doesn't."""
     tenant = _resolve_tenant(auth)
     client = Neo4jClient()
     rows = await _safe_query(
@@ -179,21 +180,14 @@ async def schema(
             for row in rows
             for label in (row.get("labels") or [])
         }
-    ) or ["Person", "Org", "Project", "Ticket"]
-    # Read relationship types via a real lookup; fall back to the seed types
-    # so the UI sidebar still shows something on a fresh boot.
+    )
     rel_types_row = await _safe_query(
         client,
         "MATCH ()-[r]->() WHERE r.tenant_id = $tenant_id "
         "RETURN DISTINCT type(r) AS t",
         {"tenant_id": tenant},
     )
-    rel_types = sorted({str(r.get("t")) for r in rel_types_row if r.get("t")}) or [
-        "WORKS_AT",
-        "OWNS",
-        "MANAGES",
-        "ASSIGNED_TO",
-    ]
+    rel_types = sorted({str(r.get("t")) for r in rel_types_row if r.get("t")})
     return {
         "node_labels": node_labels,
         "relationship_types": rel_types,
