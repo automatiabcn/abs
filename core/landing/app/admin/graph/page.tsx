@@ -36,6 +36,9 @@ interface SchemaResponse {
   node_labels?: string[];
   relationship_types?: string[];
   property_keys?: string[];
+  // Set when the schema could not be loaded (Neo4j down / non-200). Lets the
+  // sidebar show an honest error instead of fabricated placeholder labels.
+  _error?: boolean;
 }
 
 interface CypherResponse {
@@ -62,12 +65,16 @@ const SAMPLE_QUERIES: { label: string; cypher: string }[] = [
 ];
 
 async function fetchSchema(): Promise<SchemaResponse> {
-  const res = await fetch("/v1/graph/schema", {
-    credentials: "include",
-    cache: "no-store",
-  });
-  if (!res.ok) return {};
-  return res.json();
+  try {
+    const res = await fetch("/v1/graph/schema", {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) return { _error: true };
+    return res.json();
+  } catch {
+    return { _error: true };
+  }
 }
 
 async function runCypher(cypher: string): Promise<CypherResponse> {
@@ -91,7 +98,9 @@ async function runCypher(cypher: string): Promise<CypherResponse> {
   }
 }
 
-async function nlToCypher(nl: string): Promise<string> {
+async function nlToCypher(
+  nl: string,
+): Promise<{ cypher?: string; error?: string }> {
   try {
     const res = await fetch("/v1/graph/nl-query", {
       method: "POST",
@@ -100,13 +109,15 @@ async function nlToCypher(nl: string): Promise<string> {
       body: JSON.stringify({ question: nl }),
     });
     if (!res.ok) {
-      // Mock-friendly fallback when the live cascade isn't available.
-      return `// [MOCK] '${nl}' için sentezlenen Cypher (Phase K canlı cascade ile değiştirilecek)\nMATCH (n) WHERE toLower(toString(n)) CONTAINS toLower('${nl.split(" ").slice(0, 3).join(" ")}') RETURN n LIMIT 10`;
+      const text = await res.text();
+      return { error: text.slice(0, 300) || `HTTP ${res.status}` };
     }
     const data = await res.json();
-    return data.cypher ?? "";
-  } catch {
-    return `// [hata] NL→Cypher çağrısı başarısız\n// Backend Phase K'da settings tenant token ile aktiflenecek`;
+    return { cypher: data.cypher ?? "" };
+  } catch (exc) {
+    return {
+      error: exc instanceof Error ? exc.message : "NL→Cypher çağrısı başarısız",
+    };
   }
 }
 
@@ -117,6 +128,7 @@ export default function GraphPage() {
   const [running, setRunning] = useState(false);
   const [nl, setNl] = useState("");
   const [synthesising, setSynthesising] = useState(false);
+  const [nlError, setNlError] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchSchema().then(setSchema);
@@ -132,8 +144,15 @@ export default function GraphPage() {
   async function handleNl() {
     if (!nl.trim()) return;
     setSynthesising(true);
-    const generated = await nlToCypher(nl);
-    setCypher(generated);
+    setNlError(null);
+    const r = await nlToCypher(nl);
+    if (r.error) {
+      // Don't inject a fabricated/mock Cypher into the editor — surface the
+      // failure so the operator knows the synthesis didn't run.
+      setNlError(r.error);
+    } else if (r.cypher) {
+      setCypher(r.cypher);
+    }
     setSynthesising(false);
   }
 
@@ -176,6 +195,13 @@ export default function GraphPage() {
             <CardContent>
               {schema === null ? (
                 <Skeleton className="h-24 w-full" />
+              ) : schema._error ? (
+                <p
+                  data-test="graph-schema-error"
+                  className="text-xs text-muted-foreground"
+                >
+                  Şema yüklenemedi — Neo4j erişilemiyor.
+                </p>
               ) : (
                 <div className="space-y-3 text-xs">
                   <div>
@@ -183,12 +209,14 @@ export default function GraphPage() {
                       Node etiketleri
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {(schema.node_labels ?? ["Person", "Org", "Project", "Ticket"]).map(
-                        (l) => (
+                      {(schema.node_labels ?? []).length === 0 ? (
+                        <span className="text-muted-foreground">Henüz node yok</span>
+                      ) : (
+                        (schema.node_labels ?? []).map((l) => (
                           <Badge key={l} variant="outline" className="font-mono">
                             {l}
                           </Badge>
-                        ),
+                        ))
                       )}
                     </div>
                   </div>
@@ -197,8 +225,10 @@ export default function GraphPage() {
                       İlişki tipleri
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {(schema.relationship_types ?? ["WORKS_AT", "OWNS", "MANAGES", "ASSIGNED_TO"]).map(
-                        (r) => (
+                      {(schema.relationship_types ?? []).length === 0 ? (
+                        <span className="text-muted-foreground">Henüz ilişki yok</span>
+                      ) : (
+                        (schema.relationship_types ?? []).map((r) => (
                           <Badge
                             key={r}
                             variant="outline"
@@ -206,7 +236,7 @@ export default function GraphPage() {
                           >
                             -[:{r}]-
                           </Badge>
-                        ),
+                        ))
                       )}
                     </div>
                   </div>
@@ -302,6 +332,14 @@ export default function GraphPage() {
                 <Upload className="mr-2 h-3 w-3" />
                 {synthesising ? "Sentezleniyor…" : "Cypher üret"}
               </Button>
+              {nlError && (
+                <p
+                  data-test="graph-nl-error"
+                  className="text-xs text-rose-400"
+                >
+                  Cypher üretilemedi: {nlError}
+                </p>
+              )}
             </CardContent>
           </Card>
 
