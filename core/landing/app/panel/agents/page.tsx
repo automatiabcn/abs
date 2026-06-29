@@ -84,7 +84,7 @@ export default function AgentRegistryPage() {
           <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Stat label="Kayıtlı Agent" value={String(data.total)} hint="5 kategori · 120 MCP tool" />
             <Stat label="Onay-Kapılı" value={String(data.approval_gated)} hint="orta+ risk → Approval" />
-            <Stat label="Structured Output" value="100%" hint="evidence_id + confidence" />
+            <Stat label="Structured Output" value="Zorunlu" hint="şema ile zorunlu · evidence_id + confidence" />
             <Stat label="Kategori" value={String(data.categories.length)} hint="discovery · intel · engage · ops" />
           </div>
 
