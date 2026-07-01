@@ -237,3 +237,17 @@ async def recent_audit(
         "cursor": next_cursor,
         "entries": page,
     }
+
+
+@router.get("/verify-chain")
+async def verify_audit_chain(_admin: dict = Depends(admin_required)) -> dict:
+    """Recompute the tamper-evident HMAC chain over the vault audit log and
+    report integrity. Backs the panel's "Verify chain" control, which used to
+    be a hardcoded fake (a 400ms timer that always reported OK). Returns the
+    real result so a tampered chain actually surfaces as broken.
+
+    {ok, total_entries, tampered_entry_id, elapsed_ms}
+    """
+    from app.vault.audit_chain import verify_chain
+
+    return verify_chain()
