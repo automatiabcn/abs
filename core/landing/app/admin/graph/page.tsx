@@ -106,7 +106,9 @@ async function nlToCypher(
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: nl }),
+      // Backend NLQueryRequest requires `intent` (not `question`); sending the
+      // wrong key returned 422 on every call and the feature never worked.
+      body: JSON.stringify({ intent: nl }),
     });
     if (!res.ok) {
       const text = await res.text();

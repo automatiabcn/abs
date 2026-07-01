@@ -132,7 +132,10 @@ export default function AdminDashboardPage() {
   };
   const vault = (data?.vault ?? {}) as {
     total_entries?: number;
-    audit_chain_integrity?: boolean;
+    // Backend (vault/audit_chain.py) emits a STATUS string "ok" | "tampered",
+    // not a boolean — typing it as bool made the `=== false` tamper check below
+    // dead code, so the warning never surfaced on a genuinely tampered chain.
+    audit_chain_integrity?: "ok" | "tampered";
   };
 
   const betaCount = (beta.pending ?? 0) + (beta.approved ?? 0);
@@ -220,7 +223,7 @@ export default function AdminDashboardPage() {
               title="Vault audit"
               value={vault.total_entries ?? 0}
               description={
-                vault.audit_chain_integrity === false
+                vault.audit_chain_integrity === "tampered"
                   ? "⚠ Zincir bütünlüğü bozuk"
                   : "Audit zinciri kayıt sayısı"
               }
