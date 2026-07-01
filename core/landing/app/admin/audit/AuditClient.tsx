@@ -54,7 +54,10 @@ interface AuditClientProps {
 export default function AuditClient({ initialEntries }: AuditClientProps) {
   const [actor, setActor] = useState("");
   const [action, setAction] = useState("");
-  const [verifyState, setVerifyState] = useState<"idle" | "ok" | "broken">("idle");
+  const [verifyState, setVerifyState] = useState<
+    "idle" | "loading" | "ok" | "broken" | "error"
+  >("idle");
+  const [verifyDetail, setVerifyDetail] = useState<string>("");
 
   const audit = useQuery<AuditEntry[]>({
     queryKey: ["admin", "audit"],
@@ -104,9 +107,28 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
     URL.revokeObjectURL(url);
   }
 
-  function verifyChain() {
-    setVerifyState("idle");
-    window.setTimeout(() => setVerifyState("ok"), 400);
+  async function verifyChain() {
+    setVerifyState("loading");
+    setVerifyDetail("");
+    try {
+      const res = await fetch("/v1/admin/audit/verify-chain", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`verify_${res.status}`);
+      const r = await res.json();
+      if (r.ok) {
+        setVerifyState("ok");
+        setVerifyDetail(`${r.total_entries ?? 0} kayıt`);
+      } else {
+        setVerifyState("broken");
+        setVerifyDetail(
+          r.tampered_entry_id != null ? `#${r.tampered_entry_id} bozuk` : "",
+        );
+      }
+    } catch {
+      setVerifyState("error");
+    }
   }
 
   return (
@@ -135,17 +157,28 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
             variant="outline"
             size="sm"
             onClick={verifyChain}
+            disabled={verifyState === "loading"}
             data-test="audit-verify-chain"
           >
-            {verifyState === "ok" ? (
+            {verifyState === "loading" ? (
+              <>
+                <ShieldCheck className="mr-2 h-3.5 w-3.5 animate-pulse" />
+                Doğrulanıyor…
+              </>
+            ) : verifyState === "ok" ? (
               <>
                 <ShieldCheck className="mr-2 h-3.5 w-3.5 text-emerald-400" />
-                Zincir doğrulandı
+                Zincir doğrulandı{verifyDetail ? ` · ${verifyDetail}` : ""}
               </>
             ) : verifyState === "broken" ? (
               <>
                 <ShieldX className="mr-2 h-3.5 w-3.5 text-rose-400" />
-                Zincir kırık
+                Zincir kırık{verifyDetail ? ` · ${verifyDetail}` : ""}
+              </>
+            ) : verifyState === "error" ? (
+              <>
+                <ShieldX className="mr-2 h-3.5 w-3.5 text-amber-400" />
+                Doğrulanamadı
               </>
             ) : (
               <>

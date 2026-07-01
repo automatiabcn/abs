@@ -32,7 +32,7 @@ from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import pytest
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.config import settings
 from app.db.models import (
@@ -302,4 +302,37 @@ def test_q12_audit_customer_resource_and_webhook_detail_passthrough(
 def test_q12_r69_unauthenticated_returns_401(client):
     """No Authorization header → 401, never 5xx, never silent 200."""
     r = client.get("/v1/admin/audit/recent")
+    assert r.status_code == 401
+
+
+def test_verify_chain_endpoint_reports_real_integrity(client, monkeypatch):
+    """The panel's "Verify chain" button used to be a hardcoded fake (a 400ms
+    timer that always said OK). It now calls this endpoint, which recomputes
+    the real HMAC chain. An intact chain must report ok=True with a real count."""
+    from app.vault.audit_chain import append_entry
+
+    # Sibling tests seed VaultAuditEntry rows with placeholder hmacs (not a real
+    # chain); clear them so we verify a clean, properly-chained log.
+    with Session(get_engine()) as db:
+        for r in db.scalars(select(VaultAuditEntry)).all():
+            db.delete(r)
+        db.commit()
+    append_entry(action="r69_vc_one", target_key="vc.key.1")
+    append_entry(action="r69_vc_two", target_key="vc.key.2")
+    token = _login(client, monkeypatch)
+    r = client.get(
+        "/v1/admin/audit/verify-chain",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["ok"] is True
+    assert body["total_entries"] >= 2
+    assert body["tampered_entry_id"] is None
+    assert "elapsed_ms" in body
+
+
+def test_verify_chain_endpoint_requires_admin(client):
+    """Integrity verification is admin-only — no token → 401, not a silent 200."""
+    r = client.get("/v1/admin/audit/verify-chain")
     assert r.status_code == 401
