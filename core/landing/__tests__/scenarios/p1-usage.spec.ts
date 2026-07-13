@@ -28,11 +28,19 @@ test("M1 — a message sent in chat turns up in the usage figures", async ({
   expect(before.status(), await before.text()).toBe(200);
   const callsBefore: number = (await before.json()).total_calls_24h ?? 0;
 
-  // One real question, answered by a real provider.
+  // One real question, answered by a real provider — and a question nobody has
+  // asked before, because the cascade caches. A fixed prompt makes this test pass
+  // exactly once: on the second run the answer comes from cache, no provider is
+  // called, and nothing is metered — which is correct behaviour (a cache hit must
+  // not be billed twice) and a test that fails for a reason that has nothing to
+  // do with what it is checking.
+  const nonce = Date.now();
   await page.goto("/admin/chat");
   const input = page.locator('[data-test="message-input"] textarea');
   await input.waitFor({ timeout: 20_000 });
-  await input.fill("In one word: what colour is a clear sky at noon?");
+  await input.fill(
+    `In one word, what colour is a clear sky at noon? (question id ${nonce})`,
+  );
   await input.press("Enter");
   const reply = await waitForStreamedReply(page);
   expect(reply.length).toBeGreaterThan(0);
