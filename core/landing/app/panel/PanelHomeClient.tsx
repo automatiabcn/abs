@@ -13,9 +13,12 @@
 // swap in a moment later.
 "use client";
 
+import { useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+
+import type { CosmosWorld } from "@/components/CosmosGraph/buildGraph";
 import {
   Activity,
   BarChart3,
@@ -127,6 +130,43 @@ export default function PanelHomeClient({
     date: p.ts,
     Calls: p.count,
   }));
+
+  // The system map. Every node in it used to be hardcoded — seven providers,
+  // four workflows, three RAG collections — on a server that might have one
+  // provider and no documents, under a caption calling it live. It is built from
+  // what the server reports now, and an empty server draws an empty map.
+  const workflows = useQuery({
+    queryKey: ["panel", "workflow-definitions"],
+    queryFn: () =>
+      fetchJson<{ workflows?: { id?: string; name?: string }[] }>(
+        "/v1/workflows/definitions",
+      ),
+    retry: false,
+  });
+  const documents = useQuery({
+    queryKey: ["panel", "rag-documents"],
+    queryFn: () =>
+      fetchJson<{ documents?: { id?: string; filename?: string }[] }>(
+        "/v1/rag/documents",
+      ),
+    retry: false,
+  });
+
+  const world = useMemo<CosmosWorld>(
+    () => ({
+      providers: Object.keys(quota.data?.free_providers ?? {}),
+      toolCategories: Object.entries(tools.data?.category_counts ?? {}).map(
+        ([name, count]) => ({ name, count }),
+      ),
+      workflows: (workflows.data?.workflows ?? [])
+        .map((w) => w.name || w.id || "")
+        .filter(Boolean),
+      documents: (documents.data?.documents ?? [])
+        .map((d) => d.filename || d.id || "")
+        .filter(Boolean),
+    }),
+    [quota.data, tools.data, workflows.data, documents.data],
+  );
 
   return (
     <main
@@ -268,12 +308,12 @@ export default function PanelHomeClient({
               How it all connects
             </CardTitle>
             <CardDescription>
-              Providers, tools, workflows and the documents they draw on — live,
-              and moving as the server works.
+              The providers, tools, workflows and documents on this server — as it
+              reports them. Nothing here is an example.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <NeuralGraph height={460} />
+            <NeuralGraph height={460} world={world} />
           </CardContent>
         </Card>
       </section>

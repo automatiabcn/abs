@@ -54,8 +54,14 @@ function formatPct(v: number | null): string {
   return `${(v * 100).toFixed(1)} %`;
 }
 
-export default function UsageClient({ initial }: { initial: UsagePayload }) {
-  const [data, setData] = useState<UsagePayload>(initial);
+export default function UsageClient({
+  initial,
+  loadError = null,
+}: {
+  initial: UsagePayload | null;
+  loadError?: string | null;
+}) {
+  const [data, setData] = useState<UsagePayload | null>(initial);
 
   useEffect(() => {
     const t = setInterval(async () => {
@@ -73,6 +79,26 @@ export default function UsageClient({ initial }: { initial: UsagePayload }) {
     }, 30_000);
     return () => clearInterval(t);
   }, []);
+
+  // No numbers is not the same as zero numbers. This page is where a customer
+  // checks the product's cost and privacy claim, so a request that failed says
+  // it failed — it does not answer the question with a shrug shaped like proof.
+  if (!data) {
+    return (
+      <main className="mx-auto w-full max-w-6xl px-6 py-10" data-test="admin-usage-page">
+        <header className="mb-8">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Usage</h1>
+        </header>
+        <div
+          data-test="usage-load-error"
+          className="rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400"
+        >
+          We could not load your usage. {loadError ?? ""} Nothing here is an estimate —
+          reload once the server is reachable.
+        </div>
+      </main>
+    );
+  }
 
   const claudePctLabel = formatPct(data.claude.used_pct);
   const freePctLabel = formatPct(data.free_path.pct_24h);

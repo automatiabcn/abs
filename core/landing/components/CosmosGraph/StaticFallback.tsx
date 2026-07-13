@@ -16,16 +16,18 @@
 "use client";
 
 import { PALETTE } from "./colors";
-import { PROVIDER_NODES } from "./buildGraph";
 
 interface Props {
   height?: number;
   highlightProvider?: string;
+  /** The providers this server actually has. Was a hardcoded list of seven. */
+  providers?: string[];
 }
 
 export function CosmosStaticFallback({
   height = 420,
   highlightProvider,
+  providers = [],
 }: Props) {
   const cols = 4;
   const cellW = 160;
@@ -61,15 +63,14 @@ export function CosmosStaticFallback({
             />
           ))}
         </g>
-        {PROVIDER_NODES.map((n, i) => {
+        {providers.map((name, i) => {
           const col = i % cols;
           const row = Math.floor(i / cols);
           const x = left + col * cellW + 20;
           const y = top + row * cellH + 30;
-          const isActive =
-            !!highlightProvider && n.id === `p:${highlightProvider}`;
+          const isActive = !!highlightProvider && name === highlightProvider;
           return (
-            <g key={n.id}>
+            <g key={name}>
               <rect
                 x={x}
                 y={y}
@@ -85,8 +86,8 @@ export function CosmosStaticFallback({
                 strokeWidth={isActive ? 2 : 1}
                 role="button"
                 tabIndex={0}
-                aria-label={`${n.label} provider, status: ${
-                  isActive ? "active" : "healthy"
+                aria-label={`${name} provider, status: ${
+                  isActive ? "active" : "configured"
                 }`}
               />
               <text
@@ -98,7 +99,7 @@ export function CosmosStaticFallback({
                 fontFamily="ui-sans-serif, system-ui"
                 pointerEvents="none"
               >
-                {n.label}
+                {name}
               </text>
             </g>
           );

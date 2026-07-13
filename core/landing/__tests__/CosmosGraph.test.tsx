@@ -1,81 +1,88 @@
-// vitest contract for the Cosmos 3D
-// system map (mockup_2 — force-directed graph). The 3D ForceGraph3D
-// renderer is dynamic-imported with `ssr: false`, so the jsdom path
-// only exercises the static / reduced-motion fallback. We assert:
+// The system map draws this server, or it draws nothing.
 //
-//   1. brand palette contract (no rainbow per provider)
-//   2. provider list rendering (7 providers, lower-case ids)
-//   3. ARIA wrapper + reduced-motion fallback path
-//   4. `forceStatic` prop bypasses the WebGL path
+// It used to draw a fixed constellation: seven providers, four workflows, three
+// RAG collections — on every install, with no fetch behind any of it, captioned
+// "live, and moving as the server works". This test agreed with it: `it("ships
+// all seven providers")` asserted the fabrication was intact.
+//
+// The graph is built from a `CosmosWorld` now — what the server reported — so the
+// tests check that, and that an empty world draws an empty map.
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { CosmosGraph } from "@/components/CosmosGraph";
 import {
-  PROVIDER_NODES,
+  EMPTY_WORLD,
   buildCosmosGraph,
+  type CosmosWorld,
 } from "@/components/CosmosGraph/buildGraph";
 import { PALETTE, colourFor } from "@/components/CosmosGraph/colors";
 
-// Mock the heavy renderer + skeleton so jsdom doesn't try to instantiate WebGL.
-vi.mock("react-force-graph-3d", () => ({
-  default: () => null,
-}));
-vi.mock("@/components/ui/skeleton", () => ({
-  Skeleton: () => null,
-}));
+vi.mock("react-force-graph-3d", () => ({ default: () => null }));
+vi.mock("@/components/ui/skeleton", () => ({ Skeleton: () => null }));
+
+const WORLD: CosmosWorld = {
+  providers: ["groq", "ollama"],
+  toolCategories: [
+    { name: "rag", count: 5 },
+    { name: "workflow", count: 3 },
+  ],
+  workflows: ["lead-triage"],
+  documents: ["handbook.pdf"],
+};
 
 describe("CosmosGraph — palette contract", () => {
   it("uses the single brand palette (no rainbow per provider)", () => {
-    const distinctIdleColours = new Set(
-      PROVIDER_NODES.map(() => colourFor("idle")),
-    );
-    expect(distinctIdleColours.size).toBe(1);
-    expect(distinctIdleColours.has(PALETTE.primary)).toBe(true);
     expect(colourFor("active")).toBe(PALETTE.highlight);
     expect(colourFor("idle")).toBe(PALETTE.primary);
   });
 });
 
-describe("CosmosGraph — graph data", () => {
-  it("ships all seven providers", () => {
-    const ids = new Set(PROVIDER_NODES.map((n) => n.id));
-    [
-      "p:groq",
-      "p:cerebras",
-      "p:cloudflare",
-      "p:gemini",
-      "p:cohere",
-      "p:anthropic",
-      "p:ollama",
-    ].forEach((expected) => expect(ids.has(expected)).toBe(true));
+describe("CosmosGraph — the map is the server", () => {
+  it("draws the providers the server has, and no others", () => {
+    const { nodes } = buildCosmosGraph(WORLD);
+    const providers = nodes.filter((n) => n.group === "provider").map((n) => n.id);
+    expect(providers.sort()).toEqual(["p:groq", "p:ollama"]);
+    // The seven that used to appear on every install, whatever was configured.
+    expect(providers).not.toContain("p:anthropic");
+    expect(providers).not.toContain("p:cerebras");
+  });
+
+  it("draws the workflows and documents the server has", () => {
+    const { nodes } = buildCosmosGraph(WORLD);
+    const labels = nodes.map((n) => n.label);
+    expect(labels).toContain("lead-triage");
+    expect(labels).toContain("handbook.pdf");
+    // The invented ones.
+    expect(labels).not.toContain("onboarding");
+    expect(labels).not.toContain("guvenlik");
+  });
+
+  it("draws nothing for a server with nothing on it", () => {
+    const { nodes, links } = buildCosmosGraph(EMPTY_WORLD);
+    expect(nodes).toHaveLength(0);
+    expect(links).toHaveLength(0);
   });
 
   it("marks the highlighted provider as `active`", () => {
-    const { nodes } = buildCosmosGraph("groq");
-    const groq = nodes.find((n) => n.id === "p:groq");
-    const others = nodes.filter(
-      (n) => n.group === "provider" && n.id !== "p:groq",
-    );
-    expect(groq?.state).toBe("active");
-    others.forEach((n) => expect(n.state).toBe("idle"));
+    const { nodes } = buildCosmosGraph(WORLD, "groq");
+    expect(nodes.find((n) => n.id === "p:groq")?.state).toBe("active");
+    expect(nodes.find((n) => n.id === "p:ollama")?.state).toBe("idle");
   });
 });
 
-describe("CosmosGraph — reduced-motion fallback", () => {
-  it("renders the iso-grid fallback when `forceStatic` is true", () => {
-    render(<CosmosGraph forceStatic highlightProvider="groq" />);
-    const fallback = screen.getByTestId("cosmos-fallback");
-    expect(fallback).toBeInTheDocument();
-    expect(
-      screen.getByLabelText(/ABS provider grid/i),
-    ).toBeInTheDocument();
+describe("CosmosGraph — what it renders", () => {
+  it("says so, rather than drawing a system, when there is nothing to draw", () => {
+    render(<CosmosGraph world={EMPTY_WORLD} />);
+    expect(document.querySelector('[data-test="cosmos-empty"]')).not.toBeNull();
+    expect(document.querySelector('[data-test="cosmos-fallback"]')).toBeNull();
   });
 
-  it("each provider in the fallback has an ARIA button label", () => {
-    render(<CosmosGraph forceStatic />);
-    const groqLabel = screen.getByLabelText(/Groq provider, status:/i);
-    expect(groqLabel).toBeInTheDocument();
+  it("renders the iso-grid fallback for reduced motion, with the real providers", () => {
+    render(<CosmosGraph world={WORLD} forceStatic highlightProvider="groq" />);
+    expect(screen.getByTestId("cosmos-fallback")).toBeInTheDocument();
+    expect(screen.getByLabelText(/groq provider, status: active/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/ollama provider, status: configured/i)).toBeInTheDocument();
   });
 });
