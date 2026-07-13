@@ -12,7 +12,9 @@
 import type { ShellDomain } from "@/components/shell/domains";
 import type { ShellStatus } from "@/components/shell/useShellStatus";
 
-export function dotFor(domain: ShellDomain, status: ShellStatus): "bad" | null {
+export type DotTone = "bad" | "warn";
+
+export function dotFor(domain: ShellDomain, status: ShellStatus): DotTone | null {
   if (domain.status === "approvals") {
     return status.pending !== null && status.pending > 0 ? "bad" : null;
   }
@@ -20,11 +22,22 @@ export function dotFor(domain: ShellDomain, status: ShellStatus): "bad" | null {
     if (status.providersUp === null || status.providersTotal === null) return null;
     return status.providersUp < status.providersTotal ? "bad" : null;
   }
+  if (domain.status === "quota") {
+    if (status.quotaWorstPct === null) return null;
+    if (status.quotaWorstPct >= 100) return "bad";
+    return status.quotaWorstPct >= 80 ? "warn" : null;
+  }
   return null;
 }
 
-export function dotDomains(domains: ShellDomain[], status: ShellStatus): Set<string> {
-  return new Set(
-    domains.filter((domain) => dotFor(domain, status) !== null).map((d) => d.id),
-  );
+export function dotDomains(
+  domains: ShellDomain[],
+  status: ShellStatus,
+): Map<string, DotTone> {
+  const map = new Map<string, DotTone>();
+  for (const domain of domains) {
+    const tone = dotFor(domain, status);
+    if (tone) map.set(domain.id, tone);
+  }
+  return map;
 }

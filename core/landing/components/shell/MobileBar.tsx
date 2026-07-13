@@ -20,7 +20,7 @@ import { usePathname } from "next/navigation";
 import { MoreHorizontal, Search } from "lucide-react";
 
 import { DOMAINS, activeDomain } from "@/components/shell/domains";
-import { dotDomains } from "@/components/shell/status-dots";
+import { dotDomains, type DotTone } from "@/components/shell/status-dots";
 import { openCommandPalette } from "@/components/shell/TopStrip";
 import type { ShellStatus } from "@/components/shell/useShellStatus";
 import { cn } from "@/lib/utils";
@@ -79,7 +79,13 @@ export function MobileBar({ status }: { status: ShellStatus }) {
               <Icon className="h-4 w-4 text-subtle" />
               {domain.label}
               {dots.has(domain.id) && (
-                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-destructive" />
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    dots.get(domain.id) === "warn" ? "bg-warning" : "bg-destructive",
+                  )}
+                />
               )}
             </Link>
           );
@@ -96,7 +102,7 @@ export function MobileBar({ status }: { status: ShellStatus }) {
             key={domain.id}
             domain={domain}
             active={active.id === domain.id}
-            dot={dots.has(domain.id)}
+            dot={dots.get(domain.id) ?? null}
           />
         ))}
 
@@ -113,7 +119,7 @@ export function MobileBar({ status }: { status: ShellStatus }) {
         <BarButton
           domain={barDomains[2]}
           active={active.id === barDomains[2].id}
-          dot={dots.has(barDomains[2].id)}
+          dot={dots.get(barDomains[2].id) ?? null}
         />
 
         <button
@@ -142,7 +148,7 @@ function BarButton({
 }: {
   domain: (typeof DOMAINS)[number];
   active: boolean;
-  dot: boolean;
+  dot: DotTone | null;
 }) {
   const Icon = domain.icon;
   return (
@@ -159,7 +165,10 @@ function BarButton({
       {dot && (
         <span
           aria-hidden="true"
-          className="absolute right-1 top-0.5 h-1.5 w-1.5 rounded-full bg-destructive"
+          className={cn(
+            "absolute right-1 top-0.5 h-1.5 w-1.5 rounded-full",
+            dot === "warn" ? "bg-warning" : "bg-destructive",
+          )}
         />
       )}
     </Link>
