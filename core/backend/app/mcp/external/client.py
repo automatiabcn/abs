@@ -70,10 +70,55 @@ def _assert_safe_url(url: str) -> None:
     if not host:
         raise ExternalMcpError("invalid_url: missing host")
 
-    if getattr(settings, "external_mcp_allow_private", False):
-        return  # dev / dogfood — caller has opted into reaching localhost
+    # ALLOW_PRIVATE exists so someone can dogfood against a server on localhost or
+    # their own LAN. It used to `return` here — skipping the check entirely — which
+    # quietly granted a second, very different permission: link-local, and with it
+    # 169.254.169.254, the cloud metadata address that hands out the instance's IAM
+    # credentials to anything that asks. "Let me reach my laptop" and "let me reach
+    # the machine's credentials" are not the same request, and one flag must not
+    # answer both.
+    #
+    # So the flag now relaxes exactly what it is for — private ranges and loopback —
+    # and nothing else. The rest is blocked on every deployment, always.
+    allow_private = bool(getattr(settings, "external_mcp_allow_private", False))
 
-    # Resolve every address the host maps to; a single private hit is fatal.
+    def _reject(addr: str) -> None:
+        raise ExternalMcpError(
+            f"blocked_internal_address: {host} -> {addr} "
+            "(set ABS_EXTERNAL_MCP_ALLOW_PRIVATE=true only on an isolated dev box; "
+            "it does not unblock link-local addresses such as cloud metadata)"
+        )
+
+    # Never reachable, on any deployment, flag or no flag. Nobody dogfoods against
+    # a multicast group or a reserved block; the only thing the flag would buy
+    # here is the metadata endpoint.
+    def _always_forbidden(ip: ipaddress._BaseAddress) -> bool:
+        return bool(
+            ip.is_link_local or ip.is_multicast or ip.is_unspecified or ip.is_reserved
+        )
+
+    if allow_private:
+        # Dogfood mode: reaching localhost and the LAN is the whole point, and the
+        # box may well be offline, so do not resolve — a DNS lookup that fails here
+        # would block a developer for a reason that has nothing to do with safety.
+        #
+        # But a *literal* address still has to pass, because the attack this guard
+        # is for is an admin being talked into typing 169.254.169.254, and that is
+        # not a hostname. (DNS rebinding onto the metadata range is real and is not
+        # caught here — this flag says "isolated dev box", and that is the deal it
+        # is offering.)
+        try:
+            literal = ipaddress.ip_address(host)
+        except ValueError:
+            return
+        if _always_forbidden(literal):
+            _reject(str(literal))
+        return
+
+    # Production: resolve every address the host maps to; a single bad hit is
+    # fatal, and a name that will not resolve is refused rather than dialled. DNS
+    # is part of the attack surface — a hostname the operator trusts can point at
+    # an address they would never type.
     try:
         infos = socket.getaddrinfo(host, parsed.port or 0, proto=socket.IPPROTO_TCP)
     except socket.gaierror as exc:
@@ -85,18 +130,8 @@ def _assert_safe_url(url: str) -> None:
             ip = ipaddress.ip_address(addr)
         except ValueError:
             continue
-        if (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_multicast
-            or ip.is_reserved
-            or ip.is_unspecified
-        ):
-            raise ExternalMcpError(
-                f"blocked_internal_address: {host} -> {addr} "
-                "(set ABS_EXTERNAL_MCP_ALLOW_PRIVATE=true only on an isolated dev box)"
-            )
+        if _always_forbidden(ip) or ip.is_private or ip.is_loopback:
+            _reject(addr)
 
 
 def build_headers(auth_type: str, secret: str, header_name: str = "") -> dict:
@@ -153,7 +188,32 @@ async def _with_session(url: str, transport: str, headers: dict, fn):
     except ExternalMcpError:
         raise
     except Exception as exc:  # connect refused, protocol error, auth 401, …
-        raise ExternalMcpError(f"{type(exc).__name__}: {exc}") from exc
+        raise ExternalMcpError(_describe(exc)) from exc
+
+
+def _describe(exc: BaseException) -> str:
+    """Say what actually went wrong, in words an operator can act on.
+
+    The MCP transports run inside an anyio task group, so almost every real
+    failure — connection refused, a 307 because the URL wants a trailing slash, a
+    401 from a bearer token that expired — arrives wrapped in an ExceptionGroup.
+    Formatting that group gives you:
+
+        ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+
+    which is what the panel used to put on screen next to a red dot, and which
+    tells the person who just pasted their server's URL precisely nothing. The
+    cause they need is one level down, and sometimes two.
+    """
+    seen = 0
+    while seen < 5:
+        inner = getattr(exc, "exceptions", None)  # ExceptionGroup / BaseExceptionGroup
+        if not inner:
+            break
+        exc = inner[0]
+        seen += 1
+    text = str(exc).strip()
+    return f"{type(exc).__name__}: {text}" if text else type(exc).__name__
 
 
 async def discover_tools(
