@@ -26,24 +26,28 @@
  */
 
 :root {
-  /* Ground and surfaces */
-  --abs-canvas-rgb: 246 247 248;
+  /* Ground and surfaces. The neutrals lean a few points toward the brand's
+   * hue — teal-biased graphite, not printer grey. Chosen, not inherited: a
+   * pure mid-grey next to a teal accent reads as two products sharing a
+   * page. The bias is small enough to stay invisible as colour and large
+   * enough that every surface feels like the same material as the mark. */
+  --abs-canvas-rgb: 245 247 247;
   --abs-surface-rgb: 255 255 255;
-  --abs-surface-raised-rgb: 242 244 246;
-  --abs-surface-sunken-rgb: 236 239 242;
+  --abs-surface-raised-rgb: 240 244 244;
+  --abs-surface-sunken-rgb: 233 238 238;
 
   /* Lines */
-  --abs-border-rgb: 223 227 232;
-  --abs-border-soft-rgb: 234 237 240;
-  --abs-border-strong-rgb: 198 204 212;
+  --abs-border-rgb: 219 227 227;
+  --abs-border-soft-rgb: 231 237 237;
+  --abs-border-strong-rgb: 194 204 204;
 
-  /* Text */
-  --abs-fg-rgb: 20 24 29;
-  --abs-fg-muted-rgb: 74 83 94;
-  /* 4.76:1 on the lightest ground it ever sits on (surface-raised). The first
+  /* Text — same teal bias, deeper. */
+  --abs-fg-rgb: 18 24 25;
+  --abs-fg-muted-rgb: 70 83 85;
+  /* ≥4.5:1 on the lightest ground it ever sits on (surface-raised). The first
    * pass used a lighter grey that measured 3.5:1 — comfortable to look at,
    * and below AA for the small labels and captions this token exists to set. */
-  --abs-fg-subtle-rgb: 100 109 121;
+  --abs-fg-subtle-rgb: 96 109 111;
   --abs-fg-inverted-rgb: 255 255 255;
 
   /* Brand — signal teal. Deliberately not the generic AI blue/violet. */
@@ -73,19 +77,19 @@
  * against a dark ground, and the neutrals hold a cool bias so surfaces separate
  * without hairlines doing all the work. */
 :root.dark {
-  --abs-canvas-rgb: 15 18 22;
-  --abs-surface-rgb: 23 27 33;
-  --abs-surface-raised-rgb: 31 36 43;
-  --abs-surface-sunken-rgb: 11 14 17;
+  --abs-canvas-rgb: 13 17 18;
+  --abs-surface-rgb: 20 26 27;
+  --abs-surface-raised-rgb: 28 36 37;
+  --abs-surface-sunken-rgb: 8 12 13;
 
-  --abs-border-rgb: 46 53 62;
-  --abs-border-soft-rgb: 35 41 48;
-  --abs-border-strong-rgb: 63 72 83;
+  --abs-border-rgb: 44 54 55;
+  --abs-border-soft-rgb: 33 41 42;
+  --abs-border-strong-rgb: 61 74 75;
 
-  --abs-fg-rgb: 237 240 243;
-  --abs-fg-muted-rgb: 167 177 188;
-  --abs-fg-subtle-rgb: 138 148 160;
-  --abs-fg-inverted-rgb: 15 18 22;
+  --abs-fg-rgb: 234 240 240;
+  --abs-fg-muted-rgb: 164 178 177;
+  --abs-fg-subtle-rgb: 137 150 149;
+  --abs-fg-inverted-rgb: 13 17 18;
 
   --abs-brand-rgb: 78 205 194;
   --abs-brand-hover-rgb: 111 217 208;
@@ -107,19 +111,19 @@
  * light choice win over the OS preference. */
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --abs-canvas-rgb: 15 18 22;
-    --abs-surface-rgb: 23 27 33;
-    --abs-surface-raised-rgb: 31 36 43;
-    --abs-surface-sunken-rgb: 11 14 17;
+    --abs-canvas-rgb: 13 17 18;
+    --abs-surface-rgb: 20 26 27;
+    --abs-surface-raised-rgb: 28 36 37;
+    --abs-surface-sunken-rgb: 8 12 13;
 
-    --abs-border-rgb: 46 53 62;
-    --abs-border-soft-rgb: 35 41 48;
-    --abs-border-strong-rgb: 63 72 83;
+    --abs-border-rgb: 44 54 55;
+    --abs-border-soft-rgb: 33 41 42;
+    --abs-border-strong-rgb: 61 74 75;
 
-    --abs-fg-rgb: 237 240 243;
-    --abs-fg-muted-rgb: 167 177 188;
-    --abs-fg-subtle-rgb: 138 148 160;
-    --abs-fg-inverted-rgb: 15 18 22;
+    --abs-fg-rgb: 234 240 240;
+    --abs-fg-muted-rgb: 164 178 177;
+    --abs-fg-subtle-rgb: 137 150 149;
+    --abs-fg-inverted-rgb: 13 17 18;
 
     --abs-brand-rgb: 78 205 194;
     --abs-brand-hover-rgb: 111 217 208;
@@ -169,9 +173,9 @@
 
   /* Elevation. Shadows stay near-neutral; a tinted shadow on a light canvas
    * reads as a printing error, not as depth. */
-  --abs-shadow-sm: 0 1px 2px rgb(20 24 29 / 0.06);
-  --abs-shadow-md: 0 1px 2px rgb(20 24 29 / 0.05), 0 4px 12px rgb(20 24 29 / 0.06);
-  --abs-shadow-lg: 0 2px 4px rgb(20 24 29 / 0.05), 0 12px 32px rgb(20 24 29 / 0.10);
+  --abs-shadow-sm: 0 1px 2px rgb(18 24 25 / 0.06);
+  --abs-shadow-md: 0 1px 2px rgb(18 24 25 / 0.05), 0 4px 12px rgb(18 24 25 / 0.06);
+  --abs-shadow-lg: 0 2px 4px rgb(18 24 25 / 0.05), 0 12px 32px rgb(18 24 25 / 0.10);
 
   /* Radius — restrained. Everything-rounded reads as templated. */
   --abs-radius-sm: 3px;

@@ -37,7 +37,7 @@ interface PaletteItem {
   id: string;
   label: string;
   hint?: string;
-  group: "Sayfalar" | "Aksiyonlar" | "Hızlı sohbet";
+  group: "Pages" | "Actions" | "Quick chat";
   icon: typeof LayoutDashboard;
   onSelect: () => void;
 }
@@ -56,37 +56,54 @@ export function CommandPalette() {
         setOpen((o) => !o);
       }
     }
+    // The shell's search affordances (top strip button, mobile bar) open the
+    // palette by event — a synthetic ⌘K keypress would be the hack version.
+    function onOpenEvent() {
+      setOpen(true);
+    }
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    window.addEventListener("abs:palette", onOpenEvent);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("abs:palette", onOpenEvent);
+    };
   }, []);
 
+  // The palette reaches everything the nav does, under the same names — the ones
+  // that say what a thing is for. Someone who searches "cascade" or "RAG" still
+  // lands where they meant to: the old vocabulary is kept as a `hint`, which cmdk
+  // matches on, so the rename costs no muscle memory.
   const items: PaletteItem[] = useMemo(
     () => [
-      // Sayfalar (mirrors PanelSidebar)
-      { id: "go-overview", label: "Genel Bakış", group: "Sayfalar", icon: LayoutDashboard, onSelect: () => { router.push("/panel"); close(); } },
-      { id: "go-chat", label: "Sohbet", group: "Sayfalar", icon: MessageSquare, onSelect: () => { router.push("/panel/chat"); close(); } },
-      { id: "go-workflow", label: "Workflow Builder", group: "Sayfalar", icon: Workflow, onSelect: () => { router.push("/admin/workflow-builder"); close(); } },
-      { id: "go-tools", label: "MCP Tool Browser", group: "Sayfalar", icon: Wrench, onSelect: () => { router.push("/panel/tools"); close(); } },
-      { id: "go-rag", label: "RAG / Bilgi Tabanı", group: "Sayfalar", icon: Database, onSelect: () => { router.push("/admin/rag"); close(); } },
-      { id: "go-pipelines", label: "Quality Pipelines", group: "Sayfalar", icon: Sliders, onSelect: () => { router.push("/admin/pipelines"); close(); } },
-      { id: "go-providers", label: "Provider Cascade", group: "Sayfalar", icon: Layers, onSelect: () => { router.push("/admin/providers"); close(); } },
-      { id: "go-marketplace", label: "Marketplace", group: "Sayfalar", icon: Store, onSelect: () => { router.push("/admin/marketplace"); close(); } },
-      { id: "go-quota", label: "Kota", group: "Sayfalar", icon: BarChart3, onSelect: () => { router.push("/panel/quota"); close(); } },
-      { id: "go-graph", label: "Knowledge Graph", group: "Sayfalar", icon: Brain, onSelect: () => { router.push("/admin/graph"); close(); } },
-      { id: "go-meetings", label: "Toplantılar", group: "Sayfalar", icon: Mic, onSelect: () => { router.push("/panel/meetings"); close(); } },
-      { id: "go-transcription", label: "Transcription", group: "Sayfalar", icon: Boxes, onSelect: () => { router.push("/panel/transcription"); close(); } },
-      { id: "go-settings", label: "Ayarlar", group: "Sayfalar", icon: Settings, onSelect: () => { router.push("/admin/settings"); close(); } },
-      { id: "go-users", label: "Kullanıcılar", group: "Sayfalar", icon: Users, onSelect: () => { router.push("/admin/users"); close(); } },
-      { id: "go-audit", label: "Denetim", group: "Sayfalar", icon: ShieldCheck, onSelect: () => { router.push("/admin/audit"); close(); } },
-      // Aksiyonlar
-      { id: "act-new-chat", label: "Yeni sohbet başlat", hint: "/panel/chat?new=1", group: "Aksiyonlar", icon: MessageSquare, onSelect: () => { router.push("/panel/chat"); close(); } },
-      { id: "act-new-workflow", label: "Yeni iş akışı tasarla", group: "Aksiyonlar", icon: Workflow, onSelect: () => { router.push("/admin/workflow-builder"); close(); } },
-      { id: "act-test-cascade", label: "Cascade test çağrısı", group: "Aksiyonlar", icon: Layers, onSelect: () => { router.push("/admin/providers"); close(); } },
-      { id: "act-invite-user", label: "Kullanıcı davet et", group: "Aksiyonlar", icon: Users, onSelect: () => { router.push("/admin/users"); close(); } },
-      // Hızlı sohbet
-      { id: "ask-rag", label: "Sohbet: /rag …", hint: "RAG bilgi tabanı sorgusu", group: "Hızlı sohbet", icon: Database, onSelect: () => { router.push("/panel/chat"); close(); } },
-      { id: "ask-code", label: "Sohbet: /code …", hint: "Kod üret (qual_code)", group: "Hızlı sohbet", icon: Wrench, onSelect: () => { router.push("/panel/chat"); close(); } },
-      { id: "ask-translate", label: "Sohbet: /translate …", hint: "Çeviri (qual_translate)", group: "Hızlı sohbet", icon: MessageSquare, onSelect: () => { router.push("/panel/chat"); close(); } },
+      // Pages — mirrors PanelSidebar.
+      { id: "go-overview", label: "Overview", group: "Pages", icon: LayoutDashboard, onSelect: () => { router.push("/admin/dashboard"); close(); } },
+      { id: "go-chat", label: "Chat", group: "Pages", icon: MessageSquare, onSelect: () => { router.push("/admin/chat"); close(); } },
+      { id: "go-rag", label: "Company memory", hint: "RAG · knowledge base", group: "Pages", icon: Database, onSelect: () => { router.push("/admin/rag"); close(); } },
+      { id: "go-meetings", label: "Meetings", group: "Pages", icon: Mic, onSelect: () => { router.push("/admin/meetings"); close(); } },
+      { id: "go-growth", label: "Growth copilot", group: "Pages", icon: LayoutDashboard, onSelect: () => { router.push("/admin/growth"); close(); } },
+      { id: "go-usage", label: "Usage & cost", group: "Pages", icon: BarChart3, onSelect: () => { router.push("/admin/usage"); close(); } },
+      { id: "go-settings", label: "Settings", group: "Pages", icon: Settings, onSelect: () => { router.push("/admin/settings"); close(); } },
+      { id: "go-approvals", label: "Approvals", group: "Pages", icon: ShieldCheck, onSelect: () => { router.push("/admin/approvals"); close(); } },
+      { id: "go-agents", label: "Agents", group: "Pages", icon: Brain, onSelect: () => { router.push("/admin/agents"); close(); } },
+      { id: "go-workflows", label: "Workflows", group: "Pages", icon: Workflow, onSelect: () => { router.push("/admin/workflows"); close(); } },
+      { id: "go-providers", label: "Providers", hint: "cascade · failover", group: "Pages", icon: Layers, onSelect: () => { router.push("/admin/providers"); close(); } },
+      { id: "go-tools", label: "Tool catalogue", hint: "MCP tools", group: "Pages", icon: Wrench, onSelect: () => { router.push("/admin/mcp-tools"); close(); } },
+      { id: "go-pipelines", label: "Quality control", hint: "pipelines", group: "Pages", icon: Sliders, onSelect: () => { router.push("/admin/pipelines"); close(); } },
+      { id: "go-quota", label: "Limits", hint: "quota", group: "Pages", icon: BarChart3, onSelect: () => { router.push("/admin/quota"); close(); } },
+      { id: "go-graph", label: "Graph console", hint: "knowledge graph · Cypher", group: "Pages", icon: Brain, onSelect: () => { router.push("/admin/graph"); close(); } },
+      { id: "go-transcription", label: "Live capture", hint: "transcription", group: "Pages", icon: Boxes, onSelect: () => { router.push("/admin/transcription"); close(); } },
+      { id: "go-marketplace", label: "Add-ons", hint: "marketplace", group: "Pages", icon: Store, onSelect: () => { router.push("/admin/marketplace"); close(); } },
+      { id: "go-users", label: "Users", group: "Pages", icon: Users, onSelect: () => { router.push("/admin/users"); close(); } },
+      { id: "go-audit", label: "Audit log", group: "Pages", icon: ShieldCheck, onSelect: () => { router.push("/admin/audit"); close(); } },
+      // Actions
+      { id: "act-new-chat", label: "Start a new chat", group: "Actions", icon: MessageSquare, onSelect: () => { router.push("/admin/chat"); close(); } },
+      { id: "act-new-workflow", label: "Design a workflow", group: "Actions", icon: Workflow, onSelect: () => { router.push("/admin/workflows"); close(); } },
+      { id: "act-test-cascade", label: "Test the provider chain", hint: "cascade", group: "Actions", icon: Layers, onSelect: () => { router.push("/admin/providers"); close(); } },
+      { id: "act-invite-user", label: "Invite a teammate", group: "Actions", icon: Users, onSelect: () => { router.push("/admin/users"); close(); } },
+      // Quick chat
+      { id: "ask-rag", label: "Chat: /rag …", hint: "ask your knowledge base", group: "Quick chat", icon: Database, onSelect: () => { router.push("/admin/chat"); close(); } },
+      { id: "ask-code", label: "Chat: /code …", hint: "generate code", group: "Quick chat", icon: Wrench, onSelect: () => { router.push("/admin/chat"); close(); } },
+      { id: "ask-translate", label: "Chat: /translate …", hint: "translate text", group: "Quick chat", icon: MessageSquare, onSelect: () => { router.push("/admin/chat"); close(); } },
     ],
     [router, close],
   );
@@ -103,13 +120,13 @@ export function CommandPalette() {
         className="mt-24 w-full max-w-xl rounded-xl border border-border bg-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <Command label="ABS komut paleti" className="overflow-hidden">
+        <Command label="ABS command palette" className="overflow-hidden">
           <div className="flex items-center gap-2 border-b border-border px-3 py-2">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Command.Input
               value={search}
               onValueChange={setSearch}
-              placeholder="Sayfa, aksiyon veya komut ara…"
+              placeholder="Search pages, actions, commands…"
               data-test="command-palette-input"
               className="flex-1 bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground"
             />
@@ -119,9 +136,9 @@ export function CommandPalette() {
           </div>
           <Command.List className="max-h-96 overflow-y-auto p-2">
             <Command.Empty className="px-3 py-8 text-center text-sm text-muted-foreground">
-              Eşleşen aksiyon yok.
+              Nothing matches.
             </Command.Empty>
-            {(["Sayfalar", "Aksiyonlar", "Hızlı sohbet"] as const).map((g) => {
+            {(["Pages", "Actions", "Quick chat"] as const).map((g) => {
               const groupItems = items.filter((it) => it.group === g);
               if (groupItems.length === 0) return null;
               return (
@@ -153,7 +170,7 @@ export function CommandPalette() {
             })}
           </Command.List>
           <div className="border-t border-border px-3 py-2 text-[10px] text-muted-foreground">
-            ↑↓ gez · Enter aç · Esc kapat · ⌘K toggle
+            ↑↓ navigate · ↵ open · esc close
           </div>
         </Command>
       </div>
