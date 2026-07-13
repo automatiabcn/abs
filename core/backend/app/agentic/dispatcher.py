@@ -162,6 +162,97 @@ _register(
 )
 
 
+# --- L1: files, inside the roots the operator opened up. ---------------------
+#
+# Registered unconditionally and filtered out of the catalogue by `is_enabled`
+# when no root is configured — which is the default. An install that never sets
+# agent_fs_roots never shows the model that these exist.
+
+
+async def _fs_list(path: str = "") -> str:
+    from app.agentic.fs_tools import fs_list
+
+    return await fs_list(path)
+
+
+async def _fs_read(path: str) -> str:
+    from app.agentic.fs_tools import fs_read
+
+    return await fs_read(path)
+
+
+async def _fs_search(query: str, path: str = "") -> str:
+    from app.agentic.fs_tools import fs_search
+
+    return await fs_search(query, path)
+
+
+_register(
+    Tool(
+        name="fs_list",
+        level=Level.READ_FILE,
+        description=(
+            "List the files and folders at a path. Call it with no arguments "
+            "first to see which folders you are allowed to read at all."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Folder to list. Omit to see the allowed folders.",
+                }
+            },
+        },
+        fn=_fs_list,
+    )
+)
+
+_register(
+    Tool(
+        name="fs_read",
+        level=Level.READ_FILE,
+        description=(
+            "Read one text file. Use fs_list or fs_search to find its path "
+            "first — do not guess a path."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "Full path to the file."}
+            },
+            "required": ["path"],
+        },
+        fn=_fs_read,
+        required=["path"],
+    )
+)
+
+_register(
+    Tool(
+        name="fs_search",
+        level=Level.READ_FILE,
+        description=(
+            "Find which files contain a piece of text. Returns paths and line "
+            "numbers, not the text itself — open a result with fs_read to see it."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Text to look for."},
+                "path": {
+                    "type": "string",
+                    "description": "Folder to search in. Omit to search all allowed folders.",
+                },
+            },
+            "required": ["query"],
+        },
+        fn=_fs_search,
+        required=["query"],
+    )
+)
+
+
 def catalogue() -> List[Tool]:
     """The tools this server currently offers the model.
 
