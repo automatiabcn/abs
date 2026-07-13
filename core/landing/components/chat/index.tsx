@@ -238,7 +238,12 @@ export function MessageBubble({ msg }: { msg: ChatMessage }) {
             Thinking…
           </div>
         ) : (
-          <Markdown content={msg.content} />
+          // The answer, addressable on its own. What the model *said* and what it
+          // cited are different claims, and a test that cannot tell them apart
+          // cannot catch an answer taken from the wrong source.
+          <div data-test="chat-message-text">
+            <Markdown content={msg.content} />
+          </div>
         )}
         {msg.toolCalls?.map((tc, i) => (
           <ToolCallCard key={i} call={tc} />
@@ -255,6 +260,7 @@ export function MessageBubble({ msg }: { msg: ChatMessage }) {
               {msg.citations.map((c, i) => (
                 <li
                   key={c.chunk_id ?? i}
+                  data-test="chat-citation"
                   className="text-xs text-muted-foreground"
                 >
                   <span className="font-mono text-foreground">[{i + 1}]</span>{" "}
