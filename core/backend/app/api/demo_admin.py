@@ -20,6 +20,7 @@ from pathlib import Path
 from fastapi import APIRouter, Header, HTTPException, status
 from fastapi.responses import JSONResponse
 
+from app.auth.bearer import extract_bearer, token_matches
 from app.config import settings
 
 router = APIRouter(prefix="/v1/admin", tags=["admin"])
@@ -27,18 +28,8 @@ logger = logging.getLogger(__name__)
 
 
 def _check_admin(authorization: str | None) -> None:
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header missing",
-        )
-    if not authorization.lower().startswith("bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Bearer token expected",
-        )
-    token = authorization.split(None, 1)[1].strip()
-    if not settings.admin_token or token != settings.admin_token:
+    token = extract_bearer(authorization)
+    if not token_matches(token, settings.admin_token):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid admin token",

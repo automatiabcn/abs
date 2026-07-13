@@ -138,6 +138,11 @@ class Settings(BaseSettings):
     # Panel / Auth
     session_secret: str = "dev-insecure-change-in-prod"
     admin_password_bootstrap: str = "CHANGEME"
+    # Signs minted `abs_mcp_*` delegation tokens. Empty means "reuse
+    # session_secret", which keeps tokens minted before the split valid.
+    # Set it to give MCP tokens a rotation lifetime of their own — panel
+    # cookies and long-lived MCP tokens should not share one key.
+    mcp_token_secret: str = ""
 
     # Provider API anahtarları (005 — sops ile şifrelenmesi 008+ task)
     anthropic_api_key: str = ""
@@ -442,17 +447,40 @@ def validate_production_secrets(s: "Settings") -> list[str]:
     return leaked
 
 
+def looks_like_production(s: "Settings") -> bool:
+    """True when the deployment is publicly reachable, whatever `env` says.
+
+    `env` defaults to "dev", so the secret guard below used to hinge on a
+    single environment variable: an operator who deployed to a real domain
+    but never set ABS_ENV=prod booted happily and signed session cookies
+    with a placeholder secret that ships in the public repo — forgeable by
+    anyone. A public hostname served over Let's Encrypt is not something a
+    dev or test box has, so we treat it as production regardless of `env`.
+    """
+    if s.ssl_mode != "acme":
+        return False
+    domain = (s.domain or "").strip().lower()
+    if not domain:
+        return False
+    # RFC 6761 special-use names never get a public certificate.
+    local_suffixes = (".local", ".test", ".example", ".invalid", ".localhost")
+    if domain.endswith(local_suffixes) or domain in ("localhost", "127.0.0.1"):
+        return False
+    return True
+
+
 def assert_production_safe(s: "Settings") -> None:
-    """Fail fast if env=prod and any dev-insecure default leaked through."""
-    if s.env != "prod":
+    """Fail fast if a production deployment still carries dev-insecure defaults."""
+    if s.env != "prod" and not looks_like_production(s):
         return
     leaked = validate_production_secrets(s)
     if leaked:
         bullet = "\n  - ".join(leaked)
         raise RuntimeError(
-            "ABS refusing to boot in env=prod with dev-insecure defaults "
-            "still in place. Set the following ABS_* environment variables "
-            f"to real production values:\n  - {bullet}"
+            "ABS refusing to boot with dev-insecure defaults still in place "
+            f"(env={s.env!r}, domain={s.domain!r}, ssl_mode={s.ssl_mode!r}). "
+            "Set the following ABS_* environment variables to real production "
+            f"values:\n  - {bullet}"
         )
 
 
