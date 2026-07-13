@@ -5,13 +5,18 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// BUG-V1 — `/admin/usage` widget. Server-side fetches the aggregated
-// usage payload from /v1/admin/usage with the caller's session cookie,
-// hands it to <UsageClient/> as initialData so the first paint shows
-// real numbers (no client-only spinner round-trip).
+// `/admin/usage`. Server-side fetches the aggregated usage payload from
+// /v1/admin/usage with the caller's session cookie and hands it to
+// <UsageClient/>, so the first paint shows real numbers.
 //
-// On transport failure the server falls back to a zero payload with
-// the dense 7-day trend so the page stays usable.
+// It used to fall back to a made-up payload when that fetch failed: a 1,000,000
+// token Claude budget the operator never set, and `free_path.pct_24h = 1`, which
+// the page renders as "100.0 % served free". UsageClient goes out of its way to
+// avoid exactly that — `formatPct(null)` prints an em dash rather than invent a
+// ratio — and the fallback walked straight past the guard by passing `1`.
+//
+// This is the page a customer reads to check the product's central cost and
+// privacy claim. A failed request must not confirm it.
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
 
@@ -29,36 +34,10 @@ export const metadata: Metadata = {
 
 const BACKEND_URL = process.env.ABS_BACKEND_URL ?? "http://localhost:8000";
 
-function emptyTrend(): UsagePayload["daily_trend"] {
-  const today = new Date();
-  return Array.from({ length: 7 }, (_, idx) => {
-    const offset = 6 - idx;
-    const d = new Date(today);
-    d.setUTCDate(today.getUTCDate() - offset);
-    return { day: d.toISOString().slice(0, 10), claude_tokens: 0 };
-  });
-}
-
-function fallback(): UsagePayload {
-  return {
-    month: new Date().toISOString().slice(0, 7),
-    claude: {
-      limit_tokens: 1_000_000,
-      used_tokens: 0,
-      used_pct: 0,
-      over_warn: false,
-      over_block: false,
-      banner: null,
-    },
-    free_path: { calls_24h: 0, pct_24h: 1 },
-    paid_path: { calls_24h: 0 },
-    total_calls_24h: 0,
-    provider_mix_24h: {},
-    daily_trend: emptyTrend(),
-  };
-}
-
-async function fetchUsageServerSide(): Promise<UsagePayload> {
+async function fetchUsageServerSide(): Promise<{
+  usage: UsagePayload | null;
+  loadError: string | null;
+}> {
   try {
     const cookieStore = await cookies();
     const cookieHeader = cookieStore
@@ -69,14 +48,16 @@ async function fetchUsageServerSide(): Promise<UsagePayload> {
       headers: cookieHeader ? { cookie: cookieHeader } : {},
       cache: "no-store",
     });
-    if (!res.ok) return fallback();
-    return (await res.json()) as UsagePayload;
-  } catch {
-    return fallback();
+    if (!res.ok) {
+      return { usage: null, loadError: `The server answered ${res.status}.` };
+    }
+    return { usage: (await res.json()) as UsagePayload, loadError: null };
+  } catch (e) {
+    return { usage: null, loadError: `The server could not be reached (${String(e)}).` };
   }
 }
 
 export default async function UsagePage() {
-  const initial = await fetchUsageServerSide();
-  return <UsageClient initial={initial} />;
+  const { usage, loadError } = await fetchUsageServerSide();
+  return <UsageClient initial={usage} loadError={loadError} />;
 }

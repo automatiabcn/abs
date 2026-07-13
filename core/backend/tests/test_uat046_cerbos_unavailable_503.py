@@ -87,6 +87,26 @@ class _UnreachableCerbos:
         pass
 
 
+@pytest.fixture(autouse=True)
+def _a_real_project():
+    """The project is a database row now, not a dict inside the endpoint."""
+    from datetime import datetime, timezone
+
+    from sqlmodel import Session, select
+
+    from app.db.session import get_engine
+    from app.db.tenant_models import Project
+
+    with Session(get_engine()) as db:
+        exists = db.exec(select(Project).where(Project.slug == "proj-t1-alice")).first()
+        if exists is None:
+            db.add(Project(
+                slug="proj-t1-alice", tenant_slug="tenant-1", name="Alice Project",
+                owner_subject="alice", created_at=datetime.now(timezone.utc),
+            ))
+            db.commit()
+
+
 @pytest.fixture()
 def install_unreachable_cerbos():
     app.state.cerbos_client = _UnreachableCerbos()

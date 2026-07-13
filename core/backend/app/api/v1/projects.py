@@ -32,30 +32,37 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1", tags=["mcp-gateway"])
 
 
-# Stub project store. Replaced by real persistence in T-009 (RAG sprint).
-_DEMO_PROJECTS: dict[str, dict[str, Any]] = {
-    "proj-t1-alice": {
-        "id": "proj-t1-alice",
-        "name": "Alice Project",
-        "tenant_id": "tenant-1",
-        "owner_id": "alice",
-        "created_at": "2026-04-27T00:00:00Z",
-    },
-    "proj-t1-bob": {
-        "id": "proj-t1-bob",
-        "name": "Bob Project",
-        "tenant_id": "tenant-1",
-        "owner_id": "bob",
-        "created_at": "2026-04-27T00:00:00Z",
-    },
-    "proj-t2-carol": {
-        "id": "proj-t2-carol",
-        "name": "Carol Project",
-        "tenant_id": "tenant-2",
-        "owner_id": "carol",
-        "created_at": "2026-04-27T00:00:00Z",
-    },
-}
+def _load_project(project_id: str) -> dict[str, Any] | None:
+    """The caller's real project, from the `projects` table.
+
+    This endpoint used to answer from a hardcoded dict of three — Alice's
+    Project, Bob's Project, Carol's Project, in tenants named tenant-1 and
+    tenant-2 — left behind by the sprint that was going to replace it. A customer
+    asking for their own project got a 404; anyone asking for `proj-t1-alice` got
+    a 200 and a Cerbos check performed against invented tenant and owner fields.
+    Projects have had a real table for months.
+    """
+    from sqlmodel import Session, select
+
+    from app.db.session import get_engine
+    from app.db.tenant_models import Project
+
+    with Session(get_engine()) as db:
+        row = db.exec(
+            select(Project).where(
+                Project.slug == project_id,
+                Project.archived_at.is_(None),  # type: ignore[union-attr]
+            )
+        ).first()
+    if row is None:
+        return None
+    return {
+        "id": row.slug,
+        "name": row.name,
+        "tenant_id": row.tenant_slug,
+        "owner_id": row.owner_subject,
+        "created_at": row.created_at.isoformat(),
+    }
 
 
 @router.get("/projects/{project_id}")
@@ -64,7 +71,7 @@ def read_project(
     auth: AuthContext = Depends(get_auth_context),
     cerbos: CerbosClient = Depends(get_cerbos_client),
 ) -> dict[str, Any]:
-    record = _DEMO_PROJECTS.get(project_id)
+    record = _load_project(project_id)
     if record is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
 
