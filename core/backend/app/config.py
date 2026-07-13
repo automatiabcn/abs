@@ -277,18 +277,26 @@ class Settings(BaseSettings):
     qdrant_default_vector_size: int = 1024  # BGE-M3
     qdrant_snapshot_dir: str = "/qdrant/snapshots"
 
-    # T-010 — BGE-M3 embedding service
-    embedding_backend: str = "mock"  # mock | cohere | ollama | sentence_transformers | onnx_cuda | onnx_cpu
+    # BGE-M3 embedding service.
+    # `auto` picks the best real backend the box can run (ollama →
+    # sentence_transformers → cohere), and only falls back to `mock` when there
+    # is none. It used to default straight to `mock`, whose vectors are sha256 of
+    # the text: document search still returned five chunks and the model still
+    # answered from them, but the chunks were unrelated to the question. Real
+    # backends by name: cohere | ollama | sentence_transformers | onnx_cuda |
+    # onnx_cpu. `mock` is for tests.
+    embedding_backend: str = "auto"
     embedding_model_path: str = ""   # ONNX backends only
     # `cohere` backend: real semantic embeddings via the customer's existing
-    # Cohere key (bring-your-own-key), 1024-dim, zero local footprint. The
-    # recommended real backend for self-host (no model download / GPU / ollama).
+    # Cohere key (bring-your-own-key), 1024-dim, zero local footprint.
     cohere_embed_model: str = "embed-multilingual-v3.0"  # 1024-dim, multilingual
     embedding_device: str = "cpu"    # SentenceTransformers backend only
-    # Ollama embedding model name (when embedding_backend=ollama). bge-m3 is
-    # 1024-dim + multilingual (matches qdrant_default_vector_size); nomic is
-    # 768-dim. ABS_EMBEDDING_MODEL overrides.
-    embedding_model: str = "nomic-embed-text"
+    # Ollama embedding model (when embedding_backend=ollama). bge-m3 is 1024-dim
+    # and multilingual — it matches qdrant_default_vector_size above, and the
+    # product is used in more than one language. nomic-embed-text, the previous
+    # default, is 768-dim and English-leaning: it disagreed with the collection
+    # it was writing into. ABS_EMBEDDING_MODEL overrides.
+    embedding_model: str = "bge-m3"
     embedding_batch_size: int = 32
     embedding_min_batch: int = 4
 
