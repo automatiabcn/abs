@@ -145,6 +145,61 @@ class _CohereBackend:
         return None
 
 
+class _OllamaBackend:
+    """Local embeddings via Ollama (bge-m3 by default).
+
+    This backend was documented in `ABS_EMBEDDING_BACKEND`'s own comment, named
+    in the mock's "set this for real search" warning — and was not a branch in
+    this class, which is the one both ingest and chat go through. Anybody who
+    followed that advice got `ValueError: unsupported embedding backend: ollama`
+    on their first upload. It exists now.
+
+    bge-m3 is 1024-dim, matching `qdrant_default_vector_size`, so no collection
+    migration is needed. The dimension is read from the model rather than
+    assumed, because a deployment that points `ABS_EMBEDDING_MODEL` at
+    nomic-embed-text (768) must fail loudly at collection creation instead of
+    writing mis-shaped vectors.
+    """
+
+    def __init__(self, model: str | None = None) -> None:
+        import httpx
+
+        self.model = model or getattr(settings, "embedding_model", "") or "bge-m3"
+        self.url = (
+            getattr(settings, "ollama_url", "") or "http://localhost:11434"
+        ).rstrip("/")
+        self._client = httpx.Client(timeout=60.0)
+        self.dim = len(self._embed_batch(["dimension probe"])[0])
+        logger.info(
+            "embedding_ollama_init model=%s url=%s dim=%d",
+            self.model, self.url, self.dim,
+        )
+
+    def _embed_batch(self, texts: list[str]) -> list[list[float]]:
+        out: list[list[float]] = []
+        for text in texts:
+            resp = self._client.post(
+                f"{self.url}/api/embeddings",
+                json={"model": self.model, "prompt": text[:8000]},
+            )
+            if resp.status_code >= 400:
+                raise RuntimeError(
+                    f"ollama embed {resp.status_code}: {resp.text[:200]}"
+                )
+            vec = resp.json().get("embedding") or []
+            if not vec:
+                raise RuntimeError("ollama embed returned an empty vector")
+            norm = math.sqrt(sum(v * v for v in vec))
+            out.append([v / norm for v in vec] if norm else list(vec))
+        return out
+
+    def close(self) -> None:
+        try:
+            self._client.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
 class _SentenceTransformersBackend:
     def __init__(self, model_name: str = "BAAI/bge-m3", device: str = "cpu") -> None:
         try:
@@ -236,17 +291,79 @@ class _OnnxBackend:
         return None
 
 
+def _ollama_serves_embeddings() -> bool:
+    """True when a local Ollama is up and has the embedding model pulled."""
+    import httpx
+
+    wanted = (getattr(settings, "embedding_model", "") or "bge-m3").split(":")[0]
+    url = (getattr(settings, "ollama_url", "") or "http://localhost:11434").rstrip("/")
+    try:
+        resp = httpx.get(f"{url}/api/tags", timeout=2.0)
+        if resp.status_code >= 400:
+            return False
+        names = [m.get("name", "") for m in resp.json().get("models", [])]
+    except Exception:  # noqa: BLE001 — absence of Ollama is the normal case
+        return False
+    return any(n.split(":")[0] == wanted for n in names)
+
+
+def resolve_backend(configured: str) -> str:
+    """Pick a real embedding backend when the operator has not named one.
+
+    The old default was `mock`, and mock is not a degraded mode — it is sha256
+    of the text. Semantically similar queries land nowhere near each other, so
+    "chat with your documents" returned a random five chunks and the model
+    answered confidently from them. Nothing failed, nothing 500'd; the answers
+    were just quietly sourced from the wrong documents. A warning in the log is
+    not a defence against that, because the person it is warning does not read
+    the log.
+
+    So the default resolves to whatever real backend the box can actually run,
+    local first: an embedding sends every document a customer owns to whoever
+    computes the vector, and that is not a thing to opt somebody into silently.
+    Cloud (their own Cohere key) only when there is no local option. Mock is
+    reachable only by asking for it by name, which is what the test suite does.
+    """
+    name = (configured or "").strip().lower()
+    if name and name != "auto":
+        return name
+    if _ollama_serves_embeddings():
+        return "ollama"
+    try:
+        import sentence_transformers  # noqa: F401
+
+        return "sentence_transformers"
+    except ImportError:
+        pass
+    if getattr(settings, "cohere_api_key", "") or "":
+        return "cohere"
+    logger.warning(
+        "embedding backend=auto found nothing real to use — falling back to mock, "
+        "and document search will return meaningless results. Install Ollama and "
+        "`ollama pull bge-m3`, `pip install sentence-transformers`, or set "
+        "ABS_COHERE_API_KEY."
+    )
+    return "mock"
+
+
 class BGEEmbedder:
     backend: str
     dim: int
+    semantic: bool
     _impl: Any
 
     def __init__(self, backend: str) -> None:
         self.backend = backend
+        # Whether this backend actually understands meaning. Retrieval refuses to
+        # answer from a backend that does not, rather than dressing up hash
+        # collisions as citations.
+        self.semantic = backend != "mock"
         if backend == "mock":
             self._impl = _MockBackend()
         elif backend == "cohere":
             self._impl = _CohereBackend()
+        elif backend == "ollama":
+            self._impl = _OllamaBackend()
         elif backend == "sentence_transformers":
             self._impl = _SentenceTransformersBackend(
                 model_name="BAAI/bge-m3",
@@ -265,6 +382,18 @@ class BGEEmbedder:
         else:
             raise ValueError(f"unsupported embedding backend: {backend}")
         self.dim = int(getattr(self._impl, "dim", 1024))
+
+    def model_id(self) -> str:
+        """Identity of the model that produced a vector, stamped onto chunks.
+
+        Two vectors are only comparable when the same model made them. Written
+        into every chunk's payload so a corpus embedded by a previous backend
+        can be recognised as stale rather than silently searched against.
+        """
+        name = getattr(self._impl, "model", "") or getattr(
+            self._impl, "model_name", ""
+        )
+        return f"{self.backend}:{name}" if name else self.backend
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:
@@ -313,12 +442,30 @@ _embedder: BGEEmbedder | None = None
 def get_embedder() -> BGEEmbedder:
     global _embedder
     if _embedder is None:
-        backend = getattr(settings, "embedding_backend", "mock") or "mock"
+        backend = resolve_backend(getattr(settings, "embedding_backend", "auto"))
         _embedder = BGEEmbedder(backend)
         logger.info(
-            "embedder_singleton_init backend=%s dim=%d", backend, _embedder.dim
+            "embedder_singleton_init backend=%s dim=%d semantic=%s",
+            backend, _embedder.dim, _embedder.semantic,
         )
     return _embedder
+
+
+def model_id_of(embedder: Any) -> str:
+    """The identity stamp for whatever embedder a caller happens to hold.
+
+    The ingest paths accept an injected embedder (tests, and the asyncio wrapper
+    the file-ingest route uses), and not all of them are a `BGEEmbedder`. A
+    missing `model_id` must degrade to an unknown stamp, not a 500 in the middle
+    of somebody's upload.
+    """
+    fn = getattr(embedder, "model_id", None)
+    if callable(fn):
+        try:
+            return str(fn() or "unknown")
+        except Exception:  # noqa: BLE001
+            return "unknown"
+    return str(getattr(embedder, "backend", "") or "unknown")
 
 
 def close_embedder() -> None:

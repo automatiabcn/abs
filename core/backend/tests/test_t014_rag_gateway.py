@@ -190,6 +190,28 @@ def test_query_routing_overhead_under_budget(
     monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
     monkeypatch.setattr(rag_routes.qc, "search", lambda *a, **k: fake_hits)
 
+    # The budget below is *our* overhead — auth, policy, routing, serialisation —
+    # so the two things we do not control are held still: Qdrant is faked above,
+    # and the embedder here. It used to be left alone, which only worked because
+    # the default embedder was a stdlib hash and cost nothing; a real model turns
+    # this into a measurement of somebody else's inference latency, and the
+    # number stops meaning what the test's name says it means.
+    class _Embedder:
+        dim = 1024
+        backend = "stub"
+        semantic = True
+
+        def embed(self, texts):  # noqa: ANN001
+            return [[0.01] * self.dim for _ in texts]
+
+        def embed_one(self, text):  # noqa: ANN001
+            return [0.01] * self.dim
+
+        def model_id(self):
+            return "stub:test"
+
+    monkeypatch.setattr(rag_routes, "_ensure_embedder", lambda: _Embedder())
+
     with TestClient(app) as c:
         token = _issue(
             c,

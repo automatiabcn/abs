@@ -72,6 +72,18 @@ async def retrieve_citations(
         from app.rag.embedding_bge import get_embedder
 
         embedder = get_embedder()
+        if not embedder.semantic:
+            # The mock backend hashes the text. Its "nearest" chunks are chunks
+            # whose sha256 happens to point the same way, which is to say: any
+            # five of them. Returning those as citations is worse than returning
+            # nothing — the model reads them as the company's own documents and
+            # answers from whichever ones it got. Silence is the honest result.
+            logger.warning(
+                "rag search skipped: embedding backend=%s cannot match meaning. "
+                "Configure a real embedding backend (see ABS_EMBEDDING_BACKEND).",
+                embedder.backend,
+            )
+            return []
         collection = settings.qdrant_default_collection
         qc.ensure_collection(collection, vector_size=embedder.dim)
         vector = embedder.embed_one(query)

@@ -115,19 +115,21 @@ services:
       # own Qdrant/Cerbos clusters; defaults match the compose service names.
       ABS_QDRANT_URL: "${ABS_QDRANT_URL:-http://qdrant:6333}"
       ABS_CERBOS_HOST: "${ABS_CERBOS_HOST:-http://cerbos:3592}"
-      # Default to the deterministic stdlib backend so first boot works with
-      # zero extra disk + no GPU. IMPORTANT: the mock embedder is NOT semantic —
-      # its vectors are sha256-derived, so RAG only matches byte-identical text;
-      # semantically similar queries return effectively-random rankings. RAG
-      # search is therefore non-functional until you switch to a real backend:
-      #   ABS_EMBEDDING_BACKEND=cohere  ← RECOMMENDED. Real 1024-dim semantic
-      #     embeddings via your existing Cohere key (the cohere SDK already ships
-      #     in the image); zero extra disk, no GPU, no model download.
-      #   ABS_EMBEDDING_BACKEND=sentence_transformers  (pip install
-      #     sentence-transformers; lazy-downloads BAAI/bge-m3 ~2.2 GB on first call)
-      #   ABS_EMBEDDING_BACKEND=ollama  (point at an ollama host serving bge-m3)
-      # The backend logs a loud WARNING at startup while mock is active.
-      ABS_EMBEDDING_BACKEND: "${ABS_EMBEDDING_BACKEND:-mock}"
+      # `auto` picks the best real embedding backend this box can run — a local
+      # Ollama serving bge-m3, then sentence-transformers, then your Cohere key —
+      # and only falls back to `mock` if it finds none, logging loudly when it
+      # does. Local is preferred deliberately: embedding a document sends it to
+      # whoever computes the vector, and nobody should be opted into that by a
+      # default they did not choose.
+      #
+      # `mock` is not a degraded mode, it is sha256 of the text: document search
+      # returns five chunks that have nothing to do with the question, and the
+      # model answers from them confidently. Set it only in tests.
+      #   ABS_EMBEDDING_BACKEND=ollama                 (an ollama host serving bge-m3)
+      #   ABS_EMBEDDING_BACKEND=cohere                 (your Cohere key; the SDK ships in the image)
+      #   ABS_EMBEDDING_BACKEND=sentence_transformers  (pip install sentence-transformers;
+      #                                                 downloads BAAI/bge-m3, ~2.2 GB, on first call)
+      ABS_EMBEDDING_BACKEND: "${ABS_EMBEDDING_BACKEND:-auto}"
       ABS_EMBEDDING_MODEL_PATH: "${ABS_EMBEDDING_MODEL_PATH:-/app/data/models/bge-m3}"
       HF_HOME: "/app/data/models/hf-cache"
       # BUG-29 — Knowledge graph wiring. Neo4j 5.20-community ships with the
