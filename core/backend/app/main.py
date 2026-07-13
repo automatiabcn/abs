@@ -386,6 +386,28 @@ from app.middleware.rls_violation_handler import install_rls_violation_handler
 
 install_rls_violation_handler(app)
 
+
+# Every provider in the chain failed and some may recover. The cascade used to
+# raise FastAPI's HTTPException for this — from a library that agents, MCP tools,
+# pipelines and background workers all call without any web request in sight, and
+# which every one of them was catching `ProviderError` around. Now it raises a
+# ProviderError (`CascadeUnavailable`) so those callers degrade instead of dying,
+# and the HTTP surface is unchanged: the same 503, the same body, the same
+# Retry-After, built here instead of down there.
+from fastapi.responses import JSONResponse as _JSONResponse  # noqa: E402
+
+from app.providers.schemas import CascadeUnavailable as _CascadeUnavailable  # noqa: E402
+
+
+@app.exception_handler(_CascadeUnavailable)
+async def _cascade_unavailable_handler(request, exc: _CascadeUnavailable):  # noqa: ANN001
+    return _JSONResponse(
+        status_code=503,
+        content={"detail": exc.detail()},
+        headers={"Retry-After": str(exc.retry_after)},
+    )
+
+
 # T-058 caveat #11 — X-ABS-Audience enforcement (off by default; helm values flip it on).
 from app.config import settings as _abs_settings_for_audience
 from app.middleware.audience import install_audience_enforcer

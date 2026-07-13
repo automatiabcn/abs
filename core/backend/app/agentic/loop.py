@@ -167,13 +167,14 @@ async def run_agent_loop(
         try:
             raw = await _ask(prompt, providers, max_tokens, tenant, requester)
         except (ProviderError, HTTPException) as exc:
-            # Both shapes mean the same thing to the person waiting: nobody
-            # answered. The cascade raises ProviderError when every provider
-            # failed permanently, and a structured 503 when they were merely
-            # rate-limited — and the 503 is the one that actually happens on a
-            # busy day. Letting it escape from inside a stream that has already
-            # started kills the connection mid-flight, and the customer is left
-            # watching a chat that never finishes and never explains itself.
+            # Nobody answered, and the person waiting does not care why. The
+            # cascade now raises `CascadeUnavailable` (a ProviderError) when every
+            # provider was merely busy — the failure that actually happens on a
+            # busy day — so the first clause covers it. HTTPException stays in the
+            # tuple as a belt: an exception escaping a stream that has already
+            # started cannot become a response, so it kills the connection and
+            # leaves a chat that never finishes and never explains itself. That is
+            # not a failure mode worth being clever about.
             yield AgentEvent("agent-error", {"reason": "all_providers_failed",
                                              "detail": str(exc)})
             return

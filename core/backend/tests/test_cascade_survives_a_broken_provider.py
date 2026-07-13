@@ -129,9 +129,8 @@ class TestOneProviderFailingIsNotEveryProviderFailing:
 
     @pytest.mark.asyncio
     async def test_when_everyone_is_merely_down_the_caller_is_told_to_retry(self, monkeypatch):
-        from fastapi import HTTPException
-
         from app.cascade import orchestrator
+        from app.providers.schemas import CascadeUnavailable
 
         class RateLimited:
             async def call(self, prompt, model=None, **kwargs):
@@ -139,12 +138,18 @@ class TestOneProviderFailingIsNotEveryProviderFailing:
 
         monkeypatch.setattr(orchestrator, "get_provider", lambda name: RateLimited())
 
-        with pytest.raises(HTTPException) as caught:
+        # A ProviderError, deliberately: the cascade is called from agents, MCP
+        # tools and workers that are nowhere near a web request, and they all
+        # catch ProviderError. Raising FastAPI's HTTPException at them meant a
+        # rate limit killed an agent mid-stream. The HTTP 503 is still what a web
+        # client sees — built by the app's exception handler now, not here.
+        with pytest.raises(CascadeUnavailable) as caught:
             await orchestrator.call_with_cascade(
                 "anything", primary="groq", fallbacks=("gemini",), use_cache=False
             )
 
-        assert caught.value.status_code == 503
-        assert caught.value.detail["providers_tried"] == ["groq", "gemini"]
+        assert caught.value.transient is True
+        detail = caught.value.detail()
+        assert detail["providers_tried"] == ["groq", "gemini"]
         # "ProviderError" alone tells an operator nothing; the message does.
-        assert "rate limit" in caught.value.detail["last_error"]
+        assert "rate limit" in detail["last_error"]

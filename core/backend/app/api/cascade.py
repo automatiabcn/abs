@@ -43,7 +43,7 @@ from app.providers.cascade import (
     configured_map,
     get_active_providers,
 )
-from app.providers.schemas import ProviderError
+from app.providers.schemas import CascadeUnavailable, ProviderError
 from app.services import feature_usage as feature_usage_service
 from app.services import usage_log
 
@@ -215,8 +215,14 @@ async def run(
             project_slug=_project,
             user_subject=_user or None,
         )
+    except CascadeUnavailable:
+        # Busy, not broken: the app's handler answers 503 + Retry-After. A 502
+        # here would tell the caller to stop trying, which is the opposite of
+        # what is true.
+        raise
     except ProviderError as exc:
-        # All providers in the chain failed (transient or hard fail).
+        # Every provider failed for good: a bad key, a missing model. Retrying
+        # will not help, and 502 says so.
         raise HTTPException(
             502,
             f"all_providers_failed: {exc.message or str(exc)} "
@@ -225,16 +231,11 @@ async def run(
 
     fallback_chain.append(resp.provider or primary)
     tokens_used = (resp.tokens_in or 0) + (resp.tokens_out or 0)
-    try:
-        usage_log.append(
-            resp.provider or primary,
-            tokens=tokens_used,
-            # _tenant (resolved above for BYOK) is the real tenant slug;
-            # admin["sub"] is an email and bucketed usage under the wrong key.
-            tenant_slug=_tenant if _tenant != "_global" else "default",
-        )
-    except Exception:
-        pass
+    # Metering moved into the cascade itself (`orchestrator._meter`), which is
+    # the one place every answered request passes through. Recording it here as
+    # well would count this route's traffic twice — and recording it *only* here
+    # was the bug: chat, agents and workflows all go through the cascade without
+    # coming through this route, so none of them ever reached the usage page.
     try:
         feature_usage_service.increment(
             "cascade_provider_call", actor_email=admin.get("sub")
