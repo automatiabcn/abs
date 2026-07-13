@@ -49,18 +49,22 @@ def test_prod_env_with_dev_defaults_raises() -> None:
 
 
 def test_prod_env_with_real_secrets_passes() -> None:
+    # "real-session" is twelve bytes. It is not the placeholder, so this test
+    # passed — but the boot guard now also refuses signing secrets under 32
+    # bytes, and twelve of them would be refused at a customer's door. A secret
+    # a customer would really paste is 64 hex characters; use those.
     s = _dev_settings()
     s.env = "prod"
-    s.unsubscribe_jwt_secret = "real-unsub-token"
-    s.admin_token = "real-admin"
-    s.audit_ip_salt = "real-salt"
-    s.delete_confirm_jwt_secret = "real-delete"
-    s.beta_admin_token = "real-beta"
-    s.admin_jwt_secret = "real-admin-jwt"
-    s.session_secret = "real-session"
-    s.admin_password_bootstrap = "real-bootstrap"
-    s.vault_audit_hmac_secret = "real-vault"
-    s.neo4j_password = "real-neo4j-password"  # Sprint 2I #13
+    s.unsubscribe_jwt_secret = "real-unsub-token".ljust(64, "0")
+    s.admin_token = "real-admin".ljust(64, "0")
+    s.audit_ip_salt = "real-salt".ljust(64, "0")
+    s.delete_confirm_jwt_secret = "real-delete".ljust(64, "0")
+    s.beta_admin_token = "real-beta".ljust(64, "0")
+    s.admin_jwt_secret = "real-admin-jwt".ljust(64, "0")
+    s.session_secret = "real-session".ljust(64, "0")
+    s.admin_password_bootstrap = "real-bootstrap".ljust(64, "0")
+    s.vault_audit_hmac_secret = "real-vault".ljust(64, "0")
+    s.neo4j_password = "real-neo4j-password"
     leaked = validate_production_secrets(s)
     assert leaked == []
     assert_production_safe(s)  # must not raise

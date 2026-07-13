@@ -136,7 +136,14 @@ class TestProductionSecretGuard:
     def test_real_secrets_boot_fine_on_a_public_deploy(self) -> None:
         from app.config import Settings, _DEV_INSECURE_DEFAULTS, assert_production_safe
 
-        overrides = {name: f"real-{name}-value" for name in _DEV_INSECURE_DEFAULTS}
+        # These used to read `f"real-{name}-value"` — around 20 bytes, and the
+        # word "real" was carrying the whole claim. The boot guard now also
+        # holds signing secrets to 32 bytes, so a secret that is merely *not the
+        # placeholder* is no longer enough. What an operator actually pastes in
+        # is the output of `openssl rand -hex 32`; that is what we hand it.
+        overrides = {
+            name: f"real-{name}-value".ljust(64, "0") for name in _DEV_INSECURE_DEFAULTS
+        }
         s = Settings(
             domain="abs.customer.com", ssl_mode="acme", env="dev", **overrides
         )

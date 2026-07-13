@@ -103,8 +103,13 @@ def test_install_with_cosign_skip(client) -> None:
     assert body["status"] == "installed"
     assert body["plugin_id"] == "slack-receiver"
     assert body["tenant"] == "default"
-    # docker SDK is optional in CI → expect graceful no-sandbox path
-    assert body["sandbox_status"] in {"installed_no_sandbox", "running"}
+    # The install record is one fact; whether anything is actually running is
+    # another, and the second one must never be flattered. `slack-receiver`
+    # declares no image, so there is nothing to launch: without the docker SDK
+    # that reads `installed_no_sandbox`, with it `not_running`. What it must
+    # never say is `running` — a plugin the server never started.
+    assert body["sandbox_status"] in {"installed_no_sandbox", "not_running"}
+    assert body["sandbox_status"] != "running"
 
 
 # --------------------------------------------------------------------------

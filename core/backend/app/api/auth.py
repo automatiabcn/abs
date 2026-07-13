@@ -23,9 +23,10 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 import bcrypt
+import jwt
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
-from jose import ExpiredSignatureError, JWTError, jwt
+from jwt import ExpiredSignatureError, PyJWTError
 from pydantic import BaseModel, Field
 
 from app.config import settings
@@ -368,7 +369,7 @@ def _decode_token(token: str) -> Dict:
         return jwt.decode(token, settings.session_secret, algorithms=["HS256"])
     except ExpiredSignatureError as exc:
         raise _SessionExpired() from exc
-    except JWTError as exc:
+    except PyJWTError as exc:
         raise _SessionInvalid() from exc
 
 
