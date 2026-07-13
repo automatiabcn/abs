@@ -30,6 +30,49 @@
   }
 }
 
+/* ── Shell motion ─────────────────────────────────────────────────────────
+ * The failover ring and the rail's status dots. Pure CSS on purpose: this is
+ * the product's only always-on motion and it must cost nothing — no WebGL,
+ * no JS timers, and the reduced-motion block below silences all of it. */
+@keyframes abs-beam {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+
+.abs-ring-beam {
+  stroke-dasharray: 5 13;
+  animation: abs-beam 1.15s linear infinite;
+}
+
+@keyframes abs-core-pulse {
+  0%,
+  100% {
+    r: 4.4;
+  }
+  50% {
+    r: 5.1;
+  }
+}
+
+.abs-ring-core {
+  animation: abs-core-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes abs-dot-throb {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(var(--abs-danger-rgb) / 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgb(var(--abs-danger-rgb) / 0);
+  }
+}
+
+.abs-dot-throb {
+  animation: abs-dot-throb 2s ease-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

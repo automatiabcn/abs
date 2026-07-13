@@ -16,11 +16,12 @@ vi.mock("next/navigation", () => ({
   redirect: (url: string) => redirectMock(url),
 }));
 
-// PanelHeader/Sidebar/CommandPalette/QueryProvider/ThemeProvider — RSC tree
+// AppShell/CommandPalette/QueryProvider/ThemeProvider — RSC tree
 // için stub'lar. Bu test sadece probe + redirect davranışını doğruluyor.
 vi.mock("@/components/panel/CommandPaletteLazy", () => ({ default: () => null }));
-vi.mock("@/components/panel/PanelHeader", () => ({ PanelHeader: () => null }));
-vi.mock("@/components/panel/PanelSidebar", () => ({ PanelSidebar: () => null }));
+vi.mock("@/components/shell/AppShell", () => ({
+  AppShell: ({ children }: { children: React.ReactNode }) => children,
+}));
 vi.mock("@/components/panel/PanelThemeProvider", () => ({
   PanelThemeProvider: ({ children }: { children: React.ReactNode }) => children,
 }));

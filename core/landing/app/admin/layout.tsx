@@ -15,9 +15,8 @@ import { redirect } from "next/navigation";
 // Sprint 21 / Faz D — cmdk palette deferred via the same client shim
 // used by /panel/layout.tsx.
 import CommandPalette from "@/components/panel/CommandPaletteLazy";
-import { PanelHeader } from "@/components/panel/PanelHeader";
-import { PanelSidebar } from "@/components/panel/PanelSidebar";
 import { PanelThemeProvider } from "@/components/panel/PanelThemeProvider";
+import { AppShell } from "@/components/shell/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/query-client";
 
@@ -95,13 +94,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   return (
     <PanelThemeProvider>
       <QueryProvider>
-        <div className="flex min-h-[calc(100vh-3.5rem)] bg-background text-foreground">
-          <PanelSidebar />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <PanelHeader />
-            <div className="flex-1 overflow-x-hidden">{children}</div>
-          </div>
-        </div>
+        <AppShell>{children}</AppShell>
         <CommandPalette />
         <Toaster richColors position="top-right" />
       </QueryProvider>
