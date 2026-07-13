@@ -61,22 +61,41 @@ def _check_vault() -> dict:
 
 
 def _check_providers() -> dict:
-    return {
+    """Can this server answer a question at all?
+
+    It used to be hardcoded `ok: True`, with the comment that having no provider
+    configured is fine at boot. At boot, yes. Afterwards it means the one thing the
+    product promises — ask it something, get an answer — cannot happen, and the
+    health check said everything was fine.
+
+    Key *presence* is still all this measures; a revoked or mistyped key reads as
+    configured. The live signal exists (app/health/monitor.py pings every provider
+    every 60 seconds) and neither status endpoint consults it — worth wiring up,
+    and a bigger change than this one. Until then this at least stops reporting a
+    server with nothing configured as healthy.
+    """
+    configured_count = sum(
+        1
+        for v in (
+            settings.anthropic_api_key,
+            settings.groq_api_key,
+            settings.cerebras_api_key,
+            settings.gemini_api_key,
+            settings.cohere_api_key,
+            settings.cf_account_id and settings.cf_api_token,
+        )
+        if v
+    )
+    result: dict = {
         "name": "providers",
-        "ok": True,
-        "configured_count": sum(
-            1
-            for v in (
-                settings.anthropic_api_key,
-                settings.groq_api_key,
-                settings.cerebras_api_key,
-                settings.gemini_api_key,
-                settings.cohere_api_key,
-                settings.cf_account_id and settings.cf_api_token,
-            )
-            if v
-        ),
+        "ok": configured_count > 0,
+        "configured_count": configured_count,
     }
+    if configured_count == 0:
+        result["detail"] = (
+            "no provider is configured — this server cannot answer a question"
+        )
+    return result
 
 
 def _check_rag() -> dict:
@@ -161,13 +180,23 @@ async def status_json() -> dict:
         _check_email(),
         _check_stripe(),
     ]
-    fail_count = sum(1 for s in services if not s["ok"])
-    if fail_count == 0:
+    # Severity, not arithmetic. This used to count failures: zero was "ok", one or
+    # two "degraded", three or more "down". Four of the seven checks were hardcoded
+    # to pass, so they padded the denominator and nothing else — and a server whose
+    # database was unreachable, which can do precisely nothing, was reported as
+    # "degraded" because only one box had gone red.
+    #
+    # Some failures are not partial. Without the database there is no server, and
+    # without a provider there is no answer; those are the two things a customer
+    # would call an outage, so they are the two things that say so.
+    CRITICAL = {"database", "providers"}
+    failed = [s["name"] for s in services if not s["ok"]]
+    if not failed:
         overall = "ok"
-    elif fail_count <= 2:
-        overall = "degraded"
-    else:
+    elif CRITICAL.intersection(failed):
         overall = "down"
+    else:
+        overall = "degraded"
     return {
         "overall": overall,
         "uptime_seconds": int(time.time() - _BOOT_TIME),

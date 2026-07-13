@@ -82,13 +82,37 @@ def compute_verifier_hash(path: Path | None = None) -> str:
 
 
 def verify_self_integrity() -> bool:
-    """Return True iff the live verifier hash matches the build-time
-    expectation. Returns True (no-op) when no expected hash is found
-    so dev environments are not blocked by a missing build artefact.
+    """Return True iff the live verifier hash matches the build-time expectation.
+
+    This used to return True when no expected hash could be found — so the licence
+    verifier's tamper check was defeated by *deleting the hash*, which is strictly
+    easier than patching the verifier the hash protects. A guard that passes when
+    the thing it needs is missing is not a guard.
+
+    Development is already served by an explicit `ABS_TAMPER_CHECK_DISABLED=1`
+    (see `assert_self_integrity`), so it never needed this second, silent escape —
+    and unlike the flag, the silent one also worked in production.
     """
 
     expected = _expected_hash()
     if not expected:
+        target = _verifier_path()
+        if target.suffix == ".so":
+            # A compiled verifier means this is a production image, and a production
+            # image is built with its hash. The hash being absent *here* is not a
+            # dev convenience — it is the state an attacker creates, because
+            # deleting the hash file is far easier than patching the .so it
+            # protects. Refuse.
+            logger.critical(
+                "tamper_check_no_expected_hash path=%s — the verifier is compiled "
+                "but its build-time hash is missing; refusing to trust it",
+                target,
+            )
+            return False
+        # Source checkout: the verifier is a .py sitting right there, no hash is
+        # built, and there is nothing to protect that the reader cannot already
+        # edit. Passing is honest. (`ABS_TAMPER_CHECK_DISABLED=1` remains the way
+        # to skip the check deliberately.)
         return True
     try:
         actual = compute_verifier_hash()

@@ -84,14 +84,21 @@ def _check_providers() -> dict:
 
 
 def _check_rag() -> dict:
-    try:
-        import importlib
+    """One RAG check, not two.
 
-        importlib.import_module("chromadb")
-        return {"name": "rag", "ok": True, "detail": {"chromadb": "importable"}}
-    except Exception as exc:
-        logger.exception("health_full rag check failed")
-        return {"name": "rag", "ok": False, "detail": {"error_class": type(exc).__name__}}
+    This file used to carry its own copy: `import chromadb` → `ok: True`. The copy
+    in status_page.py was fixed to actually ask whether documents can be *searched*
+    (a mock embedding backend means every answer comes from unrelated chunks), and
+    this one was not — so /v1/health/full, the endpoint an operator hits precisely
+    when they suspect something is wrong, kept reporting the outage as healthy.
+
+    A check duplicated is a check that will be fixed once. There is now a single
+    implementation, and `test_the_two_health_endpoints_cannot_drift.py` fails if
+    another copy appears.
+    """
+    from app.api.status_page import _check_rag as _shared_rag_check
+
+    return _shared_rag_check()
 
 
 def _check_mcp() -> dict:

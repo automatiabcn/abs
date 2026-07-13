@@ -198,6 +198,52 @@ def test_a_broken_audit_write_never_takes_the_request_down(monkeypatch, caplog):
     ), "the audit write failed and said nothing — which is the original sin here"
 
 
+def test_a_broken_recorder_complains_every_time_but_only_floods_once(monkeypatch, caplog):
+    """Loud on every event, but the traceback only once.
+
+    If the database goes away, this fires on every request. A full traceback per
+    request buries the very log a person is reading to find out why — but going
+    quiet after the first would be the original sin all over again. So: every
+    failure is reported, and only the first carries the stack.
+    """
+    import app.observability.audit as audit_module
+
+    monkeypatch.setattr(audit_module, "_persist_broken", False)
+    monkeypatch.setattr(
+        "app.vault.audit_chain.append_entry",
+        lambda **_kw: (_ for _ in ()).throw(RuntimeError("database is gone")),
+        raising=True,
+    )
+
+    with caplog.at_level("WARNING", logger=audit_module.LOGGER_NAME):
+        for i in range(4):
+            emit_event(None, action="auth.login", outcome="success",
+                       user_id=f"u{i}@example.com")
+
+    complaints = [r for r in caplog.records if "could not be recorded" in r.message]
+    assert len(complaints) == 4, "a failed audit write went unreported"
+
+    with_stack = [r for r in complaints if r.exc_info]
+    assert len(with_stack) == 1, (
+        f"{len(with_stack)} of 4 failures printed a full traceback — an unreachable "
+        "database would bury the log in stacks"
+    )
+
+
+def test_the_recorder_rearms_after_it_recovers(monkeypatch, caplog):
+    """The next outage has to be diagnosable too, not written off as the last one."""
+    import app.observability.audit as audit_module
+
+    monkeypatch.setattr(audit_module, "_persist_broken", True)  # as if already failing
+
+    # A write succeeds — the real append_entry, no patching.
+    emit_event(None, action="auth.login", outcome="success", user_id="ok@example.com")
+    assert audit_module._persist_broken is False, (
+        "the recorder came back and stayed flagged as broken, so the next real "
+        "outage would never print a stack trace"
+    )
+
+
 @pytest.mark.parametrize(
     "action,extra",
     [
