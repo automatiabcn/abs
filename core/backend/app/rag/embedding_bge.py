@@ -337,13 +337,52 @@ def resolve_backend(configured: str) -> str:
         pass
     if getattr(settings, "cohere_api_key", "") or "":
         return "cohere"
-    logger.warning(
-        "embedding backend=auto found nothing real to use — falling back to mock, "
-        "and document search will return meaningless results. Install Ollama and "
-        "`ollama pull bge-m3`, `pip install sentence-transformers`, or set "
-        "ABS_COHERE_API_KEY."
+    # Nothing real is available. The old code fell back to `mock` here — sha256
+    # vectors — which is how "chat with your documents" came to answer confidently
+    # from five unrelated chunks with every light green. The docstring above already
+    # said mock was reachable only by name; the code disagreed with it.
+    #
+    # `none` refuses to embed at all. That is the whole point: a search that cannot
+    # work must fail where it is called, not return something that looks like an
+    # answer. Indexing fails loudly too, which is correct — a corpus embedded by
+    # nothing is not a corpus.
+    logger.error(
+        "no embedding backend available — document search is disabled. Install "
+        "Ollama and `ollama pull bge-m3`, `pip install sentence-transformers`, or "
+        "set ABS_COHERE_API_KEY. (ABS_EMBEDDING_BACKEND=mock is for tests and "
+        "produces meaningless results.)"
     )
-    return "mock"
+    return "none"
+
+
+class EmbeddingUnavailable(RuntimeError):
+    """No embedding model is configured, so nothing can be embedded or searched.
+
+    Raised rather than returning a vector, because every alternative to raising is
+    a lie: a zero vector, a random one, or a hash all produce a search that returns
+    *something*, and something is what the customer will read as an answer.
+    """
+
+
+class _NoneBackend:
+    """The absence of an embedding model, made explicit and made loud."""
+
+    dim = 1024
+    model = ""
+
+    def _embed_batch(self, texts: list[str]) -> list[list[float]]:
+        raise EmbeddingUnavailable(
+            "no embedding model is configured — documents cannot be indexed or "
+            "searched. Set ABS_EMBEDDING_BACKEND (ollama / sentence_transformers / "
+            "cohere)."
+        )
+
+    # The backends are duck-typed and the callers are not consistent about which
+    # name they reach for. Every door leads to the same refusal, so none of them
+    # can quietly become the one that returns a vector.
+    encode = _embed_batch
+    embed = _embed_batch
+    __call__ = _embed_batch
 
 
 class BGEEmbedder:
@@ -356,9 +395,12 @@ class BGEEmbedder:
         self.backend = backend
         # Whether this backend actually understands meaning. Retrieval refuses to
         # answer from a backend that does not, rather than dressing up hash
-        # collisions as citations.
-        self.semantic = backend != "mock"
-        if backend == "mock":
+        # collisions as citations. `none` is the honest absence of one; `mock` is a
+        # test fixture that must never be reached by resolution, only by name.
+        self.semantic = backend not in ("mock", "none")
+        if backend == "none":
+            self._impl = _NoneBackend()
+        elif backend == "mock":
             self._impl = _MockBackend()
         elif backend == "cohere":
             self._impl = _CohereBackend()

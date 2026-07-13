@@ -71,12 +71,69 @@ def test_auto_prefers_a_real_backend_and_keeps_documents_local(monkeypatch):
     monkeypatch.setattr(builtins, "__import__", _no_sentence_transformers)
     assert emb.resolve_backend("auto") == "cohere"
 
-    # Nothing available at all: mock, and only then.
+    # Nothing available at all. This used to resolve to `mock` — sha256 vectors —
+    # and this test used to *demand* it, which is how the fix shipped with the bug
+    # still in it: the guard was added to chat's citation path and to the health
+    # check, while the panel's own search box, the MCP tool and the agent's
+    # retriever went on answering from hash collisions. A fresh self-host with no
+    # Ollama, no sentence-transformers and no Cohere key is exactly this state.
+    #
+    # It resolves to `none` now: an embedder that refuses to embed. A search that
+    # cannot work has to fail where it is called. Anything else — a zero vector, a
+    # random one, a hash — returns *something*, and something is what a customer
+    # reads as an answer.
     monkeypatch.setattr(emb.settings, "cohere_api_key", "", raising=False)
-    assert emb.resolve_backend("auto") == "mock"
+    assert emb.resolve_backend("auto") == "none"
 
     # An explicit choice is always honoured — the tests ask for mock by name.
     assert emb.resolve_backend("mock") == "mock"
+
+
+def test_the_absent_embedder_refuses_to_produce_a_vector():
+    """`none` is not a quiet backend. It is a backend that will not lie.
+
+    Every alternative to raising here manufactures a searchable vector: a zero
+    vector matches everything, a random one matches nothing in particular, and a
+    hash matches whatever collides. All three come back as ranked hits, and ranked
+    hits are what the answer is built from.
+    """
+    from app.rag.embedding_bge import BGEEmbedder, EmbeddingUnavailable
+
+    embedder = BGEEmbedder("none")
+    assert embedder.semantic is False
+
+    with pytest.raises(EmbeddingUnavailable):
+        embedder.embed(["what is our refund policy?"])
+
+
+def test_the_panel_search_box_refuses_rather_than_answering_from_hashes(monkeypatch):
+    """The surface the original fix missed.
+
+    The `semantic` guard went into chat's citation path and the health check. The
+    panel's own RAG search — `POST /v1/rag/query`, which is where a customer
+    actually types a question about their documents, and which *synthesises an
+    answer* when asked to — had no guard at all. It went on returning confident,
+    cited, wrong answers for as long as the embedder was not a real one.
+    """
+    from fastapi import HTTPException
+
+    from app.api.v1 import rag as rag_api
+
+    class _Hashes:
+        backend = "mock"
+        semantic = False
+        dim = 1024
+
+        def model_id(self) -> str:
+            return "mock:sha256"
+
+    monkeypatch.setattr(rag_api, "get_embedder", lambda: _Hashes(), raising=True)
+
+    with pytest.raises(HTTPException) as caught:
+        rag_api._ensure_embedder()
+
+    assert caught.value.status_code == 503
+    assert "search_unavailable" in str(caught.value.detail)
 
 
 def test_ollama_is_a_backend_you_can_actually_select():
