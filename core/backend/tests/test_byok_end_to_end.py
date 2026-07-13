@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from app.cascade.cache import prompt_hash
 from app.multitenant import provider_keys as pk
@@ -37,17 +36,19 @@ def test_tenant_configured_providers_reports_db_keys(monkeypatch):
 
     monkeypatch.setattr(settings, "provider_key_encryption_key", "k", raising=False)
     pk.set_provider_key(
-        tenant_slug="byok-t", owner_type="user", owner_id="dev@x.com",
-        provider="cerebras", value="ce-user-key",
+        tenant_slug="byok-t",
+        owner_type="user",
+        owner_id="dev@x.com",
+        provider="cerebras",
+        value="ce-user-key",
     )
-    got = pk.tenant_configured_providers(
-        tenant_slug="byok-t", user_subject="dev@x.com"
-    )
+    got = pk.tenant_configured_providers(tenant_slug="byok-t", user_subject="dev@x.com")
     assert "cerebras" in got
     # a different user in the same tenant sees nothing
-    assert pk.tenant_configured_providers(
-        tenant_slug="byok-t", user_subject="other@x.com"
-    ) == set()
+    assert (
+        pk.tenant_configured_providers(tenant_slug="byok-t", user_subject="other@x.com")
+        == set()
+    )
 
 
 def test_byok_provider_enters_cascade_chain(monkeypatch):
@@ -57,8 +58,11 @@ def test_byok_provider_enters_cascade_chain(monkeypatch):
 
     monkeypatch.setattr(settings, "provider_key_encryption_key", "k", raising=False)
     pk.set_provider_key(
-        tenant_slug="byok-chain", owner_type="user", owner_id="u@x.com",
-        provider="cohere", value="co-user-key",
+        tenant_slug="byok-chain",
+        owner_type="user",
+        owner_id="u@x.com",
+        provider="cohere",
+        value="co-user-key",
     )
     extra = frozenset(
         pk.tenant_configured_providers(tenant_slug="byok-chain", user_subject="u@x.com")

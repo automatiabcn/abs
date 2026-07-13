@@ -32,9 +32,33 @@ MAX_MATCHES = 40
 # Anything that is not text is not something to read into a chat. This is a
 # convenience, not a defence — paths.py is the defence.
 TEXT_SUFFIXES = {
-    ".txt", ".md", ".markdown", ".rst", ".csv", ".tsv", ".json", ".yaml", ".yml",
-    ".toml", ".ini", ".cfg", ".conf", ".log", ".sql", ".html", ".xml",
-    ".py", ".js", ".ts", ".tsx", ".jsx", ".sh", ".go", ".rs", ".java", ".rb",
+    ".txt",
+    ".md",
+    ".markdown",
+    ".rst",
+    ".csv",
+    ".tsv",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".ini",
+    ".cfg",
+    ".conf",
+    ".log",
+    ".sql",
+    ".html",
+    ".xml",
+    ".py",
+    ".js",
+    ".ts",
+    ".tsx",
+    ".jsx",
+    ".sh",
+    ".go",
+    ".rs",
+    ".java",
+    ".rb",
 }
 
 

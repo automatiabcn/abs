@@ -11,7 +11,6 @@ Single entry point for embedding so tests can monkeypatch it. Raises
 
 from __future__ import annotations
 
-import json
 from typing import List
 
 import httpx

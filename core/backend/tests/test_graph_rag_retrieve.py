@@ -98,9 +98,7 @@ async def test_query_assembles_citations_and_subgraph(
 @pytest.mark.asyncio
 async def test_query_no_hits_returns_empty(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(rt, "_vector_search", lambda q, t, k: [])
-    res = await rt.graph_rag_query(
-        "boş", tenant_id="t1", neo4j_client=_FakeNeo4j([])
-    )
+    res = await rt.graph_rag_query("boş", tenant_id="t1", neo4j_client=_FakeNeo4j([]))
     assert res.answer is None
     assert res.citations == []
     assert res.used_graph is False
@@ -147,13 +145,17 @@ async def test_query_blank_or_no_tenant_returns_empty() -> None:
 
 # ── multi-hop (D2) ──────────────────────────────────────────────────────────
 
+
 def test_subgraph_cypher_clamps_and_inlines_depth() -> None:
     assert "*1..1" in rt._subgraph_cypher(1)
     assert "*1..2" in rt._subgraph_cypher(2)
-    assert "*1..3" in rt._subgraph_cypher(9)   # clamped to max
-    assert "*1..1" in rt._subgraph_cypher(0)   # clamped to min
+    assert "*1..3" in rt._subgraph_cypher(9)  # clamped to max
+    assert "*1..1" in rt._subgraph_cypher(0)  # clamped to min
     # tenant isolation enforced on every hop
-    assert "all(rr IN relationships(p) WHERE rr.tenant_id = $tenant_id)" in rt._subgraph_cypher(3)
+    assert (
+        "all(rr IN relationships(p) WHERE rr.tenant_id = $tenant_id)"
+        in rt._subgraph_cypher(3)
+    )
 
 
 class _CapturingNeo4j:
@@ -170,17 +172,42 @@ class _CapturingNeo4j:
 
 # A 2-hop path Ahmet→ABC→Istanbul, plus an isolated seed (no outgoing edge).
 _MULTIHOP_ROWS = [
-    {"seed_id": "person:ahmet", "seed_name": "Ahmet", "seed_type": "Person",
-     "src_id": "person:ahmet", "src_name": "Ahmet", "src_type": "Person",
-     "rel_type": "WORKS_AT",
-     "dst_id": "organization:abc", "dst_name": "ABC", "dst_type": "Organization"},
-    {"seed_id": "person:ahmet", "seed_name": "Ahmet", "seed_type": "Person",
-     "src_id": "organization:abc", "src_name": "ABC", "src_type": "Organization",
-     "rel_type": "LOCATED_IN",
-     "dst_id": "location:istanbul", "dst_name": "İstanbul", "dst_type": "Location"},
-    {"seed_id": "concept:lonely", "seed_name": "Lonely", "seed_type": "Concept",
-     "src_id": None, "src_name": None, "src_type": None, "rel_type": None,
-     "dst_id": None, "dst_name": None, "dst_type": None},
+    {
+        "seed_id": "person:ahmet",
+        "seed_name": "Ahmet",
+        "seed_type": "Person",
+        "src_id": "person:ahmet",
+        "src_name": "Ahmet",
+        "src_type": "Person",
+        "rel_type": "WORKS_AT",
+        "dst_id": "organization:abc",
+        "dst_name": "ABC",
+        "dst_type": "Organization",
+    },
+    {
+        "seed_id": "person:ahmet",
+        "seed_name": "Ahmet",
+        "seed_type": "Person",
+        "src_id": "organization:abc",
+        "src_name": "ABC",
+        "src_type": "Organization",
+        "rel_type": "LOCATED_IN",
+        "dst_id": "location:istanbul",
+        "dst_name": "İstanbul",
+        "dst_type": "Location",
+    },
+    {
+        "seed_id": "concept:lonely",
+        "seed_name": "Lonely",
+        "seed_type": "Concept",
+        "src_id": None,
+        "src_name": None,
+        "src_type": None,
+        "rel_type": None,
+        "dst_id": None,
+        "dst_name": None,
+        "dst_type": None,
+    },
 ]
 
 
@@ -190,14 +217,20 @@ async def test_multihop_collects_path_entities_and_threads_depth(
 ) -> None:
     client = _CapturingNeo4j(_MULTIHOP_ROWS)
     res = await rt.graph_rag_query(
-        "Ahmet nerede?", tenant_id="t1", synthesize=False, depth=2,
+        "Ahmet nerede?",
+        tenant_id="t1",
+        synthesize=False,
+        depth=2,
         neo4j_client=client,
     )
     # depth threaded into the query
     assert "*1..2" in client.last_cypher
     # every entity along the 2-hop path + the isolated seed is surfaced
     assert {e["id"] for e in res.entities} == {
-        "person:ahmet", "organization:abc", "location:istanbul", "concept:lonely",
+        "person:ahmet",
+        "organization:abc",
+        "location:istanbul",
+        "concept:lonely",
     }
     rel_types = sorted(r["type"] for r in res.relations)
     assert rel_types == ["LOCATED_IN", "WORKS_AT"]

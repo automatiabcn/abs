@@ -10,6 +10,7 @@ FOREACH. On a raw-Cypher endpoint those are an SSRF primitive
 can't see. None are used anywhere in the app, so they are hard-blocked (no
 _confirm_destructive bypass) on both /cypher and /nl-query.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -76,12 +77,14 @@ def test_confirm_destructive_cannot_bypass_forbidden_clause(
     "cypher",
     [
         'LOAD /*x*/ CSV FROM "file:///etc/passwd" AS r RETURN r',  # block-comment split
-        "LOAD // sneaky\n CSV FROM 'x' AS r RETURN r",            # line-comment split
+        "LOAD // sneaky\n CSV FROM 'x' AS r RETURN r",  # line-comment split
         "USING/**/PERIODIC/**/COMMIT 500 LOAD/**/CSV FROM 'x' AS r RETURN r",
         "CA/**/LL",  # cannot split a single token, but ensure no crash
     ],
 )
-def test_comment_split_clause_not_bypassable(admin_client: TestClient, cypher: str) -> None:
+def test_comment_split_clause_not_bypassable(
+    admin_client: TestClient, cypher: str
+) -> None:
     """Cypher comments between multi-word clause keywords must NOT slip past the
     forbidden-clause guard (the parser ignores the comment and executes LOAD CSV)."""
     # The first three are real LOAD CSV / PERIODIC COMMIT bypasses → must 400.

@@ -24,16 +24,14 @@ _engine = None
 # each request; the SQLAlchemy listener below reads it before every cursor
 # execute and emits `SET LOCAL abs.tenant_id`, which is what makes the Postgres
 # RLS policies on the audit tables resolve to the right tenant. No-op on SQLite.
-current_tenant: ContextVar[str | None] = ContextVar(
-    "abs_current_tenant", default=None
-)
+current_tenant: ContextVar[str | None] = ContextVar("abs_current_tenant", default=None)
 
 
 def _ensure_sqlite_dir(url: str) -> None:
     """Create the parent directory of a SQLite DB file. No-op for other engines."""
     prefix = "sqlite:///"
     if url.startswith(prefix):
-        path_str = url[len(prefix):]
+        path_str = url[len(prefix) :]
         # sqlite:////abs/path → path starts with /
         Path(path_str).parent.mkdir(parents=True, exist_ok=True)
 
@@ -130,7 +128,7 @@ def _reconcile_sqlite_columns(engine) -> None:
         return
     for table in SQLModel.metadata.sorted_tables:
         if table.name not in live_tables:
-            continue                       # create_all just made it — fully fresh
+            continue  # create_all just made it — fully fresh
         try:
             have = {c["name"] for c in insp.get_columns(table.name)}
         except Exception:
@@ -143,11 +141,11 @@ def _reconcile_sqlite_columns(engine) -> None:
                 ddl = f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {coltype}'
                 default = _column_default_literal(col)
                 if default is not None:
-                    ddl += f" DEFAULT {default}"   # else added NULLable (SQLite OK)
+                    ddl += f" DEFAULT {default}"  # else added NULLable (SQLite OK)
                 with engine.begin() as conn:
                     conn.execute(text(ddl))
                 logger.info("sqlite reconcile: added %s.%s", table.name, col.name)
-            except Exception as exc:           # noqa: BLE001 — log + keep going
+            except Exception as exc:  # noqa: BLE001 — log + keep going
                 logger.warning(
                     "sqlite reconcile: skip %s.%s: %s", table.name, col.name, exc
                 )

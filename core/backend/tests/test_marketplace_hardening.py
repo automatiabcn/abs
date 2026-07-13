@@ -12,6 +12,7 @@ Covers:
 Live docker tests (set ABS_DOCKER_LIVE=1) are skipped by default; the suite
 relies on the install flow's graceful fallback when docker SDK is missing.
 """
+
 from __future__ import annotations
 
 import os

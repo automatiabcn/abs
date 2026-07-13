@@ -86,17 +86,13 @@ def test_create_checkout_validates_inputs() -> None:
 def test_test_mode_blocks_live_secret_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(
-        settings, "stripe_secret_key", "sk_live_DANGER", raising=False
-    )
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_live_DANGER", raising=False)
     with pytest.raises(BillingMisconfiguration):
         StripeBilling(backend="test")
 
 
 def test_live_mode_requires_live_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        settings, "stripe_secret_key", "sk_test_dummy", raising=False
-    )
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_dummy", raising=False)
     with pytest.raises(BillingMisconfiguration):
         StripeBilling(backend="live")
 

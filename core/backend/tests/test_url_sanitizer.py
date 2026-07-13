@@ -53,9 +53,7 @@ def test_sanitize_redacts_api_key_variants() -> None:
 
 
 def test_sanitize_redacts_multiple_secrets_in_same_url() -> None:
-    out = sanitize_url_for_log(
-        "https://x/y?key=AAA&token=BBB&visible=ok&secret=CCC"
-    )
+    out = sanitize_url_for_log("https://x/y?key=AAA&token=BBB&visible=ok&secret=CCC")
     assert "AAA" not in out
     assert "BBB" not in out
     assert "CCC" not in out
@@ -91,8 +89,13 @@ def test_sanitize_only_matches_query_param_form() -> None:
 def test_filter_redacts_msg_string() -> None:
     flt = SecretQueryParamFilter()
     rec = logging.LogRecord(
-        name="t", level=logging.INFO, pathname="", lineno=0,
-        msg="GET https://x/y?key=LEAKED", args=None, exc_info=None,
+        name="t",
+        level=logging.INFO,
+        pathname="",
+        lineno=0,
+        msg="GET https://x/y?key=LEAKED",
+        args=None,
+        exc_info=None,
     )
     flt.filter(rec)
     assert "LEAKED" not in rec.getMessage()
@@ -102,8 +105,12 @@ def test_filter_redacts_msg_string() -> None:
 def test_filter_redacts_tuple_args() -> None:
     flt = SecretQueryParamFilter()
     rec = logging.LogRecord(
-        name="t", level=logging.INFO, pathname="", lineno=0,
-        msg="%s %s", args=("GET", "https://x/y?token=LEAKED_T"),
+        name="t",
+        level=logging.INFO,
+        pathname="",
+        lineno=0,
+        msg="%s %s",
+        args=("GET", "https://x/y?token=LEAKED_T"),
         exc_info=None,
     )
     flt.filter(rec)
@@ -117,7 +124,5 @@ def test_install_is_idempotent() -> None:
     install_url_log_sanitizer()
     install_url_log_sanitizer()  # second call must not duplicate
     httpx_logger = logging.getLogger("httpx")
-    matches = [
-        f for f in httpx_logger.filters if isinstance(f, SecretQueryParamFilter)
-    ]
+    matches = [f for f in httpx_logger.filters if isinstance(f, SecretQueryParamFilter)]
     assert len(matches) == 1

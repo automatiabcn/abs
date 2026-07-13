@@ -44,14 +44,20 @@ def _recommended_action(intent: str, consent_status: str) -> str:
     if intent == "high":
         return "Inbound reply draft"
     if intent == "medium":
-        return "Outbound suggestion (approval)" if consent_status == "opt-in" else "Enrichment needed"
+        return (
+            "Outbound suggestion (approval)"
+            if consent_status == "opt-in"
+            else "Enrichment needed"
+        )
     return "Nurture"
 
 
 def create_company(*, tenant_slug: str, name: str, **fields: Any) -> int:
-    row = Company(tenant_slug=(tenant_slug or "default"), name=name[:256], **{
-        k: v for k, v in fields.items() if hasattr(Company, k)
-    })
+    row = Company(
+        tenant_slug=(tenant_slug or "default"),
+        name=name[:256],
+        **{k: v for k, v in fields.items() if hasattr(Company, k)},
+    )
     with Session(get_engine()) as db:
         db.add(row)
         db.commit()
@@ -60,12 +66,19 @@ def create_company(*, tenant_slug: str, name: str, **fields: Any) -> int:
 
 
 def create_lead(
-    *, tenant_slug: str, company_id: Optional[int] = None, source: str = "",
-    owner: str = "", consent_status: str = "",
+    *,
+    tenant_slug: str,
+    company_id: Optional[int] = None,
+    source: str = "",
+    owner: str = "",
+    consent_status: str = "",
 ) -> dict:
     row = Lead(
-        tenant_slug=(tenant_slug or "default"), company_id=company_id,
-        source=source[:64], owner=owner[:254], consent_status=consent_status[:32],
+        tenant_slug=(tenant_slug or "default"),
+        company_id=company_id,
+        source=source[:64],
+        owner=owner[:254],
+        consent_status=consent_status[:32],
         status="new",
     )
     with Session(get_engine()) as db:
@@ -79,11 +92,14 @@ def _lead_dict(r: Lead, db: Session) -> dict:
     company = db.get(Company, r.company_id) if r.company_id else None
     bg_count = 0
     if r.company_id:
-        bg_count = len(db.exec(
-            select(Contact).where(
-                Contact.tenant_slug == r.tenant_slug, Contact.company_id == r.company_id
-            )
-        ).all())
+        bg_count = len(
+            db.exec(
+                select(Contact).where(
+                    Contact.tenant_slug == r.tenant_slug,
+                    Contact.company_id == r.company_id,
+                )
+            ).all()
+        )
     return {
         "id": r.id,
         "company_id": r.company_id,
@@ -103,20 +119,33 @@ def _lead_dict(r: Lead, db: Session) -> dict:
     }
 
 
-def _buying_group(db: Session, *, tenant_slug: str, company_id: Optional[int]) -> List[dict]:
+def _buying_group(
+    db: Session, *, tenant_slug: str, company_id: Optional[int]
+) -> List[dict]:
     """Contacts at the company grouped by role (Lead detail buying group)."""
     if not company_id:
         return []
     rows = list(
-        db.exec(select(Contact).where(
-            Contact.tenant_slug == tenant_slug, Contact.company_id == company_id,
-        ))
+        db.exec(
+            select(Contact).where(
+                Contact.tenant_slug == tenant_slug,
+                Contact.company_id == company_id,
+            )
+        )
     )
-    return [{"name": c.name, "role": c.role or "contact",
-             "consent_status": c.consent_status} for c in rows]
+    return [
+        {
+            "name": c.name,
+            "role": c.role or "contact",
+            "consent_status": c.consent_status,
+        }
+        for c in rows
+    ]
 
 
-async def score_lead(*, tenant_slug: str, lead_id: int, actor: str = "") -> Optional[dict]:
+async def score_lead(
+    *, tenant_slug: str, lead_id: int, actor: str = ""
+) -> Optional[dict]:
     """Run the Lead Scoring Agent over the lead's company → persist score."""
     tenant_slug = (tenant_slug or "default").strip()
     with Session(get_engine()) as db:
@@ -139,10 +168,15 @@ async def score_lead(*, tenant_slug: str, lead_id: int, actor: str = "") -> Opti
     )
     payload = res.payload if isinstance(res.payload, dict) else {}
     # criteria: explicit "criteria" dict, else any numeric-valued sub-dict.
-    criteria = payload.get("criteria") if isinstance(payload.get("criteria"), dict) else {}
+    criteria = (
+        payload.get("criteria") if isinstance(payload.get("criteria"), dict) else {}
+    )
     if not criteria:
-        nums = {k: v for k, v in payload.items()
-                if isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v <= 1}
+        nums = {
+            k: v
+            for k, v in payload.items()
+            if isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v <= 1
+        }
         if len(nums) >= 3:
             criteria = nums
     # score: explicit payload.score, else mean of criteria, else agent confidence.
@@ -150,8 +184,11 @@ async def score_lead(*, tenant_slug: str, lead_id: int, actor: str = "") -> Opti
     try:
         score = float(payload.get("score"))  # type: ignore[arg-type]
     except (TypeError, ValueError):
-        crit_vals = [float(v) for v in criteria.values()
-                     if isinstance(v, (int, float)) and not isinstance(v, bool)]
+        crit_vals = [
+            float(v)
+            for v in criteria.values()
+            if isinstance(v, (int, float)) and not isinstance(v, bool)
+        ]
         score = (sum(crit_vals) / len(crit_vals)) if crit_vals else res.confidence
     score = max(0.0, min(1.0, score))
 
@@ -172,6 +209,7 @@ async def score_lead(*, tenant_slug: str, lead_id: int, actor: str = "") -> Opti
     # log the scoring run (best-effort)
     try:
         from app.approvals import log_agent_run
+
         log_agent_run(res, tenant_slug=tenant_slug, actor=actor, task=task)
     except Exception:  # noqa: BLE001
         logger.info("lead score run log skipped", exc_info=True)
@@ -184,8 +222,10 @@ def list_leads(*, tenant_slug: str, limit: int = 100) -> Dict[str, Any]:
     with Session(get_engine()) as db:
         rows = list(
             db.exec(
-                select(Lead).where(Lead.tenant_slug == tenant_slug)
-                .order_by(Lead.score.desc()).limit(limit)
+                select(Lead)
+                .where(Lead.tenant_slug == tenant_slug)
+                .order_by(Lead.score.desc())
+                .limit(limit)
             )
         )
         items = [_lead_dict(r, db) for r in rows]

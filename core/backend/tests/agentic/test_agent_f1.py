@@ -126,8 +126,10 @@ class TestArguments:
                 description="search",
                 parameters={
                     "type": "object",
-                    "properties": {"question": {"type": "string"},
-                                   "top_k": {"type": "integer"}},
+                    "properties": {
+                        "question": {"type": "string"},
+                        "top_k": {"type": "integer"},
+                    },
                     "required": ["question"],
                 },
                 fn=_spy,
@@ -167,7 +169,9 @@ class TestParsing:
     def test_reads_through_a_code_fence_and_prose(self):
         # No amount of prompt firmness stops this, so the parser accommodates it
         # rather than failing output that is otherwise perfectly good.
-        raw = 'Sure!\n```json\n{"action": "final", "answer": "hi"}\n```\nHope that helps.'
+        raw = (
+            'Sure!\n```json\n{"action": "final", "answer": "hi"}\n```\nHope that helps.'
+        )
         assert parse_action(raw)["action"] == "final"
 
     def test_returns_none_when_there_is_no_action(self):
@@ -247,7 +251,9 @@ class TestLoop:
         # Two model calls: the first, then the repair turn.
         assert len([e for e in events if e.type == "agent-step"]) == 2
 
-    async def test_a_repeated_call_is_stopped_before_it_eats_the_budget(self, monkeypatch):
+    async def test_a_repeated_call_is_stopped_before_it_eats_the_budget(
+        self, monkeypatch
+    ):
         async def _fake_status() -> str:
             return "all good"
 
@@ -263,7 +269,9 @@ class TestLoop:
             ),
         )
         # A model stuck on one call, forever.
-        _events(monkeypatch, ['{"action": "tool", "name": "system_status", "args": {}}'])
+        _events(
+            monkeypatch, ['{"action": "tool", "name": "system_status", "args": {}}']
+        )
 
         events = await self._run()
         ran = [e for e in events if e.type == "tool-result"]
@@ -332,7 +340,10 @@ class TestLoop:
                 name="fs_write",
                 level=Level.WRITE,
                 description="write a file",
-                parameters={"type": "object", "properties": {"path": {"type": "string"}}},
+                parameters={
+                    "type": "object",
+                    "properties": {"path": {"type": "string"}},
+                },
                 fn=_write,
             ),
         )
@@ -381,7 +392,10 @@ class TestLoop:
                 name="fs_write",
                 level=Level.WRITE,
                 description="write a file",
-                parameters={"type": "object", "properties": {"path": {"type": "string"}}},
+                parameters={
+                    "type": "object",
+                    "properties": {"path": {"type": "string"}},
+                },
                 fn=_write,
             ),
         )

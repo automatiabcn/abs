@@ -70,14 +70,20 @@ def test_safe_error_label_passes_allowlisted_codes():
     from app.api.update import _safe_error_label
 
     assert _safe_error_label("manifest_fetch_failed") == "manifest_fetch_failed"
-    assert _safe_error_label("update_manifest_url is not configured") == "update_manifest_url is not configured"
+    assert (
+        _safe_error_label("update_manifest_url is not configured")
+        == "update_manifest_url is not configured"
+    )
 
 
 def test_safe_error_label_collapses_unknown():
     from app.api.update import _safe_error_label
 
     # Old-style raw exception strings get scrubbed
-    assert _safe_error_label("ConnectionError: [Errno 110] timed out at httpx.py:42") == "upstream_unavailable"
+    assert (
+        _safe_error_label("ConnectionError: [Errno 110] timed out at httpx.py:42")
+        == "upstream_unavailable"
+    )
     assert _safe_error_label(None) == "upstream_unavailable"
     assert _safe_error_label("") == "upstream_unavailable"
 

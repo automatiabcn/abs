@@ -27,9 +27,9 @@ async def test_ask_compound_returns_text(monkeypatch):
     from app.mcp.tools.compound_tools import ask_compound
 
     monkeypatch.setattr(settings, "groq_api_key", "sk-test")
-    route = respx.post(
-        "https://api.groq.com/openai/v1/chat/completions"
-    ).mock(return_value=_stub_response("compound says hi"))
+    route = respx.post("https://api.groq.com/openai/v1/chat/completions").mock(
+        return_value=_stub_response("compound says hi")
+    )
     out = await ask_compound("plan a trip")
     assert out == "compound says hi"
     assert route.called

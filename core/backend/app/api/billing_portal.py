@@ -31,6 +31,7 @@ from app.db.session import get_session
 from app.i18n import t
 from app.middleware.rate_limit import limiter
 from app.observability.audit import emit_event
+
 router = APIRouter(prefix="/v1/billing", tags=["billing"])
 logger = logging.getLogger(__name__)
 
@@ -79,9 +80,7 @@ async def create_portal(
             reason="license_not_found",
             status_code=404,
         )
-        raise HTTPException(
-            status_code=404, detail=t("errors.license_not_found", lang)
-        )
+        raise HTTPException(status_code=404, detail=t("errors.license_not_found", lang))
 
     stripe.api_key = settings.stripe_secret_key
     try:

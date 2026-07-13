@@ -47,9 +47,7 @@ def upgrade() -> None:
         sa.Column("last_validated_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("last_validated_ok", sa.Boolean, nullable=True),
     )
-    op.create_index(
-        "ix_provider_keys_tenant_slug", "provider_keys", ["tenant_slug"]
-    )
+    op.create_index("ix_provider_keys_tenant_slug", "provider_keys", ["tenant_slug"])
     op.create_index("ix_provider_keys_owner_type", "provider_keys", ["owner_type"])
     op.create_index("ix_provider_keys_owner_id", "provider_keys", ["owner_id"])
     op.create_index("ix_provider_keys_provider", "provider_keys", ["provider"])

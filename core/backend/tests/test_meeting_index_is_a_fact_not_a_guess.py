@@ -46,7 +46,8 @@ def test_indexed_asks_the_store_instead_of_guessing(monkeypatch):
     from app.rag import qdrant_client as qc
 
     monkeypatch.setattr(
-        meetings_mod, "_indexed_chunk_count",
+        meetings_mod,
+        "_indexed_chunk_count",
         meetings_mod._indexed_chunk_count,  # keep the real one
     )
     monkeypatch.setattr(qc, "count_document", lambda **kw: 0)
@@ -106,18 +107,27 @@ def test_a_re_upload_rebuilds_a_missing_index(monkeypatch, client, as_admin):
 
     with Session(get_engine()) as db:
         row = Meeting(
-            tenant_slug="default", uploader_email="admin@local",
-            filename="standup.wav", status="done", quality_note="",
-            audio_sha256=audio_fingerprint(audio), duration_sec=12.0,
+            tenant_slug="default",
+            uploader_email="admin@local",
+            filename="standup.wav",
+            status="done",
+            quality_note="",
+            audio_sha256=audio_fingerprint(audio),
+            duration_sec=12.0,
             speaker_count=1,
         )
         db.add(row)
         db.commit()
         db.refresh(row)
-        db.add(MeetingSegment(
-            meeting_id=row.id, speaker_id="spk_0", start_sec=0.0, end_sec=5.0,
-            text="We ship the new onboarding flow on Friday.",
-        ))
+        db.add(
+            MeetingSegment(
+                meeting_id=row.id,
+                speaker_id="spk_0",
+                start_sec=0.0,
+                end_sec=5.0,
+                text="We ship the new onboarding flow on Friday.",
+            )
+        )
         db.commit()
         meeting_id = row.id
 

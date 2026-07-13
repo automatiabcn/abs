@@ -51,7 +51,9 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def log_agent_run(result: Any, *, tenant_slug: str, actor: str = "", task: str = "") -> int:
+def log_agent_run(
+    result: Any, *, tenant_slug: str, actor: str = "", task: str = ""
+) -> int:
     """Persist one agent execution; returns the AgentRun id."""
     row = AgentRun(
         tenant_slug=tenant_slug or "default",
@@ -75,14 +77,22 @@ def log_agent_run(result: Any, *, tenant_slug: str, actor: str = "", task: str =
 
 
 def create_approval_from_result(
-    result: Any, *, tenant_slug: str, requester: str, agent_run_id: Optional[int] = None,
-    target_company: str = "", target_person: str = "", channel: str = "",
+    result: Any,
+    *,
+    tenant_slug: str,
+    requester: str,
+    agent_run_id: Optional[int] = None,
+    target_company: str = "",
+    target_person: str = "",
+    channel: str = "",
     consent_status: str = "",
 ) -> dict:
     """Turn an approval-gated agent result into a pending ApprovalItem."""
     proposed = ""
     if isinstance(result.payload, dict):
-        proposed = str(result.payload.get("message") or result.payload.get("draft") or "")
+        proposed = str(
+            result.payload.get("message") or result.payload.get("draft") or ""
+        )
     row = ApprovalItem(
         tenant_slug=tenant_slug or "default",
         agent_id=result.agent_id,
@@ -147,16 +157,16 @@ def _to_dict(r: ApprovalItem) -> dict:
     }
 
 
-def list_approvals(*, tenant_slug: str, status: str = "pending", limit: int = 100) -> Dict[str, Any]:
+def list_approvals(
+    *, tenant_slug: str, status: str = "pending", limit: int = 100
+) -> Dict[str, Any]:
     """Items for a tenant + risk-bucket summary for the Approval Center header."""
     tenant_slug = (tenant_slug or "default").strip()
     with Session(get_engine()) as db:
         q = select(ApprovalItem).where(ApprovalItem.tenant_slug == tenant_slug)
         if status and status != "all":
             q = q.where(ApprovalItem.status == status)
-        rows = list(
-            db.exec(q.order_by(ApprovalItem.created_at.desc()).limit(limit))
-        )
+        rows = list(db.exec(q.order_by(ApprovalItem.created_at.desc()).limit(limit)))
         pending = list(
             db.exec(
                 select(ApprovalItem).where(
@@ -174,11 +184,13 @@ def list_approvals(*, tenant_slug: str, status: str = "pending", limit: int = 10
     from app.db.models import AgentRun
 
     with Session(get_engine()) as db:
-        low_auto = len(db.exec(
-            select(AgentRun).where(
-                AgentRun.tenant_slug == tenant_slug, AgentRun.risk == "low"
-            )
-        ).all())
+        low_auto = len(
+            db.exec(
+                select(AgentRun).where(
+                    AgentRun.tenant_slug == tenant_slug, AgentRun.risk == "low"
+                )
+            ).all()
+        )
         decided = db.exec(
             select(ApprovalItem).where(
                 ApprovalItem.tenant_slug == tenant_slug,
@@ -257,8 +269,13 @@ class AlreadyDecided(Exception):
 
 
 def decide_approval(
-    *, tenant_slug: str, item_id: int, decision: str, decided_by: str,
-    note: str = "", edited_message: str = "",
+    *,
+    tenant_slug: str,
+    item_id: int,
+    decision: str,
+    decided_by: str,
+    note: str = "",
+    edited_message: str = "",
 ) -> Optional[dict]:
     """Approve / reject / edit a pending item. Tenant-scoped; returns the row."""
     status = _DECISIONS.get((decision or "").strip())
@@ -269,7 +286,7 @@ def decide_approval(
         row = db.get(ApprovalItem, item_id)
         if row is None or row.tenant_slug != tenant_slug:
             return None
-        prev_status = row.status            # to fire the action at most once
+        prev_status = row.status  # to fire the action at most once
         if prev_status != "pending":
             # Refused, not silently rewritten. The concurrent case is different
             # and stays as it was: two decides that race both see "pending", one
@@ -299,7 +316,11 @@ def decide_approval(
         db.refresh(row)
         logger.info(
             "approval_decision id=%s status=%s by=%s tenant=%s prev=%s",
-            item_id, status, decided_by, tenant_slug, prev_status,
+            item_id,
+            status,
+            decided_by,
+            tenant_slug,
+            prev_status,
         )
 
     # Stage E — the FIRST approve/edit fires the action (consent-gated outbox);
@@ -311,7 +332,7 @@ def decide_approval(
             from app.actions import execute_for_approval
 
             action = execute_for_approval(row, tenant_slug=tenant_slug)
-            if not note:                       # surface the action outcome on the item
+            if not note:  # surface the action outcome on the item
                 with Session(get_engine()) as db2:
                     r2 = db2.get(ApprovalItem, item_id)
                     if r2 is not None:

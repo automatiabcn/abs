@@ -39,7 +39,7 @@ class ModelOutput:
 
 @dataclass(slots=True)
 class Verdict:
-    score: float       # 0..1
+    score: float  # 0..1
     rationale: str
     chosen_model: str  # propagated from input
 
@@ -84,9 +84,7 @@ def run_ensemble(
         raise ValueError("at least one candidate required")
     judge = judge or default_judge
     verdicts = [judge(question, c) for c in candidates]
-    paired = sorted(
-        zip(verdicts, candidates), key=lambda pair: -pair[0].score
-    )
+    paired = sorted(zip(verdicts, candidates), key=lambda pair: -pair[0].score)
     best_verdict, best_candidate = paired[0]
     if opus_baseline is not None:
         floor = opus_threshold * opus_baseline

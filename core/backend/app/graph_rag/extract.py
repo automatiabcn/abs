@@ -94,7 +94,12 @@ def _slug(name: str) -> str:
     """
     folded = unicodedata.normalize("NFKD", name)
     folded = "".join(c for c in folded if not unicodedata.combining(c))
-    folded = folded.lower().replace("\u0131", "i").replace("\u015f", "s").replace("\u011f", "g")
+    folded = (
+        folded.lower()
+        .replace("\u0131", "i")
+        .replace("\u015f", "s")
+        .replace("\u011f", "g")
+    )
     folded = folded.replace("\u00e7", "c").replace("\u00f6", "o").replace("\u00fc", "u")
     folded = re.sub(r"[^a-z0-9]+", "-", folded).strip("-")
     return folded
@@ -219,7 +224,9 @@ def _parse_extraction(raw_text: str) -> ExtractionResult | None:
                 source_id=src_id, target_id=dst_id, type=rtype
             )
 
-    return ExtractionResult(entities=list(by_id.values()), relations=list(rels.values()))
+    return ExtractionResult(
+        entities=list(by_id.values()), relations=list(rels.values())
+    )
 
 
 async def _run_llm(prompt: str, *, tenant_id: str, use_cache: bool = True) -> str:

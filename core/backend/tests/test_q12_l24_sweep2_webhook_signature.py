@@ -72,10 +72,7 @@ def _audits_for(records, action_prefix: str) -> list[dict]:
 
 def _slack_sign(secret: str, ts: str, body: bytes) -> str:
     base = b"v0:" + ts.encode() + b":" + body
-    return (
-        "v0="
-        + hmac.new(secret.encode(), base, hashlib.sha256).hexdigest()
-    )
+    return "v0=" + hmac.new(secret.encode(), base, hashlib.sha256).hexdigest()
 
 
 class TestQ12L24Sweep2Slack:

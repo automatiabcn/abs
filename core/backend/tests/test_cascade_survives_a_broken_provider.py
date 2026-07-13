@@ -32,18 +32,28 @@ class TestHalfConfiguredProvidersStayOut:
     def test_the_sample_account_id_does_not_count_as_configured(self, monkeypatch):
         # Exactly what .env.example ships. It is long enough to pass a length
         # check, which is why the old check let it through.
-        monkeypatch.setattr(cascade_mod.settings, "cf_api_token", "a-real-looking-token-value")
-        monkeypatch.setattr(cascade_mod.settings, "cf_account_id", "replace-with-cf-account-id")
+        monkeypatch.setattr(
+            cascade_mod.settings, "cf_api_token", "a-real-looking-token-value"
+        )
+        monkeypatch.setattr(
+            cascade_mod.settings, "cf_account_id", "replace-with-cf-account-id"
+        )
         assert cascade_mod.is_configured("cloudflare") is False
 
     def test_a_token_without_an_account_id_routes_nowhere(self, monkeypatch):
-        monkeypatch.setattr(cascade_mod.settings, "cf_api_token", "a-real-looking-token-value")
+        monkeypatch.setattr(
+            cascade_mod.settings, "cf_api_token", "a-real-looking-token-value"
+        )
         monkeypatch.setattr(cascade_mod.settings, "cf_account_id", "")
         assert cascade_mod.is_configured("cloudflare") is False
 
     def test_both_halves_present_is_configured(self, monkeypatch):
-        monkeypatch.setattr(cascade_mod.settings, "cf_api_token", "a-real-looking-token-value")
-        monkeypatch.setattr(cascade_mod.settings, "cf_account_id", "0123456789abcdef0123456789abcdef")
+        monkeypatch.setattr(
+            cascade_mod.settings, "cf_api_token", "a-real-looking-token-value"
+        )
+        monkeypatch.setattr(
+            cascade_mod.settings, "cf_account_id", "0123456789abcdef0123456789abcdef"
+        )
         assert cascade_mod.is_configured("cloudflare") is True
 
     def test_placeholder_keys_are_refused_however_long_they_are(self, monkeypatch):
@@ -56,14 +66,27 @@ class TestHalfConfiguredProvidersStayOut:
             assert cascade_mod.is_configured("groq") is False, placeholder
 
     def test_a_real_key_still_configures_the_provider(self, monkeypatch):
-        monkeypatch.setattr(cascade_mod.settings, "groq_api_key", "gsk_liveKeyThatIsLongEnough")
+        monkeypatch.setattr(
+            cascade_mod.settings, "groq_api_key", "gsk_liveKeyThatIsLongEnough"
+        )
         assert cascade_mod.is_configured("groq") is True
 
     def test_a_broken_provider_is_absent_from_the_chain_entirely(self, monkeypatch):
-        monkeypatch.setattr(cascade_mod.settings, "groq_api_key", "gsk_liveKeyThatIsLongEnough")
-        monkeypatch.setattr(cascade_mod.settings, "cf_api_token", "a-real-looking-token-value")
-        monkeypatch.setattr(cascade_mod.settings, "cf_account_id", "replace-with-cf-account-id")
-        for attr in ("anthropic_api_key", "gemini_api_key", "cerebras_api_key", "cohere_api_key"):
+        monkeypatch.setattr(
+            cascade_mod.settings, "groq_api_key", "gsk_liveKeyThatIsLongEnough"
+        )
+        monkeypatch.setattr(
+            cascade_mod.settings, "cf_api_token", "a-real-looking-token-value"
+        )
+        monkeypatch.setattr(
+            cascade_mod.settings, "cf_account_id", "replace-with-cf-account-id"
+        )
+        for attr in (
+            "anthropic_api_key",
+            "gemini_api_key",
+            "cerebras_api_key",
+            "cohere_api_key",
+        ):
             monkeypatch.setattr(cascade_mod.settings, attr, "")
 
         assert cascade_mod.get_active_providers() == ["groq"]
@@ -71,7 +94,9 @@ class TestHalfConfiguredProvidersStayOut:
 
 class TestOneProviderFailingIsNotEveryProviderFailing:
     @pytest.mark.asyncio
-    async def test_a_permanent_failure_hands_off_to_the_next_provider(self, monkeypatch):
+    async def test_a_permanent_failure_hands_off_to_the_next_provider(
+        self, monkeypatch
+    ):
         from app.cascade import orchestrator
 
         calls: list[str] = []
@@ -81,17 +106,27 @@ class TestOneProviderFailingIsNotEveryProviderFailing:
                 calls.append("dead")
                 # A 404 from a misrouted account: permanent, and none of the
                 # next provider's business.
-                raise ProviderError("CloudFlare 404: could not route", provider="cloudflare", transient=False)
+                raise ProviderError(
+                    "CloudFlare 404: could not route",
+                    provider="cloudflare",
+                    transient=False,
+                )
 
         class Alive:
             async def call(self, prompt, model=None, **kwargs):
                 calls.append("alive")
                 return ProviderResponse(
-                    text="the answer", provider="groq", model="m", tokens_used=3, latency_ms=1
+                    text="the answer",
+                    provider="groq",
+                    model="m",
+                    tokens_used=3,
+                    latency_ms=1,
                 )
 
         monkeypatch.setattr(
-            orchestrator, "get_provider", lambda name: Dead() if name == "cloudflare" else Alive()
+            orchestrator,
+            "get_provider",
+            lambda name: Dead() if name == "cloudflare" else Alive(),
         )
 
         resp = await orchestrator.call_with_cascade(
@@ -102,7 +137,9 @@ class TestOneProviderFailingIsNotEveryProviderFailing:
         assert calls == ["dead", "alive"]  # it did not stop at the corpse
 
     @pytest.mark.asyncio
-    async def test_when_every_provider_is_misconfigured_the_error_says_so(self, monkeypatch):
+    async def test_when_every_provider_is_misconfigured_the_error_says_so(
+        self, monkeypatch
+    ):
         # Nothing here gets better by waiting, so the caller must not be told to
         # retry in sixty seconds. It gets the provider's own error — which names
         # what is wrong, and which the callers that degrade gracefully on a bad
@@ -128,7 +165,9 @@ class TestOneProviderFailingIsNotEveryProviderFailing:
             )
 
     @pytest.mark.asyncio
-    async def test_when_everyone_is_merely_down_the_caller_is_told_to_retry(self, monkeypatch):
+    async def test_when_everyone_is_merely_down_the_caller_is_told_to_retry(
+        self, monkeypatch
+    ):
         from app.cascade import orchestrator
         from app.providers.schemas import CascadeUnavailable
 

@@ -131,9 +131,7 @@ async def list_users(admin: dict = Depends(admin_required)) -> dict:
 
 class InviteBody(BaseModel):
     email: EmailStr
-    role: Literal["admin", "member", "operator", "viewer"] = Field(
-        default="member"
-    )
+    role: Literal["admin", "member", "operator", "viewer"] = Field(default="member")
 
 
 def _invite_to_dict(row) -> dict:
@@ -291,7 +289,9 @@ class UserUpdateBody(BaseModel):
     status: Optional[Literal["active", "revoked"]] = None
 
 
-def _count_active_admins(session, tenant_slug: str, exclude_id: Optional[int] = None) -> int:
+def _count_active_admins(
+    session, tenant_slug: str, exclude_id: Optional[int] = None
+) -> int:
     """How many active `admin`-role users remain in the tenant (optionally
     excluding one row being mutated). Used to block the last-admin lockout."""
     from app.db.models import User
@@ -371,7 +371,10 @@ async def update_user(
                 or body.status == "revoked"
             )
         )
-        if demotes_admin and _count_active_admins(session, tenant_id, exclude_id=user.id) == 0:
+        if (
+            demotes_admin
+            and _count_active_admins(session, tenant_id, exclude_id=user.id) == 0
+        ):
             emit_event(
                 request,
                 action="admin.user.updated",
@@ -500,5 +503,7 @@ async def revoke_invite(
         tenant_id=tenant_id,
         resource_id=invite_id,
     )
-    _audit("admin.user.invite_revoked", resource=invite_id, detail=f"tenant={tenant_id}")
+    _audit(
+        "admin.user.invite_revoked", resource=invite_id, detail=f"tenant={tenant_id}"
+    )
     return Response(status_code=204)

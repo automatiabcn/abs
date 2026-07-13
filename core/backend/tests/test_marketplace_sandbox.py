@@ -7,7 +7,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.marketplace.manifest_schema import PluginManifest, PluginPermissions, PluginType
+from app.marketplace.manifest_schema import (
+    PluginManifest,
+    PluginPermissions,
+    PluginType,
+)
 from app.marketplace.sandbox import (
     DockerSandboxLauncher,
     EgressDeniedError,

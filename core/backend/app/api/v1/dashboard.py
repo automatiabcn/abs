@@ -130,7 +130,12 @@ async def dashboard(
             "catalog": connectors["catalog_total"],
             "health": conn_health,
         },
-        "model_gateway": {"cost": 0, "currency": "$", "models": 22, "mode": "free-first cascade"},
+        "model_gateway": {
+            "cost": 0,
+            "currency": "$",
+            "models": 22,
+            "mode": "free-first cascade",
+        },
         # Back-compat keys (old frontend shape) — harmless extras.
         "agents": {
             "total": len(AGENTS),

@@ -34,7 +34,12 @@ def operator_has_free_keys(monkeypatch):
     """The ordinary install: the operator configured the free providers."""
     for attr in ("groq_api_key", "gemini_api_key"):
         monkeypatch.setattr(cascade_mod.settings, attr, REAL)
-    for attr in ("anthropic_api_key", "cerebras_api_key", "cohere_api_key", "cf_api_token"):
+    for attr in (
+        "anthropic_api_key",
+        "cerebras_api_key",
+        "cohere_api_key",
+        "cf_api_token",
+    ):
         monkeypatch.setattr(cascade_mod.settings, attr, "")
     monkeypatch.setattr(cascade_mod.settings, "cf_account_id", "")
 
@@ -58,7 +63,9 @@ class TestTheKeyYouBringIsTheOneThatAnswersYou:
     def test_several_brought_keys_keep_their_usual_order_among_themselves(
         self, operator_has_free_keys
     ):
-        chain = get_active_providers(extra_configured=frozenset({"anthropic", "cerebras"}))
+        chain = get_active_providers(
+            extra_configured=frozenset({"anthropic", "cerebras"})
+        )
         # Both ahead of the operator's providers; between themselves, the house
         # ordering still applies rather than something arbitrary.
         assert set(chain[:2]) == {"anthropic", "cerebras"}
@@ -84,7 +91,9 @@ class TestTheFreeDefaultIsNotDisturbed:
         assert "anthropic" not in chain
         assert chain[0] == "groq"
 
-    def test_an_explicit_preference_still_beats_everything(self, operator_has_free_keys):
+    def test_an_explicit_preference_still_beats_everything(
+        self, operator_has_free_keys
+    ):
         chain = get_active_providers(
             prefer="gemini", extra_configured=frozenset({"anthropic"})
         )

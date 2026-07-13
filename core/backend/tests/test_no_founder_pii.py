@@ -74,11 +74,16 @@ def _iter_scoped_files() -> list[Path]:
     return sorted(set(targets))
 
 
-@pytest.mark.parametrize("pattern,label", [
-    (FOUNDER_FIRST_NAME, "founder first name 'Enes'"),
-    (FOUNDER_USERNAME, "founder Unix username 'eneseserkan'"),
-])
-def test_no_founder_pii_in_committed_surface(pattern: re.Pattern[str], label: str) -> None:
+@pytest.mark.parametrize(
+    "pattern,label",
+    [
+        (FOUNDER_FIRST_NAME, "founder first name 'Enes'"),
+        (FOUNDER_USERNAME, "founder Unix username 'eneseserkan'"),
+    ],
+)
+def test_no_founder_pii_in_committed_surface(
+    pattern: re.Pattern[str], label: str
+) -> None:
     """No file in the customer-visible surface area mentions the founder.
 
     Failure prints the offenders so the next worker can clean them up

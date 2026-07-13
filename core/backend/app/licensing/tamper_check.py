@@ -117,7 +117,9 @@ def verify_self_integrity() -> bool:
     try:
         actual = compute_verifier_hash()
     except OSError as exc:
-        logger.critical("tamper_check_read_failed path=%s err=%s", _verifier_path(), exc)
+        logger.critical(
+            "tamper_check_read_failed path=%s err=%s", _verifier_path(), exc
+        )
         return False
     if actual != expected:
         logger.critical(

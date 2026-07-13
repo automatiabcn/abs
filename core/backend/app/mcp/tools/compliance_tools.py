@@ -35,6 +35,7 @@ try:
 except IndexError:
     # Container layout differs from monorepo (parents[5] OOB) — fall back to env or /app.
     import os as _os
+
     REPO_ROOT = Path(_os.environ.get("ABS_REPO_ROOT", "/app"))
 DPA_PATH = REPO_ROOT / "docs" / "legal" / "dpa-template.md"
 SUBPROCESSORS_PATH = REPO_ROOT / "docs" / "legal" / "subprocessors.md"
@@ -123,9 +124,7 @@ def _consent_counts() -> dict:
 
         with Session(get_engine()) as s:
             for r in s.scalars(select(Consent)).all():
-                bucket = out.setdefault(
-                    r.consent_type, {"granted": 0, "withdrawn": 0}
-                )
+                bucket = out.setdefault(r.consent_type, {"granted": 0, "withdrawn": 0})
                 if r.withdrawn_at is not None:
                     bucket["withdrawn"] += 1
                 elif r.granted_at is not None:

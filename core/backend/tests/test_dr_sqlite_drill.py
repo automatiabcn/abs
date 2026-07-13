@@ -35,7 +35,9 @@ def _seed_db(path: Path, rows: int) -> None:
     conn.close()
 
 
-def _run(script: Path, *args: str, env_extra: dict | None = None) -> subprocess.CompletedProcess:
+def _run(
+    script: Path, *args: str, env_extra: dict | None = None
+) -> subprocess.CompletedProcess:
     import os
 
     env = dict(os.environ)

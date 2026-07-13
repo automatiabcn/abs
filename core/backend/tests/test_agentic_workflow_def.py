@@ -92,7 +92,7 @@ def test_ordered_steps_ignores_dangling_edges():
         ],
         "edges": [
             {"source": "t", "target": "a1"},
-            {"source": "a1", "target": "ghost"},   # 'ghost' was deleted
+            {"source": "a1", "target": "ghost"},  # 'ghost' was deleted
             {"source": "missing", "target": "a1"},
         ],
     }
@@ -126,12 +126,30 @@ def test_save_then_get_roundtrips_positions_and_edges():
     graph = {
         "name": "Test Akış",
         "nodes": [
-            {"id": "t", "kind": "trigger", "name": "T", "desc": "", "x": 10, "y": 20, "agent_id": None},
-            {"id": "a1", "kind": "agent", "name": "A", "desc": "", "x": 200, "y": 40, "agent_id": a},
+            {
+                "id": "t",
+                "kind": "trigger",
+                "name": "T",
+                "desc": "",
+                "x": 10,
+                "y": 20,
+                "agent_id": None,
+            },
+            {
+                "id": "a1",
+                "kind": "agent",
+                "name": "A",
+                "desc": "",
+                "x": 200,
+                "y": 40,
+                "agent_id": a,
+            },
         ],
         "edges": [{"source": "t", "target": "a1"}],
     }
-    saved = save_definition(tenant_slug="t_wf_rt", key="default", name="Test Akış", graph=graph)
+    saved = save_definition(
+        tenant_slug="t_wf_rt", key="default", name="Test Akış", graph=graph
+    )
     assert saved["saved"] is True
     assert saved["node_count"] == 2
     assert saved["edge_count"] == 1
@@ -151,21 +169,29 @@ async def test_dry_run_persists_nothing():
 
     def _count():
         with Session(get_engine()) as db:
-            return db.exec(select(func.count()).select_from(WorkflowRun)
-                           .where(WorkflowRun.tenant_slug == t)).one()
+            return db.exec(
+                select(func.count())
+                .select_from(WorkflowRun)
+                .where(WorkflowRun.tenant_slug == t)
+            ).one()
 
     before = _count()
-    out = await run_workflow(tenant_slug=t, name="Preview", steps=[a],
-                             input_text="merhaba", dry_run=True)
+    out = await run_workflow(
+        tenant_slug=t, name="Preview", steps=[a], input_text="merhaba", dry_run=True
+    )
     assert out["dry_run"] is True
     assert out["id"] is None
     assert out["approvals_opened"] == 0
     assert "would_open_approvals" in out
-    assert _count() == before          # no run row persisted
+    assert _count() == before  # no run row persisted
 
 
 def test_save_is_tenant_isolated():
-    save_definition(tenant_slug="t_wf_iso_a", key="default", name="A graph",
-                    graph={"nodes": [{"id": "x", "kind": "trigger"}], "edges": []})
+    save_definition(
+        tenant_slug="t_wf_iso_a",
+        key="default",
+        name="A graph",
+        graph={"nodes": [{"id": "x", "kind": "trigger"}], "edges": []},
+    )
     other = get_definition(tenant_slug="t_wf_iso_b", key="default")
     assert other["saved"] is False  # B never saved → still default

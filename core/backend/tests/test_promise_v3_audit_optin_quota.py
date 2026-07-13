@@ -10,6 +10,7 @@ Two contracts pinned:
   2. `quota_monitor.gate()` emits a `quota.block` audit row on every
      QuotaExceeded refusal.
 """
+
 from __future__ import annotations
 
 import logging

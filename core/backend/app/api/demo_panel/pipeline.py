@@ -51,12 +51,14 @@ async def recent_pipeline(limit: int = 20) -> dict:
     with Session(get_engine()) as db:
         # DB-side filter/order/limit — UNAUTHENTICATED endpoint must not load the
         # full (growing) audit table into memory each request.
-        rows = list(db.scalars(
-            select(CustomerAuditEntry)
-            .where(CustomerAuditEntry.resource.in_(list(PIPELINE_TOOLS)))
-            .order_by(CustomerAuditEntry.ts.desc())
-            .limit(capped)
-        ).all())
+        rows = list(
+            db.scalars(
+                select(CustomerAuditEntry)
+                .where(CustomerAuditEntry.resource.in_(list(PIPELINE_TOOLS)))
+                .order_by(CustomerAuditEntry.ts.desc())
+                .limit(capped)
+            ).all()
+        )
     for r in rows:
         ts = _norm(r.ts)
         out.append(

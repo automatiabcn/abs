@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import time
-from pathlib import Path
 
 import pytest
 
@@ -42,9 +41,7 @@ def _e2e_setup_state(tmp_path, monkeypatch):
 
 
 def _full_token():
-    return generate_license(
-        customer_id="cus_e2e", tier="self-host", seat_count=1
-    )
+    return generate_license(customer_id="cus_e2e", tier="self-host", seat_count=1)
 
 
 def test_e2e_full_6_steps_completion(client, _e2e_setup_state, monkeypatch):
@@ -134,7 +131,12 @@ def test_e2e_completion_idempotent(client, _e2e_setup_state):
     state["completed"] = True
     state["current_step"] = 6
     state["completed_steps"] = [
-        "admin", "license", "domain", "anthropic", "providers", "test"
+        "admin",
+        "license",
+        "domain",
+        "anthropic",
+        "providers",
+        "test",
     ]
     state_file.write_text(json.dumps(state))
 

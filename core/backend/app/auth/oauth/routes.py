@@ -61,9 +61,7 @@ def _resolve_roles(subject: str) -> list[str]:
         from app.db.session import get_engine
 
         with _S(get_engine()) as db:
-            u = db.execute(
-                select(User).where(User.email == subject)
-            ).scalars().first()
+            u = db.execute(select(User).where(User.email == subject)).scalars().first()
             if u is not None and u.role:
                 return [str(u.role)]
     except Exception:  # pragma: no cover — defensive
@@ -201,9 +199,7 @@ async def authorize(
     if state:
         qs += f"&state={state}"
     sep = "&" if "?" in validated_redirect_uri else "?"
-    return RedirectResponse(
-        url=f"{validated_redirect_uri}{sep}{qs}", status_code=302
-    )
+    return RedirectResponse(url=f"{validated_redirect_uri}{sep}{qs}", status_code=302)
 
 
 @router.post("/oauth/token")

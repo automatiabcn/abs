@@ -105,9 +105,7 @@ def _get_or_create_tenant(slug: str) -> Tenant:
 
 
 @router.get("/tenant")
-async def get_tenant(
-    request: Request, admin: dict = Depends(admin_required)
-) -> dict:
+async def get_tenant(request: Request, admin: dict = Depends(admin_required)) -> dict:
     slug = _resolve_tenant_slug(admin)
     try:
         tenant = _get_or_create_tenant(slug)

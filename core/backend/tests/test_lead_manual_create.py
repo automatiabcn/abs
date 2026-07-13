@@ -28,8 +28,11 @@ def test_create_lead_persists_company_detail(admin_client):
     r = admin_client.post(
         "/v1/leads",
         json={
-            "company_name": "Acme Yapı A.Ş.", "sector": "İnşaat",
-            "domain": "acme.example", "location": "İstanbul", "size": "11-50",
+            "company_name": "Acme Yapı A.Ş.",
+            "sector": "İnşaat",
+            "domain": "acme.example",
+            "location": "İstanbul",
+            "size": "11-50",
         },
     )
     assert r.status_code in (200, 201), r.text

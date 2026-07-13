@@ -145,7 +145,11 @@ def test_purge_script_dry_run_lists_candidates():
 
     repo = str(REPO_ROOT)
     out = subprocess.run(
-        [sys.executable, f"{repo}/infra/scripts/purge_deleted_accounts.py", "--dry-run"],
+        [
+            sys.executable,
+            f"{repo}/infra/scripts/purge_deleted_accounts.py",
+            "--dry-run",
+        ],
         capture_output=True,
         text=True,
         cwd=f"{repo}/core/backend",
@@ -213,16 +217,12 @@ def test_purge_script_executes_and_zeros_pii():
         # children must be gone
         assert (
             db.scalars(
-                select(CustomerAuditEntry).where(
-                    CustomerAuditEntry.license_jti == jti
-                )
+                select(CustomerAuditEntry).where(CustomerAuditEntry.license_jti == jti)
             ).first()
             is None
         )
         assert (
-            db.scalars(
-                select(EmailQueue).where(EmailQueue.license_jti == jti)
-            ).first()
+            db.scalars(select(EmailQueue).where(EmailQueue.license_jti == jti)).first()
             is None
         )
         assert (
@@ -267,4 +267,6 @@ def test_purge_leaves_global_connected_secrets_untouched():
                 ConnectedSecret.key_name == "global-slack-token-purge-test"
             )
         ).first()
-        assert secret is not None, "global connected secret must survive an account purge"
+        assert secret is not None, (
+            "global connected secret must survive an account purge"
+        )

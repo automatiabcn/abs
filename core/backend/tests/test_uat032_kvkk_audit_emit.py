@@ -65,7 +65,9 @@ def test_delete_requested_emits_ok(
         )
     assert r.status_code == 200
     events = _audits_for(caplog.records, "me.account.delete_requested")
-    assert any(e.get("outcome") == "success" and e.get("user_id") == jti for e in events)
+    assert any(
+        e.get("outcome") == "success" and e.get("user_id") == jti for e in events
+    )
 
 
 def test_delete_confirmed_emits_ok(
@@ -88,7 +90,9 @@ def test_delete_confirmed_emits_ok(
         )
     assert r.status_code == 200
     events = _audits_for(caplog.records, "me.account.delete_confirmed")
-    assert any(e.get("outcome") == "success" and e.get("user_id") == jti for e in events)
+    assert any(
+        e.get("outcome") == "success" and e.get("user_id") == jti for e in events
+    )
 
 
 def test_delete_cancelled_emits_ok(
@@ -109,7 +113,9 @@ def test_delete_cancelled_emits_ok(
         )
     assert r.status_code == 200
     events = _audits_for(caplog.records, "me.account.delete_cancelled")
-    assert any(e.get("outcome") == "success" and e.get("user_id") == jti for e in events)
+    assert any(
+        e.get("outcome") == "success" and e.get("user_id") == jti for e in events
+    )
 
 
 def test_purge_executed_emits_ok(
@@ -141,4 +147,6 @@ def test_purge_executed_emits_ok(
         purge_module.main([])
 
     events = _audits_for(caplog.records, "me.account.purge_executed")
-    assert any(e.get("outcome") == "success" and e.get("user_id") == jti for e in events)
+    assert any(
+        e.get("outcome") == "success" and e.get("user_id") == jti for e in events
+    )

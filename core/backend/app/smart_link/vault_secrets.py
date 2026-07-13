@@ -142,7 +142,9 @@ def list_secrets() -> list[dict]:
                     "key_name": r.key_name,
                     "provider": r.provider,
                     "created_at": created.isoformat(),
-                    "last_validated_at": validated_at.isoformat() if validated_at else None,
+                    "last_validated_at": validated_at.isoformat()
+                    if validated_at
+                    else None,
                     "last_validated_ok": r.last_validated_ok,
                     "last_validated_error": r.last_validated_error,
                 }

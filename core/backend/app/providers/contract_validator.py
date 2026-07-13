@@ -42,24 +42,36 @@ def assert_canonical_request(provider: str, payload: dict[str, Any]) -> None:
         for k in ("model", "max_tokens", "messages"):
             assert k in payload, f"anthropic request missing {k!r}"
         msgs = payload["messages"]
-        assert isinstance(msgs, list) and msgs, "anthropic messages must be non-empty list"
+        assert isinstance(msgs, list) and msgs, (
+            "anthropic messages must be non-empty list"
+        )
         for m in msgs:
-            assert "role" in m and "content" in m, "anthropic message missing role/content"
+            assert "role" in m and "content" in m, (
+                "anthropic message missing role/content"
+            )
         return
     if provider in ("groq", "openrouter", "cohere"):
         for k in ("model", "messages"):
             assert k in payload, f"{provider} request missing {k!r}"
         msgs = payload["messages"]
-        assert isinstance(msgs, list) and msgs, f"{provider} messages must be non-empty list"
+        assert isinstance(msgs, list) and msgs, (
+            f"{provider} messages must be non-empty list"
+        )
         for m in msgs:
-            assert "role" in m and "content" in m, f"{provider} message missing role/content"
+            assert "role" in m and "content" in m, (
+                f"{provider} message missing role/content"
+            )
         return
     if provider == "gemini":
         contents = payload.get("contents")
-        assert isinstance(contents, list) and contents, "gemini contents must be non-empty list"
+        assert isinstance(contents, list) and contents, (
+            "gemini contents must be non-empty list"
+        )
         for c in contents:
             parts = c.get("parts")
-            assert isinstance(parts, list) and parts, "gemini parts must be non-empty list"
+            assert isinstance(parts, list) and parts, (
+                "gemini parts must be non-empty list"
+            )
             assert "text" in parts[0], "gemini first part needs text"
         return
     raise AssertionError(f"unknown provider {provider!r}")
@@ -68,15 +80,21 @@ def assert_canonical_request(provider: str, payload: dict[str, Any]) -> None:
 def assert_canonical_response(provider: str, payload: dict[str, Any]) -> None:
     if provider == "anthropic":
         content = payload.get("content")
-        assert isinstance(content, list) and content, "anthropic response.content must be non-empty list"
-        first = content[0]
-        assert first.get("type") == "text" and isinstance(first.get("text"), str) and first["text"], (
-            "anthropic first content block must be text with non-empty text"
+        assert isinstance(content, list) and content, (
+            "anthropic response.content must be non-empty list"
         )
+        first = content[0]
+        assert (
+            first.get("type") == "text"
+            and isinstance(first.get("text"), str)
+            and first["text"]
+        ), "anthropic first content block must be text with non-empty text"
         return
     if provider in ("groq", "openrouter"):
         choices = payload.get("choices")
-        assert isinstance(choices, list) and choices, f"{provider} response.choices required"
+        assert isinstance(choices, list) and choices, (
+            f"{provider} response.choices required"
+        )
         msg = choices[0].get("message")
         assert isinstance(msg, dict), f"{provider} response.choices[0].message required"
         assert isinstance(msg.get("content"), str) and msg["content"], (
@@ -95,7 +113,9 @@ def assert_canonical_response(provider: str, payload: dict[str, Any]) -> None:
         msg = payload.get("message")
         assert isinstance(msg, dict), "cohere response.message required"
         content = msg.get("content")
-        assert isinstance(content, list) and content, "cohere response.message.content required"
+        assert isinstance(content, list) and content, (
+            "cohere response.message.content required"
+        )
         assert isinstance(content[0].get("text"), str) and content[0]["text"], (
             "cohere first content block text required"
         )
@@ -106,11 +126,17 @@ def assert_canonical_response(provider: str, payload: dict[str, Any]) -> None:
 def canonical_text(provider: str, response: dict[str, Any]) -> str:
     """Extract the assistant message text into the canonical ABS shape."""
     if provider == "anthropic":
-        return "".join(b.get("text", "") for b in response.get("content", []) if b.get("type") == "text")
+        return "".join(
+            b.get("text", "")
+            for b in response.get("content", [])
+            if b.get("type") == "text"
+        )
     if provider in ("groq", "openrouter"):
         return response["choices"][0]["message"]["content"]
     if provider == "gemini":
-        return "".join(p.get("text", "") for p in response["candidates"][0]["content"]["parts"])
+        return "".join(
+            p.get("text", "") for p in response["candidates"][0]["content"]["parts"]
+        )
     if provider == "cohere":
         return "".join(b.get("text", "") for b in response["message"]["content"])
     raise AssertionError(f"unknown provider {provider!r}")

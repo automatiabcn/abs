@@ -131,8 +131,12 @@ def test_step_meta_tokens_forwarded(monkeypatch):
 
     async def _fake_call():
         return ProviderResponse(
-            text="ok", model="m1", provider="p", elapsed_ms=10,
-            tokens_in=42, tokens_out=88,
+            text="ok",
+            model="m1",
+            provider="p",
+            elapsed_ms=10,
+            tokens_in=42,
+            tokens_out=88,
         )
 
     step, _ = asyncio.run(timed_step("test", _fake_call(), model_hint="m1"))

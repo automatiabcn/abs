@@ -248,7 +248,9 @@ def test_query_synthesizes_answer(monkeypatch: pytest.MonkeyPatch) -> None:
             "id": "p1",
             "score": 0.9,
             "payload": {
-                "chunk_id": "p1", "doc_id": "d1", "seq": 0,
+                "chunk_id": "p1",
+                "doc_id": "d1",
+                "seq": 0,
                 "text": "Kira her ayın 5'inde ödenir.",
             },
         }
@@ -280,7 +282,9 @@ def test_query_synthesizes_answer(monkeypatch: pytest.MonkeyPatch) -> None:
     assert len(body["hits"]) == 1
 
 
-def test_query_without_answer_flag_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_query_without_answer_flag_returns_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     cid = f"rag-{secrets.token_hex(3)}"
     _seed_client(cid)
     monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
@@ -297,7 +301,15 @@ def test_query_doc_ids_filter_passed_to_search(monkeypatch: pytest.MonkeyPatch) 
     _seed_client(cid)
     captured: dict = {}
 
-    def fake_search(*, collection, tenant_id, query_vector, limit, score_threshold=None, extra_filter=None):
+    def fake_search(
+        *,
+        collection,
+        tenant_id,
+        query_vector,
+        limit,
+        score_threshold=None,
+        extra_filter=None,
+    ):
         captured["extra_filter"] = extra_filter
         return []
 

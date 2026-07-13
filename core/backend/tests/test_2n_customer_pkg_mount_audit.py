@@ -12,6 +12,7 @@ Sprint 2N FAZ D bu pattern'i sistemleştiriyor:
 - `customer_onboard.sh` her host bind mount'u kopyalar (cerbos + scripts +
   Caddyfile + license.jwt + ghcr_pull.token + docker-compose.yml)
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -66,7 +67,9 @@ def test_onboard_copies_every_host_bind_mount_source() -> None:
             f"infra/{clean}" not in onboard_raw
             and f"infra/{clean.lower()}" not in onboard_raw
         ):
-            failures.append(f"compose mount './{src}' → no cp in onboard.sh (target {target})")
+            failures.append(
+                f"compose mount './{src}' → no cp in onboard.sh (target {target})"
+            )
     assert not failures, "\n".join(failures)
 
 
@@ -84,9 +87,7 @@ def test_builder_enforces_required_file_list() -> None:
     # builder fails fast if onboard.sh skipped a step.
     required_in_builder = {"docker-compose.yml", "Caddyfile", "cerbos", "scripts"}
     missing = [f for f in required_in_builder if f'"{f}"' not in raw]
-    assert not missing, (
-        f"build_customer_pkg.sh REQUIRED array missing: {missing}"
-    )
+    assert not missing, f"build_customer_pkg.sh REQUIRED array missing: {missing}"
     # Credentials too — license + ghcr token.
     assert '"license.jwt"' in raw
     assert '"ghcr_pull.token"' in raw

@@ -81,9 +81,7 @@ class HallucinationGuard:
                     audit=audit,
                 )
             if attempt == self.max_revisions:
-                logger.warning(
-                    "hallucination_guard_exhausted score=%.3f", score
-                )
+                logger.warning("hallucination_guard_exhausted score=%.3f", score)
                 return GuardResult(
                     answer=current,
                     faithfulness=score,

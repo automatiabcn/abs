@@ -47,9 +47,7 @@ async def reset_demo(authorization: str | None = Header(default=None)) -> JSONRe
             state_path.unlink()
         except Exception as exc:
             logger.exception("demo state delete failed: %s", exc)
-            raise HTTPException(
-                status_code=500, detail=f"Silinemedi: {str(exc)[:200]}"
-            )
+            raise HTTPException(status_code=500, detail=f"Silinemedi: {str(exc)[:200]}")
 
     logger.info("[admin] demo reset existed=%s", existed)
     return JSONResponse(

@@ -37,7 +37,6 @@ from app.services import feature_usage as feature_usage_service
 from app.workflow_v10 import runner
 from app.workflow_v10.builder.synthesizer import (
     SynthesisError,
-    extract_json,
     synthesize as synth_run,
 )
 from app.workflow_v10.builder.templates import list_templates
@@ -68,8 +67,8 @@ class SynthesizeResponse(BaseModel):
 # so an admin-authenticated (or JWT-compromised) caller could POST a 10k-node,
 # Multi-MB payload: runner.plan() walks the whole structure and allocates per
 # Node, which OOMs the worker.
-WORKFLOW_NODES_MAX = 200       # generous; shipped templates use 5–20
-WORKFLOW_EDGES_MAX = 500       # ≈ 2.5× nodes (DAG fan-out budget)
+WORKFLOW_NODES_MAX = 200  # generous; shipped templates use 5–20
+WORKFLOW_EDGES_MAX = 500  # ≈ 2.5× nodes (DAG fan-out budget)
 
 
 class ExecuteRequest(BaseModel):
@@ -178,9 +177,7 @@ async def _cascade_synth_fn(prompt: str) -> str:
             max_tokens=2048,
         )
     except ProviderError as exc:
-        raise SynthesisError(
-            f"cascade_failed: {exc.message or str(exc)}"
-        ) from exc
+        raise SynthesisError(f"cascade_failed: {exc.message or str(exc)}") from exc
     if not resp.text:
         raise SynthesisError("cascade_empty_response")
     return resp.text
@@ -220,8 +217,7 @@ async def synthesize(
             payload = {
                 "workflow": result.workflow.model_dump(mode="json"),
                 "explanation": (
-                    f"LLM-synthesised workflow "
-                    f"(revisions={result.revisions})"
+                    f"LLM-synthesised workflow (revisions={result.revisions})"
                 ),
                 "source": "llm",
                 "revisions": result.revisions,
@@ -230,8 +226,7 @@ async def synthesize(
             logger.warning("LLM synth failed (%s); falling back to template", exc)
             payload = _template_fallback(body.intent, body.locale)
             payload["explanation"] = (
-                f"Template fallback after LLM failure: {exc}. "
-                f"{payload['explanation']}"
+                f"Template fallback after LLM failure: {exc}. {payload['explanation']}"
             )
             # Surface a soft warning so the panel can tell the operator the
             # Canvas fell back to a template match, instead of it silently
@@ -253,9 +248,7 @@ async def synthesize(
         warnings.insert(0, fallback_warning)
 
     try:
-        feature_usage_service.increment(
-            "workflow_run", actor_email=admin.get("sub")
-        )
+        feature_usage_service.increment("workflow_run", actor_email=admin.get("sub"))
     except Exception:
         pass
 

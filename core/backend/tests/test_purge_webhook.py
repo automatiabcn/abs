@@ -47,7 +47,9 @@ def test_purge_dry_run_no_deletes(monkeypatch):
 
     with Session(get_engine()) as s:
         rows = s.scalars(
-            select(WebhookEvent).where(WebhookEvent.event_id.startswith("evt_purge_dry_"))
+            select(WebhookEvent).where(
+                WebhookEvent.event_id.startswith("evt_purge_dry_")
+            )
         ).all()
         assert len(rows) == 2  # dry-run silmemeli
 

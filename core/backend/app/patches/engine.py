@@ -5,10 +5,10 @@
 
 """Patch engine — parse, preview, apply and score unified diffs.
 
-  - parse_diff():    list the @@-headed hunks
-  - preview_patch(): `patch --dry-run`, so nothing is written to check a patch
-  - apply_patch():   atomic write, with a backup by default
-  - score_patch():   0-10 on minimalism and how concentrated the hunks are
+- parse_diff():    list the @@-headed hunks
+- preview_patch(): `patch --dry-run`, so nothing is written to check a patch
+- apply_patch():   atomic write, with a backup by default
+- score_patch():   0-10 on minimalism and how concentrated the hunks are
 """
 
 from __future__ import annotations
@@ -40,11 +40,11 @@ class Hunk:
 
     @property
     def adds(self) -> int:
-        return sum(1 for l in self.lines if l.op == "+")
+        return sum(1 for line in self.lines if line.op == "+")
 
     @property
     def dels(self) -> int:
-        return sum(1 for l in self.lines if l.op == "-")
+        return sum(1 for line in self.lines if line.op == "-")
 
 
 def parse_diff(text: str) -> List[Hunk]:
@@ -150,7 +150,11 @@ def apply_patch(file_path: str, diff_text: str, backup: bool = True) -> dict:
                 "reason": result.stderr[:200] or result.stdout[:200],
                 "backup_path": backup_path,
             }
-        return {"success": True, "backup_path": backup_path, "stdout": result.stdout[:300]}
+        return {
+            "success": True,
+            "backup_path": backup_path,
+            "stdout": result.stdout[:300],
+        }
     except FileNotFoundError:
         return {"success": False, "reason": "`patch` binary yok"}
     except Exception as exc:
@@ -202,7 +206,9 @@ def score_patch(diff_text: str) -> dict:
 
     teaching = []
     if hunk_count > 6:
-        teaching.append(f"{hunk_count} hunks — scattered patch; split it into smaller ones.")
+        teaching.append(
+            f"{hunk_count} hunks — scattered patch; split it into smaller ones."
+        )
     if max_hunk_size > 80:
         teaching.append(f"Largest hunk is {max_hunk_size} lines — extract a function.")
     if minimal_ratio < 0.2:

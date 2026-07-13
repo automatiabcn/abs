@@ -69,7 +69,9 @@ def test_parse_extraction_invalid_json_returns_none() -> None:
 
 
 @pytest.mark.asyncio
-async def test_extract_graph_blank_text_skips_llm(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_extract_graph_blank_text_skips_llm(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     called = False
 
     async def _fail(*a, **k):
@@ -94,7 +96,9 @@ async def test_extract_graph_uses_llm_output(monkeypatch: pytest.MonkeyPatch) ->
 
 
 @pytest.mark.asyncio
-async def test_extract_graph_retries_then_gives_up(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_extract_graph_retries_then_gives_up(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     calls = {"n": 0}
 
     async def _prose(prompt, *, tenant_id, use_cache=True):

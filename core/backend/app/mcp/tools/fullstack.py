@@ -9,9 +9,8 @@ that is best at that layer (see _LAYER_MODELS)."""
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from app.cascade.orchestrator import call_with_cascade
 from app.mcp.middleware import with_hooks
@@ -34,17 +33,41 @@ _LAYER_MODELS: Dict[str, tuple[str, str]] = {
 
 _LAYER_HINTS: Dict[str, tuple[str, ...]] = {
     "frontend": (
-        "react", "next.js", "nextjs", "vue", "svelte", "tailwind",
-        "jsx", "tsx", "component", "landing", "ui ",
+        "react",
+        "next.js",
+        "nextjs",
+        "vue",
+        "svelte",
+        "tailwind",
+        "jsx",
+        "tsx",
+        "component",
+        "landing",
+        "ui ",
     ),
     "backend": (
-        "fastapi", "flask", "django", "express", "endpoint", "api ",
-        "rest", "graphql", "middleware", "router",
+        "fastapi",
+        "flask",
+        "django",
+        "express",
+        "endpoint",
+        "api ",
+        "rest",
+        "graphql",
+        "middleware",
+        "router",
     ),
     "database": ("sql", "postgres", "sqlite", "mongodb", "schema", "migration", "orm"),
     "devops": (
-        "docker", "kubernetes", "k8s", "ci", "cd", "github actions",
-        "nginx", "caddy", "deploy",
+        "docker",
+        "kubernetes",
+        "k8s",
+        "ci",
+        "cd",
+        "github actions",
+        "nginx",
+        "caddy",
+        "deploy",
     ),
     "testing": ("pytest", "jest", "vitest", "test case", "unit test"),
     "docs": ("readme", "dokuman", "documentation", "api doc", "kullanici kilavuz"),
@@ -114,7 +137,10 @@ async def fullstack_scan(project_dir: str) -> str:
     manifest_files: List[str] = []
     for p in root.rglob("*"):
         # skip hidden + node_modules + .venv
-        if any(part.startswith(".") or part in ("node_modules", "__pycache__") for part in p.parts):
+        if any(
+            part.startswith(".") or part in ("node_modules", "__pycache__")
+            for part in p.parts
+        ):
             continue
         if p.is_file():
             total_files += 1
@@ -152,8 +178,7 @@ async def fullstack_plan(project_dir: str) -> str:
     scan = await fullstack_scan(project_dir)  # scan text
     prompt = (
         "Read the project inventory below. List what is missing or weak, then "
-        "give the 5-7 highest-priority tasks as a plan:\n\n"
-        + scan
+        "give the 5-7 highest-priority tasks as a plan:\n\n" + scan
     )
     try:
         resp = await call_with_cascade(

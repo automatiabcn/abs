@@ -10,7 +10,6 @@ Backs the Lead Intelligence screen. Tenant from the authenticated principal.
 
 from __future__ import annotations
 
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -49,13 +48,20 @@ async def create_lead_endpoint(
 ) -> dict:
     tenant = _tenant(auth)
     company_id = create_company(
-        tenant_slug=tenant, name=body.company_name, sector=body.sector,
-        source=body.source, domain=body.domain or None,
-        location=body.location, size=body.size,
+        tenant_slug=tenant,
+        name=body.company_name,
+        sector=body.sector,
+        source=body.source,
+        domain=body.domain or None,
+        location=body.location,
+        size=body.size,
     )
     return create_lead(
-        tenant_slug=tenant, company_id=company_id, source=body.source,
-        owner=auth.subject, consent_status=body.consent_status,
+        tenant_slug=tenant,
+        company_id=company_id,
+        source=body.source,
+        owner=auth.subject,
+        consent_status=body.consent_status,
     )
 
 
@@ -75,7 +81,9 @@ async def score_lead_endpoint(
     lead_id: int,
     auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
 ) -> dict:
-    row = await score_lead(tenant_slug=_tenant(auth), lead_id=lead_id, actor=auth.subject)
+    row = await score_lead(
+        tenant_slug=_tenant(auth), lead_id=lead_id, actor=auth.subject
+    )
     if row is None:
         raise HTTPException(404, "lead_not_found")
     return row

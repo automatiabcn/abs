@@ -31,13 +31,13 @@ def test_handlers_register_all_four():
 
 
 def test_extract_json_handles_fenced_block():
-    raw = "Here is the review:\n```json\n[{\"issue\": \"missing import\"}]\n```\nthanks"
+    raw = 'Here is the review:\n```json\n[{"issue": "missing import"}]\n```\nthanks'
     parsed = extract_json(raw, default=[])
     assert parsed == [{"issue": "missing import"}]
 
 
 def test_extract_json_handles_balanced_braces_with_nested_strings():
-    raw = "Result: {\"text\": \"a } string with brace\", \"score\": 0.5} cheers"
+    raw = 'Result: {"text": "a } string with brace", "score": 0.5} cheers'
     parsed = extract_json(raw, default={})
     assert parsed == {"text": "a } string with brace", "score": 0.5}
 
@@ -101,9 +101,7 @@ async def test_qual_tr_polish_runs_on_review_issues():
             return review_payload
         return "Bu bir taslak Türkçe metindir."
 
-    result = await run_qual_pipeline(
-        "qual_tr", "Bunu Türkçe yaz", call_provider=call
-    )
+    result = await run_qual_pipeline("qual_tr", "Bunu Türkçe yaz", call_provider=call)
     assert result.verified is True
     assert result.revisions == 1
     assert "akıcı" in result.completion
@@ -122,7 +120,9 @@ async def test_qual_analysis_three_perspectives_are_synthesised():
     )
     assert result.verified is True
     assert "Sentez" in result.completion
-    perspective_names = {s.name for s in result.stages if s.name.startswith("perspective")}
+    perspective_names = {
+        s.name for s in result.stages if s.name.startswith("perspective")
+    }
     assert perspective_names == {"perspective-a", "perspective-b", "perspective-c"}
 
 

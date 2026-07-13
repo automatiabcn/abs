@@ -42,13 +42,17 @@ def upgrade() -> None:
     op.create_table(
         "agent_runs",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("tenant_slug", sa.String(64), nullable=False, server_default="default"),
+        sa.Column(
+            "tenant_slug", sa.String(64), nullable=False, server_default="default"
+        ),
         sa.Column("agent_id", sa.String(64), nullable=False),
         sa.Column("task", sa.String(8000), nullable=False),
         sa.Column("summary", sa.String(4096), nullable=False, server_default=""),
         sa.Column("confidence", sa.Float, nullable=False, server_default="0"),
         sa.Column("risk", sa.String(16), nullable=False, server_default="low"),
-        sa.Column("requires_approval", sa.Boolean, nullable=False, server_default=sa.false()),
+        sa.Column(
+            "requires_approval", sa.Boolean, nullable=False, server_default=sa.false()
+        ),
         sa.Column("provider", sa.String(64), nullable=False, server_default=""),
         sa.Column("evidence_json", sa.Text, nullable=False, server_default="[]"),
         sa.Column("payload_json", sa.Text, nullable=False, server_default="{}"),
@@ -63,7 +67,9 @@ def upgrade() -> None:
     op.create_table(
         "approval_items",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("tenant_slug", sa.String(64), nullable=False, server_default="default"),
+        sa.Column(
+            "tenant_slug", sa.String(64), nullable=False, server_default="default"
+        ),
         sa.Column("agent_id", sa.String(64), nullable=False, server_default=""),
         sa.Column("agent_run_id", sa.Integer, nullable=True),
         sa.Column("action", sa.String(1024), nullable=False),
@@ -72,10 +78,17 @@ def upgrade() -> None:
         sa.Column("channel", sa.String(64), nullable=False, server_default=""),
         sa.Column("rationale", sa.String(4096), nullable=False, server_default=""),
         sa.Column("evidence_json", sa.Text, nullable=False, server_default="[]"),
-        sa.Column("proposed_message", sa.String(8192), nullable=False, server_default=""),
+        sa.Column(
+            "proposed_message", sa.String(8192), nullable=False, server_default=""
+        ),
         sa.Column("risk", sa.String(16), nullable=False, server_default="medium"),
         sa.Column("consent_status", sa.String(32), nullable=False, server_default=""),
-        sa.Column("policy_result", sa.String(64), nullable=False, server_default="requires_approval"),
+        sa.Column(
+            "policy_result",
+            sa.String(64),
+            nullable=False,
+            server_default="requires_approval",
+        ),
         sa.Column("status", sa.String(16), nullable=False, server_default="pending"),
         sa.Column("decided_by", sa.String(254), nullable=False, server_default=""),
         sa.Column("decided_at", sa.DateTime(timezone=True), nullable=True),
@@ -85,7 +98,9 @@ def upgrade() -> None:
     )
     op.create_index("ix_approval_items_tenant_slug", "approval_items", ["tenant_slug"])
     op.create_index("ix_approval_items_agent_id", "approval_items", ["agent_id"])
-    op.create_index("ix_approval_items_agent_run_id", "approval_items", ["agent_run_id"])
+    op.create_index(
+        "ix_approval_items_agent_run_id", "approval_items", ["agent_run_id"]
+    )
     op.create_index("ix_approval_items_status", "approval_items", ["status"])
     op.create_index("ix_approval_items_created_at", "approval_items", ["created_at"])
 

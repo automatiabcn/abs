@@ -27,15 +27,37 @@ from app.db.session import get_engine
 # Incoming header (lowercased) → canonical field. Both English and Turkish
 # headers are accepted; these are matched against real uploads, not display text.
 _ALIASES = {
-    "company": "company", "firma": "company", "name": "company", "\u015firket": "company", "sirket": "company",
-    "sector": "sector", "sekt\u00f6r": "sector", "sektor": "sector", "industry": "sector",
-    "vkn": "vkn", "taxid": "vkn", "tax_id": "vkn",
-    "domain": "domain", "website": "domain", "web": "domain",
-    "contact": "contact_name", "contact_name": "contact_name", "yetkili": "contact_name", "ki\u015fi": "contact_name",
-    "email": "contact_email", "contact_email": "contact_email", "eposta": "contact_email", "e-posta": "contact_email",
-    "role": "contact_role", "contact_role": "contact_role", "rol": "contact_role", "title": "contact_role",
-    "score": "score", "skor": "score",
-    "intent": "intent", "niyet": "intent",
+    "company": "company",
+    "firma": "company",
+    "name": "company",
+    "\u015firket": "company",
+    "sirket": "company",
+    "sector": "sector",
+    "sekt\u00f6r": "sector",
+    "sektor": "sector",
+    "industry": "sector",
+    "vkn": "vkn",
+    "taxid": "vkn",
+    "tax_id": "vkn",
+    "domain": "domain",
+    "website": "domain",
+    "web": "domain",
+    "contact": "contact_name",
+    "contact_name": "contact_name",
+    "yetkili": "contact_name",
+    "ki\u015fi": "contact_name",
+    "email": "contact_email",
+    "contact_email": "contact_email",
+    "eposta": "contact_email",
+    "e-posta": "contact_email",
+    "role": "contact_role",
+    "contact_role": "contact_role",
+    "rol": "contact_role",
+    "title": "contact_role",
+    "score": "score",
+    "skor": "score",
+    "intent": "intent",
+    "niyet": "intent",
 }
 
 
@@ -58,7 +80,13 @@ def _parse_rows(data: str, fmt: str) -> list[dict]:
     text = (data or "").strip()
     if fmt == "json" or (not fmt and text[:1] in "[{"):
         parsed = json.loads(text)
-        raw = parsed if isinstance(parsed, list) else parsed.get("rows", []) if isinstance(parsed, dict) else []
+        raw = (
+            parsed
+            if isinstance(parsed, list)
+            else parsed.get("rows", [])
+            if isinstance(parsed, dict)
+            else []
+        )
     else:
         reader = csv.DictReader(io.StringIO(text))
         raw = [dict(r) for r in reader]
@@ -71,7 +99,7 @@ def _parse_rows(data: str, fmt: str) -> list[dict]:
                 canon[ck] = str(v).strip()
         if canon.get("company"):
             out.append(canon)
-        if len(out) >= _MAX_ROWS:           # bound a single upload
+        if len(out) >= _MAX_ROWS:  # bound a single upload
             break
     return out
 
@@ -81,7 +109,7 @@ def _to_score(v: str) -> float:
         f = float(v)
     except (TypeError, ValueError):
         return 0.0
-    if f > 1.0:           # percentage form (0..100) → 0..1
+    if f > 1.0:  # percentage form (0..100) → 0..1
         f = f / 100.0
     return max(0.0, min(1.0, f))
 
@@ -102,7 +130,9 @@ class CsvImportAdapter(ConnectorAdapter):
     auth_kind = "file"
     credential_fields = [
         CredentialField(key="data", label="CSV / JSON content", type="file"),
-        CredentialField(key="format", label="Format (csv|json)", type="text", required=False),
+        CredentialField(
+            key="format", label="Format (csv|json)", type="text", required=False
+        ),
     ]
 
     async def test_connection(self, creds: dict) -> tuple[bool, str]:
@@ -126,21 +156,26 @@ class CsvImportAdapter(ConnectorAdapter):
             # keep it current as we insert — dedup stays O(n) over the upload.
             by_name = {
                 _norm(c.name): c
-                for c in db.exec(select(Company).where(Company.tenant_slug == tenant_slug)).all()
+                for c in db.exec(
+                    select(Company).where(Company.tenant_slug == tenant_slug)
+                ).all()
             }
             for row in rows:
                 cname = row["company"][:256]
                 company = by_name.get(_norm(cname))
                 if company is None:
                     company = Company(
-                        tenant_slug=tenant_slug, name=cname,
-                        sector=row.get("sector", "")[:96], vkn=row.get("vkn") or None,
-                        domain=row.get("domain") or None, source="csv_import",
+                        tenant_slug=tenant_slug,
+                        name=cname,
+                        sector=row.get("sector", "")[:96],
+                        vkn=row.get("vkn") or None,
+                        domain=row.get("domain") or None,
+                        source="csv_import",
                     )
                     db.add(company)
                     db.commit()
                     db.refresh(company)
-                    by_name[_norm(cname)] = company    # so later rows dedup too
+                    by_name[_norm(cname)] = company  # so later rows dedup too
                     res.companies += 1
                 else:
                     if row.get("sector"):
@@ -157,11 +192,16 @@ class CsvImportAdapter(ConnectorAdapter):
                         )
                     ).first()
                     if not has:
-                        db.add(Contact(
-                            tenant_slug=tenant_slug, company_id=company.id,
-                            name=row.get("contact_name", "")[:160] or row["contact_email"].split("@")[0],
-                            email=row["contact_email"][:254], role=row.get("contact_role", "")[:96],
-                        ))
+                        db.add(
+                            Contact(
+                                tenant_slug=tenant_slug,
+                                company_id=company.id,
+                                name=row.get("contact_name", "")[:160]
+                                or row["contact_email"].split("@")[0],
+                                email=row["contact_email"][:254],
+                                role=row.get("contact_role", "")[:96],
+                            )
+                        )
                         res.contacts += 1
 
                 # one lead per imported company (if none yet)
@@ -172,11 +212,16 @@ class CsvImportAdapter(ConnectorAdapter):
                 ).first()
                 if not lead:
                     score = _to_score(row.get("score", ""))
-                    db.add(Lead(
-                        tenant_slug=tenant_slug, company_id=company.id, source="csv_import",
-                        score=score, intent=_intent(row.get("intent", ""), score),
-                        status="scored" if score else "new",
-                    ))
+                    db.add(
+                        Lead(
+                            tenant_slug=tenant_slug,
+                            company_id=company.id,
+                            source="csv_import",
+                            score=score,
+                            intent=_intent(row.get("intent", ""), score),
+                            status="scored" if score else "new",
+                        )
+                    )
                     res.leads += 1
             db.commit()
         return res

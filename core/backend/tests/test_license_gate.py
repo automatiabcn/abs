@@ -80,9 +80,7 @@ async def test_gate_blocks_when_demo_expired_no_license(
 
 
 @pytest.mark.asyncio
-async def test_gate_fails_closed_when_check_errors(
-    gate_env, hooked_tool, monkeypatch
-):
+async def test_gate_fails_closed_when_check_errors(gate_env, hooked_tool, monkeypatch):
     """3rd-eye audit — with require_license ON, an error evaluating the gate
     must BLOCK (fail closed), not let the tool run. The old code logged the
     exception and fell through, executing the tool (fail open)."""

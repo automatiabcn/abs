@@ -90,9 +90,7 @@ async def ask_granite_fast(prompt: str) -> str:
 @with_hooks("ask_starcoder")
 async def ask_starcoder(prompt: str) -> str:
     """StarCoder2 3B — fill-in-the-middle completion and fast lint."""
-    return await _call(
-        "ask_starcoder", prompt, primary="ollama", model="starcoder2:3b"
-    )
+    return await _call("ask_starcoder", prompt, primary="ollama", model="starcoder2:3b")
 
 
 @mcp_server.tool()
@@ -108,9 +106,7 @@ async def ask_deepseek(prompt: str) -> str:
 @with_hooks("ask_codellama")
 async def ask_codellama(prompt: str) -> str:
     """CodeLlama 7B — lightweight code and unit-test generation."""
-    return await _call(
-        "ask_codellama", prompt, primary="ollama", model="codellama:7b"
-    )
+    return await _call("ask_codellama", prompt, primary="ollama", model="codellama:7b")
 
 
 @mcp_server.tool()

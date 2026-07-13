@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 
 import httpx
 import pytest
@@ -80,8 +79,13 @@ def test_callback_invalid_state_rejected(client):
     assert r.status_code == 400
 
 
-def _mock_oauth_post(monkeypatch, *, code_token: str, refresh_token: str | None,
-                     refreshed_token: str | None = None):
+def _mock_oauth_post(
+    monkeypatch,
+    *,
+    code_token: str,
+    refresh_token: str | None,
+    refreshed_token: str | None = None,
+):
     """GitHub, answering both grants: the initial code exchange and the refresh.
 
     The old helper answered only one, which was enough, because /github/refresh
@@ -98,12 +102,19 @@ def _mock_oauth_post(monkeypatch, *, code_token: str, refresh_token: str | None,
             if body.get("grant_type") == "refresh_token":
                 if refreshed_token is None:
                     return _FakeRsp(400, {"error": "unsupported_grant_type"})
-                return _FakeRsp(200, {
-                    "access_token": refreshed_token,
-                    "refresh_token": "ghr_rotated",
-                    "expires_in": 28800,
-                })
-            payload = {"access_token": code_token, "scope": "repo", "token_type": "bearer"}
+                return _FakeRsp(
+                    200,
+                    {
+                        "access_token": refreshed_token,
+                        "refresh_token": "ghr_rotated",
+                        "expires_in": 28800,
+                    },
+                )
+            payload = {
+                "access_token": code_token,
+                "scope": "repo",
+                "token_type": "bearer",
+            }
             if refresh_token:
                 payload["refresh_token"] = refresh_token
                 payload["expires_in"] = 28800
@@ -121,14 +132,21 @@ def _connect(client) -> None:
 
 
 def test_refresh_requires_admin(client, monkeypatch):
-    _mock_oauth_post(monkeypatch, code_token="ghs_initial", refresh_token="ghr_1",
-                     refreshed_token="ghs_second")
+    _mock_oauth_post(
+        monkeypatch,
+        code_token="ghs_initial",
+        refresh_token="ghr_1",
+        refreshed_token="ghs_second",
+    )
     _connect(client)
 
     assert client.post("/v1/smart-link/github/refresh").status_code == 401
-    assert client.post(
-        "/v1/smart-link/github/refresh", headers={"Authorization": "Bearer wrong"}
-    ).status_code == 403
+    assert (
+        client.post(
+            "/v1/smart-link/github/refresh", headers={"Authorization": "Bearer wrong"}
+        ).status_code
+        == 403
+    )
 
 
 def test_refresh_actually_replaces_the_stored_token(client, monkeypatch):
@@ -137,8 +155,12 @@ def test_refresh_actually_replaces_the_stored_token(client, monkeypatch):
     was leaked kept the leaked token, with a green tick over it."""
     from app.smart_link.vault_secrets import decrypt_secret
 
-    _mock_oauth_post(monkeypatch, code_token="ghs_initial", refresh_token="ghr_1",
-                     refreshed_token="ghs_second")
+    _mock_oauth_post(
+        monkeypatch,
+        code_token="ghs_initial",
+        refresh_token="ghr_1",
+        refreshed_token="ghs_second",
+    )
     _connect(client)
     assert decrypt_secret("github_oauth_token") == "ghs_initial"
 

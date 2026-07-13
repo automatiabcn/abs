@@ -83,7 +83,7 @@ async def create_session(
             if getattr(price, "recurring", None):
                 mode = "subscription"
         except Exception:  # noqa: BLE001 — an unreadable price is not a reason to
-            pass          # refuse a sale; the Session.create below will still fail loudly
+            pass  # refuse a sale; the Session.create below will still fail loudly
 
         session = stripe.checkout.Session.create(
             mode=mode,
@@ -107,8 +107,12 @@ async def create_session(
         msg = getattr(exc, "user_message", None) or "stripe_unavailable"
         raise HTTPException(status_code=502, detail=f"Stripe error: {msg}") from exc
 
-    url = getattr(session, "url", None) or (session.get("url") if isinstance(session, dict) else None)
-    sid = getattr(session, "id", None) or (session.get("id") if isinstance(session, dict) else None)
+    url = getattr(session, "url", None) or (
+        session.get("url") if isinstance(session, dict) else None
+    )
+    sid = getattr(session, "id", None) or (
+        session.get("id") if isinstance(session, dict) else None
+    )
     if not url or not sid:
         raise HTTPException(status_code=502, detail="Stripe session response invalid")
     return CreateSessionResponse(checkout_url=url, session_id=sid)

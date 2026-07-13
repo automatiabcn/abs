@@ -24,19 +24,49 @@ logger = logging.getLogger(__name__)
 # Ltd. Sti." and "Kaya Insaat" resolve to one company. Non-ASCII is escaped to
 # keep the source ASCII; the matched text is unchanged.
 _SUFFIXES = [
-    "anonim sirketi", "limited sirketi", "a.s.", "as", "ltd. sti.", "ltd sti",
-    "ltd", "sti", "san. ve tic.", "san ve tic", "san. tic.", "sanayi", "ticaret",
-    "a s", "\u015f", "\u015fti", "a.\u015f.", "a.\u015f", "ltd.", "\u015fti.",
+    "anonim sirketi",
+    "limited sirketi",
+    "a.s.",
+    "as",
+    "ltd. sti.",
+    "ltd sti",
+    "ltd",
+    "sti",
+    "san. ve tic.",
+    "san ve tic",
+    "san. tic.",
+    "sanayi",
+    "ticaret",
+    "a s",
+    "\u015f",
+    "\u015fti",
+    "a.\u015f.",
+    "a.\u015f",
+    "ltd.",
+    "\u015fti.",
 ]
 
 
 # Map Turkish letters to ASCII BEFORE casefold: casefolding a dotted capital I
 # yields "i" + U+0307 (a combining dot), which a later `[^a-z0-9]` strip turns
 # into a space and splits the word in two. Translating first avoids that.
-_TR = str.maketrans({
-    "\u0130": "i", "I": "i", "\u0131": "i", "\u015e": "s", "\u015f": "s", "\u011e": "g", "\u011f": "g",
-    "\u00dc": "u", "\u00fc": "u", "\u00d6": "o", "\u00f6": "o", "\u00c7": "c", "\u00e7": "c",
-})
+_TR = str.maketrans(
+    {
+        "\u0130": "i",
+        "I": "i",
+        "\u0131": "i",
+        "\u015e": "s",
+        "\u015f": "s",
+        "\u011e": "g",
+        "\u011f": "g",
+        "\u00dc": "u",
+        "\u00fc": "u",
+        "\u00d6": "o",
+        "\u00f6": "o",
+        "\u00c7": "c",
+        "\u00e7": "c",
+    }
+)
 
 
 def normalize_company_name(name: str) -> str:
@@ -80,7 +110,8 @@ def resolve_companies(*, tenant_slug: str) -> Dict[str, Any]:
         companies = list(
             db.exec(
                 select(Company).where(
-                    Company.tenant_slug == tenant_slug, Company.canonical == True  # noqa: E712
+                    Company.tenant_slug == tenant_slug,
+                    Company.canonical == True,  # noqa: E712
                 )
             )
         )
@@ -91,7 +122,7 @@ def resolve_companies(*, tenant_slug: str) -> Dict[str, Any]:
         for key, members in groups.items():
             if len(members) < 2:
                 continue
-            members.sort(key=lambda m: (m.created_at or datetime.now(timezone.utc)))
+            members.sort(key=lambda m: m.created_at or datetime.now(timezone.utc))
             survivor = members[0]
             dups = members[1:]
             dup_ids = [d.id for d in dups]
@@ -100,10 +131,12 @@ def resolve_companies(*, tenant_slug: str) -> Dict[str, Any]:
             # per (dup × model) — same result, no N+1 on the merge path.
             for model in (Contact, Lead, Opportunity):
                 rows = list(
-                    db.exec(select(model).where(
-                        model.tenant_slug == tenant_slug,
-                        model.company_id.in_(dup_ids),  # type: ignore[attr-defined]
-                    ))
+                    db.exec(
+                        select(model).where(
+                            model.tenant_slug == tenant_slug,
+                            model.company_id.in_(dup_ids),  # type: ignore[attr-defined]
+                        )
+                    )
                 )
                 for r in rows:
                     r.company_id = survivor.id
@@ -112,8 +145,9 @@ def resolve_companies(*, tenant_slug: str) -> Dict[str, Any]:
                 dup.canonical = False
                 db.add(dup)
                 survivor.merged_count += 1
-                merges.append({"survivor_id": survivor.id, "merged_id": dup.id,
-                               "block": key})
+                merges.append(
+                    {"survivor_id": survivor.id, "merged_id": dup.id, "block": key}
+                )
             survivor.match_confidence = min(1.0, 0.8 + 0.05 * survivor.merged_count)
             db.add(survivor)
         db.commit()
@@ -129,16 +163,26 @@ def context_graph_view(*, tenant_slug: str, limit: int = 60) -> Dict[str, Any]:
     with Session(get_engine()) as db:
         companies = list(
             db.exec(
-                select(Company).where(
-                    Company.tenant_slug == tenant_slug, Company.canonical == True  # noqa: E712
-                ).limit(limit)
+                select(Company)
+                .where(
+                    Company.tenant_slug == tenant_slug,
+                    Company.canonical == True,  # noqa: E712
+                )
+                .limit(limit)
             )
         )
         cids = [c.id for c in companies]
         for c in companies:
-            nodes.append({"id": f"company:{c.id}", "type": "company", "label": c.name,
-                          "lifecycle": c.lifecycle, "score": round(c.score, 2),
-                          "merged_count": c.merged_count})
+            nodes.append(
+                {
+                    "id": f"company:{c.id}",
+                    "type": "company",
+                    "label": c.name,
+                    "lifecycle": c.lifecycle,
+                    "score": round(c.score, 2),
+                    "merged_count": c.merged_count,
+                }
+            )
         if cids:
             for model, ntype, labeller in (
                 (Contact, "contact", lambda r: r.name),
@@ -146,16 +190,25 @@ def context_graph_view(*, tenant_slug: str, limit: int = 60) -> Dict[str, Any]:
                 (Opportunity, "opportunity", lambda r: r.name),
             ):
                 rows = list(
-                    db.exec(select(model).where(
-                        model.tenant_slug == tenant_slug,
-                        model.company_id.in_(cids),  # type: ignore[attr-defined]
-                    ).limit(limit * 3))
+                    db.exec(
+                        select(model)
+                        .where(
+                            model.tenant_slug == tenant_slug,
+                            model.company_id.in_(cids),  # type: ignore[attr-defined]
+                        )
+                        .limit(limit * 3)
+                    )
                 )
                 for r in rows:
                     nid = f"{ntype}:{r.id}"
                     nodes.append({"id": nid, "type": ntype, "label": labeller(r)})
-                    edges.append({"source": f"company:{r.company_id}", "target": nid,
-                                  "rel": ntype})
+                    edges.append(
+                        {
+                            "source": f"company:{r.company_id}",
+                            "target": nid,
+                            "rel": ntype,
+                        }
+                    )
     # Match accuracy = mean canonical match_confidence; merges = source records
     # folded into canonicals (Σ merged_count − #canonicals).
     confs = [c.match_confidence for c in companies]

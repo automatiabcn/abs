@@ -12,7 +12,6 @@ import logging
 from typing import List, Optional, Sequence
 
 import httpx
-from fastapi import HTTPException
 
 from app.providers.registry import get_provider
 from app.providers.schemas import (
@@ -146,7 +145,11 @@ async def call_with_cascade(
     chain: List[str] = [primary, *fallbacks]
     # When a per-owner key may be used, the cache is namespaced by owner so one
     # owner's answer is never served to another inside the same tenant.
-    owner = f"p:{project_slug}" if project_slug else (f"u:{user_subject}" if user_subject else "")
+    owner = (
+        f"p:{project_slug}"
+        if project_slug
+        else (f"u:{user_subject}" if user_subject else "")
+    )
     cache_key = prompt_hash(prompt, model or "", tenant_id=tenant_id, owner=owner)
 
     if use_cache:
@@ -231,7 +234,11 @@ async def call_with_cascade(
     # sixty seconds: the keys are missing or wrong. Hand back the provider's own
     # error, which says so in words, and which the callers that degrade
     # gracefully on a missing key already know how to catch.
-    if last_err is not None and not saw_transient and isinstance(last_err, ProviderError):
+    if (
+        last_err is not None
+        and not saw_transient
+        and isinstance(last_err, ProviderError)
+    ):
         raise last_err
 
     # Otherwise something was temporarily down or rate-limited, and retrying is

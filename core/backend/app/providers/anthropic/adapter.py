@@ -55,7 +55,9 @@ class AnthropicProvider(BaseProvider):
             )
         if not _key:
             raise ProviderError(
-                "Anthropic API key is not configured", provider=self.name, transient=False
+                "Anthropic API key is not configured",
+                provider=self.name,
+                transient=False,
             )
 
         # Quota gate runs BEFORE the network call — the budget must be enforced
@@ -98,7 +100,11 @@ class AnthropicProvider(BaseProvider):
             )
         except Exception as exc:
             name = type(exc).__name__
-            transient = name in {"RateLimitError", "APITimeoutError", "APIConnectionError"} or "500" in str(exc)
+            transient = name in {
+                "RateLimitError",
+                "APITimeoutError",
+                "APIConnectionError",
+            } or "500" in str(exc)
             raise ProviderError(
                 f"Anthropic {name}: {str(exc)[:200]}",
                 provider=self.name,

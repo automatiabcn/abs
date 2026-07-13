@@ -32,7 +32,14 @@ def completed_setup(monkeypatch, tmp_path: Path):
     state = {
         "completed": True,
         "current_step": 6,
-        "completed_steps": ["admin", "license", "domain", "anthropic", "providers", "test"],
+        "completed_steps": [
+            "admin",
+            "license",
+            "domain",
+            "anthropic",
+            "providers",
+            "test",
+        ],
         "started_at": time.time(),
         "completed_at": time.time(),
         "data": {},

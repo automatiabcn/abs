@@ -46,9 +46,7 @@ def _auth_dependency(
     leaking the request schema. Declared as `dependencies=[...]` on
     the router so every hook endpoint inherits the gate."""
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "missing_bearer_token"
-        )
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing_bearer_token")
     token = authorization.split(" ", 1)[1].strip()
     payload = verify_token(token)
     scope = payload.get("scope")
@@ -73,9 +71,7 @@ def _auth_from_header(authorization: Optional[str]) -> Dict:
     payload. Same logic as the router-level dependency; both are safe
     to call (idempotent verify)."""
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "missing_bearer_token"
-        )
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing_bearer_token")
     token = authorization.split(" ", 1)[1].strip()
     payload = verify_token(token)
     scope = payload.get("scope")
@@ -222,8 +218,7 @@ def audit_log(
                     license_jti=tenant,
                     action=f"claude_code.{body.tool_name}",
                     resource=body.cwd,
-                    detail=(body.tool_input and str(body.tool_input)[:512])
-                    or None,
+                    detail=(body.tool_input and str(body.tool_input)[:512]) or None,
                     ts=ts,
                 )
             )

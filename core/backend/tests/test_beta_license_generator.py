@@ -27,9 +27,12 @@ def test_generator_creates_jwt_and_db_row(capsys):
     mod = _load_script()
     rc = mod.main(
         [
-            "--email", "beta-test1@x.co",
-            "--tier", "self-host",
-            "--duration-days", "60",
+            "--email",
+            "beta-test1@x.co",
+            "--tier",
+            "self-host",
+            "--duration-days",
+            "60",
             "--no-email",
         ]
     )
@@ -38,7 +41,6 @@ def test_generator_creates_jwt_and_db_row(capsys):
     # JWT line
     assert "LICENSE=" in out
     # JSON output
-    parts = out.split("\n", 1)
     # Find the JSON part
     json_start = out.index("{")
     parsed = json.loads(out[json_start:])
@@ -60,16 +62,20 @@ def test_generator_team_tier_with_seat_count(capsys):
     mod = _load_script()
     rc = mod.main(
         [
-            "--email", "beta-team@x.co",
-            "--tier", "team",
-            "--seat-count", "5",
-            "--duration-days", "180",
+            "--email",
+            "beta-team@x.co",
+            "--tier",
+            "team",
+            "--seat-count",
+            "5",
+            "--duration-days",
+            "180",
             "--no-email",
         ]
     )
     assert rc == 0
     out = capsys.readouterr().out
-    parsed = json.loads(out[out.index("{"):])
+    parsed = json.loads(out[out.index("{") :])
     assert parsed["tier"] == "team"
     assert parsed["seat_count"] == 5
 
@@ -78,16 +84,20 @@ def test_generator_lang_propagates_to_db(capsys):
     mod = _load_script()
     rc = mod.main(
         [
-            "--email", "beta-tr@x.co",
-            "--tier", "self-host",
-            "--duration-days", "30",
-            "--lang", "tr",
+            "--email",
+            "beta-tr@x.co",
+            "--tier",
+            "self-host",
+            "--duration-days",
+            "30",
+            "--lang",
+            "tr",
             "--no-email",
         ]
     )
     assert rc == 0
     out = capsys.readouterr().out
-    parsed = json.loads(out[out.index("{"):])
+    parsed = json.loads(out[out.index("{") :])
     with Session(get_engine()) as s:
         row = s.scalars(
             select(License).where(License.jti == parsed["license_jti"])

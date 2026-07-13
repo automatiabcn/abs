@@ -4,6 +4,7 @@ def test_v1_magic_claim_route_registered(client):
     r = client.get("/v1/auth/magic-claim?token=short")
     assert r.status_code == 400, r.text
 
+
 def test_v1_magic_claim_unknown_token_404(client):
     r = client.get("/v1/auth/magic-claim?token=ThisTokenDoesNotExistAtAll1234567890")
     assert r.status_code == 404, r.text

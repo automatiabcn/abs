@@ -285,8 +285,14 @@ _register(
         parameters={
             "type": "object",
             "properties": {
-                "path": {"type": "string", "description": "Full path of the file to write."},
-                "content": {"type": "string", "description": "The complete new contents."},
+                "path": {
+                    "type": "string",
+                    "description": "Full path of the file to write.",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "The complete new contents.",
+                },
             },
             "required": ["path", "content"],
         },

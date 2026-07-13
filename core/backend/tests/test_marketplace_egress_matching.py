@@ -6,6 +6,7 @@ function docstring). These tests pin the MATCHING logic so that when the proxy
 that calls it lands, the allow/deny decisions are already correct: no apex
 match on a wildcard, no suffix-smuggling, case-insensitive exact match.
 """
+
 import pytest
 
 from app.marketplace.sandbox import EgressDeniedError, SandboxSpec, enforce_egress
@@ -13,9 +14,15 @@ from app.marketplace.sandbox import EgressDeniedError, SandboxSpec, enforce_egre
 
 def _spec(*allow):
     return SandboxSpec(
-        plugin_id="p", image="x:1", cpu_quota=0.5, memory_mb=256,
-        network_allowlist=allow, read_only_mounts=(), tmpfs_mounts=(),
-        env={}, tenant_id="t",
+        plugin_id="p",
+        image="x:1",
+        cpu_quota=0.5,
+        memory_mb=256,
+        network_allowlist=allow,
+        read_only_mounts=(),
+        tmpfs_mounts=(),
+        env={},
+        tenant_id="t",
     )
 
 
@@ -30,13 +37,13 @@ def test_allowed_hosts(host):
 @pytest.mark.parametrize(
     "host",
     [
-        "example.com",            # apex must NOT match *.example.com
-        "evil-example.com",       # no dot boundary
-        "example.com.evil.com",   # suffix smuggling
+        "example.com",  # apex must NOT match *.example.com
+        "evil-example.com",  # no dot boundary
+        "example.com.evil.com",  # suffix smuggling
         "a.example.com.evil.com",
         "aexample.com",
         "notexample.com",
-        "foo.com.evil.com",       # exact-pattern suffix smuggling
+        "foo.com.evil.com",  # exact-pattern suffix smuggling
     ],
 )
 def test_denied_hosts(host):

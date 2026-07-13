@@ -22,14 +22,18 @@ def _admin(monkeypatch):
     monkeypatch.setattr(settings, "admin_token", "test-admin-026")
 
 
-def _patch_slack(monkeypatch, *, oauth_ok=True, post_ok=True, bot_token="xoxb-mock-token"):
+def _patch_slack(
+    monkeypatch, *, oauth_ok=True, post_ok=True, bot_token="xoxb-mock-token"
+):
     real_post = httpx.Client.post
 
     def _post(self, url, *args, **kwargs):
         url_str = str(url)
         if "slack.com/api/oauth.v2.access" in url_str:
             if oauth_ok:
-                return _FakeRsp(200, {"ok": True, "access_token": bot_token, "team": {"id": "T1"}})
+                return _FakeRsp(
+                    200, {"ok": True, "access_token": bot_token, "team": {"id": "T1"}}
+                )
             return _FakeRsp(200, {"ok": False, "error": "invalid_code"})
         if "slack.com/api/chat.postMessage" in url_str:
             if post_ok:

@@ -79,9 +79,9 @@ def test_allowlist_loads_with_required_top_level_keys(allowlist):
 def test_every_allowlist_entry_has_why_and_review_owner(allowlist):
     for entry in allowlist["allowlist"]:
         assert "why" in entry, f"entry {entry.get('id')!r} missing 'why'"
-        assert (
-            "review_owner" in entry
-        ), f"entry {entry.get('id')!r} missing 'review_owner'"
+        assert "review_owner" in entry, (
+            f"entry {entry.get('id')!r} missing 'review_owner'"
+        )
         # Body of `why` must be substantive — discourages stub allowlist entries.
         why = entry["why"].strip()
         assert len(why) > 60, (
@@ -107,8 +107,11 @@ def test_docker_shell_env_defaults_entry_covers_known_pattern_files(allowlist):
     under the single DOCKER_SHELL_ENV_DEFAULTS entry, not be sprinkled
     individually."""
     entry = next(
-        (e for e in allowlist["allowlist"]
-         if e.get("id") == "DOCKER_SHELL_ENV_DEFAULTS"),
+        (
+            e
+            for e in allowlist["allowlist"]
+            if e.get("id") == "DOCKER_SHELL_ENV_DEFAULTS"
+        ),
         None,
     )
     assert entry is not None, "missing DOCKER_SHELL_ENV_DEFAULTS allowlist entry"

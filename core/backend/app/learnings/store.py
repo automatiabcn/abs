@@ -63,7 +63,10 @@ def log(
     # failure should not flood the store with identical entries.
     now = time.time()
     for entry in recent(limit=50):
-        if entry.get("hash") == h and (now - float(entry.get("ts", 0) or 0)) < _DEDUP_WINDOW:
+        if (
+            entry.get("hash") == h
+            and (now - float(entry.get("ts", 0) or 0)) < _DEDUP_WINDOW
+        ):
             return None
     entry = {
         "ts": now,

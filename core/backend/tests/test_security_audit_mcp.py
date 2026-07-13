@@ -42,6 +42,7 @@ def test_security_audit_warns_when_secrets_missing(monkeypatch):
 
 def test_security_audit_records_breach_count(monkeypatch):
     from app.middleware import rate_limit as rate_limit_module
+
     monkeypatch.setattr(rate_limit_module, "_breach_timestamps", [], raising=False)
     rate_limit_module.record_breach()
     rate_limit_module.record_breach()

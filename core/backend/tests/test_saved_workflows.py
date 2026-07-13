@@ -115,7 +115,9 @@ def test_update_in_place_no_duplicate(client, panel_admin):
     assert after == before  # no duplicate created
 
     # the persisted row reflects the update
-    assert client.get(f"/v1/workflows/definitions/{wf_id}").json()["name"] == "v2-updated"
+    assert (
+        client.get(f"/v1/workflows/definitions/{wf_id}").json()["name"] == "v2-updated"
+    )
 
 
 def test_update_unknown_or_cross_tenant_404(client, panel_admin):
@@ -127,9 +129,7 @@ def test_update_unknown_or_cross_tenant_404(client, panel_admin):
 
 
 def test_save_requires_auth(client):
-    r = client.post(
-        "/v1/workflows/definitions", json={"name": "x", "definition": _WF}
-    )
+    r = client.post("/v1/workflows/definitions", json={"name": "x", "definition": _WF})
     assert r.status_code in (401, 403)
 
 

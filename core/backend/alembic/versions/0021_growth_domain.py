@@ -36,7 +36,9 @@ def _enable_rls(tbl: str) -> None:
 
 
 def _ts() -> sa.Column:
-    return sa.Column("tenant_slug", sa.String(64), nullable=False, server_default="default")
+    return sa.Column(
+        "tenant_slug", sa.String(64), nullable=False, server_default="default"
+    )
 
 
 def upgrade() -> None:

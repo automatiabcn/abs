@@ -17,7 +17,6 @@ from typing import Iterator
 
 import pytest
 
-from app.api import marketplace as marketplace_module
 from app.config import settings
 
 
@@ -87,9 +86,9 @@ def test_installed_resolves_admin_tenant_when_query_param_missing(client):
         assert r_list.status_code == 200, r_list.text
         body = r_list.json()
         assert body["tenant"] == "demo-acme"
-        assert any(
-            row["plugin_id"] == "slack-receiver" for row in body["installed"]
-        ), body
+        assert any(row["plugin_id"] == "slack-receiver" for row in body["installed"]), (
+            body
+        )
     finally:
         app.dependency_overrides.pop(live_dep, None)
 
@@ -112,9 +111,7 @@ def test_installed_explicit_query_param_still_supported(client):
         assert r.status_code == 200
         body = r.json()
         assert body["tenant"] == "demo-acme"
-        assert any(
-            row["plugin_id"] == "gmail-archiver" for row in body["installed"]
-        )
+        assert any(row["plugin_id"] == "gmail-archiver" for row in body["installed"])
     finally:
         app.dependency_overrides.pop(live_dep, None)
 
@@ -159,9 +156,7 @@ def test_installed_default_tenant_legacy_path(client):
     assert r.status_code == 200
     body = r.json()
     assert body["tenant"] == "default"
-    assert any(
-        row["plugin_id"] == "slack-receiver" for row in body["installed"]
-    ), body
+    assert any(row["plugin_id"] == "slack-receiver" for row in body["installed"]), body
 
 
 def test_bootstrap_admin_resolves_tenant_from_credentials_file(client, tmp_path):
@@ -205,9 +200,9 @@ def test_bootstrap_admin_resolves_tenant_from_credentials_file(client, tmp_path)
         assert r.status_code == 200, r.text
         body = r.json()
         assert body["tenant"] == "demo-acme", body
-        assert any(
-            row["plugin_id"] == "gmail-archiver" for row in body["installed"]
-        ), body
+        assert any(row["plugin_id"] == "gmail-archiver" for row in body["installed"]), (
+            body
+        )
     finally:
         app.dependency_overrides.pop(live_dep, None)
 
@@ -222,9 +217,7 @@ def test_bootstrap_admin_without_explicit_tenant_uses_default(client):
     from app.api.marketplace import current_admin as live_dep
     from app.main import app
 
-    app.dependency_overrides[live_dep] = lambda: {
-        "sub": "owner@acme-co.io"
-    }
+    app.dependency_overrides[live_dep] = lambda: {"sub": "owner@acme-co.io"}
     try:
         # Installing under a tenant that is not yours is refused. This used to be
         # a 201: `multi_tenant_strict` shipped off, so a claim-less admin could

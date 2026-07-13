@@ -93,12 +93,16 @@ async def slack_events_webhook(request: _Request) -> dict:
     if isinstance(payload, dict) and payload.get("type") == "url_verification":
         return {"challenge": payload.get("challenge", "")}
 
-    event_type = (payload.get("event") or {}).get("type") if isinstance(payload, dict) else None
+    event_type = (
+        (payload.get("event") or {}).get("type") if isinstance(payload, dict) else None
+    )
     return {
         "ok": True,
         "event_type": event_type,
         "received_at": logger.name,
     }
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -158,9 +162,7 @@ async def slack_callback(code: str, state: str) -> dict:
         error = type(exc).__name__
 
     if bot_token:
-        encrypt_secret(
-            key_name="slack_bot_token", provider="slack", value=bot_token
-        )
+        encrypt_secret(key_name="slack_bot_token", provider="slack", value=bot_token)
 
     return {
         "ok": bot_token is not None,

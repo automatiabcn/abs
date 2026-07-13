@@ -34,9 +34,7 @@ def _admin_headers() -> dict:
 def test_admin_queue_requires_bearer(client):
     r = client.get("/v1/admin/beta/queue")
     assert r.status_code == 401
-    r = client.get(
-        "/v1/admin/beta/queue", headers={"Authorization": "Bearer wrong"}
-    )
+    r = client.get("/v1/admin/beta/queue", headers={"Authorization": "Bearer wrong"})
     assert r.status_code == 403
 
 
@@ -69,9 +67,7 @@ def test_admin_approve_issues_license_and_marks_request(client, monkeypatch):
     with Session(get_engine()) as db:
         req_id = db.scalars(select(BetaRequest)).first().id
 
-    r = client.post(
-        f"/v1/admin/beta/{req_id}/approve", headers=_admin_headers()
-    )
+    r = client.post(f"/v1/admin/beta/{req_id}/approve", headers=_admin_headers())
     assert r.status_code == 200
     body = r.json()
     assert body["ok"] is True
@@ -79,9 +75,7 @@ def test_admin_approve_issues_license_and_marks_request(client, monkeypatch):
     assert jti
 
     with Session(get_engine()) as db:
-        req = db.scalars(
-            select(BetaRequest).where(BetaRequest.id == req_id)
-        ).first()
+        req = db.scalars(select(BetaRequest).where(BetaRequest.id == req_id)).first()
         lic = db.scalars(select(License).where(License.jti == jti)).first()
     assert req.status == "approved"
     assert req.license_jti == jti
@@ -107,8 +101,6 @@ def test_admin_reject_marks_request(client, monkeypatch):
     assert r.status_code == 200
 
     with Session(get_engine()) as db:
-        req = db.scalars(
-            select(BetaRequest).where(BetaRequest.id == req_id)
-        ).first()
+        req = db.scalars(select(BetaRequest).where(BetaRequest.id == req_id)).first()
     assert req.status == "rejected"
     assert req.rejected_reason == "spam"

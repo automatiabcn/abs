@@ -21,14 +21,16 @@ def test_normalize_turkish_legal_suffix() -> None:
 
 
 def test_entity_resolution_merges_by_vkn() -> None:
-    a = leads.create_company(tenant_slug="tG", name="Demirel Yapı A.Ş.", vkn="1112223334")
+    a = leads.create_company(
+        tenant_slug="tG", name="Demirel Yapı A.Ş.", vkn="1112223334"
+    )
     b = leads.create_company(tenant_slug="tG", name="Demirel Yapi", vkn="1112223334")
     # a lead hangs off the duplicate
     leads.create_lead(tenant_slug="tG", company_id=b, source="crm")
 
     report = resolve_companies(tenant_slug="tG")
     assert report["merged_count"] == 1
-    assert report["merges"][0]["survivor_id"] == a   # oldest survives
+    assert report["merges"][0]["survivor_id"] == a  # oldest survives
 
     graph = context_graph_view(tenant_slug="tG")
     company_nodes = [n for n in graph["nodes"] if n["type"] == "company"]
@@ -36,7 +38,9 @@ def test_entity_resolution_merges_by_vkn() -> None:
     assert any(n["id"] == f"company:{a}" for n in company_nodes)
     assert all(n["id"] != f"company:{b}" for n in company_nodes)
     # the duplicate's lead was reassigned to the survivor (edge present)
-    assert any(e["source"] == f"company:{a}" and e["rel"] == "lead" for e in graph["edges"])
+    assert any(
+        e["source"] == f"company:{a}" and e["rel"] == "lead" for e in graph["edges"]
+    )
 
 
 def test_entity_resolution_merges_three_dups_reassigns_all_children() -> None:
@@ -50,12 +54,12 @@ def test_entity_resolution_merges_three_dups_reassigns_all_children() -> None:
     leads.create_lead(tenant_slug="t3", company_id=c, source="web")
 
     report = resolve_companies(tenant_slug="t3")
-    assert report["merged_count"] == 2          # b and c both folded into a
+    assert report["merged_count"] == 2  # b and c both folded into a
     assert all(m["survivor_id"] == a for m in report["merges"])
 
     graph = context_graph_view(tenant_slug="t3")
     company_nodes = [n for n in graph["nodes"] if n["type"] == "company"]
-    assert [n["id"] for n in company_nodes] == [f"company:{a}"]   # only survivor
+    assert [n["id"] for n in company_nodes] == [f"company:{a}"]  # only survivor
     # both reassigned leads now edge off the survivor
     lead_edges = [e for e in graph["edges"] if e["rel"] == "lead"]
     assert len(lead_edges) == 2

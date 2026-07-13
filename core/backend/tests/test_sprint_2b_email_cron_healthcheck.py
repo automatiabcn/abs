@@ -21,9 +21,9 @@ def _slice(text: str, anchor: str, length: int = 1200) -> str:
 
 
 def test_customer_compose_email_cron_has_process_healthcheck():
-    compose = (
-        REPO_ROOT / "infra" / "docker-compose.customer.yml"
-    ).read_text(encoding="utf-8")
+    compose = (REPO_ROOT / "infra" / "docker-compose.customer.yml").read_text(
+        encoding="utf-8"
+    )
     cron_block = _slice(compose, "email-cron:")
     assert "healthcheck:" in cron_block
     # debian-slim backend image has no procps → no pgrep. We walk

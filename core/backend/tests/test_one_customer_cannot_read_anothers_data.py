@@ -57,10 +57,15 @@ def test_a_shared_server_refuses_raw_cypher(monkeypatch):
 
 def test_when_the_tenant_count_cannot_be_read_we_assume_the_worst(monkeypatch):
     """A database we cannot ask is not a database with one tenant in it."""
+
     def _boom():
         raise RuntimeError("db is down")
 
-    monkeypatch.setattr(graph_api, "_serves_more_than_one_tenant", graph_api._serves_more_than_one_tenant)
+    monkeypatch.setattr(
+        graph_api,
+        "_serves_more_than_one_tenant",
+        graph_api._serves_more_than_one_tenant,
+    )
     monkeypatch.setattr("app.db.session.get_engine", _boom)
 
     assert graph_api._serves_more_than_one_tenant() is True

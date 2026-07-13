@@ -81,8 +81,6 @@ def test_signup_creates_member_not_admin(client):
     from app.db.session import get_engine
 
     with Session(get_engine()) as s:
-        u = s.exec(
-            select(User).where(User.email == "freshsignup@demo.local")
-        ).first()
+        u = s.exec(select(User).where(User.email == "freshsignup@demo.local")).first()
         assert u is not None
         assert u.role == "member", f"signup role must be member, got {u.role}"

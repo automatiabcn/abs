@@ -92,9 +92,7 @@ def _signing_key() -> bytes:
 
 
 def _sign(payload: Dict) -> str:
-    body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode(
-        "utf-8"
-    )
+    body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
     sig = hmac.new(_signing_key(), body, hashlib.sha256).digest()
     return f"abs_mcp_{_b64url(body)}.{_b64url(sig)}"
 
@@ -119,15 +117,13 @@ def verify_token(token: str) -> Dict:
     """Decode + HMAC verify. Returns payload on success."""
     if not token.startswith("abs_mcp_"):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid_token_prefix")
-    rest = token[len("abs_mcp_"):]
+    rest = token[len("abs_mcp_") :]
     try:
         body_b64, sig_b64 = rest.split(".", 1)
         body = _b64url_decode(body_b64)
         provided = _b64url_decode(sig_b64)
     except (ValueError, IndexError) as exc:
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "malformed_token"
-        ) from exc
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "malformed_token") from exc
 
     expected = hmac.new(_signing_key(), body, hashlib.sha256).digest()
     if not hmac.compare_digest(provided, expected):
@@ -165,11 +161,17 @@ def mint_token(
     # failure must not block handing the operator their token.
     try:
         with get_session_sync() as db:
-            db.add(MintedTokenRecord(
-                token_digest=_token_digest(token), tenant_slug=tenant,
-                label=body.label, scope=body.scope, issued_by=admin["sub"],
-                issued_at=issued_at, expires_at=expires_at,
-            ))
+            db.add(
+                MintedTokenRecord(
+                    token_digest=_token_digest(token),
+                    tenant_slug=tenant,
+                    label=body.label,
+                    scope=body.scope,
+                    issued_by=admin["sub"],
+                    issued_at=issued_at,
+                    expires_at=expires_at,
+                )
+            )
             db.commit()
     except Exception:  # noqa: BLE001 — ledger is best-effort
         logger.info("mcp_token issuance-ledger write skipped", exc_info=True)
@@ -195,9 +197,7 @@ def verify_endpoint(
 ) -> Dict:
     """Public endpoint — any caller with a token can confirm it's valid."""
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "missing_bearer_token"
-        )
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing_bearer_token")
     token = authorization.split(" ", 1)[1].strip()
     payload = verify_token(token)
     return {
@@ -360,7 +360,8 @@ def list_tokens(admin: dict = Depends(current_admin)) -> list[ActiveTokenInfo]:
             .order_by(MintedTokenRecord.issued_at.desc())  # type: ignore[attr-defined]
         ).all()
         revoked = {
-            r.token_digest for r in db.exec(
+            r.token_digest
+            for r in db.exec(
                 select(MintedTokenBlacklist).where(
                     MintedTokenBlacklist.tenant_slug == tenant
                 )
@@ -379,11 +380,17 @@ def list_tokens(admin: dict = Depends(current_admin)) -> list[ActiveTokenInfo]:
             st = "expired"
         else:
             st = "active"
-        out.append(ActiveTokenInfo(
-            token_digest=r.token_digest, label=r.label, scope=r.scope,
-            issued_by=r.issued_by, issued_at=r.issued_at,
-            expires_at=r.expires_at, status=st,
-        ))
+        out.append(
+            ActiveTokenInfo(
+                token_digest=r.token_digest,
+                label=r.label,
+                scope=r.scope,
+                issued_by=r.issued_by,
+                issued_at=r.issued_at,
+                expires_at=r.expires_at,
+                status=st,
+            )
+        )
     return out
 
 

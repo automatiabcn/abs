@@ -11,8 +11,12 @@ from app.pipelines.base import PipelineResult
 from app.providers.schemas import ProviderError, ProviderResponse
 
 
-def _make_resp(text: str, model: str = "m", provider: str = "p", elapsed: int = 100) -> ProviderResponse:
-    return ProviderResponse(text=text, model=model, provider=provider, elapsed_ms=elapsed)
+def _make_resp(
+    text: str, model: str = "m", provider: str = "p", elapsed: int = 100
+) -> ProviderResponse:
+    return ProviderResponse(
+        text=text, model=model, provider=provider, elapsed_ms=elapsed
+    )
 
 
 @pytest.fixture
@@ -20,7 +24,11 @@ def fake_providers(monkeypatch):
     """Tüm get_provider çağrıları AsyncMock provider döndürsün."""
     providers = {}
 
-    def _set(name: str, responses: dict[str, ProviderResponse] | None = None, raise_for: set[str] | None = None):
+    def _set(
+        name: str,
+        responses: dict[str, ProviderResponse] | None = None,
+        raise_for: set[str] | None = None,
+    ):
         mock = AsyncMock()
 
         async def _call(prompt, model=None, **kw):
@@ -29,7 +37,11 @@ def fake_providers(monkeypatch):
             if responses and model in responses:
                 return responses[model]
             # generic success
-            return _make_resp(f"{name}:{(model or 'default')}:{prompt[:20]}", model=model or "?", provider=name)
+            return _make_resp(
+                f"{name}:{(model or 'default')}:{prompt[:20]}",
+                model=model or "?",
+                provider=name,
+            )
 
         mock.call = _call
         providers[name] = mock
@@ -51,7 +63,9 @@ def fake_providers(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_qual_code_chain_all_pass(fake_providers):
-    fake_providers("cloudflare", {"@cf/moonshotai/kimi-k2.5": _make_resp("def foo(): return 1")})
+    fake_providers(
+        "cloudflare", {"@cf/moonshotai/kimi-k2.5": _make_resp("def foo(): return 1")}
+    )
     fake_providers("groq", {"openai/gpt-oss-20b": _make_resp("def foo(): return 2")})
     fake_providers("ollama", {"codellama:7b": _make_resp("PASS")})
 
@@ -69,12 +83,19 @@ async def test_qual_code_chain_all_pass(fake_providers):
 
 @pytest.mark.asyncio
 async def test_qual_code_triggers_fix_when_verify_finds_issues(fake_providers):
-    fake_providers("cloudflare", {"@cf/moonshotai/kimi-k2.5": _make_resp("def foo(): return 1")})
-    fake_providers("groq", {
-        "openai/gpt-oss-20b": _make_resp("def foo(): return 2"),
-        "openai/gpt-oss-120b": _make_resp("def foo():\n    return 1  # fixed"),
-    })
-    fake_providers("ollama", {"codellama:7b": _make_resp("Missing type hint on return")})
+    fake_providers(
+        "cloudflare", {"@cf/moonshotai/kimi-k2.5": _make_resp("def foo(): return 1")}
+    )
+    fake_providers(
+        "groq",
+        {
+            "openai/gpt-oss-20b": _make_resp("def foo(): return 2"),
+            "openai/gpt-oss-120b": _make_resp("def foo():\n    return 1  # fixed"),
+        },
+    )
+    fake_providers(
+        "ollama", {"codellama:7b": _make_resp("Missing type hint on return")}
+    )
 
     result = await q.QualCodePipeline().run("tip ipuçlu fonksiyon")
     names = [s.name for s in result.steps]
@@ -85,7 +106,9 @@ async def test_qual_code_triggers_fix_when_verify_finds_issues(fake_providers):
 @pytest.mark.asyncio
 async def test_qual_tr_chain_passes_review(fake_providers):
     fake_providers("groq", {"qwen/qwen3-32b": _make_resp("Uzun Türkçe metin bu.")})
-    fake_providers("gemini", {"gemini-2.5-flash": _make_resp("Alternatif metin çok kısa")})
+    fake_providers(
+        "gemini", {"gemini-2.5-flash": _make_resp("Alternatif metin çok kısa")}
+    )
     fake_providers("ollama", {"aya:8b": _make_resp("TAMAM")})
     fake_providers("cloudflare")
 
@@ -99,12 +122,17 @@ async def test_qual_tr_chain_passes_review(fake_providers):
 
 @pytest.mark.asyncio
 async def test_qual_analysis_synthesizes_3_perspectives(fake_providers):
-    fake_providers("groq", {
-        "openai/gpt-oss-120b": _make_resp("SENTEZ: hepsi iyi"),
-    })
+    fake_providers(
+        "groq",
+        {
+            "openai/gpt-oss-120b": _make_resp("SENTEZ: hepsi iyi"),
+        },
+    )
     # override: perspective çağrısında technical = gptoss, synthesis da gptoss
     # mock basit kaldığı için hep "SENTEZ: hepsi iyi" dönecek; bu OK
-    fake_providers("cloudflare", {"@cf/moonshotai/kimi-k2.5": _make_resp("stratejik perspektif")})
+    fake_providers(
+        "cloudflare", {"@cf/moonshotai/kimi-k2.5": _make_resp("stratejik perspektif")}
+    )
     fake_providers("gemini", {"gemini-2.5-pro": _make_resp("kritik perspektif")})
 
     result = await q.QualAnalysisPipeline().run("Self-hosted AI sistemi mi, cloud mu?")
@@ -117,7 +145,9 @@ async def test_qual_analysis_synthesizes_3_perspectives(fake_providers):
 @pytest.mark.asyncio
 async def test_qual_translate_roundtrip(fake_providers):
     fake_providers("groq", {"qwen/qwen3-32b": _make_resp("Merhaba dünya")})
-    fake_providers("cloudflare", {"@cf/moonshotai/kimi-k2.5": _make_resp("Hello world")})
+    fake_providers(
+        "cloudflare", {"@cf/moonshotai/kimi-k2.5": _make_resp("Hello world")}
+    )
     fake_providers("ollama", {"llama3.1:8b": _make_resp("TAMAM")})
 
     result = await q.QualTranslatePipeline().run("Hello world")

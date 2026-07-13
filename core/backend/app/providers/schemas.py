@@ -17,11 +17,15 @@ class ProviderResponse(BaseModel):
 
     text: str = Field(default="", description="The answer itself")
     model: str = Field(default="", description="Which model answered")
-    provider: str = Field(default="", description="Which provider answered (groq, gemini, …)")
+    provider: str = Field(
+        default="", description="Which provider answered (groq, gemini, …)"
+    )
     elapsed_ms: int = Field(default=0, description="How long it took, in milliseconds")
     tokens_in: Optional[int] = Field(default=None, description="Tokens in the question")
     tokens_out: Optional[int] = Field(default=None, description="Tokens in the answer")
-    cached: bool = Field(default=False, description="True if this came from the cache, not the provider")
+    cached: bool = Field(
+        default=False, description="True if this came from the cache, not the provider"
+    )
     error: Optional[str] = Field(default=None, description="Why it failed, if it did")
 
 

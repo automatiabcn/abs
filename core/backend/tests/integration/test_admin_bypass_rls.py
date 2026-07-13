@@ -142,10 +142,7 @@ def test_abs_app_blocked_without_guc() -> None:
     with app_engine.connect() as conn:
         # No GUC — abs_app must see nothing under FORCE RLS.
         rows = conn.execute(
-            text(
-                "SELECT 1 FROM customer_audit_entries "
-                "WHERE license_jti = :j"
-            ),
+            text("SELECT 1 FROM customer_audit_entries WHERE license_jti = :j"),
             {"j": f"jti-{marker}"},
         ).fetchall()
         assert rows == []

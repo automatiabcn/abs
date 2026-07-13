@@ -7,6 +7,7 @@ text, so semantic retrieval is non-functional. Previously this was a quiet INFO
 line that read like normal startup. It must be a WARNING so operators know RAG
 search won't actually work until they configure a real backend.
 """
+
 from __future__ import annotations
 
 import logging

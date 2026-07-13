@@ -45,12 +45,16 @@ def test_coqui_backend_unavailable_falls_back_to_piper(tmp_path, monkeypatch):
             backend="piper",
         )
 
-    with patch.object(tts._CoquiBackend, "synthesize", _raise_unavailable), \
-         patch.object(tts._CoquiBackend, "__init__", lambda self, **_: None), \
-         patch.object(tts._PiperBackend, "__init__", _piper_init), \
-         patch.object(tts._PiperBackend, "synthesize", _piper_synth):
+    with (
+        patch.object(tts._CoquiBackend, "synthesize", _raise_unavailable),
+        patch.object(tts._CoquiBackend, "__init__", lambda self, **_: None),
+        patch.object(tts._PiperBackend, "__init__", _piper_init),
+        patch.object(tts._PiperBackend, "synthesize", _piper_synth),
+    ):
         reminder = tts.TTSReminder("coqui")
-        result = reminder.synthesize("Merhaba ekip, toplantı 14:00", target_dir=tmp_path)
+        result = reminder.synthesize(
+            "Merhaba ekip, toplantı 14:00", target_dir=tmp_path
+        )
         assert result.backend == "piper"
         assert Path(result.audio_path).exists()
         assert reminder.backend == "piper"
@@ -63,8 +67,10 @@ def test_coqui_backend_no_fallback_raises(tmp_path, monkeypatch):
     def _raise_unavailable(self, *args, **kwargs):
         raise tts.TTSBackendUnavailable("coqui missing")
 
-    with patch.object(tts._CoquiBackend, "__init__", lambda self, **_: None), \
-         patch.object(tts._CoquiBackend, "synthesize", _raise_unavailable):
+    with (
+        patch.object(tts._CoquiBackend, "__init__", lambda self, **_: None),
+        patch.object(tts._CoquiBackend, "synthesize", _raise_unavailable),
+    ):
         reminder = tts.TTSReminder("coqui")
         with pytest.raises(tts.TTSBackendUnavailable):
             reminder.synthesize("Merhaba", target_dir=tmp_path)

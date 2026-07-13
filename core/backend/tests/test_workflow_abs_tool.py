@@ -31,7 +31,10 @@ def test_rag_query_invokes_real_query(monkeypatch):
     node = {
         "id": "t1",
         "kind": "abs_tool",
-        "config": {"tool_name": "abs.rag_query", "tool_args": {"question": "what is {{n0}}", "top_k": 3}},
+        "config": {
+            "tool_name": "abs.rag_query",
+            "tool_args": {"question": "what is {{n0}}", "top_k": 3},
+        },
     }
     out = asyncio.run(_run(node, {"n0": {"text": "ABS"}}))
     assert out["kind"] == "abs_tool"
@@ -58,7 +61,10 @@ def test_ask_routes_to_cascade(monkeypatch):
     node = {
         "id": "t1",
         "kind": "abs_tool",
-        "config": {"tool_name": "ask_gptoss", "tool_args": {"prompt": "summarize {{n0}}"}},
+        "config": {
+            "tool_name": "ask_gptoss",
+            "tool_args": {"prompt": "summarize {{n0}}"},
+        },
     }
     out = asyncio.run(_run(node, {"n0": {"text": "the doc"}}))
     assert out["text"] == "CASCADE-OUT"
@@ -80,6 +86,10 @@ def test_unknown_external_tool_is_honest_error():
 
 
 def test_empty_question_skipped():
-    node = {"id": "t1", "kind": "abs_tool", "config": {"tool_name": "rag_query", "tool_args": {}}}
+    node = {
+        "id": "t1",
+        "kind": "abs_tool",
+        "config": {"tool_name": "rag_query", "tool_args": {}},
+    }
     out = asyncio.run(_run(node))
     assert out.get("skipped") == "abs_tool"

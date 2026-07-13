@@ -51,12 +51,14 @@ def _synthesise_from_audit(limit: int) -> list[dict]:
         # is a cheap Python filter over that bounded set. (This route now requires
         # a signed-in operator, which it did not when that DoS was found — keep the
         # bound anyway: a signed-in caller can still ask for a lot.)
-        rows = list(db.scalars(
-            select(CustomerAuditEntry)
-            .where(CustomerAuditEntry.action == "tool_call")
-            .order_by(CustomerAuditEntry.ts.desc())
-            .limit(capped)
-        ).all())
+        rows = list(
+            db.scalars(
+                select(CustomerAuditEntry)
+                .where(CustomerAuditEntry.action == "tool_call")
+                .order_by(CustomerAuditEntry.ts.desc())
+                .limit(capped)
+            ).all()
+        )
     for r in rows:
         ts = _norm(r.ts)
         if ts is None or ts < cutoff:

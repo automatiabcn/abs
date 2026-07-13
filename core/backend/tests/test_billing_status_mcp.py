@@ -110,5 +110,9 @@ def test_billing_status_recent_events_ordered_desc(monkeypatch):
     out = json.loads(raw)
     ev_ids = [e["event_id"] for e in out["recent_events"]]
     # En yeni eklenen (evt_order_2) listenin basinda olmali
-    idx = {eid: ev_ids.index(eid) for eid in ("evt_order_0", "evt_order_1", "evt_order_2") if eid in ev_ids}
+    idx = {
+        eid: ev_ids.index(eid)
+        for eid in ("evt_order_0", "evt_order_1", "evt_order_2")
+        if eid in ev_ids
+    }
     assert idx["evt_order_2"] < idx["evt_order_1"] < idx["evt_order_0"]

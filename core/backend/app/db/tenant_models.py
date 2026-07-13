@@ -148,14 +148,14 @@ class ExternalMcpServer(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     tenant_slug: str = Field(index=True, max_length=64)
-    slug: str = Field(index=True, max_length=64)          # stable id within tenant
-    name: str = Field(default="", max_length=128)         # human label
-    url: str = Field(max_length=2048)                      # transport endpoint
+    slug: str = Field(index=True, max_length=64)  # stable id within tenant
+    name: str = Field(default="", max_length=128)  # human label
+    url: str = Field(max_length=2048)  # transport endpoint
     transport: str = Field(default="http", max_length=16)  # http | sse
     auth_type: str = Field(default="none", max_length=16)  # none | bearer | header
     # Fernet ciphertext of the bearer token / header value (empty when none).
     encrypted_auth: str = Field(default="", max_length=8192)
-    header_name: str = Field(default="", max_length=64)    # for auth_type=header
+    header_name: str = Field(default="", max_length=64)  # for auth_type=header
     enabled: bool = Field(default=True)
     # Discovery / health snapshot from the last test_connection.
     status: str = Field(default="unconfigured", max_length=24)  # ok|error|unconfigured

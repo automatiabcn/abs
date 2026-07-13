@@ -146,7 +146,11 @@ def _check_mcp() -> dict:
     try:
         from app.mcp.server import _REGISTERED_COUNT
 
-        return {"name": "mcp", "ok": _REGISTERED_COUNT >= 100, "tools": _REGISTERED_COUNT}
+        return {
+            "name": "mcp",
+            "ok": _REGISTERED_COUNT >= 100,
+            "tools": _REGISTERED_COUNT,
+        }
     except Exception as exc:
         logger.exception("status_page mcp check failed")
         return {"name": "mcp", "ok": False, "error_class": type(exc).__name__}

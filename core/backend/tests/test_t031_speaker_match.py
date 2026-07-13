@@ -45,9 +45,7 @@ def test_identify_blocks_cross_tenant() -> None:
 def test_consent_required_raises_when_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(
-        settings, "meeting_voice_consent_required", True, raising=False
-    )
+    monkeypatch.setattr(settings, "meeting_voice_consent_required", True, raising=False)
     reg = SpeakerRegistry()
     with pytest.raises(ConsentRequired):
         reg.enroll(

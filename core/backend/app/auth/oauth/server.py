@@ -86,9 +86,7 @@ def _revoke_refresh_family(db: Session, start_hash: str) -> int:
         chain.append(cursor)
         nxt = first_or_none(
             db,
-            select(OAuthRefreshToken).where(
-                OAuthRefreshToken.token_hash == cursor
-            ),
+            select(OAuthRefreshToken).where(OAuthRefreshToken.token_hash == cursor),
         )
         cursor = nxt.rotated_to_hash if nxt is not None else None
     if not chain:
@@ -264,9 +262,7 @@ def exchange_code_for_tokens(
 
     from app.db.query_helpers import first_or_none
 
-    record = first_or_none(
-        db, select(OAuthAuthCode).where(OAuthAuthCode.code == code)
-    )
+    record = first_or_none(db, select(OAuthAuthCode).where(OAuthAuthCode.code == code))
     if record is None:
         raise OAuthError("invalid_grant", "unknown authorization code")
     if record.client_id != client_id:
@@ -337,9 +333,7 @@ def refresh_access_token(
     presented_hash = _hash_token(refresh_token)
     rt = first_or_none(
         db,
-        select(OAuthRefreshToken).where(
-            OAuthRefreshToken.token_hash == presented_hash
-        ),
+        select(OAuthRefreshToken).where(OAuthRefreshToken.token_hash == presented_hash),
     )
     if rt is None:
         raise OAuthError("invalid_grant", "unknown refresh token")

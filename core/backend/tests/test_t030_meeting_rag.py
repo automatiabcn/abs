@@ -40,9 +40,7 @@ def test_build_chunks_skips_empty_segments() -> None:
         ],
         backend="mock",
     )
-    chunks = build_chunks_from_transcript(
-        t, meeting_id="m2", tenant_id="t1"
-    )
+    chunks = build_chunks_from_transcript(t, meeting_id="m2", tenant_id="t1")
     assert len(chunks) == 1
     assert chunks[0]["text"].endswith("real")
 

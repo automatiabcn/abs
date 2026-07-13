@@ -28,8 +28,13 @@ def test_restore_state_reopens_recent_persisted_open(
     """A provider that tripped just before a restart stays isolated."""
     monkeypatch.setattr(settings, "data_dir", str(tmp_path), raising=False)
     persist.save(
-        {"groq": {"state": "open", "fail_count": 5,
-                  "opened_at_real_time": time.time() - 1}}
+        {
+            "groq": {
+                "state": "open",
+                "fail_count": 5,
+                "opened_at_real_time": time.time() - 1,
+            }
+        }
     )
     br = CircuitBreaker()
     assert br.restore_state() == 1
@@ -43,8 +48,13 @@ def test_restore_state_skips_expired_open(
     """An open that already outlived the reset window is NOT restored."""
     monkeypatch.setattr(settings, "data_dir", str(tmp_path), raising=False)
     persist.save(
-        {"groq": {"state": "open", "fail_count": 5,
-                  "opened_at_real_time": time.time() - 99_999}}
+        {
+            "groq": {
+                "state": "open",
+                "fail_count": 5,
+                "opened_at_real_time": time.time() - 99_999,
+            }
+        }
     )
     br = CircuitBreaker()
     assert br.restore_state() == 0

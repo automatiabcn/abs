@@ -36,8 +36,11 @@ async def test_mcp_context_drives_byok(monkeypatch):
 
     monkeypatch.setattr(settings, "provider_key_encryption_key", "k", raising=False)
     pk.set_provider_key(
-        tenant_slug="mcp-acme", owner_type="user", owner_id="dev@acme.com",
-        provider="groq", value="MCP_USER_KEY",
+        tenant_slug="mcp-acme",
+        owner_type="user",
+        owner_id="dev@acme.com",
+        provider="groq",
+        value="MCP_USER_KEY",
     )
     seen: dict = {}
     monkeypatch.setattr(orch, "get_provider", lambda name: _fake_provider(seen))

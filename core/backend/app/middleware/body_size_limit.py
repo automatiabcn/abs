@@ -34,20 +34,20 @@ logger = logging.getLogger(__name__)
 # `_default` key supplies the fallback. Tune via settings if tier
 # differentiation is needed in future.
 DEFAULT_CAPS: Mapping[str, int] = {
-    "/v1/rag/ingest-file": 40 * 1024 * 1024,   # 40 MB — raw PDF/DOCX uploads
-    "/v1/rag/ingest": 10 * 1024 * 1024,        # 10 MB — JSON text body
-    "/v1/marketplace/install": 64 * 1024,      # 64 KB — admin payload
-    "/v1/marketplace/uninstall": 16 * 1024,    # 16 KB
-    "/v1/workflows/synthesize": 256 * 1024,    # 256 KB
+    "/v1/rag/ingest-file": 40 * 1024 * 1024,  # 40 MB — raw PDF/DOCX uploads
+    "/v1/rag/ingest": 10 * 1024 * 1024,  # 10 MB — JSON text body
+    "/v1/marketplace/install": 64 * 1024,  # 64 KB — admin payload
+    "/v1/marketplace/uninstall": 16 * 1024,  # 16 KB
+    "/v1/workflows/synthesize": 256 * 1024,  # 256 KB
     "/v1/workflows/execute": 1 * 1024 * 1024,  # 1 MB — execute caps in Q12-L25-002
-    "/v1/chat/completions": 8 * 1024 * 1024,   # 8 MB — Q12-L25-003 already caps msgs
+    "/v1/chat/completions": 8 * 1024 * 1024,  # 8 MB — Q12-L25-003 already caps msgs
     # Meetings are long, and audio is big: an hour of recorded conversation is
     # 30–60 MB as mp3 and far more as wav. This path had no entry, so it fell to
     # the 5 MB default while the endpoint itself advertised a 250 MB limit — two
     # numbers that could not both be true, and the middleware's was the one that
     # ran. In practice you could upload about two minutes of a meeting.
     "/v1/meetings/upload": 250 * 1024 * 1024,  # 250 MB — matches the endpoint
-    "_default": 5 * 1024 * 1024,               # 5 MB — generic admin
+    "_default": 5 * 1024 * 1024,  # 5 MB — generic admin
     # Ceiling for every per-path cap above. Raised alongside the meetings cap;
     # no other path asks for more than 40 MB, so nothing else widens.
     "_hardcap": 250 * 1024 * 1024,

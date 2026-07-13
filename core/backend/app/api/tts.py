@@ -59,9 +59,7 @@ async def synthesize_endpoint(
         logger.warning("piper unavailable: %s", exc)
         raise HTTPException(503, f"piper_unavailable: {exc}") from exc
     try:
-        feature_usage_service.increment(
-            "tts_synthesize", actor_email=admin.get("sub")
-        )
+        feature_usage_service.increment("tts_synthesize", actor_email=admin.get("sub"))
     except Exception:
         pass
     return Response(content=wav, media_type="audio/wav")

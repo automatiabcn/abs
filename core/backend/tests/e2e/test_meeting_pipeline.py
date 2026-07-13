@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.meeting.action_items import ActionItem, extract_action_items
+from app.meeting.action_items import extract_action_items
 from app.meeting.rag_index import (
     MeetingRAGIndexer,
     build_chunks_from_transcript,
@@ -10,7 +10,6 @@ from app.meeting.rag_index import (
 from app.meeting.speaker_match import SpeakerRegistry
 from app.meeting.ticket_link import (
     ExistingTicket,
-    decide_ticket_action,
     link_action_items,
 )
 from app.meeting.transcribe import Transcriber

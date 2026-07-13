@@ -18,7 +18,7 @@ class CredentialField:
 
     key: str
     label: str
-    type: str = "text"           # text | password | textarea | file
+    type: str = "text"  # text | password | textarea | file
     placeholder: str = ""
     required: bool = True
 
@@ -36,8 +36,11 @@ class SyncResult:
 
     def to_dict(self) -> dict:
         return {
-            "companies": self.companies, "contacts": self.contacts,
-            "leads": self.leads, "total": self.total, "error": self.error,
+            "companies": self.companies,
+            "contacts": self.contacts,
+            "leads": self.leads,
+            "total": self.total,
+            "error": self.error,
         }
 
 

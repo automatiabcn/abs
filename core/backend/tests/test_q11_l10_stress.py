@@ -39,9 +39,7 @@ class TestQ11L10QuotaGateStress:
         assert r.status_code == 201, r.text
         return r.json()["token"]
 
-    def test_200_parallel_risky_quota_check_splits_100_100(
-        self, admin_client
-    ):
+    def test_200_parallel_risky_quota_check_splits_100_100(self, admin_client):
         # Reset the in-process counter so the stress test starts clean
         # regardless of test ordering inside the suite.
         ccx._risky_window.clear()
@@ -60,9 +58,7 @@ class TestQ11L10QuotaGateStress:
                 "/v1/hooks/quota-check", json=payload, headers=headers
             )
             assert resp.status_code == 200, resp.text
-            decision = resp.json()["hookSpecificOutput"][
-                "permissionDecision"
-            ]
+            decision = resp.json()["hookSpecificOutput"]["permissionDecision"]
             return decision
 
         with ThreadPoolExecutor(max_workers=20) as ex:
@@ -78,12 +74,8 @@ class TestQ11L10QuotaGateStress:
                         other.append(decision)
 
         assert other == [], f"unexpected decisions: {other}"
-        assert allows == 100, (
-            f"expected 100 allow, got {allows} (denies={denies})"
-        )
-        assert denies == 100, (
-            f"expected 100 deny, got {denies} (allows={allows})"
-        )
+        assert allows == 100, f"expected 100 allow, got {allows} (denies={denies})"
+        assert denies == 100, f"expected 100 deny, got {denies} (allows={allows})"
 
     def test_non_risky_tool_unbounded(self, admin_client):
         ccx._risky_window.clear()
@@ -108,7 +100,4 @@ class TestQ11L10QuotaGateStress:
             for fut in as_completed(futures):
                 r = fut.result()
                 assert r.status_code == 200
-                assert (
-                    r.json()["hookSpecificOutput"]["permissionDecision"]
-                    == "allow"
-                )
+                assert r.json()["hookSpecificOutput"]["permissionDecision"] == "allow"

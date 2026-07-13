@@ -132,7 +132,9 @@ def finish_workflow(trace_id: str, status: str = "ok") -> None:
 
 def get_workflow(trace_id: str) -> Dict[str, Any]:
     with _connect() as conn:
-        wf = conn.execute("SELECT * FROM workflows WHERE id = ?", (trace_id,)).fetchone()
+        wf = conn.execute(
+            "SELECT * FROM workflows WHERE id = ?", (trace_id,)
+        ).fetchone()
         if not wf:
             return {}
         steps = conn.execute(
@@ -151,7 +153,9 @@ def get_workflow(trace_id: str) -> Dict[str, Any]:
                     "step_idx": s["step_idx"],
                     "name": s["name"],
                     "status": s["status"],
-                    "result": json.loads(s["result_json"]) if s["result_json"] else None,
+                    "result": json.loads(s["result_json"])
+                    if s["result_json"]
+                    else None,
                     "started_at": s["started_at"],
                     "finished_at": s["finished_at"],
                 }
@@ -247,7 +251,9 @@ def stats() -> Dict[str, Any]:
             "SELECT id, type, status, started_at FROM workflows "
             "ORDER BY started_at DESC LIMIT 5"
         ).fetchall()
-    db_size_kb = round(_db_path().stat().st_size / 1024, 1) if _db_path().exists() else 0.0
+    db_size_kb = (
+        round(_db_path().stat().st_size / 1024, 1) if _db_path().exists() else 0.0
+    )
     return {
         "total_workflows": total,
         "by_status": by_status,

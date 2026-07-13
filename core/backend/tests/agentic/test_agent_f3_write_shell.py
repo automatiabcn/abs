@@ -23,7 +23,7 @@ import json
 import pytest
 
 from app.agentic import dispatcher, write_tools
-from app.agentic.approvals_bridge import AGENT_TOOL_CHANNEL, payload_of, request_tool_approval
+from app.agentic.approvals_bridge import AGENT_TOOL_CHANNEL, payload_of
 from app.agentic.paths import PathDenied
 from app.agentic.policy import Level, check, is_enabled
 from app.config import settings
@@ -55,7 +55,9 @@ class TestTheseToolsAreOffUntilTheyAreOn:
         # it was never told exists.
         assert "fs_write" not in dispatcher.describe_for_prompt()
 
-    def test_letting_it_write_files_does_not_let_it_run_commands(self, workspace, monkeypatch):
+    def test_letting_it_write_files_does_not_let_it_run_commands(
+        self, workspace, monkeypatch
+    ):
         monkeypatch.setattr(settings, "agent_shell_enabled", False)
         names = {tool.name for tool in dispatcher.catalogue()}
         assert "fs_write" in names
@@ -87,9 +89,13 @@ class TestAnApprovedWriteIsStillNotAnywhere:
             await write_tools.fs_write(str(outside), "ssh-rsa AAAA...")
 
     @pytest.mark.asyncio
-    async def test_it_will_not_overwrite_a_secret_inside_an_allowed_folder(self, workspace):
+    async def test_it_will_not_overwrite_a_secret_inside_an_allowed_folder(
+        self, workspace
+    ):
         with pytest.raises(PathDenied, match="not readable"):
-            await write_tools.fs_write(str(workspace["root"] / ".env"), "ABS_GROQ_API_KEY=stolen")
+            await write_tools.fs_write(
+                str(workspace["root"] / ".env"), "ABS_GROQ_API_KEY=stolen"
+            )
         assert "sk-live" in (workspace["root"] / ".env").read_text(encoding="utf-8")
 
 
@@ -114,12 +120,16 @@ class TestAnApprovedCommandRunsWhatWasRead:
         # transcript that gets stored and indexed.
         monkeypatch.setenv("ABS_GROQ_API_KEY", "sk-live-secret-value")
         monkeypatch.setenv("HOME_LOOKING_VAR", "harmless")
-        out = await write_tools.run_command("echo [$ABS_GROQ_API_KEY] [$HOME_LOOKING_VAR]")
+        out = await write_tools.run_command(
+            "echo [$ABS_GROQ_API_KEY] [$HOME_LOOKING_VAR]"
+        )
         assert "sk-live-secret-value" not in out
         assert "harmless" in out  # ordinary variables still come through
 
     @pytest.mark.asyncio
-    async def test_a_command_that_never_finishes_is_stopped(self, workspace, monkeypatch):
+    async def test_a_command_that_never_finishes_is_stopped(
+        self, workspace, monkeypatch
+    ):
         monkeypatch.setattr(write_tools, "SHELL_TIMEOUT_SECONDS", 0.5)
         with pytest.raises(PathDenied, match="stopped"):
             await write_tools.run_command("sleep 5")
@@ -129,7 +139,9 @@ class TestAnApprovedCommandRunsWhatWasRead:
 
 
 class TestTheApprovalCarriesTheCall:
-    def test_the_stored_payload_is_the_call_not_the_summary(self, workspace, monkeypatch, tmp_path):
+    def test_the_stored_payload_is_the_call_not_the_summary(
+        self, workspace, monkeypatch, tmp_path
+    ):
         opened = {}
 
         class FakeItem:
@@ -181,7 +193,12 @@ class TestTheAssistantCanAskAndOnlyAsk:
                         "arguments": {"path": str(target), "content": "the summary"},
                     }
                 ),
-                json.dumps({"action": "final", "answer": "I asked to save it; it needs your ok."}),
+                json.dumps(
+                    {
+                        "action": "final",
+                        "answer": "I asked to save it; it needs your ok.",
+                    }
+                ),
             ]
         )
 

@@ -67,7 +67,9 @@ MAX_CPU_QUOTA = 4.0
 MIN_MEMORY_MB = 64
 MAX_MEMORY_MB = 4096
 
-_HOST_RE = re.compile(r"^(?:\*\.)?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
+_HOST_RE = re.compile(
+    r"^(?:\*\.)?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$"
+)
 
 
 class SandboxError(RuntimeError):
@@ -132,7 +134,9 @@ def _validate_mount(path: str, *, allowed_prefixes: tuple[str, ...], kind: str) 
 
 def _validate_egress_pattern(pattern: str) -> str:
     if not isinstance(pattern, str) or not pattern.strip():
-        raise EgressDeniedError(f"egress pattern must be a non-empty string: {pattern!r}")
+        raise EgressDeniedError(
+            f"egress pattern must be a non-empty string: {pattern!r}"
+        )
     norm = pattern.strip().lower()
     if not _HOST_RE.fullmatch(norm):
         raise EgressDeniedError(f"malformed egress pattern: {pattern!r}")
@@ -185,7 +189,9 @@ def build_sandbox_spec(
         _validate_mount(p, allowed_prefixes=ALLOWED_TMPFS_PATHS, kind="tmpfs")
         for p in manifest.permissions.filesystem_write
     )
-    network = tuple(_validate_egress_pattern(p) for p in manifest.permissions.network_egress)
+    network = tuple(
+        _validate_egress_pattern(p) for p in manifest.permissions.network_egress
+    )
 
     merged_env = _validate_env(env)
     merged_env["PLUGIN_ID"] = manifest.id
@@ -328,13 +334,19 @@ class DockerSandboxLauncher:
         # parsed by docker as a flag — argv injection. The manifest validator
         # already enforces a clean OCI ref; re-check here so a SandboxSpec built
         # directly (bypassing the manifest) still cannot smuggle a flag.
-        if not spec.image or spec.image[0] == "-" or any(c.isspace() for c in spec.image):
+        if (
+            not spec.image
+            or spec.image[0] == "-"
+            or any(c.isspace() for c in spec.image)
+        ):
             raise SandboxError(f"refusing to launch unsafe image ref: {spec.image!r}")
         argv.append(spec.image)
         return argv
 
     def launch(self, spec: SandboxSpec) -> int:
-        if self._image_pull_check is not None and not self._image_pull_check(spec.image):
+        if self._image_pull_check is not None and not self._image_pull_check(
+            spec.image
+        ):
             raise SandboxError(f"image not available: {spec.image}")
 
         if self._runner is None:
@@ -472,7 +484,9 @@ class PluginSandbox:
                 self.client.images.pull(entry_point)
                 return entry_point
             except Exception as exc:  # registry miss / offline
-                logger.warning("plugin image %s could not be pulled: %s", entry_point, exc)
+                logger.warning(
+                    "plugin image %s could not be pulled: %s", entry_point, exc
+                )
                 raise PluginImageUnavailable(
                     f"the image for this plugin ({entry_point}) could not be pulled: "
                     f"{type(exc).__name__}. Nothing was started."

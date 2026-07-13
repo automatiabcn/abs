@@ -314,9 +314,7 @@ def _resolve_admin_tenant(admin: dict) -> str:
     try:
         with Session(get_engine()) as db:
             stmt = (
-                select(User)
-                .where(User.email == email)
-                .where(User.status == "active")
+                select(User).where(User.email == email).where(User.status == "active")
             )
             user = db.exec(stmt).first()
             if user is not None and user.tenant_slug:

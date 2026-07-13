@@ -51,7 +51,9 @@ def _norm(s: str) -> str:
     return (s or "").strip().lower()
 
 
-def _resolve_contact_email(db: Session, tenant: str, company_name: str) -> Optional[str]:
+def _resolve_contact_email(
+    db: Session, tenant: str, company_name: str
+) -> Optional[str]:
     """Primary contact email for the approval's target company (consent key)."""
     if not company_name:
         return None
@@ -79,10 +81,16 @@ def _record(db: Session, **kw: Any) -> ActionExecution:
 
 def _to_dict(r: ActionExecution) -> dict:
     return {
-        "id": r.id, "approval_item_id": r.approval_item_id, "agent_id": r.agent_id,
-        "action_kind": r.action_kind, "channel": r.channel,
-        "target_company": r.target_company, "target_contact": r.target_contact,
-        "message": r.message, "status": r.status, "reason": r.reason,
+        "id": r.id,
+        "approval_item_id": r.approval_item_id,
+        "agent_id": r.agent_id,
+        "action_kind": r.action_kind,
+        "channel": r.channel,
+        "target_company": r.target_company,
+        "target_contact": r.target_contact,
+        "message": r.message,
+        "status": r.status,
+        "reason": r.reason,
         "created_at": r.created_at.isoformat() if r.created_at else None,
     }
 
@@ -100,7 +108,9 @@ def _run_coroutine_blocking(coro: Any, *, timeout: float = 60.0) -> str:
         return pool.submit(asyncio.run, coro).result(timeout=timeout)
 
 
-def _execute_agent_tool(item: Any, *, tenant: str, base: Dict[str, Any]) -> Dict[str, Any]:
+def _execute_agent_tool(
+    item: Any, *, tenant: str, base: Dict[str, Any]
+) -> Dict[str, Any]:
     """Run the tool call an operator just approved."""
     from app.agentic import dispatcher
     from app.agentic.approvals_bridge import payload_of
@@ -109,45 +119,75 @@ def _execute_agent_tool(item: Any, *, tenant: str, base: Dict[str, Any]) -> Dict
     call = payload_of(item)
     with Session(get_engine()) as db:
         if call is None:
-            return _to_dict(_record(
-                db, **base, action_kind="agent_tool", channel=AGENT_TOOL_CHANNEL,
-                status="failed", reason="the approved call could not be read",
-            ))
+            return _to_dict(
+                _record(
+                    db,
+                    **base,
+                    action_kind="agent_tool",
+                    channel=AGENT_TOOL_CHANNEL,
+                    status="failed",
+                    reason="the approved call could not be read",
+                )
+            )
 
         tool = dispatcher.get(call["name"])
         if tool is None:
-            return _to_dict(_record(
-                db, **base, action_kind="agent_tool", channel=AGENT_TOOL_CHANNEL,
-                status="failed", reason=f"unknown tool: {call['name']}",
-            ))
+            return _to_dict(
+                _record(
+                    db,
+                    **base,
+                    action_kind="agent_tool",
+                    channel=AGENT_TOOL_CHANNEL,
+                    status="failed",
+                    reason=f"unknown tool: {call['name']}",
+                )
+            )
 
         # The gate again, at the moment of action.
         decision = check(tool.level)
         if decision.verdict == "deny":
             logger.info(
                 "approved agent tool refused at execution: %s (%s)",
-                call["name"], decision.reason,
+                call["name"],
+                decision.reason,
             )
-            return _to_dict(_record(
-                db, **base, action_kind="agent_tool", channel=AGENT_TOOL_CHANNEL,
-                status="blocked",
-                reason=f"no longer permitted: {decision.reason}",
-            ))
+            return _to_dict(
+                _record(
+                    db,
+                    **base,
+                    action_kind="agent_tool",
+                    channel=AGENT_TOOL_CHANNEL,
+                    status="blocked",
+                    reason=f"no longer permitted: {decision.reason}",
+                )
+            )
 
         try:
             output = _run_coroutine_blocking(dispatcher.run(call["name"], call["args"]))
         except Exception as exc:  # noqa: BLE001 — a failing command is an outcome
             logger.info("approved agent tool failed: %s: %s", call["name"], exc)
-            return _to_dict(_record(
-                db, **base, action_kind="agent_tool", channel=AGENT_TOOL_CHANNEL,
-                status="failed", reason=str(exc)[:512],
-            ))
+            return _to_dict(
+                _record(
+                    db,
+                    **base,
+                    action_kind="agent_tool",
+                    channel=AGENT_TOOL_CHANNEL,
+                    status="failed",
+                    reason=str(exc)[:512],
+                )
+            )
 
         logger.info("approved agent tool executed: %s", call["name"])
-        return _to_dict(_record(
-            db, **base, action_kind="agent_tool", channel=AGENT_TOOL_CHANNEL,
-            status="executed", reason=output[:512],
-        ))
+        return _to_dict(
+            _record(
+                db,
+                **base,
+                action_kind="agent_tool",
+                channel=AGENT_TOOL_CHANNEL,
+                status="executed",
+                reason=output[:512],
+            )
+        )
 
 
 def execute_for_approval(item: Any, *, tenant_slug: str) -> Dict[str, Any]:
@@ -157,11 +197,15 @@ def execute_for_approval(item: Any, *, tenant_slug: str) -> Dict[str, Any]:
     Outbound comms are consent-gated; internal actions apply immediately."""
     tenant = (tenant_slug or "default").strip()
     channel = _norm(getattr(item, "channel", ""))
-    message = (getattr(item, "proposed_message", "") or getattr(item, "action", ""))[:2048]
+    message = (getattr(item, "proposed_message", "") or getattr(item, "action", ""))[
+        :2048
+    ]
     base = dict(
-        tenant_slug=tenant, approval_item_id=getattr(item, "id", None),
+        tenant_slug=tenant,
+        approval_item_id=getattr(item, "id", None),
         agent_id=getattr(item, "agent_id", ""),
-        target_company=getattr(item, "target_company", ""), message=message,
+        target_company=getattr(item, "target_company", ""),
+        message=message,
     )
 
     # An agent tool call. Approved by a person, and only now allowed to run — and
@@ -184,31 +228,60 @@ def execute_for_approval(item: Any, *, tenant_slug: str) -> Dict[str, Any]:
         # a failure, and a failure a person can see is worth more than a success
         # they cannot.
         if channel not in _COMMS:
-            row = _record(db, **base, action_kind="internal", channel=channel,
-                          status="failed",
-                          reason=(f"no handler for '{channel}' actions on this server "
-                                  "— nothing was changed"))
+            row = _record(
+                db,
+                **base,
+                action_kind="internal",
+                channel=channel,
+                status="failed",
+                reason=(
+                    f"no handler for '{channel}' actions on this server "
+                    "— nothing was changed"
+                ),
+            )
             logger.warning(
                 "approved internal action has no handler: channel=%s approval=%s",
-                channel, base["approval_item_id"],
+                channel,
+                base["approval_item_id"],
             )
             return _to_dict(row)
 
         # outbound comms — resolve recipient + consent gate (fail-closed)
         email = _resolve_contact_email(db, tenant, base["target_company"])
         if not email:
-            row = _record(db, **base, action_kind="message_send", channel=channel,
-                          status="blocked", reason="recipient could not be resolved")
+            row = _record(
+                db,
+                **base,
+                action_kind="message_send",
+                channel=channel,
+                status="blocked",
+                reason="recipient could not be resolved",
+            )
             return _to_dict(row)
 
-        gate = check_channel(tenant_slug=tenant, contact_email=email,
-                             channel=_GATE_CHANNEL.get(channel, channel))
+        gate = check_channel(
+            tenant_slug=tenant,
+            contact_email=email,
+            channel=_GATE_CHANNEL.get(channel, channel),
+        )
         if not gate.get("allowed"):
-            row = _record(db, **base, action_kind="message_send", channel=channel,
-                          status="blocked", target_contact=email,
-                          reason=_REASON_TEXT.get(gate.get("reason", ""), gate.get("reason", "no consent")))
-            logger.info("action blocked (%s) approval=%s reason=%s",
-                        channel, base["approval_item_id"], gate.get("reason"))
+            row = _record(
+                db,
+                **base,
+                action_kind="message_send",
+                channel=channel,
+                status="blocked",
+                target_contact=email,
+                reason=_REASON_TEXT.get(
+                    gate.get("reason", ""), gate.get("reason", "no consent")
+                ),
+            )
+            logger.info(
+                "action blocked (%s) approval=%s reason=%s",
+                channel,
+                base["approval_item_id"],
+                gate.get("reason"),
+            )
             return _to_dict(row)
 
         # A person approved it and the Consent Ledger allows it. Send it.
@@ -223,15 +296,21 @@ def execute_for_approval(item: Any, *, tenant_slug: str) -> Dict[str, Any]:
             message=message,
         )
         row = _record(
-            db, **base, action_kind="message_send", channel=channel,
+            db,
+            **base,
+            action_kind="message_send",
+            channel=channel,
             target_contact=email,
             status="sent" if result.sent else "failed",
             reason=result.detail[:256],
         )
         logger.info(
             "action %s (%s) approval=%s → %s: %s",
-            "sent" if result.sent else "FAILED", channel,
-            base["approval_item_id"], email, result.detail,
+            "sent" if result.sent else "FAILED",
+            channel,
+            base["approval_item_id"],
+            email,
+            result.detail,
         )
         return _to_dict(row)
 
@@ -270,10 +349,13 @@ def retry_action(*, tenant_slug: str, action_id: int) -> Dict[str, Any]:
         if row.action_kind != "message_send":
             raise RetryNotAllowed("only an outbound message can be retried")
         if row.status != "failed":
-            raise RetryNotAllowed(f"this message is '{row.status}', not failed — nothing to retry")
+            raise RetryNotAllowed(
+                f"this message is '{row.status}', not failed — nothing to retry"
+            )
 
         gate = check_channel(
-            tenant_slug=tenant, contact_email=row.target_contact,
+            tenant_slug=tenant,
+            contact_email=row.target_contact,
             channel=_GATE_CHANNEL.get(row.channel, row.channel),
         )
         if not gate.get("allowed"):
@@ -283,8 +365,10 @@ def retry_action(*, tenant_slug: str, action_id: int) -> Dict[str, Any]:
             )[:256]
         else:
             result = delivery.deliver(
-                channel=row.channel, to=row.target_contact,
-                subject=_subject_for(None, row.target_company), message=row.message,
+                channel=row.channel,
+                to=row.target_contact,
+                subject=_subject_for(None, row.target_company),
+                message=row.message,
             )
             row.status = "sent" if result.sent else "failed"
             row.reason = result.detail[:256]

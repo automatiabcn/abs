@@ -40,7 +40,6 @@ from app.smart_link.vault_secrets import (
     delete_secret,
     encrypt_secret,
     list_secrets,
-    rotate_secret,
     update_validation_status,
 )
 
@@ -166,9 +165,7 @@ def _new_state(provider: str, redirect_url: str) -> str:
                 ts = ts.replace(tzinfo=timezone.utc)
             if now - ts > _STATE_TTL:
                 db.delete(r)
-        db.add(
-            OAuthState(state=state, provider=provider, redirect_url=redirect_url)
-        )
+        db.add(OAuthState(state=state, provider=provider, redirect_url=redirect_url))
         db.commit()
     return state
 
@@ -177,9 +174,7 @@ def _consume_state(state: str, provider: str) -> Optional[str]:
     """Pop state once; returns redirect_url or None if invalid/expired/replayed."""
     now = datetime.now(timezone.utc)
     with Session(get_engine()) as db:
-        row = db.scalars(
-            select(OAuthState).where(OAuthState.state == state)
-        ).first()
+        row = db.scalars(select(OAuthState).where(OAuthState.state == state)).first()
         if row is None:
             return None
         ts = row.created_at
@@ -271,9 +266,7 @@ async def github_callback(code: str, state: str, request: Request) -> dict:
                 headers={"Accept": "application/json"},
                 json={
                     "client_id": getattr(settings, "github_client_id", ""),
-                    "client_secret": getattr(
-                        settings, "github_client_secret", ""
-                    ),
+                    "client_secret": getattr(settings, "github_client_secret", ""),
                     "code": code,
                     "state": state,
                 },
@@ -297,9 +290,7 @@ async def github_callback(code: str, state: str, request: Request) -> dict:
         error = type(exc).__name__
 
     if token:
-        encrypt_secret(
-            key_name="github_oauth_token", provider="github", value=token
-        )
+        encrypt_secret(key_name="github_oauth_token", provider="github", value=token)
         if refresh:
             encrypt_secret(
                 key_name="github_oauth_token__refresh",
@@ -308,9 +299,7 @@ async def github_callback(code: str, state: str, request: Request) -> dict:
             )
         if expires_in and expires_in > 0:
             _set_expiry("github_oauth_token", seconds=expires_in)
-        update_validation_status(
-            key_name="github_oauth_token", ok=True, error=None
-        )
+        update_validation_status(key_name="github_oauth_token", ok=True, error=None)
         emit_event(
             request,
             action="smart_link.github.callback",
@@ -418,7 +407,9 @@ async def github_revoke(
 
 
 @router.post("/api-key", response_model=ApiKeyStoreResponse)
-async def store_api_key(body: ApiKeyStoreRequest, request: Request) -> ApiKeyStoreResponse:
+async def store_api_key(
+    body: ApiKeyStoreRequest, request: Request
+) -> ApiKeyStoreResponse:
     valid_ids = {p["id"] for p in _SUPPORTED_PROVIDERS}
     if body.provider not in valid_ids:
         emit_event(

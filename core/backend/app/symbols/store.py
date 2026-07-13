@@ -80,8 +80,7 @@ def bulk_insert(symbols: List[Symbol]) -> int:
         edge_rows = [(s.name, e, s.file) for s in symbols for e in s.edges_out]
         if edge_rows:
             conn.executemany(
-                "INSERT OR IGNORE INTO edges (from_sym, to_sym, file) "
-                "VALUES (?, ?, ?)",
+                "INSERT OR IGNORE INTO edges (from_sym, to_sym, file) VALUES (?, ?, ?)",
                 edge_rows,
             )
         return cur.rowcount or 0
@@ -147,8 +146,6 @@ def stats() -> Dict[str, Any]:
         edges = conn.execute("SELECT COUNT(*) AS c FROM edges").fetchone()["c"]
         by_kind = {
             r["kind"]: r["c"]
-            for r in conn.execute(
-                "SELECT kind, COUNT(*) c FROM symbols GROUP BY kind"
-            )
+            for r in conn.execute("SELECT kind, COUNT(*) c FROM symbols GROUP BY kind")
         }
     return {"total_symbols": total, "total_edges": edges, "by_kind": by_kind}

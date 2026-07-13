@@ -48,9 +48,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime, nullable=False),
         sa.Column("claimed_at", sa.DateTime, nullable=True),
     )
-    op.create_index(
-        "ix_users_email", "users", ["email"], unique=True
-    )
+    op.create_index("ix_users_email", "users", ["email"], unique=True)
     op.create_index("ix_users_tenant_slug", "users", ["tenant_slug"])
     op.create_index("ix_users_status", "users", ["status"])
     op.create_index("ix_users_magic_token", "users", ["magic_token"])

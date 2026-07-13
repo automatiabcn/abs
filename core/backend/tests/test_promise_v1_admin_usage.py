@@ -7,9 +7,9 @@ This test pins the JSON shape that the Tremor metric tiles + 7-day
 chart subscribe to, plus the auth gate (401 without bearer) and the
 cold-install graceful fallback.
 """
+
 from __future__ import annotations
 
-import pathlib
 
 import bcrypt
 import pytest
@@ -29,9 +29,7 @@ def _set_password(monkeypatch, raw: str) -> None:
 
 def _login(client, monkeypatch) -> str:
     _set_password(monkeypatch, "s3cret")
-    return client.post(
-        "/v1/admin/login", json={"password": "s3cret"}
-    ).json()["token"]
+    return client.post("/v1/admin/login", json={"password": "s3cret"}).json()["token"]
 
 
 @pytest.fixture(autouse=True)
@@ -75,9 +73,7 @@ def test_promise_v1_unauthenticated_returns_401(client):
     assert r.status_code == 401
 
 
-def test_promise_v1_cold_install_zero_payload(
-    client, monkeypatch, _empty_usage_log
-):
+def test_promise_v1_cold_install_zero_payload(client, monkeypatch, _empty_usage_log):
     token = _login(client, monkeypatch)
     r = client.get(
         "/v1/admin/usage",
@@ -86,12 +82,25 @@ def test_promise_v1_cold_install_zero_payload(
     assert r.status_code == 200
     body = r.json()
     # Top-level shape (the Tremor tiles bind to these keys).
-    assert {"month", "claude", "free_path", "paid_path", "total_calls_24h",
-            "provider_mix_24h", "daily_trend"} <= set(body.keys())
+    assert {
+        "month",
+        "claude",
+        "free_path",
+        "paid_path",
+        "total_calls_24h",
+        "provider_mix_24h",
+        "daily_trend",
+    } <= set(body.keys())
     # Claude block carries quota state (PROMISE.md "Claude budget: Y %").
     claude = body["claude"]
-    assert {"limit_tokens", "used_tokens", "used_pct",
-            "over_warn", "over_block", "banner"} <= set(claude.keys())
+    assert {
+        "limit_tokens",
+        "used_tokens",
+        "used_pct",
+        "over_warn",
+        "over_block",
+        "banner",
+    } <= set(claude.keys())
     assert claude["used_tokens"] == 0
     assert claude["used_pct"] == 0.0
     assert claude["over_warn"] is False
@@ -119,12 +128,24 @@ def test_promise_v1_aggregates_recent_usage(
     empty, _ = _empty_usage_log
     now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     rows = [
-        {"timestamp": now, "model_version": "groq/gpt-oss-120b",
-         "input_tokens": 5, "output_tokens": 10},
-        {"timestamp": now, "model_version": "groq/llama-3.3-70b",
-         "input_tokens": 5, "output_tokens": 10},
-        {"timestamp": now, "model_version": "claude-sonnet-4-5",
-         "input_tokens": 100, "output_tokens": 200},
+        {
+            "timestamp": now,
+            "model_version": "groq/gpt-oss-120b",
+            "input_tokens": 5,
+            "output_tokens": 10,
+        },
+        {
+            "timestamp": now,
+            "model_version": "groq/llama-3.3-70b",
+            "input_tokens": 5,
+            "output_tokens": 10,
+        },
+        {
+            "timestamp": now,
+            "model_version": "claude-sonnet-4-5",
+            "input_tokens": 100,
+            "output_tokens": 200,
+        },
     ]
     with empty.open("w", encoding="utf-8") as fh:
         for row in rows:

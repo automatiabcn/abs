@@ -70,9 +70,7 @@ def test_fuzz_30k_job_exists_with_correct_selector(workflow):
     assert "tests/test_q11_l13_hypothesis_10k.py" in full, (
         "fuzz-30k job no longer references the 10K test file"
     )
-    assert "-m fuzz" in full, (
-        "fuzz-30k job dropped the [fuzz] marker selector"
-    )
+    assert "-m fuzz" in full, "fuzz-30k job dropped the [fuzz] marker selector"
 
 
 def test_on_failure_artifact_upload_preserves_hypothesis_db(workflow):
@@ -81,9 +79,9 @@ def test_on_failure_artifact_upload_preserves_hypothesis_db(workflow):
     job = workflow["jobs"]["fuzz-30k"]
     upload_step = next(
         (
-            s for s in job.get("steps", [])
-            if isinstance(s, dict)
-            and "Upload Hypothesis-DB" in (s.get("name") or "")
+            s
+            for s in job.get("steps", [])
+            if isinstance(s, dict) and "Upload Hypothesis-DB" in (s.get("name") or "")
         ),
         None,
     )
@@ -105,6 +103,8 @@ def test_fuzz_test_file_exists_and_has_fuzz_marker():
     text = FUZZ_TESTS_PATH.read_text(encoding="utf-8")
     # The marker should appear at module/class level — without it, the
     # weekend cron's `-m fuzz` would select nothing and silently pass.
-    assert "pytestmark" in text or "@pytest.mark.fuzz" in text or "pytest.mark.fuzz" in text, (
-        "test_q11_l13_hypothesis_10k.py no longer carries the [fuzz] marker"
-    )
+    assert (
+        "pytestmark" in text
+        or "@pytest.mark.fuzz" in text
+        or "pytest.mark.fuzz" in text
+    ), "test_q11_l13_hypothesis_10k.py no longer carries the [fuzz] marker"

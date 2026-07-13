@@ -156,9 +156,7 @@ async def run_qual_pipeline(
     return result
 
 
-QUAL_HANDLERS: Dict[
-    str, Callable[[str, CallProvider], Awaitable[QualResult]]
-] = {}
+QUAL_HANDLERS: Dict[str, Callable[[str, CallProvider], Awaitable[QualResult]]] = {}
 
 
 def _register(

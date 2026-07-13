@@ -74,8 +74,7 @@ def test_no_unreachable_abs_local_target():
 def test_concurrency_group_prevents_overlap(workflow):
     conc = workflow.get("concurrency", {})
     assert conc.get("group", "").startswith("lighthouse-nightly-"), (
-        "missing concurrency group — overlapping scheduled + dispatch "
-        "runs would clash"
+        "missing concurrency group — overlapping scheduled + dispatch runs would clash"
     )
     assert conc.get("cancel-in-progress") is True
 
@@ -86,8 +85,9 @@ def test_desktop_job_uses_canonical_lighthouserc(workflow):
     job = jobs["desktop"]
     steps = job.get("steps", [])
     lhci_steps = [
-        s for s in steps if isinstance(s, dict)
-        and "lighthouse-ci-action" in (s.get("uses") or "")
+        s
+        for s in steps
+        if isinstance(s, dict) and "lighthouse-ci-action" in (s.get("uses") or "")
     ]
     assert len(lhci_steps) == 2, (
         "desktop job must run lighthouse-ci-action exactly twice — once "
@@ -115,14 +115,15 @@ def test_slow_3g_job_exists_and_runs_after_desktop(workflow):
     # run — the two profiles are independent regression signals.
     assert job.get("if") == "always()"
     lhci_step = next(
-        (s for s in job["steps"] if isinstance(s, dict)
-         and "lighthouse-ci-action" in (s.get("uses") or "")),
+        (
+            s
+            for s in job["steps"]
+            if isinstance(s, dict) and "lighthouse-ci-action" in (s.get("uses") or "")
+        ),
         None,
     )
     assert lhci_step is not None
-    assert lhci_step["with"]["configPath"] == (
-        "core/landing/lighthouserc.slow-3g.json"
-    )
+    assert lhci_step["with"]["configPath"] == ("core/landing/lighthouserc.slow-3g.json")
 
 
 def test_slow3g_lighthouserc_declares_mobile_throttled_profile(slow3g_rc):
@@ -155,9 +156,11 @@ def test_node_version_matches_perf_budget(workflow):
     """Drift from perf-budget.yml's node version causes hard-to-debug
     Lighthouse-vs-Next mismatch. Pin to the same major."""
     desktop_setup = next(
-        (s for s in workflow["jobs"]["desktop"]["steps"]
-         if isinstance(s, dict)
-         and "actions/setup-node" in (s.get("uses") or "")),
+        (
+            s
+            for s in workflow["jobs"]["desktop"]["steps"]
+            if isinstance(s, dict) and "actions/setup-node" in (s.get("uses") or "")
+        ),
         None,
     )
     assert desktop_setup is not None

@@ -90,7 +90,9 @@ def test_meetingbot_default_recall_now_opt_in_only():
 def test_meetingbot_local_backend_constructs(tmp_path, monkeypatch):
     from app.config import settings
 
-    monkeypatch.setattr(settings, "meeting_local_jobs_dir", str(tmp_path), raising=False)
+    monkeypatch.setattr(
+        settings, "meeting_local_jobs_dir", str(tmp_path), raising=False
+    )
     bot = MeetingBot("local")
     assert bot.backend == "local"
 
@@ -159,7 +161,9 @@ def test_wer_high_for_unrelated_text():
 def test_google_calendar_pickup_creates_jobs(tmp_path, monkeypatch):
     from app.config import settings
 
-    monkeypatch.setattr(settings, "meeting_local_jobs_dir", str(tmp_path), raising=False)
+    monkeypatch.setattr(
+        settings, "meeting_local_jobs_dir", str(tmp_path), raising=False
+    )
     events = [
         {
             "id": "evt-1",

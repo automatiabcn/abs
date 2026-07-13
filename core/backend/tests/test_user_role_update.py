@@ -73,9 +73,7 @@ def test_demote_then_last_admin_protected(client, monkeypatch):
     a2 = _seed("admin2@rbac.test", "admin", "active", tenant)
 
     # Two active admins → demoting one is allowed.
-    r = client.patch(
-        f"/v1/admin/users/{a2}", headers=headers, json={"role": "member"}
-    )
+    r = client.patch(f"/v1/admin/users/{a2}", headers=headers, json={"role": "member"})
     assert r.status_code == 200, r.text
     assert r.json()["role"] == "member"
 

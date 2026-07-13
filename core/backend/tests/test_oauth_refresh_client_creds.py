@@ -7,6 +7,7 @@ refresh_token, so GitHub rejected every refresh and stored tokens silently
 expired — a non-working feature. The settings fields were also never declared,
 so ABS_GITHUB_CLIENT_ID / ABS_GITHUB_CLIENT_SECRET were ignored.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -32,8 +33,11 @@ class _CapturingClient:
             status_code = 200
 
             def json(_self):
-                return {"access_token": "ghs_new", "refresh_token": "ghr_new",
-                        "expires_in": 3600}
+                return {
+                    "access_token": "ghs_new",
+                    "refresh_token": "ghr_new",
+                    "expires_in": 3600,
+                }
 
         return _R()
 

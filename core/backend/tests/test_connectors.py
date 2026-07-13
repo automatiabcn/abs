@@ -15,9 +15,9 @@ CATALOG_TOTAL = len(CONNECTORS)
 
 
 def test_catalog_shape() -> None:
-    assert CATALOG_TOTAL == 28                        # 27 + csv_import (Stage A)
-    assert CONNECTORS["parasut"].local_priority is True   # Turkey niche
-    assert CONNECTORS["csv_import"].id == "csv_import"     # first real adapter
+    assert CATALOG_TOTAL == 28  # 27 + csv_import (Stage A)
+    assert CONNECTORS["parasut"].local_priority is True  # Turkey niche
+    assert CONNECTORS["csv_import"].id == "csv_import"  # first real adapter
     out = list_connectors(tenant_slug="tCnew")
     assert out["catalog_total"] == CATALOG_TOTAL
     assert out["connected_total"] == 0  # fresh tenant: nothing connected
@@ -41,7 +41,9 @@ async def test_connect_disconnect_per_tenant() -> None:
     assert parasut["status"] == "connected"
 
     # idempotent
-    assert (await connect(tenant_slug="tC", connector_id="parasut"))["status"] == "connected"
+    assert (await connect(tenant_slug="tC", connector_id="parasut"))[
+        "status"
+    ] == "connected"
     assert list_connectors(tenant_slug="tC")["connected_total"] == 1
 
     # isolation: another tenant unaffected
@@ -62,7 +64,7 @@ async def test_csv_import_dedups_within_file() -> None:
     adp = CsvImportAdapter()
     csv = "company,score\nAkme A.Ş.,0.8\nAkme A.Ş.,0.9\nBeta Ltd,0.4"
     res = await adp.sync("tCsv", {"format": "csv", "data": csv})
-    assert res.companies == 2          # 'Akme' deduped despite two rows
+    assert res.companies == 2  # 'Akme' deduped despite two rows
     assert res.leads == 2
 
 

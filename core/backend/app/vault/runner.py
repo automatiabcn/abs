@@ -67,6 +67,7 @@ def sops_version() -> Optional[str]:
 
 def _version_at_least(actual: str, required: str) -> bool:
     """Compare semver-ish strings: '3.7.3' >= '3.7.0'."""
+
     def _parse(v: str) -> tuple:
         return tuple(int(p) for p in v.split(".")[:3] if p.isdigit())
 
@@ -96,9 +97,7 @@ def check_production_vault() -> None:
         )
     version = sops_version()
     if version is None:
-        raise RuntimeError(
-            "sops binary found but `sops --version` produced no output."
-        )
+        raise RuntimeError("sops binary found but `sops --version` produced no output.")
     if not _version_at_least(version, settings.vault_min_sops_version):
         raise RuntimeError(
             f"sops version {version} < required {settings.vault_min_sops_version}"
@@ -131,7 +130,15 @@ def decrypt_all() -> Dict[str, Any]:
         return {}  # vault bos — fresh install
     try:
         result = subprocess.run(
-            ["sops", "-d", "--input-type", "yaml", "--output-type", "yaml", str(secrets_path)],
+            [
+                "sops",
+                "-d",
+                "--input-type",
+                "yaml",
+                "--output-type",
+                "yaml",
+                str(secrets_path),
+            ],
             env=_sops_env(),
             capture_output=True,
             text=True,

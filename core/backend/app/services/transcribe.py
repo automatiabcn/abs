@@ -103,8 +103,7 @@ def _parse_response(payload: dict) -> dict[str, Any]:
             }
         )
     duration = float(
-        payload.get("duration")
-        or (segments[-1]["end"] if segments else 0.0)
+        payload.get("duration") or (segments[-1]["end"] if segments else 0.0)
     )
     return {
         "duration_sec": duration,
@@ -147,11 +146,15 @@ async def _transcribe_via_groq(
         raise WhisperXUnavailableError(
             "transcribe_backend=groq requires a Groq API key"
         )
-    model = (getattr(settings, "groq_whisper_model", "") or "").strip() or _GROQ_WHISPER_MODEL
+    model = (
+        getattr(settings, "groq_whisper_model", "") or ""
+    ).strip() or _GROQ_WHISPER_MODEL
     data = {"model": model, "response_format": "verbose_json"}
     if language:
         data["language"] = language
-    files = {"file": (filename or "audio.webm", audio_bytes, "application/octet-stream")}
+    files = {
+        "file": (filename or "audio.webm", audio_bytes, "application/octet-stream")
+    }
     try:
         async with httpx.AsyncClient(timeout=WHISPERX_TIMEOUT_SECONDS) as client:
             resp = await client.post(

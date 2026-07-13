@@ -20,7 +20,7 @@ _GEN_SYSTEM = (
 _VERIFY_SYSTEM = (
     "Review the following code for bugs, missing imports, off-by-one errors, "
     "type errors, and obvious security issues. "
-    "Reply with ONLY a JSON list of {\"issue\": str, \"line\": int|null} entries; "
+    'Reply with ONLY a JSON list of {"issue": str, "line": int|null} entries; '
     "empty list `[]` if the code is correct."
 )
 _FIX_SYSTEM = (
@@ -29,16 +29,26 @@ _FIX_SYSTEM = (
 )
 
 
-async def execute(prompt: str, call_provider: _runner.CallProvider) -> _runner.QualResult:
+async def execute(
+    prompt: str, call_provider: _runner.CallProvider
+) -> _runner.QualResult:
     result = _runner.QualResult(pipeline_id="qual_code", completion="", verified=False)
 
     gen_prompt = f"{_GEN_SYSTEM}\n\nTask:\n{prompt}"
     primary, secondary = await asyncio.gather(
         _runner.run_stage(
-            "qual_code", "generate-primary", "groq", gen_prompt, call_provider=call_provider
+            "qual_code",
+            "generate-primary",
+            "groq",
+            gen_prompt,
+            call_provider=call_provider,
         ),
         _runner.run_stage(
-            "qual_code", "generate-secondary", "cerebras", gen_prompt, call_provider=call_provider
+            "qual_code",
+            "generate-secondary",
+            "cerebras",
+            gen_prompt,
+            call_provider=call_provider,
         ),
     )
     result.stages.extend([primary[0], secondary[0]])

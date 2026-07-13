@@ -97,9 +97,7 @@ def test_mint_refuses_when_baked_pubkey_present_but_private_missing(
 
     from app.config import settings
 
-    monkeypatch.setattr(
-        settings, "private_key_path", str(tmp_path / "missing.pem")
-    )
+    monkeypatch.setattr(settings, "private_key_path", str(tmp_path / "missing.pem"))
 
     with pytest.raises(RuntimeError, match="license_mint_no_private_key"):
         generate_license("missing@x.local", tier="self-host", valid_days=1)

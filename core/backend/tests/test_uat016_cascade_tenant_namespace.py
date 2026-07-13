@@ -87,15 +87,11 @@ async def test_breaker_isolation_per_tenant(monkeypatch):
         )
 
     assert (
-        await orch_mod.default_breaker.allow(
-            orch_mod._breaker_key("acme", "flaky")
-        )
+        await orch_mod.default_breaker.allow(orch_mod._breaker_key("acme", "flaky"))
         is False
     )
     assert (
-        await orch_mod.default_breaker.allow(
-            orch_mod._breaker_key("beta", "flaky")
-        )
+        await orch_mod.default_breaker.allow(orch_mod._breaker_key("beta", "flaky"))
         is True
     )
 

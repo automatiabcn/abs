@@ -4,6 +4,7 @@ Exercises the real API surface (auth cookie + ExecuteRequest + the new
 POST /v1/workflows/jobs/{id}/resume) rather than the runner in isolation,
 proving the hitl pause/resume path is wired through FastAPI.
 """
+
 from __future__ import annotations
 
 import time
@@ -26,7 +27,11 @@ _HITL_WF = {
     "nodes": [
         {"id": "t", "kind": "trigger", "config": {"input": "ship it"}},
         {"id": "gate", "kind": "hitl", "config": {"approval_role": "admin"}},
-        {"id": "act", "kind": "output", "config": {"output_template": "shipped: {{t}}"}},
+        {
+            "id": "act",
+            "kind": "output",
+            "config": {"output_template": "shipped: {{t}}"},
+        },
     ],
     "edges": [{"source": "t", "target": "gate"}, {"source": "gate", "target": "act"}],
 }
@@ -45,7 +50,9 @@ def _poll(client: TestClient, job_id: str, want: set[str], tries: int = 50) -> d
 
 def test_execute_pause_resume_via_http(client: TestClient):
     _login(client)
-    r = client.post("/v1/workflows/execute", json={"workflow": _HITL_WF, "dry_run": False})
+    r = client.post(
+        "/v1/workflows/execute", json={"workflow": _HITL_WF, "dry_run": False}
+    )
     assert r.status_code == 200, r.text[:300]
     job_id = r.json().get("job_id")
     assert job_id, r.json()
@@ -67,7 +74,10 @@ def test_execute_pause_resume_via_http(client: TestClient):
 
 def test_resume_when_not_paused_is_409(client: TestClient):
     _login(client)
-    wf = {"nodes": [{"id": "o", "kind": "output", "config": {"output_template": "x"}}], "edges": []}
+    wf = {
+        "nodes": [{"id": "o", "kind": "output", "config": {"output_template": "x"}}],
+        "edges": [],
+    }
     r = client.post("/v1/workflows/execute", json={"workflow": wf, "dry_run": False})
     job_id = r.json()["job_id"]
     _poll(client, job_id, {"done", "error"})

@@ -23,9 +23,7 @@ def test_public_status_minimal_shape(client):
 def test_admin_status_requires_bearer(client):
     r = client.get("/v1/admin/status/full")
     assert r.status_code == 401
-    r = client.get(
-        "/v1/admin/status/full", headers={"Authorization": "Bearer wrong"}
-    )
+    r = client.get("/v1/admin/status/full", headers={"Authorization": "Bearer wrong"})
     assert r.status_code == 403
 
 

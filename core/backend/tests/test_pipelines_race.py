@@ -22,7 +22,10 @@ class _FakeProvider:
         if self._raise:
             raise ProviderError("fail", provider="fake", transient=True)
         return ProviderResponse(
-            text=f"{self._text}:{model}", model=model or "?", provider="fake", elapsed_ms=int(self._delay * 1000)
+            text=f"{self._text}:{model}",
+            model=model or "?",
+            provider="fake",
+            elapsed_ms=int(self._delay * 1000),
         )
 
 

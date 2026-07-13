@@ -16,9 +16,16 @@ logger = logging.getLogger(__name__)
 
 # Intent taxonomy (design doc §7.9).
 INTENTS = [
-    "sales_inquiry", "pricing_request", "demo_request", "support_request",
-    "complaint", "partnership", "vendor_message", "job_application",
-    "spam", "urgent_customer_issue",
+    "sales_inquiry",
+    "pricing_request",
+    "demo_request",
+    "support_request",
+    "complaint",
+    "partnership",
+    "vendor_message",
+    "job_application",
+    "spam",
+    "urgent_customer_issue",
 ]
 
 
@@ -44,8 +51,11 @@ async def triage_inbound(
         "Put the reply draft in payload.draft.\n\nREQUEST: " + (message or "")
     )
     res = await run_agent(
-        "inbound_triage", task, tenant_id=tenant_slug,
-        project_slug=project_slug, user_subject=actor,
+        "inbound_triage",
+        task,
+        tenant_id=tenant_slug,
+        project_slug=project_slug,
+        user_subject=actor,
     )
 
     payload = res.payload if isinstance(res.payload, dict) else {}
@@ -61,8 +71,12 @@ async def triage_inbound(
         try:
             from app.consent import check_channel
 
-            g = check_channel(tenant_slug=tenant_slug, contact_email=from_email, channel="email")
-            consent_status = g.get("status", "") or ("opt-in" if g.get("allowed") else "unknown")
+            g = check_channel(
+                tenant_slug=tenant_slug, contact_email=from_email, channel="email"
+            )
+            consent_status = g.get("status", "") or (
+                "opt-in" if g.get("allowed") else "unknown"
+            )
         except Exception:  # noqa: BLE001 — best-effort
             consent_status = ""
 
@@ -74,8 +88,12 @@ async def triage_inbound(
         run_id = log_agent_run(res, tenant_slug=tenant_slug, actor=actor, task=message)
         if res.requires_approval:
             approval = create_approval_from_result(
-                res, tenant_slug=tenant_slug, requester=actor or from_email,
-                agent_run_id=run_id, channel=channel, target_person=from_email,
+                res,
+                tenant_slug=tenant_slug,
+                requester=actor or from_email,
+                agent_run_id=run_id,
+                channel=channel,
+                target_person=from_email,
                 consent_status=consent_status,
             )
     except Exception:  # noqa: BLE001 — persistence best-effort

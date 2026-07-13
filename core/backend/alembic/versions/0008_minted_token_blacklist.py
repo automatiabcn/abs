@@ -33,21 +33,15 @@ def upgrade() -> None:
     op.create_table(
         "minted_token_blacklist",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column(
-            "token_digest", sa.String(64), nullable=False, unique=True
-        ),
+        sa.Column("token_digest", sa.String(64), nullable=False, unique=True),
         sa.Column(
             "tenant_slug",
             sa.String(64),
             nullable=False,
             server_default="default",
         ),
-        sa.Column(
-            "label", sa.String(64), nullable=False, server_default=""
-        ),
-        sa.Column(
-            "revoked_by", sa.String(254), nullable=False, server_default=""
-        ),
+        sa.Column("label", sa.String(64), nullable=False, server_default=""),
+        sa.Column("revoked_by", sa.String(254), nullable=False, server_default=""),
         sa.Column("revoked_at", sa.DateTime, nullable=False),
         sa.Column("expires_at", sa.DateTime, nullable=True),
         sa.Column("reason", sa.String(256), nullable=True),

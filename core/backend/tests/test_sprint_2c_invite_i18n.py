@@ -13,14 +13,19 @@ TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "app" / "email" / "temp
 
 def test_three_locales_exist():
     for lang in ("en", "tr", "es"):
-        assert (TEMPLATES_DIR / f"invite_{lang}.html").is_file(), f"missing invite_{lang}.html"
+        assert (TEMPLATES_DIR / f"invite_{lang}.html").is_file(), (
+            f"missing invite_{lang}.html"
+        )
 
 
-@pytest.mark.parametrize("lang,expected_subject_part", [
-    ("en", "Join"),
-    ("tr", "davet"),
-    ("es", "invitado"),
-])
+@pytest.mark.parametrize(
+    "lang,expected_subject_part",
+    [
+        ("en", "Join"),
+        ("tr", "davet"),
+        ("es", "invitado"),
+    ],
+)
 def test_render_invite_per_locale(lang: str, expected_subject_part: str):
     from app.email.sender import _render
 

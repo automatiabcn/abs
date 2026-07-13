@@ -72,7 +72,8 @@ def _avg_drift(entries: list[Dict[str, Any]], outcome: str) -> Optional[float]:
     drifts = [
         float(e["persona_drift"])
         for e in entries
-        if e.get("outcome") == outcome and isinstance(e.get("persona_drift"), (int, float))
+        if e.get("outcome") == outcome
+        and isinstance(e.get("persona_drift"), (int, float))
     ]
     if not drifts:
         return None
@@ -98,7 +99,9 @@ def _append_history(record: Dict[str, Any]) -> None:
 def train_persona(min_samples: int = 10, history_limit: int = 200) -> Dict[str, Any]:
     """Adapt the persona thresholds from accept/reject outcomes."""
     entries = _read_log_entries(history_limit)
-    samples_with_outcome = [e for e in entries if e.get("outcome") in ("accept", "reject")]
+    samples_with_outcome = [
+        e for e in entries if e.get("outcome") in ("accept", "reject")
+    ]
     sample_size = len(samples_with_outcome)
 
     before = load_persona()

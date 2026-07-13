@@ -83,9 +83,7 @@ def test_cascade_run_502_when_all_providers_fail(admin_client, monkeypatch):
     """Orchestrator raises ProviderError → route → 502."""
 
     async def _all_fail(prompt, *, primary, **kw):
-        raise ProviderError(
-            "all transient", provider=primary, transient=True
-        )
+        raise ProviderError("all transient", provider=primary, transient=True)
 
     monkeypatch.setattr("app.api.cascade.call_with_cascade", _all_fail)
 

@@ -86,9 +86,7 @@ def _public_pem_from_private(private_pem: bytes) -> bytes:
 
 def _normalised_pem(raw: bytes) -> bytes:
     """Strip whitespace + comments so byte comparison survives line-ending drift."""
-    return b"".join(
-        line.strip() for line in raw.splitlines() if line.strip()
-    )
+    return b"".join(line.strip() for line in raw.splitlines() if line.strip())
 
 
 def assert_mint_keypair_pairs() -> None:
@@ -125,9 +123,7 @@ def assert_mint_keypair_pairs() -> None:
     try:
         derived_pub = _public_pem_from_private(priv_pem)
     except Exception as exc:  # pragma: no cover — malformed PEM
-        raise RuntimeError(
-            f"license_mint_private_key_unreadable: {exc!s}"
-        ) from exc
+        raise RuntimeError(f"license_mint_private_key_unreadable: {exc!s}") from exc
 
     baked_pub = IMAGE_BAKED_PUBLIC_KEY.read_bytes()
     if _normalised_pem(derived_pub) != _normalised_pem(baked_pub):

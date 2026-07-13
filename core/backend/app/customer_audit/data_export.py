@@ -28,7 +28,6 @@ import secrets
 import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Tuple
 
 from cryptography.fernet import Fernet
 from sqlmodel import Session, select
@@ -91,9 +90,7 @@ def _build_zip(license_jti: str, customer_email: str) -> bytes:
             .order_by(CustomerAuditEntry.ts)  # type: ignore[union-attr]
         ).all()
         webhook_rows = db.scalars(
-            select(WebhookEvent).where(
-                WebhookEvent.license_jti == license_jti
-            )
+            select(WebhookEvent).where(WebhookEvent.license_jti == license_jti)
         ).all()
         email_rows = db.scalars(
             select(EmailQueue).where(EmailQueue.license_jti == license_jti)
@@ -229,7 +226,12 @@ def run_export_job(job_id: str) -> dict:
             db.add(row)
             db.commit()
 
-    return {"ok": True, "job_id": job_id, "path": str(out_path), "size": len(ciphertext)}
+    return {
+        "ok": True,
+        "job_id": job_id,
+        "path": str(out_path),
+        "size": len(ciphertext),
+    }
 
 
 def decrypt_export(

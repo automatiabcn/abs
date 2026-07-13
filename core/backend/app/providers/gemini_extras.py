@@ -13,7 +13,7 @@ native endpoints directly rather than going through the shared chat helper.
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import httpx
 
@@ -45,7 +45,9 @@ async def _post(url: str, body: dict, *, key: str, timeout: float = 90.0) -> dic
     if r.status_code == 429:
         raise ProviderError("Gemini rate limit", provider="gemini", transient=True)
     if r.status_code >= 500:
-        raise ProviderError(f"Gemini 5xx: {r.status_code}", provider="gemini", transient=True)
+        raise ProviderError(
+            f"Gemini 5xx: {r.status_code}", provider="gemini", transient=True
+        )
     if r.status_code >= 400:
         raise ProviderError(
             f"Gemini {r.status_code}: {r.text[:200]}",
@@ -100,10 +102,14 @@ async def gemini_search(
     except Exception:
         pass
 
-    return ProviderResponse(text=text, model=model, provider="gemini", elapsed_ms=elapsed)
+    return ProviderResponse(
+        text=text, model=model, provider="gemini", elapsed_ms=elapsed
+    )
 
 
-async def gemini_url(url: str, question: str = "Summarize this page", *, model: str = "gemini-2.5-flash") -> ProviderResponse:
+async def gemini_url(
+    url: str, question: str = "Summarize this page", *, model: str = "gemini-2.5-flash"
+) -> ProviderResponse:
     """URL context — ask a question about the content of a URL; Gemini fetches it."""
     key = _require_key()
     body = {
@@ -118,7 +124,9 @@ async def gemini_url(url: str, question: str = "Summarize this page", *, model: 
     )
 
 
-async def gemini_structured(prompt: str, schema: dict, *, model: str = "gemini-2.5-flash") -> ProviderResponse:
+async def gemini_structured(
+    prompt: str, schema: dict, *, model: str = "gemini-2.5-flash"
+) -> ProviderResponse:
     """JSON schema-guaranteed output."""
     key = _require_key()
     body = {
@@ -145,7 +153,9 @@ async def gemini_image(
     key = _require_key()
     body = {"contents": [{"parts": [{"text": prompt}]}]}
     start = time.monotonic()
-    data = await _post(f"{_BASE}/models/{model}:generateContent", body, key=key, timeout=120.0)
+    data = await _post(
+        f"{_BASE}/models/{model}:generateContent", body, key=key, timeout=120.0
+    )
     elapsed = int((time.monotonic() - start) * 1000)
     text_parts: List[str] = []
     try:
@@ -153,7 +163,7 @@ async def gemini_image(
             inline = p.get("inlineData") or {}
             if inline.get("data"):
                 text_parts.append(
-                    f"[IMAGE base64 {inline.get('mimeType','image/png')} "
+                    f"[IMAGE base64 {inline.get('mimeType', 'image/png')} "
                     f"{len(inline['data'])} bytes]"
                 )
             elif "text" in p:
@@ -293,4 +303,6 @@ async def gemini_video_status(operation_name: str) -> ProviderResponse:
         raise ProviderError(
             f"Gemini video status: {exc}", provider="gemini", transient=True
         ) from exc
-    return ProviderResponse(text=r.text, model="veo-3.0", provider="gemini", elapsed_ms=0)
+    return ProviderResponse(
+        text=r.text, model="veo-3.0", provider="gemini", elapsed_ms=0
+    )

@@ -18,12 +18,14 @@ def _stub_runtime(monkeypatch):
         return []
 
     async def _fake(agent, prompt, **kw):
-        return json.dumps({
-            "summary": "Pricing talebi sınıflandı",
-            "recommended_action": "fiyat taslağı gönder",
-            "confidence": 0.9,
-            "payload": {"intent": "pricing_request", "draft": "Merhaba, fiyat..."},
-        }), "groq"
+        return json.dumps(
+            {
+                "summary": "Pricing talebi sınıflandı",
+                "recommended_action": "fiyat taslağı gönder",
+                "confidence": 0.9,
+                "payload": {"intent": "pricing_request", "draft": "Merhaba, fiyat..."},
+            }
+        ), "groq"
 
     monkeypatch.setattr("app.agents.runtime._gather_evidence", _no_rag)
     monkeypatch.setattr("app.agents.runtime._complete", _fake)
@@ -31,13 +33,16 @@ def _stub_runtime(monkeypatch):
 
 async def test_triage_classifies_and_opens_approval(_stub_runtime) -> None:
     out = await triage_inbound(
-        "Premium PVC fiyatı nedir?", tenant_slug="tI",
-        channel="web", from_email="musteri@x.io", actor="admin@x.io",
+        "Premium PVC fiyatı nedir?",
+        tenant_slug="tI",
+        channel="web",
+        from_email="musteri@x.io",
+        actor="admin@x.io",
     )
     assert out["intent"] == "pricing_request"
     assert out["intent"] in INTENTS
     assert out["draft"].startswith("Merhaba")
-    assert out["requires_approval"] is True   # inbound_triage = medium risk
+    assert out["requires_approval"] is True  # inbound_triage = medium risk
     assert out["run_id"] is not None
     # approval item opened with the inbound channel + sender
     assert out["approval"] is not None
@@ -51,8 +56,9 @@ async def test_unknown_intent_falls_back(monkeypatch) -> None:
         return []
 
     async def _fake(agent, prompt, **kw):
-        return json.dumps({"summary": "x", "confidence": 0.5,
-                           "payload": {"intent": "made_up_intent"}}), "groq"
+        return json.dumps(
+            {"summary": "x", "confidence": 0.5, "payload": {"intent": "made_up_intent"}}
+        ), "groq"
 
     monkeypatch.setattr("app.agents.runtime._gather_evidence", _no_rag)
     monkeypatch.setattr("app.agents.runtime._complete", _fake)

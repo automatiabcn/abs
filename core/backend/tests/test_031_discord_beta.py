@@ -8,10 +8,7 @@ from app.integrations import discord_webhook as dw
 
 def test_notify_beta_request_noop_when_url_empty(monkeypatch):
     monkeypatch.setattr(settings, "discord_webhook_url", "")
-    assert (
-        dw.notify_beta_request(email="x@x.com", name="X", use_case="trial")
-        is False
-    )
+    assert dw.notify_beta_request(email="x@x.com", name="X", use_case="trial") is False
 
 
 def test_notify_beta_approved_payload(monkeypatch):

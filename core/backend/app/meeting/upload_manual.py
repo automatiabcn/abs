@@ -42,7 +42,9 @@ def _recordings_dir() -> pathlib.Path:
     return base
 
 
-def _validate_extension(filename: str, allowed: Iterable[str] = ALLOWED_EXTENSIONS) -> str:
+def _validate_extension(
+    filename: str, allowed: Iterable[str] = ALLOWED_EXTENSIONS
+) -> str:
     ext = pathlib.Path(filename).suffix.lower()
     if ext not in allowed:
         raise UploadError(f"unsupported audio extension: {ext!r}")

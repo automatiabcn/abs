@@ -105,9 +105,7 @@ class _MockBackend:
         self._messages.setdefault(tenant_id, []).append(msg)
         return msg
 
-    def draft(
-        self, tenant_id: str, *, thread_id: str, subject: str, body: str
-    ) -> str:
+    def draft(self, tenant_id: str, *, thread_id: str, subject: str, body: str) -> str:
         draft_id = f"draft-{uuid.uuid4().hex[:12]}"
         logger.info(
             "gmail_draft tenant=%s thread=%s draft=%s subject_len=%d",
@@ -131,7 +129,7 @@ class _MockBackend:
                 for a in add:
                     if a not in m.labels:
                         m.labels.append(a)
-                m.labels = [l for l in m.labels if l not in remove]
+                m.labels = [label for label in m.labels if label not in remove]
                 return
 
 
@@ -214,12 +212,18 @@ class _GoogleBackend:
             for mid in ids:
                 rd = client.get(
                     f"{self.BASE_URL}/messages/{mid}",
-                    params={"format": "metadata", "metadataHeaders": ["From", "To", "Subject"]},
+                    params={
+                        "format": "metadata",
+                        "metadataHeaders": ["From", "To", "Subject"],
+                    },
                     headers=self._headers(tenant_id),
                 )
                 rd.raise_for_status()
                 msg = rd.json()
-                hdr = {h["name"]: h["value"] for h in msg.get("payload", {}).get("headers", [])}
+                hdr = {
+                    h["name"]: h["value"]
+                    for h in msg.get("payload", {}).get("headers", [])
+                }
                 results.append(
                     GmailMessage(
                         message_id=str(msg.get("id")),
@@ -235,9 +239,7 @@ class _GoogleBackend:
                 )
         return results
 
-    def draft(
-        self, tenant_id: str, *, thread_id: str, subject: str, body: str
-    ) -> str:
+    def draft(self, tenant_id: str, *, thread_id: str, subject: str, body: str) -> str:
         import base64
         import httpx
 
@@ -251,7 +253,10 @@ class _GoogleBackend:
             r = client.post(
                 f"{self.BASE_URL}/drafts",
                 json=payload,
-                headers={**self._headers(tenant_id), "Content-Type": "application/json"},
+                headers={
+                    **self._headers(tenant_id),
+                    "Content-Type": "application/json",
+                },
             )
             r.raise_for_status()
             return str(r.json()["id"])
@@ -263,7 +268,10 @@ class _GoogleBackend:
             r = client.post(
                 f"{self.BASE_URL}/drafts/send",
                 json={"id": draft_id},
-                headers={**self._headers(tenant_id), "Content-Type": "application/json"},
+                headers={
+                    **self._headers(tenant_id),
+                    "Content-Type": "application/json",
+                },
             )
             r.raise_for_status()
             return str(r.json()["id"])
@@ -277,7 +285,10 @@ class _GoogleBackend:
             r = client.post(
                 f"{self.BASE_URL}/messages/{message_id}/modify",
                 json={"addLabelIds": add, "removeLabelIds": remove},
-                headers={**self._headers(tenant_id), "Content-Type": "application/json"},
+                headers={
+                    **self._headers(tenant_id),
+                    "Content-Type": "application/json",
+                },
             )
             r.raise_for_status()
 
@@ -285,7 +296,9 @@ class _GoogleBackend:
 class GmailMCP:
     backend: str
 
-    def __init__(self, *, backend: str = "mock", vault: GmailTokenVault | None = None) -> None:
+    def __init__(
+        self, *, backend: str = "mock", vault: GmailTokenVault | None = None
+    ) -> None:
         self.backend = backend
         self.vault = vault or GmailTokenVault()
         if backend == "mock":

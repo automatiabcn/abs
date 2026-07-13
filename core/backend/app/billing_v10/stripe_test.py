@@ -16,7 +16,6 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any
 
 from app.config import settings
 
@@ -103,7 +102,10 @@ class StripeBilling:
         )
         self._sessions[session.session_id] = session
         logger.info(
-            "stripe_checkout tenant=%s price=%s seats=%d", tenant_id, price_id, seat_count
+            "stripe_checkout tenant=%s price=%s seats=%d",
+            tenant_id,
+            price_id,
+            seat_count,
         )
         return session
 

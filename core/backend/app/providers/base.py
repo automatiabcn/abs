@@ -58,7 +58,9 @@ async def openai_compatible_chat(
     """
     if not api_key:
         raise ProviderError(
-            f"{provider_name} API key is not configured", provider=provider_name, transient=False
+            f"{provider_name} API key is not configured",
+            provider=provider_name,
+            transient=False,
         )
 
     headers = {
@@ -85,18 +87,24 @@ async def openai_compatible_chat(
             r = await client.post(url, headers=headers, json=body)
     except httpx.TimeoutException as exc:
         raise ProviderError(
-            f"{provider_name} timeout ({timeout}s)", provider=provider_name, transient=True
+            f"{provider_name} timeout ({timeout}s)",
+            provider=provider_name,
+            transient=True,
         ) from exc
     except httpx.HTTPError as exc:
         raise ProviderError(
-            f"{provider_name} connection error: {exc}", provider=provider_name, transient=True
+            f"{provider_name} connection error: {exc}",
+            provider=provider_name,
+            transient=True,
         ) from exc
 
     elapsed_ms = int((time.monotonic() - start) * 1000)
 
     if r.status_code >= 500:
         raise ProviderError(
-            f"{provider_name} 5xx: {r.status_code}", provider=provider_name, transient=True
+            f"{provider_name} 5xx: {r.status_code}",
+            provider=provider_name,
+            transient=True,
         )
     if r.status_code == 429:
         raise ProviderError(

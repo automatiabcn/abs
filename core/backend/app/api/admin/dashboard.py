@@ -94,7 +94,9 @@ def _read_cache() -> dict | None:
 def _write_cache(payload: dict) -> None:
     try:
         sanitized = _sanitize_for_cache(payload)
-        body = dict(sanitized) if isinstance(sanitized, dict) else {"payload": sanitized}
+        body = (
+            dict(sanitized) if isinstance(sanitized, dict) else {"payload": sanitized}
+        )
         body["_ts"] = time.time()
         # Sprint 2D ITEM-2.2 — write with 0600 perms (owner read/write only).
         # Defense-in-depth on top of the sanitizer.
@@ -178,11 +180,7 @@ def _billing_summary() -> dict:
 
         with Session(get_engine()) as db:
             rows = list(db.scalars(select(License)).all())
-        active = [
-            r
-            for r in rows
-            if r.revoked_at is None and r.purged_at is None
-        ]
+        active = [r for r in rows if r.revoked_at is None and r.purged_at is None]
         breakdown: dict[str, int] = {}
         for r in active:
             breakdown[r.tier or "unknown"] = breakdown.get(r.tier or "unknown", 0) + 1

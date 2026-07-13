@@ -56,9 +56,9 @@ def _seed_client(client_id: str) -> None:
 
     with Session(get_engine()) as db:
         existing = db.exec(
-            __import__("sqlmodel").select(OAuthClient).where(
-                OAuthClient.client_id == client_id
-            )
+            __import__("sqlmodel")
+            .select(OAuthClient)
+            .where(OAuthClient.client_id == client_id)
         ).first()
         if existing:
             return
@@ -80,7 +80,9 @@ def _seed_client(client_id: str) -> None:
 _CLIENT_ID = "graphrag-test-client"
 
 
-def _auth_headers(c: TestClient, *, tenant_id: str, subject: str = "u1") -> dict[str, str]:
+def _auth_headers(
+    c: TestClient, *, tenant_id: str, subject: str = "u1"
+) -> dict[str, str]:
     tok = _token(c, tenant_id=tenant_id, subject=subject)
     return {"Authorization": f"Bearer {tok}", "X-ABS-Audience": _CLIENT_ID}
 
@@ -161,7 +163,10 @@ def test_query_returns_answer_and_subgraph(monkeypatch: pytest.MonkeyPatch) -> N
             answer="cevap [1]",
             citations=[
                 GraphCitation(
-                    chunk_id="c1", source="rapor.pdf", excerpt="...", score=0.7,
+                    chunk_id="c1",
+                    source="rapor.pdf",
+                    excerpt="...",
+                    score=0.7,
                     doc_id="d1",
                 )
             ],

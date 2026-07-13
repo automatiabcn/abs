@@ -81,7 +81,9 @@ def estimate_daily_cost() -> Dict[str, Any]:
             in_tok = int(calls * _AVG_TOKENS_PER_CALL * _INPUT_RATIO)
             out_tok = int(calls * _AVG_TOKENS_PER_CALL * _OUTPUT_RATIO)
         cost_in = (in_tok / 1_000_000) * float(model.get("pricing_per_mtok_input", 0))
-        cost_out = (out_tok / 1_000_000) * float(model.get("pricing_per_mtok_output", 0))
+        cost_out = (out_tok / 1_000_000) * float(
+            model.get("pricing_per_mtok_output", 0)
+        )
         cost = round(cost_in + cost_out, 4)
         total_usd += cost
         by_provider[provider] = round(by_provider.get(provider, 0.0) + cost, 4)

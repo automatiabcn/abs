@@ -35,13 +35,9 @@ def _patch_provider_call(monkeypatch):
     async def fake(*_a, **_kw):
         from app.providers.schemas import ProviderResponse
 
-        return ProviderResponse(
-            text="ok", model="fake", provider="groq", elapsed_ms=1
-        )
+        return ProviderResponse(text="ok", model="fake", provider="groq", elapsed_ms=1)
 
-    monkeypatch.setattr(
-        "app.cascade.orchestrator.call_with_cascade", fake
-    )
+    monkeypatch.setattr("app.cascade.orchestrator.call_with_cascade", fake)
 
 
 def test_test_provider_caps_at_5_per_minute(client, monkeypatch):
