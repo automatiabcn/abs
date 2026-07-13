@@ -226,17 +226,28 @@ def test_bootstrap_admin_without_explicit_tenant_uses_default(client):
         "sub": "owner@acme-co.io"
     }
     try:
+        # Installing under a tenant that is not yours is refused. This used to be
+        # a 201: `multi_tenant_strict` shipped off, so a claim-less admin could
+        # name any tenant in the body and have the plugin installed there — and
+        # the test asserted the 201, then checked that *listing* showed
+        # "default", which is the divergence stated as if it were the point.
         r_install = client.post(
             "/v1/marketplace/install",
             json={"plugin_id": "slack-receiver", "tenant": "acme-co"},
         )
-        assert r_install.status_code == 201, r_install.text
+        assert r_install.status_code == 403, r_install.text
+        assert r_install.json()["detail"] == "cross_tenant_forbidden"
+
+        # Their own tenant — no explicit source, so "default" — still works.
+        r_own = client.post(
+            "/v1/marketplace/install",
+            json={"plugin_id": "slack-receiver", "tenant": "default"},
+        )
+        assert r_own.status_code == 201, r_own.text
 
         r = client.get("/v1/marketplace/installed")
         assert r.status_code == 200
         body = r.json()
-        # No explicit tenant source → consistent "default" (was the divergent
-        # email-domain heuristic "acme-co").
         assert body["tenant"] == "default", body
     finally:
         app.dependency_overrides.pop(live_dep, None)

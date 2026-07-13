@@ -454,18 +454,33 @@ async def install(
             body.plugin_id,
             body.tenant,
             plugin.get("sandbox", {}),
-            # Launch the descriptor's real published image when available;
-            # _resolve_image() degrades to the local busybox stub otherwise.
             image_ref=plugin.get("entry_point"),
         )
         install_record["container_id"] = result.get("container_id")
         install_record["sandbox_status"] = result.get("status", "running")
     except Exception as exc:  # pragma: no cover — graceful in CI / no docker
+        # The install record is still written (the catalogue must stay
+        # consistent), but it does not get to say the plugin is running.
+        #
+        # It used to default to `sandbox_status: "running"` on the way out of a
+        # *failed* launch — and the launch itself, when the plugin's image could
+        # not be pulled, quietly started a busybox stub and called that running
+        # too. Two layers, the same lie: a plugin that is not there, reported as
+        # up. What is running is now either the plugin's own signed image or
+        # nothing, and the record says which.
         logger.warning(
-            "marketplace_install_sandbox_skipped plugin=%s err=%s",
+            "marketplace_install_sandbox_failed plugin=%s err=%s",
             body.plugin_id,
             exc,
         )
+        # "There is no sandbox on this host" and "the sandbox refused to start
+        # this plugin" are different facts, and an operator needs to tell them
+        # apart. Neither of them is "running".
+        no_docker = isinstance(exc, ImportError) or "docker" in str(exc).lower()
+        install_record["sandbox_status"] = (
+            "installed_no_sandbox" if no_docker else "not_running"
+        )
+        install_record["sandbox_error"] = f"{type(exc).__name__}: {exc}"[:300]
 
     bucket.append(install_record)
     _write_installs(state)

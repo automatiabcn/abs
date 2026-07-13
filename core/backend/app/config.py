@@ -301,7 +301,10 @@ class Settings(BaseSettings):
     embedding_min_batch: int = 4
 
     # T-013 — Reranker (Qwen3-Reranker-4B + Cohere fallback + mock)
-    rerank_backend: str = "mock"   # mock | qwen3_onnx | cohere
+    # "auto" resolves to what this server can actually do (cohere → onnx → none).
+    # It was "mock" — Jaccard word overlap, behind an API field that says
+    # "cross-encoder rerank", and measurably worse than not reranking at all.
+    rerank_backend: str = "auto"   # auto | none | qwen3_onnx | cohere | mock (tests)
     rerank_model_path: str = ""    # ONNX path
     rerank_device: str = "cpu"     # cpu | cuda
     rerank_cache_ttl_seconds: int = 3600
@@ -434,7 +437,14 @@ class Settings(BaseSettings):
     #   • graph /cypher + /nl-query — raw Cypher can RETURN scalar/aliased
     #     properties with no tenant_id key, slipping past the row filter; strict
     #     mode refuses raw Cypher (the templated graph endpoints stay open).
-    multi_tenant_strict: bool = False
+    #
+    # Default ON. It was off, which meant a fresh install shipped with the
+    # cross-tenant paths open and an operator had to know to close them — the
+    # wrong way round for a setting whose failure mode is one customer reading
+    # another's data. A single-tenant deployment loses nothing by it: the
+    # claim-less admin resolves to its own canonical tenant, which is the tenant
+    # it was asking about anyway.
+    multi_tenant_strict: bool = True
 
     # GraphRAG — knowledge graph over the RAG corpus (Phase 2).
     # When enabled, ingest best-effort extracts entities/relations into Neo4j;

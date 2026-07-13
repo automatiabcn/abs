@@ -53,13 +53,31 @@ def test_pulls_entry_point_when_missing_but_pullable():
     assert imgs.pulled == [ref]
 
 
-def test_falls_back_to_stub_when_image_unavailable():
+def test_an_unpullable_image_is_a_failed_install_not_a_busybox():
+    """It used to start a local busybox stub and report `status: "running"`.
+
+    So an operator installed a plugin, saw it come up green, and had a container
+    that does nothing sitting where the plugin should be — and the signed image the
+    cosign check had verified was never pulled at all. A plugin whose image cannot
+    be fetched is not installed."""
+    import pytest
+
+    from app.marketplace.sandbox import PluginImageUnavailable
+
     ref = "ghcr.io/abs-plugins/does-not-exist:9.9.9"
     s = _sandbox(_FakeImages())  # not present, not pullable
-    assert s._resolve_image("does-not-exist", ref) == "abs-plugin-stub:does-not-exist"
+
+    with pytest.raises(PluginImageUnavailable) as exc:
+        s._resolve_image("does-not-exist", ref)
+    assert "Nothing was started" in str(exc.value)
 
 
-def test_no_entry_point_uses_stub():
+def test_a_plugin_with_no_image_to_run_is_refused():
+    import pytest
+
+    from app.marketplace.sandbox import PluginImageUnavailable
+
     s = _sandbox(_FakeImages())
-    assert s._resolve_image("vllm-endpoint", None) == "abs-plugin-stub:vllm-endpoint"
-    assert s._resolve_image("vllm-endpoint", "") == "abs-plugin-stub:vllm-endpoint"
+    for empty in (None, ""):
+        with pytest.raises(PluginImageUnavailable):
+            s._resolve_image("vllm-endpoint", empty)

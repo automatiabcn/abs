@@ -5,7 +5,9 @@
 
 """T-013 — Cross-encoder reranker (Qwen3-Reranker-4B + Cohere fallback + mock).
 
-Default backend is "mock" (pure-stdlib lexical overlap) so tests work offline.
+Default backend is "auto": Cohere if a key is configured, the local ONNX
+cross-encoder if a model path is, and otherwise no reranking at all — the dense
+order, untouched, which is the honest answer when no reranker exists.
 Real backends are gated behind deferred imports. Includes a tiny in-process
 LRU+TTL cache keyed on (backend, query, doc-hash) — no Redis dependency for
 Sprint 3; production can swap by writing a `_RedisCache` adapter later.
@@ -133,12 +135,48 @@ class _CohereBackend:
         return None
 
 
+class _NoRerankBackend:
+    """Leaves the dense order exactly as it found it.
+
+    This is what "no reranker configured" honestly looks like. The alternative on
+    offer was `_MockBackend` — Jaccard word overlap — which is not a weaker
+    cross-encoder, it is a different and worse ranking function: it promotes chunks
+    that repeat the query's words over chunks that answer the question, and it does
+    it while the API field says `cross-encoder rerank`. Measured on the golden set,
+    it ranked *below* not reranking at all.
+    """
+
+    def _score_pairs(self, query: str, docs: list[str]) -> list[float]:
+        # Descending, so the existing sort is a no-op on the dense order.
+        return [float(len(docs) - i) for i in range(len(docs))]
+
+    def close(self) -> None:  # pragma: no cover — nothing to close
+        pass
+
+
+def resolve_rerank_backend(name: str) -> str:
+    """`auto` → whatever this server can actually do, and never a pretend one."""
+    name = (name or "auto").strip().lower()
+    if name != "auto":
+        return name
+    if (getattr(settings, "cohere_api_key", "") or "").strip():
+        return "cohere"
+    if (getattr(settings, "rerank_model_path", "") or "").strip():
+        return "qwen3_onnx"
+    return "none"
+
+
 class Reranker:
     backend: str
 
     def __init__(self, backend_name: str) -> None:
+        backend_name = resolve_rerank_backend(backend_name)
         self.backend = backend_name
-        if backend_name == "mock":
+        if backend_name == "none":
+            self._impl = _NoRerankBackend()
+        elif backend_name == "mock":
+            # Kept for the tests that need a deterministic reordering. It is not a
+            # default any more, and it never was a cross-encoder.
             self._impl = _MockBackend()
         elif backend_name == "qwen3_onnx":
             providers = (
@@ -241,19 +279,20 @@ _reranker: Reranker | None = None
 def get_reranker() -> Reranker:
     global _reranker
     if _reranker is None:
-        backend = getattr(settings, "rerank_backend", "mock") or "mock"
+        backend = getattr(settings, "rerank_backend", "auto") or "auto"
         try:
             _reranker = Reranker(backend)
         except Exception as exc:
-            # e.g. rerank_backend=cohere but the operator hasn't entered a
-            # Cohere key yet. Degrade to the mock reranker (dense order
-            # preserved) instead of taking the whole RAG path down.
+            # e.g. rerank_backend=cohere but the operator hasn't entered a Cohere
+            # key yet. Fall back to not reranking — not to word-overlap scoring
+            # dressed up as a cross-encoder, which is how a degraded install ended
+            # up ranking *worse* than one with the feature switched off.
             logger.warning(
-                "reranker backend %r unavailable (%s) — falling back to mock",
+                "reranker backend %r unavailable (%s) — results will not be reranked",
                 backend,
                 exc,
             )
-            _reranker = Reranker("mock")
+            _reranker = Reranker("none")
     return _reranker
 
 
