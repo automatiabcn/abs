@@ -28,6 +28,7 @@ from app.api import beta_admin as beta_admin_router
 from app.api import beta_portal as beta_portal_router
 from app.api import billing_portal as billing_portal_router
 from app.api.admin import analytics_licenses as admin_analytics_router
+from app.api.admin import licenses as admin_licenses_router
 from app.api.admin import audit_recent as admin_audit_router
 from app.api.admin import auth as admin_auth_router
 from app.api.admin import churn as admin_churn_router
@@ -450,6 +451,7 @@ app.include_router(v1_consent_router)         # Agentic Growth — Consent Ledge
 app.include_router(admin_auth_router.router)
 app.include_router(admin_dashboard_router.router)
 app.include_router(admin_analytics_router.router)
+app.include_router(admin_licenses_router.router)
 app.include_router(admin_churn_router.router)
 app.include_router(admin_errors_router.router)
 app.include_router(admin_audit_router.router)

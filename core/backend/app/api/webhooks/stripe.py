@@ -241,14 +241,41 @@ async def stripe_webhook(
         db.commit()
         db.refresh(db_license)
 
+        # The one email that matters. For a self-hosted customer the licence key is
+        # the thing they paid for, and it arrives exactly once, by mail.
+        #
+        # A failure here used to be logged and forgotten: the webhook still returned
+        # 200, Stripe was satisfied, the licence row existed, and the customer had a
+        # receipt and nothing else. Nobody was told — not the customer, not the
+        # operator. It is still not allowed to fail the webhook (Stripe would retry
+        # the whole event and re-issue), but it is no longer allowed to be quiet:
+        # the failure goes to the audit log, which is the one place that is read
+        # when someone writes in asking where their key is, and the key stays
+        # recoverable from `POST /v1/admin/licenses/{jti}/resend`.
         try:
             send_license_email(
                 to=email,
                 license_key=token,
                 refund_url="https://abs.automatiabcn.com/refund",
+                lang=preferred_lang,
             )
         except Exception as exc:
-            logger.exception("license email delivery failed: %s", exc)
+            logger.critical(
+                "LICENCE NOT DELIVERED — paid customer has no key: jti=%s email=%s err=%s",
+                payload_dict["jti"], email, exc, exc_info=True,
+            )
+            try:
+                emit_event(
+                    None,
+                    action="license.delivery_failed",
+                    outcome="failure",
+                    resource_type="license",
+                    resource_id=payload_dict["jti"],
+                    user_id=email,
+                    reason=str(exc)[:200],
+                )
+            except Exception:  # noqa: BLE001 — never fail the webhook on the log
+                logger.exception("could not record the licence delivery failure")
 
         # Onboarding series. Delivery failures must not fail the webhook: the
         # License is already issued and Stripe would retry the whole event.

@@ -102,6 +102,24 @@ _SUPPORTED_PROVIDERS = [
 _STATE_TTL = timedelta(minutes=10)
 
 
+def _set_expiry(key_name: str, *, seconds: int) -> None:
+    """Record when a token dies, so the refresher can get ahead of it.
+
+    `scan_and_refresh` looks for secrets expiring within the hour. It found none,
+    because nothing ever wrote an expiry — GitHub tells us `expires_in` on the
+    exchange and we threw it away."""
+    from app.db.models import ConnectedSecret
+
+    with Session(get_engine()) as db:
+        row = db.exec(
+            select(ConnectedSecret).where(ConnectedSecret.key_name == key_name)
+        ).first()
+        if row is not None:
+            row.expires_at = datetime.now(timezone.utc) + timedelta(seconds=seconds)
+            db.add(row)
+            db.commit()
+
+
 def _check_admin(
     authorization: Optional[str], request: Optional[Request] = None
 ) -> None:
@@ -243,6 +261,8 @@ async def github_callback(code: str, state: str, request: Request) -> dict:
 
     # Real flow POSTs to GitHub /login/oauth/access_token. Tests monkeypatch httpx.
     token: Optional[str] = None
+    refresh: Optional[str] = None
+    expires_in: Optional[int] = None
     error: Optional[str] = None
     try:
         with httpx.Client(timeout=5.0) as c:
@@ -260,7 +280,16 @@ async def github_callback(code: str, state: str, request: Request) -> dict:
             )
             if r.status_code == 200:
                 data = r.json() if hasattr(r, "json") else {}
-                token = data.get("access_token") if isinstance(data, dict) else None
+                if isinstance(data, dict):
+                    token = data.get("access_token")
+                    # Kept, at last. `refresh_github_token()` has always existed
+                    # and always read `github_oauth_token__refresh` — a key this
+                    # callback never wrote, so the real refresher had nothing to
+                    # work with and /github/refresh re-encrypted the same access
+                    # token and called it rotated.
+                    refresh = data.get("refresh_token")
+                    exp = data.get("expires_in")
+                    expires_in = int(exp) if isinstance(exp, (int, float)) else None
             else:
                 error = f"HTTP {r.status_code}"
     except Exception as exc:
@@ -271,6 +300,14 @@ async def github_callback(code: str, state: str, request: Request) -> dict:
         encrypt_secret(
             key_name="github_oauth_token", provider="github", value=token
         )
+        if refresh:
+            encrypt_secret(
+                key_name="github_oauth_token__refresh",
+                provider="github",
+                value=refresh,
+            )
+        if expires_in and expires_in > 0:
+            _set_expiry("github_oauth_token", seconds=expires_in)
         update_validation_status(
             key_name="github_oauth_token", ok=True, error=None
         )
@@ -303,6 +340,16 @@ async def github_callback(code: str, state: str, request: Request) -> dict:
 async def github_refresh(
     request: Request, authorization: Optional[str] = Header(default=None)
 ) -> dict:
+    """Get a new access token from GitHub.
+
+    This used to decrypt the current token and re-encrypt the same bytes under the
+    same key — `rotate_secret(new_value=current)` — then return `{"rotated": true}`.
+    Nothing rotated. The token GitHub could revoke was the token still stored, and
+    an operator pressing Refresh because they suspected a leak got a green tick and
+    the compromised credential.
+
+    `refresh_github_token()` was already written, already correct, and had never
+    once been called."""
     _check_admin(authorization, request)
     current = decrypt_secret("github_oauth_token")
     if current is None:
@@ -315,16 +362,43 @@ async def github_refresh(
             provider="github",
         )
         raise HTTPException(404, "No GitHub token stored")
-    rotate_secret(
-        key_name="github_oauth_token", provider="github", new_value=current
-    )
+
+    from app.smart_link.oauth_refresh import refresh_github_token
+
+    result = refresh_github_token("github_oauth_token")
+    if not result.get("ok"):
+        # A refresh that could not happen says so. GitHub only issues refresh
+        # tokens to OAuth apps with token expiration turned on; without one there
+        # is nothing to rotate with, and pretending otherwise is what we just
+        # removed.
+        reason = str(result.get("error") or result.get("status") or "refresh_failed")
+        emit_event(
+            request,
+            action="smart_link.github.refresh",
+            outcome="failure",
+            reason=reason,
+            provider="github",
+        )
+        raise HTTPException(
+            409,
+            f"GitHub did not issue a new token: {reason}. The stored token is "
+            "unchanged. (GitHub only supports refresh for OAuth apps with token "
+            "expiration enabled — otherwise disconnect and reconnect.)",
+        )
+
     emit_event(
         request,
         action="smart_link.github.refresh",
         outcome="success",
         provider="github",
     )
-    return {"ok": True, "provider": "github", "rotated": True}
+    return {
+        "ok": True,
+        "provider": "github",
+        "rotated": True,
+        "refresh_token_rotated": bool(result.get("refresh_token_rotated")),
+        "expires_at": result.get("expires_at"),
+    }
 
 
 @router.delete("/github")
