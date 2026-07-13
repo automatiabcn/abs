@@ -71,6 +71,37 @@ test("G1 — a proposed action waits for a person, then fires when approved", as
   expect(fired).toHaveLength(1);
 });
 
+test("G1b — rejecting it means nothing happens, and it cannot be revived", async ({ page }) => {
+  // The other half of the promise, and the half nobody tests. "Approved sends
+  // it" is worth nothing unless "rejected does not" is equally certain — a
+  // reject that quietly sends anyway is the single worst bug this product could
+  // ship, because the operator believes they stopped it.
+  const approvalId = await proposeAction(page);
+
+  await page.goto("/admin/approvals");
+  const item = page.locator(`[data-test="approval-item"][data-approval-id="${approvalId}"]`);
+  await expect(item).toBeVisible({ timeout: 30_000 });
+
+  // Rejected through the panel button, not the API: the button is what an
+  // operator actually presses, and it is the button that has to be wired right.
+  await item.getByRole("button", { name: /reject/i }).click();
+
+  await expect(page.locator('[data-test="action-result"]')).toContainText(/rejected|nothing was done/i, {
+    timeout: 30_000,
+  });
+
+  expect(await outboxFor(page, approvalId), "a rejected action was sent anyway").toHaveLength(0);
+
+  // And approving it afterwards must not resurrect it. A decided item is
+  // decided; a second decision that fires the action would make the reject a
+  // suggestion rather than a refusal.
+  const revive = await page.request.post(`/v1/approvals/${approvalId}/decide`, {
+    data: { decision: "approve", note: "" },
+  });
+  expect([400, 409]).toContain(revive.status());
+  expect(await outboxFor(page, approvalId), "a rejected action was revived").toHaveLength(0);
+});
+
 test("X3 — approving the same item twice at once still sends it once", async ({ page }) => {
   const approvalId = await proposeAction(page);
 
