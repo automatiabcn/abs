@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 from app.config import settings
 from app.integrations.github_app import verify_webhook_signature_typed
-from app.observability.audit import emit_event  # Q12-L24 sweep 2
+from app.observability.audit import emit_event
 
 router = APIRouter(prefix="/v1/integrations/github", tags=["github-app"])
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 @router.post("/webhook")
 async def github_app_webhook(request: Request) -> dict:
-    """028 — GitHub App webhook receiver. HMAC SHA-256 verify."""
+    """GitHub App webhook receiver. HMAC SHA-256 verify."""
     body = await request.body()
     sig = request.headers.get("X-Hub-Signature-256", "")
     ok, reason = verify_webhook_signature_typed(
@@ -31,7 +31,7 @@ async def github_app_webhook(request: Request) -> dict:
         signature_header=sig,
     )
     if not ok:
-        # Q12-L24-008 — distinguish boot-misconfig (signing_secret_empty)
+        # Distinguish boot-misconfig (signing_secret_empty)
         # from attack signal (signature_mismatch / header_missing).
         # Response body stays generic to avoid leaking which check failed.
         emit_event(

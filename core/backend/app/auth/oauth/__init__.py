@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-003 — OAuth 2.1 authorization server (Authorization Code + PKCE).
+"""OAuth 2.1 authorization server (Authorization Code + PKCE).
 
 Public surface:
     issue_authorization_code, exchange_code_for_tokens, refresh_access_token,

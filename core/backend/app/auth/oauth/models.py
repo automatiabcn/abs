@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-003 — OAuth 2.1 server-side models."""
+"""OAuth 2.1 server-side models."""
 
 from __future__ import annotations
 

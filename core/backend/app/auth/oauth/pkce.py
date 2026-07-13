@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-003 — PKCE (RFC 7636) S256 verification.
+"""PKCE (RFC 7636) S256 verification.
 
 OAuth 2.1 mandates `code_challenge_method = S256`; `plain` is rejected.
 """

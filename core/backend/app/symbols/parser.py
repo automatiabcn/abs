@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""016 — Python AST parser.
+"""Python AST parser.
 
 Fonksiyon (def/async def), class ve import sembollerini cikarir.
 Fonksiyon icindeki Call node'lari `edges_out` olarak kaydedilir.
@@ -148,7 +148,7 @@ def parse_directory(root: Path, skip_dirs: Optional[Set[str]] = None) -> List[Sy
         ".pytest_cache",
         ".cache",
     }
-    # 022 — TS/JS parser dahil
+    # TS/JS parser dahil
     from app.symbols.typescript_parser import is_ts_or_js, parse_typescript_file
 
     out: List[Symbol] = []

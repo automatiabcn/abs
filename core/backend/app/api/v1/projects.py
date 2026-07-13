@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-005 — `/v1/projects/{project_id}` MCP gateway endpoint.
+"""`/v1/projects/{project_id}` MCP gateway endpoint.
 
 Acceptance criteria:
 - Invalid JWT → 401
@@ -85,7 +85,7 @@ def read_project(
     try:
         allowed = is_allowed_or_raise(principal, resource, "read", client=cerbos)
     except CerbosUnavailable as exc:
-        # Sprint 2I UAT-046 — PDP transport blip surfaces as 503 so the
+        # PDP transport blip surfaces as 503 so the
         # client retries; falling back to 403 would tell a legitimate
         # user "permanently forbidden" for what is actually an
         # infrastructure outage.

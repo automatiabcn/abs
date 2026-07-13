@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-030 — Meeting transcript → RAG indexing helper.
+"""Meeting transcript → RAG indexing helper.
 
 Converts a transcript into RAG chunks (per-segment) and dispatches them to the
 T-009 Qdrant wrapper under the caller's tenant. Retention budget exposed via

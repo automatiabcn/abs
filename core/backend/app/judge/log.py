@@ -51,7 +51,7 @@ def log_judgment(
     judgment_id = uuid.uuid4().hex[:12]
     persona_drift = None
     try:
-        # AST fingerprint detail varsa drift kabaca: ortalama mutlak fark
+        # With AST fingerprint detail, drift is roughly the mean absolute difference
         details = result.get("fingerprint_details") or []
         if details:
             diffs = [

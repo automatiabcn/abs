@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-023 — LangFuse-compatible prompt management with versioning + rollback.
+"""LangFuse-compatible prompt management with versioning + rollback.
 
 Pre-T-018 we keep prompts in-memory + on disk; once LangFuse SDK fetch is
 wired (`langfuse.get_prompt(name, label="production")`), this module switches

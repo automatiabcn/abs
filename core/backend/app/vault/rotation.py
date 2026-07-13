@@ -44,7 +44,7 @@ class RotationError(Exception):
 class RotationBusyError(RotationError):
     """Another rotation is currently holding the rotate lock.
 
-    Q12-L22-002 — pre-fix two concurrent admins could each call
+    Pre-fix two concurrent admins could each call
     `rotate_age_key`, both decrypt with the OLD recipient, both
     overwrite the master-key file (one new key clobbers the other),
     and both encrypt_all in parallel. The losing rotation's audit

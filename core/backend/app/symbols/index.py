@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""016 — Symbol indexing orchestrator."""
+"""Symbol indexing orchestrator."""
 
 from __future__ import annotations
 

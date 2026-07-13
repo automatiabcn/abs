@@ -99,7 +99,7 @@ def verify_webhook_signature(
 
     Back-compat shim — keeps the bool return for any callers that
     don't need the failure taxonomy. New callers should prefer
-    `verify_webhook_signature_typed` (Q12-L24-008).
+    `verify_webhook_signature_typed`.
     """
     ok, _reason = verify_webhook_signature_typed(
         secret=secret, body=body, signature_header=signature_header

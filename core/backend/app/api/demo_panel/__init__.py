@@ -3,4 +3,4 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""033 — Demo-readiness panel sub-routers (tools/cascade/pipeline)."""
+"""Demo-readiness panel sub-routers (tools/cascade/pipeline)."""

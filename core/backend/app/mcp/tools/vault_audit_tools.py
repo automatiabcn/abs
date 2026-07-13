@@ -20,7 +20,7 @@ from app.mcp.tracking import tracker  # noqa: E402
 @mcp_server.tool()
 @with_hooks("vault_audit_status")
 async def vault_audit_status(limit: int = 50) -> str:
-    """027 — Vault audit chain integrity + recent entries."""
+    """Vault audit chain integrity + recent entries."""
     await tracker.bump("vault_audit_status")
     from app.vault.audit_chain import stats
 

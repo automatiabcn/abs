@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q12-L23 — structured audit emit helper.
+"""structured audit emit helper.
 
 Single entry point for emitting *security/operability-relevant* events
 to the `abs.audit` logger. Pairs with `RequestIDMiddleware` so every

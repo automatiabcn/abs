@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""Sprint 2K — convert Postgres RLS violations to a typed 403 response.
+"""convert Postgres RLS violations to a typed 403 response.
 
 When the tenant GUC is missing or wrong at write time, Postgres raises
 ``new row violates row-level security policy`` (SQLSTATE 42501,

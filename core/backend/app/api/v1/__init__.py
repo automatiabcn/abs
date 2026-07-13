@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-005 — MCP Gateway base API (v1).
+"""MCP Gateway base API (v1).
 
 JWT-authenticated, Cerbos-authorized read paths for ABS resources.
 """

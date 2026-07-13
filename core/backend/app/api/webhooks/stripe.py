@@ -202,7 +202,7 @@ async def stripe_webhook(
         meta: dict = session.get("metadata") or {}
         tier: str = meta.get("tier", "self-host")
         seat_count: int = _parse_seat_count(meta.get("seat_count"))
-        # 023 — Stripe customer locale (e.g. 'tr-TR') ilk 2 char → preferred_lang
+        # Stripe customer locale (e.g. 'tr-TR') ilk 2 char → preferred_lang
         cust_locale = (
             (session.get("customer_details") or {}).get("locale") or ""
         ).lower()

@@ -3,13 +3,13 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""014 — Update apply trigger.
+"""Update apply trigger.
 
-NOT: Backend container'i kendi-kendini restart edemez. trigger_pull() sadece
-host volume'una `update_pending.json` flag yazar. Host-side cron veya systemd
-unit pickup eder ve `docker compose pull && docker compose up -d` calistirir.
+A backend container cannot restart itself. `trigger_pull()` only writes an
+`update_pending.json` flag to the host volume; a host-side cron job or systemd
+unit picks it up and runs `docker compose pull && docker compose up -d`.
 
-Bu mimari tasarim karari `summary.md` ve `docs/operations.md`'de belirtilir.
+This is deliberate, and is written down in `summary.md` and `docs/operations.md`.
 """
 
 from __future__ import annotations

@@ -3,13 +3,12 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Panel admin auth — JWT HTTP-only cookie oturumu.
+"""Panel admin auth — an HTTP-only JWT session cookie.
 
-The setup wizard writes /app/data/admin_credentials.json (email + bcrypt
-hash); it is the source of truth for login. When the file is absent, the
-bootstrap fallback
-(env'den admin_password_bootstrap + admin@local) calisir; bu sayede ilk-acilis
-ve setup-sonrasi yollarin ikisi de tek endpoint'ten cozulur.
+The setup wizard writes /app/data/admin_credentials.json (email + bcrypt hash);
+it is the source of truth for login. When that file is absent, the bootstrap
+fallback (admin_password_bootstrap from the environment, as admin@local) takes
+over — so first-run and post-setup both resolve through this one endpoint.
 """
 
 from __future__ import annotations
@@ -182,10 +181,10 @@ def _load_admin_credentials_raw() -> Optional[Dict]:
 
 
 def _load_admin_credentials() -> Tuple[str, bytes, str]:
-    """Setup wizard creds varsa onlari, yoksa bootstrap fallback dondur.
+    """Return the setup wizard credentials when present, else the bootstrap fallback.
 
     Returns:
-        (email, password_hash_bytes, source) — source bir teshis amacli string.
+        (email, password_hash_bytes, source) — `source` is for diagnostics only.
     """
     raw = _load_admin_credentials_raw()
     if raw is not None:

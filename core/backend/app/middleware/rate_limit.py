@@ -60,7 +60,7 @@ def _trusted_proxy_set() -> frozenset[str]:
 
 
 def client_ip_for_rate_limit(request: Request) -> str:
-    """Sprint 2I UAT-042 — pick the real client IP for rate-limit keying.
+    """pick the real client IP for rate-limit keying.
 
     If the immediate hop (``request.client.host``) is listed in
     ``ABS_TRUSTED_PROXIES`` we honour the first IP in

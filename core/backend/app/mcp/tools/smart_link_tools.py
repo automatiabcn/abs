@@ -24,7 +24,7 @@ from app.mcp.tracking import tracker  # noqa: E402
 @mcp_server.tool()
 @with_hooks("smart_link_status")
 async def smart_link_status() -> str:
-    """026 — Connected services list + last validation status."""
+    """Connected services list + last validation status."""
     await tracker.bump("smart_link_status")
     from app.smart_link.vault_secrets import list_secrets
 
@@ -38,7 +38,7 @@ async def smart_link_status() -> str:
 @mcp_server.tool()
 @with_hooks("provider_validate")
 async def provider_validate(provider: str, api_key: str) -> str:
-    """026 — Validate provider API key (live test call)."""
+    """Validate provider API key (live test call)."""
     await tracker.bump("provider_validate")
     from app.smart_link.provider_validators import validate
 

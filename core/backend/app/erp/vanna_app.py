@@ -195,7 +195,7 @@ class Text2SQL:
         )
 
     def explain(self, sql: str) -> str:
-        # T-Q01: defense-in-depth — assert_safe_sql() rejects anything that
+        # Defense-in-depth — assert_safe_sql() rejects anything that
         # isn't a single SELECT/WITH statement (no `;`, no `--`, no DDL/DML
         # keywords). We re-validate after a strip + length cap to make the
         # f-string interpolation provably safe.

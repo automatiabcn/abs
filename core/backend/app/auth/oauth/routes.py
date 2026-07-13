@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-003 — OAuth 2.1 endpoints (FastAPI router).
+"""OAuth 2.1 endpoints (FastAPI router).
 
 Mounted at app root by `app.main`. Endpoints:
     GET  /oauth/authorize          → returns 302 redirect with `code`

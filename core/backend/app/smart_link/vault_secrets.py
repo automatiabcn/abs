@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""026 — Smart link secret vault (sops/age + 5-min cache + audit log).
+"""Smart link secret vault (sops/age + 5-min cache + audit log).
 
 Public API:
   - encrypt_secret(key_name, provider, value) → ConnectedSecret row

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-R01 — typed SQLModel ORM helpers.
+"""typed SQLModel ORM helpers.
 
 The fs-scan tool regex-matches a particular ORM method name and flags every
 occurrence as a Python interpreter call (eval/exec category), even when it is

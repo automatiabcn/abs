@@ -73,7 +73,7 @@ def _counts() -> dict:
 @mcp_server.tool()
 @with_hooks("beta_metrics")
 async def beta_metrics() -> str:
-    """031 — Beta waitlist counts, recent signups, paid-conversion rate."""
+    """Beta waitlist counts, recent signups, paid-conversion rate."""
     await tracker.bump("beta_metrics")
     return json.dumps(_counts(), indent=2, ensure_ascii=False)
 

@@ -64,7 +64,7 @@ class EmailQueue(SQLModel, table=True):
 
 
 class OAuthState(SQLModel, table=True):
-    """026 — OAuth state CSRF token cache (10-min TTL)."""
+    """OAuth state CSRF token cache (10-min TTL)."""
 
     __tablename__ = "oauth_states"
 
@@ -75,7 +75,7 @@ class OAuthState(SQLModel, table=True):
 
 
 class ConnectedSecret(SQLModel, table=True):
-    """026 — Encrypted API keys / OAuth tokens for smart link integrations."""
+    """Encrypted API keys / OAuth tokens for smart link integrations."""
 
     __tablename__ = "connected_secrets"
 
@@ -87,13 +87,13 @@ class ConnectedSecret(SQLModel, table=True):
     last_validated_at: Optional[datetime] = Field(default=None)
     last_validated_ok: Optional[bool] = Field(default=None)
     last_validated_error: Optional[str] = Field(default=None, max_length=512)
-    # 028 — OAuth refresh tracking
+    # OAuth refresh tracking
     expires_at: Optional[datetime] = Field(default=None)
     refresh_token_encrypted: Optional[str] = Field(default=None, max_length=8192)
 
 
 class VaultAuditEntry(SQLModel, table=True):
-    """027 — Vault audit log with HMAC chain (tamper-evident).
+    """Vault audit log with HMAC chain (tamper-evident).
 
     Each row has hmac = HMAC-SHA256(secret, canonical_entry + prev_hmac).
     `verify_chain()` re-computes and detects any modification.
@@ -163,7 +163,7 @@ class DataExportJob(SQLModel, table=True):
 
 
 class BetaRequest(SQLModel, table=True):
-    """031 — Beta access waitlist + auto/manual approval queue."""
+    """Beta access waitlist + auto/manual approval queue."""
 
     __tablename__ = "beta_requests"
 
@@ -422,7 +422,7 @@ class TenantInstalledPlugin(SQLModel, table=True):
 
 
 class MintedTokenBlacklist(SQLModel, table=True):
-    """Q10-L6-002 — revoked MCP integration tokens.
+    """revoked MCP integration tokens.
 
     Issued tokens are HMAC-only (no DB row at mint), so revocation is
     handled by adding the token's payload digest here. `verify_token`

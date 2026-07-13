@@ -26,7 +26,7 @@ from app.customer_audit.logger import log_customer_action
 from app.db.models import DataExportJob, License
 from app.db.session import get_engine
 from app.licensing import verify_license
-from app.observability.audit import emit_event  # Q12-L23 sweep 3
+from app.observability.audit import emit_event
 
 router = APIRouter(prefix="/v1/me", tags=["me"])
 logger = logging.getLogger(__name__)

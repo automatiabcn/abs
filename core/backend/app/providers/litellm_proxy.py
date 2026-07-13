@@ -5,7 +5,7 @@
 
 """LiteLLM proxy adapter — optional gateway in front of native ABS providers.
 
-Sprint 19 T-S02.4 — POC. Disabled by default; enable by setting
+POC. Disabled by default; enable by setting
 `ABS_LITELLM_PROXY_URL` (e.g., `http://litellm-proxy:4000`). When enabled,
 ABS routes all chat completions through the LiteLLM proxy instead of native
 provider adapters.

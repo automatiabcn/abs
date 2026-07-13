@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Claude API quota monitor (Sprint 20 T-F03).
+"""Claude API quota monitor.
 
 Tracks per-month token usage when ABS hits Anthropic. Two thresholds:
   - WARN_PCT  (default 80%) — emit a warning + LangFuse trace; UI banner.

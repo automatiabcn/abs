@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-049 — News watcher source registry + dedupe + rate limit."""
+"""News watcher source registry + dedupe + rate limit."""
 
 from __future__ import annotations
 

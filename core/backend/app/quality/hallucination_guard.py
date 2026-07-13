@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-052 — Hallucination guard. faithfulness < 0.85 → mandatory revise."""
+"""Hallucination guard. faithfulness < 0.85 → mandatory revise."""
 
 from __future__ import annotations
 

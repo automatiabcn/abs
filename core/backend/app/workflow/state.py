@@ -224,7 +224,7 @@ def cleanup_old(days: int = 30) -> int:
         ids = [r["id"] for r in ids_rows]
         if not ids:
             return 0
-        # T-Q01: f-string only injects server-generated `?,?,?` placeholders
+        # f-string only injects server-generated `?,?,?` placeholders
         # (one per id, length-bounded by the SELECT above), never user input.
         # Actual id values bind via the `ids` argument as parameters.
         placeholders = ",".join("?" for _ in ids)

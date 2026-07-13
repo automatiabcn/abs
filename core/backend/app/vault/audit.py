@@ -3,9 +3,9 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""013 — Vault audit log (JSONL append-only).
+"""Vault audit log (JSONL append-only).
 
-Cleartext value YAZILMAZ — sadece event tipi + key adi + opsiyonel meta.
+A cleartext value is NEVER written — only the event type, the key name, and optional metadata.
 Path: settings.data_dir/vault_audit.jsonl
 """
 

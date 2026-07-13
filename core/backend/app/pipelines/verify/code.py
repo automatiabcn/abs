@@ -3,9 +3,9 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""auto_verify_code: 3 yerel model paralel (granite-2b security + codellama test + deepseek lint).
+"""auto_verify_code: three local models in parallel (granite-2b security + codellama tests + deepseek lint).
 
-Ollama gerektirir. ABS_OLLAMA_URL yoksa error.
+Requires Ollama: errors out when ABS_OLLAMA_URL is unset.
 """
 
 from __future__ import annotations

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-016 — Structured per-request usage logging (LangFuse-compatible).
+"""Structured per-request usage logging (LangFuse-compatible).
 
 Writes newline-delimited JSON to a JSONL file with optional sampling. Future
 T-018 will replace the file writer with the LangFuse SDK without changing the

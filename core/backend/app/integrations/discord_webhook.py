@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""025 — Discord webhook notifications (license / refund / health alert).
+"""Discord webhook notifications (license / refund / health alert).
 
 Env: ABS_DISCORD_WEBHOOK_URL — empty = no-op (boot stays clean).
 
@@ -87,7 +87,7 @@ def notify_refund(*, jti: str, reason: str) -> bool:
 
 
 def notify_beta_request(*, email: str, name: str = "", use_case: str = "") -> bool:
-    """031 — New beta access request received."""
+    """New beta access request received."""
     fields = [
         {"name": "Email", "value": email, "inline": True},
     ]
@@ -105,7 +105,7 @@ def notify_beta_request(*, email: str, name: str = "", use_case: str = "") -> bo
 
 
 def notify_beta_approved(*, license_jti: str, email: str) -> bool:
-    """031 — Beta request approved + license issued."""
+    """Beta request approved + license issued."""
     embed = {
         "title": "✅ Beta license issued",
         "description": f"**{email}** is now a beta tester.",
@@ -119,7 +119,7 @@ def notify_beta_approved(*, license_jti: str, email: str) -> bool:
 
 
 def notify_milestone(*, metric: str, value: int | str) -> bool:
-    """031 — Generic milestone (e.g. '10 beta signups', 'first paid customer')."""
+    """Generic milestone (e.g. '10 beta signups', 'first paid customer')."""
     embed = {
         "title": "🏁 Milestone hit",
         "description": f"**{metric}**",

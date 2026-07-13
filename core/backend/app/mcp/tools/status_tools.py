@@ -30,7 +30,7 @@ _BOOT_TIME = time.time()
 @mcp_server.tool()
 @with_hooks("status_check")
 async def status_check() -> str:
-    """025 — System status + 24h business metrics for solo operator dashboard."""
+    """System status + 24h business metrics for solo operator dashboard."""
     await tracker.bump("status_check")
     from datetime import datetime, timezone
 

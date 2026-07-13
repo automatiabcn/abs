@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-011 — RAG ingest pipeline v10: parsing, late chunking, contextual prefix."""
+"""RAG ingest pipeline v10: parsing, late chunking, contextual prefix."""
 
 from __future__ import annotations
 

@@ -3,15 +3,15 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-011 — RAG ingest + query endpoints (v10 pipeline).
+"""RAG ingest + query endpoints (v10 pipeline).
 
 `/v1/rag/ingest` — accept JSON body or multipart upload, parse → late-chunk →
 embed → upsert into Qdrant under the caller's tenant.
 `/v1/rag/query` — embed the query, search the tenant's collection, return
 top-K hits.
 
-JWT-authenticated via `get_auth_context` (T-005) and tenant-scoped via the
-Qdrant wrapper (T-009). Cerbos resource-level policy is added in T-012.
+JWT-authenticated via `get_auth_context` and tenant-scoped via the
+Qdrant wrapper. Cerbos resource-level policy is added in T-012.
 """
 
 from __future__ import annotations
@@ -131,7 +131,7 @@ def _tenant_collection(auth: AuthContext) -> str:
 
 
 def _ensure_embedder():
-    """BUG-27 — surface embedder import/init failures as 503 instead of 500.
+    """surface embedder import/init failures as 503 instead of 500.
 
     The customer image ships with the deterministic `mock` backend by
     default; switching to `sentence_transformers` requires the optional

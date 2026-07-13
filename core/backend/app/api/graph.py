@@ -240,7 +240,7 @@ async def cypher(
             detail="destructive_requires_confirm",
         )
     params = dict(body.params or {})
-    # BUG-29 — auto-inject so user queries can rely on `$tenant_id` even if
+    # Auto-inject so user queries can rely on `$tenant_id` even if
     # they forget to pass it. Caller-provided value (if any) wins so tests
     # can simulate cross-tenant attempts.
     params.setdefault(_TENANT_PARAM, tenant)
@@ -283,7 +283,7 @@ async def ingest(
 async def seed(
     auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
 ) -> Dict[str, Any]:
-    """BUG-29 — admin-triggered demo graph seed for the caller's tenant.
+    """admin-triggered demo graph seed for the caller's tenant.
 
     Idempotent (MERGE-based) so the panel "Reseed" button is safe to spam.
     """

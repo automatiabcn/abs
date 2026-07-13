@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-012 — Cerbos RAG resource pre-filter.
+"""Cerbos RAG resource pre-filter.
 
 FastAPI dependency that resolves the caller's tenant to a `rag_collection`
 resource and asks Cerbos for a decision BEFORE any Qdrant work runs. Failure

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""016 — Symbol graph endpoints (real implementation).
+"""Symbol graph endpoints (real implementation).
 
 Python AST parsed sembolleri SQLite store'dan sorgular.
 Endpoint'ler:

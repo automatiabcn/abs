@@ -105,7 +105,7 @@ class McpTokenAuthASGI:
             await response(scope, receive, send)
             return
 
-        # Sprint 2L — bridge the MCP caller's tenant into the RLS ContextVar so
+        # Bridge the MCP caller's tenant into the RLS ContextVar so
         # the Postgres RLS policies scope every DB access a tool makes. HTTP
         # routes get this from TenantContextMiddleware; the /mcp transport is a
         # mounted sub-app authenticated by an ``abs_mcp_`` token (not an OAuth

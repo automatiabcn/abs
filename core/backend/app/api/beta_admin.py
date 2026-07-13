@@ -25,7 +25,7 @@ from app.config import settings
 from app.db.models import BetaRequest, License
 from app.db.session import get_engine
 from app.licensing import generate_license
-from app.observability.audit import emit_event  # Q12-L23 sweep 4
+from app.observability.audit import emit_event
 
 router = APIRouter(prefix="/v1/admin/beta", tags=["admin"])
 logger = logging.getLogger(__name__)

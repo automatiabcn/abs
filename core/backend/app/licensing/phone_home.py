@@ -116,7 +116,7 @@ def _load_activation_state() -> dict[str, Any] | None:
         return None
 
 
-# BUG-21 — public read API + cache-age helper. The chat handler calls
+# Public read API + cache-age helper. The chat handler calls
 # ``get_cached_license_state()`` on every /v1/chat/completions request and
 # falls back to a synchronous heartbeat (``force_heartbeat_sync``) when
 # the cache is older than the half-interval, so a server-side revoke

@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q12-L18 (S7 R48) — IndexedDB-backed draft persistence for the
+// Q12-L18 — IndexedDB-backed draft persistence for the
 // /panel/chat textarea. The R36 service-worker caches *responses*;
 // this helper persists *user input* across reloads, navigations,
 // and browser-tab closures.

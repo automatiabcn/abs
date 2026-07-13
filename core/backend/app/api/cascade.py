@@ -11,7 +11,7 @@ client can issue a completion request and see the cascade chain in action.
 Auth: panel session cookie (`current_admin`).
 
 Modes:
-* `anthropic_mock_mode` set (Q3 P3) — uses the deterministic mock so tests
+* `anthropic_mock_mode` set — uses the deterministic mock so tests
   can exercise rate-limit / timeout / 500 fallback paths without a key.
 * No mock + provider keys configured — *would* call the real provider
   cascade. Live cascade (Groq + Cerebras + Gemini real calls) is gated on
