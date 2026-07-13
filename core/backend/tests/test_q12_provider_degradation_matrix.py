@@ -28,23 +28,27 @@ import pytest
 
 from app.providers.schemas import ProviderResponse
 
-# A real-looking key passes is_configured (>8 chars, no placeholder prefix).
+# A real-looking key passes is_configured (>8 chars, not a placeholder string).
 REAL = "real-test-key-AAAAAAAA"
-# Placeholder (REPLACE_ prefix) returns True only when length passes; we
-# use a long REPLACE_xxxx so configured_map() still says True but no
-# real provider can be reached.
-PLACEHOLDER = "REPLACE_THIS_BEFORE_PROD_xxxxxxxxxxxx"
+# "Configured, but wrong" — a key the operator really did paste in, which the
+# provider will reject at call time. It must NOT be one of the .env.example
+# placeholder strings: those now correctly read as *unconfigured*, because a
+# provider carrying one has no chance of working and only breaks the cascade it
+# sits in.
+INVALID = "wrong-but-real-looking-key-AAAA"
 
 ALL_KEYS: dict[str, str] = {
     "anthropic_api_key": REAL,
     "groq_api_key": REAL,
     "cerebras_api_key": REAL,
     "gemini_api_key": REAL,
+    # Cloudflare needs both halves — a token alone routes nowhere.
     "cf_api_token": REAL,
+    "cf_account_id": REAL,
     "cohere_api_key": REAL,
 }
 
-ALL_PLACEHOLDER: dict[str, str] = {k: PLACEHOLDER for k in ALL_KEYS}
+ALL_INVALID: dict[str, str] = {k: INVALID for k in ALL_KEYS}
 
 ANTHROPIC_ONLY: dict[str, str] = {
     "anthropic_api_key": REAL,
@@ -52,6 +56,7 @@ ANTHROPIC_ONLY: dict[str, str] = {
     "cerebras_api_key": "",
     "gemini_api_key": "",
     "cf_api_token": "",
+    "cf_account_id": "",
     "cohere_api_key": "",
 }
 
@@ -78,7 +83,7 @@ def _scenario_overrides(name: str) -> dict[str, str]:
         # because anthropic counts as active. Diverges from brief.
         return dict(ANTHROPIC_ONLY)
     if name == "all_invalid":
-        return dict(ALL_PLACEHOLDER)  # all placeholder; configured by length
+        return dict(ALL_INVALID)  # keys present and wrong: configured, unusable
     raise AssertionError(f"unknown scenario {name!r}")
 
 
