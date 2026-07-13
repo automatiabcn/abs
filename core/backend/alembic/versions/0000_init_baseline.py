@@ -95,9 +95,7 @@ def upgrade() -> None:
             server_default=sa.false(),
         ),
     )
-    op.create_index(
-        op.f("ix_email_queue_license_jti"), "email_queue", ["license_jti"]
-    )
+    op.create_index(op.f("ix_email_queue_license_jti"), "email_queue", ["license_jti"])
     op.create_index(op.f("ix_email_queue_kind"), "email_queue", ["kind"])
     op.create_index(
         op.f("ix_email_queue_scheduled_at"), "email_queue", ["scheduled_at"]
@@ -159,9 +157,7 @@ def upgrade() -> None:
             server_default=sa.text("''"),
         ),
     )
-    op.create_index(
-        op.f("ix_vault_audit_entries_ts"), "vault_audit_entries", ["ts"]
-    )
+    op.create_index(op.f("ix_vault_audit_entries_ts"), "vault_audit_entries", ["ts"])
     op.create_index(
         op.f("ix_vault_audit_entries_action"), "vault_audit_entries", ["action"]
     )
@@ -367,12 +363,8 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_vault_audit_entries_ts"), table_name="vault_audit_entries")
     op.drop_table("vault_audit_entries")
 
-    op.drop_index(
-        op.f("ix_connected_secrets_provider"), table_name="connected_secrets"
-    )
-    op.drop_index(
-        op.f("ix_connected_secrets_key_name"), table_name="connected_secrets"
-    )
+    op.drop_index(op.f("ix_connected_secrets_provider"), table_name="connected_secrets")
+    op.drop_index(op.f("ix_connected_secrets_key_name"), table_name="connected_secrets")
     op.drop_table("connected_secrets")
 
     op.drop_index(op.f("ix_oauth_states_provider"), table_name="oauth_states")

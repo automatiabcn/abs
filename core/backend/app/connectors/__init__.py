@@ -14,6 +14,11 @@ from app.connectors.registry import CONNECTORS, GROUP_LABELS, Connector, get_con
 from app.connectors.service import connect, disconnect, list_connectors
 
 __all__ = [
-    "CONNECTORS", "Connector", "get_connector", "GROUP_LABELS",
-    "list_connectors", "connect", "disconnect",
+    "CONNECTORS",
+    "Connector",
+    "get_connector",
+    "GROUP_LABELS",
+    "list_connectors",
+    "connect",
+    "disconnect",
 ]

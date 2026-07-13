@@ -177,7 +177,10 @@ def _serialize(meeting: Meeting, segments: List[MeetingSegment]) -> Dict[str, An
         if seg.speaker_id not in speaker_seen:
             speaker_seen[seg.speaker_id] = len(speakers) + 1
             speakers.append(
-                {"id": seg.speaker_id, "name": f"Speaker {speaker_seen[seg.speaker_id]}"}
+                {
+                    "id": seg.speaker_id,
+                    "name": f"Speaker {speaker_seen[seg.speaker_id]}",
+                }
             )
         seg_payload.append(
             {
@@ -202,7 +205,9 @@ def _serialize(meeting: Meeting, segments: List[MeetingSegment]) -> Dict[str, An
         "speakers": speakers,
         "segments": seg_payload,
         "created_at": meeting.created_at.isoformat(),
-        "completed_at": meeting.completed_at.isoformat() if meeting.completed_at else None,
+        "completed_at": meeting.completed_at.isoformat()
+        if meeting.completed_at
+        else None,
     }
 
 
@@ -230,7 +235,9 @@ async def list_meetings(admin: dict = Depends(current_admin)) -> Dict[str, Any]:
                     "quality_note": meeting.quality_note,
                     "indexed": _indexed_chunk_count(meeting) > 0,
                     "created_at": meeting.created_at.isoformat(),
-                    "completed_at": meeting.completed_at.isoformat() if meeting.completed_at else None,
+                    "completed_at": meeting.completed_at.isoformat()
+                    if meeting.completed_at
+                    else None,
                 }
             )
     return {"meetings": out, "count": len(out)}
@@ -289,8 +296,11 @@ async def upload_meeting(
             # rebuilt from the segments already in SQL. Chunk ids are
             # deterministic, so a healthy meeting re-indexes to exactly the same
             # points — one meeting, one copy, which is what T3 asks for.
-            if not _indexed_chunk_count(seen) and seen.status == "done" \
-                    and not seen.quality_note:
+            if (
+                not _indexed_chunk_count(seen)
+                and seen.status == "done"
+                and not seen.quality_note
+            ):
                 try:
                     n = _autoindex_meeting_rag(
                         meeting_id=seen.id,
@@ -310,9 +320,7 @@ async def upload_meeting(
                             ],
                         },
                     )
-                    logger.info(
-                        "meeting_rag_reindex meeting=%s chunks=%d", seen.id, n
-                    )
+                    logger.info("meeting_rag_reindex meeting=%s chunks=%d", seen.id, n)
                 except Exception as exc:  # noqa: BLE001 — never fail the upload
                     logger.warning(
                         "meeting_rag_reindex_failed meeting=%s err=%s", seen.id, exc
@@ -355,9 +363,7 @@ async def upload_meeting(
                     row.completed_at = datetime.now(timezone.utc)
                     db.add(row)
                     db.commit()
-            raise HTTPException(
-                503, f"whisperx_unavailable: {exc}"
-            ) from exc
+            raise HTTPException(503, f"whisperx_unavailable: {exc}") from exc
     finally:
         try:
             tmp_path.unlink(missing_ok=True)
@@ -416,9 +422,7 @@ async def upload_meeting(
             raise HTTPException(500, "meeting_disappeared")
 
     try:
-        feature_usage_service.increment(
-            "audio_upload", actor_email=uploader_email
-        )
+        feature_usage_service.increment("audio_upload", actor_email=uploader_email)
     except Exception:
         pass
 

@@ -26,6 +26,7 @@ from app.providers.schemas import ProviderError
 
 # ---- describe_image (provider) -------------------------------------------
 
+
 def test_describe_image_returns_vision_text(monkeypatch):
     async def _fake_post(url, body, *, key, timeout=90.0):
         # the image part is forwarded as inlineData
@@ -48,12 +49,15 @@ def test_describe_image_without_key_raises(monkeypatch):
 
 # ---- ingest-image endpoint ------------------------------------------------
 
+
 @pytest.fixture(autouse=True)
 def _allow_cerbos():
     class _Allow:
         def check_resources(self, *, principal, resources):
             entry = SimpleNamespace(is_allowed=lambda action: True)
-            return SimpleNamespace(results=[entry], failed=lambda: False, status_code=200)
+            return SimpleNamespace(
+                results=[entry], failed=lambda: False, status_code=200
+            )
 
         def close(self):
             return None
@@ -91,7 +95,9 @@ def test_ingest_image_stores_description_tagged_as_image(monkeypatch):
 
     async def _fake_describe(b64, mime, **kw):
         assert mime == "image/png"
-        return SimpleNamespace(text="A red invoice with the total 42 EUR and a blue logo.")
+        return SimpleNamespace(
+            text="A red invoice with the total 42 EUR and a blue logo."
+        )
 
     monkeypatch.setattr(gx, "describe_image", _fake_describe)
 
@@ -140,6 +146,7 @@ def test_ingest_image_rejects_non_image(monkeypatch):
 
 # ---- unified query kind filter -------------------------------------------
 
+
 def test_query_kinds_image_adds_kind_filter(monkeypatch):
     captured: dict = {}
 
@@ -176,8 +183,13 @@ def test_query_by_image_describes_then_searches(monkeypatch):
             {
                 "id": "c9",
                 "score": 0.77,
-                "payload": {"doc_id": "d9", "chunk_id": "c9", "seq": 0,
-                            "text": "matching policy doc", "tenant_id": k["tenant_id"]},
+                "payload": {
+                    "doc_id": "d9",
+                    "chunk_id": "c9",
+                    "seq": 0,
+                    "text": "matching policy doc",
+                    "tenant_id": k["tenant_id"],
+                },
             }
         ]
 

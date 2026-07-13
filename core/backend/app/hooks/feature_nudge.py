@@ -37,6 +37,7 @@ def _nudge_factory(rate: dict) -> tuple:
 # Command-line nudges
 # =============================================================================
 
+
 @safe_hook("feature_nudge_bash")
 def maybe_feature_nudge_bash(cmd: str) -> str:
     if not cmd or len(cmd) < 10:
@@ -50,9 +51,16 @@ def maybe_feature_nudge_bash(cmd: str) -> str:
 
     # Writing code — one model writes, another checks, a third fixes.
     if "qual-code" not in cmd_l and "qual " not in cmd_l:
-        kw = ("write a function", "write function", "implement",
-              "python function", "javascript function",
-              "react component", "api endpoint", "write code")
+        kw = (
+            "write a function",
+            "write function",
+            "implement",
+            "python function",
+            "javascript function",
+            "react component",
+            "api endpoint",
+            "write code",
+        )
         if any(k in cmd_l for k in kw) and "ask" in cmd_l:
             if _allow("qual-code"):
                 _persist()
@@ -64,8 +72,14 @@ def maybe_feature_nudge_bash(cmd: str) -> str:
 
     # Comparing options — one model's opinion is not a comparison.
     if "race" not in cmd_l and "mcp__abs__race" not in cmd_l:
-        kw = ("compare ", " vs ", "alternatives", "research",
-              "multiple models", "which is better")
+        kw = (
+            "compare ",
+            " vs ",
+            "alternatives",
+            "research",
+            "multiple models",
+            "which is better",
+        )
         if any(k in cmd_l for k in kw):
             if _allow("race"):
                 _persist()
@@ -76,8 +90,15 @@ def maybe_feature_nudge_bash(cmd: str) -> str:
 
     # Documentation.
     if "write_docs" not in cmd_l and "fs-doc" not in cmd_l:
-        kw = ("write a readme", "readme", "documentation", "api doc",
-              "write a report", "detailed report", "user guide")
+        kw = (
+            "write a readme",
+            "readme",
+            "documentation",
+            "api doc",
+            "write a report",
+            "detailed report",
+            "user guide",
+        )
         if any(k in cmd_l for k in kw):
             if _allow("docs"):
                 _persist()
@@ -88,8 +109,14 @@ def maybe_feature_nudge_bash(cmd: str) -> str:
 
     # Looking over a whole project.
     if all(p not in cmd_l for p in ("fs-scan", "fs-plan", "fs-exec")):
-        kw = ("scan project", "project analysis", "what is missing",
-              "gaps in", "project completion", "finish the project")
+        kw = (
+            "scan project",
+            "project analysis",
+            "what is missing",
+            "gaps in",
+            "project completion",
+            "finish the project",
+        )
         if any(k in cmd_l for k in kw):
             if _allow("fs-scan"):
                 _persist()
@@ -100,8 +127,14 @@ def maybe_feature_nudge_bash(cmd: str) -> str:
 
     # Something you already have an answer to, somewhere.
     if "rag" not in cmd_l and "mcp__abs__rag" not in cmd_l:
-        kw = ("have we done this", "did we already", "similar pattern",
-              "in our own", "from our docs", "previous project")
+        kw = (
+            "have we done this",
+            "did we already",
+            "similar pattern",
+            "in our own",
+            "from our docs",
+            "previous project",
+        )
         if any(k in cmd_l for k in kw):
             if _allow("rag"):
                 _persist()
@@ -112,8 +145,14 @@ def maybe_feature_nudge_bash(cmd: str) -> str:
 
     # Checking code rather than writing it.
     if "auto_verify" not in cmd_l and "write_tests" not in cmd_l:
-        kw = ("write tests", "unit test", "verify code", "check this code",
-              "security check", "review this code")
+        kw = (
+            "write tests",
+            "unit test",
+            "verify code",
+            "check this code",
+            "security check",
+            "review this code",
+        )
         if any(k in cmd_l for k in kw):
             if _allow("auto_verify"):
                 _persist()
@@ -136,8 +175,15 @@ def maybe_feature_nudge_bash(cmd: str) -> str:
 
     # Writing in a language other than English.
     if "aya" not in cmd_l and "qual-tr" not in cmd_l:
-        kw = ("grammar", "proofread", "spelling", "translate",
-              "in turkish", "in spanish", "in german")
+        kw = (
+            "grammar",
+            "proofread",
+            "spelling",
+            "translate",
+            "in turkish",
+            "in spanish",
+            "in german",
+        )
         if any(k in cmd_l for k in kw):
             if _allow("aya"):
                 _persist()
@@ -149,8 +195,13 @@ def maybe_feature_nudge_bash(cmd: str) -> str:
 
     # Images.
     if "gemini_image" not in cmd_l and "llava" not in cmd_l:
-        kw = ("read this image", "image analysis", "read the chart",
-              "mockup", "describe the screenshot")
+        kw = (
+            "read this image",
+            "image analysis",
+            "read the chart",
+            "mockup",
+            "describe the screenshot",
+        )
         if any(k in cmd_l for k in kw):
             if _allow("gemini_image"):
                 _persist()
@@ -158,8 +209,7 @@ def maybe_feature_nudge_bash(cmd: str) -> str:
 
     # Output you intend to parse.
     if "gemini_structured" not in cmd_l:
-        kw = ("json schema", "structured output", "extract a table",
-              "as json")
+        kw = ("json schema", "structured output", "extract a table", "as json")
         if any(k in cmd_l for k in kw):
             if _allow("gemini_structured"):
                 _persist()
@@ -181,8 +231,7 @@ def maybe_feature_nudge_bash(cmd: str) -> str:
 
     # Code completion.
     if "starcoder" not in cmd_l:
-        kw = ("fill in the middle", "fim complet", "code completion",
-              "autocomplete")
+        kw = ("fill in the middle", "fim complet", "code completion", "autocomplete")
         if any(k in cmd_l for k in kw):
             if _allow("starcoder"):
                 _persist()
@@ -193,8 +242,14 @@ def maybe_feature_nudge_bash(cmd: str) -> str:
 
     # Very large inputs.
     if "scout" not in cmd_l and "longcontext" not in cmd_l:
-        kw = ("128k", "200k", "262k", "long context", "very large file",
-              "whole codebase")
+        kw = (
+            "128k",
+            "200k",
+            "262k",
+            "long context",
+            "very large file",
+            "whole codebase",
+        )
         if any(k in cmd_l for k in kw):
             if _allow("longcontext"):
                 _persist()
@@ -216,8 +271,12 @@ def maybe_feature_nudge_bash(cmd: str) -> str:
 
     # Decisions you cannot take back.
     if "race" not in cmd_l:
-        kw = ("critical decision", "production deploy",
-              "architecture decision", "before we commit")
+        kw = (
+            "critical decision",
+            "production deploy",
+            "architecture decision",
+            "before we commit",
+        )
         if any(k in cmd_l for k in kw):
             if _allow("race-critical"):
                 _persist()

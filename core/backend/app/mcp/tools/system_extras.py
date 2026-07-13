@@ -71,7 +71,11 @@ async def model_health() -> str:
         fails = int(st.get("fail_count") or 0)
         score = 10.0 if state == "closed" else (5.0 if state == "half_open" else 2.0)
         score -= min(fails * 0.5, 3.0)
-        results[name] = {"state": state, "fail_count": fails, "health_score": max(0.0, score)}
+        results[name] = {
+            "state": state,
+            "fail_count": fails,
+            "health_score": max(0.0, score),
+        }
     # No calls yet is not ill health — report healthy rather than zero.
     if not results:
         return json.dumps({"note": "no provider calls yet", "default_health": 10.0})
@@ -106,13 +110,13 @@ async def preview_patch(file_path: str, unified_diff: str) -> str:
 
 
 @with_hooks("apply_patch")
-async def apply_patch(
-    file_path: str, unified_diff: str, backup: bool = True
-) -> str:
+async def apply_patch(file_path: str, unified_diff: str, backup: bool = True) -> str:
     """Apply a unified diff atomically, with a backup. On failure the file is
     rolled back and the reason returned."""
     await tracker.bump("apply_patch")
-    return json.dumps(_apply_patch(file_path, unified_diff, backup=backup), ensure_ascii=False)
+    return json.dumps(
+        _apply_patch(file_path, unified_diff, backup=backup), ensure_ascii=False
+    )
 
 
 REGISTERED_TOOLS.extend(

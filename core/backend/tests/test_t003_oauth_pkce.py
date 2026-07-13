@@ -10,9 +10,11 @@ from app.auth.oauth.pkce import verify_s256
 
 
 def _challenge(verifier: str) -> str:
-    return base64.urlsafe_b64encode(
-        hashlib.sha256(verifier.encode("ascii")).digest()
-    ).rstrip(b"=").decode("ascii")
+    return (
+        base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode("ascii")
+    )
 
 
 def test_pkce_s256_accepts_valid_pair() -> None:

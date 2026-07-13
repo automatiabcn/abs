@@ -14,7 +14,7 @@ import logging
 import re
 from dataclasses import dataclass
 
-from app.meeting.transcribe import Transcript, TranscriptSegment
+from app.meeting.transcribe import Transcript
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +30,23 @@ class ActionItem:
 
 
 _VERB_HINTS = (
-    "yapaca\u011f\u0131m", "yapmal\u0131", "haz\u0131rla", "g\u00f6nder", "ara", "topla",
-    "investigate", "ship", "draft", "send", "schedule", "follow up",
-    "ensure", "fix", "deliver", "review", "kontrol",
+    "yapaca\u011f\u0131m",
+    "yapmal\u0131",
+    "haz\u0131rla",
+    "g\u00f6nder",
+    "ara",
+    "topla",
+    "investigate",
+    "ship",
+    "draft",
+    "send",
+    "schedule",
+    "follow up",
+    "ensure",
+    "fix",
+    "deliver",
+    "review",
+    "kontrol",
 )
 _DUE_HINTS = (
     (r"yar\u0131n", "tomorrow"),

@@ -18,6 +18,7 @@ flips from the legacy cookie-only `current_admin` dep to the panel-or-bearer
 
 Neo4j outages return 503 with `neo4j_unavailable` instead of leaking 500.
 """
+
 from __future__ import annotations
 
 import json
@@ -166,9 +167,7 @@ def _extract_tenant(value: Any) -> str | None:
     return None
 
 
-async def _safe_query(
-    cli: Neo4jClient, cypher: str, params: dict
-) -> list[dict]:
+async def _safe_query(cli: Neo4jClient, cypher: str, params: dict) -> list[dict]:
     try:
         return await cli.query(cypher, params)
     except ServiceUnavailable as exc:
@@ -205,16 +204,11 @@ async def schema(
         {"tenant_id": tenant},
     )
     node_labels: list[str] = sorted(
-        {
-            str(label)
-            for row in rows
-            for label in (row.get("labels") or [])
-        }
+        {str(label) for row in rows for label in (row.get("labels") or [])}
     )
     rel_types_row = await _safe_query(
         client,
-        "MATCH ()-[r]->() WHERE r.tenant_id = $tenant_id "
-        "RETURN DISTINCT type(r) AS t",
+        "MATCH ()-[r]->() WHERE r.tenant_id = $tenant_id RETURN DISTINCT type(r) AS t",
         {"tenant_id": tenant},
     )
     rel_types = sorted({str(r.get("t")) for r in rel_types_row if r.get("t")})
@@ -280,9 +274,7 @@ async def ingest(
     for r in body.relations:
         rel_props = dict(r.get("props") or {})
         rel_props.setdefault("tenant_id", tenant)
-        await client.upsert_relation(
-            r["src_id"], r["type"], r["dst_id"], rel_props
-        )
+        await client.upsert_relation(r["src_id"], r["type"], r["dst_id"], rel_props)
         n_r += 1
     return {"entities": n_e, "relations": n_r, "tenant_id": tenant}
 
@@ -370,7 +362,7 @@ async def nl_query(
         "same on relationships) so cross-tenant rows cannot leak. "
         "Output the raw JSON object ONLY — no markdown fences, no prose — "
         "with shape "
-        "{\"cypher\": \"...\", \"params\": {...}, \"explanation\": \"...\"}. "
+        '{"cypher": "...", "params": {...}, "explanation": "..."}. '
         "Schema hint: nodes use :Person, :Org, :Project, :Ticket; "
         "relations: WORKS_AT, OWNS, MANAGES, ASSIGNED_TO.\n\n"
         f"NL: {body.intent}\nLocale: {body.locale}"
@@ -388,8 +380,11 @@ async def nl_query(
     async def _call(p, cache=True):
         try:
             return await call_with_cascade(
-                p, primary=primary, fallbacks=tuple(rest),
-                tenant_id=tenant, use_cache=cache,
+                p,
+                primary=primary,
+                fallbacks=tuple(rest),
+                tenant_id=tenant,
+                use_cache=cache,
             )
         except CascadeUnavailable:
             raise  # busy, not broken — 503 + Retry-After, from the app handler

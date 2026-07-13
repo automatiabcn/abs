@@ -239,8 +239,7 @@ class TestQ12L22OAuthAtomicClaimRegression:
             "the `revoked_at IS NULL` predicate"
         )
         assert "_revoke_refresh_family" in src, (
-            "Q12-L22-006 regression: OAuth 2.1 §6.1 family revocation "
-            "helper missing"
+            "Q12-L22-006 regression: OAuth 2.1 §6.1 family revocation helper missing"
         )
 
     def test_oauth_replay_returns_invalid_grant(self, client: TestClient) -> None:
@@ -288,9 +287,9 @@ class TestQ12L25BodySizeLimitRegression:
         )
 
     def test_oversize_install_returns_413(self, client: TestClient) -> None:
-        big_payload = '{"plugin_id":"x","tenant":"y","blob":"' + "z" * (
-            6 * 1024 * 1024
-        ) + '"}'
+        big_payload = (
+            '{"plugin_id":"x","tenant":"y","blob":"' + "z" * (6 * 1024 * 1024) + '"}'
+        )
         resp = client.post(
             "/v1/marketplace/install",
             content=big_payload,
@@ -365,7 +364,7 @@ class TestSprint21BundleRegression:
             limit = int(baseline * self.BUFFER)
             if total > limit:
                 regressions.append(
-                    f"{route}: {total/1024:.1f} KiB > limit {limit/1024:.1f} KiB"
+                    f"{route}: {total / 1024:.1f} KiB > limit {limit / 1024:.1f} KiB"
                 )
         assert not regressions, (
             "Sprint 21 regression: chunk totals exceeded +20% buffer:\n"
@@ -401,9 +400,7 @@ class TestQ12L20003RegressionPin:
         if not chat_client.exists():
             import pytest as _pytest
 
-            _pytest.skip(
-                "core/landing/app/panel/chat/ChatClient.tsx not on this build"
-            )
+            _pytest.skip("core/landing/app/panel/chat/ChatClient.tsx not on this build")
         src = chat_client.read_text(encoding="utf-8")
         # Q12-L20-003 fix surface — sessions-error-tile banner.
         assert 'data-test="sessions-error-tile"' in src, (
@@ -412,7 +409,7 @@ class TestQ12L20003RegressionPin:
             "surfaces /v1/chat/sessions 5xx is gone"
         )
         assert 'role="alert"' in src, (
-            "Q12-L20-003 regression: role=\"alert\" attribute is missing "
+            'Q12-L20-003 regression: role="alert" attribute is missing '
             "from ChatClient.tsx — the SR contract for the error banner is broken"
         )
 

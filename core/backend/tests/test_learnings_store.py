@@ -51,7 +51,12 @@ def test_recent_count_window_days(isolated_data_dir):
     entries = [
         {"ts": now, "category": "bugfix", "lesson": "today", "hash": "h1"},
         {"ts": now - 5 * 86400, "category": "bugfix", "lesson": "5d ago", "hash": "h2"},
-        {"ts": now - 35 * 86400, "category": "bugfix", "lesson": "35d ago", "hash": "h3"},
+        {
+            "ts": now - 35 * 86400,
+            "category": "bugfix",
+            "lesson": "35d ago",
+            "hash": "h3",
+        },
     ]
     file_path.write_text(
         "\n".join(json.dumps(e) for e in entries) + "\n", encoding="utf-8"

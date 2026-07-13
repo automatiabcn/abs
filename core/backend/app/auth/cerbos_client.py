@@ -112,9 +112,7 @@ def is_allowed_or_raise(
                 pdp.close()
             except Exception:
                 pass
-        raise CerbosUnavailable(
-            f"cerbos_pdp_unreachable:{type(exc).__name__}"
-        ) from exc
+        raise CerbosUnavailable(f"cerbos_pdp_unreachable:{type(exc).__name__}") from exc
 
     if own:
         try:
@@ -123,9 +121,7 @@ def is_allowed_or_raise(
             pass
 
     if result.failed():
-        raise CerbosUnavailable(
-            f"cerbos_decision_failed:{result.status_code}"
-        )
+        raise CerbosUnavailable(f"cerbos_decision_failed:{result.status_code}")
     decision = False
     for entry in result.results:
         decision = entry.is_allowed(action)

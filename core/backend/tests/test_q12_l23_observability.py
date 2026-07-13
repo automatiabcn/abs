@@ -69,9 +69,7 @@ class TestQ12L23RequestIDMiddleware:
         assert len(echoed) == 32, "Q12-L23: replacement must be uuid4().hex"
 
     def test_request_id_replaced_when_too_long(self, client: TestClient) -> None:
-        r = client.get(
-            "/auth/me", headers={"X-Request-ID": "a" * 129}
-        )
+        r = client.get("/auth/me", headers={"X-Request-ID": "a" * 129})
         echoed = r.headers.get("X-Request-ID", "")
         assert echoed != "a" * 129, (
             "Q12-L23: oversized X-Request-ID must be replaced (>128 chars)"
@@ -131,9 +129,7 @@ class TestQ12L23EmitEventScrub:
         with caplog.at_level(logging.INFO, logger=LOGGER_NAME):
             caplog.clear()
             emit_event(fake, action="x.y", outcome="totally-bogus")
-        records = [
-            r for r in caplog.records if r.name == LOGGER_NAME
-        ]
+        records = [r for r in caplog.records if r.name == LOGGER_NAME]
         assert records, "Q12-L23: emit_event produced no abs.audit record"
         last = records[-1]
         audit = getattr(last, "audit", None)
@@ -170,9 +166,7 @@ class TestQ12L23LoginAuditTrail:
             and getattr(rec, "audit", {}).get("action") == "auth.login"
             and getattr(rec, "audit", {}).get("outcome") == "denied"
         ]
-        assert denials, (
-            "Q12-L23: /auth/login bad-email must emit denied audit event"
-        )
+        assert denials, "Q12-L23: /auth/login bad-email must emit denied audit event"
         last = denials[-1]
         # PII guard: never log full email or password
         assert last.get("email_hint", "").endswith("***"), (

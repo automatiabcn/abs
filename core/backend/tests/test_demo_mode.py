@@ -18,7 +18,9 @@ def isolated_demo(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(settings, "data_dir", str(tmp_path))
     monkeypatch.setattr(settings, "license_key", "")
     (tmp_path / "setup_state.json").write_text(
-        json.dumps({"completed": True, "current_step": 6, "completed_steps": [], "data": {}}),
+        json.dumps(
+            {"completed": True, "current_step": 6, "completed_steps": [], "data": {}}
+        ),
         encoding="utf-8",
     )
     return tmp_path

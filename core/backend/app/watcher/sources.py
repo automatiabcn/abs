@@ -82,9 +82,7 @@ class WatcherRegistry:
                 continue
             self._seen.add(fp)
             out.append(item)
-        logger.info(
-            "watcher_fetch source=%s in=%d new=%d", name, len(items), len(out)
-        )
+        logger.info("watcher_fetch source=%s in=%d new=%d", name, len(items), len(out))
         return out
 
     def fetch_all(self) -> dict[str, list[NewsItem]]:

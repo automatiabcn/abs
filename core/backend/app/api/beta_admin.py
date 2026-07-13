@@ -105,7 +105,11 @@ async def list_queue(
             stmt = stmt.where(BetaRequest.status == status)
         stmt = stmt.limit(min(limit, 500))
         rows = list(db.scalars(stmt).all())
-    return {"status": status, "count": len(rows), "items": [_serialize(r) for r in rows]}
+    return {
+        "status": status,
+        "count": len(rows),
+        "items": [_serialize(r) for r in rows],
+    }
 
 
 @router.post("/{request_id}/approve")
@@ -131,7 +135,11 @@ async def approve_request(
             )
             raise HTTPException(404, "request_not_found")
         if row.status == "approved" and row.license_jti:
-            return {"ok": True, "already_approved": True, "license_jti": row.license_jti}
+            return {
+                "ok": True,
+                "already_approved": True,
+                "license_jti": row.license_jti,
+            }
         if row.status == "rejected":
             emit_event(
                 request,

@@ -99,9 +99,7 @@ def test_migration_idempotent(vault_env, monkeypatch):
         runner_mod, "write_secret", lambda k, v: fake_store.update({k: v})
     )
 
-    vault_env["env"].write_text(
-        "ABS_ANTHROPIC_API_KEY=sk-ant-test\n", encoding="utf-8"
-    )
+    vault_env["env"].write_text("ABS_ANTHROPIC_API_KEY=sk-ant-test\n", encoding="utf-8")
     n1 = migrate_plaintext_env_to_vault(env_path=str(vault_env["env"]))
     assert n1 == 1
     n2 = migrate_plaintext_env_to_vault(env_path=str(vault_env["env"]))

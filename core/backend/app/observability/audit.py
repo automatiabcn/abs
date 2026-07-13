@@ -183,7 +183,9 @@ def _persist(payload: dict[str, Any]) -> None:
             actor=str(payload.get("user_id") or "system")[:64],
             target_key=(str(payload["path"])[:128] if payload.get("path") else None),
             detail=_json.dumps(detail, default=str)[:512],
-            tenant_id=(str(payload["tenant_id"])[:64] if payload.get("tenant_id") else None),
+            tenant_id=(
+                str(payload["tenant_id"])[:64] if payload.get("tenant_id") else None
+            ),
         )
         # Recovered. Re-arm the traceback, so the *next* outage is diagnosable too
         # rather than being written off as more of the last one.

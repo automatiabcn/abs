@@ -50,7 +50,8 @@ async def connect_endpoint(
     auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
 ) -> dict:
     row = await connect(
-        tenant_slug=_tenant(auth), connector_id=connector_id,
+        tenant_slug=_tenant(auth),
+        connector_id=connector_id,
         credentials=(body.credentials if body else {}),
     )
     if row is None:

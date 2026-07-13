@@ -21,12 +21,15 @@ def test_judge_feed_uses_real_aggregate_keys(monkeypatch):
     stream_mod._JUDGE_CACHE["ts"] = 0.0
 
     def _fake_aggregate(*args, **kwargs):
-        return {"count": 4, "avg_combined": 8.5,
-                "outcome_counts": {"accept": 3, "reject": 1}}
+        return {
+            "count": 4,
+            "avg_combined": 8.5,
+            "outcome_counts": {"accept": 3, "reject": 1},
+        }
 
     monkeypatch.setattr("app.judge.stats.aggregate", _fake_aggregate)
 
     out = stream_mod._build_judge_placeholder()
-    assert out["score"] == 8.5                     # was None (wrong key)
+    assert out["score"] == 8.5  # was None (wrong key)
     assert "4 patches" in out["summary"]
-    assert "75%" in out["summary"]                 # 3/4 accepted — was 0%
+    assert "75%" in out["summary"]  # 3/4 accepted — was 0%

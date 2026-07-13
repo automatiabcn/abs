@@ -74,9 +74,7 @@ async def quota_status() -> QuotaStatus:
     )
 
     free_providers: Dict[str, QuotaSlice] = {}
-    warnings: List[str] = list(
-        threshold_warnings(claude_slice.percent, "claude_plus")
-    )
+    warnings: List[str] = list(threshold_warnings(claude_slice.percent, "claude_plus"))
 
     for provider in ("groq", "gemini", "cerebras", "cohere", "cloudflare"):
         used, limit = await get_monthly_usage(provider, start, now)

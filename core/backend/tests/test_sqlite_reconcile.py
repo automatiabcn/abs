@@ -25,7 +25,12 @@ _OLD_CONNECTOR_STATES = (
     " connected_at DATETIME,"
     " last_sync_at DATETIME)"
 )
-_STAGE_A_COLUMNS = ("auth_kind", "encrypted_credentials", "last_sync_count", "last_error")
+_STAGE_A_COLUMNS = (
+    "auth_kind",
+    "encrypted_credentials",
+    "last_sync_count",
+    "last_error",
+)
 
 
 def test_reconcile_adds_missing_columns(tmp_path):
@@ -44,8 +49,14 @@ def test_reconcile_adds_missing_columns(tmp_path):
 
     # the row survives + a read of the new column works (no 500)
     with eng.begin() as c:
-        c.execute(text("INSERT INTO connector_states (tenant_slug, connector_id) VALUES ('t','x')"))
-        row = c.execute(text("SELECT auth_kind, last_sync_count FROM connector_states")).first()
+        c.execute(
+            text(
+                "INSERT INTO connector_states (tenant_slug, connector_id) VALUES ('t','x')"
+            )
+        )
+        row = c.execute(
+            text("SELECT auth_kind, last_sync_count FROM connector_states")
+        ).first()
     assert row is not None
 
 
@@ -55,7 +66,7 @@ def test_reconcile_is_idempotent(tmp_path):
         c.execute(text(_OLD_CONNECTOR_STATES))
     _reconcile_sqlite_columns(eng)
     cols1 = {col["name"] for col in inspect(eng).get_columns("connector_states")}
-    _reconcile_sqlite_columns(eng)          # second run must be a no-op, not raise
+    _reconcile_sqlite_columns(eng)  # second run must be a no-op, not raise
     cols2 = {col["name"] for col in inspect(eng).get_columns("connector_states")}
     assert cols1 == cols2
 

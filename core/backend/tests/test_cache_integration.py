@@ -6,7 +6,6 @@ cache_stats hit/miss counter'ı orchestrator hot path'ine bağlı olmalı.
 from __future__ import annotations
 
 import asyncio
-import time
 
 import pytest
 

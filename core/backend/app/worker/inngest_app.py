@@ -57,9 +57,7 @@ async def on_user_registered(
         user_id = data.get("user_id")
         email = data.get("email")
         if not user_id or not email:
-            raise inngest.NonRetriableError(
-                f"missing user_id/email in {sorted(data)}"
-            )
+            raise inngest.NonRetriableError(f"missing user_id/email in {sorted(data)}")
         return {"user_id": str(user_id), "email": str(email)}
 
     user = await ctx.step.run("validate-payload", _validate)

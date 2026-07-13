@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
 
 import stripe
 from sqlmodel import Session, select
 
-from app.db.models import EmailQueue, License
+from app.db.models import License
 from app.db.session import get_engine
 from app.email.sender import _render
 

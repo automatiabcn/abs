@@ -32,7 +32,9 @@ def test_build_budget_uses_real_cost(monkeypatch, isolated_data_dir):
     # billing/__init__ re-export'u da patch edelim ki app.api.stream içe import'u doğru gelsin
     import app.billing as billing_pkg
 
-    monkeypatch.setattr(billing_pkg, "estimate_daily_cost", lambda: fake_cost, raising=False)
+    monkeypatch.setattr(
+        billing_pkg, "estimate_daily_cost", lambda: fake_cost, raising=False
+    )
 
     payload = stream_mod._build_budget()
     assert payload["today_usd"] == 1.23

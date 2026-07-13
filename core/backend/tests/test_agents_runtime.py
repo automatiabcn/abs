@@ -35,28 +35,34 @@ def test_get_agent_known_and_unknown() -> None:
 
 def test_risk_drives_approval() -> None:
     assert registry.get_agent("knowledge_base").requires_approval is False  # low
-    assert registry.get_agent("inbound_triage").requires_approval is True   # medium
-    assert registry.get_agent("outbound_draft").requires_approval is True   # high
+    assert registry.get_agent("inbound_triage").requires_approval is True  # medium
+    assert registry.get_agent("outbound_draft").requires_approval is True  # high
 
 
 @pytest.fixture
 def _no_rag(monkeypatch):
     async def _empty(agent, task, **kw):
         return []
+
     monkeypatch.setattr("app.agents.runtime._gather_evidence", _empty)
 
 
 async def test_run_agent_structured(monkeypatch, _no_rag) -> None:
     async def _fake(agent, prompt, **kw):
-        return json.dumps({
-            "summary": "İki kategoride görünürlük düşüşü",
-            "recommended_action": "FAQ içeriği ekle",
-            "confidence": 0.82,
-            "payload": {"categories": ["pvc", "kapı"]},
-        }), "groq"
+        return json.dumps(
+            {
+                "summary": "İki kategoride görünürlük düşüşü",
+                "recommended_action": "FAQ içeriği ekle",
+                "confidence": 0.82,
+                "payload": {"categories": ["pvc", "kapı"]},
+            }
+        ), "groq"
+
     monkeypatch.setattr("app.agents.runtime._complete", _fake)
 
-    res = await run_agent("aeo_visibility", "AI görünürlüğünü analiz et", tenant_id="t1")
+    res = await run_agent(
+        "aeo_visibility", "AI görünürlüğünü analiz et", tenant_id="t1"
+    )
     assert res.agent_id == "aeo_visibility"
     assert res.output_kind == "aeo_report"
     assert res.summary.startswith("İki kategoride")
@@ -69,6 +75,7 @@ async def test_run_agent_structured(monkeypatch, _no_rag) -> None:
 async def test_run_agent_degrades_without_provider(monkeypatch, _no_rag) -> None:
     async def _none(agent, prompt, **kw):
         return "", ""
+
     monkeypatch.setattr("app.agents.runtime._complete", _none)
 
     res = await run_agent("knowledge_base", "what does it cost?", tenant_id="t1")
@@ -83,6 +90,7 @@ async def test_run_agent_degrades_without_provider(monkeypatch, _no_rag) -> None
 async def test_run_engagement_agent_flags_approval(monkeypatch, _no_rag) -> None:
     async def _fake(agent, prompt, **kw):
         return json.dumps({"summary": "taslak", "confidence": 0.7}), "cloudflare"
+
     monkeypatch.setattr("app.agents.runtime._complete", _fake)
 
     res = await run_agent("outbound_draft", "taslak yaz", tenant_id="t1")
@@ -98,22 +106,28 @@ async def test_run_unknown_agent_raises() -> None:
 async def test_confidence_clamped(monkeypatch, _no_rag) -> None:
     async def _fake(agent, prompt, **kw):
         return json.dumps({"summary": "x", "confidence": 9.9}), "groq"
+
     monkeypatch.setattr("app.agents.runtime._complete", _fake)
     res = await run_agent("lead_scoring", "skorla", tenant_id="t1")
     assert res.confidence == 1.0
 
 
-async def test_degraded_engagement_agent_opens_no_approval(monkeypatch, _no_rag) -> None:
+async def test_degraded_engagement_agent_opens_no_approval(
+    monkeypatch, _no_rag
+) -> None:
     # No provider → degraded → even a high-risk agent must NOT gate an approval.
     async def _none(agent, prompt, **kw):
         return "", ""
+
     monkeypatch.setattr("app.agents.runtime._complete", _none)
     res = await run_agent("outbound_draft", "taslak", tenant_id="t1")
     assert res.degraded is True
     assert res.requires_approval is False
 
 
-async def test_complete_reads_provider_response_text_field(monkeypatch, _no_rag) -> None:
+async def test_complete_reads_provider_response_text_field(
+    monkeypatch, _no_rag
+) -> None:
     """Regression: the runtime must read ProviderResponse.text (not .completion).
     Reading the wrong field made every agent degrade even with a live provider.
     Stubs the cascade (NOT _complete) so the real field extraction runs."""
@@ -124,8 +138,11 @@ async def test_complete_reads_provider_response_text_field(monkeypatch, _no_rag)
             text='{"summary": "gerçek cevap", "confidence": 0.7, "payload": {}}',
             provider="groq",
         )
+
     monkeypatch.setattr("app.cascade.orchestrator.call_with_cascade", _fake_cascade)
-    monkeypatch.setattr("app.providers.cascade.get_active_providers", lambda **k: ["groq"])
+    monkeypatch.setattr(
+        "app.providers.cascade.get_active_providers", lambda **k: ["groq"]
+    )
 
     res = await run_agent("knowledge_base", "soru", tenant_id="default")
     assert res.degraded is False

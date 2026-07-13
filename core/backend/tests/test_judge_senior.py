@@ -55,7 +55,7 @@ async def test_judge_diff_llm_mocked(monkeypatch):
 
     diff = (
         "--- a/x.py\n+++ b/x.py\n@@ -1 +1,3 @@\n"
-        '+def fib(n: int) -> int:\n'
+        "+def fib(n: int) -> int:\n"
         '+    """Fibonacci."""\n'
         "+    return n if n < 2 else fib(n-1)+fib(n-2)\n"
     )

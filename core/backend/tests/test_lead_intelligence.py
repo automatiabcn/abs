@@ -7,14 +7,17 @@ from __future__ import annotations
 
 import json
 
-import pytest
 
 from app.leads import service
 
 
 def test_create_and_list_priority() -> None:
-    cid = service.create_company(tenant_slug="tL", name="Demirel Yapı A.Ş.", sector="İnşaat")
-    lead = service.create_lead(tenant_slug="tL", company_id=cid, source="web", owner="a@x.io")
+    cid = service.create_company(
+        tenant_slug="tL", name="Demirel Yapı A.Ş.", sector="İnşaat"
+    )
+    lead = service.create_lead(
+        tenant_slug="tL", company_id=cid, source="web", owner="a@x.io"
+    )
     assert lead["company_name"] == "Demirel Yapı A.Ş."
     assert lead["status"] == "new"
     listed = service.list_leads(tenant_slug="tL")
@@ -29,22 +32,26 @@ async def test_score_lead_persists(monkeypatch) -> None:
         return []
 
     async def _fake(agent, prompt, **kw):
-        return json.dumps({
-            "summary": "yüksek skor",
-            "confidence": 0.6,
-            "payload": {"score": 0.87, "criteria": {"icp": 0.92, "intent": 0.9}},
-        }), "groq"
+        return json.dumps(
+            {
+                "summary": "yüksek skor",
+                "confidence": 0.6,
+                "payload": {"score": 0.87, "criteria": {"icp": 0.92, "intent": 0.9}},
+            }
+        ), "groq"
 
     monkeypatch.setattr("app.agents.runtime._gather_evidence", _no_rag)
     monkeypatch.setattr("app.agents.runtime._complete", _fake)
 
     cid = service.create_company(tenant_slug="tS", name="Kaya İnşaat", sector="İnşaat")
     lead = service.create_lead(tenant_slug="tS", company_id=cid, source="crm")
-    scored = await service.score_lead(tenant_slug="tS", lead_id=lead["id"], actor="a@x.io")
+    scored = await service.score_lead(
+        tenant_slug="tS", lead_id=lead["id"], actor="a@x.io"
+    )
 
     assert scored is not None
-    assert scored["score"] == 0.87           # payload.score wins over confidence
-    assert scored["intent"] == "high"        # >= 0.8
+    assert scored["score"] == 0.87  # payload.score wins over confidence
+    assert scored["intent"] == "high"  # >= 0.8
     assert scored["status"] == "scored"
     assert scored["score_breakdown"]["icp"] == 0.92
     # priority list now ordered by score

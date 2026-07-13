@@ -45,7 +45,9 @@ def _score_layers(content: str, ext: str) -> Dict[str, float]:
     layers["code_blocks"] = min(1.0, blocks / 20.0)
 
     # Mixed language: non-English letters together with English stop words.
-    common_en = sum(content.lower().count(w) for w in (" the ", " and ", " of ", " is "))
+    common_en = sum(
+        content.lower().count(w) for w in (" the ", " and ", " of ", " is ")
+    )
     layers["lang_mix"] = min(1.0, common_en / 50.0) if tr > 20 else 0.0
 
     long_lines = sum(1 for ln in content.splitlines() if len(ln) > 500)

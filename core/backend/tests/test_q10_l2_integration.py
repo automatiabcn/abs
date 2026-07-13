@@ -44,17 +44,13 @@ def admin_client(client):
 
 
 class TestCascadeChatRoundtrip:
-    def test_completions_persists_user_and_assistant_messages(
-        self, admin_client
-    ):
+    def test_completions_persists_user_and_assistant_messages(self, admin_client):
         # Fire a streaming completion, parse SSE, then verify the session
         # holds both rows.
         resp = admin_client.post(
             "/v1/chat/completions",
             json={
-                "messages": [
-                    {"role": "user", "content": "Q10 L2 integration ping"}
-                ],
+                "messages": [{"role": "user", "content": "Q10 L2 integration ping"}],
                 "stream": True,
             },
         )
@@ -248,9 +244,7 @@ class TestRagRoundtripAndIsolation:
         import hashlib
 
         return (
-            base64.urlsafe_b64encode(
-                hashlib.sha256(verifier.encode("ascii")).digest()
-            )
+            base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
             .rstrip(b"=")
             .decode("ascii")
         )
@@ -269,17 +263,13 @@ class TestRagRoundtripAndIsolation:
                     redirect_uris="https://app.local/callback",
                     allowed_scopes="openid profile",
                     is_confidential=False,
-                    created_at=datetime.now(timezone.utc).replace(
-                        tzinfo=None
-                    ),
+                    created_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 )
             )
             db.commit()
 
     @classmethod
-    def _issue_token(
-        cls, c, *, client_id, user_subject, tenant_id, roles
-    ) -> str:
+    def _issue_token(cls, c, *, client_id, user_subject, tenant_id, roles) -> str:
         verifier = "v" * 64
         auth = c.get(
             "/oauth/authorize",
@@ -297,9 +287,7 @@ class TestRagRoundtripAndIsolation:
             follow_redirects=False,
         )
         assert auth.status_code == 302, auth.text
-        code = auth.headers["location"].split("code=", 1)[1].split("&", 1)[
-            0
-        ]
+        code = auth.headers["location"].split("code=", 1)[1].split("&", 1)[0]
         tok = c.post(
             "/oauth/token",
             data={
@@ -313,9 +301,7 @@ class TestRagRoundtripAndIsolation:
         assert tok.status_code == 200, tok.text
         return tok.json()["access_token"]
 
-    def test_rag_ingest_then_query_returns_same_doc(
-        self, client, monkeypatch
-    ):
+    def test_rag_ingest_then_query_returns_same_doc(self, client, monkeypatch):
         import secrets
         from app.api.v1 import rag as rag_routes
 
@@ -359,9 +345,7 @@ class TestRagRoundtripAndIsolation:
         assert hits[0]["doc_id"] == original_doc_id
         assert "Q10 round 18 marker" in hits[0]["text"]
 
-    def test_rag_cross_tenant_query_returns_zero_hits(
-        self, client, monkeypatch
-    ):
+    def test_rag_cross_tenant_query_returns_zero_hits(self, client, monkeypatch):
         import secrets
         from app.api.v1 import rag as rag_routes
 
@@ -453,9 +437,7 @@ class TestMarketplaceLifecycleRoundtrip:
         assert install.json()["status"] == "installed"
 
         # 2) /installed reflects the row (response key is "installed")
-        listing = admin_client.get(
-            "/v1/marketplace/installed?tenant=default"
-        )
+        listing = admin_client.get("/v1/marketplace/installed?tenant=default")
         assert listing.status_code == 200
         ids = [row["plugin_id"] for row in listing.json()["installed"]]
         assert "slack-receiver" in ids
@@ -468,13 +450,9 @@ class TestMarketplaceLifecycleRoundtrip:
         assert rm.json()["status"] == "uninstalled"
 
         # 4) /installed no longer contains the plugin
-        post = admin_client.get(
-            "/v1/marketplace/installed?tenant=default"
-        )
+        post = admin_client.get("/v1/marketplace/installed?tenant=default")
         assert post.status_code == 200
-        ids_after = [
-            row["plugin_id"] for row in post.json()["installed"]
-        ]
+        ids_after = [row["plugin_id"] for row in post.json()["installed"]]
         assert "slack-receiver" not in ids_after
 
         # 5) re-uninstall is now a 404

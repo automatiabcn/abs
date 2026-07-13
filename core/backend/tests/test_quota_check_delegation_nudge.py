@@ -9,6 +9,7 @@ any connecting client (Claude Code, Codex) got passive MCP/CLAUDE.md guidance
 but no active hook nudge. Folding the nudge into quota-check makes delegation
 work out of the box for whoever connects, with no extra hook.
 """
+
 from __future__ import annotations
 
 import pytest

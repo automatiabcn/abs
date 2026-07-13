@@ -52,7 +52,9 @@ def test_a_locked_down_install_says_so(client, as_admin, monkeypatch):
     assert not any(tool["name"].startswith("fs_") for tool in body["tools"])
 
 
-def test_it_names_the_folders_that_were_actually_opened(client, as_admin, monkeypatch, tmp_path):
+def test_it_names_the_folders_that_were_actually_opened(
+    client, as_admin, monkeypatch, tmp_path
+):
     real = tmp_path / "docs"
     real.mkdir()
     # The second one is a typo. roots() drops it, so the panel must not show it:

@@ -18,9 +18,7 @@ def test_all_four_legal_docs_carry_draft_banner():
     for path in DOCS:
         assert path.exists(), f"missing doc: {path}"
         head = path.read_text(encoding="utf-8")[:600]
-        assert "DRAFT — LEGAL REVIEW REQUIRED" in head, (
-            f"banner missing in {path}"
-        )
+        assert "DRAFT — LEGAL REVIEW REQUIRED" in head, f"banner missing in {path}"
         assert "docs/legal/README.md" in head, (
             f"banner does not reference README in {path}"
         )

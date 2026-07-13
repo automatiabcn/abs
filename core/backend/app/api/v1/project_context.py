@@ -59,8 +59,9 @@ def resolve_active_project(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "project_not_found")
     # Admins act tenant-wide; everyone else must be a live member.
     if "admin" not in {r.lower() for r in (roles or [])}:
-        if pm.get_role(tenant_slug=tenant, project_slug=pid, user_subject=subject) is None:
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN, "not_a_project_member"
-            )
+        if (
+            pm.get_role(tenant_slug=tenant, project_slug=pid, user_subject=subject)
+            is None
+        ):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "not_a_project_member")
     return pid

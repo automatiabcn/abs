@@ -47,11 +47,7 @@ async def system_validate(force: bool = False) -> str:
     """023 — Run install validation; cached 5 min unless force=True."""
     await tracker.bump("system_validate")
     now = time.time()
-    if (
-        not force
-        and _CACHE["data"] is not None
-        and now - _CACHE["ts"] < _CACHE_TTL
-    ):
+    if not force and _CACHE["data"] is not None and now - _CACHE["ts"] < _CACHE_TTL:
         return json.dumps(_CACHE["data"], ensure_ascii=False, indent=2)
 
     try:

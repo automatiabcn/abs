@@ -5,11 +5,7 @@ from __future__ import annotations
 import configparser
 from pathlib import Path
 
-UNITS_DIR = (
-    Path(__file__).resolve().parents[3]
-    / "infra"
-    / "systemd"
-)
+UNITS_DIR = Path(__file__).resolve().parents[3] / "infra" / "systemd"
 
 
 def _parse(path: Path) -> configparser.RawConfigParser:

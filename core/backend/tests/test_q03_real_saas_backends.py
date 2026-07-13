@@ -140,9 +140,9 @@ def test_deepgram_transcribe_parses_diarized_words(tmp_path: Path) -> None:
 def test_elevenlabs_writes_mp3_bytes(tmp_path: Path) -> None:
     backend = _ElevenLabsBackend(api_key="el_test_abc", voice_id="voice_1")
     fake_audio = b"\x00\x01\x02fake-mp3"
-    route = respx.post(
-        "https://api.elevenlabs.io/v1/text-to-speech/voice_1"
-    ).mock(return_value=httpx.Response(200, content=fake_audio))
+    route = respx.post("https://api.elevenlabs.io/v1/text-to-speech/voice_1").mock(
+        return_value=httpx.Response(200, content=fake_audio)
+    )
     out = backend.synthesize("Merhaba dünya", target_dir=tmp_path)
     assert route.called
     sent = route.calls[0].request
@@ -178,9 +178,7 @@ def test_gmail_list_uses_oauth_refresh_and_lists_messages(monkeypatch) -> None:
         )
     )
     respx.get("https://gmail.googleapis.com/gmail/v1/users/me/messages").mock(
-        return_value=httpx.Response(
-            200, json={"messages": [{"id": "m1"}]}
-        )
+        return_value=httpx.Response(200, json={"messages": [{"id": "m1"}]})
     )
     respx.get("https://gmail.googleapis.com/gmail/v1/users/me/messages/m1").mock(
         return_value=httpx.Response(

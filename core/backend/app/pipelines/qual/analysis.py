@@ -23,8 +23,12 @@ _SYNTH_SYSTEM = (
 )
 
 
-async def execute(prompt: str, call_provider: _runner.CallProvider) -> _runner.QualResult:
-    result = _runner.QualResult(pipeline_id="qual_analysis", completion="", verified=False)
+async def execute(
+    prompt: str, call_provider: _runner.CallProvider
+) -> _runner.QualResult:
+    result = _runner.QualResult(
+        pipeline_id="qual_analysis", completion="", verified=False
+    )
 
     base = _PERSPECTIVE_TEMPLATE.format(prompt=prompt)
     a, b, c = await asyncio.gather(
@@ -32,10 +36,18 @@ async def execute(prompt: str, call_provider: _runner.CallProvider) -> _runner.Q
             "qual_analysis", "perspective-a", "groq", base, call_provider=call_provider
         ),
         _runner.run_stage(
-            "qual_analysis", "perspective-b", "cerebras", base, call_provider=call_provider
+            "qual_analysis",
+            "perspective-b",
+            "cerebras",
+            base,
+            call_provider=call_provider,
         ),
         _runner.run_stage(
-            "qual_analysis", "perspective-c", "gemini", base, call_provider=call_provider
+            "qual_analysis",
+            "perspective-c",
+            "gemini",
+            base,
+            call_provider=call_provider,
         ),
     )
     result.stages.extend([a[0], b[0], c[0]])

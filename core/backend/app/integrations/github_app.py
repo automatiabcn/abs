@@ -29,7 +29,9 @@ import jwt as pyjwt
 logger = logging.getLogger(__name__)
 
 
-def generate_app_jwt(*, app_id: str, private_key_pem: str, ttl_seconds: int = 540) -> str:
+def generate_app_jwt(
+    *, app_id: str, private_key_pem: str, ttl_seconds: int = 540
+) -> str:
     """Build an RS256 JWT identifying the GitHub App.
 
     Args:
@@ -129,9 +131,9 @@ def verify_webhook_signature_typed(
         return False, "signing_secret_empty"
     if not signature_header or not signature_header.startswith("sha256="):
         return False, "header_missing"
-    expected = "sha256=" + hmac.new(
-        secret.encode("utf-8"), body, hashlib.sha256
-    ).hexdigest()
+    expected = (
+        "sha256=" + hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+    )
     if hmac.compare_digest(expected, signature_header):
         return True, ""
     return False, "signature_mismatch"

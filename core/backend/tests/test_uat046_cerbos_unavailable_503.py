@@ -20,9 +20,7 @@ from app.main import app
 
 def _challenge(verifier: str) -> str:
     return (
-        base64.urlsafe_b64encode(
-            hashlib.sha256(verifier.encode("ascii")).digest()
-        )
+        base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
         .rstrip(b"=")
         .decode("ascii")
     )
@@ -100,10 +98,15 @@ def _a_real_project():
     with Session(get_engine()) as db:
         exists = db.exec(select(Project).where(Project.slug == "proj-t1-alice")).first()
         if exists is None:
-            db.add(Project(
-                slug="proj-t1-alice", tenant_slug="tenant-1", name="Alice Project",
-                owner_subject="alice", created_at=datetime.now(timezone.utc),
-            ))
+            db.add(
+                Project(
+                    slug="proj-t1-alice",
+                    tenant_slug="tenant-1",
+                    name="Alice Project",
+                    owner_subject="alice",
+                    created_at=datetime.now(timezone.utc),
+                )
+            )
             db.commit()
 
 

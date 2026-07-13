@@ -66,7 +66,9 @@ def test_test_endpoint_provider_error_surfaces_ok_false(client, monkeypatch):
     async def _fake_call_with_cascade(*args, **kwargs):
         from app.providers.schemas import ProviderError
 
-        raise ProviderError("simulated_provider_failure", provider="groq", transient=True)
+        raise ProviderError(
+            "simulated_provider_failure", provider="groq", transient=True
+        )
 
     monkeypatch.setattr(
         "app.cascade.orchestrator.call_with_cascade", _fake_call_with_cascade

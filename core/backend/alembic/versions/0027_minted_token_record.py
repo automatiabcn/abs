@@ -31,17 +31,30 @@ def upgrade() -> None:
         "minted_token_record",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("token_digest", sa.String(64), nullable=False),
-        sa.Column("tenant_slug", sa.String(64), nullable=False, server_default="default"),
+        sa.Column(
+            "tenant_slug", sa.String(64), nullable=False, server_default="default"
+        ),
         sa.Column("label", sa.String(64), nullable=False, server_default=""),
         sa.Column("scope", sa.String(64), nullable=False, server_default="all"),
         sa.Column("issued_by", sa.String(254), nullable=False, server_default=""),
         sa.Column("issued_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
     )
-    op.create_index("ix_minted_token_record_token_digest", "minted_token_record", ["token_digest"], unique=True)
-    op.create_index("ix_minted_token_record_tenant_slug", "minted_token_record", ["tenant_slug"])
-    op.create_index("ix_minted_token_record_issued_at", "minted_token_record", ["issued_at"])
-    op.create_index("ix_minted_token_record_expires_at", "minted_token_record", ["expires_at"])
+    op.create_index(
+        "ix_minted_token_record_token_digest",
+        "minted_token_record",
+        ["token_digest"],
+        unique=True,
+    )
+    op.create_index(
+        "ix_minted_token_record_tenant_slug", "minted_token_record", ["tenant_slug"]
+    )
+    op.create_index(
+        "ix_minted_token_record_issued_at", "minted_token_record", ["issued_at"]
+    )
+    op.create_index(
+        "ix_minted_token_record_expires_at", "minted_token_record", ["expires_at"]
+    )
 
 
 def downgrade() -> None:

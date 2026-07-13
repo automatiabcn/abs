@@ -11,7 +11,6 @@ side filters on.
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import logging
 import os
@@ -82,7 +81,9 @@ def _walk_files(root: Path, extensions: Iterable[str]) -> Iterable[Path]:
     exts = {e.lower() for e in extensions}
     for dirpath, dirnames, filenames in os.walk(root):
         # in-place skip
-        dirnames[:] = [d for d in dirnames if d not in _SKIP_DIRS and not d.startswith(".")]
+        dirnames[:] = [
+            d for d in dirnames if d not in _SKIP_DIRS and not d.startswith(".")
+        ]
         for fn in filenames:
             p = Path(dirpath) / fn
             if p.suffix.lower() in exts:
@@ -106,11 +107,22 @@ async def _embed_one(text: str) -> Optional[List[float]]:
 # is unaffected.
 _RAG_BLOCKED_DIRS = ("/etc", "/proc", "/sys", "/root", "/app/vault-key")
 _RAG_BLOCKED_SUFFIXES = (
-    ".key", ".pem", ".age", ".env", ".db", ".sqlite", ".sqlite3",
+    ".key",
+    ".pem",
+    ".age",
+    ".env",
+    ".db",
+    ".sqlite",
+    ".sqlite3",
 )
 _RAG_BLOCKED_NAMES = (
-    "secrets.yaml", "age.key", "private.pem", "public.pem",
-    ".env", "admin_credentials.json", "demo_license.jwt",
+    "secrets.yaml",
+    "age.key",
+    "private.pem",
+    "public.pem",
+    ".env",
+    "admin_credentials.json",
+    "demo_license.jwt",
 )
 
 
@@ -198,7 +210,9 @@ async def index_path(
                 existing = coll.get(ids=[doc_id])
                 if existing and existing.get("ids"):
                     skipped += 1
-                    skipped_reasons["unchanged"] = skipped_reasons.get("unchanged", 0) + 1
+                    skipped_reasons["unchanged"] = (
+                        skipped_reasons.get("unchanged", 0) + 1
+                    )
                     continue
             except Exception:
                 pass

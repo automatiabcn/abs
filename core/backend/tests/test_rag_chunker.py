@@ -19,7 +19,9 @@ def _collect(it):
 def test_python_chunks_split_at_function_boundary():
     src = '''"""Module preamble."""\nimport os\n\n\ndef alpha():\n    return 1\n\n\ndef beta():\n    return 2\n\n\nclass Gamma:\n    def m(self):\n        return 3\n'''
     chunks = _collect(chunk_python(src))
-    assert len(chunks) == 4, f"beklenen 4 (preamble + alpha + beta + Gamma), gelen {len(chunks)}"
+    assert len(chunks) == 4, (
+        f"beklenen 4 (preamble + alpha + beta + Gamma), gelen {len(chunks)}"
+    )
     bodies = [c for _, c in chunks]
     assert any("import os" in b for b in bodies)
     assert any("def alpha" in b for b in bodies)

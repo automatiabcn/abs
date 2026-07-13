@@ -121,7 +121,9 @@ async def retrieve_citations(
                 source=source,
                 relevance_score=score,
                 excerpt=str(payload.get("text") or "")[:200],
-                page=int(page) if isinstance(page, (int, str)) and str(page).isdigit() else None,
+                page=int(page)
+                if isinstance(page, (int, str)) and str(page).isdigit()
+                else None,
             )
         )
     return citations

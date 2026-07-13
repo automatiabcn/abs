@@ -83,9 +83,7 @@ def read_project(
         owner_id=record["owner_id"],
     )
     try:
-        allowed = is_allowed_or_raise(
-            principal, resource, "read", client=cerbos
-        )
+        allowed = is_allowed_or_raise(principal, resource, "read", client=cerbos)
     except CerbosUnavailable as exc:
         # Sprint 2I UAT-046 — PDP transport blip surfaces as 503 so the
         # client retries; falling back to 403 would tell a legitimate

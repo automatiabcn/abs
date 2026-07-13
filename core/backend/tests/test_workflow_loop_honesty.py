@@ -29,7 +29,11 @@ def _loop_wf():
     return {
         "nodes": [
             {"id": "t", "kind": "trigger", "config": {"input": "suppliers"}},
-            {"id": "lp", "kind": "loop", "config": {"script": "for s in suppliers: notify"}},
+            {
+                "id": "lp",
+                "kind": "loop",
+                "config": {"script": "for s in suppliers: notify"},
+            },
             {"id": "out", "kind": "output", "config": {"output_template": "done"}},
         ],
         "edges": [

@@ -73,7 +73,9 @@ async def _probe_gemini(req: dict) -> dict:
         f"{model}:generateContent?key={api_key}"
     )
     async with httpx.AsyncClient(timeout=60) as client:
-        r = await client.post(url, headers={"Content-Type": "application/json"}, json=req)
+        r = await client.post(
+            url, headers={"Content-Type": "application/json"}, json=req
+        )
         r.raise_for_status()
         return r.json()
 
@@ -101,14 +103,22 @@ async def main() -> int:
         live = await _PROBES[args.provider](req)
     except Exception as exc:
         # A probe failure is not a contract drift — log but don't fail the job.
-        args.out.write_text(json.dumps({"skipped": True, "provider": args.provider, "error": str(exc)[:240]}))
+        args.out.write_text(
+            json.dumps(
+                {"skipped": True, "provider": args.provider, "error": str(exc)[:240]}
+            )
+        )
         return 0
 
     golden = load_fixture(args.provider, "response")
     payload = {
         "provider": args.provider,
-        "live_fingerprint_keys": fingerprint({k: type(v).__name__ for k, v in live.items()}),
-        "golden_fingerprint_keys": fingerprint({k: type(v).__name__ for k, v in golden.items()}),
+        "live_fingerprint_keys": fingerprint(
+            {k: type(v).__name__ for k, v in live.items()}
+        ),
+        "golden_fingerprint_keys": fingerprint(
+            {k: type(v).__name__ for k, v in golden.items()}
+        ),
         "live_text_preview": canonical_text(args.provider, live)[:160],
     }
     args.out.write_text(json.dumps(payload, indent=2))

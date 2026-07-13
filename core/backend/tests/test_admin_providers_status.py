@@ -32,6 +32,7 @@ def _login(client, monkeypatch) -> str:
 @pytest.fixture(autouse=True)
 def _reset_admin_state():
     from app.api.admin import auth as a
+
     a._reset_state_for_tests()
     yield
     a._reset_state_for_tests()

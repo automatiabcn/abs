@@ -34,9 +34,7 @@ from sqlalchemy import create_engine, inspect
 def _alembic_cfg_for(db_url: str, repo_root: Path) -> Config:
     cfg = Config(str(repo_root / "alembic.ini"))
     cfg.set_main_option("sqlalchemy.url", db_url)
-    cfg.set_main_option(
-        "script_location", str(repo_root / "alembic")
-    )
+    cfg.set_main_option("script_location", str(repo_root / "alembic"))
     return cfg
 
 

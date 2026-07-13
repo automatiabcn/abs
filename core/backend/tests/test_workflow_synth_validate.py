@@ -48,7 +48,7 @@ def test_extract_json_passes_through_clean_object():
 
 
 def test_extract_json_strips_prose_and_returns_object():
-    text = "Sure! Here is the JSON:\n{\"a\": 1, \"b\": [2, 3]}\nDone."
+    text = 'Sure! Here is the JSON:\n{"a": 1, "b": [2, 3]}\nDone.'
     assert json.loads(extract_json(text)) == {"a": 1, "b": [2, 3]}
 
 
@@ -107,7 +107,9 @@ def test_schema_check_invalid_payload_returns_errors():
 # ---- validator: semantic_check --------------------------------------------
 
 
-def _wf_with(nodes: list[Node], edges: list[Edge], *, tenant_scoped: bool = True) -> Workflow:
+def _wf_with(
+    nodes: list[Node], edges: list[Edge], *, tenant_scoped: bool = True
+) -> Workflow:
     return Workflow(
         id="wf-x",
         name="X",
@@ -138,7 +140,12 @@ def test_semantic_check_destructive_without_hitl_errors():
 def test_semantic_check_destructive_with_hitl_passes():
     nodes = [
         Node(id="step-a", kind=NodeKind.LLM_CALL, name="Compose"),
-        Node(id="step-b", kind=NodeKind.HITL, name="Approve", config=NodeConfig(approval_role="tenant_owner")),
+        Node(
+            id="step-b",
+            kind=NodeKind.HITL,
+            name="Approve",
+            config=NodeConfig(approval_role="tenant_owner"),
+        ),
         Node(
             id="step-c",
             kind=NodeKind.ABS_TOOL,
@@ -146,7 +153,10 @@ def test_semantic_check_destructive_with_hitl_passes():
             config=NodeConfig(tool_name="abs.gmail_send"),
         ),
     ]
-    edges = [Edge(source="step-a", target="step-b"), Edge(source="step-b", target="step-c")]
+    edges = [
+        Edge(source="step-a", target="step-b"),
+        Edge(source="step-b", target="step-c"),
+    ]
     wf = _wf_with(nodes, edges)
     errors, _ = semantic_check(wf)
     assert not any("HITL approval" in e for e in errors)
@@ -213,7 +223,14 @@ def test_validate_workflow_rejects_destructive_without_hitl():
         "trigger": {"kind": "manual", "id": "trg-x", "description": ""},
         "tenant_scoped": True,
         "nodes": [
-            {"id": "step-a", "kind": "abs_tool", "name": "send", "config": {"tool_name": "abs.gmail_send"}, "retry_max": 0, "timeout_s": 60}
+            {
+                "id": "step-a",
+                "kind": "abs_tool",
+                "name": "send",
+                "config": {"tool_name": "abs.gmail_send"},
+                "retry_max": 0,
+                "timeout_s": 60,
+            }
         ],
         "edges": [],
         "variables": [],

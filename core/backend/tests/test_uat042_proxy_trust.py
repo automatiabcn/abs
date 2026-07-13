@@ -44,7 +44,5 @@ def test_multi_ip_xforwardedfor_takes_first(monkeypatch):
     from app.middleware import rate_limit as rl
 
     monkeypatch.setattr(settings, "trusted_proxies", "127.0.0.1")
-    req = _FakeRequest(
-        "127.0.0.1", "198.51.100.7,  10.0.0.1,  203.0.113.1"
-    )
+    req = _FakeRequest("127.0.0.1", "198.51.100.7,  10.0.0.1,  203.0.113.1")
     assert rl.client_ip_for_rate_limit(req) == "198.51.100.7"

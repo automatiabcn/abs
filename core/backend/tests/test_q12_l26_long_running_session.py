@@ -145,9 +145,7 @@ class TestQ12L26TamperedSessionAuditReason:
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
         with caplog.at_level(logging.INFO, logger=LOGGER_NAME):
-            r = client.get(
-                "/auth/me", cookies={"abs_session": "definitely.not.a.jwt"}
-            )
+            r = client.get("/auth/me", cookies={"abs_session": "definitely.not.a.jwt"})
         assert r.status_code == 401
         decoded = [
             getattr(rec, "audit", {})
@@ -177,16 +175,17 @@ class TestQ12L26AuditEmissionHygiene:
         assert r.status_code == 401
 
         decode_events = [
-            rec for rec in caplog.records
+            rec
+            for rec in caplog.records
             if rec.name == LOGGER_NAME
             and getattr(rec, "audit", {}).get("action") == "auth.session.decode"
         ]
         check_events = [
-            rec for rec in caplog.records
+            rec
+            for rec in caplog.records
             if rec.name == LOGGER_NAME
-            and getattr(rec, "audit", {}).get("action") in (
-                "auth.me.check", "auth.session.check"
-            )
+            and getattr(rec, "audit", {}).get("action")
+            in ("auth.me.check", "auth.session.check")
         ]
         assert not decode_events, (
             "Q12-L26: missing cookie must NOT trigger auth.session.decode"
@@ -236,9 +235,7 @@ class TestQ12L26OAuthRefreshSingleUse:
 
             verifier = "v" * 64
             challenge = (
-                base64.urlsafe_b64encode(
-                    hashlib.sha256(verifier.encode()).digest()
-                )
+                base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest())
                 .rstrip(b"=")
                 .decode("ascii")
             )

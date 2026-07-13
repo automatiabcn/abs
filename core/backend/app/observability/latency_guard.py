@@ -46,9 +46,7 @@ class LatencyGuard:
     def record(self, *, route: str, latency_ms: float) -> LatencyAlert | None:
         if not route:
             raise ValueError("route required")
-        bucket = self._buckets.setdefault(
-            route, collections.deque(maxlen=self.window)
-        )
+        bucket = self._buckets.setdefault(route, collections.deque(maxlen=self.window))
         bucket.append(float(latency_ms))
         if len(bucket) < max(20, self.window // 4):
             return None

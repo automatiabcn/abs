@@ -19,6 +19,7 @@ from app.middleware.body_size_limit import BodySizeLimitMiddleware, DEFAULT_CAPS
 
 # ---------- body-size caps ----------
 
+
 def test_ingest_file_cap_is_40mb_and_beats_ingest_prefix() -> None:
     mw = BodySizeLimitMiddleware(None, caps=DEFAULT_CAPS)
     # longest-prefix: /v1/rag/ingest-file must resolve to its own 40 MB cap,
@@ -34,12 +35,15 @@ def test_ingest_file_cap_under_hardcap() -> None:
 
 # ---------- parser: unsupported mime is graceful ----------
 
+
 def test_parse_document_unknown_binary_mime_falls_back_to_text() -> None:
     from app.rag import pipeline_v10 as pipe
 
     # An unknown mime is treated as text (not routed to PDF/DOCX parser),
     # so arbitrary uploads never 500 the ingest path.
-    doc = pipe.parse_document(b"plain bytes", mime_type="application/x-zip", filename="z.bin")
+    doc = pipe.parse_document(
+        b"plain bytes", mime_type="application/x-zip", filename="z.bin"
+    )
     assert doc.text == "plain bytes"
 
 
@@ -55,6 +59,7 @@ def test_extract_binary_text_rejects_unknown_mime_cleanly() -> None:
 
 
 # ---------- cloudflare runtime name ----------
+
 
 def test_cloudflare_runtime_name_matches_registry() -> None:
     from app.api.admin import providers_save, providers_status

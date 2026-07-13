@@ -129,8 +129,7 @@ def test_rls_blocks_cross_tenant_select() -> None:
         conn.execute(text("SET abs.tenant_id = 'tenant_b'"))
         rows = conn.execute(
             text(
-                "SELECT license_jti FROM customer_audit_entries "
-                "WHERE license_jti = :j"
+                "SELECT license_jti FROM customer_audit_entries WHERE license_jti = :j"
             ),
             {"j": jti},
         ).fetchall()
@@ -149,8 +148,7 @@ def test_rls_allows_same_tenant_select() -> None:
         conn.execute(text("SET abs.tenant_id = 'tenant_a'"))
         rows = conn.execute(
             text(
-                "SELECT license_jti FROM customer_audit_entries "
-                "WHERE license_jti = :j"
+                "SELECT license_jti FROM customer_audit_entries WHERE license_jti = :j"
             ),
             {"j": jti},
         ).fetchall()
@@ -242,9 +240,7 @@ def test_rls_downgrade_restores_global_visibility() -> None:
         # sets once after the first upgrade. Goes through _admin_engine
         # because abs_app_rls cannot ALTER ROLE / GRANT.
         with _admin_engine().connect() as conn:
-            conn.execute(
-                text("ALTER ROLE abs_admin WITH LOGIN PASSWORD 'abs_admin'")
-            )
+            conn.execute(text("ALTER ROLE abs_admin WITH LOGIN PASSWORD 'abs_admin'"))
             conn.execute(text("GRANT CONNECT ON DATABASE abs_rls_test TO abs_admin"))
             conn.execute(text("GRANT USAGE ON SCHEMA public TO abs_admin"))
             conn.execute(

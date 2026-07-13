@@ -7,7 +7,6 @@ import asyncio
 
 import httpx
 import pytest
-from fastapi import HTTPException
 
 from app.cascade import orchestrator as orch_mod
 from app.providers.base import BaseProvider

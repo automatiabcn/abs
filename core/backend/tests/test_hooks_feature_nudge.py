@@ -14,16 +14,12 @@ def _tmp_cache(monkeypatch, tmp_path):
 
 
 def test_code_write_triggers_qual_code_nudge():
-    msg = feature_nudge.maybe_feature_nudge_bash(
-        'ask "python function yaz" gptoss'
-    )
+    msg = feature_nudge.maybe_feature_nudge_bash('ask "python function yaz" gptoss')
     assert "qual-code" in msg
 
 
 def test_compare_triggers_race_nudge():
-    msg = feature_nudge.maybe_feature_nudge_bash(
-        'ask "compare React vs Vue" kimi'
-    )
+    msg = feature_nudge.maybe_feature_nudge_bash('ask "compare React vs Vue" kimi')
     assert "race" in msg
 
 
@@ -35,9 +31,7 @@ def test_rag_keyword_triggers_rag_nudge():
 
 
 def test_docs_keyword_triggers_docs_nudge():
-    msg = feature_nudge.maybe_feature_nudge_bash(
-        'ask "readme yaz proje icin" qwen32b'
-    )
+    msg = feature_nudge.maybe_feature_nudge_bash('ask "readme yaz proje icin" qwen32b')
     assert "docs" in msg or "Dokümantasyon" in msg or "fs-doc" in msg
 
 

@@ -33,15 +33,19 @@ class Connector:
     id: str
     name: str
     group: str
-    kind: str                 # read | read/write | action
+    kind: str  # read | read/write | action
     note: str = ""
-    official: bool = True      # official API / approved channel (no scraping)
+    official: bool = True  # official API / approved channel (no scraping)
     local_priority: bool = False  # regional integration a global vendor rarely ships
 
     def to_dict(self) -> dict:
         return {
-            "id": self.id, "name": self.name, "group": self.group,
-            "kind": self.kind, "note": self.note, "official": self.official,
+            "id": self.id,
+            "name": self.name,
+            "group": self.group,
+            "kind": self.kind,
+            "note": self.note,
+            "official": self.official,
             "local_priority": self.local_priority,
         }
 
@@ -53,9 +57,30 @@ def _c(**kw) -> Connector:
 _LIST: List[Connector] = [
     # Regional ERP / bookkeeping vendors. The first name is the vendor's own
     # brand, escaped so the source stays ASCII — it is a proper noun, not copy.
-    _c(id="parasut", name="Para\u015f\u00fct", group=GRP_ERP, kind="read", note="invoice + payment", local_priority=True),
-    _c(id="logo", name="Logo", group=GRP_ERP, kind="read", note="revenue sync", local_priority=True),
-    _c(id="mikro", name="Mikro", group=GRP_ERP, kind="read", note="customer + order", local_priority=True),
+    _c(
+        id="parasut",
+        name="Para\u015f\u00fct",
+        group=GRP_ERP,
+        kind="read",
+        note="invoice + payment",
+        local_priority=True,
+    ),
+    _c(
+        id="logo",
+        name="Logo",
+        group=GRP_ERP,
+        kind="read",
+        note="revenue sync",
+        local_priority=True,
+    ),
+    _c(
+        id="mikro",
+        name="Mikro",
+        group=GRP_ERP,
+        kind="read",
+        note="customer + order",
+        local_priority=True,
+    ),
     _c(id="erpnext", name="ERPNext", group=GRP_ERP, kind="read/write"),
     _c(id="quickbooks", name="QuickBooks", group=GRP_ERP, kind="read", note="invoice"),
     _c(id="xero", name="Xero", group=GRP_ERP, kind="read", note="revenue"),
@@ -65,26 +90,88 @@ _LIST: List[Connector] = [
     _c(id="zoho", name="Zoho CRM", group=GRP_CRM, kind="read", note="pipeline"),
     _c(id="pipedrive", name="Pipedrive", group=GRP_CRM, kind="read", note="deal"),
     _c(id="frappe_crm", name="Frappe CRM", group=GRP_CRM, kind="read/write"),
-    _c(id="internal_crm", name="Internal CRM", group=GRP_CRM, kind="read/write", note="lightweight schema"),
+    _c(
+        id="internal_crm",
+        name="Internal CRM",
+        group=GRP_CRM,
+        kind="read/write",
+        note="lightweight schema",
+    ),
     # Communication & ads — approved channels only, never a scraped one.
     _c(id="gmail", name="Gmail", group=GRP_COMMS, kind="read", note="read inbound"),
     _c(id="microsoft365", name="Microsoft 365", group=GRP_COMMS, kind="read"),
-    _c(id="whatsapp_bsp", name="WhatsApp BSP", group=GRP_COMMS, kind="action", note="approved API"),
+    _c(
+        id="whatsapp_bsp",
+        name="WhatsApp BSP",
+        group=GRP_COMMS,
+        kind="action",
+        note="approved API",
+    ),
     _c(id="twilio", name="Twilio", group=GRP_COMMS, kind="action", note="SMS / voice"),
-    _c(id="google_ads", name="Google Ads", group=GRP_COMMS, kind="read", note="attribution"),
-    _c(id="meta_ads", name="Meta Ads", group=GRP_COMMS, kind="read", note="attribution"),
-    _c(id="linkedin_ads", name="LinkedIn Ads", group=GRP_COMMS, kind="action", note="audience"),
-    _c(id="slack_teams", name="Slack / Teams", group=GRP_COMMS, kind="read", note="read export"),
+    _c(
+        id="google_ads",
+        name="Google Ads",
+        group=GRP_COMMS,
+        kind="read",
+        note="attribution",
+    ),
+    _c(
+        id="meta_ads", name="Meta Ads", group=GRP_COMMS, kind="read", note="attribution"
+    ),
+    _c(
+        id="linkedin_ads",
+        name="LinkedIn Ads",
+        group=GRP_COMMS,
+        kind="action",
+        note="audience",
+    ),
+    _c(
+        id="slack_teams",
+        name="Slack / Teams",
+        group=GRP_COMMS,
+        kind="read",
+        note="read export",
+    ),
     # Data / Intelligence / Automation
-    _c(id="firecrawl", name="Firecrawl", group=GRP_DATA, kind="read", note="web crawl (ToS-safe)"),
-    _c(id="apify", name="Apify", group=GRP_DATA, kind="read", note="official-API scrape"),
+    _c(
+        id="firecrawl",
+        name="Firecrawl",
+        group=GRP_DATA,
+        kind="read",
+        note="web crawl (ToS-safe)",
+    ),
+    _c(
+        id="apify",
+        name="Apify",
+        group=GRP_DATA,
+        kind="read",
+        note="official-API scrape",
+    ),
     _c(id="clay", name="Clay", group=GRP_DATA, kind="read", note="enrichment"),
     _c(id="apollo", name="Apollo", group=GRP_DATA, kind="read", note="lead data"),
     _c(id="zoominfo", name="ZoomInfo", group=GRP_DATA, kind="read", note="enrichment"),
-    _c(id="n8n", name="n8n", group=GRP_DATA, kind="action", note="middleware automation"),
-    _c(id="custom_mcp", name="Custom MCP", group=GRP_DATA, kind="action", note="business-specific tool"),
+    _c(
+        id="n8n",
+        name="n8n",
+        group=GRP_DATA,
+        kind="action",
+        note="middleware automation",
+    ),
+    _c(
+        id="custom_mcp",
+        name="Custom MCP",
+        group=GRP_DATA,
+        kind="action",
+        note="business-specific tool",
+    ),
     # The only connector with a working adapter — no external auth needed.
-    _c(id="csv_import", name="CSV / JSON Import", group=GRP_DATA, kind="read", note="import companies + leads"),
+    _c(
+        id="csv_import",
+        name="CSV / JSON Import",
+        group=GRP_DATA,
+        kind="read",
+        note="import companies + leads",
+    ),
 ]
 
 CONNECTORS: Dict[str, Connector] = {c.id: c for c in _LIST}

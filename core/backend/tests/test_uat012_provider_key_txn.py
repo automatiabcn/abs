@@ -50,9 +50,7 @@ def test_env_write_failure_returns_500_and_rolls_back(client, monkeypatch):
 
     _patch_live_ok(monkeypatch)
     # Vault write succeeds…
-    monkeypatch.setattr(
-        setup_mod, "_persist_encrypted_secret", lambda *_a, **_kw: True
-    )
+    monkeypatch.setattr(setup_mod, "_persist_encrypted_secret", lambda *_a, **_kw: True)
 
     # …but .env write raises IOError.
     def _boom(*_a, **_kw):
@@ -86,12 +84,8 @@ def test_both_writes_succeed_returns_200(client, monkeypatch):
     from app.api.admin import providers_save
 
     _patch_live_ok(monkeypatch)
-    monkeypatch.setattr(
-        setup_mod, "_persist_encrypted_secret", lambda *_a, **_kw: True
-    )
-    monkeypatch.setattr(
-        setup_mod, "_persist_env_var", lambda *_a, **_kw: True
-    )
+    monkeypatch.setattr(setup_mod, "_persist_encrypted_secret", lambda *_a, **_kw: True)
+    monkeypatch.setattr(setup_mod, "_persist_env_var", lambda *_a, **_kw: True)
 
     async def _noop_invalidate(_pid):
         return None

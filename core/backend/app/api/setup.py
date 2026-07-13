@@ -38,6 +38,8 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, model_validato
 from app.config import settings
 from app.licensing import verify_license
 from app.observability.audit import emit_event
+
+
 def _persist_customer_audit(
     license_jti: str | None,
     action: str,
@@ -72,6 +74,7 @@ def _persist_customer_audit(
             db.commit()
     except Exception as exc:  # pragma: no cover — defensive only
         logger.info("customer_audit_persist_skipped action=%s err=%s", action, exc)
+
 
 router = APIRouter(prefix="/v1/setup", tags=["setup"])
 logger = logging.getLogger(__name__)
@@ -198,9 +201,7 @@ def _persist_encrypted_secret(vault_key: str, value: str) -> bool:
                 log_event("write", vault_key, source="setup_wizard")
                 return True
             except VaultError as exc:
-                logger.warning(
-                    "vault write fail, falling back to .env: %s", exc
-                )
+                logger.warning("vault write fail, falling back to .env: %s", exc)
     except Exception as exc:
         logger.info("vault unavailable, .env fallback: %s", exc)
     return _persist_env_var(f"ABS_{vault_key.upper()}", value)
@@ -390,18 +391,30 @@ class ProvidersBody(BaseModel):
 # and the rest fall back to a charset+length sanity check so a real key is
 # never falsely rejected. The step-6 live ping remains the source of truth.
 _PROVIDER_KEY_RULES: Dict[str, "tuple[re.Pattern[str], str]"] = {
-    "groq_api_key": (re.compile(r"^gsk_[A-Za-z0-9]{6,}$"),
-                     "Groq keys start with 'gsk_'"),
-    "gemini_api_key": (re.compile(r"^AIza[0-9A-Za-z_\-]{10,}$"),
-                       "Google/Gemini keys start with 'AIza'"),
-    "cerebras_api_key": (re.compile(r"^(csk-)?[A-Za-z0-9_\-]{16,}$"),
-                         "This does not look like a Cerebras key"),
-    "cohere_api_key": (re.compile(r"^[A-Za-z0-9_\-]{16,}$"),
-                       "Cohere keys are 16+ URL-safe characters"),
-    "cf_account_id": (re.compile(r"^[0-9a-fA-F]{32}$"),
-                      "A Cloudflare account ID is 32 hex characters"),
-    "cf_api_token": (re.compile(r"^[A-Za-z0-9_\-]{20,}$"),
-                     "This does not look like a Cloudflare API token"),
+    "groq_api_key": (
+        re.compile(r"^gsk_[A-Za-z0-9]{6,}$"),
+        "Groq keys start with 'gsk_'",
+    ),
+    "gemini_api_key": (
+        re.compile(r"^AIza[0-9A-Za-z_\-]{10,}$"),
+        "Google/Gemini keys start with 'AIza'",
+    ),
+    "cerebras_api_key": (
+        re.compile(r"^(csk-)?[A-Za-z0-9_\-]{16,}$"),
+        "This does not look like a Cerebras key",
+    ),
+    "cohere_api_key": (
+        re.compile(r"^[A-Za-z0-9_\-]{16,}$"),
+        "Cohere keys are 16+ URL-safe characters",
+    ),
+    "cf_account_id": (
+        re.compile(r"^[0-9a-fA-F]{32}$"),
+        "A Cloudflare account ID is 32 hex characters",
+    ),
+    "cf_api_token": (
+        re.compile(r"^[A-Za-z0-9_\-]{20,}$"),
+        "This does not look like a Cloudflare API token",
+    ),
 }
 
 
@@ -483,12 +496,16 @@ async def step_admin(body: AdminBody, request: Request) -> Dict[str, Any]:
         state = read_state()
         _assert_no_existing_admin(request)
         _ensure_step(state, 1, request, "admin")
-        pwd_hash = bcrypt.hashpw(body.password.encode("utf-8"), bcrypt.gensalt()).decode(
-            "utf-8"
-        )
+        pwd_hash = bcrypt.hashpw(
+            body.password.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
         admin_credentials_path().write_text(
             json.dumps(
-                {"email": body.email, "password_hash": pwd_hash, "created_at": time.time()},
+                {
+                    "email": body.email,
+                    "password_hash": pwd_hash,
+                    "created_at": time.time(),
+                },
                 ensure_ascii=False,
             ),
             encoding="utf-8",
@@ -548,7 +565,11 @@ async def step_license(body: LicenseBody, request: Request) -> Dict[str, Any]:
         action="setup.license.activated",
         detail=f"tier={payload.get('tier')} seats={payload.get('seat_count')}",
     )
-    return {"ok": True, "current_step": state["current_step"], "tier": payload.get("tier")}
+    return {
+        "ok": True,
+        "current_step": state["current_step"],
+        "tier": payload.get("tier"),
+    }
 
 
 @router.post("/step/domain", status_code=status.HTTP_200_OK)
@@ -625,7 +646,8 @@ async def step_anthropic(body: AnthropicBody, request: Request) -> Dict[str, Any
         provider="skipped" if body.skip_paid_providers else "configured",
     )
     _persist_customer_audit(
-        license_jti=str(state.get("data", {}).get("license", {}).get("jti") or "") or None,
+        license_jti=str(state.get("data", {}).get("license", {}).get("jti") or "")
+        or None,
         action="setup.provider.anthropic",
         detail="skipped" if body.skip_paid_providers else "configured",
     )
@@ -696,7 +718,8 @@ async def step_providers(body: ProvidersBody, request: Request) -> Dict[str, Any
         count=len(configured),
     )
     _persist_customer_audit(
-        license_jti=str(state.get("data", {}).get("license", {}).get("jti") or "") or None,
+        license_jti=str(state.get("data", {}).get("license", {}).get("jti") or "")
+        or None,
         action="setup.providers.configured",
         detail=",".join(configured) if configured else "none",
     )
@@ -736,21 +759,36 @@ async def _run_provider_tests() -> Dict[str, Any]:
             results[field_name] = {"status": "skipped", "reason": "not a pingable key"}
             continue
         if not live:
-            results[field_name] = {"status": "skipped", "reason": "live ping disabled in test mode"}
+            results[field_name] = {
+                "status": "skipped",
+                "reason": "live ping disabled in test mode",
+            }
             continue
         try:
             from app.cascade.orchestrator import call_with_cascade
+
             resp = await asyncio.wait_for(
-                call_with_cascade("ping", primary=provider, fallbacks=(), use_cache=False),
+                call_with_cascade(
+                    "ping", primary=provider, fallbacks=(), use_cache=False
+                ),
                 timeout=8.0,
             )
             ok = bool(getattr(resp, "text", ""))
             results[field_name] = (
-                {"status": "ok", "provider": provider} if ok
-                else {"status": "fail", "provider": provider, "reason": "empty response"}
+                {"status": "ok", "provider": provider}
+                if ok
+                else {
+                    "status": "fail",
+                    "provider": provider,
+                    "reason": "empty response",
+                }
             )
         except Exception as exc:  # noqa: BLE001 — a failed ping must not block setup
-            results[field_name] = {"status": "fail", "provider": provider, "reason": str(exc)[:160]}
+            results[field_name] = {
+                "status": "fail",
+                "provider": provider,
+                "reason": str(exc)[:160],
+            }
     return results
 
 

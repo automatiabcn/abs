@@ -61,7 +61,11 @@ def test_judge_can_be_overridden() -> None:
         return type(
             "V",
             (),
-            {"score": 0.7 if c.model == "groq" else 0.1, "rationale": "stub", "chosen_model": c.model},
+            {
+                "score": 0.7 if c.model == "groq" else 0.1,
+                "rationale": "stub",
+                "chosen_model": c.model,
+            },
         )()
 
     res = run_ensemble(

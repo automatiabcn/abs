@@ -56,9 +56,7 @@ def breach_count_24h() -> int:
 
 def _trusted_proxy_set() -> frozenset[str]:
     raw = getattr(settings, "trusted_proxies", "") or ""
-    return frozenset(
-        ip.strip() for ip in raw.split(",") if ip.strip()
-    )
+    return frozenset(ip.strip() for ip in raw.split(",") if ip.strip())
 
 
 def client_ip_for_rate_limit(request: Request) -> str:

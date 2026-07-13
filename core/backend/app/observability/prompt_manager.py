@@ -102,7 +102,9 @@ class PromptStore:
             raise KeyError(f"prompt {name!r} v{version} not found")
         return prompt
 
-    def rollback(self, name: str, *, to_version: int, label: str = "production") -> Prompt:
+    def rollback(
+        self, name: str, *, to_version: int, label: str = "production"
+    ) -> Prompt:
         if (name, to_version) not in self._prompts:
             raise KeyError(f"prompt {name!r} v{to_version} not found for rollback")
         self._labels[(name, label)] = to_version

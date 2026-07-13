@@ -42,7 +42,9 @@ def _resolve_admin_tenant(admin: dict) -> str:
     projects live under the same tenant the data + queries use."""
     from app.api.chat import _resolve_tenant
 
-    return _resolve_tenant(str(admin.get("sub") or admin.get("email") or "")) or "default"
+    return (
+        _resolve_tenant(str(admin.get("sub") or admin.get("email") or "")) or "default"
+    )
 
 
 def _subject(admin: dict) -> str:
@@ -76,21 +78,28 @@ async def list_projects(admin: dict = Depends(admin_required)) -> dict:
     with Session(get_engine()) as db:
         rows = db.exec(
             select(Project).where(
-                Project.tenant_slug == tenant, Project.archived_at == None  # noqa: E711
+                Project.tenant_slug == tenant,
+                Project.archived_at == None,  # noqa: E711
             )
         ).all()
     return {
         "tenant": tenant,
         "projects": [
-            {"slug": p.slug, "name": p.name, "owner": p.owner_subject,
-             "qdrant_collection": p.qdrant_collection}
+            {
+                "slug": p.slug,
+                "name": p.name,
+                "owner": p.owner_subject,
+                "qdrant_collection": p.qdrant_collection,
+            }
             for p in rows
         ],
     }
 
 
 @router.post("")
-async def create_project(body: ProjectIn, admin: dict = Depends(admin_required)) -> dict:
+async def create_project(
+    body: ProjectIn, admin: dict = Depends(admin_required)
+) -> dict:
     _require_creator(admin)
     tenant = _resolve_admin_tenant(admin)
     slug = body.slug.strip().lower()
@@ -103,9 +112,7 @@ async def create_project(body: ProjectIn, admin: dict = Depends(admin_required))
         # persists under the per-tenant unique constraint, so we can't insert a
         # duplicate) rather than 409'ing the operator out of reusing the name.
         existing = db.exec(
-            select(Project).where(
-                Project.slug == slug, Project.tenant_slug == tenant
-            )
+            select(Project).where(Project.slug == slug, Project.tenant_slug == tenant)
         ).first()
         if existing is not None:
             if existing.archived_at is None:
@@ -128,7 +135,9 @@ async def create_project(body: ProjectIn, admin: dict = Depends(admin_required))
             db.commit()
     # creator becomes project owner
     pm.add_member(
-        tenant_slug=tenant, project_slug=slug, user_subject=subject,
+        tenant_slug=tenant,
+        project_slug=slug,
+        user_subject=subject,
         role=pm.ROLE_OWNER,
     )
     logger.info("project_created tenant=%s slug=%s by=%s", tenant, slug, subject)
@@ -141,9 +150,7 @@ async def archive_project(slug: str, admin: dict = Depends(admin_required)) -> d
     tenant = _resolve_admin_tenant(admin)
     with Session(get_engine()) as db:
         proj = db.exec(
-            select(Project).where(
-                Project.slug == slug, Project.tenant_slug == tenant
-            )
+            select(Project).where(Project.slug == slug, Project.tenant_slug == tenant)
         ).first()
         if not proj:
             raise HTTPException(404, "project_not_found")
@@ -170,20 +177,24 @@ async def add_member(
     tenant = _resolve_admin_tenant(admin)
     with Session(get_engine()) as db:
         if not db.exec(
-            select(Project).where(
-                Project.slug == slug, Project.tenant_slug == tenant
-            )
+            select(Project).where(Project.slug == slug, Project.tenant_slug == tenant)
         ).first():
             raise HTTPException(404, "project_not_found")
     try:
         pm.add_member(
-            tenant_slug=tenant, project_slug=slug,
-            user_subject=body.user_subject, role=body.role,
+            tenant_slug=tenant,
+            project_slug=slug,
+            user_subject=body.user_subject,
+            role=body.role,
         )
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
-    return {"ok": True, "project": slug, "user_subject": body.user_subject,
-            "role": body.role}
+    return {
+        "ok": True,
+        "project": slug,
+        "user_subject": body.user_subject,
+        "role": body.role,
+    }
 
 
 @router.delete("/{slug}/members/{user_subject}")

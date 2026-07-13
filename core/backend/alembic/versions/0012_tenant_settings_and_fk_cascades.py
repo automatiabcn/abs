@@ -42,10 +42,7 @@ def _seed_tenant_rows() -> None:
     ).first()
     if exists is None:
         bind.execute(
-            sa.text(
-                "INSERT INTO tenants(slug, name, created_at) "
-                "VALUES (:s, :n, :c)"
-            ),
+            sa.text("INSERT INTO tenants(slug, name, created_at) VALUES (:s, :n, :c)"),
             {"s": "default", "n": "default", "c": now},
         )
 
@@ -65,8 +62,7 @@ def _seed_tenant_rows() -> None:
                 continue
             bind.execute(
                 sa.text(
-                    "INSERT INTO tenants(slug, name, created_at) "
-                    "VALUES (:s, :n, :c)"
+                    "INSERT INTO tenants(slug, name, created_at) VALUES (:s, :n, :c)"
                 ),
                 {"s": slug, "n": slug, "c": now},
             )
@@ -77,9 +73,7 @@ def upgrade() -> None:
     dialect = bind.dialect.name
 
     with op.batch_alter_table("tenants") as batch:
-        batch.add_column(
-            sa.Column("branding_message", sa.String(500), nullable=True)
-        )
+        batch.add_column(sa.Column("branding_message", sa.String(500), nullable=True))
         batch.add_column(sa.Column("logo_url", sa.String(512), nullable=True))
         batch.add_column(sa.Column("primary_color", sa.String(7), nullable=True))
 
@@ -131,9 +125,7 @@ def downgrade() -> None:
                 "fk_tenant_installed_plugins_tenant_id", type_="foreignkey"
             )
         with op.batch_alter_table("tenant_invites") as batch:
-            batch.drop_constraint(
-                "fk_tenant_invites_tenant_id", type_="foreignkey"
-            )
+            batch.drop_constraint("fk_tenant_invites_tenant_id", type_="foreignkey")
     else:
         op.drop_constraint(
             "fk_tenant_installed_plugins_tenant_id",

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import time
 
 import httpx
 import jwt as pyjwt
@@ -30,10 +29,14 @@ def _generate_test_keypair():
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     ).decode("utf-8")
-    pub = key.public_key().public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
-    ).decode("utf-8")
+    pub = (
+        key.public_key()
+        .public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        .decode("utf-8")
+    )
     return pem, pub
 
 
@@ -64,6 +67,7 @@ def test_fetch_installation_token_success(_keys, monkeypatch):
     class _R:
         status_code = 201
         text = ""
+
         def json(self):
             return {
                 "token": "ghs_install_test_token",
@@ -90,7 +94,9 @@ def test_fetch_installation_token_success(_keys, monkeypatch):
     monkeypatch.setattr(httpx, "Client", _Client)
 
     out = fetch_installation_token(
-        app_id="123", installation_id="456", private_key_pem=pem,
+        app_id="123",
+        installation_id="456",
+        private_key_pem=pem,
         http_client=_Client(),
     )
     assert out["ok"] is True
@@ -108,6 +114,7 @@ def test_fetch_installation_token_failure(_keys):
     class _C:
         def post(self, *a, **kw):
             return _R()
+
         def close(self):
             pass
 
@@ -121,10 +128,25 @@ def test_fetch_installation_token_failure(_keys):
 def test_verify_webhook_signature_pass_and_fail():
     secret = "github_webhook_secret_test"
     body = b'{"action":"created"}'
-    expected_sig = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-    assert verify_webhook_signature(secret=secret, body=body, signature_header=expected_sig) is True
-    assert verify_webhook_signature(secret=secret, body=body, signature_header="sha256=" + "0" * 64) is False
-    assert verify_webhook_signature(secret="", body=body, signature_header=expected_sig) is False
+    expected_sig = (
+        "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    )
+    assert (
+        verify_webhook_signature(
+            secret=secret, body=body, signature_header=expected_sig
+        )
+        is True
+    )
+    assert (
+        verify_webhook_signature(
+            secret=secret, body=body, signature_header="sha256=" + "0" * 64
+        )
+        is False
+    )
+    assert (
+        verify_webhook_signature(secret="", body=body, signature_header=expected_sig)
+        is False
+    )
 
 
 def test_app_manifest_has_required_keys():

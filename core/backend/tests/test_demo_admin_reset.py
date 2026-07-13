@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import time
-from pathlib import Path
 
 import pytest
 
@@ -22,7 +21,14 @@ def _isolated_data_dir(tmp_path, monkeypatch):
             {
                 "completed": True,
                 "current_step": 6,
-                "completed_steps": ["admin", "license", "domain", "anthropic", "providers", "test"],
+                "completed_steps": [
+                    "admin",
+                    "license",
+                    "domain",
+                    "anthropic",
+                    "providers",
+                    "test",
+                ],
                 "started_at": time.time(),
                 "completed_at": time.time(),
                 "data": {},
@@ -38,9 +44,7 @@ def test_demo_reset_no_auth_returns_401(client, _isolated_data_dir):
 
 
 def test_demo_reset_wrong_token_returns_403(client, _isolated_data_dir):
-    r = client.post(
-        "/v1/admin/demo/reset", headers={"Authorization": "Bearer wrong"}
-    )
+    r = client.post("/v1/admin/demo/reset", headers={"Authorization": "Bearer wrong"})
     assert r.status_code == 403
 
 

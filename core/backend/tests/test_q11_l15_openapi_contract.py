@@ -30,8 +30,7 @@ class TestQ11L15McpTokenRoutes:
     def test_revoke_endpoint_documented(self, openapi):
         paths = openapi["paths"]
         assert "/v1/mcp/tokens/revoke" in paths, (
-            "Q10 Round 14 endpoint missing from OpenAPI — silent client "
-            "breakage risk"
+            "Q10 Round 14 endpoint missing from OpenAPI — silent client breakage risk"
         )
         post = paths["/v1/mcp/tokens/revoke"].get("post")
         assert post is not None
@@ -63,6 +62,7 @@ class TestQ11L15McpTokenRoutes:
             if p.get("minLength") == 16:
                 return True
             return any(v.get("minLength") == 16 for v in p.get("anyOf", []))
+
         assert _min_len(props["token"])
 
     def test_revoked_token_info_schema(self, openapi):

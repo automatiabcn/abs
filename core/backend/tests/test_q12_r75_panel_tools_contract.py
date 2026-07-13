@@ -22,6 +22,7 @@ the registry, not the HTTP endpoint shape. R75 fills the gap with
 - ?category= does NOT change `total` (full registry size)
 - tools sorted by (category, name)
 """
+
 from __future__ import annotations
 
 import pytest

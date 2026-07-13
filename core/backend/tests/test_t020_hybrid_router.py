@@ -19,9 +19,7 @@ def test_classify_rag_only_for_explanatory_question() -> None:
 
 
 def test_classify_hybrid_when_both_signals_present() -> None:
-    decision = classify_route(
-        "Geçen ay en çok satılan ürünleri özetle"
-    )
+    decision = classify_route("Geçen ay en çok satılan ürünleri özetle")
     assert decision.route == "hybrid"
 
 

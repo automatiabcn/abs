@@ -58,7 +58,9 @@ class QualTranslatePipeline(BasePipeline):
             model_hint="@cf/moonshotai/kimi-k2.5",
         )
         steps.append(back_step)
-        wf.step("back-translate", "ok" if back_step.ok else "fail", _step_payload(back_step))
+        wf.step(
+            "back-translate", "ok" if back_step.ok else "fail", _step_payload(back_step)
+        )
 
         final_text = translated
         if back is not None and back.text:
@@ -94,7 +96,11 @@ class QualTranslatePipeline(BasePipeline):
                     model_hint="openai/gpt-oss-120b",
                 )
                 steps.append(refine_step)
-                wf.step("refine", "ok" if refine_step.ok else "fail", _step_payload(refine_step))
+                wf.step(
+                    "refine",
+                    "ok" if refine_step.ok else "fail",
+                    _step_payload(refine_step),
+                )
                 if refine is not None and refine.text:
                     final_text = refine.text
 

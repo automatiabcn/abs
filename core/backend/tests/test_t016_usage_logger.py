@@ -9,7 +9,6 @@ import secrets
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -142,23 +141,28 @@ def test_record_handles_write_error_gracefully(
             raise OSError("disk full")
 
     monkeypatch.setattr(log, "_file", _Boom())
-    assert log.record(
-        ul.make_event(
-            name="rag.query",
-            request_type="query",
-            status="ok",
-            latency_ms=1.0,
+    assert (
+        log.record(
+            ul.make_event(
+                name="rag.query",
+                request_type="query",
+                status="ok",
+                latency_ms=1.0,
+            )
         )
-    ) is False
+        is False
+    )
 
 
 # ----- /v1/rag end-to-end logging --------------------------------------
 
 
 def _challenge(verifier: str) -> str:
-    return base64.urlsafe_b64encode(
-        hashlib.sha256(verifier.encode("ascii")).digest()
-    ).rstrip(b"=").decode("ascii")
+    return (
+        base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode("ascii")
+    )
 
 
 def _seed_client(client_id: str) -> None:

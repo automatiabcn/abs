@@ -165,7 +165,9 @@ class Settings(BaseSettings):
     cohere_api_key: str = ""
     openrouter_api_key: str = ""
     vllm_url: str = ""
-    vllm_api_key: str = ""  # T-Q08 — self-hosted vLLM ignores it; pass org token if needed
+    vllm_api_key: str = (
+        ""  # T-Q08 — self-hosted vLLM ignores it; pass org token if needed
+    )
     ollama_url: str = ""
 
     # T-R03 fix #4 — Ollama-first cascade (yerel $0 → groq cloud → anthropic).
@@ -226,9 +228,9 @@ class Settings(BaseSettings):
     mlx_url: str = ""  # Apple Silicon Neural Engine bridge (unset degrades gracefully)
 
     # Stripe Price IDs — copy them from setup_stripe_products.py output into .env
-    abs_price_self_host: str = ""   # Stripe Price ID — self-host SKU
-    abs_price_team_5: str = ""      # Stripe Price ID — team-pack 5 seat SKU
-    abs_price_team_10: str = ""     # Stripe Price ID — team-pack 10 seat SKU
+    abs_price_self_host: str = ""  # Stripe Price ID — self-host SKU
+    abs_price_team_5: str = ""  # Stripe Price ID — team-pack 5 seat SKU
+    abs_price_team_10: str = ""  # Stripe Price ID — team-pack 10 seat SKU
 
     # Q12-R84 — Tier seat list prices (USD/month). Default 0.0 = pricing not
     # configured; operators MUST set these in their own .env. Tier IDs
@@ -244,7 +246,9 @@ class Settings(BaseSettings):
     abs_annual_offer_price: float = 0.0
 
     # 013 — Encrypted secrets vault (sops + age)
-    vault_key_path: str = "/app/vault-key/age.key"  # master key — mount on its own volume
+    vault_key_path: str = (
+        "/app/vault-key/age.key"  # master key — mount on its own volume
+    )
     vault_secrets_path: str = "/app/data/secrets.yaml"  # encrypted secrets file
 
     # 027 — Vault production hardening
@@ -286,11 +290,11 @@ class Settings(BaseSettings):
     # backends by name: cohere | ollama | sentence_transformers | onnx_cuda |
     # onnx_cpu. `mock` is for tests.
     embedding_backend: str = "auto"
-    embedding_model_path: str = ""   # ONNX backends only
+    embedding_model_path: str = ""  # ONNX backends only
     # `cohere` backend: real semantic embeddings via the customer's existing
     # Cohere key (bring-your-own-key), 1024-dim, zero local footprint.
     cohere_embed_model: str = "embed-multilingual-v3.0"  # 1024-dim, multilingual
-    embedding_device: str = "cpu"    # SentenceTransformers backend only
+    embedding_device: str = "cpu"  # SentenceTransformers backend only
     # Ollama embedding model (when embedding_backend=ollama). bge-m3 is 1024-dim
     # and multilingual — it matches qdrant_default_vector_size above, and the
     # product is used in more than one language. nomic-embed-text, the previous
@@ -304,9 +308,9 @@ class Settings(BaseSettings):
     # "auto" resolves to what this server can actually do (cohere → onnx → none).
     # It was "mock" — Jaccard word overlap, behind an API field that says
     # "cross-encoder rerank", and measurably worse than not reranking at all.
-    rerank_backend: str = "auto"   # auto | none | qwen3_onnx | cohere | mock (tests)
-    rerank_model_path: str = ""    # ONNX path
-    rerank_device: str = "cpu"     # cpu | cuda
+    rerank_backend: str = "auto"  # auto | none | qwen3_onnx | cohere | mock (tests)
+    rerank_model_path: str = ""  # ONNX path
+    rerank_device: str = "cpu"  # cpu | cuda
     rerank_cache_ttl_seconds: int = 3600
     rerank_cache_max_entries: int = 4096
 
@@ -342,7 +346,7 @@ class Settings(BaseSettings):
     ragas_max_drop: float = 0.05
 
     # T-025..T-032 — Meeting pipeline
-    transcribe_backend: str = "mock"   # mock | whisperx | deepgram | groq
+    transcribe_backend: str = "mock"  # mock | whisperx | deepgram | groq
     transcribe_device: str = "cuda"
     deepgram_api_key: str = ""
     recall_backend: str = "mock"

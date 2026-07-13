@@ -36,7 +36,9 @@ def _resolve_admin_tenant(admin: dict) -> str:
     """Match the runtime tenant the same way provider-keys does."""
     from app.api.chat import _resolve_tenant
 
-    return _resolve_tenant(str(admin.get("sub") or admin.get("email") or "")) or "default"
+    return (
+        _resolve_tenant(str(admin.get("sub") or admin.get("email") or "")) or "default"
+    )
 
 
 def _subject(admin: dict) -> str:

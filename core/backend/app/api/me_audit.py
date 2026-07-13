@@ -17,7 +17,6 @@ from typing import Optional
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from sqlmodel import Session, select
 
-from app.config import settings
 from app.db.models import CustomerAuditEntry
 from app.db.session import get_engine
 from app.licensing import verify_license

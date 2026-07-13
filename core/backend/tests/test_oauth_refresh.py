@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-import httpx
 from sqlmodel import Session, select
 
 from app.db.models import ConnectedSecret
@@ -43,9 +42,7 @@ class _FakeClient:
 
 def _seed_github_secret(jti: str, expires_in: int = 3600):
     _CACHE.clear()
-    encrypt_secret(
-        key_name=jti, provider="github", value="ghs_old_access_token"
-    )
+    encrypt_secret(key_name=jti, provider="github", value="ghs_old_access_token")
     encrypt_secret(
         key_name=f"{jti}__refresh", provider="github", value="ghr_old_refresh"
     )
@@ -60,12 +57,16 @@ def _seed_github_secret(jti: str, expires_in: int = 3600):
 
 def test_is_expired_or_close_detects_imminent_expiry():
     secret = ConnectedSecret(
-        key_name="x", provider="github", encrypted_value="b64:x",
+        key_name="x",
+        provider="github",
+        encrypted_value="b64:x",
         expires_at=datetime.now(timezone.utc) + timedelta(minutes=30),
     )
     assert _is_expired_or_close(secret, lead_minutes=60) is True
     secret2 = ConnectedSecret(
-        key_name="x", provider="github", encrypted_value="b64:x",
+        key_name="x",
+        provider="github",
+        encrypted_value="b64:x",
         expires_at=datetime.now(timezone.utc) + timedelta(minutes=120),
     )
     assert _is_expired_or_close(secret2, lead_minutes=60) is False
@@ -117,9 +118,7 @@ def test_refresh_emits_audit_entry():
         200,
         {"access_token": "new", "refresh_token": "new_r", "expires_in": 100},
     )
-    refresh_github_token(
-        key_name="test_audit_refresh", http_client=_FakeClient(rsp)
-    )
+    refresh_github_token(key_name="test_audit_refresh", http_client=_FakeClient(rsp))
     with Session(get_engine()) as s:
         rows = s.scalars(
             select(VaultAuditEntry)

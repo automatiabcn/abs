@@ -31,9 +31,7 @@ def _mock_mode(monkeypatch):
     monkeypatch.setenv("ABS_ANTHROPIC_MOCK_MODE", "ok")
     from app.config import settings
 
-    monkeypatch.setattr(
-        settings, "anthropic_mock_mode", "ok", raising=False
-    )
+    monkeypatch.setattr(settings, "anthropic_mock_mode", "ok", raising=False)
 
 
 class TestQ11L10CascadeRace:

@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from cerbos.sdk.client import CerbosClient
-from fastapi import Depends, Header, HTTPException, Request, status
+from fastapi import Header, HTTPException, Request, status
 
 from app.auth.cerbos_client import build_principal
 from app.auth.oauth.server import OAuthError, verify_access_token

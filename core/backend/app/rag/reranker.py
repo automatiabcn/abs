@@ -69,9 +69,7 @@ class _MockBackend:
 class _Qwen3OnnxBackend:
     def __init__(self, model_path: str, providers: list[str]) -> None:
         if not model_path:
-            raise ValueError(
-                "rerank_model_path must be set for the qwen3_onnx backend"
-            )
+            raise ValueError("rerank_model_path must be set for the qwen3_onnx backend")
         try:
             import onnxruntime as ort  # noqa: F401
             from transformers import AutoTokenizer  # noqa: F401
@@ -111,9 +109,7 @@ class _CohereBackend:
         try:
             import cohere  # noqa: F401
         except ImportError as exc:
-            raise ImportError(
-                "cohere backend requires the `cohere` package"
-            ) from exc
+            raise ImportError("cohere backend requires the `cohere` package") from exc
 
         import cohere
 

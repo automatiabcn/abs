@@ -26,9 +26,16 @@ def _hitl_wf():
         "nodes": [
             {"id": "t", "kind": "trigger", "config": {"input": "deploy"}},
             {"id": "gate", "kind": "hitl", "config": {"approval_role": "admin"}},
-            {"id": "act", "kind": "output", "config": {"output_template": "ACTED on {{t}}"}},
+            {
+                "id": "act",
+                "kind": "output",
+                "config": {"output_template": "ACTED on {{t}}"},
+            },
         ],
-        "edges": [{"source": "t", "target": "gate"}, {"source": "gate", "target": "act"}],
+        "edges": [
+            {"source": "t", "target": "gate"},
+            {"source": "gate", "target": "act"},
+        ],
     }
 
 
@@ -68,7 +75,10 @@ def test_reject_finishes_without_downstream():
         assert final["state"] == "done"
         assert final["node_outputs"]["gate"]["rejected"] is True
         # act was downstream of a rejected gate → never reached
-        assert final["node_outputs"].get("act", {}).get("skipped") == "unreached" or "act" not in final["node_outputs"]
+        assert (
+            final["node_outputs"].get("act", {}).get("skipped") == "unreached"
+            or "act" not in final["node_outputs"]
+        )
 
     asyncio.run(go())
 
@@ -76,7 +86,12 @@ def test_reject_finishes_without_downstream():
 def test_resume_non_paused_job_is_conflict():
     async def go():
         # a workflow with no hitl finishes immediately
-        wf = {"nodes": [{"id": "o", "kind": "output", "config": {"output_template": "x"}}], "edges": []}
+        wf = {
+            "nodes": [
+                {"id": "o", "kind": "output", "config": {"output_template": "x"}}
+            ],
+            "edges": [],
+        }
         runner.reset_for_tests()
         job_id = await runner.enqueue(wf, "demo")
         for _ in range(50):

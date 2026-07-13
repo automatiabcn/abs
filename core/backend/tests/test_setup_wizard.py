@@ -65,7 +65,9 @@ def test_license_step_validates_jwt(isolated_setup, client):
     assert r_bad.status_code == 400
 
     # Valid token → 200
-    token = generate_license("cust_setup", tier="self-host", seat_count=1, valid_days=30)
+    token = generate_license(
+        "cust_setup", tier="self-host", seat_count=1, valid_days=30
+    )
     r_ok = client.post("/v1/setup/step/license", json={"license_key": token})
     assert r_ok.status_code == 200, r_ok.text
     body = r_ok.json()
@@ -208,8 +210,6 @@ def test_providers_step_strips_whitespace_and_accepts_valid(isolated_setup, clie
 
 def test_providers_step_rejects_bad_cf_account_id(isolated_setup, client):
     _advance_to_providers(client)
-    r = client.post(
-        "/v1/setup/step/providers", json={"cf_account_id": "not-32-hex"}
-    )
+    r = client.post("/v1/setup/step/providers", json={"cf_account_id": "not-32-hex"})
     assert r.status_code == 400, r.text
     assert "cf_account_id" in r.json()["detail"]["fields"]

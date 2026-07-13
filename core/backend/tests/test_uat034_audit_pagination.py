@@ -39,9 +39,7 @@ def _seed_customer_audit(n: int) -> None:
     base = datetime.now(timezone.utc) - timedelta(hours=2)
     with Session(get_engine()) as db:
         # Clear pre-existing rows so the test is hermetic.
-        for r in db.scalars(
-            __import__("sqlmodel").select(CustomerAuditEntry)
-        ).all():
+        for r in db.scalars(__import__("sqlmodel").select(CustomerAuditEntry)).all():
             db.delete(r)
         for i in range(n):
             db.add(
@@ -110,15 +108,11 @@ def test_pagination_no_skip_on_identical_timestamps(client, monkeypatch):
     limit=10, and assert all 25 appear exactly once."""
     same_ts = datetime.now(timezone.utc) - timedelta(hours=3)
     with Session(get_engine()) as db:
-        for r in db.scalars(
-            __import__("sqlmodel").select(CustomerAuditEntry)
-        ).all():
+        for r in db.scalars(__import__("sqlmodel").select(CustomerAuditEntry)).all():
             db.delete(r)
         for i in range(25):
             db.add(
-                CustomerAuditEntry(
-                    license_jti=f"same{i}", action="seed", ts=same_ts
-                )
+                CustomerAuditEntry(license_jti=f"same{i}", action="seed", ts=same_ts)
             )
         db.commit()
 
@@ -129,9 +123,7 @@ def test_pagination_no_skip_on_identical_timestamps(client, monkeypatch):
         url = "/v1/admin/audit/recent?source=customer&limit=10"
         if cursor:
             url += f"&cursor={cursor}"
-        body = client.get(
-            url, headers={"Authorization": f"Bearer {token}"}
-        ).json()
+        body = client.get(url, headers={"Authorization": f"Bearer {token}"}).json()
         seen.extend(e["id"] for e in body["entries"])
         cursor = body["cursor"]
         if not cursor:

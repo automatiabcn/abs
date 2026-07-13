@@ -49,7 +49,9 @@ def test_smoke_results_have_expected_keys():
 def test_skip_tools_have_reasons():
     mod = _load_smoke()
     for tool, reason in mod._SKIP_TOOLS.items():
-        assert isinstance(reason, str) and len(reason) > 3, f"{tool} skip reason missing"
+        assert isinstance(reason, str) and len(reason) > 3, (
+            f"{tool} skip reason missing"
+        )
 
 
 def test_safe_defaults_have_dict_args():

@@ -31,7 +31,10 @@ def _resolve_admin_tenant(admin: dict) -> str:
     """Runtime-consistent tenant (matches RAG/cascade `auth.tenant_id`)."""
     from app.api.chat import _resolve_tenant
 
-    return _resolve_tenant(str(admin.get("sub") or admin.get("email") or "")) or "default"
+    return (
+        _resolve_tenant(str(admin.get("sub") or admin.get("email") or "")) or "default"
+    )
+
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1/admin/settings", tags=["admin", "settings"])

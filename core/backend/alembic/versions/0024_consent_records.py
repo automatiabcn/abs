@@ -28,22 +28,36 @@ def upgrade() -> None:
     op.create_table(
         "consent_records",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("tenant_slug", sa.String(64), nullable=False, server_default="default"),
+        sa.Column(
+            "tenant_slug", sa.String(64), nullable=False, server_default="default"
+        ),
         sa.Column("contact_email", sa.String(254), nullable=False),
-        sa.Column("email_consent", sa.Boolean, nullable=False, server_default=sa.false()),
-        sa.Column("phone_consent", sa.Boolean, nullable=False, server_default=sa.false()),
+        sa.Column(
+            "email_consent", sa.Boolean, nullable=False, server_default=sa.false()
+        ),
+        sa.Column(
+            "phone_consent", sa.Boolean, nullable=False, server_default=sa.false()
+        ),
         sa.Column("sms_consent", sa.Boolean, nullable=False, server_default=sa.false()),
-        sa.Column("whatsapp_consent", sa.Boolean, nullable=False, server_default=sa.false()),
+        sa.Column(
+            "whatsapp_consent", sa.Boolean, nullable=False, server_default=sa.false()
+        ),
         sa.Column("do_not_call", sa.Boolean, nullable=False, server_default=sa.false()),
         sa.Column("opt_in_source", sa.String(64), nullable=False, server_default=""),
         sa.Column("opt_in_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("opt_out_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("legal_basis", sa.String(48), nullable=False, server_default=""),
-        sa.Column("consent_evidence", sa.String(512), nullable=False, server_default=""),
+        sa.Column(
+            "consent_evidence", sa.String(512), nullable=False, server_default=""
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
-    op.create_index("ix_consent_records_tenant_slug", "consent_records", ["tenant_slug"])
-    op.create_index("ix_consent_records_contact_email", "consent_records", ["contact_email"])
+    op.create_index(
+        "ix_consent_records_tenant_slug", "consent_records", ["tenant_slug"]
+    )
+    op.create_index(
+        "ix_consent_records_contact_email", "consent_records", ["contact_email"]
+    )
 
     if op.get_bind().dialect.name == "postgresql":
         op.execute("ALTER TABLE consent_records ENABLE ROW LEVEL SECURITY;")
@@ -56,7 +70,9 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     if op.get_bind().dialect.name == "postgresql":
-        op.execute("DROP POLICY IF EXISTS consent_records_tenant_isolation ON consent_records;")
+        op.execute(
+            "DROP POLICY IF EXISTS consent_records_tenant_isolation ON consent_records;"
+        )
         op.execute("ALTER TABLE consent_records NO FORCE ROW LEVEL SECURITY;")
         op.execute("ALTER TABLE consent_records DISABLE ROW LEVEL SECURITY;")
     op.drop_table("consent_records")

@@ -57,9 +57,7 @@ def test_tenant_filter_always_includes_tenant_condition() -> None:
 
 
 def test_tenant_filter_merges_extra_must_conditions() -> None:
-    extra = Filter(
-        must=[FieldCondition(key="lang", match=MatchValue(value="tr"))]
-    )
+    extra = Filter(must=[FieldCondition(key="lang", match=MatchValue(value="tr"))])
     f = qc._tenant_filter("t1", extra=extra)
     keys = {c.key for c in (f.must or [])}
     assert keys == {"tenant_id", "lang"}
@@ -80,8 +78,7 @@ def test_ensure_collection_creates_when_missing(
     assert cfg.distance == Distance.COSINE
     assert client.create_payload_index.call_count == 2
     fields = [
-        c.kwargs["field_name"]
-        for c in client.create_payload_index.call_args_list
+        c.kwargs["field_name"] for c in client.create_payload_index.call_args_list
     ]
     assert fields == ["tenant_id", "created_at"]
 
@@ -139,9 +136,7 @@ def test_search_passes_tenant_filter(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setattr(qc, "_client", client, raising=False)
 
-    out = qc.search(
-        collection="c", tenant_id="t1", query_vector=[0.1] * 4, limit=5
-    )
+    out = qc.search(collection="c", tenant_id="t1", query_vector=[0.1] * 4, limit=5)
     kwargs = client.query_points.call_args.kwargs
     assert _has_tenant_match(kwargs["query_filter"], "t1")
     assert kwargs["limit"] == 5

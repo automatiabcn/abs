@@ -93,12 +93,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_chat_sessions_archived_at", table_name="chat_sessions"
-    )
-    op.drop_index(
-        "ix_chat_sessions_last_activity_at", table_name="chat_sessions"
-    )
+    op.drop_index("ix_chat_sessions_archived_at", table_name="chat_sessions")
+    op.drop_index("ix_chat_sessions_last_activity_at", table_name="chat_sessions")
     with op.batch_alter_table("chat_sessions") as batch:
         batch.drop_column("message_count")
         batch.drop_column("last_activity_at")

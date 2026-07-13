@@ -67,7 +67,9 @@ async def _safe_publish(subject: str, envelope: dict[str, Any], *, log_ctx: str)
         return str(seq)
     except asyncio.TimeoutError:
         logger.warning(
-            "auth_event_publish_timeout %s after %.1fs", log_ctx, PUBLISH_TIMEOUT_SECONDS
+            "auth_event_publish_timeout %s after %.1fs",
+            log_ctx,
+            PUBLISH_TIMEOUT_SECONDS,
         )
         return ""
     except Exception as exc:  # noqa: BLE001 — bus boundary

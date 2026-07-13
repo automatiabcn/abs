@@ -5,8 +5,8 @@
 
 """Smart link MCP tools.
 
-  smart_link_status() — list connected services + last validation
-  provider_validate(provider, api_key) — provider validators wrapper
+smart_link_status() — list connected services + last validation
+provider_validate(provider, api_key) — provider validators wrapper
 """
 
 from __future__ import annotations
@@ -42,9 +42,7 @@ async def provider_validate(provider: str, api_key: str) -> str:
     await tracker.bump("provider_validate")
     from app.smart_link.provider_validators import validate
 
-    return json.dumps(
-        validate(provider, api_key), ensure_ascii=False, indent=2
-    )
+    return json.dumps(validate(provider, api_key), ensure_ascii=False, indent=2)
 
 
 REGISTERED_TOOLS.extend(["smart_link_status", "provider_validate"])

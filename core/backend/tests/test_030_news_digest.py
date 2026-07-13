@@ -17,9 +17,7 @@ def _wipe_cache(tmp_path, monkeypatch):
 
 
 def _ok(text: str) -> ProviderResponse:
-    return ProviderResponse(
-        text=text, provider="gemini", model="gemini-2.5-flash"
-    )
+    return ProviderResponse(text=text, provider="gemini", model="gemini-2.5-flash")
 
 
 @pytest.mark.asyncio

@@ -67,7 +67,11 @@ def compose_reply(
     tone = _TONE.get(classification.category, "Professional and helpful tone.")
     reply_body = (
         f"Hi,\n\n{tone}\n\n"
-        + ("\n".join(f"> {line}" for line in context_block) + "\n\n" if context_block else "")
+        + (
+            "\n".join(f"> {line}" for line in context_block) + "\n\n"
+            if context_block
+            else ""
+        )
         + f"Best regards,\nABS Assistant {inline_citations}".strip()
     )
     confidence = min(1.0, classification.confidence + 0.1 * len(citations))

@@ -41,9 +41,7 @@ def test_list_inbox_returns_seeded_messages() -> None:
 
 def test_draft_and_send_round_trip() -> None:
     g = GmailMCP(backend="mock")
-    msg = g._impl.insert_for_test(
-        "t1", sender="a@b.c", subject="hi", body="body"
-    )
+    msg = g._impl.insert_for_test("t1", sender="a@b.c", subject="hi", body="body")
     draft = g.draft_reply(
         tenant_id="t1", thread_id=msg.thread_id, subject="re", body="reply"
     )
@@ -54,9 +52,7 @@ def test_draft_and_send_round_trip() -> None:
 
 def test_label_adds_and_removes() -> None:
     g = GmailMCP(backend="mock")
-    msg = g._impl.insert_for_test(
-        "t1", sender="a@b.c", subject="hi", body="body"
-    )
+    msg = g._impl.insert_for_test("t1", sender="a@b.c", subject="hi", body="body")
     g.label(tenant_id="t1", message_id=msg.message_id, add=["urgent"])
     g.label(
         tenant_id="t1",

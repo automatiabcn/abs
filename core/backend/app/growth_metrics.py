@@ -99,7 +99,10 @@ def compute_buying_signals(db: Session, tenant: str, limit: int = 6) -> dict:
     """Fuse signals from the real records — high-intent leads, fresh
     opportunities, active engagements, entity-resolution merges. ``signal_types``
     is the count of distinct signal kinds actually detected (not a catalog size)."""
-    companies = {c.id: c.name for c in db.exec(select(Company).where(Company.tenant_slug == tenant))}
+    companies = {
+        c.id: c.name
+        for c in db.exec(select(Company).where(Company.tenant_slug == tenant))
+    }
     leads = list(db.exec(select(Lead).where(Lead.tenant_slug == tenant)))
     opps = list(db.exec(select(Opportunity).where(Opportunity.tenant_slug == tenant)))
     cutoff = _now() - timedelta(days=30)
@@ -109,9 +112,13 @@ def compute_buying_signals(db: Session, tenant: str, limit: int = 6) -> dict:
     for ln in sorted(leads, key=lambda x: x.score, reverse=True):
         name = companies.get(ln.company_id, "—")
         if ln.intent == "high":
-            signals.append({"icon": "🔥", "label": "High-intent signal", "company": name})
+            signals.append(
+                {"icon": "🔥", "label": "High-intent signal", "company": name}
+            )
         elif ln.status == "engaged":
-            signals.append({"icon": "📈", "label": "Active engagement", "company": name})
+            signals.append(
+                {"icon": "📈", "label": "Active engagement", "company": name}
+            )
 
     for o in opps:
         created = o.created_at
@@ -120,12 +127,24 @@ def compute_buying_signals(db: Session, tenant: str, limit: int = 6) -> dict:
         if created >= cutoff:
             cur = _CURRENCY.get(o.currency, o.currency)
             amt = f" · {round(o.amount):,}{cur}".replace(",", ".") if o.amount else ""
-            signals.append({"icon": "🎯", "label": f"New opportunity{amt}", "company": companies.get(o.company_id, "—")})
+            signals.append(
+                {
+                    "icon": "🎯",
+                    "label": f"New opportunity{amt}",
+                    "company": companies.get(o.company_id, "—"),
+                }
+            )
 
     for cid, cname in companies.items():
         company = db.get(Company, cid)
         if company and company.merged_count > 1:
-            signals.append({"icon": "↻", "label": f"Record fusion ×{company.merged_count}", "company": cname})
+            signals.append(
+                {
+                    "icon": "↻",
+                    "label": f"Record fusion ×{company.merged_count}",
+                    "company": cname,
+                }
+            )
 
     signal_types = len({s["icon"] for s in signals})
     return {"signals": signals[:limit], "signal_types": signal_types}

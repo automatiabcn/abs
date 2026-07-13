@@ -10,8 +10,7 @@ import pytest
 from app.billing_v10.checkout_link import build_checkout_link
 
 PRICING_PATH = (
-    Path(__file__).resolve().parent.parent.parent
-    / "landing/v10/pricing_data.json"
+    Path(__file__).resolve().parent.parent.parent / "landing/v10/pricing_data.json"
 )
 
 

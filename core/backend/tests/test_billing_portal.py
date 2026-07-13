@@ -63,9 +63,7 @@ def test_portal_no_stripe_key_returns_503(client, monkeypatch):
 
 def test_portal_no_active_license_returns_404(client, monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_x")
-    r = client.post(
-        "/v1/billing/portal", json={"customer_email": "missing@x.co"}
-    )
+    r = client.post("/v1/billing/portal", json={"customer_email": "missing@x.co"})
     assert r.status_code == 404
 
 
@@ -81,25 +79,17 @@ def test_portal_active_license_returns_url(client, monkeypatch, _seed_active_lic
         assert kwargs["customer"] == "cus_portal_1"
         return fake_portal
 
-    monkeypatch.setattr(
-        "stripe.billing_portal.Session.create", _fake_create
-    )
+    monkeypatch.setattr("stripe.billing_portal.Session.create", _fake_create)
 
-    r = client.post(
-        "/v1/billing/portal", json={"customer_email": "active@x.co"}
-    )
+    r = client.post("/v1/billing/portal", json={"customer_email": "active@x.co"})
     assert r.status_code == 200, r.text
     body = r.json()
     assert "billing.stripe.com" in body["portal_url"]
     assert body["expires_at"]
 
 
-def test_portal_revoked_license_returns_404(
-    client, monkeypatch, _seed_revoked_license
-):
+def test_portal_revoked_license_returns_404(client, monkeypatch, _seed_revoked_license):
     """Revoked lisans → portal kapalı (refund sonrası)."""
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_x")
-    r = client.post(
-        "/v1/billing/portal", json={"customer_email": "revoked@x.co"}
-    )
+    r = client.post("/v1/billing/portal", json={"customer_email": "revoked@x.co"})
     assert r.status_code == 404

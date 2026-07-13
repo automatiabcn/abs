@@ -25,13 +25,13 @@ from typing import Dict, Optional, Tuple
 import bcrypt
 import jwt
 from fastapi import APIRouter, HTTPException, Request, Response, status
-from fastapi.responses import RedirectResponse
 from jwt import ExpiredSignatureError, PyJWTError
 from pydantic import BaseModel, Field
 
 from app.config import settings
 from app.middleware.rate_limit import limiter
 from app.observability.audit import emit_event
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
 
@@ -63,11 +63,13 @@ def _check_locked(email: str) -> Optional[datetime]:
         from app.db.session import get_engine
 
         with Session(get_engine()) as db:
-            row = db.execute(
-                select(FailedLoginAttempt).where(
-                    FailedLoginAttempt.email == email
+            row = (
+                db.execute(
+                    select(FailedLoginAttempt).where(FailedLoginAttempt.email == email)
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             if row is None or row.locked_until is None:
                 return None
             locked = row.locked_until
@@ -92,11 +94,13 @@ def _record_failed_login(email: str, tenant_slug: Optional[str]) -> None:
 
         now = datetime.now(timezone.utc)
         with Session(get_engine()) as db:
-            row = db.execute(
-                select(FailedLoginAttempt).where(
-                    FailedLoginAttempt.email == email
+            row = (
+                db.execute(
+                    select(FailedLoginAttempt).where(FailedLoginAttempt.email == email)
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             if row is None:
                 row = FailedLoginAttempt(
                     email=email,
@@ -129,9 +133,7 @@ def _clear_failed_login(email: str) -> None:
 
         with Session(get_engine()) as db:
             db.execute(
-                delete(FailedLoginAttempt).where(
-                    FailedLoginAttempt.email == email
-                )
+                delete(FailedLoginAttempt).where(FailedLoginAttempt.email == email)
             )
             db.commit()
     except Exception as exc:
@@ -254,9 +256,7 @@ def _lookup_tenant_slug(email: str) -> Optional[str]:
 
         with Session(get_engine()) as db:
             stmt = (
-                select(User)
-                .where(User.email == email)
-                .where(User.status == "active")
+                select(User).where(User.email == email).where(User.status == "active")
             )
             user = db.execute(stmt).scalars().first()
             if user is not None and user.tenant_slug:
@@ -292,9 +292,7 @@ def _lookup_user_in_db(email: str) -> Optional[Tuple[str, bytes, str]]:
 
         with Session(get_engine()) as db:
             stmt = (
-                select(User)
-                .where(User.email == email)
-                .where(User.status == "active")
+                select(User).where(User.email == email).where(User.status == "active")
             )
             user = db.execute(stmt).scalars().first()
             if user is None:
@@ -397,9 +395,7 @@ def _subject_revoked(email: str) -> bool:
         from app.db.session import get_engine
 
         with Session(get_engine()) as db:
-            user = db.execute(
-                select(User).where(User.email == email)
-            ).scalars().first()
+            user = db.execute(select(User).where(User.email == email)).scalars().first()
             if user is None:
                 return False
             return str(user.status) != "active"
@@ -522,9 +518,7 @@ def login(payload: LoginRequest, request: Request, response: Response) -> Dict:
         candidates.append(file_match)
 
     if not candidates:
-        logger.info(
-            "login_failed reason=email_no_source email=%s", payload.email
-        )
+        logger.info("login_failed reason=email_no_source email=%s", payload.email)
         _record_failed_login(payload.email, None)
         emit_event(
             request,
@@ -560,9 +554,7 @@ def login(payload: LoginRequest, request: Request, response: Response) -> Dict:
         "login_failed reason=password_mismatch sources=%s",
         [c[2] for c in candidates],
     )
-    _record_failed_login(
-        payload.email, _lookup_tenant_slug(payload.email)
-    )
+    _record_failed_login(payload.email, _lookup_tenant_slug(payload.email))
     emit_event(
         request,
         action="auth.login",
@@ -584,7 +576,10 @@ def logout(response: Response) -> Dict:
 class SignupRequest(BaseModel):
     email: str = Field(..., min_length=3, max_length=254)
     tenant_slug: str = Field(
-        ..., min_length=2, max_length=32, pattern=r"^[a-z0-9](?:[a-z0-9\-]{0,30}[a-z0-9])?$"
+        ...,
+        min_length=2,
+        max_length=32,
+        pattern=r"^[a-z0-9](?:[a-z0-9\-]{0,30}[a-z0-9])?$",
     )
     # Optional at signup; if provided, hashed and stored on the
     # pending User row so the claim step can promote without a second
@@ -613,9 +608,7 @@ def _read_pending_signups() -> list[dict]:
 def _write_pending_signups(rows: list[dict]) -> None:
     p = _pending_signups_path()
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(
-        json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    p.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 _MAGIC_TTL_SECONDS = 24 * 60 * 60  # 24h claim window
@@ -638,9 +631,7 @@ def _persist_user_pending(
             if password
             else _hash_password(secrets.token_urlsafe(16)).decode("utf-8")
         )
-        expires = datetime.now(timezone.utc) + timedelta(
-            seconds=_MAGIC_TTL_SECONDS
-        )
+        expires = datetime.now(timezone.utc) + timedelta(seconds=_MAGIC_TTL_SECONDS)
         with Session(get_engine()) as db:
             stmt = select(User).where(User.email == email)
             existing = db.execute(stmt).scalars().first()
@@ -693,9 +684,7 @@ def _claim_user_by_token(magic_token: str) -> Optional[Dict]:
             now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
             stored = user.magic_expires_at
             if stored is not None:
-                stored_naive = (
-                    stored.replace(tzinfo=None) if stored.tzinfo else stored
-                )
+                stored_naive = stored.replace(tzinfo=None) if stored.tzinfo else stored
                 if stored_naive < now_naive:
                     return {"error": "expired"}
             user.status = "active"
@@ -738,9 +727,7 @@ def _claim_user_by_token(magic_token: str) -> Optional[Dict]:
             try:
                 from app.multitenant.provisioning import ensure_tenant_provisioned
 
-                ensure_tenant_provisioned(
-                    claimed_tenant, owner_subject=claimed_email
-                )
+                ensure_tenant_provisioned(claimed_tenant, owner_subject=claimed_email)
             except Exception:  # noqa: BLE001 — provisioning is best-effort
                 logger.info("self-serve provisioning skipped", exc_info=True)
 
@@ -827,9 +814,7 @@ def _claim_invite_by_token(token: str) -> Optional[Dict]:
 
         digest = hash_magic_token(token)
         with Session(get_engine()) as db:
-            stmt = select(TenantInvite).where(
-                TenantInvite.magic_token_hash == digest
-            )
+            stmt = select(TenantInvite).where(TenantInvite.magic_token_hash == digest)
             invite = db.execute(stmt).scalars().first()
             if invite is None:
                 return None
@@ -840,11 +825,7 @@ def _claim_invite_by_token(token: str) -> Optional[Dict]:
             stored = invite.expires_at
             now = datetime.now(timezone.utc)
             if stored is not None:
-                exp = (
-                    stored
-                    if stored.tzinfo
-                    else stored.replace(tzinfo=timezone.utc)
-                )
+                exp = stored if stored.tzinfo else stored.replace(tzinfo=timezone.utc)
                 if exp < now:
                     return {"error": "expired"}
             invite.status = "accepted"
@@ -962,9 +943,7 @@ def magic_claim(token: str, request: Request, response: Response) -> Dict:
     rows = [r for r in rows if r.get("magic_token") != token]
     _write_pending_signups(rows)
 
-    session_token = _create_token(
-        result["email"], tenant=result.get("tenant_slug")
-    )
+    session_token = _create_token(result["email"], tenant=result.get("tenant_slug"))
     _set_cookie(response, session_token)
     return {
         "status": "claimed",
@@ -1032,7 +1011,5 @@ def me(request: Request) -> Dict:
         )
         raise _SessionInvalid()
     exp = payload.get("exp")
-    exp_iso = (
-        datetime.fromtimestamp(exp, tz=timezone.utc).isoformat() if exp else ""
-    )
+    exp_iso = datetime.fromtimestamp(exp, tz=timezone.utc).isoformat() if exp else ""
     return {"email": payload.get("sub", ""), "exp_at": exp_iso}

@@ -41,8 +41,11 @@ async def inbound_triage(
 ) -> dict:
     """Classify an incoming request + draft a source-cited reply (→ Approval)."""
     return await triage_inbound(
-        body.message, tenant_slug=_tenant(auth), channel=body.channel,
-        from_email=body.from_email, project_slug=body.project_slug,
+        body.message,
+        tenant_slug=_tenant(auth),
+        channel=body.channel,
+        from_email=body.from_email,
+        project_slug=body.project_slug,
         actor=auth.subject,
     )
 
@@ -59,8 +62,11 @@ async def knowledge_ask(
 ) -> dict:
     """Knowledge Base Agent — a source-cited answer from the tenant's corpus."""
     res = await run_agent(
-        "knowledge_base", body.question, tenant_id=_tenant(auth),
-        project_slug=body.project_slug, user_subject=auth.subject,
+        "knowledge_base",
+        body.question,
+        tenant_id=_tenant(auth),
+        project_slug=body.project_slug,
+        user_subject=auth.subject,
     )
     out = {
         "answer": res.summary,

@@ -73,11 +73,15 @@ def test_login_success_clears_failed_login_row(client, monkeypatch):
         for _ in range(2):
             _wrong_login(client)
         with Session(get_engine()) as db:
-            row = db.execute(
-                select(FailedLoginAttempt).where(
-                    FailedLoginAttempt.email == "admin@local"
+            row = (
+                db.execute(
+                    select(FailedLoginAttempt).where(
+                        FailedLoginAttempt.email == "admin@local"
+                    )
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             assert row is not None
             assert row.attempts_count == 2
 
@@ -88,11 +92,15 @@ def test_login_success_clears_failed_login_row(client, monkeypatch):
         assert r.status_code == 200, r.text
 
         with Session(get_engine()) as db:
-            row = db.execute(
-                select(FailedLoginAttempt).where(
-                    FailedLoginAttempt.email == "admin@local"
+            row = (
+                db.execute(
+                    select(FailedLoginAttempt).where(
+                        FailedLoginAttempt.email == "admin@local"
+                    )
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             assert row is None
     finally:
         if backup is not None:

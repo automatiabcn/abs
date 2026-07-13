@@ -28,7 +28,9 @@ def test_append_entry_creates_chain():
     _purge()
     a = append_entry(action="encrypt", actor="test", target_key="key1")
     b = append_entry(action="decrypt", actor="test", target_key="key1")
-    c = append_entry(action="rotate", actor="test", target_key="key1", detail="scheduled")
+    c = append_entry(
+        action="rotate", actor="test", target_key="key1", detail="scheduled"
+    )
 
     assert a.prev_hmac == ""
     assert a.hmac and len(a.hmac) == 64

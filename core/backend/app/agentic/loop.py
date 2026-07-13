@@ -124,8 +124,13 @@ def _transcript(system: str, turns: List[str], user: str) -> str:
     return "\n\n".join(parts)
 
 
-async def _ask(prompt: str, providers: List[str], max_tokens: int, tenant: str,
-               user_subject: Optional[str]) -> str:
+async def _ask(
+    prompt: str,
+    providers: List[str],
+    max_tokens: int,
+    tenant: str,
+    user_subject: Optional[str],
+) -> str:
     primary, *rest = providers
     resp = await call_with_cascade(
         prompt,
@@ -175,8 +180,9 @@ async def run_agent_loop(
             # started cannot become a response, so it kills the connection and
             # leaves a chat that never finishes and never explains itself. That is
             # not a failure mode worth being clever about.
-            yield AgentEvent("agent-error", {"reason": "all_providers_failed",
-                                             "detail": str(exc)})
+            yield AgentEvent(
+                "agent-error", {"reason": "all_providers_failed", "detail": str(exc)}
+            )
             return
 
         action = parse_action(raw)
@@ -239,11 +245,14 @@ async def run_agent_loop(
             continue
 
         decision = check(tool.level)
-        yield AgentEvent("tool-call", {"name": name, "args": args,
-                                       "level": tool.level.name.lower()})
+        yield AgentEvent(
+            "tool-call", {"name": name, "args": args, "level": tool.level.name.lower()}
+        )
 
         if decision.verdict == "deny":
-            turns.append(f"System: the tool '{name}' is not available ({decision.reason}).")
+            turns.append(
+                f"System: the tool '{name}' is not available ({decision.reason})."
+            )
             continue
 
         if decision.verdict == "approve":
@@ -301,10 +310,15 @@ async def run_agent_loop(
     try:
         raw = await _ask(prompt, providers, max_tokens, tenant, requester)
     except ProviderError as exc:
-        yield AgentEvent("agent-error", {"reason": "all_providers_failed",
-                                         "detail": str(exc)})
+        yield AgentEvent(
+            "agent-error", {"reason": "all_providers_failed", "detail": str(exc)}
+        )
         return
 
     action = parse_action(raw)
-    answer = str(action.get("answer", "")) if action and action.get("action") == "final" else raw
+    answer = (
+        str(action.get("answer", ""))
+        if action and action.get("action") == "final"
+        else raw
+    )
     yield AgentEvent("agent-done", {"answer": answer, "steps_exhausted": True})

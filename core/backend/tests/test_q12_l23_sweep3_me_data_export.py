@@ -23,7 +23,6 @@ This sweep brings L23 to 3/3 FULL CLEAN.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient

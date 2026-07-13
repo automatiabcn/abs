@@ -44,9 +44,7 @@ def _mock_mode(monkeypatch):
     monkeypatch.setenv("ABS_ANTHROPIC_MOCK_MODE", "ok")
     from app.config import settings as app_settings
 
-    monkeypatch.setattr(
-        app_settings, "anthropic_mock_mode", "ok", raising=False
-    )
+    monkeypatch.setattr(app_settings, "anthropic_mock_mode", "ok", raising=False)
 
 
 @pytest.fixture(autouse=True)
@@ -115,9 +113,7 @@ class TestQ11L13ChatCompletions10K:
             st.text(max_size=10),
         ),
     )
-    def test_chat_completions_no_5xx_10k(
-        self, admin_client, messages, session_id
-    ):
+    def test_chat_completions_no_5xx_10k(self, admin_client, messages, session_id):
         body = {"messages": messages}
         if session_id is not None:
             body["session_id"] = session_id
@@ -159,9 +155,7 @@ class TestQ11L13RagQuery10K:
         if rerank is not None:
             body["rerank"] = rerank
         r = admin_client.post("/v1/rag/query", json=body)
-        assert r.status_code != 500, (
-            f"500 on body={body!r}, resp={r.text[:200]}"
-        )
+        assert r.status_code != 500, f"500 on body={body!r}, resp={r.text[:200]}"
         assert r.status_code in ACCEPTABLE_STATUS | {503}, (
             f"unexpected status {r.status_code} on body={body!r}"
         )
@@ -187,9 +181,7 @@ class TestQ11L13WorkflowsSynth10K:
         if nl_request is not None:
             body["nl_request"] = nl_request
         r = admin_client.post("/v1/workflows/synthesize", json=body)
-        assert r.status_code != 500, (
-            f"500 on body={body!r}, resp={r.text[:200]}"
-        )
+        assert r.status_code != 500, f"500 on body={body!r}, resp={r.text[:200]}"
         assert r.status_code in ACCEPTABLE_STATUS | {503}, (
             f"unexpected status {r.status_code} on body={body!r}"
         )

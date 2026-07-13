@@ -46,9 +46,7 @@ def test_patch_branding_requires_admin(client):
 
 def test_get_tenant_seeds_default_row(client, monkeypatch):
     token = _admin_token(client, monkeypatch)
-    r = client.get(
-        "/v1/admin/tenant", headers={"Authorization": f"Bearer {token}"}
-    )
+    r = client.get("/v1/admin/tenant", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["slug"]
@@ -166,8 +164,6 @@ def test_slug_available_current_slug_is_available(client, monkeypatch):
     headers = {"Authorization": f"Bearer {token}"}
     me = client.get("/v1/admin/tenant", headers=headers)
     own = me.json()["slug"]
-    r = client.get(
-        f"/v1/admin/tenant/slug-available?slug={own}", headers=headers
-    )
+    r = client.get(f"/v1/admin/tenant/slug-available?slug={own}", headers=headers)
     assert r.status_code == 200
     assert r.json()["available"] is True

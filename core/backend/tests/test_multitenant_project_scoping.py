@@ -28,7 +28,10 @@ def _seed_project(slug: str, tenant: str) -> None:
         if not db.get(Project, slug):
             db.add(
                 Project(
-                    slug=slug, tenant_slug=tenant, name=slug, owner_subject="o@x.com",
+                    slug=slug,
+                    tenant_slug=tenant,
+                    name=slug,
+                    owner_subject="o@x.com",
                     created_at=datetime.now(timezone.utc),
                 )
             )
@@ -45,7 +48,10 @@ def _req(project_id: str | None):
 def test_no_header_returns_none():
     from app.api.v1.project_context import resolve_active_project
 
-    assert resolve_active_project(_req(None), tenant_slug="t", subject="u", roles=[]) is None
+    assert (
+        resolve_active_project(_req(None), tenant_slug="t", subject="u", roles=[])
+        is None
+    )
 
 
 def test_unknown_project_404():
@@ -54,7 +60,9 @@ def test_unknown_project_404():
     from app.api.v1.project_context import resolve_active_project
 
     with pytest.raises(HTTPException) as e:
-        resolve_active_project(_req("ghost-proj"), tenant_slug="t-b4", subject="u", roles=[])
+        resolve_active_project(
+            _req("ghost-proj"), tenant_slug="t-b4", subject="u", roles=[]
+        )
     assert e.value.status_code == 404
 
 
@@ -66,7 +74,10 @@ def test_non_member_403():
     _seed_project("b4-secret", "t-b4")
     with pytest.raises(HTTPException) as e:
         resolve_active_project(
-            _req("b4-secret"), tenant_slug="t-b4", subject="outsider@x.com", roles=["member"]
+            _req("b4-secret"),
+            tenant_slug="t-b4",
+            subject="outsider@x.com",
+            roles=["member"],
         )
     assert e.value.status_code == 403
 
@@ -101,7 +112,8 @@ def _fake_cerbos():
         def check_resources(self, *, principal, resources):  # noqa: ANN001
             return SimpleNamespace(
                 results=[SimpleNamespace(is_allowed=lambda a: True)],
-                failed=lambda: False, status_code=200,
+                failed=lambda: False,
+                status_code=200,
             )
 
         def close(self):
@@ -115,22 +127,48 @@ def _fake_cerbos():
 
 def _headers(c, *, cid, tenant, project=None):
     v = "v" * 64
-    chal = base64.urlsafe_b64encode(hashlib.sha256(v.encode()).digest()).rstrip(b"=").decode()
+    chal = (
+        base64.urlsafe_b64encode(hashlib.sha256(v.encode()).digest())
+        .rstrip(b"=")
+        .decode()
+    )
     with Session(get_engine()) as db:
-        db.add(OAuthClient(client_id=cid, redirect_uris="https://a/cb",
-                           allowed_scopes="openid", is_confidential=False,
-                           created_at=datetime.now(timezone.utc).replace(tzinfo=None)))
+        db.add(
+            OAuthClient(
+                client_id=cid,
+                redirect_uris="https://a/cb",
+                allowed_scopes="openid",
+                is_confidential=False,
+                created_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            )
+        )
         db.commit()
-    a = c.get("/oauth/authorize", params={
-        "response_type": "code", "client_id": cid, "redirect_uri": "https://a/cb",
-        "code_challenge": chal, "code_challenge_method": "S256", "scope": "rag:query",
-        "user_subject": "admin@x.com", "tenant_id": tenant, "roles": "admin",
-    }, follow_redirects=False)
+    a = c.get(
+        "/oauth/authorize",
+        params={
+            "response_type": "code",
+            "client_id": cid,
+            "redirect_uri": "https://a/cb",
+            "code_challenge": chal,
+            "code_challenge_method": "S256",
+            "scope": "rag:query",
+            "user_subject": "admin@x.com",
+            "tenant_id": tenant,
+            "roles": "admin",
+        },
+        follow_redirects=False,
+    )
     code = a.headers["location"].split("code=", 1)[1].split("&", 1)[0]
-    tok = c.post("/oauth/token", data={
-        "grant_type": "authorization_code", "client_id": cid, "code": code,
-        "redirect_uri": "https://a/cb", "code_verifier": v,
-    }).json()["access_token"]
+    tok = c.post(
+        "/oauth/token",
+        data={
+            "grant_type": "authorization_code",
+            "client_id": cid,
+            "code": code,
+            "redirect_uri": "https://a/cb",
+            "code_verifier": v,
+        },
+    ).json()["access_token"]
     h = {"Authorization": f"Bearer {tok}", "X-ABS-Audience": cid}
     if project:
         h["X-Project-Id"] = project
@@ -142,7 +180,15 @@ def test_query_adds_project_filter(monkeypatch):
     _seed_project("proj-q", "t-q")
     captured = {}
 
-    def fake_search(*, collection, tenant_id, query_vector, limit, score_threshold=None, extra_filter=None):
+    def fake_search(
+        *,
+        collection,
+        tenant_id,
+        query_vector,
+        limit,
+        score_threshold=None,
+        extra_filter=None,
+    ):
         captured["filter"] = extra_filter
         return []
 

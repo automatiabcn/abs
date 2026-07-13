@@ -41,6 +41,7 @@ _QUEUED_RESPONSE = {
 def _email_hash(email: str) -> str:
     return hashlib.sha256(email.encode("utf-8")).hexdigest()[:8]
 
+
 router = APIRouter(prefix="/v1/beta", tags=["beta"])
 logger = logging.getLogger(__name__)
 
@@ -102,9 +103,7 @@ def _auto_issue_license(req: BetaRequest) -> str:
             )
         )
         # Mark request approved
-        target = db.scalars(
-            select(BetaRequest).where(BetaRequest.id == req.id)
-        ).first()
+        target = db.scalars(select(BetaRequest).where(BetaRequest.id == req.id)).first()
         if target is not None:
             target.status = "approved"
             target.approved_at = now
@@ -127,7 +126,9 @@ def _notify_discord(*, kind: str, req: BetaRequest, jti: Optional[str] = None) -
         from app.integrations import discord_webhook as dw
 
         if kind == "request" and hasattr(dw, "notify_beta_request"):
-            dw.notify_beta_request(email=req.email, name=req.name, use_case=req.use_case)
+            dw.notify_beta_request(
+                email=req.email, name=req.name, use_case=req.use_case
+            )
         elif kind == "approved" and hasattr(dw, "notify_beta_approved"):
             dw.notify_beta_approved(license_jti=jti or "", email=req.email)
     except Exception as exc:

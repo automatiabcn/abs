@@ -9,6 +9,7 @@ BUG-29 — graph routes flipped from `current_admin` (cookie-only dict) to
 fixture now overrides the new dep so the test fleet keeps passing without
 booting an actual Neo4j.
 """
+
 from __future__ import annotations
 
 import json
@@ -123,7 +124,7 @@ def test_nl_query_mocked(admin_client, monkeypatch):
                 {
                     "cypher": (
                         "MATCH (p:Person)-[:WORKS_AT]->"
-                        "(c:Org {name: \"DemoCo\"}) RETURN p"
+                        '(c:Org {name: "DemoCo"}) RETURN p'
                     ),
                     "params": {},
                     "explanation": "stub",

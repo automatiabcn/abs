@@ -172,9 +172,7 @@ def status() -> dict:
             conn = sqlite3.connect(str(DB_PATH))
             for table in ("users", "feature_usage_log", "usage_log"):
                 try:
-                    n = conn.execute(
-                        f"SELECT count(*) FROM {table}"
-                    ).fetchone()[0]
+                    n = conn.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
                     out[f"{table}_rows"] = n
                 except sqlite3.OperationalError:
                     out[f"{table}_rows"] = "missing_table"

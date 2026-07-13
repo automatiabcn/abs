@@ -52,7 +52,7 @@ def _render(template_name: str, lang: str = "en", **context) -> tuple[str, str]:
     for line in html.splitlines():
         stripped = line.strip()
         if stripped.startswith("<!-- subject:") and stripped.endswith("-->"):
-            subject = stripped[len("<!-- subject:"):-3].strip()
+            subject = stripped[len("<!-- subject:") : -3].strip()
             break
     return subject, html
 
@@ -94,7 +94,9 @@ def send_license_email(
     msg["From"] = settings.smtp_from
     msg["To"] = to
     msg["Subject"] = subject
-    msg.set_content("Your email client does not display HTML. Please use an HTML-capable client.")
+    msg.set_content(
+        "Your email client does not display HTML. Please use an HTML-capable client."
+    )
     msg.add_alternative(html, subtype="html")
 
     with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as smtp:
@@ -152,10 +154,25 @@ def send_refund_email(*, to: str, license_jti: str, refund_date: str) -> None:
 
 
 _ROLE_LABELS = {
-    "en": {"admin": "Administrator", "operator": "Operator", "viewer": "Viewer", "member": "Member"},
+    "en": {
+        "admin": "Administrator",
+        "operator": "Operator",
+        "viewer": "Viewer",
+        "member": "Member",
+    },
     # Non-ASCII escaped so the source stays ASCII; the rendered label is unchanged.
-    "tr": {"admin": "Admin", "operator": "Operat\u00f6r", "viewer": "Okur", "member": "\u00dcye"},
-    "es": {"admin": "Administrador", "operator": "Operador", "viewer": "Lector", "member": "Miembro"},
+    "tr": {
+        "admin": "Admin",
+        "operator": "Operat\u00f6r",
+        "viewer": "Okur",
+        "member": "\u00dcye",
+    },
+    "es": {
+        "admin": "Administrador",
+        "operator": "Operador",
+        "viewer": "Lector",
+        "member": "Miembro",
+    },
 }
 
 

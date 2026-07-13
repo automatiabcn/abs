@@ -11,6 +11,7 @@ skip-mode lets the marketplace install flow succeed without compromising the
 production threat model. Real cosign keyring + Sigstore transparency log
 verification lands in Q8.
 """
+
 from __future__ import annotations
 
 import logging

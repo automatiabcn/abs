@@ -44,7 +44,7 @@ def _session_env(tmp_path_factory):
     generate_keypair(str(private_path), str(public_path))
 
     # DB init (tmp dir'de tabloları oluştur)
-    from app.db.session import _engine, init_db
+    from app.db.session import init_db
 
     # module-level engine cache'ini sıfırla
     import app.db.session as session_mod

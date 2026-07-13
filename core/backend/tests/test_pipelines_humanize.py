@@ -12,7 +12,9 @@ def test_humanize_score_empty_text_is_zero():
 
 
 def test_humanize_score_detects_ai_stock_phrase():
-    s = humanize_score_text("As an AI, I cannot provide real-time data. In conclusion, it is important to note...")
+    s = humanize_score_text(
+        "As an AI, I cannot provide real-time data. In conclusion, it is important to note..."
+    )
     assert s.score > 0
     assert any("as an ai" in m for m in s.matches)
 

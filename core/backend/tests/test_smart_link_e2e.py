@@ -14,10 +14,13 @@ def test_e2e_github_oauth_full_round_trip(client, monkeypatch):
 
     def _post(self, url, *args, **kwargs):
         if "github.com/login/oauth/access_token" in str(url):
+
             class _R:
                 status_code = 200
+
                 def json(self):
                     return {"access_token": "ghs_e2e_token"}
+
             return _R()
         return real_post(self, url, *args, **kwargs)
 
@@ -62,17 +65,24 @@ def test_e2e_api_key_store_for_each_provider(client, monkeypatch):
 
     class _R200:
         status_code = 200
+
         def json(self):
             return {"data": []}
 
     class _R400:
         status_code = 400
+
         def json(self):
             return {"error": "bad"}
 
     def _get(self, url, *args, **kwargs):
         u = str(url)
-        if "openai.com" in u or "cohere.ai" in u or "groq.com" in u or "googleapis" in u:
+        if (
+            "openai.com" in u
+            or "cohere.ai" in u
+            or "groq.com" in u
+            or "googleapis" in u
+        ):
             return _R200()
         return real_get(self, url, *args, **kwargs)
 

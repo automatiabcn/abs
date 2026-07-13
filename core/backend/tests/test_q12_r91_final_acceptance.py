@@ -82,9 +82,7 @@ def _walk_setup(client, *, admin_email: str, admin_password: str) -> None:
         json={"email": admin_email, "password": admin_password},
     )
     assert r.status_code == 200, r.text
-    r = client.post(
-        "/v1/setup/step/license", json={"license_key": license_token}
-    )
+    r = client.post("/v1/setup/step/license", json={"license_key": license_token})
     assert r.status_code == 200, r.text
     r = client.post(
         "/v1/setup/step/domain",
@@ -174,10 +172,9 @@ def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
     )
     assert r_run.status_code in (502, 503), r_run.text
     detail = r_run.json().get("detail", "")
-    assert (
-        "all_providers_failed" in detail
-        or "no_providers_configured" in detail
-    ), f"PHASE 2: unexpected detail {detail!r}"
+    assert "all_providers_failed" in detail or "no_providers_configured" in detail, (
+        f"PHASE 2: unexpected detail {detail!r}"
+    )
 
     # ────────────────────────────────────────────────────────────────────
     # PHASE 3 — license JWT lifecycle: activate → revoke → status → reactivate
@@ -185,9 +182,7 @@ def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
     activate_token = generate_license(
         customer_id="cus_r91_active", tier="self-host", seat_count=1, valid_days=30
     )
-    r_act = client.post(
-        "/v1/license/activate", json={"license_key": activate_token}
-    )
+    r_act = client.post("/v1/license/activate", json={"license_key": activate_token})
     assert r_act.status_code == 200, r_act.text
     assert r_act.json()["status"] == "activated"
 
@@ -246,8 +241,7 @@ def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
     r_status_active = client.get("/v1/license/status")
     assert r_status_active.status_code == 200
     assert r_status_active.json()["status"] == "active", (
-        f"PHASE 3: post-reactivation expected active, got "
-        f"{r_status_active.json()!r}"
+        f"PHASE 3: post-reactivation expected active, got {r_status_active.json()!r}"
     )
 
     # ────────────────────────────────────────────────────────────────────
@@ -291,9 +285,11 @@ def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
     assert r_claim_b.json()["status"] == "claimed"
 
     with Session(get_engine()) as db:
-        rows = db.execute(
-            select(User).where(User.tenant_slug == "r91-tenant")
-        ).scalars().all()
+        rows = (
+            db.execute(select(User).where(User.tenant_slug == "r91-tenant"))
+            .scalars()
+            .all()
+        )
     emails = sorted(u.email for u in rows)
     assert "admin_a@r91.local" in emails, (
         f"PHASE 4: admin_a missing from tenant rows {emails}"
@@ -338,9 +334,9 @@ def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
         f"PHASE 6: expected 2 configured after groq drop, got "
         f"{drop['configured_count']}"
     )
-    assert any(
-        "groq" in str(m).lower() for m in drop["missing"]
-    ), f"PHASE 6: groq must appear in missing[], got {drop['missing']}"
+    assert any("groq" in str(m).lower() for m in drop["missing"]), (
+        f"PHASE 6: groq must appear in missing[], got {drop['missing']}"
+    )
 
     # Re-add groq → returns to 3 configured, cascade contract green.
     monkeypatch.setattr(settings, "groq_api_key", REAL_KEY, raising=False)
@@ -348,9 +344,8 @@ def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
     assert r_recovered.status_code == 200
     rec = r_recovered.json()
     assert rec["configured_count"] == 3, (
-        f"PHASE 6: post-recovery expected 3 configured, got "
-        f"{rec['configured_count']}"
+        f"PHASE 6: post-recovery expected 3 configured, got {rec['configured_count']}"
     )
-    assert not any(
-        "groq" in str(m).lower() for m in rec["missing"]
-    ), f"PHASE 6: groq should be reactivated, still in missing {rec['missing']}"
+    assert not any("groq" in str(m).lower() for m in rec["missing"]), (
+        f"PHASE 6: groq should be reactivated, still in missing {rec['missing']}"
+    )

@@ -34,9 +34,7 @@ def test_offline_grace_clock_drift_negative_age_rejected(tmp_path, monkeypatch):
     is invalid with reason ``offline_grace_clock_drift``."""
 
     state_path = tmp_path / "license_activation.json"
-    future_last_check = (
-        datetime.now(timezone.utc) + timedelta(days=10)
-    ).isoformat()
+    future_last_check = (datetime.now(timezone.utc) + timedelta(days=10)).isoformat()
     state_path.write_text(
         json.dumps(
             {

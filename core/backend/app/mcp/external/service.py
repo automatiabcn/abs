@@ -55,7 +55,9 @@ def _public(row: ExternalMcpServer) -> dict:
         "status": row.status,
         "last_error": row.last_error,
         "discovered_tool_count": row.discovered_tool_count,
-        "last_checked_at": row.last_checked_at.isoformat() if row.last_checked_at else None,
+        "last_checked_at": row.last_checked_at.isoformat()
+        if row.last_checked_at
+        else None,
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
 
@@ -129,7 +131,11 @@ def add_server(
         db.refresh(row)
         logger.info(
             "external_mcp_added tenant=%s slug=%s transport=%s auth=%s by=%s",
-            tenant_slug, slug, transport, auth_type, created_by,
+            tenant_slug,
+            slug,
+            transport,
+            auth_type,
+            created_by,
         )
         return _public(row)
 
@@ -167,7 +173,7 @@ def update_server(
     url: Optional[str] = None,
     transport: Optional[str] = None,
     auth_type: Optional[str] = None,
-    secret: Optional[str] = None,   # None=unchanged, ""=clear, value=rotate
+    secret: Optional[str] = None,  # None=unchanged, ""=clear, value=rotate
     header_name: Optional[str] = None,
     enabled: Optional[bool] = None,
 ) -> Optional[dict]:
@@ -187,7 +193,9 @@ def update_server(
         if header_name is not None:
             row.header_name = header_name.strip()
         if secret is not None:
-            row.encrypted_auth = encrypt_secret_value(secret.strip()) if secret.strip() else ""
+            row.encrypted_auth = (
+                encrypt_secret_value(secret.strip()) if secret.strip() else ""
+            )
         if enabled is not None:
             row.enabled = bool(enabled)
         # Re-validate the resulting auth shape.
@@ -262,9 +270,7 @@ async def test_connection(tenant_slug: str, slug: str) -> dict:
         result = {
             "ok": True,
             "tool_count": len(tools),
-            "tools": [
-                {"name": t.name, "description": t.description} for t in tools
-            ],
+            "tools": [{"name": t.name, "description": t.description} for t in tools],
         }
         status, last_error, count = "ok", None, len(tools)
     except ext_client.ExternalMcpError as exc:

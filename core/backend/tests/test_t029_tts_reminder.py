@@ -30,11 +30,15 @@ def test_synthesize_returns_audio_path(tmp_path: Path) -> None:
     assert r.cost_usd == 0.0
 
 
-def test_budget_only_enforced_for_paid_backend(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_budget_only_enforced_for_paid_backend(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     """T-F02 — budget gate only fires for opt-in ElevenLabs, not free backends."""
     monkeypatch.setattr(settings, "elevenlabs_budget_usd", 0.000001, raising=False)
     # Mock (free) is unaffected by budget caps now.
-    r = tts.TTSReminder("mock").synthesize("Some long text here for sure", target_dir=tmp_path)
+    r = tts.TTSReminder("mock").synthesize(
+        "Some long text here for sure", target_dir=tmp_path
+    )
     assert r.backend == "mock"
     assert r.cost_usd == 0.0
 
@@ -52,7 +56,9 @@ def test_elevenlabs_requires_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
         tts.TTSReminder("elevenlabs")
 
 
-def test_elevenlabs_requires_api_key_when_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_elevenlabs_requires_api_key_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(settings, "elevenlabs_enabled", True, raising=False)
     monkeypatch.setattr(settings, "elevenlabs_api_key", "", raising=False)
     with pytest.raises(ValueError):

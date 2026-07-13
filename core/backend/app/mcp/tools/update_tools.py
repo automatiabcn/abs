@@ -40,9 +40,7 @@ async def health_status() -> str:
     await tracker.bump("health_status")
     from app.health.monitor import monitor
 
-    return json.dumps(
-        {"providers": monitor.snapshot()}, ensure_ascii=False, indent=2
-    )
+    return json.dumps({"providers": monitor.snapshot()}, ensure_ascii=False, indent=2)
 
 
 @mcp_server.tool()

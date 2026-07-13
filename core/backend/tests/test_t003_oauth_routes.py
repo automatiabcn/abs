@@ -7,7 +7,6 @@ import hashlib
 import secrets
 from datetime import datetime, timezone
 
-import bcrypt
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -17,9 +16,11 @@ from app.main import app
 
 
 def _challenge(verifier: str) -> str:
-    return base64.urlsafe_b64encode(
-        hashlib.sha256(verifier.encode("ascii")).digest()
-    ).rstrip(b"=").decode("ascii")
+    return (
+        base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode("ascii")
+    )
 
 
 def _seed_client(client_id: str, redirect: str = "https://app.local/callback") -> None:

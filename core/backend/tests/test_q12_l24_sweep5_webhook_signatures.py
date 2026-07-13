@@ -75,9 +75,7 @@ class TestQ12L24008TypedSignature:
         assert reason == "header_missing"
 
     def test_header_wrong_prefix(self) -> None:
-        ok, reason = self.fn(
-            secret="s3cret", body=b"x", signature_header="sha512=abc"
-        )
+        ok, reason = self.fn(secret="s3cret", body=b"x", signature_header="sha512=abc")
         assert ok is False
         assert reason == "header_missing"
 
@@ -96,10 +94,7 @@ class TestQ12L24008TypedSignature:
 
         secret = "s3cret"
         body = b"hello"
-        sig = (
-            "sha256="
-            + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-        )
+        sig = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
         ok, reason = self.fn(secret=secret, body=body, signature_header=sig)
         assert ok is True
         assert reason == ""
@@ -113,9 +108,7 @@ class TestQ12L24008BackCompatShim:
         from app.integrations.github_app import verify_webhook_signature
 
         # Sanity: shim still callable + returns bool.
-        result = verify_webhook_signature(
-            secret="", body=b"", signature_header=""
-        )
+        result = verify_webhook_signature(secret="", body=b"", signature_header="")
         assert result is False
 
     def test_bool_shim_routes_through_typed_impl(self) -> None:
@@ -126,14 +119,9 @@ class TestQ12L24008BackCompatShim:
 
         secret = "rot13"
         body = b"payload"
-        sig = (
-            "sha256="
-            + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-        )
+        sig = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
         assert (
-            verify_webhook_signature(
-                secret=secret, body=body, signature_header=sig
-            )
+            verify_webhook_signature(secret=secret, body=body, signature_header=sig)
             is True
         )
 
@@ -162,7 +150,9 @@ class TestQ12L24008GithubWebhookAuditTaxonomy:
         # The handler should pass `reason` (the typed string) — not a hard
         # coded "signature_invalid" — into emit_event when ok is False.
         # Substring presence is sufficient as a regression check.
-        assert "reason=reason" in src or 'reason=reason or "signature_invalid"' in src, (
+        assert (
+            "reason=reason" in src or 'reason=reason or "signature_invalid"' in src
+        ), (
             "Q12-L24-008 regression: github_app webhook handler is no "
             "longer routing the typed reason into the emit_event call"
         )

@@ -38,9 +38,7 @@ def test_checkout_completed_schedules_4_onboarding_emails(client, monkeypatch):
     jti = r.json()["jti"]
 
     with Session(get_engine()) as s:
-        rows = s.scalars(
-            select(EmailQueue).where(EmailQueue.license_jti == jti)
-        ).all()
+        rows = s.scalars(select(EmailQueue).where(EmailQueue.license_jti == jti)).all()
         kinds = sorted(r.kind for r in rows)
         assert kinds == ["expiry_warning", "recovery", "walkthrough", "welcome"]
 
@@ -67,8 +65,6 @@ def test_duplicate_webhook_does_not_double_schedule(client, monkeypatch):
     assert r2.json().get("duplicate") is True
 
     with Session(get_engine()) as s:
-        rows = s.scalars(
-            select(EmailQueue).where(EmailQueue.license_jti == jti)
-        ).all()
+        rows = s.scalars(select(EmailQueue).where(EmailQueue.license_jti == jti)).all()
         # 4 onboarding email — duplicate path ekstra schedule etmedi
         assert len(rows) == 4

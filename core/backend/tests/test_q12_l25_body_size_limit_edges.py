@@ -145,9 +145,7 @@ def test_post_at_cap_plus_one_rejected(boundary_client: TestClient) -> None:
             "Content-Type": "application/json",
         },
     )
-    assert r.status_code == 413, (
-        f"cl=101 cap=100 should reject, got {r.status_code}"
-    )
+    assert r.status_code == 413, f"cl=101 cap=100 should reject, got {r.status_code}"
     body = r.json()
     assert body["detail"] == "request_body_too_large"
     assert body["limit_bytes"] == 100
@@ -186,7 +184,7 @@ def test_post_negative_content_length_rejected(boundary_client: TestClient) -> N
     # normalise to a transport error. Accept either as long as it is
     # not 200.
     assert r.status_code != 200, (
-        f"negative CL should be rejected somewhere upstream, got 200"
+        "negative CL should be rejected somewhere upstream, got 200"
     )
 
 

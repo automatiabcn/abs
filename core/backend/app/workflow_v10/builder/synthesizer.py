@@ -74,7 +74,9 @@ def _few_shot_examples(limit: int = 3) -> list[dict[str, Any]]:
     """Pick a small slice of templates to ground the LLM with concrete shapes."""
     examples: list[dict[str, Any]] = []
     for tmpl in list_templates()[:limit]:
-        examples.append({"intent": tmpl.title_en, "workflow": tmpl.workflow.model_dump(mode="json")})
+        examples.append(
+            {"intent": tmpl.title_en, "workflow": tmpl.workflow.model_dump(mode="json")}
+        )
     return examples
 
 
@@ -105,8 +107,11 @@ def _normalize_llm_workflow(data: Any) -> Any:
     if not isinstance(data, dict):
         return data
     if "trigger" not in data or not isinstance(data.get("trigger"), dict):
-        data["trigger"] = {"id": "trigger-1", "kind": "manual",
-                           "description": "auto-added"}
+        data["trigger"] = {
+            "id": "trigger-1",
+            "kind": "manual",
+            "description": "auto-added",
+        }
     else:
         t = data["trigger"]
         t.setdefault("id", "trigger-1")
@@ -124,7 +129,7 @@ def _normalize_llm_workflow(data: Any) -> Any:
             n.setdefault("name", n.get("id", f"Step {i + 1}").replace("-", " ").title())
             kind = n.get("kind")
             if kind not in ("llm_call", "api_request", "conditional", "loop", "hitl"):
-                tool = (n.get("tool") or n.get("config", {}).get("tool_name") or "")
+                tool = n.get("tool") or n.get("config", {}).get("tool_name") or ""
                 if "request" in tool or "http" in tool or "api" in tool:
                     n["kind"] = "api_request"
                 elif tool.startswith("abs.hitl") or "approval" in tool:
@@ -140,9 +145,16 @@ def _normalize_llm_workflow(data: Any) -> Any:
                 if "prompt_template" in cfg and "prompt" not in cfg:
                     cfg["prompt"] = cfg.pop("prompt_template")
                 _allowed_cfg = {
-                    "model", "prompt", "method", "url", "tool_name",
-                    "tool_args", "condition_expr", "approval_role",
-                    "script", "output_template",
+                    "model",
+                    "prompt",
+                    "method",
+                    "url",
+                    "tool_name",
+                    "tool_args",
+                    "condition_expr",
+                    "approval_role",
+                    "script",
+                    "output_template",
                 }
                 for k in list(cfg.keys()):
                     if k not in _allowed_cfg:

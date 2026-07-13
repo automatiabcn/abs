@@ -42,8 +42,7 @@ async def write_tests(function_signatures: str) -> str:
     await tracker.bump("write_tests")
     prompt = (
         "Write pytest tests for the following function(s). Cover the happy path, "
-        "edge cases and error cases:\n\n"
-        + function_signatures
+        "edge cases and error cases:\n\n" + function_signatures
     )
     try:
         provider = get_provider("cloudflare")
@@ -62,8 +61,7 @@ async def write_docs(module_info: str) -> str:
     await tracker.bump("write_docs")
     prompt = (
         "Write API documentation for this module in markdown: what it does, its "
-        "parameters, and an example request and response:\n\n"
-        + module_info
+        "parameters, and an example request and response:\n\n" + module_info
     )
     try:
         provider = get_provider("groq")

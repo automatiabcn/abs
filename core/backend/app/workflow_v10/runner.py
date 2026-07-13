@@ -55,7 +55,7 @@ _PER_KIND_ESTIMATE_S: Dict[str, float] = {
     "api_request": 0.4,
     "conditional": 0.05,
     "loop": 0.4,
-    "hitl": 0.0,         # blocked on human, not measurable
+    "hitl": 0.0,  # blocked on human, not measurable
     "abs_tool": 0.6,
     "transform": 0.1,
     "output": 0.05,
@@ -107,9 +107,7 @@ def _node_cost_usd(node: Dict[str, Any]) -> float:
         if free in raw:
             return 0.0
     # Paid lookup (most-specific key wins).
-    for key, price in sorted(
-        _PAID_PER_CALL_USD.items(), key=lambda kv: -len(kv[0])
-    ):
+    for key, price in sorted(_PAID_PER_CALL_USD.items(), key=lambda kv: -len(kv[0])):
         if key in raw:
             return price
     # No provider hint → cost is 0 unless the node kind is explicitly
@@ -247,6 +245,7 @@ def _node_text(out: Any) -> str:
 def _render(template: str, outputs: Dict[str, Any]) -> str:
     """Substitute `{{node_id}}` placeholders with that node's prior output.
     Unknown placeholders are left intact so a bad ref doesn't silently vanish."""
+
     def repl(m: "re.Match[str]") -> str:
         key = m.group(1).strip()
         # accept `id`, `steps.id`, `steps.id.output` shapes → take the id token
@@ -254,6 +253,7 @@ def _render(template: str, outputs: Dict[str, Any]) -> str:
         if token in outputs:
             return _node_text(outputs[token])
         return m.group(0)
+
     return _TEMPLATE_RE.sub(repl, template)
 
 
@@ -265,7 +265,12 @@ async def _run_node(
         from app.cascade.orchestrator import call_with_cascade
 
         prompt = _render(
-            str(config.get("prompt_template") or config.get("prompt") or node.get("name") or ""),
+            str(
+                config.get("prompt_template")
+                or config.get("prompt")
+                or node.get("name")
+                or ""
+            ),
             outputs,
         )
         if not prompt.strip():
@@ -280,7 +285,10 @@ async def _run_node(
         # Trigger carries the workflow's initial input so downstream
         # {{trigger-id}} references resolve to something.
         text = str(
-            config.get("input") or config.get("payload") or node.get("description") or ""
+            config.get("input")
+            or config.get("payload")
+            or node.get("description")
+            or ""
         )
         return {"text": text, "kind": "trigger"}
     if kind == "api_request":
@@ -384,7 +392,10 @@ async def _run_api_request(
                 attempt + 1,
                 last_exc,
             )
-    return {"error": f"request failed after {retry_max + 1} attempt(s): {last_exc}", "kind": "api_request"}
+    return {
+        "error": f"request failed after {retry_max + 1} attempt(s): {last_exc}",
+        "kind": "api_request",
+    }
 
 
 # abs_tool names the engine can invoke for real. External / side-effecting
@@ -413,7 +424,9 @@ async def _run_abs_tool(
         from app.rag import query as rag_query_fn
 
         question = _render(
-            str(args.get("question") or args.get("query") or config.get("prompt") or ""),
+            str(
+                args.get("question") or args.get("query") or config.get("prompt") or ""
+            ),
             outputs,
         )
         if not question.strip():
@@ -431,20 +444,30 @@ async def _run_abs_tool(
         import json as _json
 
         res = await system_status()
-        text = res if isinstance(res, str) else _json.dumps(res, ensure_ascii=False, default=str)
+        text = (
+            res
+            if isinstance(res, str)
+            else _json.dumps(res, ensure_ascii=False, default=str)
+        )
         return {"text": text, "tool": raw_name, "kind": "abs_tool"}
 
     if short.startswith("ask") or short in ("llm", "cascade"):
         from app.cascade.orchestrator import call_with_cascade
 
         prompt = _render(
-            str(args.get("prompt") or args.get("question") or config.get("prompt") or ""),
+            str(
+                args.get("prompt") or args.get("question") or config.get("prompt") or ""
+            ),
             outputs,
         )
         if not prompt.strip():
             return {"skipped": "abs_tool", "note": f"{raw_name}: empty prompt"}
         # ask_<provider> → primary provider; bare "ask" → default groq.
-        provider = str(args.get("provider") or (short[4:] if short.startswith("ask_") else "") or "groq")
+        provider = str(
+            args.get("provider")
+            or (short[4:] if short.startswith("ask_") else "")
+            or "groq"
+        )
         resp = await call_with_cascade(
             prompt, primary=provider, tenant_id=tenant or "default"
         )
@@ -539,7 +562,9 @@ async def _execute_run(job_id: str) -> None:
                     # Preserve the approver identity recorded by resume() — re-
                     # executing the gate must not wipe the audit trail.
                     record.node_outputs[nid] = {
-                        "rejected": True, "kind": "hitl", "approval_role": role,
+                        "rejected": True,
+                        "kind": "hitl",
+                        "approval_role": role,
                         "rejected_by": decision.get("rejected_by"),
                     }
                     continue
@@ -547,10 +572,16 @@ async def _execute_run(job_id: str) -> None:
                     # not yet decided → pause and wait for resume()
                     record.state = "awaiting_approval"
                     record.pending_node = nid
-                    record.node_outputs[nid] = {"awaiting": "approval", "kind": "hitl", "approval_role": role}
+                    record.node_outputs[nid] = {
+                        "awaiting": "approval",
+                        "kind": "hitl",
+                        "approval_role": role,
+                    }
                     return
                 output = {
-                    "approved": True, "kind": "hitl", "approval_role": role,
+                    "approved": True,
+                    "kind": "hitl",
+                    "approval_role": role,
                     "approved_by": decision.get("approved_by"),
                 }
                 record.node_outputs[nid] = output
@@ -564,7 +595,11 @@ async def _execute_run(job_id: str) -> None:
             # Resume reuse: a node already executed in a previous pass keeps its
             # output (never re-run a side effect like api_request/abs_tool). Only
             # real results are reused — "unreached"/"awaiting" markers re-evaluate.
-            if isinstance(prior, dict) and not prior.get("awaiting") and prior.get("skipped") != "unreached":
+            if (
+                isinstance(prior, dict)
+                and not prior.get("awaiting")
+                and prior.get("skipped") != "unreached"
+            ):
                 output = prior
             else:
                 try:
@@ -584,9 +619,7 @@ async def _execute_run(job_id: str) -> None:
                 # its failure must NOT be silent: surface it in warnings so the
                 # caller/panel sees it instead of a green "done" hiding an error
                 # buried in node_outputs.
-                record.warnings.append(
-                    f"node {nid} ({kind}) failed: {output['error']}"
-                )
+                record.warnings.append(f"node {nid} ({kind}) failed: {output['error']}")
             for e in out_edges.get(nid, []):
                 if _edge_fires(e, output):
                     dst = e.get("target") or e.get("to")
@@ -652,9 +685,19 @@ async def resume(
             "role": role,
         }
     record.node_outputs[nid] = (
-        {"approved": True, "kind": "hitl", "approved_by": actor or role, "approval_role": required_role}
+        {
+            "approved": True,
+            "kind": "hitl",
+            "approved_by": actor or role,
+            "approval_role": required_role,
+        }
         if approved
-        else {"rejected": True, "kind": "hitl", "rejected_by": actor or role, "approval_role": required_role}
+        else {
+            "rejected": True,
+            "kind": "hitl",
+            "rejected_by": actor or role,
+            "approval_role": required_role,
+        }
     )
     record.pending_node = None
     record.state = "running"

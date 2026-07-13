@@ -50,12 +50,8 @@ async def mock_openai_chat(
     )
 
 
-async def mock_anthropic_message(
-    model: str, prompt: str
-) -> ProviderResponse:
-    return await mock_openai_chat(
-        model=model, prompt=prompt, latency_range=(800, 1200)
-    )
+async def mock_anthropic_message(model: str, prompt: str) -> ProviderResponse:
+    return await mock_openai_chat(model=model, prompt=prompt, latency_range=(800, 1200))
 
 
 def mock_stripe_event(event_type: str = "checkout.session.completed") -> dict[str, Any]:

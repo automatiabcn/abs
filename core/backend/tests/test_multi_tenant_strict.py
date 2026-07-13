@@ -13,6 +13,7 @@ behaviour (and its existing tests) stay byte-identical:
      properties that carry no ``tenant_id`` key, slipping past the row filter.
      Strict mode refuses the raw surface (templated endpoints stay open).
 """
+
 from __future__ import annotations
 
 import pytest

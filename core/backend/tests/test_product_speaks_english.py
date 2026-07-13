@@ -16,6 +16,7 @@ titles and the i18n locale files are *translations sitting beside English
 originals* — the product ships in three languages on purpose. Turkish there is
 the feature. Turkish anywhere else is the leak.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -40,9 +41,9 @@ ASCII_TURKISH = re.compile(
 
 # Where Turkish is the product, not a leak.
 TRANSLATION_SURFACES = (
-    "i18n/locales",          # the locale catalogues themselves
-    "email/templates",       # welcome_tr.html sits beside welcome_en.html
-    "static/setup",          # the wizard's EN/TR/ES dictionary
+    "i18n/locales",  # the locale catalogues themselves
+    "email/templates",  # welcome_tr.html sits beside welcome_en.html
+    "static/setup",  # the wizard's EN/TR/ES dictionary
     "workflow_v10/builder/templates.py",  # title_tr beside title
 )
 
@@ -60,13 +61,13 @@ INPUT_MATCHERS = (
     "erp/hybrid_router.py",
     "erp/vanna_app.py",
     "connectors/adapters/csv_import.py",
-    "connectors/registry.py",   # "Paraşüt" is a vendor's name
+    "connectors/registry.py",  # "Paraşüt" is a vendor's name
     "hooks/enrichment.py",
     "hooks/delegate_nudge.py",
     "mcp/tools/fullstack.py",
     "pipelines/humanize/scorer.py",
     "pipelines/qual/translate.py",
-    "services/tts.py",          # a Turkish voice is a Turkish voice
+    "services/tts.py",  # a Turkish voice is a Turkish voice
 )
 
 
@@ -100,7 +101,7 @@ def test_no_turkish_in_shipped_code() -> None:
     hits = _offenders(re.compile(f"[{TURKISH_LETTERS}]"))
     assert not hits, (
         "Turkish in shipped code — the customer reads this, and so does anyone "
-        f"who opens the repo:\n" + "\n".join(hits[:25])
+        "who opens the repo:\n" + "\n".join(hits[:25])
     )
 
 
@@ -111,5 +112,5 @@ def test_no_accent_stripped_turkish_in_shipped_code() -> None:
     hits = _offenders(ASCII_TURKISH)
     assert not hits, (
         "Turkish with the accents stripped out — invisible to a character-class "
-        f"grep, still Turkish to the reader:\n" + "\n".join(hits[:25])
+        "grep, still Turkish to the reader:\n" + "\n".join(hits[:25])
     )

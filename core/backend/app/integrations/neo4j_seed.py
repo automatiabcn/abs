@@ -19,6 +19,7 @@ duplicates. Lifespan calls `ensure_tenant_seed("default")` so the panel is
 usable on first boot; the admin can re-trigger it per tenant via
 `POST /v1/graph/seed`.
 """
+
 from __future__ import annotations
 
 import logging
@@ -33,7 +34,12 @@ __all__ = ["ensure_tenant_seed", "tenant_node_counts"]
 
 _SEED_PEOPLE: list[dict[str, str]] = [
     {"id": "p-anna", "name": "Anna Kaya", "email": "anna@acme.local", "role": "CTO"},
-    {"id": "p-bora", "name": "Bora Aksoy", "email": "bora@acme.local", "role": "Eng Lead"},
+    {
+        "id": "p-bora",
+        "name": "Bora Aksoy",
+        "email": "bora@acme.local",
+        "role": "Eng Lead",
+    },
     {"id": "p-cem", "name": "Cem Demir", "email": "cem@acme.local", "role": "Engineer"},
 ]
 

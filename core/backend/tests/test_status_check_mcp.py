@@ -11,7 +11,15 @@ def test_status_check_response_shape():
 
     raw = asyncio.run(status_check())
     out = json.loads(raw)
-    for key in ("uptime_seconds", "timestamp", "services", "overall", "licenses", "revenue_today_usd", "recent_errors"):
+    for key in (
+        "uptime_seconds",
+        "timestamp",
+        "services",
+        "overall",
+        "licenses",
+        "revenue_today_usd",
+        "recent_errors",
+    ):
         assert key in out, f"missing key: {key}"
     assert isinstance(out["services"], list)
     assert out["overall"] in {"ok", "degraded", "down", "unknown"}

@@ -193,8 +193,7 @@ class TestClaudeCodeHookScope:
             )
         assert last_response is not None
         assert (
-            last_response.json()["hookSpecificOutput"]["permissionDecision"]
-            == "allow"
+            last_response.json()["hookSpecificOutput"]["permissionDecision"] == "allow"
         )
 
     def test_audit_log_returns_received_at_marker(self, admin_client):
@@ -238,9 +237,7 @@ class TestChatCrossTenantIsolation:
         assert r.status_code == 404
 
     def test_patch_rename_unknown_session_returns_404(self, admin_client):
-        r = admin_client.patch(
-            "/v1/chat/sessions/9_999_999", json={"title": "x"}
-        )
+        r = admin_client.patch("/v1/chat/sessions/9_999_999", json={"title": "x"})
         assert r.status_code == 404
 
     def test_completions_rejects_empty_messages(self, admin_client):
@@ -299,9 +296,7 @@ class TestMcpTokenRevoke:
         assert r.status_code == 201, r.text
         return r.json()
 
-    def test_revoked_token_fails_verify_with_token_revoked_detail(
-        self, admin_client
-    ):
+    def test_revoked_token_fails_verify_with_token_revoked_detail(self, admin_client):
         minted = self._mint(admin_client, label="kill-me")
         token = minted["token"]
         # Pre-revoke: verify works.
@@ -327,12 +322,8 @@ class TestMcpTokenRevoke:
     def test_revoke_is_idempotent(self, admin_client):
         minted = self._mint(admin_client, label="dup-revoke")
         token = minted["token"]
-        first = admin_client.post(
-            "/v1/mcp/tokens/revoke", json={"token": token}
-        )
-        second = admin_client.post(
-            "/v1/mcp/tokens/revoke", json={"token": token}
-        )
+        first = admin_client.post("/v1/mcp/tokens/revoke", json={"token": token})
+        second = admin_client.post("/v1/mcp/tokens/revoke", json={"token": token})
         assert first.status_code == 204
         assert second.status_code == 204
 
@@ -346,9 +337,7 @@ class TestMcpTokenRevoke:
         r = admin_client.get("/v1/mcp/tokens/revoked")
         assert r.status_code == 200
         rows = r.json()
-        match = next(
-            (row for row in rows if row["label"] == "audit-trail"), None
-        )
+        match = next((row for row in rows if row["label"] == "audit-trail"), None)
         assert match is not None
         assert match["reason"] == "rotation"
         assert match["revoked_by"]  # non-empty admin email

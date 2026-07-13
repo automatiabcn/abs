@@ -97,7 +97,9 @@ class TestFingerprint:
 
 
 class TestUpload:
-    def test_the_same_recording_twice_is_one_meeting(self, client, as_admin, monkeypatch):
+    def test_the_same_recording_twice_is_one_meeting(
+        self, client, as_admin, monkeypatch
+    ):
         import app.api.meetings as meetings
 
         calls = {"transcribe": 0, "index": 0}
@@ -108,7 +110,9 @@ class TestUpload:
 
         async def fake_transcribe(path):
             calls["transcribe"] += 1
-            return _transcript(duration=600.0, text="We agreed to ship on Friday. " * 40)
+            return _transcript(
+                duration=600.0, text="We agreed to ship on Friday. " * 40
+            )
 
         def fake_index(**kwargs):
             calls["index"] += 1
@@ -127,7 +131,9 @@ class TestUpload:
         # Same bytes, different filename — a re-sync, a retried upload.
         again = client.post(
             "/v1/meetings/upload",
-            files={"audio": ("copy-of-meeting.wav", io.BytesIO(b"RIFFspeech"), "audio/wav")},
+            files={
+                "audio": ("copy-of-meeting.wav", io.BytesIO(b"RIFFspeech"), "audio/wav")
+            },
         )
         assert again.status_code == 201, again.text
         assert again.json()["duplicate_of"] == first.json()["id"]
@@ -150,7 +156,9 @@ class TestUpload:
             # Two hours in, a few hundred characters out. Exactly what WhisperX
             # returns for a recording whose microphone died: confident, fluent,
             # and invented.
-            return _transcript(duration=7200.0, text="Thank you. Thank you very much." * 8)
+            return _transcript(
+                duration=7200.0, text="Thank you. Thank you very much." * 8
+            )
 
         def fake_index(**kwargs):
             indexed["n"] += 1
@@ -184,7 +192,9 @@ class TestUpload:
         store = {"chunks": 0}
 
         async def fake_transcribe(path):
-            return _transcript(duration=1800.0, text="We agreed to ship on Friday. " * 60)
+            return _transcript(
+                duration=1800.0, text="We agreed to ship on Friday. " * 60
+            )
 
         def fake_index(**kwargs):
             indexed["n"] += 1
@@ -201,7 +211,9 @@ class TestUpload:
 
         r = client.post(
             "/v1/meetings/upload",
-            files={"audio": ("standup.wav", io.BytesIO(b"RIFFreal-standup"), "audio/wav")},
+            files={
+                "audio": ("standup.wav", io.BytesIO(b"RIFFreal-standup"), "audio/wav")
+            },
         )
         body = r.json()
 

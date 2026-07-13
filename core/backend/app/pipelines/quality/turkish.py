@@ -53,7 +53,11 @@ class QualTrPipeline(BasePipeline):
             meta={"succeeded": ok_names},
         )
         steps.append(parallel_step)
-        wf.step("parallel-drafts", "ok" if parallel_step.ok else "fail", _step_payload(parallel_step))
+        wf.step(
+            "parallel-drafts",
+            "ok" if parallel_step.ok else "fail",
+            _step_payload(parallel_step),
+        )
 
         best = pick_longest_success(drafts)
         if best is None:
@@ -78,7 +82,9 @@ class QualTrPipeline(BasePipeline):
             "review", ollama.call(review_prompt, model="aya:8b"), model_hint="aya:8b"
         )
         steps.append(review_step)
-        wf.step("review", "ok" if review_step.ok else "fail", _step_payload(review_step))
+        wf.step(
+            "review", "ok" if review_step.ok else "fail", _step_payload(review_step)
+        )
 
         final_text = draft.text
         if review is not None and review.text:
@@ -96,7 +102,11 @@ class QualTrPipeline(BasePipeline):
                     model_hint="@cf/moonshotai/kimi-k2.5",
                 )
                 steps.append(polish_step)
-                wf.step("polish", "ok" if polish_step.ok else "fail", _step_payload(polish_step))
+                wf.step(
+                    "polish",
+                    "ok" if polish_step.ok else "fail",
+                    _step_payload(polish_step),
+                )
                 if polish is not None and polish.text:
                     final_text = polish.text
 

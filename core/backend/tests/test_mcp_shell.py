@@ -47,5 +47,11 @@ def test_system_status_returns_structured_dict():
     assert "license" in result
     assert "configured" in result["providers"]
     assert set(result["providers"]["configured"].keys()) >= {
-        "groq", "cerebras", "gemini", "cloudflare", "anthropic", "cohere", "ollama"
+        "groq",
+        "cerebras",
+        "gemini",
+        "cloudflare",
+        "anthropic",
+        "cohere",
+        "ollama",
     }

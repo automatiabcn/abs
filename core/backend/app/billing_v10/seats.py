@@ -87,9 +87,7 @@ class SeatCounter:
             raise ValueError(f"unknown tier {tier!r}")
         cap = TIERS[tier].seat_cap
         if in_use > cap:
-            raise SeatLimitExceeded(
-                f"{in_use} seats > tier {tier} cap {cap}"
-            )
+            raise SeatLimitExceeded(f"{in_use} seats > tier {tier} cap {cap}")
         self._seats[tenant_id] = {"tier": tier, "in_use": in_use}
 
     def add(self, *, tenant_id: str, n: int = 1) -> int:
@@ -119,9 +117,7 @@ class SeatCounter:
             raise ValueError(f"unknown tier {new_tier!r}")
         cap = TIERS[new_tier].seat_cap
         if record["in_use"] > cap:
-            raise SeatLimitExceeded(
-                f"in-use {record['in_use']} > new tier cap {cap}"
-            )
+            raise SeatLimitExceeded(f"in-use {record['in_use']} > new tier cap {cap}")
         record["tier"] = new_tier
         logger.info("seat_upgrade tenant=%s tier=%s", tenant_id, new_tier)
 

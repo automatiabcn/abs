@@ -11,6 +11,7 @@ the deeper gap — the flow returns a portal session for ANY submitted email wit
 no proof of ownership. Closing that needs an email-magic-link (send the portal
 link to the address) or a logged-in session; that is a product/UX change.
 """
+
 from __future__ import annotations
 
 

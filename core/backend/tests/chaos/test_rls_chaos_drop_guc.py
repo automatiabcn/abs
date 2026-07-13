@@ -71,7 +71,11 @@ def test_non_rls_db_error_falls_through() -> None:
     resp = client.get("/raises-other")
     assert resp.status_code == 500
     # detail should not be tenant_isolation_required.
-    body = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+    body = (
+        resp.json()
+        if resp.headers.get("content-type", "").startswith("application/json")
+        else {}
+    )
     assert body.get("detail") != "tenant_isolation_required"
 
 

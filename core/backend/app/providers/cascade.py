@@ -198,9 +198,7 @@ def configured_map() -> dict[str, bool]:
     return {p: is_configured(p) for p in PROVIDER_ORDER}
 
 
-def order_by_preference(
-    providers: Iterable[str], prefer: Optional[str]
-) -> List[str]:
+def order_by_preference(providers: Iterable[str], prefer: Optional[str]) -> List[str]:
     """Public helper — re-uses `get_active_providers` ordering on a custom
     subset. Mainly for tests that want to verify ordering without touching
     settings."""

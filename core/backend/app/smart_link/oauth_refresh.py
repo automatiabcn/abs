@@ -92,9 +92,7 @@ def refresh_github_token(
         new_refresh = data.get("refresh_token") if isinstance(data, dict) else None
         expires_in = data.get("expires_in") if isinstance(data, dict) else None
     except Exception as exc:
-        update_validation_status(
-            key_name=key_name, ok=False, error=str(exc)[:200]
-        )
+        update_validation_status(key_name=key_name, ok=False, error=str(exc)[:200])
         return {"ok": False, "error": str(exc)[:200]}
     finally:
         if own_client:
@@ -108,18 +106,14 @@ def refresh_github_token(
 
     encrypt_secret(key_name=key_name, provider="github", value=new_access)
     if new_refresh:
-        encrypt_secret(
-            key_name=refresh_key_name, provider="github", value=new_refresh
-        )
+        encrypt_secret(key_name=refresh_key_name, provider="github", value=new_refresh)
 
     new_exp = None
     if isinstance(expires_in, (int, float)) and expires_in > 0:
         new_exp = datetime.now(timezone.utc) + timedelta(seconds=int(expires_in))
         with Session(get_engine()) as db:
             row = db.scalars(
-                select(ConnectedSecret).where(
-                    ConnectedSecret.key_name == key_name
-                )
+                select(ConnectedSecret).where(ConnectedSecret.key_name == key_name)
             ).first()
             if row is not None:
                 row.expires_at = new_exp

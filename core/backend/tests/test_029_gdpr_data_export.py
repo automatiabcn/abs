@@ -61,9 +61,7 @@ def test_build_zip_contains_all_files():
         path = row.output_path
 
     cipher = open(path, "rb").read()
-    plaintext = decrypt_export(
-        license_jti=jti, customer_email=email, ciphertext=cipher
-    )
+    plaintext = decrypt_export(license_jti=jti, customer_email=email, ciphertext=cipher)
 
     with zipfile.ZipFile(io.BytesIO(plaintext)) as zf:
         names = set(zf.namelist())

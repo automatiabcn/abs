@@ -11,7 +11,15 @@ def test_health_full_returns_overall_and_checks(client):
     assert "checks" in body
     assert isinstance(body["checks"], list)
     names = {c["name"] for c in body["checks"]}
-    assert {"database", "vault", "providers", "rag", "mcp", "email", "data_dir"}.issubset(names)
+    assert {
+        "database",
+        "vault",
+        "providers",
+        "rag",
+        "mcp",
+        "email",
+        "data_dir",
+    }.issubset(names)
 
 
 def test_health_full_database_check_passes(client):

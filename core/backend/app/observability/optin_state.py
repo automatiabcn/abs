@@ -17,6 +17,7 @@ abs.audit and rewrite the file.
 The store is intentionally simple — single-process, single-write at
 boot — so we don't need locks or migrations.
 """
+
 from __future__ import annotations
 
 import json

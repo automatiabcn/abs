@@ -36,7 +36,9 @@ def upgrade() -> None:
     op.create_table(
         "external_mcp_servers",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("tenant_slug", sa.String(64), nullable=False, server_default="default"),
+        sa.Column(
+            "tenant_slug", sa.String(64), nullable=False, server_default="default"
+        ),
         sa.Column("slug", sa.String(64), nullable=False),
         sa.Column("name", sa.String(128), nullable=False, server_default=""),
         sa.Column("url", sa.String(2048), nullable=False),
@@ -45,9 +47,13 @@ def upgrade() -> None:
         sa.Column("encrypted_auth", sa.String(8192), nullable=False, server_default=""),
         sa.Column("header_name", sa.String(64), nullable=False, server_default=""),
         sa.Column("enabled", sa.Boolean, nullable=False, server_default=sa.true()),
-        sa.Column("status", sa.String(24), nullable=False, server_default="unconfigured"),
+        sa.Column(
+            "status", sa.String(24), nullable=False, server_default="unconfigured"
+        ),
         sa.Column("last_error", sa.String(512), nullable=True),
-        sa.Column("discovered_tool_count", sa.Integer, nullable=False, server_default="0"),
+        sa.Column(
+            "discovered_tool_count", sa.Integer, nullable=False, server_default="0"
+        ),
         sa.Column("last_checked_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("created_by", sa.String(254), nullable=False, server_default=""),
@@ -57,9 +63,7 @@ def upgrade() -> None:
     op.create_index(
         "ix_external_mcp_servers_tenant_slug", "external_mcp_servers", ["tenant_slug"]
     )
-    op.create_index(
-        "ix_external_mcp_servers_slug", "external_mcp_servers", ["slug"]
-    )
+    op.create_index("ix_external_mcp_servers_slug", "external_mcp_servers", ["slug"])
 
     if op.get_bind().dialect.name == "postgresql":
         op.execute("ALTER TABLE external_mcp_servers ENABLE ROW LEVEL SECURITY;")

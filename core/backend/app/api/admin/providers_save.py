@@ -122,9 +122,7 @@ def _persist_secret(
                 provider_id,
                 rb_exc,
             )
-        raise _PersistError(
-            f"env_write_failed:{type(exc).__name__}"
-        ) from exc
+        raise _PersistError(f"env_write_failed:{type(exc).__name__}") from exc
 
     if not vault_ok and not env_ok:
         # UAT-012 hardening: neither vault nor .env accepted the write (vault
@@ -148,9 +146,7 @@ def _persist_enabled_flag(provider_id: str, enabled: bool) -> bool:
         from app.api.setup import _persist_env_var
 
         return bool(
-            _persist_env_var(
-                f"ABS_{flag_attr.upper()}", "true" if enabled else "false"
-            )
+            _persist_env_var(f"ABS_{flag_attr.upper()}", "true" if enabled else "false")
         )
     except Exception as exc:  # pragma: no cover
         logger.warning("enabled flag persist failed: %s", exc)
@@ -289,7 +285,9 @@ async def save_provider(
     # Cloudflare Workers AI needs an account id beside the token. Apply it to
     # the live settings BEFORE the connectivity test so the ping can reach
     # /accounts/{id}/ai/run/…; persisted further below next to the token.
-    cf_account_new = (body.account_id or "").strip() if provider_id == "cloudflare" else ""
+    cf_account_new = (
+        (body.account_id or "").strip() if provider_id == "cloudflare" else ""
+    )
     cf_account_prev = getattr(settings, "cf_account_id", "")
     if provider_id == "cloudflare" and cf_account_new:
         setattr(settings, "cf_account_id", cf_account_new)

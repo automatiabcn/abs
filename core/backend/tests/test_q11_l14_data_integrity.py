@@ -48,9 +48,7 @@ class TestQ11L14AlembicChain:
         inspector = inspect(get_engine())
         assert "minted_token_blacklist" in inspector.get_table_names()
 
-        cols = {
-            c["name"] for c in inspector.get_columns("minted_token_blacklist")
-        }
+        cols = {c["name"] for c in inspector.get_columns("minted_token_blacklist")}
         expected = {
             "id",
             "token_digest",
@@ -75,9 +73,7 @@ class TestQ11L14RevokePersistence:
         assert r.status_code == 200
         return client
 
-    def test_revoke_writes_row_visible_from_fresh_session(
-        self, admin_client
-    ):
+    def test_revoke_writes_row_visible_from_fresh_session(self, admin_client):
         r = admin_client.post(
             "/v1/mcp/tokens",
             json={"label": "q11-l14", "scope": "all", "ttl_days": 1},
@@ -112,9 +108,7 @@ class TestQ11L14RevokePersistence:
         )
         token = r.json()["token"]
 
-        admin_client.post(
-            "/v1/mcp/tokens/revoke", json={"token": token}
-        )
+        admin_client.post("/v1/mcp/tokens/revoke", json={"token": token})
 
         replay = admin_client.get(
             "/v1/mcp/tokens/verify",

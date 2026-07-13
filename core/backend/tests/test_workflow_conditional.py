@@ -15,6 +15,7 @@ import app.workflow_v10.runner as runner
 
 # ---- safe condition evaluation ---------------------------------------------
 
+
 def test_eval_string_equality():
     assert ce.evaluate('{{n1}} == "yes"', {"n1": {"text": "yes"}}) is True
     assert ce.evaluate('{{n1}} == "yes"', {"n1": {"text": "no"}}) is False
@@ -38,7 +39,10 @@ def test_eval_empty_is_true():
 
 def test_eval_uses_result_of_conditional_upstream():
     # a {{ref}} to a conditional node resolves to its bool result
-    assert ce.evaluate('{{c1}} == "true"', {"c1": {"result": True, "text": "true"}}) is True
+    assert (
+        ce.evaluate('{{c1}} == "true"', {"c1": {"result": True, "text": "true"}})
+        is True
+    )
 
 
 @pytest.mark.parametrize(
@@ -46,9 +50,9 @@ def test_eval_uses_result_of_conditional_upstream():
     [
         "__import__('os').system('x')",
         "open('/etc/passwd').read()",
-        "len({{n1}}) > 0",          # function call
-        "n1 == 'x'",                # bare name (not a literal)
-        "{{n1}}.__class__",          # attribute access
+        "len({{n1}}) > 0",  # function call
+        "n1 == 'x'",  # bare name (not a literal)
+        "{{n1}}.__class__",  # attribute access
     ],
 )
 def test_eval_rejects_dangerous(expr):
@@ -57,6 +61,7 @@ def test_eval_rejects_dangerous(expr):
 
 
 # ---- edge-condition routing -------------------------------------------------
+
 
 async def _run(wf):
     runner.reset_for_tests()
@@ -73,7 +78,11 @@ def _branch_wf(input_text):
     return {
         "nodes": [
             {"id": "t", "kind": "trigger", "config": {"input": input_text}},
-            {"id": "c", "kind": "conditional", "config": {"condition_expr": '{{t}} == "go"'}},
+            {
+                "id": "c",
+                "kind": "conditional",
+                "config": {"condition_expr": '{{t}} == "go"'},
+            },
             {"id": "yes", "kind": "output", "config": {"output_template": "took TRUE"}},
             {"id": "no", "kind": "output", "config": {"output_template": "took FALSE"}},
         ],
@@ -106,7 +115,11 @@ def test_diamond_join_reachable_via_any_path():
     # b's unconditional edge (OR semantics — any firing edge reaches a node).
     wf = {
         "nodes": [
-            {"id": "a", "kind": "conditional", "config": {"condition_expr": '"x" == "x"'}},
+            {
+                "id": "a",
+                "kind": "conditional",
+                "config": {"condition_expr": '"x" == "x"'},
+            },
             {"id": "b", "kind": "output", "config": {"output_template": "B"}},
             {"id": "c", "kind": "output", "config": {"output_template": "C"}},
             {"id": "d", "kind": "output", "config": {"output_template": "D"}},
@@ -156,6 +169,9 @@ def test_no_conditions_runs_every_node_backwards_compat():
     st = asyncio.run(_run(wf))
     assert st["state"] == "done"
     # every node executed — no "unreached" anywhere
-    assert all("skipped" not in v or v.get("skipped") != "unreached" for v in st["node_outputs"].values())
+    assert all(
+        "skipped" not in v or v.get("skipped") != "unreached"
+        for v in st["node_outputs"].values()
+    )
     assert st["node_outputs"]["a"]["text"] == "A"
     assert st["node_outputs"]["b"]["text"] == "B"

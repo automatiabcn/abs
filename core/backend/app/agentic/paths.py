@@ -128,8 +128,7 @@ def resolve(raw: str, *, must_exist: bool = True) -> Path:
     if inside is None:
         # Deliberately vague about what is out there; specific about the rule.
         raise PathDenied(
-            "that path is outside the folders this server allows the assistant "
-            "to read"
+            "that path is outside the folders this server allows the assistant to read"
         )
 
     denied = _is_denied(target.relative_to(inside))

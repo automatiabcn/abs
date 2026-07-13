@@ -99,9 +99,7 @@ async def _query_usage_sum(provider: str, start: datetime, end: datetime) -> int
         tokens, _cost = monthly_sum(provider, start, end)
         return tokens
     except Exception as exc:
-        logger.debug(
-            "usage_log query unavailable for %s: %s", provider, exc
-        )
+        logger.debug("usage_log query unavailable for %s: %s", provider, exc)
         return 0
 
 

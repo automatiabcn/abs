@@ -57,7 +57,12 @@ async def _noop() -> str:  # pragma: no cover — only feeds Tool.from_function
 
 
 def _make_proxy_tool(
-    ext_name: str, description: str, schema: dict, tenant_slug: str, slug: str, orig: str
+    ext_name: str,
+    description: str,
+    schema: dict,
+    tenant_slug: str,
+    slug: str,
+    orig: str,
 ):
     """Build a FastMCP Tool that proxies to the upstream server on call.
 
@@ -95,11 +100,16 @@ def _make_proxy_tool(
 
             conn = service.connection_params(self._tenant, self._slug)
             if not conn or not conn.get("enabled"):
-                return [TextContent(type="text", text="[external MCP server unavailable]")]
+                return [
+                    TextContent(type="text", text="[external MCP server unavailable]")
+                ]
             try:
                 res = await ext_client.call_external_tool(
-                    conn["url"], conn["transport"], conn.get("headers") or {},
-                    self._orig, arguments or {},
+                    conn["url"],
+                    conn["transport"],
+                    conn.get("headers") or {},
+                    self._orig,
+                    arguments or {},
                 )
                 if res.get("ok"):
                     text = res.get("text") or ""
@@ -153,7 +163,9 @@ async def federate_server(tenant_slug: str, slug: str) -> int:
         mcp_server._tool_manager._tools[ext_name] = proxy
         registered.append(ext_name)
     _FEDERATED[slug] = registered
-    logger.info("federated slug=%s tools=%d tenant=%s", slug, len(registered), tenant_slug)
+    logger.info(
+        "federated slug=%s tools=%d tenant=%s", slug, len(registered), tenant_slug
+    )
     return len(registered)
 
 
@@ -205,5 +217,9 @@ async def call_federated(
     if not conn.get("enabled"):
         return {"ok": False, "text": "disabled"}
     return await ext_client.call_external_tool(
-        conn["url"], conn["transport"], conn.get("headers") or {}, tool_name, arguments or {}
+        conn["url"],
+        conn["transport"],
+        conn.get("headers") or {},
+        tool_name,
+        arguments or {},
     )

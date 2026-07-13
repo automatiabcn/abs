@@ -35,7 +35,9 @@ def test_record_increments_used(ledger):
 
 def test_warn_threshold_at_80_percent(ledger):
     # 800K of a 1M limit → should trigger over_warn but not over_block
-    qm.record(tokens_in=400_000, tokens_out=400_000, model="claude-opus-4-5", ledger=ledger)
+    qm.record(
+        tokens_in=400_000, tokens_out=400_000, model="claude-opus-4-5", ledger=ledger
+    )
     s = qm.status(ledger=ledger)
     assert s.over_warn is True
     assert s.over_block is False
@@ -43,7 +45,9 @@ def test_warn_threshold_at_80_percent(ledger):
 
 
 def test_block_threshold_at_95_percent(ledger):
-    qm.record(tokens_in=950_000, tokens_out=10_000, model="claude-opus-4-5", ledger=ledger)
+    qm.record(
+        tokens_in=950_000, tokens_out=10_000, model="claude-opus-4-5", ledger=ledger
+    )
     s = qm.status(ledger=ledger)
     assert s.over_block is True
     banner = s.banner() or ""
@@ -69,7 +73,9 @@ def test_simulated_1m_token_run_progresses_through_thresholds(ledger):
     saw_warn = False
     saw_block = False
     for _ in range(100):
-        qm.record(tokens_in=10_000, tokens_out=0, model="claude-opus-4-5", ledger=ledger)
+        qm.record(
+            tokens_in=10_000, tokens_out=0, model="claude-opus-4-5", ledger=ledger
+        )
         s = qm.status(ledger=ledger)
         if s.over_warn and not saw_warn:
             saw_warn = True

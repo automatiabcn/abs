@@ -47,9 +47,7 @@ def install_rls_violation_handler(app: FastAPI) -> None:
     """Register the handler on the given FastAPI app."""
 
     @app.exception_handler(DBAPIError)
-    async def _on_db_error(
-        request: Request, exc: DBAPIError
-    ) -> JSONResponse:
+    async def _on_db_error(request: Request, exc: DBAPIError) -> JSONResponse:
         if _is_rls_violation(exc):
             # Don't echo the underlying message — it can include row
             # values that the caller is supposed to be denied.

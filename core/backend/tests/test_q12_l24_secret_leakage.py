@@ -89,18 +89,15 @@ class TestQ12L24SignupTokenNotLogged:
         hint = full_token[:6]
 
         signup_logs = [
-            rec for rec in caplog.records
-            if "signup_pending" in rec.getMessage()
+            rec for rec in caplog.records if "signup_pending" in rec.getMessage()
         ]
         assert signup_logs, "Q12-L24-001: no signup_pending log emitted"
-        assert any(hint in rec.getMessage() and "***" in rec.getMessage()
-                   for rec in signup_logs), (
-            "Q12-L24-001: log must carry token_hint for ops correlation"
-        )
+        assert any(
+            hint in rec.getMessage() and "***" in rec.getMessage()
+            for rec in signup_logs
+        ), "Q12-L24-001: log must carry token_hint for ops correlation"
 
-    def test_response_body_still_returns_magic_link(
-        self, client: TestClient
-    ) -> None:
+    def test_response_body_still_returns_magic_link(self, client: TestClient) -> None:
         # Self-host SMTP-less installs need the link surfaced in API
         # response. This test pins the contract so we don't accidentally
         # over-fix L24-001 by stripping the response too.
@@ -131,9 +128,7 @@ _STRIPE_INTERNAL_ID_PATTERN = re.compile(
 
 
 class TestQ12L24StripeDetailScrub:
-    def test_billing_portal_stripe_error_detail_safe(
-        self, client: TestClient
-    ) -> None:
+    def test_billing_portal_stripe_error_detail_safe(self, client: TestClient) -> None:
         try:
             import stripe  # noqa: F401
         except Exception:
@@ -150,18 +145,20 @@ class TestQ12L24StripeDetailScrub:
 
             def __str__(self) -> str:  # pragma: no cover - test data
                 return (
-                    "Internal: customer cus_FAKE9999 not found "
-                    "for sk_live_LEAKED1234"
+                    "Internal: customer cus_FAKE9999 not found for sk_live_LEAKED1234"
                 )
 
         # Patch the Stripe error type the handler catches and the call
         # that raises so str(exc) contains internal IDs.
-        with patch.object(
-            bp_mod.stripe.error, "StripeError", _FakeStripeError, create=True
-        ), patch.object(
-            bp_mod.stripe.billing_portal.Session,
-            "create",
-            side_effect=_FakeStripeError(),
+        with (
+            patch.object(
+                bp_mod.stripe.error, "StripeError", _FakeStripeError, create=True
+            ),
+            patch.object(
+                bp_mod.stripe.billing_portal.Session,
+                "create",
+                side_effect=_FakeStripeError(),
+            ),
         ):
             r = client.post(
                 "/v1/billing/portal",
@@ -179,9 +176,7 @@ class TestQ12L24StripeDetailScrub:
                 f"Q12-L24-002 REGRESSION: portal 502 leaked internal IDs: {leaks}"
             )
 
-    def test_checkout_stripe_error_detail_safe(
-        self, client: TestClient
-    ) -> None:
+    def test_checkout_stripe_error_detail_safe(self, client: TestClient) -> None:
         try:
             import stripe  # noqa: F401
         except Exception:
@@ -198,12 +193,15 @@ class TestQ12L24StripeDetailScrub:
                     "acct_LEAKED1234 verification needed"
                 )
 
-        with patch.object(
-            ck_mod.stripe.error, "StripeError", _FakeStripeError, create=True
-        ), patch.object(
-            ck_mod.stripe.checkout.Session,
-            "create",
-            side_effect=_FakeStripeError(),
+        with (
+            patch.object(
+                ck_mod.stripe.error, "StripeError", _FakeStripeError, create=True
+            ),
+            patch.object(
+                ck_mod.stripe.checkout.Session,
+                "create",
+                side_effect=_FakeStripeError(),
+            ),
         ):
             r = client.post(
                 "/v1/checkout/session",

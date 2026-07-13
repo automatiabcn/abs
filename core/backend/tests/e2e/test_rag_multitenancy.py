@@ -32,18 +32,21 @@ from app.auth.oauth.models import OAuthClient
 from app.db.session import get_engine
 from app.main import app
 from app.rag import qdrant_client as qc
-from app.rag.embedding_bge import close_embedder, get_embedder
+from app.rag.embedding_bge import close_embedder
 
 DATASET = json.loads(
-    (Path(__file__).resolve().parent.parent / "fixtures/golden_eval_dataset.json")
-    .read_text(encoding="utf-8")
+    (
+        Path(__file__).resolve().parent.parent / "fixtures/golden_eval_dataset.json"
+    ).read_text(encoding="utf-8")
 )
 
 
 def _challenge(verifier: str) -> str:
-    return base64.urlsafe_b64encode(
-        hashlib.sha256(verifier.encode("ascii")).digest()
-    ).rstrip(b"=").decode("ascii")
+    return (
+        base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode("ascii")
+    )
 
 
 def _seed_client(client_id: str) -> None:
@@ -60,7 +63,9 @@ def _seed_client(client_id: str) -> None:
         db.commit()
 
 
-def _issue(c: TestClient, *, client_id, tenant_id, user_subject="alice", roles=("member",)):
+def _issue(
+    c: TestClient, *, client_id, tenant_id, user_subject="alice", roles=("member",)
+):
     verifier = "v" * 64
     auth = c.get(
         "/oauth/authorize",
@@ -176,7 +181,9 @@ def _allowing_cerbos_and_clean_embedder():
     close_embedder()
 
 
-def _ingest_corpus(c: TestClient, *, token: str, client_id: str, text: str, doc_id: str) -> None:
+def _ingest_corpus(
+    c: TestClient, *, token: str, client_id: str, text: str, doc_id: str
+) -> None:
     r = c.post(
         "/v1/rag/ingest",
         json={

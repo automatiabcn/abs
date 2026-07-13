@@ -33,7 +33,9 @@ class RaceCodePipeline(BasePipeline):
         if winner is None:
             return PipelineResult(
                 pipeline_type=self.pipeline_type,
-                steps=[PipelineStep(name="race", model="-", elapsed_ms=elapsed, ok=False)],
+                steps=[
+                    PipelineStep(name="race", model="-", elapsed_ms=elapsed, ok=False)
+                ],
                 final_response="",
                 total_elapsed_ms=elapsed,
                 prompt=prompt,

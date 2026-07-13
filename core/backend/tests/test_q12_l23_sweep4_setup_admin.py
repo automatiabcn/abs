@@ -299,9 +299,7 @@ class TestQ12L23Sweep4AdminGate:
             algorithm="HS256",
         )
         with caplog.at_level(logging.INFO, logger=LOGGER_NAME):
-            r = client.get(
-                "/v1/admin/me", headers={"Authorization": f"Bearer {token}"}
-            )
+            r = client.get("/v1/admin/me", headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 401
         events = _audits_for(caplog.records, "admin.auth.gate")
         assert events

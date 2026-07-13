@@ -25,11 +25,15 @@ from app.db.session import get_engine
 def test_team_licence_counts_toward_mrr(client, monkeypatch):
     monkeypatch.setattr(settings, "abs_seat_price_team_5", 1200.0)  # → 100/mo
     with Session(get_engine()) as db:
-        db.add(License(
-            jti="mrr-team-tier-1", tier="team", seat_count=5,
-            issued_at=datetime.now(timezone.utc),
-            expires_at=datetime.now(timezone.utc),
-        ))
+        db.add(
+            License(
+                jti="mrr-team-tier-1",
+                tier="team",
+                seat_count=5,
+                issued_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc),
+            )
+        )
         db.commit()
 
     # 1200 / 12 = 100 monthly. Before the fix the team licence matched no key

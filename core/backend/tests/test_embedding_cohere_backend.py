@@ -6,6 +6,7 @@ Makes RAG actually work out of the box without the mock embedder, ollama, or a
 the customer already configured for the model cascade. embed-multilingual-v3.0
 is 1024-dim, matching qdrant_default_vector_size — no collection migration.
 """
+
 from __future__ import annotations
 
 import sys

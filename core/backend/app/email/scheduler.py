@@ -23,7 +23,7 @@ from sqlmodel import Session, select
 
 from app.config import settings
 from app.db.models import EmailQueue, License
-from app.db.session import get_engine, get_session_sync
+from app.db.session import get_session_sync
 
 logger = logging.getLogger(__name__)
 
@@ -44,13 +44,9 @@ def _make_unsubscribe_token(license_jti: str) -> str:
     payload = {
         "license_jti": license_jti,
         "iat": int(datetime.now(timezone.utc).timestamp()),
-        "exp": int(
-            (datetime.now(timezone.utc) + timedelta(days=365)).timestamp()
-        ),
+        "exp": int((datetime.now(timezone.utc) + timedelta(days=365)).timestamp()),
     }
-    return jwt.encode(
-        payload, settings.unsubscribe_jwt_secret, algorithm="HS256"
-    )
+    return jwt.encode(payload, settings.unsubscribe_jwt_secret, algorithm="HS256")
 
 
 def _unsubscribe_url(token: str) -> str:
@@ -60,7 +56,9 @@ def _unsubscribe_url(token: str) -> str:
     return f"{base}/v1/email/unsubscribe?token={token}"
 
 
-def schedule_onboarding(*, license_jti: str, email: str, db: Optional[Session] = None) -> int:
+def schedule_onboarding(
+    *, license_jti: str, email: str, db: Optional[Session] = None
+) -> int:
     """Queue the four timed onboarding mails for a new license.
 
     first_success is queued separately (`schedule_first_success`). Returns the
@@ -154,9 +152,7 @@ def _render_for(row: EmailQueue, db: Session) -> Tuple[str, str]:
     }
 
     if row.kind == "expiry_warning":
-        lic = db.scalars(
-            select(License).where(License.jti == row.license_jti)
-        ).first()
+        lic = db.scalars(select(License).where(License.jti == row.license_jti)).first()
         if lic is not None:
             expires_at = lic.expires_at
             if expires_at.tzinfo is None:
@@ -171,9 +167,7 @@ def _render_for(row: EmailQueue, db: Session) -> Tuple[str, str]:
         ctx["portal_url"] = f"{settings.domain or 'abs.automatiabcn.com'}/manage"
 
     elif row.kind == "recovery":
-        lic = db.scalars(
-            select(License).where(License.jti == row.license_jti)
-        ).first()
+        lic = db.scalars(select(License).where(License.jti == row.license_jti)).first()
         if lic is not None:
             expires_at = lic.expires_at
             if expires_at.tzinfo is None:
@@ -186,9 +180,7 @@ def _render_for(row: EmailQueue, db: Session) -> Tuple[str, str]:
         ctx["first_tool_name"] = "system_status"
 
     # 023 — preferred_lang from License row (default 'en')
-    lic = db.scalars(
-        select(License).where(License.jti == row.license_jti)
-    ).first()
+    lic = db.scalars(select(License).where(License.jti == row.license_jti)).first()
     lang = lic.preferred_lang if (lic and lic.preferred_lang) else "en"
     return _render(f"{row.kind}.html", lang=lang, **ctx)
 

@@ -45,7 +45,8 @@ def test_codeql_config_excludes_path_injection_on_safe_path() -> None:
     assert filters, "query-filters block missing"
 
     path_injection_excludes = [
-        f["exclude"] for f in filters
+        f["exclude"]
+        for f in filters
         if isinstance(f, dict)
         and "exclude" in f
         and f["exclude"].get("id") == "py/path-injection"

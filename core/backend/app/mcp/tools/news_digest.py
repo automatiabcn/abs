@@ -55,9 +55,7 @@ def _read_cache() -> str | None:
 
 def _write_cache(markdown: str) -> None:
     try:
-        CACHE_PATH.write_text(
-            json.dumps({"ts": time.time(), "markdown": markdown})
-        )
+        CACHE_PATH.write_text(json.dumps({"ts": time.time(), "markdown": markdown}))
     except Exception as exc:
         logger.debug("news_digest cache write failed: %s", exc)
 
@@ -115,7 +113,7 @@ async def news_digest(force_refresh: bool = False) -> str:
         if cached:
             return cached
 
-    sections = await asyncio.gather(*[_one_query(l, q) for l, q in QUERIES])
+    sections = await asyncio.gather(*[_one_query(label, q) for label, q in QUERIES])
     markdown = _format_markdown(list(sections))
     _write_cache(markdown)
     return markdown

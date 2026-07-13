@@ -42,7 +42,9 @@ def test_auto_finds_cohere_when_a_key_is_there(monkeypatch):
 
 def test_auto_finds_the_local_cross_encoder_when_one_is_installed(monkeypatch):
     monkeypatch.setattr(settings, "cohere_api_key", "", raising=False)
-    monkeypatch.setattr(settings, "rerank_model_path", "/models/qwen3.onnx", raising=False)
+    monkeypatch.setattr(
+        settings, "rerank_model_path", "/models/qwen3.onnx", raising=False
+    )
 
     assert resolve_rerank_backend("auto") == "qwen3_onnx"
 
@@ -55,7 +57,7 @@ def test_no_reranker_leaves_the_dense_order_exactly_as_it_was(monkeypatch):
 
     docs = [
         "the pension scheme changed in April",
-        "query query query query",          # the mock would have hoisted this
+        "query query query query",  # the mock would have hoisted this
         "annual leave carries over",
     ]
     out = Reranker("auto").rerank("query", docs, top_k=3)

@@ -42,7 +42,6 @@ from app.licensing.phone_home import (
 )
 from app.cascade.orchestrator import call_with_cascade
 from app.chat import (
-    PIPELINE_OPTIONS,
     ChatCitation,
     build_citation_prompt_block,
     detect_pipeline,
@@ -208,7 +207,7 @@ def _detect_slash_command(content: str) -> Optional[Dict]:
         if content.startswith(prefix):
             return {
                 "name": name,
-                "args": {"query": content[len(prefix):].strip()},
+                "args": {"query": content[len(prefix) :].strip()},
             }
     return None
 
@@ -322,9 +321,7 @@ def _create_session(
     # default title in that case.
     title = "New chat"
     if first_user_msg:
-        first_line = next(
-            iter(first_user_msg.strip().splitlines()), ""
-        )
+        first_line = next(iter(first_user_msg.strip().splitlines()), "")
         if first_line:
             title = first_line[:60]
     sess = ChatSession(
@@ -338,9 +335,7 @@ def _create_session(
     return sess
 
 
-def _load_session(
-    db: Session, session_id: int, tenant_slug: str
-) -> ChatSession:
+def _load_session(db: Session, session_id: int, tenant_slug: str) -> ChatSession:
     sess = db.get(ChatSession, session_id)
     if not sess or sess.tenant_slug != tenant_slug:
         raise HTTPException(status_code=404, detail="session_not_found")
@@ -408,9 +403,7 @@ def list_sessions(
 
 
 @router.post("/sessions", response_model=ChatSessionOut, status_code=201)
-def create_session(
-    body: NewSessionRequest, admin: dict = Depends(current_admin)
-):
+def create_session(body: NewSessionRequest, admin: dict = Depends(current_admin)):
     tenant = _resolve_tenant(admin["sub"])
     with Session(get_engine()) as db:
         sess = ChatSession(
@@ -449,9 +442,7 @@ def rename_session(
 
 
 @router.delete("/sessions/{session_id}", status_code=204)
-def delete_session(
-    session_id: int, admin: dict = Depends(current_admin)
-):
+def delete_session(session_id: int, admin: dict = Depends(current_admin)):
     tenant = _resolve_tenant(admin["sub"])
     with Session(get_engine()) as db:
         sess = _load_session(db, session_id, tenant)
@@ -468,9 +459,7 @@ def delete_session(
 # ───── pin / archive thread mutations ────────────────────────────────────
 
 
-@router.post(
-    "/sessions/{session_id}/pin", response_model=ChatSessionOut
-)
+@router.post("/sessions/{session_id}/pin", response_model=ChatSessionOut)
 def pin_session(
     session_id: int,
     pinned: bool = True,
@@ -488,9 +477,7 @@ def pin_session(
         return _session_out(sess, sess.message_count)
 
 
-@router.post(
-    "/sessions/{session_id}/archive", response_model=ChatSessionOut
-)
+@router.post("/sessions/{session_id}/archive", response_model=ChatSessionOut)
 def archive_session(
     session_id: int,
     admin: dict = Depends(current_admin),
@@ -508,9 +495,7 @@ def archive_session(
         return _session_out(sess, sess.message_count)
 
 
-@router.post(
-    "/sessions/{session_id}/unarchive", response_model=ChatSessionOut
-)
+@router.post("/sessions/{session_id}/unarchive", response_model=ChatSessionOut)
 def unarchive_session(
     session_id: int,
     admin: dict = Depends(current_admin),
@@ -527,12 +512,8 @@ def unarchive_session(
         return _session_out(sess, sess.message_count)
 
 
-@router.get(
-    "/sessions/{session_id}/messages", response_model=List[ChatMessageOut]
-)
-def list_messages(
-    session_id: int, admin: dict = Depends(current_admin)
-):
+@router.get("/sessions/{session_id}/messages", response_model=List[ChatMessageOut])
+def list_messages(session_id: int, admin: dict = Depends(current_admin)):
     tenant = _resolve_tenant(admin["sub"])
     with Session(get_engine()) as db:
         _load_session(db, session_id, tenant)
@@ -634,9 +615,7 @@ async def completions(
     if not body.messages:
         raise HTTPException(status_code=400, detail="messages_required")
     if body.messages[-1].role != "user":
-        raise HTTPException(
-            status_code=400, detail="last_message_must_be_user"
-        )
+        raise HTTPException(status_code=400, detail="last_message_must_be_user")
     _assert_license_ok()
 
     admin_email = admin["sub"]
@@ -666,7 +645,9 @@ async def completions(
             ).one()
             or 0
         )
-        new_msgs = body.messages[existing_count:] if existing_count else list(body.messages)
+        new_msgs = (
+            body.messages[existing_count:] if existing_count else list(body.messages)
+        )
         for m in new_msgs:
             db.add(
                 ChatMessage(
@@ -701,12 +682,15 @@ async def completions(
     #   - a qual_* pipeline is selected (it orchestrates providers itself)
     #   - the Anthropic mock provider is active (test/dev path; _try_mock
     #     Still runs inside the stream)
-    if (
-        body.pipeline in ("auto", "cascade")
-        and pipeline_used not in ("qual_code", "qual_tr", "qual_analysis", "qual_translate")
+    if body.pipeline in ("auto", "cascade") and pipeline_used not in (
+        "qual_code",
+        "qual_tr",
+        "qual_analysis",
+        "qual_translate",
     ):
         try:
             from app.providers.anthropic_mock import get_mock_provider
+
             _mock_active = get_mock_provider() is not None
         except Exception:
             _mock_active = False
@@ -739,8 +723,8 @@ async def completions(
         """
         from app.agentic.loop import run_agent_loop
 
-        yield f'data: {json.dumps({"type": "session", "session_id": sess_id, "title": sess_title})}\n\n'
-        yield f'data: {json.dumps({"type": "mode", "id": "agent"})}\n\n'
+        yield f"data: {json.dumps({'type': 'session', 'session_id': sess_id, 'title': sess_title})}\n\n"
+        yield f"data: {json.dumps({'type': 'mode', 'id': 'agent'})}\n\n"
 
         t_agent = time.perf_counter()
         try:
@@ -752,8 +736,8 @@ async def completions(
                 "No provider is set up yet, so there is nothing to answer with. "
                 "Add a key under Settings → Providers."
             )
-            yield f'data: {json.dumps({"type": "text", "content": err, "provider": "none"})}\n\n'
-            yield 'data: [DONE]\n\n'
+            yield f"data: {json.dumps({'type': 'text', 'content': err, 'provider': 'none'})}\n\n"
+            yield "data: [DONE]\n\n"
             return
 
         answer = ""
@@ -766,8 +750,9 @@ async def completions(
         ):
             yield event.sse()
             if event.type == "tool-call":
-                tool_calls.append({"name": event.data.get("name"),
-                                   "args": event.data.get("args")})
+                tool_calls.append(
+                    {"name": event.data.get("name"), "args": event.data.get("args")}
+                )
             elif event.type == "agent-done":
                 answer = str(event.data.get("answer") or "")
             elif event.type == "agent-error":
@@ -781,7 +766,7 @@ async def completions(
         # already given the client something to render at every step, so the
         # typewriter effect buys nothing and delays the payload.
         if answer:
-            yield f'data: {json.dumps({"type": "text", "content": answer, "provider": "agent"})}\n\n'
+            yield f"data: {json.dumps({'type': 'text', 'content': answer, 'provider': 'agent'})}\n\n"
 
         with Session(get_engine()) as db:
             db.add(
@@ -810,14 +795,14 @@ async def completions(
                 db.add(touched)
             db.commit()
 
-        yield 'data: [DONE]\n\n'
+        yield "data: [DONE]\n\n"
 
     async def stream() -> AsyncGenerator[str, None]:
-        yield f'data: {json.dumps({"type": "session", "session_id": sess_id, "title": sess_title})}\n\n'
-        yield f'data: {json.dumps({"type": "pipeline", "id": pipeline_used})}\n\n'
+        yield f"data: {json.dumps({'type': 'session', 'session_id': sess_id, 'title': sess_title})}\n\n"
+        yield f"data: {json.dumps({'type': 'pipeline', 'id': pipeline_used})}\n\n"
 
         if cmd:
-            yield f'data: {json.dumps({"type": "tool-call", "name": cmd["name"], "args": cmd["args"]})}\n\n'
+            yield f"data: {json.dumps({'type': 'tool-call', 'name': cmd['name'], 'args': cmd['args']})}\n\n"
             if cmd["name"] == "rag":
                 stub = {
                     "type": "tool-result",
@@ -827,7 +812,7 @@ async def completions(
                         "are not wired up yet."
                     ),
                 }
-                yield f'data: {json.dumps(stub)}\n\n'
+                yield f"data: {json.dumps(stub)}\n\n"
 
         # RAG-grounded citations: pull top-K chunks
         # before the cascade call, inject as a [1]/[2]/… block, and ship
@@ -846,7 +831,7 @@ async def completions(
                 logger.info("citation retrieval skipped: %s", exc)
                 citations = []
             if citations:
-                yield f'data: {json.dumps({"type": "citations", "citations": serialise_citations(citations)})}\n\n'
+                yield f"data: {json.dumps({'type': 'citations', 'citations': serialise_citations(citations)})}\n\n"
 
         # Multi-turn rendering. Build a "User: …\nAssistant: …"
         # transcript from body.messages and append the citation-augmented
@@ -855,8 +840,10 @@ async def completions(
         if len(body.messages) > 1:
             history_lines: list[str] = []
             for m in body.messages[:-1]:
-                role_label = "User" if m.role == "user" else (
-                    "Assistant" if m.role == "assistant" else m.role.capitalize()
+                role_label = (
+                    "User"
+                    if m.role == "user"
+                    else ("Assistant" if m.role == "assistant" else m.role.capitalize())
                 )
                 history_lines.append(f"{role_label}: {m.content}")
             transcript = "\n".join(history_lines)
@@ -874,7 +861,7 @@ async def completions(
         # SSE traffic well within the 30s idle-timeout window. Live
         # provider calls can run 5-30s; without this beat a slow
         # provider would silently disconnect mid-request.
-        yield f'data: {json.dumps({"type": "thinking"})}\n\n'
+        yield f"data: {json.dumps({'type': 'thinking'})}\n\n"
 
         t0 = time.perf_counter()
         # Qual_* dedicated multi-model pipelines.
@@ -888,7 +875,9 @@ async def completions(
                 qual_meta = qual_result.to_dict()
                 cascade_resp = CascadeResponse(
                     completion=qual_result.completion or "",
-                    provider=(qual_result.providers[-1] if qual_result.providers else "qual"),
+                    provider=(
+                        qual_result.providers[-1] if qual_result.providers else "qual"
+                    ),
                     fallback_chain=list(qual_result.providers) or ["qual"],
                     tokens_used=0,
                     mock=False,
@@ -917,13 +906,12 @@ async def completions(
                 )
             elif detail_str.startswith("all_providers_failed"):
                 err_text = (
-                    "Every provider failed on this question. Try again in a "
-                    "moment."
+                    "Every provider failed on this question. Try again in a moment."
                 )
             else:
                 err_text = "The answer did not come through. Try again."
-            yield f'data: {json.dumps({"type": "text", "content": err_text, "provider": "none"})}\n\n'
-            yield 'data: [DONE]\n\n'
+            yield f"data: {json.dumps({'type': 'text', 'content': err_text, 'provider': 'none'})}\n\n"
+            yield "data: [DONE]\n\n"
             with Session(get_engine()) as db:
                 db.add(
                     ChatMessage(
@@ -952,10 +940,10 @@ async def completions(
         for i in range(0, len(text), chunk_size):
             payload = {
                 "type": "text",
-                "content": text[i:i + chunk_size],
+                "content": text[i : i + chunk_size],
                 "provider": provider,
             }
-            yield f'data: {json.dumps(payload)}\n\n'
+            yield f"data: {json.dumps(payload)}\n\n"
             await asyncio.sleep(0.01)
 
         latency_ms = int((time.perf_counter() - t0) * 1000)
@@ -1000,8 +988,8 @@ async def completions(
                 "fallback": qual_meta.get("fallback", False),
                 "fallback_reason": qual_meta.get("fallback_reason"),
             }
-        yield f'data: {json.dumps(meta)}\n\n'
-        yield 'data: [DONE]\n\n'
+        yield f"data: {json.dumps(meta)}\n\n"
+        yield "data: [DONE]\n\n"
 
         with Session(get_engine()) as db:
             tool_calls_json = (

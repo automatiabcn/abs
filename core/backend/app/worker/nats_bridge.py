@@ -63,13 +63,13 @@ async def bridge_nats_to_inngest(
 
     subs = []
     for nats_subject, inngest_event in mapping.items():
-        durable = f"{durable_prefix}-{inngest_event.replace('/', '_').replace('.', '_')}"
+        durable = (
+            f"{durable_prefix}-{inngest_event.replace('/', '_').replace('.', '_')}"
+        )
 
         async def _handler(msg, _evt=inngest_event) -> None:  # noqa: ANN001
             data = _decode(msg.data)
-            await inngest_client.send(
-                inngest.Event(name=_evt, data=data)
-            )
+            await inngest_client.send(inngest.Event(name=_evt, data=data))
             logger.debug("nats→inngest forwarded %s -> %s", msg.subject, _evt)
 
         sub = await subscribe(nats_subject, _handler, durable=durable)

@@ -63,23 +63,15 @@ def upgrade() -> None:
         sa.Column("uploader_email", sa.String(254), nullable=False),
         sa.Column("filename", sa.String(256), nullable=False),
         sa.Column("duration_sec", sa.Float, nullable=False, server_default="0"),
-        sa.Column(
-            "speaker_count", sa.Integer, nullable=False, server_default="0"
-        ),
-        sa.Column(
-            "status", sa.String(32), nullable=False, server_default="pending"
-        ),
+        sa.Column("speaker_count", sa.Integer, nullable=False, server_default="0"),
+        sa.Column("status", sa.String(32), nullable=False, server_default="pending"),
         sa.Column("summary", sa.String(4096), nullable=False, server_default=""),
         sa.Column("error_message", sa.String(512), nullable=True),
         sa.Column("created_at", sa.DateTime, nullable=False),
         sa.Column("completed_at", sa.DateTime, nullable=True),
     )
-    op.create_index(
-        "ix_meetings_tenant_slug", "meetings", ["tenant_slug"]
-    )
-    op.create_index(
-        "ix_meetings_uploader_email", "meetings", ["uploader_email"]
-    )
+    op.create_index("ix_meetings_tenant_slug", "meetings", ["tenant_slug"])
+    op.create_index("ix_meetings_uploader_email", "meetings", ["uploader_email"])
     op.create_index("ix_meetings_created_at", "meetings", ["created_at"])
 
     op.create_table(
@@ -99,23 +91,13 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_meeting_segments_meeting_id", table_name="meeting_segments"
-    )
+    op.drop_index("ix_meeting_segments_meeting_id", table_name="meeting_segments")
     op.drop_table("meeting_segments")
     op.drop_index("ix_meetings_created_at", table_name="meetings")
-    op.drop_index(
-        "ix_meetings_uploader_email", table_name="meetings"
-    )
+    op.drop_index("ix_meetings_uploader_email", table_name="meetings")
     op.drop_index("ix_meetings_tenant_slug", table_name="meetings")
     op.drop_table("meetings")
-    op.drop_index(
-        "ix_feature_usage_log_ts", table_name="feature_usage_log"
-    )
-    op.drop_index(
-        "ix_feature_usage_log_feature_id", table_name="feature_usage_log"
-    )
-    op.drop_index(
-        "ix_feature_usage_log_tenant_slug", table_name="feature_usage_log"
-    )
+    op.drop_index("ix_feature_usage_log_ts", table_name="feature_usage_log")
+    op.drop_index("ix_feature_usage_log_feature_id", table_name="feature_usage_log")
+    op.drop_index("ix_feature_usage_log_tenant_slug", table_name="feature_usage_log")
     op.drop_table("feature_usage_log")

@@ -27,9 +27,7 @@ def _mock_mode(monkeypatch):
     monkeypatch.setenv("ABS_ANTHROPIC_MOCK_MODE", "ok")
     from app.config import settings
 
-    monkeypatch.setattr(
-        settings, "anthropic_mock_mode", "ok", raising=False
-    )
+    monkeypatch.setattr(settings, "anthropic_mock_mode", "ok", raising=False)
 
 
 class TestQ11L10QuotaRollingWindow:
@@ -49,9 +47,7 @@ class TestQ11L10QuotaRollingWindow:
         )
         return r.json()["token"]
 
-    def test_rolling_window_drops_entries_older_than_1h(
-        self, admin_client
-    ):
+    def test_rolling_window_drops_entries_older_than_1h(self, admin_client):
         """Pre-populate the in-memory deque with 200 fake-old timestamps,
         then make one real risky-tool call. Old entries must drop, count
         must reset to 1 (only the new call), and the response must be
@@ -61,7 +57,6 @@ class TestQ11L10QuotaRollingWindow:
 
         # Resolve the test admin's tenant so we plant entries on the
         # right key.
-        from app.api.chat import _resolve_tenant
         from app.api.mcp_tokens import verify_token
 
         payload = verify_token(token)
@@ -106,20 +101,18 @@ class TestQ11L10QuotaRollingWindow:
             json={"tool_name": "Bash"},
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert (
-            r.json()["hookSpecificOutput"]["permissionDecision"]
-            == "allow"
-        ), "100th call should allow (count=100, limit=100)"
+        assert r.json()["hookSpecificOutput"]["permissionDecision"] == "allow", (
+            "100th call should allow (count=100, limit=100)"
+        )
 
         r2 = admin_client.post(
             "/v1/hooks/quota-check",
             json={"tool_name": "Bash"},
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert (
-            r2.json()["hookSpecificOutput"]["permissionDecision"]
-            == "deny"
-        ), "101st call should deny (count=101 > 100)"
+        assert r2.json()["hookSpecificOutput"]["permissionDecision"] == "deny", (
+            "101st call should deny (count=101 > 100)"
+        )
 
 
 class TestQ11L10SseThinkingHeartbeat:
@@ -132,9 +125,7 @@ class TestQ11L10SseThinkingHeartbeat:
         assert r.status_code == 200
         return client
 
-    def test_completions_emits_thinking_frame_before_cascade(
-        self, admin_client
-    ):
+    def test_completions_emits_thinking_frame_before_cascade(self, admin_client):
         """Q11-L10-002 fix: the SSE stream must yield a 'thinking'
         frame between the session frame and the first text chunk so a
         slow cascade doesn't silently exhaust a proxy idle timeout."""
@@ -144,15 +135,13 @@ class TestQ11L10SseThinkingHeartbeat:
             json={"messages": [{"role": "user", "content": "ping"}]},
         ) as resp:
             assert resp.status_code == 200
-            assert resp.headers["content-type"].startswith(
-                "text/event-stream"
-            )
+            assert resp.headers["content-type"].startswith("text/event-stream")
 
             frames: list[dict] = []
             for raw in resp.iter_lines():
                 if not raw.startswith("data: "):
                     continue
-                payload = raw[len("data: "):]
+                payload = raw[len("data: ") :]
                 if payload == "[DONE]":
                     break
                 frames.append(json.loads(payload))

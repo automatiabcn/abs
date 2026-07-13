@@ -18,9 +18,11 @@ from app.db.session import get_engine
 
 
 def _challenge(verifier: str) -> str:
-    return base64.urlsafe_b64encode(
-        hashlib.sha256(verifier.encode("ascii")).digest()
-    ).rstrip(b"=").decode("ascii")
+    return (
+        base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode("ascii")
+    )
 
 
 @pytest.fixture()
@@ -256,9 +258,7 @@ def test_verify_access_token_round_trip(db_session: Session) -> None:
         redirect_uri="https://app.local/callback",
         code_verifier=verifier,
     )
-    claims = oauth_server.verify_access_token(
-        tokens["access_token"], audience="c8"
-    )
+    claims = oauth_server.verify_access_token(tokens["access_token"], audience="c8")
     assert claims["sub"] == "user-8"
     assert claims["scope"] == "rag:query"
 

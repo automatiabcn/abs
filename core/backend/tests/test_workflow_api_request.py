@@ -16,14 +16,26 @@ import app.workflow_v10.runner as runner
 
 # ---- net_guard (SSRF) -------------------------------------------------------
 
+
 def _fake_getaddrinfo(ip):
     def _inner(host, port, **kw):  # noqa: ANN001
-        return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (ip, port or 0))]
+        return [
+            (
+                socket.AF_INET,
+                socket.SOCK_STREAM,
+                socket.IPPROTO_TCP,
+                "",
+                (ip, port or 0),
+            )
+        ]
+
     return _inner
 
 
 def test_guard_allows_public_ip(monkeypatch):
-    monkeypatch.setattr(net_guard.socket, "getaddrinfo", _fake_getaddrinfo("93.184.216.34"))
+    monkeypatch.setattr(
+        net_guard.socket, "getaddrinfo", _fake_getaddrinfo("93.184.216.34")
+    )
     net_guard.assert_safe_url("https://example.com/api")  # no raise
 
 
@@ -45,12 +57,12 @@ def test_guard_blocks_non_http_scheme():
 @pytest.mark.parametrize(
     "ip",
     [
-        "::ffff:127.0.0.1",      # IPv4-mapped loopback
+        "::ffff:127.0.0.1",  # IPv4-mapped loopback
         "::ffff:169.254.169.254",  # IPv4-mapped cloud metadata
-        "64:ff9b::7f00:1",       # NAT64 of 127.0.0.1
-        "64:ff9b::a00:1",        # NAT64 of 10.0.0.1
-        "2002:7f00:1::",         # 6to4 of 127.0.0.1
-        "2002:0a00:0001::",      # 6to4 of 10.0.0.1
+        "64:ff9b::7f00:1",  # NAT64 of 127.0.0.1
+        "64:ff9b::a00:1",  # NAT64 of 10.0.0.1
+        "2002:7f00:1::",  # 6to4 of 127.0.0.1
+        "2002:0a00:0001::",  # 6to4 of 10.0.0.1
     ],
 )
 def test_guard_blocks_embedded_ipv4_smuggling(ip):
@@ -60,6 +72,7 @@ def test_guard_blocks_embedded_ipv4_smuggling(ip):
 
 
 # ---- runner api_request -----------------------------------------------------
+
 
 class _FakeResp:
     def __init__(self, text, status=200):  # noqa: ANN001
@@ -94,15 +107,23 @@ def test_api_request_executes_and_templates(monkeypatch):
     import httpx
 
     calls: list = []
-    monkeypatch.setattr(net_guard.socket, "getaddrinfo", _fake_getaddrinfo("93.184.216.34"))
     monkeypatch.setattr(
-        httpx, "AsyncClient", lambda **kw: _FakeClient(resp=_FakeResp("PONG", 200), calls=calls)
+        net_guard.socket, "getaddrinfo", _fake_getaddrinfo("93.184.216.34")
+    )
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kw: _FakeClient(resp=_FakeResp("PONG", 200), calls=calls),
     )
 
     node = {
         "id": "a1",
         "kind": "api_request",
-        "config": {"method": "POST", "url": "https://api.example.com/{{n0}}", "prompt": "hi {{n0}}"},
+        "config": {
+            "method": "POST",
+            "url": "https://api.example.com/{{n0}}",
+            "prompt": "hi {{n0}}",
+        },
         "timeout_s": 5,
     }
     out = __import__("asyncio").run(_run_node(node, {"n0": {"text": "v1"}}))
@@ -115,8 +136,14 @@ def test_api_request_executes_and_templates(monkeypatch):
 
 
 def test_api_request_blocks_ssrf(monkeypatch):
-    monkeypatch.setattr(net_guard.socket, "getaddrinfo", _fake_getaddrinfo("169.254.169.254"))
-    node = {"id": "a1", "kind": "api_request", "config": {"method": "GET", "url": "http://169.254.169.254/latest/meta-data/"}}
+    monkeypatch.setattr(
+        net_guard.socket, "getaddrinfo", _fake_getaddrinfo("169.254.169.254")
+    )
+    node = {
+        "id": "a1",
+        "kind": "api_request",
+        "config": {"method": "GET", "url": "http://169.254.169.254/latest/meta-data/"},
+    }
     out = __import__("asyncio").run(_run_node(node))
     assert "error" in out and "unsafe url" in out["error"]
 
@@ -124,11 +151,18 @@ def test_api_request_blocks_ssrf(monkeypatch):
 def test_api_request_retries_then_errors(monkeypatch):
     import httpx
 
-    monkeypatch.setattr(net_guard.socket, "getaddrinfo", _fake_getaddrinfo("93.184.216.34"))
+    monkeypatch.setattr(
+        net_guard.socket, "getaddrinfo", _fake_getaddrinfo("93.184.216.34")
+    )
     monkeypatch.setattr(
         httpx, "AsyncClient", lambda **kw: _FakeClient(exc=httpx.ConnectError("down"))
     )
-    node = {"id": "a1", "kind": "api_request", "config": {"method": "GET", "url": "https://x.example/"}, "retry_max": 2}
+    node = {
+        "id": "a1",
+        "kind": "api_request",
+        "config": {"method": "GET", "url": "https://x.example/"},
+        "retry_max": 2,
+    }
     out = __import__("asyncio").run(_run_node(node))
     assert "error" in out
     assert "3 attempt" in out["error"]  # 1 + retry_max(2)

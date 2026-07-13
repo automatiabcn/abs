@@ -41,9 +41,7 @@ def test_the_real_cause_is_reported_not_the_wrapper():
 
 def test_a_cause_nested_two_groups_deep_is_still_found():
     inner = RuntimeError("Redirect response '307 Temporary Redirect'")
-    described = _describe(
-        ExceptionGroup("outer", [ExceptionGroup("inner", [inner])])
-    )
+    described = _describe(ExceptionGroup("outer", [ExceptionGroup("inner", [inner])]))
     assert "RuntimeError" in described
     assert "307" in described
 

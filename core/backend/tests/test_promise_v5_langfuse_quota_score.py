@@ -12,6 +12,7 @@ Pinned contract:
     raising and emits zero scores (observability must never block the
     gate path).
 """
+
 from __future__ import annotations
 
 import pytest

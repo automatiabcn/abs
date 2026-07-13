@@ -42,9 +42,7 @@ def test_faq_min_300_words_and_15_questions():
     text = p.read_text(encoding="utf-8")
     assert len(text.split()) >= 300
     # Numaralı sorular ###1.…15.
-    h3_lines = [
-        line for line in text.splitlines() if line.startswith("### ")
-    ]
+    h3_lines = [line for line in text.splitlines() if line.startswith("### ")]
     assert len(h3_lines) >= 15
 
 
@@ -55,5 +53,12 @@ def test_changelog_documents_every_shipped_version():
     p = _docs_dir() / "CHANGELOG.md"
     assert p.is_file()
     text = p.read_text(encoding="utf-8")
-    for version in ("## 1.0.6", "## 1.0.4", "## 1.0.3", "## 1.0.1", "## 1.0.0", "## 0.1.0"):
+    for version in (
+        "## 1.0.6",
+        "## 1.0.4",
+        "## 1.0.3",
+        "## 1.0.1",
+        "## 1.0.0",
+        "## 0.1.0",
+    ):
         assert version in text, f"CHANGELOG.md no longer documents {version}"

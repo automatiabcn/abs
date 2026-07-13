@@ -19,7 +19,9 @@ def test_panel_js_handles_license_status_event():
     # status event listener now lives in sse.js, the handler in widgets.js,
     # and the inline-onclick handler in ui.js.
     sse = (PANEL_DIR / "assets" / "panel" / "sse.js").read_text(encoding="utf-8")
-    widgets = (PANEL_DIR / "assets" / "panel" / "widgets.js").read_text(encoding="utf-8")
+    widgets = (PANEL_DIR / "assets" / "panel" / "widgets.js").read_text(
+        encoding="utf-8"
+    )
     ui = (PANEL_DIR / "assets" / "panel" / "ui.js").read_text(encoding="utf-8")
     assert '"license-status"' in sse
     assert "onLicenseStatus" in widgets

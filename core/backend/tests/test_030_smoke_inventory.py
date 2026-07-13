@@ -5,12 +5,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
-SCRIPT = (
-    Path(__file__).resolve().parents[3]
-    / "infra"
-    / "scripts"
-    / "mcp_tool_smoke.py"
-)
+SCRIPT = Path(__file__).resolve().parents[3] / "infra" / "scripts" / "mcp_tool_smoke.py"
 
 
 def _load_module():
@@ -34,6 +29,6 @@ def test_new_030_tools_in_skip_or_safe_defaults():
         "news_digest",
     }
     for name in new_tools:
-        assert (
-            name in skip or name in safe
-        ), f"{name} missing from both _SKIP_TOOLS and _SAFE_DEFAULTS"
+        assert name in skip or name in safe, (
+            f"{name} missing from both _SKIP_TOOLS and _SAFE_DEFAULTS"
+        )

@@ -51,8 +51,7 @@ def test_q12_l24_007_pyjwt_error_response_is_generic(caplog) -> None:
     # error_class must reach ops via the warning log (taxonomy only,
     # never the raw message).
     assert any(
-        "license_verify_pyjwt_error" in r.message
-        and "FakeWeirdPyJWTError" in r.message
+        "license_verify_pyjwt_error" in r.message and "FakeWeirdPyJWTError" in r.message
         for r in caplog.records
     ), "expected ops audit warning with error_class taxonomy"
 

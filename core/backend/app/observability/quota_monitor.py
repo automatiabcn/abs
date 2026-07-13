@@ -64,7 +64,9 @@ def _ledger_path() -> pathlib.Path:
 
 
 def _monthly_limit() -> int:
-    return int(os.getenv("ABS_CLAUDE_MONTHLY_TOKEN_LIMIT", DEFAULT_MONTHLY_LIMIT_TOKENS))
+    return int(
+        os.getenv("ABS_CLAUDE_MONTHLY_TOKEN_LIMIT", DEFAULT_MONTHLY_LIMIT_TOKENS)
+    )
 
 
 def _warn_pct() -> float:
@@ -123,7 +125,9 @@ def status(*, ledger: pathlib.Path | None = None) -> QuotaStatus:
     )
 
 
-def gate(*, requested_tokens: int = 0, ledger: pathlib.Path | None = None) -> QuotaStatus:
+def gate(
+    *, requested_tokens: int = 0, ledger: pathlib.Path | None = None
+) -> QuotaStatus:
     """Pre-flight check — call before issuing the Claude request.
 
     Raises QuotaExceeded when (used + requested) >= BLOCK_PCT * limit. The
@@ -190,9 +194,13 @@ def record(
             fh.write(json.dumps(row) + "\n")
     s = status(ledger=path)
     if s.over_block:
-        logger.warning("claude_quota_over_block month=%s pct=%.1f%%", s.month, s.used_pct * 100)
+        logger.warning(
+            "claude_quota_over_block month=%s pct=%.1f%%", s.month, s.used_pct * 100
+        )
     elif s.over_warn:
-        logger.info("claude_quota_over_warn month=%s pct=%.1f%%", s.month, s.used_pct * 100)
+        logger.info(
+            "claude_quota_over_warn month=%s pct=%.1f%%", s.month, s.used_pct * 100
+        )
     # BUG-V5 — push the rolling monthly used-pct as a LangFuse score
     # so the dashboard time-series matches the PROMISE.md vow
     # ("LangFuse dashboard `claude_tokens_used_pct_month` time-series").
@@ -224,8 +232,9 @@ def _push_langfuse_pct(s: QuotaStatus) -> None:
             comment=f"month={s.month} used={s.used_tokens}/{s.limit_tokens}",
         )
     except Exception:  # noqa: BLE001 — observability never blocks
-        logger.debug("langfuse claude_tokens_used_pct_month emit skipped",
-                     exc_info=True)
+        logger.debug(
+            "langfuse claude_tokens_used_pct_month emit skipped", exc_info=True
+        )
 
 
 def reset_for_tests(ledger: pathlib.Path | None = None) -> None:

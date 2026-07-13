@@ -70,7 +70,7 @@ def _lookup_pricing(provider: str, model: str | None) -> dict | None:
         logger.info("provider config load failed: %s", exc)
         return None
 
-    models = ((cfg.get(provider) or {}).get("models") or [])
+    models = (cfg.get(provider) or {}).get("models") or []
     if not models:
         return None
     if model:

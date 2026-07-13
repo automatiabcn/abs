@@ -51,7 +51,11 @@ class QualCodePipeline(BasePipeline):
             meta={"attempted": list(drafts.keys()), "succeeded": ok_names},
         )
         steps.append(parallel_step)
-        wf.step("parallel-drafts", "ok" if parallel_step.ok else "fail", _step_payload(parallel_step))
+        wf.step(
+            "parallel-drafts",
+            "ok" if parallel_step.ok else "fail",
+            _step_payload(parallel_step),
+        )
 
         best = pick_longest_success(drafts)
         if best is None:
@@ -79,7 +83,9 @@ class QualCodePipeline(BasePipeline):
             model_hint="codellama:7b",
         )
         steps.append(verify_step)
-        wf.step("verify", "ok" if verify_step.ok else "fail", _step_payload(verify_step))
+        wf.step(
+            "verify", "ok" if verify_step.ok else "fail", _step_payload(verify_step)
+        )
 
         final_text = draft.text
         if verify is not None and verify.text:

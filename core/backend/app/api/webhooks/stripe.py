@@ -31,6 +31,7 @@ from app.email.sender import send_license_email
 from app.i18n import t
 from app.licensing import generate_license, verify_license
 from app.observability.audit import emit_event
+
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 logger = logging.getLogger(__name__)
 
@@ -211,9 +212,7 @@ async def stripe_webhook(
 
         cust_id = stripe_cust or f"email:{email}"
 
-        token = generate_license(
-            customer_id=cust_id, tier=tier, seat_count=seat_count
-        )
+        token = generate_license(customer_id=cust_id, tier=tier, seat_count=seat_count)
         payload_dict = verify_license(token)
 
         # Second idempotency layer: the license itself may already be stored.
@@ -229,12 +228,8 @@ async def stripe_webhook(
             customer_id_stripe=stripe_cust,
             tier=tier,
             seat_count=seat_count,
-            issued_at=datetime.fromtimestamp(
-                payload_dict["iat"], tz=timezone.utc
-            ),
-            expires_at=datetime.fromtimestamp(
-                payload_dict["exp"], tz=timezone.utc
-            ),
+            issued_at=datetime.fromtimestamp(payload_dict["iat"], tz=timezone.utc),
+            expires_at=datetime.fromtimestamp(payload_dict["exp"], tz=timezone.utc),
             preferred_lang=preferred_lang,
         )
         db.add(db_license)
@@ -262,7 +257,10 @@ async def stripe_webhook(
         except Exception as exc:
             logger.critical(
                 "LICENCE NOT DELIVERED — paid customer has no key: jti=%s email=%s err=%s",
-                payload_dict["jti"], email, exc, exc_info=True,
+                payload_dict["jti"],
+                email,
+                exc,
+                exc_info=True,
             )
             try:
                 emit_event(

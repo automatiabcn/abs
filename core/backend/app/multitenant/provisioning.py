@@ -139,7 +139,10 @@ def ensure_tenant_provisioned(
 
     logger.info(
         "tenant_provisioned slug=%s owner=%s created_tenant=%s created_project=%s",
-        slug, owner, created_tenant, created_project,
+        slug,
+        owner,
+        created_tenant,
+        created_project,
     )
     return {
         "tenant": slug,

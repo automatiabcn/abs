@@ -42,9 +42,7 @@ def upgrade() -> None:
         sa.Column("tenant_id", sa.String(64), nullable=False),
         sa.Column("plugin_id", sa.String(64), nullable=False),
         sa.Column("version", sa.String(32), nullable=False),
-        sa.Column(
-            "sandbox_container_id", sa.String(64), nullable=True
-        ),
+        sa.Column("sandbox_container_id", sa.String(64), nullable=True),
         sa.Column("installed_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("uninstalled_at", sa.DateTime(timezone=True), nullable=True),
     )

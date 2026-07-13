@@ -6,7 +6,6 @@ orchestrator as a transcript.
 
 from __future__ import annotations
 
-import json as _json
 import re
 from typing import Any
 
@@ -119,9 +118,7 @@ def test_multi_turn_persists_all_new_messages(client):
     sid = _sess_id_from_sse(r.text)
 
     with Session(get_engine()) as db:
-        rows = list(
-            db.exec(select(ChatMessage).where(ChatMessage.session_id == sid))
-        )
+        rows = list(db.exec(select(ChatMessage).where(ChatMessage.session_id == sid)))
     roles = [r.role for r in rows]
     contents = [r.content for r in rows]
     assert roles[:3] == ["user", "assistant", "user"]
@@ -136,9 +133,7 @@ def test_resumed_session_only_persists_new_tail(client):
     sid = _sess_id_from_sse(r1.text)
 
     with Session(get_engine()) as db:
-        before = list(
-            db.exec(select(ChatMessage).where(ChatMessage.session_id == sid))
-        )
+        before = list(db.exec(select(ChatMessage).where(ChatMessage.session_id == sid)))
     before_count = len(before)
 
     full_history = [{"role": r.role, "content": r.content} for r in before]
@@ -147,9 +142,7 @@ def test_resumed_session_only_persists_new_tail(client):
     assert r2.status_code == 200, r2.text
 
     with Session(get_engine()) as db:
-        after = list(
-            db.exec(select(ChatMessage).where(ChatMessage.session_id == sid))
-        )
+        after = list(db.exec(select(ChatMessage).where(ChatMessage.session_id == sid)))
     assert len(after) == before_count + 2
     assert after[-2].content == "second"
     assert after[-1].role == "assistant"

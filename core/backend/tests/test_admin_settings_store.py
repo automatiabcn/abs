@@ -30,7 +30,10 @@ def _reset_admin_state():
 
 def test_settings_requires_admin(client):
     assert client.get("/v1/admin/settings/webhooks").status_code in (401, 403)
-    assert client.put("/v1/admin/settings/webhooks", json={"data": {}}).status_code in (401, 403)
+    assert client.put("/v1/admin/settings/webhooks", json={"data": {}}).status_code in (
+        401,
+        403,
+    )
 
 
 def test_put_get_roundtrip(client, monkeypatch):
@@ -47,8 +50,12 @@ def test_put_get_roundtrip(client, monkeypatch):
 def test_put_is_idempotent_update(client, monkeypatch):
     tok = _admin_token(client, monkeypatch)
     h = {"Authorization": f"Bearer {tok}"}
-    client.put("/v1/admin/settings/alerts", headers=h, json={"data": {"quota_warn": 70}})
-    client.put("/v1/admin/settings/alerts", headers=h, json={"data": {"quota_warn": 85}})
+    client.put(
+        "/v1/admin/settings/alerts", headers=h, json={"data": {"quota_warn": 70}}
+    )
+    client.put(
+        "/v1/admin/settings/alerts", headers=h, json={"data": {"quota_warn": 85}}
+    )
     g = client.get("/v1/admin/settings/alerts", headers=h)
     assert g.json()["data"]["quota_warn"] == 85
 
@@ -57,7 +64,12 @@ def test_unknown_section_404(client, monkeypatch):
     tok = _admin_token(client, monkeypatch)
     h = {"Authorization": f"Bearer {tok}"}
     assert client.get("/v1/admin/settings/wizardry", headers=h).status_code == 404
-    assert client.put("/v1/admin/settings/wizardry", headers=h, json={"data": {}}).status_code == 404
+    assert (
+        client.put(
+            "/v1/admin/settings/wizardry", headers=h, json={"data": {}}
+        ).status_code
+        == 404
+    )
 
 
 def test_empty_section_returns_empty_data(client, monkeypatch):

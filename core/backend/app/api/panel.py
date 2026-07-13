@@ -52,8 +52,7 @@ def panel_legacy_disabled(request: Request) -> Response:
     # Authenticated admins are refused too: the page is gone, not protected.
     return Response(
         content=(
-            "Legacy panel removed. Use /admin/dashboard "
-            "(Automatia ABS Next.js admin)."
+            "Legacy panel removed. Use /admin/dashboard (Automatia ABS Next.js admin)."
         ),
         status_code=410,
         media_type="text/plain",

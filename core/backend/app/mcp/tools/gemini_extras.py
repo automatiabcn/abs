@@ -46,9 +46,7 @@ async def gemini_image_pro(prompt: str) -> str:
 @with_hooks("gemini_image_edit")
 async def gemini_image_edit(prompt: str, image_base64: str) -> str:
     """Edit a base64 image according to the prompt."""
-    return await _safe(
-        "gemini_image_edit", _gx.gemini_image_edit(prompt, image_base64)
-    )
+    return await _safe("gemini_image_edit", _gx.gemini_image_edit(prompt, image_base64))
 
 
 @mcp_server.tool()
@@ -63,9 +61,7 @@ async def gemini_video(prompt: str) -> str:
 @with_hooks("gemini_video_status")
 async def gemini_video_status(operation_name: str) -> str:
     """Poll a video job by the operation name gemini_video returned."""
-    return await _safe(
-        "gemini_video_status", _gx.gemini_video_status(operation_name)
-    )
+    return await _safe("gemini_video_status", _gx.gemini_video_status(operation_name))
 
 
 @mcp_server.tool()
@@ -98,7 +94,9 @@ async def gemini_lite(prompt: str) -> str:
     await tracker.bump("gemini_lite")
     try:
         provider = get_provider("gemini")
-        resp = await provider.call(prompt, model="gemini-2.5-flash-lite", max_tokens=1024)
+        resp = await provider.call(
+            prompt, model="gemini-2.5-flash-lite", max_tokens=1024
+        )
         return resp.text or ""
     except ProviderError as exc:
         return f"[ERROR] gemini_lite: {exc.message}"

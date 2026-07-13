@@ -20,9 +20,11 @@ from app.main import app
 
 
 def _challenge(verifier: str) -> str:
-    return base64.urlsafe_b64encode(
-        hashlib.sha256(verifier.encode("ascii")).digest()
-    ).rstrip(b"=").decode("ascii")
+    return (
+        base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode("ascii")
+    )
 
 
 def _seed_client(client_id: str) -> None:
@@ -53,9 +55,7 @@ async def test_publish_user_registered_envelope_shape(
     bus = AsyncMock(return_value=42)
     monkeypatch.setattr(events, "nats_publish", bus)
 
-    seq = await events.publish_user_registered(
-        "u1", email="a@b.c", tenant_id="t1"
-    )
+    seq = await events.publish_user_registered("u1", email="a@b.c", tenant_id="t1")
     assert seq == "42"
     subject, envelope = bus.call_args.args
     assert subject == "abs.events.user.registered"
@@ -104,9 +104,7 @@ async def test_publish_login_failed_omits_subject_when_none(
     bus = AsyncMock(return_value=99)
     monkeypatch.setattr(events, "nats_publish", bus)
 
-    seq = await events.publish_login_failed(
-        client_id="c2", reason="bad_password"
-    )
+    seq = await events.publish_login_failed(client_id="c2", reason="bad_password")
     assert seq == "99"
     _, envelope = bus.call_args.args
     data = envelope["data"]

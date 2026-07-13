@@ -31,9 +31,7 @@ def aggregate(window_days: int = 7) -> Dict[str, Any]:
     entries = read_recent(limit=1000)
 
     cur_window = [e for e in entries if (e.get("ts") or 0) >= cutoff]
-    prev_window = [
-        e for e in entries if cutoff_prev <= (e.get("ts") or 0) < cutoff
-    ]
+    prev_window = [e for e in entries if cutoff_prev <= (e.get("ts") or 0) < cutoff]
 
     avg_combined = _avg([e.get("combined_score") for e in cur_window])
     avg_ast = _avg([e.get("ast_score") for e in cur_window])

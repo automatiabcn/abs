@@ -194,7 +194,9 @@ def test_cascade_skip_paid_routes_to_free_provider(all_keys_admin, monkeypatch):
     assert routed[0] == "groq", f"free chain primary should be groq, got {routed[0]}"
 
 
-def test_cascade_default_routes_to_free_primary_anthropic_last(all_keys_admin, monkeypatch):
+def test_cascade_default_routes_to_free_primary_anthropic_last(
+    all_keys_admin, monkeypatch
+):
     """Default (skip_paid=False) is free-first — groq leads, anthropic stays in
     the chain only as the quota-protected last-resort fallback
     (ABS_HYBRID_TIER_PROMISE: "Free path first … 95%+ of the work on free")."""
