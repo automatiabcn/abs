@@ -154,11 +154,15 @@ class ConnectorState(SQLModel, table=True):
 class ActionExecution(SQLModel, table=True):
     """Outbox/audit of an action fired after a human approval (Stage E).
 
-    The concrete 'onay → aksiyon' record: when a reviewer approves an item, the
-    executor runs its action — internal effects apply immediately, outbound
-    comms are consent-gated (Consent Ledger) and queued to the channel. Every
-    attempt lands here (executed | queued | blocked | failed) so there is a full
-    after-approval trail. Tenant-scoped."""
+    The concrete 'approval → action' record: when a reviewer approves an item,
+    the executor carries it out — agent tool calls are dispatched, outbound comms
+    are consent-gated (Consent Ledger) and then actually sent. Every attempt lands
+    here (executed | sent | blocked | failed) with the reason, so there is a full
+    after-approval trail. Tenant-scoped.
+
+    `sent` means the message left this server. It is written only after the
+    delivery path says so — never in advance, and never for a channel this server
+    has no integration for."""
 
     __tablename__ = "action_executions"
 
@@ -171,7 +175,7 @@ class ActionExecution(SQLModel, table=True):
     target_company: str = Field(default="", max_length=256)
     target_contact: str = Field(default="", max_length=254)
     message: str = Field(default="", max_length=2048)
-    status: str = Field(default="executed", max_length=16, index=True)  # executed|queued|blocked|failed
+    status: str = Field(default="executed", max_length=16, index=True)  # executed|sent|blocked|failed
     reason: str = Field(default="", max_length=256)
     created_at: datetime = Field(default_factory=_now, index=True)
 

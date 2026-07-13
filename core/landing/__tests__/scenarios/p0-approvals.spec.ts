@@ -37,14 +37,21 @@ async function proposeAction(page: import("@playwright/test").Page): Promise<num
   return body.approval.id as number;
 }
 
+type OutboxRow = {
+  approval_item_id?: number;
+  status?: string;
+  reason?: string;
+  action_kind?: string;
+};
+
 async function outboxFor(
   page: import("@playwright/test").Page,
   approvalId: number,
-): Promise<unknown[]> {
+): Promise<OutboxRow[]> {
   const res = await page.request.get("/v1/approvals/outbox");
   expect(res.ok()).toBe(true);
   const body = await res.json();
-  const rows: Array<{ approval_item_id?: number }> = body.actions ?? body.items ?? [];
+  const rows: OutboxRow[] = body.actions ?? body.items ?? [];
   return rows.filter((r) => r.approval_item_id === approvalId);
 }
 
@@ -69,6 +76,19 @@ test("G1 — a proposed action waits for a person, then fires when approved", as
   // Approved means acted on, and the outbox is where an operator proves it.
   const fired = await outboxFor(page, approvalId);
   expect(fired).toHaveLength(1);
+
+  // And the row has to say what actually became of it.
+  //
+  // It used to say `queued`, into a queue nothing drained — so this assertion
+  // passing was compatible with the message never being sent. Every outcome is
+  // now something that happened: `sent` (a mail server took it), `failed` (it
+  // did not, and the reason is on the row), or `blocked` (consent refused it).
+  // On a dev box with no SMTP host it will be `failed · no SMTP server` — which
+  // is the truth, and the whole point.
+  const row = fired[0];
+  expect(["sent", "failed", "blocked"]).toContain(row.status);
+  expect(row.status, "the outbox still claims a queue that nothing drains").not.toBe("queued");
+  expect(row.reason?.length, "an outcome with no reason on it").toBeGreaterThan(0);
 });
 
 test("G1b — rejecting it means nothing happens, and it cannot be revived", async ({ page }) => {

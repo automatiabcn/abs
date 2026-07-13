@@ -17,7 +17,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from app.actions import list_actions
+from app.actions import RetryNotAllowed, list_actions, retry_action
 from app.api.v1.deps import AuthContext, get_admin_or_bearer_auth_context
 from app.approvals import decide_approval, get_approval, list_approvals
 from app.approvals.service import AlreadyDecided
@@ -44,6 +44,32 @@ async def list_outbox(
 ) -> dict:
     """Action executions fired after approvals — the 'onay → aksiyon' trail."""
     return list_actions(tenant_slug=_tenant(auth))
+
+
+@router.post("/outbox/{action_id}/retry")
+async def retry_outbox_action(
+    action_id: int,
+    auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
+) -> dict:
+    """Send a failed message again — the mail server was down, the approval wasn't."""
+    try:
+        row = retry_action(tenant_slug=_tenant(auth), action_id=action_id)
+    except KeyError:
+        raise HTTPException(404, "action_not_found")
+    except RetryNotAllowed as exc:
+        raise HTTPException(409, str(exc))
+
+    emit_event(
+        None,
+        action="approval.retry",
+        outcome="success" if row["status"] == "sent" else "failure",
+        resource_type="action_execution",
+        resource_id=str(action_id),
+        user_id=auth.subject,
+        tenant_id=_tenant(auth),
+        reason=row["reason"],
+    )
+    return row
 
 
 @router.get("/{item_id}")

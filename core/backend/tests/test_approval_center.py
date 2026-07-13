@@ -93,7 +93,7 @@ def test_decide_fires_action_at_most_once(monkeypatch: pytest.MonkeyPatch) -> No
 
     def _fake_exec(row, *, tenant_slug):  # noqa: ANN001
         calls["n"] += 1
-        return {"status": "queued", "reason": "ok"}
+        return {"status": "sent", "reason": "delivered to a@x.io"}
 
     monkeypatch.setattr(actions_mod, "execute_for_approval", _fake_exec)
     service.decide_approval(
@@ -130,7 +130,7 @@ def test_a_rejection_cannot_be_rewritten_into_an_approval(monkeypatch: pytest.Mo
 
     def _fake_exec(row, *, tenant_slug):  # noqa: ANN001
         calls["n"] += 1
-        return {"status": "queued", "reason": "ok"}
+        return {"status": "sent", "reason": "delivered to a@x.io"}
 
     monkeypatch.setattr(actions_mod, "execute_for_approval", _fake_exec)
 

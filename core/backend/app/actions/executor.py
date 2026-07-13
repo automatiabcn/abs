@@ -3,17 +3,20 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Action executor — fire an approved agent action, gated by consent (Stage E).
+"""Action executor — carry out an approved action, gated by consent (Stage E).
 
 The approval → action bridge. When a reviewer approves an Approval Center item,
 this runs its action and records the outcome in the ActionExecution outbox:
 
-  • internal actions (CRM note, merge, field update, route) apply immediately;
+  • agent tool calls are re-checked against the policy gate, then dispatched;
   • outbound comms (email / whatsapp / sms / voice) are consent-gated via the
-    Consent Ledger (fail-closed) and, when allowed, queued to the channel.
+    Consent Ledger (fail-closed) and, when allowed, **actually sent** —
+    `app.actions.delivery` reports back whether the message left the building,
+    and the outbox row says `sent` or `failed`, never a hopeful `queued`.
 
-No silent sends: outbound never goes out without an opt-in consent record. Every
-attempt — executed, queued, blocked or failed — is persisted, tenant-scoped.
+No silent sends: outbound never goes out without an opt-in consent record. And no
+silent non-sends either: every attempt — sent, blocked or failed — is persisted
+with the reason, tenant-scoped, so an operator can see what happened and retry.
 """
 
 from __future__ import annotations
@@ -23,6 +26,7 @@ from typing import Any, Dict, Optional
 
 from sqlmodel import Session, select
 
+from app.actions import delivery
 from app.agentic.approvals_bridge import AGENT_TOOL_CHANNEL
 from app.consent.service import check_channel
 from app.db.growth_models import ActionExecution, Company, Contact
@@ -40,7 +44,6 @@ _REASON_TEXT = {
     "channel_not_consented": "no consent for this channel",
     "opted_out": "opted out — not sent",
     "do_not_call": "do-not-call list",
-    "consent_granted": "consent on file · queued to the channel",
 }
 
 
@@ -169,11 +172,26 @@ def execute_for_approval(item: Any, *, tenant_slug: str) -> Dict[str, Any]:
         return _execute_agent_tool(item, tenant=tenant, base=base)
 
     with Session(get_engine()) as db:
-        # internal action — no external recipient, applies immediately
+        # An internal action — a CRM note, a merge, a field update, a route.
+        #
+        # This used to write `status="executed", reason="internal action applied"`
+        # and change nothing at all. There is no handler for any of them: the only
+        # reason this module touches Company or Contact is to look up an email
+        # address. So an operator approved a change to their CRM, the outbox told
+        # them it had been applied, and their data was exactly as before.
+        #
+        # Until a handler exists, say so. An approval that cannot be carried out is
+        # a failure, and a failure a person can see is worth more than a success
+        # they cannot.
         if channel not in _COMMS:
             row = _record(db, **base, action_kind="internal", channel=channel,
-                          status="executed", reason="internal action applied")
-            logger.info("action executed (internal) approval=%s", base["approval_item_id"])
+                          status="failed",
+                          reason=(f"no handler for '{channel}' actions on this server "
+                                  "— nothing was changed"))
+            logger.warning(
+                "approved internal action has no handler: channel=%s approval=%s",
+                channel, base["approval_item_id"],
+            )
             return _to_dict(row)
 
         # outbound comms — resolve recipient + consent gate (fail-closed)
@@ -185,18 +203,96 @@ def execute_for_approval(item: Any, *, tenant_slug: str) -> Dict[str, Any]:
 
         gate = check_channel(tenant_slug=tenant, contact_email=email,
                              channel=_GATE_CHANNEL.get(channel, channel))
-        if gate.get("allowed"):
+        if not gate.get("allowed"):
             row = _record(db, **base, action_kind="message_send", channel=channel,
-                          status="queued", target_contact=email,
-                          reason=_REASON_TEXT.get(gate.get("reason", ""), "consent on file · queued"))
-            logger.info("action queued (%s) approval=%s → %s", channel, base["approval_item_id"], email)
+                          status="blocked", target_contact=email,
+                          reason=_REASON_TEXT.get(gate.get("reason", ""), gate.get("reason", "no consent")))
+            logger.info("action blocked (%s) approval=%s reason=%s",
+                        channel, base["approval_item_id"], gate.get("reason"))
             return _to_dict(row)
 
-        row = _record(db, **base, action_kind="message_send", channel=channel,
-                      status="blocked", target_contact=email,
-                      reason=_REASON_TEXT.get(gate.get("reason", ""), gate.get("reason", "no consent")))
-        logger.info("action blocked (%s) approval=%s reason=%s",
-                    channel, base["approval_item_id"], gate.get("reason"))
+        # A person approved it and the Consent Ledger allows it. Send it.
+        #
+        # It used to stop here and write `status="queued"` — into a queue nothing
+        # drains, in a codebase with no worker and no `where(status == "queued")`
+        # anywhere in it. The message never went. This is where it goes.
+        result = delivery.deliver(
+            channel=channel,
+            to=email,
+            subject=_subject_for(item, base["target_company"]),
+            message=message,
+        )
+        row = _record(
+            db, **base, action_kind="message_send", channel=channel,
+            target_contact=email,
+            status="sent" if result.sent else "failed",
+            reason=result.detail[:256],
+        )
+        logger.info(
+            "action %s (%s) approval=%s → %s: %s",
+            "sent" if result.sent else "FAILED", channel,
+            base["approval_item_id"], email, result.detail,
+        )
+        return _to_dict(row)
+
+
+def _subject_for(item: Any, company: str) -> str:
+    """A subject line for an approved outbound email."""
+    subject = (getattr(item, "subject", "") or "").strip()
+    if subject:
+        return subject[:200]
+    title = (getattr(item, "title", "") or "").strip()
+    if title:
+        return title[:200]
+    return f"Message from {company}"[:200] if company else "Message"
+
+
+class RetryNotAllowed(Exception):
+    """The outbox row cannot be retried, and why."""
+
+
+def retry_action(*, tenant_slug: str, action_id: int) -> Dict[str, Any]:
+    """Send a failed outbound message again.
+
+    An SMTP server that was down for a minute should not cost an operator the
+    message they approved. A failed row keeps everything needed to send it —
+    recipient, body, channel — so this re-runs the consent gate (it may have been
+    withdrawn since) and the delivery, and updates the row with what happened.
+
+    Only `failed` message_send rows. A `sent` row is not retried, because sending
+    it twice is a second message to a real person, and a `blocked` row was refused
+    on purpose."""
+    tenant = (tenant_slug or "default").strip()
+    with Session(get_engine()) as db:
+        row = db.get(ActionExecution, action_id)
+        if row is None or row.tenant_slug != tenant:
+            raise KeyError("action_not_found")
+        if row.action_kind != "message_send":
+            raise RetryNotAllowed("only an outbound message can be retried")
+        if row.status != "failed":
+            raise RetryNotAllowed(f"this message is '{row.status}', not failed — nothing to retry")
+
+        gate = check_channel(
+            tenant_slug=tenant, contact_email=row.target_contact,
+            channel=_GATE_CHANNEL.get(row.channel, row.channel),
+        )
+        if not gate.get("allowed"):
+            row.status = "blocked"
+            row.reason = _REASON_TEXT.get(
+                gate.get("reason", ""), gate.get("reason", "no consent")
+            )[:256]
+        else:
+            result = delivery.deliver(
+                channel=row.channel, to=row.target_contact,
+                subject=_subject_for(None, row.target_company), message=row.message,
+            )
+            row.status = "sent" if result.sent else "failed"
+            row.reason = result.detail[:256]
+
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+        logger.info("outbox retry: id=%s → %s (%s)", action_id, row.status, row.reason)
         return _to_dict(row)
 
 
