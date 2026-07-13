@@ -101,6 +101,10 @@ class TestUpload:
         import app.api.meetings as meetings
 
         calls = {"transcribe": 0, "index": 0}
+        # A stand-in for the vector store, so "is it indexed?" is answered by
+        # what was actually written rather than by what we hoped happened. The
+        # re-upload path checks this before deciding whether to rebuild.
+        store = {"chunks": 0}
 
         async def fake_transcribe(path):
             calls["transcribe"] += 1
@@ -108,10 +112,12 @@ class TestUpload:
 
         def fake_index(**kwargs):
             calls["index"] += 1
+            store["chunks"] = 3
             return 3
 
         monkeypatch.setattr(meetings, "transcribe_path", fake_transcribe)
         monkeypatch.setattr(meetings, "_autoindex_meeting_rag", fake_index)
+        monkeypatch.setattr(meetings, "_indexed_chunk_count", lambda m: store["chunks"])
         monkeypatch.setattr(meetings.settings, "meeting_rag_autoindex", True)
 
         first = client.post("/v1/meetings/upload", files={"audio": _wav()})
@@ -127,8 +133,10 @@ class TestUpload:
         assert again.json()["duplicate_of"] == first.json()["id"]
         assert again.json()["id"] == first.json()["id"]
 
-        # And the expensive halves ran exactly once, which is the entire point:
-        # no second GPU minute, no second copy of every passage in the store.
+        # Transcription — the expensive half — ran exactly once: no second GPU
+        # minute. And the meeting was indexed once, because the first index
+        # worked; a re-upload rebuilds the index only when it is genuinely
+        # missing, which is what makes a broken index fixable at all.
         assert calls == {"transcribe": 1, "index": 1}
 
     def test_a_silent_recording_is_kept_but_never_indexed(
@@ -173,16 +181,22 @@ class TestUpload:
         import app.api.meetings as meetings
 
         indexed = {"n": 0}
+        store = {"chunks": 0}
 
         async def fake_transcribe(path):
             return _transcript(duration=1800.0, text="We agreed to ship on Friday. " * 60)
 
         def fake_index(**kwargs):
             indexed["n"] += 1
+            store["chunks"] = 7
             return 7
 
         monkeypatch.setattr(meetings, "transcribe_path", fake_transcribe)
         monkeypatch.setattr(meetings, "_autoindex_meeting_rag", fake_index)
+        # `indexed` is now read back from the store, not inferred from the fact
+        # that transcription finished — the two used to be conflated, and a
+        # meeting with an empty index still showed a green tick.
+        monkeypatch.setattr(meetings, "_indexed_chunk_count", lambda m: store["chunks"])
         monkeypatch.setattr(meetings.settings, "meeting_rag_autoindex", True)
 
         r = client.post(
