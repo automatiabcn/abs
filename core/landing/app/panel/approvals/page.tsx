@@ -36,7 +36,7 @@ const RISK: Record<string, string> = {
 };
 const ACTION_STATUS: Record<string, string> = {
   executed: "border-emerald-500/40 text-emerald-300",
-  queued: "border-sky-500/40 text-sky-300",
+  sent: "border-emerald-500/40 text-emerald-300",
   blocked: "border-rose-500/40 text-rose-300",
   failed: "border-amber-500/40 text-amber-300",
 };
@@ -47,9 +47,11 @@ const ACTION_KIND: Record<string, string> = {
   agent_tool: "assistant action",
   internal: "internal",
 };
+// "sent" means the message left this server — the delivery path said so. It used
+// to say "queued", into a queue nothing drained, and the message never went.
 const STATUS_LABEL: Record<string, string> = {
-  executed: "✓ done", queued: "✓ queued", blocked: "⛔ blocked",
-  failed: "⚠ failed", rejected: "✕ rejected",
+  executed: "✓ done", sent: "✓ sent", blocked: "⛔ blocked",
+  failed: "⚠ not sent", rejected: "✕ rejected",
 };
 function trTime(iso: string | null): string {
   if (!iso) return "";
@@ -73,6 +75,8 @@ export default function ApprovalCenterPage() {
   // Id whose decision is in flight — disables that row's buttons so a
   // double-click can't fire the (often irreversible, outbound) action twice.
   const [pendingId, setPendingId] = useState<number | null>(null);
+  // Outbox row currently being sent again.
+  const [retryId, setRetryId] = useState<number | null>(null);
 
   const load = useCallback(() => {
     fetch("/v1/approvals?status=pending", { credentials: "include", cache: "no-store" })
@@ -103,6 +107,27 @@ export default function ApprovalCenterPage() {
       setErr(`Could not send your decision: ${String(e)}`);
     } finally {
       setPendingId(null);
+    }
+  }
+
+  // A mail server that was down for a minute should not cost you the message you
+  // already approved. The row keeps everything needed to send it again.
+  async function retry(id: number) {
+    if (retryId !== null) return;
+    setRetryId(id);
+    setErr(null);
+    try {
+      const r = await fetch(`/v1/approvals/outbox/${id}/retry`, {
+        method: "POST", credentials: "include",
+      });
+      const j = await r.json().catch(() => null);
+      if (!r.ok) throw new Error(j?.detail ?? `HTTP ${r.status}`);
+      setResult({ status: j.status, reason: j.reason });
+      load();
+    } catch (e) {
+      setErr(`Could not send it again: ${String(e)}`);
+    } finally {
+      setRetryId(null);
     }
   }
 
@@ -259,17 +284,30 @@ export default function ApprovalCenterPage() {
                   <thead><tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                     <th className="pb-2 pr-3 font-medium">Agent</th><th className="pb-2 pr-3 font-medium">Kind</th>
                     <th className="pb-2 pr-3 font-medium">Channel</th><th className="pb-2 pr-3 font-medium">Target</th>
-                    <th className="pb-2 pr-3 font-medium">Status</th><th className="pb-2 font-medium">Outcome</th>
+                    <th className="pb-2 pr-3 font-medium">Status</th><th className="pb-2 pr-3 font-medium">Outcome</th>
+                    <th className="pb-2 font-medium"></th>
                   </tr></thead>
                   <tbody className="divide-y divide-border">
                     {outbox.items.map((a) => (
-                      <tr key={a.id}>
+                      <tr key={a.id} data-test="outbox-row" data-status={a.status}>
                         <td className="py-2.5 pr-3 font-medium">{a.agent_id}</td>
                         <td className="py-2.5 pr-3 text-muted-foreground">{ACTION_KIND[a.action_kind] ?? a.action_kind}</td>
                         <td className="py-2.5 pr-3 font-mono text-muted-foreground">{a.channel || "—"}</td>
                         <td className="py-2.5 pr-3 text-muted-foreground">{a.target_company || "—"}{a.target_contact ? ` · ${a.target_contact}` : ""}</td>
                         <td className="py-2.5 pr-3"><span className={`rounded-full border px-2 py-0.5 text-[10px] ${ACTION_STATUS[a.status] ?? "border-border"}`}>{STATUS_LABEL[a.status] ?? a.status}</span></td>
-                        <td className="py-2.5 text-[12px] text-muted-foreground">{a.reason}</td>
+                        <td className="py-2.5 pr-3 text-[12px] text-muted-foreground">{a.reason}</td>
+                        <td className="py-2.5">
+                          {a.status === "failed" && a.action_kind === "message_send" && (
+                            <button
+                              data-test="outbox-retry"
+                              onClick={() => retry(a.id)}
+                              disabled={retryId === a.id}
+                              className="rounded-md border px-3 py-1 text-[11px] disabled:opacity-50"
+                            >
+                              {retryId === a.id ? "…" : "Try again"}
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

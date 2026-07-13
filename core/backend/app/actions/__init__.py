@@ -5,6 +5,11 @@
 
 """Action layer — execute an approved agent action (Stage E)."""
 
-from app.actions.executor import execute_for_approval, list_actions
+from app.actions.executor import (
+    RetryNotAllowed,
+    execute_for_approval,
+    list_actions,
+    retry_action,
+)
 
-__all__ = ["execute_for_approval", "list_actions"]
+__all__ = ["RetryNotAllowed", "execute_for_approval", "list_actions", "retry_action"]
