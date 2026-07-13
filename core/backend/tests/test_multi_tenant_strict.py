@@ -31,6 +31,17 @@ def strict_on(monkeypatch):
 
 
 @pytest.fixture()
+def shared_server(monkeypatch):
+    """More than one customer on this server — which is what makes raw Cypher a
+    leak. Strict mode alone no longer refuses it: a single-tenant self-host keeps
+    its console, because there is nobody there to leak to."""
+    from app.api import graph as graph_api
+
+    monkeypatch.setattr(graph_api, "_serves_more_than_one_tenant", lambda: True)
+    yield
+
+
+@pytest.fixture()
 def strict_off(monkeypatch):
     monkeypatch.setattr(settings, "multi_tenant_strict", False)
     yield
@@ -125,7 +136,7 @@ def graph_admin():
 
 
 def test_strict_refuses_raw_cypher(
-    client: TestClient, graph_admin, strict_on
+    client: TestClient, graph_admin, strict_on, shared_server
 ) -> None:
     """A benign-looking scalar projection (`RETURN n.email AS e`) carries no
     tenant_id key and would slip past the row filter — strict mode refuses the
@@ -139,7 +150,7 @@ def test_strict_refuses_raw_cypher(
 
 
 def test_strict_refuses_nl_query(
-    client: TestClient, graph_admin, strict_on
+    client: TestClient, graph_admin, strict_on, shared_server
 ) -> None:
     r = client.post(
         "/v1/graph/nl-query",

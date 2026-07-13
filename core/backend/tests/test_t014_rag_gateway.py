@@ -124,6 +124,17 @@ def test_auth_stack_reexports_match_canonical_paths() -> None:
 
 
 def test_query_with_rerank_reduces_to_top_k(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Pinned to the lexical mock on purpose: this test is about the rerank
+    # plumbing (top_k, ordering by score), and it needs a backend that actually
+    # reorders. It is no longer the default — with no reranker configured the
+    # server does not rerank, rather than reordering by word overlap behind an
+    # API field that says "cross-encoder". See test_rerank_backend_resolution.
+    from app.config import settings as _s
+    from app.rag import reranker as _rr
+
+    monkeypatch.setattr(_s, "rerank_backend", "mock", raising=False)
+    _rr.close_reranker()
+
     cid = f"gw-rr-{secrets.token_hex(3)}"
     _seed_client(cid)
     fake_hits = _build_hits(8)
@@ -152,6 +163,7 @@ def test_query_with_rerank_reduces_to_top_k(monkeypatch: pytest.MonkeyPatch) -> 
     body = r.json()
     assert len(body["hits"]) == 3
     assert body["hits"][0]["text"].startswith("hit 3")
+    _rr.close_reranker()
 
 
 def test_query_without_rerank_returns_qdrant_order(

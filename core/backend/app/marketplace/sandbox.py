@@ -90,6 +90,13 @@ class ResourceLimitViolation(SandboxError):
     """Manifest requested a CPU/memory quota outside the allowed bounds."""
 
 
+class PluginImageUnavailable(SandboxError):
+    """The plugin's image could not be fetched, so the plugin is not running.
+
+    Raised instead of quietly launching a placeholder container in its place.
+    """
+
+
 @dataclass(frozen=True)
 class SandboxSpec:
     plugin_id: str
@@ -442,17 +449,21 @@ class PluginSandbox:
         return f"abs-plugin-stub:{plugin_id}"
 
     def _resolve_image(self, plugin_id: str, entry_point: Optional[str]) -> str:
-        """Prefer the descriptor's real ``entry_point`` image; fall back to the
-        local busybox stub when it is not pullable.
+        """The plugin's own image, or nothing.
 
-        Q7 hardcoded the stub. The descriptor (e.g. slack-thread-rag.json) ships
-        a real ``entry_point`` like ``ghcr.io/abs-plugins/slack-thread-rag:1.0.0``.
-        We launch that real image when it is available locally or pullable, and
-        degrade to the stub otherwise so a fresh install never hard-fails just
-        because the plugin image hasn't been published to the registry yet.
+        This used to fall back to a local busybox stub when the real image could
+        not be pulled — and `launch` then reported `status: "running"`. So an
+        operator installed a plugin, watched it come up green, and had a container
+        that does nothing sitting where the plugin should be. The signed image was
+        never pulled; the thing running had never been verified because it was not
+        the thing that was verified.
+
+        A plugin whose image cannot be fetched is not installed. Say so.
         """
         if not entry_point:
-            return self._image(plugin_id)
+            raise PluginImageUnavailable(
+                f"{plugin_id} does not declare an image to run (entry_point is empty)"
+            )
         try:
             self.client.images.get(entry_point)
             return entry_point
@@ -460,13 +471,12 @@ class PluginSandbox:
             try:
                 self.client.images.pull(entry_point)
                 return entry_point
-            except Exception as exc:  # registry miss / offline → stub fallback
-                logger.warning(
-                    "plugin image %s unavailable (%s) — falling back to stub",
-                    entry_point,
-                    exc,
-                )
-                return self._image(plugin_id)
+            except Exception as exc:  # registry miss / offline
+                logger.warning("plugin image %s could not be pulled: %s", entry_point, exc)
+                raise PluginImageUnavailable(
+                    f"the image for this plugin ({entry_point}) could not be pulled: "
+                    f"{type(exc).__name__}. Nothing was started."
+                ) from exc
 
     # ---- lifecycle ------------------------------------------------------
     def launch(
