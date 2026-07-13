@@ -83,7 +83,10 @@ test.describe("Q12-R64 /admin/audit split-shell", () => {
     context,
   }) => {
     const cookie = loadAuthCookie();
-    if (!cookie) test.skip(true, "abs_session cookie missing");
+    if (!cookie) throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
     await context.addCookies([
       { ...cookie!, expires: Math.floor(Date.now() / 1000) + 3600 },
     ]);

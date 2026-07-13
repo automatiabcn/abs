@@ -69,7 +69,10 @@ test.describe("Q12-L26 active drill — drop + reconnect", () => {
     page,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     let firstChunkSent = false;
     await page.route(/\/v1\/chat\/completions/, async (route) => {
@@ -112,7 +115,10 @@ test.describe("Q12-L26 active drill — drop + reconnect", () => {
     page,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     // Caddy/proxy restart simulation: every chat-completions call
     // returns 502. The R35 retry: 1 cap means the user reaches the
@@ -142,7 +148,10 @@ test.describe("Q12-L26 active drill — drop + reconnect", () => {
     page,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     // Active-drill flavour of the R35 sessions-error-tile contract:
     // every GET /v1/chat/sessions call returns 502 (proxy-drop). The
