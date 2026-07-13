@@ -39,7 +39,7 @@ export interface ShellDomain {
   icon: LucideIcon;
   pages: ShellPage[];
   /** Which live signal lights this domain's rail dot, if any. */
-  status?: "approvals" | "providers";
+  status?: "approvals" | "providers" | "quota";
 }
 
 export const DOMAINS: ShellDomain[] = [
@@ -103,6 +103,7 @@ export const DOMAINS: ShellDomain[] = [
     id: "cost",
     label: "Cost",
     icon: BarChart3,
+    status: "quota",
     pages: [
       { href: "/admin/usage", label: "Usage" },
       { href: "/admin/quota", label: "Limits" },

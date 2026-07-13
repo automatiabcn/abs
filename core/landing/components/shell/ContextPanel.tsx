@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 function badgeFor(
   href: string,
   status: ShellStatus,
-): { text: string; tone: "bad" | "ok" } | null {
+): { text: string; tone: "bad" | "warn" | "ok" } | null {
   if (href === "/admin/approvals" && status.pending !== null && status.pending > 0) {
     return { text: String(status.pending), tone: "bad" };
   }
@@ -34,6 +34,12 @@ function badgeFor(
     return {
       text: `${status.providersUp}/${status.providersTotal}`,
       tone: degraded ? "bad" : "ok",
+    };
+  }
+  if (href === "/admin/quota" && status.quotaWorstPct !== null && status.quotaWorstPct >= 80) {
+    return {
+      text: `${Math.round(status.quotaWorstPct)}%`,
+      tone: status.quotaWorstPct >= 100 ? "bad" : "warn",
     };
   }
   return null;
@@ -71,9 +77,9 @@ export function ContextPanel({ status }: { status: ShellStatus }) {
               <span
                 className={cn(
                   "num-mono rounded px-1.5 py-px text-[10px]",
-                  badge.tone === "bad"
-                    ? "bg-destructive-soft text-destructive"
-                    : "bg-success-soft text-success",
+                  badge.tone === "bad" && "bg-destructive-soft text-destructive",
+                  badge.tone === "warn" && "bg-warning-soft text-warning",
+                  badge.tone === "ok" && "bg-success-soft text-success",
                 )}
               >
                 {badge.text}

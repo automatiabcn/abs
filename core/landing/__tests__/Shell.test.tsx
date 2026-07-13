@@ -20,6 +20,8 @@ import {
   activeDomain,
   isActive,
 } from "@/components/shell/domains";
+import { dotFor } from "@/components/shell/status-dots";
+import type { ShellStatus } from "@/components/shell/useShellStatus";
 
 const ALL_PAGES = DOMAINS.flatMap((domain) => domain.pages);
 const ALL_HREFS = ALL_PAGES.map((page) => page.href);
@@ -120,16 +122,46 @@ describe("shell domains — language", () => {
 });
 
 describe("shell domains — live status wiring", () => {
-  it("marks Growth with the approvals signal and Engine with providers", () => {
+  it("marks Growth with approvals, Engine with providers, Cost with quota", () => {
     const growth = DOMAINS.find((domain) => domain.id === "growth");
     const engine = DOMAINS.find((domain) => domain.id === "engine");
+    const cost = DOMAINS.find((domain) => domain.id === "cost");
     expect(growth?.status).toBe("approvals");
     expect(engine?.status).toBe("providers");
+    expect(cost?.status).toBe("quota");
   });
 
   it("resolves the active domain from any page inside it", () => {
     expect(activeDomain("/admin/approvals").id).toBe("growth");
     expect(activeDomain("/admin/mcp-tools/some-tool").id).toBe("engine");
     expect(activeDomain("/nowhere").id).toBe("overview");
+  });
+
+  it("lights the dots at the promised thresholds, and never on unknown", () => {
+    const cost = DOMAINS.find((domain) => domain.id === "cost")!;
+    const growth = DOMAINS.find((domain) => domain.id === "growth")!;
+    const engine = DOMAINS.find((domain) => domain.id === "engine")!;
+    const base: ShellStatus = {
+      pending: null,
+      providersUp: null,
+      providersTotal: null,
+      quotaWorstPct: null,
+    };
+
+    // Unknown state shows nothing — a broken status poll must never alarm.
+    expect(dotFor(cost, base)).toBeNull();
+    expect(dotFor(growth, base)).toBeNull();
+    expect(dotFor(engine, base)).toBeNull();
+
+    // Quota: the catalogue's M2 contract — amber at 80%, red at the ceiling.
+    expect(dotFor(cost, { ...base, quotaWorstPct: 79 })).toBeNull();
+    expect(dotFor(cost, { ...base, quotaWorstPct: 80 })).toBe("warn");
+    expect(dotFor(cost, { ...base, quotaWorstPct: 100 })).toBe("bad");
+
+    expect(dotFor(growth, { ...base, pending: 0 })).toBeNull();
+    expect(dotFor(growth, { ...base, pending: 3 })).toBe("bad");
+
+    expect(dotFor(engine, { ...base, providersUp: 6, providersTotal: 6 })).toBeNull();
+    expect(dotFor(engine, { ...base, providersUp: 5, providersTotal: 6 })).toBe("bad");
   });
 });

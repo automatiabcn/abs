@@ -21,6 +21,8 @@ export interface ShellStatus {
   pending: number | null;
   providersUp: number | null;
   providersTotal: number | null;
+  /** Worst quota slice in percent (0–100+), or null while unknown. */
+  quotaWorstPct: number | null;
 }
 
 async function fetchPending(): Promise<number> {
@@ -35,6 +37,27 @@ async function fetchPending(): Promise<number> {
   };
   if (typeof data.pending_total === "number") return data.pending_total;
   return data.items?.length ?? 0;
+}
+
+interface QuotaSlice {
+  percent?: number;
+}
+
+async function fetchQuotaWorst(): Promise<number> {
+  const res = await fetch("/v1/system/quota_status", {
+    credentials: "include",
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = (await res.json()) as {
+    claude_plus?: QuotaSlice;
+    free_providers?: Record<string, QuotaSlice>;
+  };
+  const slices = [data.claude_plus, ...Object.values(data.free_providers ?? {})];
+  return slices.reduce(
+    (worst, slice) => Math.max(worst, slice?.percent ?? 0),
+    0,
+  );
 }
 
 async function fetchProviders(): Promise<{ up: number; total: number }> {
@@ -65,9 +88,18 @@ export function useShellStatus(): ShellStatus {
     retry: false,
   });
 
+  const quota = useQuery({
+    queryKey: ["shell", "quota"],
+    queryFn: fetchQuotaWorst,
+    refetchInterval: 120_000,
+    staleTime: 60_000,
+    retry: false,
+  });
+
   return {
     pending: approvals.data ?? null,
     providersUp: providers.data?.up ?? null,
     providersTotal: providers.data?.total ?? null,
+    quotaWorstPct: quota.data ?? null,
   };
 }
