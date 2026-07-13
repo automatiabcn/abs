@@ -80,13 +80,47 @@ def _check_providers() -> dict:
 
 
 def _check_rag() -> dict:
+    """Is document search actually working?
+
+    This used to be `import chromadb` — a check on whether a library was
+    installed, standing in for a check on whether the feature worked. It
+    reported `ok` while the embedding backend was the mock one, which is to say
+    while every question put to the knowledge base was being answered from five
+    unrelated chunks. A health check that is green during the outage it exists to
+    report is worse than no health check: it is the reason nobody looks further.
+
+    So it asks the question the operator is actually asking: can this server find
+    the right document?
+    """
     try:
         import importlib
 
         importlib.import_module("chromadb")
-        return {"name": "rag", "ok": True}
     except Exception:
-        return {"name": "rag", "ok": False}
+        return {"name": "rag", "ok": False, "detail": "vector store unavailable"}
+
+    try:
+        from app.rag.embedding_bge import get_embedder
+
+        embedder = get_embedder()
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "name": "rag",
+            "ok": False,
+            "detail": f"embedding backend unavailable: {str(exc)[:120]}",
+        }
+
+    if not embedder.semantic:
+        return {
+            "name": "rag",
+            "ok": False,
+            "embed_model": embedder.model_id(),
+            "detail": (
+                "no embedding model configured — documents can be uploaded but "
+                "not searched. Set ABS_EMBEDDING_BACKEND."
+            ),
+        }
+    return {"name": "rag", "ok": True, "embed_model": embedder.model_id()}
 
 
 def _check_mcp() -> dict:

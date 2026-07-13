@@ -60,9 +60,11 @@ services:
       # BUG-27 — point RAG/Cerbos at the in-stack services declared below.
       ABS_QDRANT_URL: "${ABS_QDRANT_URL:-http://qdrant:6333}"
       ABS_CERBOS_HOST: "${ABS_CERBOS_HOST:-http://cerbos:3592}"
-      # Default to the deterministic stdlib backend; opt-in to
-      # sentence_transformers via .env after `pip install` in a sidecar.
-      ABS_EMBEDDING_BACKEND: "${ABS_EMBEDDING_BACKEND:-mock}"
+      # `auto` resolves to a real embedding backend (ollama → sentence
+      # transformers → cohere) and only falls back to `mock` if it finds none.
+      # Mock vectors are sha256 of the text: search returns unrelated chunks and
+      # the model answers from them, which is worse than no search at all.
+      ABS_EMBEDDING_BACKEND: "${ABS_EMBEDDING_BACKEND:-auto}"
       ABS_EMBEDDING_MODEL_PATH: "${ABS_EMBEDDING_MODEL_PATH:-/app/data/models/bge-m3}"
       HF_HOME: "/app/data/models/hf-cache"
       # BUG-29 — Knowledge graph wiring.

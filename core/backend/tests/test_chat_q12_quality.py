@@ -276,6 +276,8 @@ def test_retrieve_citations_searches_qdrant_tenant(monkeypatch):
 
     class _Emb:
         dim = 1024
+        backend = "ollama"
+        semantic = True  # a real backend; the mock one is refused outright now
 
         def embed_one(self, t):  # noqa: ANN001
             return [0.1] * self.dim
