@@ -46,15 +46,22 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], storageState: "playwright/.auth/admin.json" },
     },
   ],
-  webServer: {
-    // The landing proxies /v1/* to ABS_BACKEND_URL, so the browser talks to
-    // the real API through the real front door.
-    command: "npx next dev --port 3458 --hostname 127.0.0.1",
-    url: "http://127.0.0.1:3458/login",
-    reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
-    env: {
-      ABS_BACKEND_URL: process.env.ABS_BACKEND_URL ?? "http://127.0.0.1:8000",
-    },
-  },
+  // Point PLAYWRIGHT_BASE_URL at a dev server you already have running and the
+  // suite uses it instead of starting its own. Two `next dev` processes in one
+  // checkout share (and corrupt) the .next cache, which shows up as a login page
+  // that never hydrates — a failure that looks like the product's fault and
+  // isn't.
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        // The landing proxies /v1/* to ABS_BACKEND_URL, so the browser talks to
+        // the real API through the real front door.
+        command: "npx next dev --port 3458 --hostname 127.0.0.1",
+        url: "http://127.0.0.1:3458/login",
+        reuseExistingServer: !process.env.CI,
+        timeout: 180_000,
+        env: {
+          ABS_BACKEND_URL: process.env.ABS_BACKEND_URL ?? "http://127.0.0.1:8000",
+        },
+      },
 });

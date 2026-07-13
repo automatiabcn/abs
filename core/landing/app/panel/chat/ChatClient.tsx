@@ -221,7 +221,7 @@ export default function ChatClient() {
             data-test="sessions-error-tile"
             className="flex flex-wrap items-center justify-between gap-3 border-b border-rose-500/30 bg-rose-500/10 px-6 py-2 text-sm text-rose-200"
           >
-            <span>Sohbet geçmişi yüklenemedi</span>
+            <span>Could not load your conversations</span>
             <button
               type="button"
               onClick={() => sessionsQuery.refetch()}
@@ -238,7 +238,7 @@ export default function ChatClient() {
               Sohbet
             </h1>
             <p className="text-xs text-muted-foreground">
-              Cascade router · 6 sağlayıcı · slash komut desteği
+              Answers come from whichever provider is up — type / for commands
             </p>
           </div>
           {sessionsQuery.isFetching && (
@@ -279,7 +279,7 @@ export default function ChatClient() {
                       data-test="configure-cta"
                       className="rounded border border-rose-500/40 px-2 py-0.5 text-xs hover:bg-rose-500/20"
                     >
-                      Sağlayıcı yapılandır
+                      Configure a provider
                     </a>
                     <button
                       type="button"

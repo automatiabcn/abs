@@ -246,8 +246,8 @@ export function useChat({
                 setAgentStep(null);
                 setError(
                   evt.reason === "all_providers_failed"
-                    ? "Sağlayıcılara ulaşılamadı; lütfen tekrar deneyin."
-                    : "Agent modu şu an kullanılamıyor.",
+                    ? "No provider could be reached. Please try again."
+                    : "Agent mode is not available right now.",
                 );
                 break;
             }
@@ -316,24 +316,24 @@ export function useChat({
           }
           if (detail && /no_providers_configured/i.test(detail)) {
             throw new Error(
-              "Henüz sağlayıcı yapılandırılmadı. Sağlayıcı yapılandır bağlantısını kullanın.",
+              "No provider is configured yet. Use the Configure a provider link.",
             );
           }
           throw new Error(detail ? `${res.status} · ${detail}` : `Backend ${res.status}`);
         }
         const reader = res.body?.getReader();
-        if (!reader) throw new Error("Yanıt akışı boş");
+        if (!reader) throw new Error("The response stream was empty");
         await consumeStream(reader);
       } catch (exc: unknown) {
         if ((exc as Error)?.name === "AbortError") {
           // user-initiated cancel — leave partial assistant content as-is
         } else {
           const msg =
-            exc instanceof Error ? exc.message : "Bilinmeyen hata";
+            exc instanceof Error ? exc.message : "Something went wrong";
           setError(msg);
           updateLastAssistant((m) => ({
             ...m,
-            content: m.content || `Hata: ${msg}`,
+            content: m.content || `Error: ${msg}`,
             provider: "none",
           }));
         }
