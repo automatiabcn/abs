@@ -83,7 +83,7 @@ describe("agent mode — the control", () => {
     expect(CHAT_UI).toContain("aria-pressed={agentMode}");
     // The live step label: an agent run is several provider calls long, and a
     // still spinner across that reads as a hang.
-    expect(CHAT_UI).toMatch(/agentStep\s*\?\s*`Adım \$\{agentStep\}`/);
+    expect(CHAT_UI).toMatch(/agentStep\s*\?\s*`Step \$\{agentStep\}`/);
   });
 
   it("cannot be flipped mid-run", () => {

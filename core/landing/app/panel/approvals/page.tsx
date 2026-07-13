@@ -40,14 +40,21 @@ const ACTION_STATUS: Record<string, string> = {
   blocked: "border-rose-500/40 text-rose-300",
   failed: "border-amber-500/40 text-amber-300",
 };
+// What actually ran. An agent writing a file or running a command is not the
+// same event as a CRM note, and the outbox used to call both "internal action".
+const ACTION_KIND: Record<string, string> = {
+  message_send: "message",
+  agent_tool: "assistant action",
+  internal: "internal",
+};
 const STATUS_LABEL: Record<string, string> = {
-  executed: "✓ uygulandı", queued: "✓ kuyruğa alındı", blocked: "⛔ engellendi",
-  failed: "⚠ hata", rejected: "✕ reddedildi",
+  executed: "✓ done", queued: "✓ queued", blocked: "⛔ blocked",
+  failed: "⚠ failed", rejected: "✕ rejected",
 };
 function trTime(iso: string | null): string {
   if (!iso) return "";
   const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  return m < 60 ? `${m} dk önce` : `${Math.round(m / 60)} sa önce`;
+  return m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`;
 }
 function evGroups(ev: Evidence[]) {
   const g: Record<string, string[]> = {};
@@ -55,7 +62,7 @@ function evGroups(ev: Evidence[]) {
   return g;
 }
 const EV_TITLE: Record<string, string> = {
-  rag: "KANIT · RAG", graph: "KANIT · GRAPH", consent: "CONSENT EVIDENCE", policy: "POLICY SONUCU",
+  rag: "EVIDENCE · DOCUMENTS", graph: "EVIDENCE · GRAPH", consent: "EVIDENCE · CONSENT", policy: "POLICY",
 };
 
 export default function ApprovalCenterPage() {
@@ -90,10 +97,10 @@ export default function ApprovalCenterPage() {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const j = await r.json().catch(() => null);
       if (j?.action) setResult({ status: j.action.status, reason: j.action.reason });
-      else if (decision === "reject") setResult({ status: "rejected", reason: "aksiyon tetiklenmedi" });
+      else if (decision === "reject") setResult({ status: "rejected", reason: "nothing was done" });
       load();
     } catch (e) {
-      setErr(`Karar gönderilemedi: ${String(e)}`);
+      setErr(`Could not send your decision: ${String(e)}`);
     } finally {
       setPendingId(null);
     }
@@ -102,8 +109,8 @@ export default function ApprovalCenterPage() {
   // Approving fires the (often outbound: email/WhatsApp/CRM) action. Confirm
   // first so a stray click on a dense queue row can't silently send.
   function confirmApprove(it: Item) {
-    const where = it.channel ? ` ${it.channel} ile gönderilecek` : "";
-    if (window.confirm(`"${it.action}" onaylanacak${where}. Emin misiniz?`)) {
+    const where = it.channel && it.channel !== "agent_tool" ? ` It will be sent over ${it.channel}.` : "";
+    if (window.confirm(`Approve: "${it.action}".${where}`)) {
       decide(it.id, "approve");
     }
   }
@@ -117,20 +124,20 @@ export default function ApprovalCenterPage() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Approval Center</h1>
-          <p className="mt-1 text-[12px] text-muted-foreground">agent önerileri insan onayına düşer · gerekçe + kanıt + risk + consent + policy görünür</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">Nothing here has happened yet. Each row is something the assistant wants to do, with its reasoning, evidence and risk — it runs only if you say so.</p>
         </div>
         {d && (
           <div className="flex gap-2 text-[11px]">
-            <span className="rounded-full border border-amber-500/40 px-3 py-1 text-amber-300">{d.pending_total} bekliyor</span>
-            <span className="rounded-full border border-rose-500/40 px-3 py-1 text-rose-300">{d.by_risk.high ?? 0} yüksek-risk</span>
+            <span className="rounded-full border border-amber-500/40 px-3 py-1 text-amber-300">{d.pending_total} waiting</span>
+            <span className="rounded-full border border-rose-500/40 px-3 py-1 text-rose-300">{d.by_risk.high ?? 0} high risk</span>
           </div>
         )}
       </div>
-      {err && <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">Yüklenemedi: {err}</div>}
+      {err && <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">Could not load: {err}</div>}
       {result && (
         <div data-test="action-result" className={`mb-4 flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm ${result.status === "blocked" ? "border-rose-500/40 bg-rose-500/5 text-rose-200" : result.status === "failed" ? "border-amber-500/40 bg-amber-500/5 text-amber-200" : result.status === "rejected" ? "border-border bg-muted/20 text-muted-foreground" : "border-emerald-500/40 bg-emerald-500/5 text-emerald-200"}`}>
-          <span><b>Aksiyon:</b> {STATUS_LABEL[result.status] ?? result.status} · {result.reason}</span>
-          <button onClick={() => setResult(null)} className="text-xs opacity-70 hover:opacity-100">kapat</button>
+          <span><b>Outcome:</b> {STATUS_LABEL[result.status] ?? result.status} · {result.reason}</span>
+          <button onClick={() => setResult(null)} className="text-xs opacity-70 hover:opacity-100">dismiss</button>
         </div>
       )}
       {!d && !err && <div className="h-64 w-full animate-pulse rounded-md bg-muted/40" />}
@@ -140,10 +147,10 @@ export default function ApprovalCenterPage() {
           {/* ── Tier scorecards ─────────────────────── */}
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
             {[
-              ["Düşük (otomatik)", String(t?.low_auto ?? 0), "iç rapor · CRM okuma · brief"],
-              ["Orta (insan)", String(t?.medium_pending ?? 0), "email taslağı · CRM update"],
-              ["Yüksek (onay+audit)", String(t?.high_pending ?? 0), "outbound · WhatsApp"],
-              ["Onay kabul oranı", t?.accept_rate != null ? `%${t.accept_rate}` : "—", "risk-bazlı akıllı eşik · batch"],
+              ["Low — ran on its own", String(t?.low_auto ?? 0), "reading a report, looking something up"],
+              ["Medium — waiting for you", String(t?.medium_pending ?? 0), "a drafted email, a file the assistant wants to write"],
+              ["High — waiting for you", String(t?.high_pending ?? 0), "sending a message, running a command"],
+              ["You approved", t?.accept_rate != null ? `${t.accept_rate}%` : "—", "of what was proposed"],
             ].map(([l, v, h]) => (
               <div key={l} className="rounded-xl border bg-card/60 p-4">
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{l}</div>
@@ -155,7 +162,7 @@ export default function ApprovalCenterPage() {
 
           {/* ── Detailed approval cards ─────────────── */}
           <div className="space-y-4">
-            {detailed.length === 0 && <div className="text-sm text-muted-foreground">Detaylı bekleyen onay yok.</div>}
+            {detailed.length === 0 && <div className="text-sm text-muted-foreground">Nothing is waiting for you.</div>}
             {detailed.map((it) => {
               const g = evGroups(it.evidence);
               return (
@@ -175,10 +182,10 @@ export default function ApprovalCenterPage() {
                         <span className="ml-auto text-[11px] text-muted-foreground">{trTime(it.created_at)}</span>
                       </div>
                       <div className="mt-2 text-[13px]"><b>Aksiyon:</b> {it.action}</div>
-                      {it.rationale && <div className="mt-1 text-[12px] text-muted-foreground"><b className="text-foreground">Agent gerekçesi:</b> {it.rationale}</div>}
+                      {it.rationale && <div className="mt-1 text-[12px] text-muted-foreground"><b className="text-foreground">Why:</b> {it.rationale}</div>}
                       {it.proposed_message && (
                         <div className="mt-2">
-                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Önerilen mesaj</div>
+                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">What it will do</div>
                           <div className="mt-1 rounded-md border bg-background/40 px-3 py-2 text-[12px]">{it.proposed_message}</div>
                         </div>
                       )}
@@ -196,10 +203,10 @@ export default function ApprovalCenterPage() {
                       </div>
                     </div>
                     <div className="flex w-[150px] shrink-0 flex-col gap-2">
-                      <button onClick={() => decide(it.id, "approve")} disabled={pendingId === it.id} className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">✓ {pendingId === it.id ? "Gönderiliyor…" : it.channel === "email" ? "Onayla & Gönder" : "Onayla"}</button>
-                      <button onClick={() => decide(it.id, "edit")} disabled={pendingId === it.id} className="rounded-md border px-3 py-1.5 text-xs disabled:opacity-50">✎ Düzenle</button>
-                      <button onClick={() => decide(it.id, "reject")} disabled={pendingId === it.id} className="rounded-md border px-3 py-1.5 text-xs text-rose-300 disabled:opacity-50">✕ Reddet</button>
-                      {it.risk === "high" && <div className="text-center text-[10px] text-muted-foreground">⏱ 4s sonra escalate</div>}
+                      <button onClick={() => decide(it.id, "approve")} disabled={pendingId === it.id} className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">✓ {pendingId === it.id ? "Working…" : it.channel === "email" ? "Approve & send" : "Approve"}</button>
+                      <button onClick={() => decide(it.id, "edit")} disabled={pendingId === it.id} className="rounded-md border px-3 py-1.5 text-xs disabled:opacity-50">✎ Edit</button>
+                      <button onClick={() => decide(it.id, "reject")} disabled={pendingId === it.id} className="rounded-md border px-3 py-1.5 text-xs text-rose-300 disabled:opacity-50">✕ Reject</button>
+                      {it.risk === "high" && <div className="text-center text-[10px] text-muted-foreground">⏱ escalates in 4 h</div>}
                     </div>
                   </div>
                 </div>
@@ -239,8 +246,8 @@ export default function ApprovalCenterPage() {
           {outbox && outbox.total > 0 && (
             <div className="mt-6 rounded-xl border bg-card/60 p-4" data-test="outbox">
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold">⇉ Aksiyon Outbox</span>
-                <span className="text-[11px] text-muted-foreground">onaydan sonra çalışan aksiyonlar · Consent Ledger ile geçitlenir</span>
+                <span className="text-sm font-semibold">⇉ What actually ran</span>
+                <span className="text-[11px] text-muted-foreground">Everything you approved, and what came of it. Outbound messages still need consent on file.</span>
                 <div className="ml-auto flex gap-1.5">
                   {Object.entries(outbox.by_status).map(([s, n]) => (
                     <span key={s} className={`rounded-full border px-2 py-0.5 text-[10px] ${ACTION_STATUS[s] ?? "border-border text-muted-foreground"}`}>{STATUS_LABEL[s] ?? s}: {n}</span>
@@ -250,15 +257,15 @@ export default function ApprovalCenterPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-[13px]">
                   <thead><tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-                    <th className="pb-2 pr-3 font-medium">Agent</th><th className="pb-2 pr-3 font-medium">Tür</th>
-                    <th className="pb-2 pr-3 font-medium">Kanal</th><th className="pb-2 pr-3 font-medium">Hedef</th>
-                    <th className="pb-2 pr-3 font-medium">Durum</th><th className="pb-2 font-medium">Gerekçe</th>
+                    <th className="pb-2 pr-3 font-medium">Agent</th><th className="pb-2 pr-3 font-medium">Kind</th>
+                    <th className="pb-2 pr-3 font-medium">Channel</th><th className="pb-2 pr-3 font-medium">Target</th>
+                    <th className="pb-2 pr-3 font-medium">Status</th><th className="pb-2 font-medium">Outcome</th>
                   </tr></thead>
                   <tbody className="divide-y divide-border">
                     {outbox.items.map((a) => (
                       <tr key={a.id}>
                         <td className="py-2.5 pr-3 font-medium">{a.agent_id}</td>
-                        <td className="py-2.5 pr-3 text-muted-foreground">{a.action_kind === "message_send" ? "mesaj" : "iç aksiyon"}</td>
+                        <td className="py-2.5 pr-3 text-muted-foreground">{ACTION_KIND[a.action_kind] ?? a.action_kind}</td>
                         <td className="py-2.5 pr-3 font-mono text-muted-foreground">{a.channel || "—"}</td>
                         <td className="py-2.5 pr-3 text-muted-foreground">{a.target_company || "—"}{a.target_contact ? ` · ${a.target_contact}` : ""}</td>
                         <td className="py-2.5 pr-3"><span className={`rounded-full border px-2 py-0.5 text-[10px] ${ACTION_STATUS[a.status] ?? "border-border"}`}>{STATUS_LABEL[a.status] ?? a.status}</span></td>

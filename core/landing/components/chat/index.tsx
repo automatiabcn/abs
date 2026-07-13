@@ -71,7 +71,7 @@ const PROVIDER_PALETTE: Record<
     tone: "bg-amber-500/15 text-amber-300 border-amber-500/30",
     icon: Sparkles,
   },
-  none: { label: "Yapılandırılmadı", tone: "bg-rose-500/15 text-rose-300 border-rose-500/30", icon: Layers },
+  none: { label: "Not configured", tone: "bg-rose-500/15 text-rose-300 border-rose-500/30", icon: Layers },
 };
 
 export function ProviderChip({
@@ -123,13 +123,13 @@ export function MetaPills({
       {latencyMs != null && (
         <span className="inline-flex items-center gap-1">
           <Clock className="h-3 w-3" />
-          {latencyMs.toLocaleString("tr-TR")} ms
+          {latencyMs.toLocaleString()} ms
         </span>
       )}
       {tokensUsed != null && (
         <span className="inline-flex items-center gap-1">
           <Activity className="h-3 w-3" />
-          {tokensUsed.toLocaleString("tr-TR")} token
+          {tokensUsed.toLocaleString()} tokens
         </span>
       )}
     </span>
@@ -235,7 +235,7 @@ export function MessageBubble({ msg }: { msg: ChatMessage }) {
         {msg.role === "assistant" && msg.content === "" ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-            Yazıyor…
+            Thinking…
           </div>
         ) : (
           <Markdown content={msg.content} />
@@ -301,11 +301,11 @@ interface SlashCommand {
 }
 
 const SLASH_COMMANDS: SlashCommand[] = [
-  { cmd: "/rag", desc: "Bilgi tabanı sorgusu (RAG)" },
-  { cmd: "/workflow", desc: "İş akışı oluştur ve çalıştır" },
-  { cmd: "/code", desc: "Kod üret (qual_code zinciri)" },
-  { cmd: "/translate", desc: "Çeviri (qual_translate)" },
-  { cmd: "/analyze", desc: "Derin analiz (3 perspektif)" },
+  { cmd: "/rag", desc: "Search your documents" },
+  { cmd: "/workflow", desc: "Build and run a workflow" },
+  { cmd: "/code", desc: "Write code (reviewed by a second model)" },
+  { cmd: "/translate", desc: "Translate, then check the translation" },
+  { cmd: "/analyze", desc: "Analyse from three angles, then synthesise" },
 ];
 
 function SlashCommandPalette({
@@ -353,7 +353,7 @@ export function MessageInput({
   agentMode,
   onToggleAgent,
   agentStep,
-  placeholder = "Bir mesaj yazın veya / ile komut başlatın…",
+  placeholder = "Ask anything, or type / for a command…",
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -411,8 +411,8 @@ export function MessageInput({
             data-test="agent-toggle"
             title={
               agentMode
-                ? "Agent açık — yanıtlamadan önce sistemi ve dokümanlarınızı sorgular"
-                : "Agent — yanıtlamadan önce sistemi ve dokümanlarınızı sorgulasın"
+                ? "Agent is on — it looks things up before answering, and asks you before it changes anything"
+                : "Agent — let it look things up before answering"
             }
             className={
               agentMode
@@ -424,7 +424,7 @@ export function MessageInput({
             {/* The step counter is the whole reason this label is live: an agent
                 run takes seconds and several provider calls, and a still spinner
                 through that reads as a hang. */}
-            {agentMode && agentStep ? `Adım ${agentStep}` : "Agent"}
+            {agentMode && agentStep ? `Step ${agentStep}` : "Agent"}
           </button>
         )}
         <textarea
@@ -443,7 +443,7 @@ export function MessageInput({
             variant="ghost"
             size="icon"
             onClick={onAbort}
-            aria-label="Akışı durdur · Stop · Detener"
+            aria-label="Stop"
             data-testid="chat-abort"
           >
             <StopCircle className="h-4 w-4" />
@@ -454,7 +454,7 @@ export function MessageInput({
             size="icon"
             onClick={onSubmit}
             disabled={disabled || !value.trim()}
-            aria-label="Mesaj gönder · Send message · Enviar"
+            aria-label="Send message"
             data-testid="chat-send"
           >
             <ArrowUp className="h-4 w-4" />
@@ -462,7 +462,7 @@ export function MessageInput({
         )}
       </div>
       <div className="mt-1 px-2 text-[11px] text-muted-foreground">
-        Enter ile gönder · Shift+Enter satır atla · / ile komut listesini aç
+        Enter to send · Shift+Enter for a new line · / for commands
       </div>
     </div>
   );
@@ -515,7 +515,7 @@ export function ChatSidebar({
       <div className="relative mb-2">
         <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Geçmişte ara…"
+          placeholder="Search conversations…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           className="pl-7 text-sm"
@@ -530,7 +530,7 @@ export function ChatSidebar({
           </div>
         ) : visible.length === 0 ? (
           <p className="px-2 py-6 text-center text-xs text-muted-foreground">
-            Henüz geçmiş yok.
+            No conversations yet.
           </p>
         ) : (
           <ul className="space-y-1">
@@ -581,7 +581,7 @@ export function ChatSidebar({
           className="mt-3 justify-start gap-2 border-t border-border/60 pt-3 text-sm text-muted-foreground hover:text-foreground"
         >
           <Sparkles className="h-4 w-4 text-primary" />
-          Prompt kütüphanesi
+          Prompt library
         </Button>
       )}
     </aside>
@@ -601,14 +601,14 @@ export function MetaSidebar({ meta }: { meta: MetaEvent | null }) {
       </h3>
       {!meta ? (
         <p className="text-sm text-muted-foreground">
-          İlk mesajdan sonra cascade verisi burada görünecek.
+          Once you ask something, this shows who answered and what it cost.
         </p>
       ) : (
         <div className="space-y-4">
           <Card className="bg-background/60">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
-                Sağlayıcı
+                Provider
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -625,13 +625,13 @@ export function MetaSidebar({ meta }: { meta: MetaEvent | null }) {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Gecikme</span>
                 <span className="font-mono">
-                  {meta.latencyMs.toLocaleString("tr-TR")} ms
+                  {meta.latencyMs.toLocaleString()} ms
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Token</span>
                 <span className="font-mono">
-                  {meta.tokensUsed.toLocaleString("tr-TR")}
+                  {meta.tokensUsed.toLocaleString()}
                 </span>
               </div>
             </CardContent>
