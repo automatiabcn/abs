@@ -243,6 +243,19 @@ def get_approval(*, tenant_slug: str, item_id: int) -> Optional[dict]:
         return _to_dict(row)
 
 
+class AlreadyDecided(Exception):
+    """Someone tried to decide an item that has already been decided.
+
+    The action was never at risk — `won_transition` sees to that, and a second
+    decision has never re-fired anything. What was at risk was the record. A
+    re-decide used to overwrite `status` and return 200, so an item a person
+    had *rejected* could be left reading "approved", with a decided_at to match
+    and nothing sent. The operator reads that row later and believes a message
+    went out that never did. A decision is a fact about what a person chose;
+    it does not get rewritten.
+    """
+
+
 def decide_approval(
     *, tenant_slug: str, item_id: int, decision: str, decided_by: str,
     note: str = "", edited_message: str = "",
@@ -257,6 +270,14 @@ def decide_approval(
         if row is None or row.tenant_slug != tenant_slug:
             return None
         prev_status = row.status            # to fire the action at most once
+        if prev_status != "pending":
+            # Refused, not silently rewritten. The concurrent case is different
+            # and stays as it was: two decides that race both see "pending", one
+            # wins the claim below, and the loser is told the truth — the item is
+            # decided — rather than being turned into a second send.
+            raise AlreadyDecided(
+                f"this was already {prev_status}; a decision cannot be taken back"
+            )
         # Claim the pending→decided transition atomically so the action fires
         # at most once even under concurrent decides (a read-then-write check on
         # prev_status races). Only the winner gets won_transition=True.
