@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-05-07T11:52:04+00:00",
+  "source_latency_json": "artifacts/promise_verify/latency_benchmark.json",
+  "ledger": {
+    "n_prompts": 100,
+    "groq_total_tokens": {
+      "input": 14462,
+      "output": 56212
+    },
+    "anthropic_total_tokens": {
+      "input": 9214,
+      "output": 47588
+    },
+    "anthropic_estimated_from_groq": false,
+    "per_prompt_avg_tokens": {
+      "groq": {
+        "input": 144.6,
+        "output": 562.1
+      },
+      "anthropic": {
+        "input": 92.1,
+        "output": 475.9
+      }
+    },
+    "cost_per_prompt": {
+      "groq_usd": 0.0,
+      "anthropic_usd": 0.007401
+    },
+    "monthly_projection_usd": {
+      "1000": {
+        "groq_usd": 0.0,
+        "anthropic_usd": 7.4146
+      },
+      "10000": {
+        "groq_usd": 0.0,
+        "anthropic_usd": 74.1462
+      }
+    },
+    "pricing": {
+      "groq": {
+        "model": "openai/gpt-oss-120b",
+        "input_per_mtok_usd": 0.0,
+        "output_per_mtok_usd": 0.0
+      },
+      "anthropic": {
+        "model": "claude-sonnet-4-5-20250929",
+        "input_per_mtok_usd": 3.0,
+        "output_per_mtok_usd": 15.0
+      }
+    }
+  }
+}
