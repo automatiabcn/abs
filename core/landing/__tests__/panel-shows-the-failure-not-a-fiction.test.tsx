@@ -19,7 +19,7 @@
 // a customer hits.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, waitFor } from "@testing-library/react";
+import { fireEvent, render, waitFor } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -98,6 +98,69 @@ describe("the audit page, when the log could not be read", () => {
     expect(container.textContent).toMatch(/auth\.login/);
     expect(at(container, "audit-load-error")).toBeNull();
     expect(at(container, "audit-export")).not.toBeDisabled();
+  });
+});
+
+describe("the chain check does not congratulate itself on an empty log", () => {
+  function respondWithChain(body: Record<string, unknown>) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) =>
+        String(url).includes("verify-chain")
+          ? Promise.resolve(
+              new Response(JSON.stringify(body), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+              }),
+            )
+          : Promise.reject(new Error("not under test")),
+      ),
+    );
+  }
+
+  it("says nothing was recorded, rather than 'Log intact'", async () => {
+    // The API is right that an empty chain is not tampered with. The button was
+    // wrong to render that as reassurance: "Log intact" over zero entries is a
+    // green tick on no work, and it is precisely what this button displayed for
+    // months while the recorder wrote to a logger with no handler.
+    respondWithChain({ ok: true, total_entries: 0, tampered_entry_id: null });
+
+    const { container } = renderWithQuery(
+      <AuditClient initialEntries={[]} loadError={null} />,
+    );
+    fireEvent.click(at(container, "audit-verify-chain")!);
+
+    await waitFor(() =>
+      expect(container.textContent).toMatch(/nothing recorded yet/i),
+    );
+    expect(container.textContent).not.toMatch(/intact/i);
+  });
+
+  it("says intact only when it has actually checked something, and says how much", async () => {
+    respondWithChain({ ok: true, total_entries: 412, tampered_entry_id: null });
+
+    const { container } = renderWithQuery(
+      <AuditClient initialEntries={[]} loadError={null} />,
+    );
+    fireEvent.click(at(container, "audit-verify-chain")!);
+
+    await waitFor(() => expect(container.textContent).toMatch(/Log intact/i));
+    expect(container.textContent).toMatch(/412 entries checked/i);
+  });
+
+  it("says so, loudly, when the chain is broken", async () => {
+    // If this ever stops being reachable, the chain is decoration.
+    respondWithChain({ ok: false, total_entries: 9, tampered_entry_id: 7 });
+
+    const { container } = renderWithQuery(
+      <AuditClient initialEntries={[]} loadError={null} />,
+    );
+    fireEvent.click(at(container, "audit-verify-chain")!);
+
+    await waitFor(() =>
+      expect(container.textContent).toMatch(/tampered with/i),
+    );
+    expect(container.textContent).toMatch(/#7/);
   });
 });
 
