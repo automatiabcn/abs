@@ -70,6 +70,18 @@ def send_license_email(
     )
 
     if not settings.smtp_host:
+        # In development, printing the mail to the log is a convenience.
+        #
+        # In production it is the product going missing. This one email carries
+        # the licence key — for a self-hosted customer it *is* what they bought —
+        # and a server with no SMTP host was writing it to a log file, returning
+        # cleanly, and letting the webhook answer Stripe with a 200. Money in, key
+        # nowhere, no error anywhere.
+        if str(getattr(settings, "env", "")).lower() in ("prod", "production"):
+            raise RuntimeError(
+                "no SMTP server is configured (ABS_SMTP_HOST) — the licence key "
+                "cannot be delivered"
+            )
         logger.info(
             "[email:console-fallback] to=%s subject=%r length=%d",
             to,

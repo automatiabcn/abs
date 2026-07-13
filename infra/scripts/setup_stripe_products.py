@@ -43,11 +43,18 @@ PRODUCTS: List[Dict] = [
     {"name": "ABS Team Pack 10", "amount": 209300, "metadata_sku": "team-10"},
 ]
 
-# 022 — Annual recurring SKU'lar (--annual flag ile)
+# Annual subscriptions. `recurring` is what makes them subscriptions — without it
+# Stripe creates a one-time price, and a plan a customer bought as "annual" charges
+# them once and never renews. The flag that switches to this list is documented as
+# "one-time yerine subscription" (subscription instead of one-time); the prices it
+# created were one-time.
 ANNUAL_PRODUCTS: List[Dict] = [
-    {"name": "ABS Self-Host Annual", "amount": 29999, "metadata_sku": "self-host-annual"},
-    {"name": "ABS Team Pack 5 Annual", "amount": 119999, "metadata_sku": "team-5-annual"},
-    {"name": "ABS Team Pack 10 Annual", "amount": 209999, "metadata_sku": "team-10-annual"},
+    {"name": "ABS Self-Host Annual", "amount": 29999,
+     "metadata_sku": "self-host-annual", "recurring": {"interval": "year"}},
+    {"name": "ABS Team Pack 5 Annual", "amount": 119999,
+     "metadata_sku": "team-5-annual", "recurring": {"interval": "year"}},
+    {"name": "ABS Team Pack 10 Annual", "amount": 209999,
+     "metadata_sku": "team-10-annual", "recurring": {"interval": "year"}},
 ]
 
 
@@ -125,25 +132,38 @@ def main(argv: List[str] | None = None) -> int:
             ),
             None,
         )
+        recurring = spec.get("recurring")
         if found is not None:
             prices = stripe.Price.list(product=found.id, active=True, limit=10)
+            # An existing price only counts as this SKU's price if it bills the
+            # same way. A one-time price left over from before this fix must not
+            # satisfy the check for a subscription price — that is precisely how a
+            # renewing plan stays non-renewing through a re-run.
             active_price = next(
-                (pr for pr in prices.data if pr.unit_amount == spec["amount"]),
+                (
+                    pr
+                    for pr in prices.data
+                    if pr.unit_amount == spec["amount"]
+                    and bool(getattr(pr, "recurring", None)) == bool(recurring)
+                ),
                 None,
             )
             if active_price is not None:
-                print(f"# {spec['metadata_sku']} ({args.mode}) mevcut: {active_price.id}")
+                print(f"# {spec['metadata_sku']} ({args.mode}) exists: {active_price.id}")
                 continue
         product = found or stripe.Product.create(
             name=spec["name"],
             metadata={"sku": spec["metadata_sku"], "mode": args.mode},
         )
-        price = stripe.Price.create(
+        price_args = dict(
             product=product.id,
             currency="usd",
             unit_amount=spec["amount"],
             metadata={"sku": spec["metadata_sku"], "mode": args.mode},
         )
+        if recurring:
+            price_args["recurring"] = recurring
+        price = stripe.Price.create(**price_args)
         env_name = _env_name_for(spec["metadata_sku"])
         print(f"{env_name}={price.id}")
 
