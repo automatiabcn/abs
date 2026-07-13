@@ -117,7 +117,24 @@ async def _complete(
         from app.cascade.orchestrator import call_with_cascade
         from app.providers.cascade import get_active_providers
 
-        active = get_active_providers(prefer=agent.provider_hint)
+        # The caller's own keys count here too. An agent run that ignored them
+        # would answer from the free tier while the person's paid key sat unused
+        # two rooms away — the same BYOK promise the chat path already keeps.
+        extra: frozenset[str] = frozenset()
+        try:
+            from app.multitenant.provider_keys import tenant_configured_providers
+
+            extra = frozenset(
+                tenant_configured_providers(
+                    tenant_slug=tenant_id,
+                    project_slug=project_slug,
+                    user_subject=user_subject,
+                )
+            )
+        except Exception as exc:  # noqa: BLE001 — BYOK is a bonus, never a blocker
+            logger.debug("agent BYOK lookup skipped: %s", exc)
+
+        active = get_active_providers(prefer=agent.provider_hint, extra_configured=extra)
         if not active:
             return "", ""
         primary, *rest = active
