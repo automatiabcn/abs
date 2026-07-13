@@ -143,7 +143,7 @@ def _ensure_embedder():
     historically this was a 500 with a Python ImportError leaking out.
     """
     try:
-        return get_embedder()
+        embedder = get_embedder()
     except ImportError as exc:
         logger.warning("embedder_unavailable_import: %s", exc)
         raise HTTPException(
@@ -156,6 +156,23 @@ def _ensure_embedder():
             status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"embedder_unavailable: {exc}",
         ) from exc
+
+    # An embedder that does not understand meaning cannot search, and this is the
+    # endpoint the panel's search box and the /rag command call. The guard existed
+    # in chat's citation path and nowhere else, so the *main* surface went on
+    # answering from sha256 vectors — confidently, with citations, from unrelated
+    # documents. Refusing here is the difference between a customer seeing an
+    # error and a customer being misled.
+    if not embedder.semantic:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "search_unavailable: no embedding model is configured, so documents "
+                "cannot be searched. Set ABS_EMBEDDING_BACKEND (ollama / "
+                "sentence_transformers / cohere)."
+            ),
+        )
+    return embedder
 
 
 def _synthesize_answer(

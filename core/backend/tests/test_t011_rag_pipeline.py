@@ -484,6 +484,11 @@ def test_ingest_embed_failure_returns_503_not_500(monkeypatch: pytest.MonkeyPatc
 
     class _BoomEmbedder:
         dim = 1024
+        # A real embedder that understands meaning — the failure under test is the
+        # embedding *call* blowing up, not the backend being absent. Retrieval now
+        # refuses outright when `semantic` is false, so a stub that omits it would
+        # be testing the wrong refusal.
+        semantic = True
 
         def embed(self, texts):  # noqa: ANN001
             raise RuntimeError("cohere 429: rate limit")
@@ -520,6 +525,7 @@ def test_ingest_file_runs_with_asyncio_embedder(monkeypatch: pytest.MonkeyPatch)
 
     class _AsyncioEmbedder:
         dim = 1024
+        semantic = True
 
         def embed(self, texts):  # noqa: ANN001 — mimics _CohereBackend.embed
             async def _run():
