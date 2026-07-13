@@ -267,6 +267,13 @@ class Meeting(SQLModel, table=True):
     status: str = Field(max_length=32, default="pending")  # pending|done|error
     summary: str = Field(default="", max_length=4096)
     error_message: Optional[str] = Field(default=None, max_length=512)
+    # SHA-256 of the audio bytes — the same recording uploaded twice is one
+    # meeting, one transcription bill, and one copy in the vector store.
+    audio_sha256: str = Field(default="", max_length=64, index=True)
+    # Set when the recording transcribed without failing but holds no usable
+    # speech. Non-empty means it was deliberately kept out of the knowledge
+    # base, and this sentence is what the operator is shown.
+    quality_note: str = Field(default="", max_length=512)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc), index=True
     )
