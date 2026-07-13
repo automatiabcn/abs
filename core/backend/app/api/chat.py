@@ -129,9 +129,46 @@ class ChatMessageOut(BaseModel):
     content: str
     provider: Optional[str]
     tool_calls: Any = []
+    # Citations are not a tool call, and returning them as one is why they used
+    # to disappear. They were being written into the tool_calls blob and never
+    # read back out, so an answer that streamed with its sources attached lost
+    # them the moment the page rehydrated from the database — leaving the
+    # model's "[4]" markers pointing at a list that was no longer on screen.
+    citations: List[Dict] = []
     tokens_used: Optional[int]
     latency_ms: Optional[int]
     created_at: datetime
+
+
+def _decode_tool_calls(raw: Optional[str]) -> Any:
+    """The stored blob, whatever shape history left it in.
+
+    Two shapes exist in the wild: a list of tool calls (agent mode), and a dict
+    carrying the cascade's pipeline metadata with the citations inside it. Both
+    have been written to this one column, so both have to be read from it.
+    """
+    if not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _stored_tool_calls(raw: Optional[str]) -> List[Any]:
+    decoded = _decode_tool_calls(raw)
+    if decoded is None:
+        return []
+    return decoded if isinstance(decoded, list) else [decoded]
+
+
+def _stored_citations(raw: Optional[str]) -> List[Dict]:
+    """Pull the sources back out, so a reloaded answer still shows where it came from."""
+    decoded = _decode_tool_calls(raw)
+    if not isinstance(decoded, dict):
+        return []
+    cited = decoded.get("citations")
+    return [c for c in cited if isinstance(c, dict)] if isinstance(cited, list) else []
 
 
 class NewSessionRequest(BaseModel):
@@ -504,15 +541,8 @@ def list_messages(
                 role=m.role,
                 content=m.content,
                 provider=m.provider,
-                tool_calls=(
-                    (
-                        json.loads(m.tool_calls)
-                        if isinstance(json.loads(m.tool_calls), list)
-                        else [json.loads(m.tool_calls)]
-                    )
-                    if m.tool_calls
-                    else []
-                ),
+                tool_calls=_stored_tool_calls(m.tool_calls),
+                citations=_stored_citations(m.tool_calls),
                 tokens_used=m.tokens_used,
                 latency_ms=m.latency_ms,
                 created_at=m.created_at,
