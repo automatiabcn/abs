@@ -50,9 +50,26 @@ describe("PanelSidebar — canonical URLs", () => {
     }
   });
 
-  it("renames the cascade item to 'Sağlayıcılar' so the label matches /admin/providers", () => {
-    expect(SIDEBAR).toContain('label: "Sağlayıcılar"');
+  // The nav says what a thing is for, never what it is built from. "Cascade" is
+  // the mechanism; an operator arrives wanting to see their Providers.
+  it("names the providers item after the route, not after the mechanism", () => {
+    expect(SIDEBAR).toContain('label: "Providers"');
     expect(SIDEBAR).not.toMatch(/label:\s*"Cascade"/);
+  });
+
+  // Twenty-seven items greeted every newcomer at once. Seven now carry the jobs
+  // people arrive with; the rest stay one click away under Advanced — present,
+  // not deleted. Both halves of that promise are worth holding onto.
+  it("keeps the first screen to seven items and hides nothing", () => {
+    // Match the array declarations exactly: `const ADVANCED_KEY` sits above them
+    // and would otherwise be what a loose split lands on.
+    const primary = SIDEBAR.split("const PRIMARY: NavItem[]")[1]?.split("];")[0] ?? "";
+    const advanced = SIDEBAR.split("const ADVANCED: NavItem[]")[1]?.split("];")[0] ?? "";
+
+    const count = (block: string) => (block.match(/href:/g) ?? []).length;
+
+    expect(count(primary)).toBe(7);
+    expect(count(advanced)).toBeGreaterThanOrEqual(20);
   });
 
   it("retains a redirect equivalence map so the active highlight tracks /panel/* landings", () => {

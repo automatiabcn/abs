@@ -15,11 +15,16 @@ interface PanelThemeProviderProps {
   children: ReactNode;
 }
 
+// The panel opened dark for everyone, which suited the people who built it and
+// nobody who buys it. Following the operating system is the honest default: a
+// console someone runs a business from should look like the rest of their
+// working day, and light is now designed to the same standard rather than being
+// an inverted afterthought. An explicit toggle still wins over both.
 export function PanelThemeProvider({ children }: PanelThemeProviderProps) {
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="dark"
+      defaultTheme="system"
       enableSystem
       disableTransitionOnChange
     >

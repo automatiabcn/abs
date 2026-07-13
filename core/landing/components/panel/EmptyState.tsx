@@ -41,7 +41,10 @@ export function EmptyState({
       data-test="empty-state"
       className="mx-auto flex max-w-md flex-col items-center justify-center gap-3 px-6 py-12 text-center"
     >
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+      {/* bg-primary-soft, not bg-primary/10: colours resolve through var() now,
+          and Tailwind 3 cannot re-compose an alpha onto one — the opacity
+          modifier silently produced no background at all. */}
+      <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-primary-soft text-primary">
         <Icon className="h-6 w-6" />
       </div>
       <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
