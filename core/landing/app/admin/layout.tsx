@@ -45,14 +45,24 @@ async function _probeBackendHealthy(): Promise<boolean> {
   }
 }
 
-// Page-level RBAC gate. middleware.ts only checks "logged in" (/auth/me), so a
-// non-admin member could load the admin chrome (every data call then 401s —
-// backend is secure, but it's a confusing shell). Probe the admin-only
-// /v1/admin/me with the caller's cookies: a definitive 401/403 means
-// not-an-admin → render an access-denied notice instead of the console.
-// Fail-open on network errors so a transient hiccup never locks out a real
-// admin (the backend still gates the actual data).
-async function _isAdmin(): Promise<boolean> {
+// Page-level RBAC gate. middleware.ts only checks "logged in" (/auth/me), so
+// without this a non-admin member loads the admin chrome.
+//
+// This used to end in `} catch { return true; }` — fail-OPEN. The comment
+// defended it as "a transient hiccup must never lock out a real admin", but the
+// hiccup it opened the door on was a 2.5-second timeout, and the door was the
+// whole console: users, audit log, providers, keys. An attacker who can slow one
+// request down by two and a half seconds — or simply a busy server — got in.
+//
+// A gate that opens when it cannot tell is not a gate. So:
+//   • a definitive answer decides it (200 → admin, 401/403 → denied);
+//   • anything else — a timeout, a 500, a network error — is *unknown*, and
+//     unknown does not render the console. It says so, and offers a retry.
+// A real admin sees a page telling them to try again. That is a far smaller cost
+// than the alternative, and unlike the alternative it is one they can see.
+type AdminVerdict = "admin" | "denied" | "unverified";
+
+async function _adminVerdict(): Promise<AdminVerdict> {
   try {
     const cookieHeader = (await cookies()).toString();
     const res = await fetch(`${BACKEND_URL}/v1/admin/me`, {
@@ -60,11 +70,30 @@ async function _isAdmin(): Promise<boolean> {
       headers: cookieHeader ? { cookie: cookieHeader } : undefined,
       signal: AbortSignal.timeout(2500),
     });
-    if (res.status === 401 || res.status === 403) return false;
-    return true;
+    if (res.ok) return "admin";
+    if (res.status === 401 || res.status === 403) return "denied";
+    return "unverified";
   } catch {
-    return true;
+    return "unverified";
   }
+}
+
+function Notice({ title, body }: { title: string; body: string }) {
+  return (
+    <main
+      data-test="admin-gate-notice"
+      className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-background p-6 text-center text-foreground"
+    >
+      <h1 className="text-xl font-semibold">{title}</h1>
+      <p className="max-w-md text-sm text-muted-foreground">{body}</p>
+      <a
+        href="/login"
+        className="rounded-md border border-border px-4 py-2 text-sm hover:bg-accent"
+      >
+        Go to sign-in
+      </a>
+    </main>
+  );
 }
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
@@ -72,23 +101,22 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   if (!healthy) {
     redirect("/login?reason=backend-unreachable");
   }
-  const admin = await _isAdmin();
-  if (!admin) {
+  const verdict = await _adminVerdict();
+  if (verdict === "denied") {
     // Inline notice (no redirect → no loop for a logged-in non-admin).
     return (
-      <main className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-background p-6 text-center text-foreground">
-        <h1 className="text-xl font-semibold">You need admin access</h1>
-        <p className="max-w-md text-sm text-muted-foreground">
-          This console is for admins only. Ask an admin to change your role, or
-          sign in with an admin account.
-        </p>
-        <a
-          href="/login"
-          className="rounded-md border border-border px-4 py-2 text-sm hover:bg-accent"
-        >
-          Go to sign-in
-        </a>
-      </main>
+      <Notice
+        title="You need admin access"
+        body="This console is for admins only. Ask an admin to change your role, or sign in with an admin account."
+      />
+    );
+  }
+  if (verdict === "unverified") {
+    return (
+      <Notice
+        title="We could not check your access"
+        body="The server did not answer in time, so we cannot confirm you are an admin. Reload the page to try again — the console stays closed until we know."
+      />
     );
   }
   return (
