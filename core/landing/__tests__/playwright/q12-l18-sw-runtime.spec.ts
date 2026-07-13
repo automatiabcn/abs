@@ -86,7 +86,10 @@ test.describe("Q12-L18 SW runtime — cache hit verification", () => {
     browserName,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
     // Some browsers (firefox-mobile) have flaky SW lifecycle in
     // Playwright; chromium is the contract surface for this spec.
     test.skip(
@@ -121,7 +124,10 @@ test.describe("Q12-L18 SW runtime — cache hit verification", () => {
     browserName,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
     test.skip(browserName !== "chromium", "chromium-only");
 
     await page.goto(CHAT_URL, { waitUntil: "load" });
@@ -152,7 +158,10 @@ test.describe("Q12-L18 SW runtime — cache hit verification", () => {
     browserName,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
     test.skip(browserName !== "chromium", "chromium-only");
 
     await page.goto(CHAT_URL, { waitUntil: "load" });

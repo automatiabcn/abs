@@ -66,7 +66,10 @@ async function clearDraft(page: Page): Promise<void> {
 test.describe("Q12-L18 offline drafts (R48)", () => {
   test("draft restores after a normal reload", async ({ page }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.goto(CHAT_URL, { waitUntil: "load" });
     await clearDraft(page);
@@ -92,7 +95,10 @@ test.describe("Q12-L18 offline drafts (R48)", () => {
 
   test("draft survives an offline window", async ({ page, context }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.goto(CHAT_URL, { waitUntil: "load" });
     await clearDraft(page);
@@ -134,7 +140,10 @@ test.describe("Q12-L18 offline drafts (R48)", () => {
     page,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.goto(CHAT_URL, { waitUntil: "load" });
     const ta = page.locator("textarea").first();
