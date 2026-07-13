@@ -72,17 +72,47 @@ class CascadeResponse(BaseModel):
 
 
 @router.get("/providers")
-async def list_providers(_admin: dict = Depends(current_admin)) -> dict:
-    """Configured / missing breakdown — lets the panel show the cascade
-    chain without polling /quota_status."""
+async def list_providers(
+    request: Request, admin: dict = Depends(current_admin)
+) -> dict:
+    """The chain that will actually answer *this* caller.
+
+    It used to be the chain that would answer a caller with no keys of their own,
+    which is a different thing the moment anyone brings one: a provider they
+    supplied a key for showed up under "missing", and the order on screen was not
+    the order their questions would take. The panel's whole job here is to tell
+    someone who is about to answer them.
+    """
+    from app.api.chat import _resolve_tenant
+
+    subject = str(admin.get("sub") or "")
+    tenant = _resolve_tenant(subject) or "_global"
+    project = request.headers.get("X-Project-Id") or None
+
+    owned: frozenset[str] = frozenset()
+    if tenant and tenant != "_global":
+        try:
+            from app.multitenant.provider_keys import tenant_configured_providers
+
+            owned = frozenset(
+                tenant_configured_providers(
+                    tenant_slug=tenant, project_slug=project, user_subject=subject
+                )
+            )
+        except Exception:  # noqa: BLE001 — BYOK is a bonus, never a blocker
+            owned = frozenset()
+
     cfg = configured_map()
-    active = get_active_providers()
-    missing = [p for p in PROVIDER_ORDER if not cfg.get(p, False)]
+    active = get_active_providers(extra_configured=owned)
+    missing = [p for p in PROVIDER_ORDER if not cfg.get(p, False) and p not in owned]
     return {
         "active": active,
         "missing": missing,
         "configured_count": len(active),
         "total": len(PROVIDER_ORDER),
+        # Which of these are the caller's own keys, so the panel can say so
+        # rather than leaving them to guess whose bill a question lands on.
+        "byok": sorted(owned),
         "anthropic_mock_mode": getattr(settings, "anthropic_mock_mode", "off"),
     }
 

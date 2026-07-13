@@ -161,14 +161,32 @@ def get_active_providers(
     `skip_paid=True` swaps to the free-only chain and drops paid providers
     entirely.
 
-    MT Phase 1: `extra_configured` is a set of providers a caller knows are
-    configured via a per-owner (user/project/org) key even when no global key
-    exists — so BYOK can activate a provider the operator didn't set globally.
+    `extra_configured` is the set of providers this caller has supplied their own
+    key for (BYOK), at any tier — project, user, or org. Two things follow, and
+    the second one is the point:
+
+    It *activates* a provider the operator never configured globally, so someone
+    can bring a provider the server has never heard of.
+
+    And it *promotes* it. Free-first exists to keep the operator's bill at zero,
+    which is exactly right for the operator's own keys — but a person who pastes
+    in their own Anthropic key and is then answered by the free tier has bought
+    nothing. Pasting a key is a statement of preference, so the providers a
+    caller owns go to the front, in their usual relative order, and everything
+    the operator configured follows behind as the fallback it was always meant to
+    be. A caller who brings nothing sees the free chain, untouched.
     """
     base_order = PROVIDER_ORDER_FREE_FIRST if skip_paid else PROVIDER_ORDER_DEFAULT
     active = [p for p in base_order if is_configured(p) or p in extra_configured]
     if skip_paid:
+        # An explicit "free only" wins over whose money it is: someone asking to
+        # stay on the free tier means it, key or no key.
         active = [p for p in active if p not in PAID_PROVIDERS]
+
+    owned = [p for p in active if p in extra_configured]
+    if owned:
+        active = owned + [p for p in active if p not in extra_configured]
+
     if prefer and prefer in active:
         active.remove(prefer)
         active.insert(0, prefer)
