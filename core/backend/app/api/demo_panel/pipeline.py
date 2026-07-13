@@ -13,9 +13,14 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-router = APIRouter(prefix="/v1/panel/pipeline", tags=["panel"])
+from app.api.auth import current_admin
+
+# Signed-in operators only — pipeline runs are a record of the company's work.
+router = APIRouter(
+    prefix="/v1/panel/pipeline", tags=["panel"], dependencies=[Depends(current_admin)]
+)
 
 PIPELINE_TOOLS = {
     "qual_code",

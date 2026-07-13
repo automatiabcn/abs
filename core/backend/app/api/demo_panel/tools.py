@@ -13,9 +13,19 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-router = APIRouter(prefix="/v1/panel", tags=["panel"])
+from app.api.auth import current_admin
+
+# Operator data, so an operator has to be signed in to read it. This router was
+# open: anyone who could reach a customer's server could pull the whole tool
+# catalogue — every capability, every description, and (once an external MCP
+# server is connected) `ext_<slug>__*` names that spell out which of the
+# company's internal systems are wired in. The page in front of it was already
+# behind a login, which made the hole easy to miss and did nothing to close it.
+router = APIRouter(
+    prefix="/v1/panel", tags=["panel"], dependencies=[Depends(current_admin)]
+)
 
 # Heuristic prefix → category mapping. Keep small and stable.
 _CATEGORY_RULES: list[tuple[str, str]] = [
