@@ -11,7 +11,11 @@ from fastapi import HTTPException
 
 from app.cascade import orchestrator as orch_mod
 from app.providers.base import BaseProvider
-from app.providers.schemas import ProviderError, ProviderResponse
+from app.providers.schemas import (
+    CascadeUnavailable,
+    ProviderError,
+    ProviderResponse,
+)
 
 
 class _RaisingProvider(BaseProvider):
@@ -94,7 +98,14 @@ async def test_all_providers_down_raises_503_with_chain(monkeypatch):
     }
     monkeypatch.setattr(orch_mod, "get_provider", lambda n: chain[n])
 
-    with pytest.raises(HTTPException) as info:
+    # The claim is unchanged — an HTTP caller sees a structured 503 with a
+    # Retry-After, not a leaked 500. What changed is where it is built: the
+    # cascade raises a ProviderError (`CascadeUnavailable`) and the app's
+    # exception handler turns it into the response. The cascade is called by
+    # agents, MCP tools and workers that live nowhere near a web request, and
+    # raising FastAPI's own exception at them meant it sailed past every
+    # `except ProviderError` they had.
+    with pytest.raises(CascadeUnavailable) as info:
         await orch_mod.call_with_cascade(
             "p",
             primary="a",
@@ -103,11 +114,45 @@ async def test_all_providers_down_raises_503_with_chain(monkeypatch):
             tenant_id="t4",
         )
 
-    assert info.value.status_code == 503
-    assert info.value.detail["error"] == "providers_unavailable"
-    assert info.value.detail["providers_tried"] == ["a", "b"]
-    assert info.value.detail["retry_after"] == 60
-    assert info.value.headers["Retry-After"] == "60"
+    assert info.value.transient is True, "callers must know this one may recover"
+    detail = info.value.detail()
+    assert detail["error"] == "providers_unavailable"
+    assert detail["providers_tried"] == ["a", "b"]
+    assert detail["retry_after"] == 60
+    assert info.value.retry_after == 60
+
+
+def test_an_http_caller_still_gets_the_structured_503(monkeypatch):
+    """The other half of UAT-044, tested where it now happens.
+
+    Moving the 503 out of the cascade and into an exception handler is only safe
+    if the response is identical. So: drive the app itself, with every provider
+    down, and check the customer's client sees exactly what it saw before —
+    status, body, and the Retry-After it backs off on.
+    """
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from app.main import app as real_app  # registers the handler
+
+    probe = FastAPI(exception_handlers=real_app.exception_handlers)
+
+    @probe.get("/boom")
+    async def _boom():  # noqa: ANN202
+        raise CascadeUnavailable(
+            "everything is down",
+            providers_tried=["groq", "gemini"],
+            last_error=ProviderError("rate limit", provider="groq"),
+        )
+
+    resp = TestClient(probe, raise_server_exceptions=False).get("/boom")
+
+    assert resp.status_code == 503
+    assert resp.headers["Retry-After"] == "60"
+    body = resp.json()["detail"]
+    assert body["error"] == "providers_unavailable"
+    assert body["providers_tried"] == ["groq", "gemini"]
+    assert "rate limit" in body["last_error"]
 
 
 @pytest.mark.asyncio

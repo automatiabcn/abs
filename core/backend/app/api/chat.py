@@ -54,7 +54,7 @@ from app.config import settings
 from app.db.models import ChatMessage, ChatSession, User
 from app.db.session import get_engine
 from app.providers.cascade import get_active_providers
-from app.providers.schemas import ProviderError
+from app.providers.schemas import CascadeUnavailable, ProviderError
 
 
 logger = logging.getLogger(__name__)
@@ -285,6 +285,12 @@ async def _run_cascade(
             project_slug=project_slug,
             user_subject=user_subject,
         )
+    except CascadeUnavailable:
+        # Everyone was busy, not broken. That is a 503 with a Retry-After — the
+        # app's handler builds it. Folding it into the 502 below would tell a
+        # client that something is permanently wrong and strip the one piece of
+        # advice worth giving: try again in a minute.
+        raise
     except ProviderError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

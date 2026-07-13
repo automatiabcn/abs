@@ -33,3 +33,49 @@ class ProviderError(Exception):
         self.message = message
         self.provider = provider
         self.transient = transient
+
+
+class CascadeUnavailable(ProviderError):
+    """Every provider in the chain failed, and at least one might recover.
+
+    This is a ProviderError on purpose. The cascade used to raise a FastAPI
+    ``HTTPException`` here — a web-framework exception thrown from a library
+    that agents, MCP tools, pipelines and background workers all call. None of
+    them are behind a web request, and every one of them was catching
+    ``ProviderError`` and nothing else, so this sailed straight through their
+    error handling: an agent mid-stream died on a rate limit, and a provider
+    test whose provider was merely busy came back as a raw 503 instead of "busy,
+    try again".
+
+    Being a ProviderError means everything that already knows how to degrade
+    gracefully now degrades gracefully. The HTTP layer keeps its 503 — an
+    exception handler translates this into exactly the response it used to
+    build, headers and all.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        providers_tried: list[str] | None = None,
+        last_error: Exception | None = None,
+        retry_after: int = 60,
+    ):
+        super().__init__(message, provider="", transient=True)
+        self.providers_tried = providers_tried or []
+        self.last_error = last_error
+        self.retry_after = retry_after
+
+    def detail(self) -> dict:
+        """The body the HTTP layer returns — unchanged from the old 503."""
+        out: dict = {
+            "error": "providers_unavailable",
+            "providers_tried": list(self.providers_tried),
+            "retry_after": self.retry_after,
+        }
+        if self.last_error is not None:
+            out["last_error_class"] = type(self.last_error).__name__
+            # The class name alone ("ProviderError") tells an operator nothing
+            # about which half of their configuration is wrong. The message does.
+            out["last_error"] = str(self.last_error)[:300]
+        return out

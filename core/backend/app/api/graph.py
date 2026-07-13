@@ -319,7 +319,7 @@ async def nl_query(
     try:
         from app.cascade.orchestrator import call_with_cascade
         from app.providers.cascade import get_active_providers
-        from app.providers.schemas import ProviderError
+        from app.providers.schemas import CascadeUnavailable, ProviderError
     except ImportError as exc:
         raise HTTPException(
             status_code=422,
@@ -366,6 +366,8 @@ async def nl_query(
                 p, primary=primary, fallbacks=tuple(rest),
                 tenant_id=tenant, use_cache=cache,
             )
+        except CascadeUnavailable:
+            raise  # busy, not broken — 503 + Retry-After, from the app handler
         except ProviderError as exc:
             raise HTTPException(
                 502, f"nl_translation_failed: {exc.message or str(exc)}"
