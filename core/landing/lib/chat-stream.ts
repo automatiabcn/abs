@@ -403,6 +403,7 @@ export async function loadHistory(
     content: string;
     provider: string | null;
     tool_calls: ToolCall[] | null;
+    citations: Citation[] | null;
     tokens_used: number | null;
     latency_ms: number | null;
     created_at: string;
@@ -413,6 +414,10 @@ export async function loadHistory(
     content: r.content,
     provider: r.provider ?? undefined,
     toolCalls: r.tool_calls ?? undefined,
+    // Without this the sources vanish on reload: the answer streams with its
+    // citations, the page rehydrates from the database, and the "[1]" markers
+    // in the text end up pointing at nothing.
+    citations: r.citations?.length ? r.citations : undefined,
     tokensUsed: r.tokens_used ?? undefined,
     latencyMs: r.latency_ms ?? undefined,
     createdAt: r.created_at,
