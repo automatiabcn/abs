@@ -29,7 +29,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
-from jose import jwt as jose_jwt
+import jwt as session_jwt
 
 from app.observability.audit import LOGGER_NAME
 
@@ -51,7 +51,7 @@ def _make_cookie(seconds_ago: int) -> str:
         "iat": int(iat.timestamp()),
         "exp": int(exp.timestamp()),
     }
-    return jose_jwt.encode(payload, settings.session_secret, algorithm="HS256")
+    return session_jwt.encode(payload, settings.session_secret, algorithm="HS256")
 
 
 # ----------------------------------------------------------------------
@@ -111,7 +111,7 @@ class TestQ12L26TamperedSessionAuditReason:
         from app.config import settings
 
         now = datetime.now(tz=timezone.utc)
-        valid = jose_jwt.encode(
+        valid = session_jwt.encode(
             {
                 "sub": "x@l26.test",
                 "iat": int(now.timestamp()),

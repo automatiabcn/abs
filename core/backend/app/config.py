@@ -512,6 +512,63 @@ def looks_like_production(s: "Settings") -> bool:
     return True
 
 
+# Secrets that key an HMAC or authenticate a caller. The guard above only
+# catches an operator who changed *nothing*; it says nothing about one who
+# changed the session secret to "hunter2". Every one of these signs or
+# authorises something a stranger would like to forge, and SHA-256 HMAC keys
+# below 32 bytes weaken the construction (RFC 7518 §3.2 — PyJWT warns on it).
+_MIN_SECRET_BYTES = 32
+
+_SIGNING_SECRETS: tuple[str, ...] = (
+    "session_secret",
+    "admin_jwt_secret",
+    "admin_token",
+    "beta_admin_token",
+    "unsubscribe_jwt_secret",
+    "delete_confirm_jwt_secret",
+    "vault_audit_hmac_secret",
+    "audit_ip_salt",
+    "mcp_token_secret",
+    "magic_link_hmac_secret",
+)
+
+
+# Signing secrets with no working "off" position: something in the request path
+# always needs to HMAC with them. `.env.example` ships them blank, so an operator
+# who copies it and fills in only what they recognise leaves these empty — and an
+# empty string is not the placeholder, so the guard above waved it through. The
+# server then booted and PyJWT raised `InvalidKeyError: HMAC key must not be
+# empty` on the first sign-in. A deployment that cannot log anyone in is not a
+# deployment; refuse it at the door, where the message can still be read.
+_REQUIRED_SECRETS: tuple[str, ...] = (
+    "session_secret",
+    "admin_jwt_secret",
+    "unsubscribe_jwt_secret",
+    "delete_confirm_jwt_secret",
+    "vault_audit_hmac_secret",
+    "audit_ip_salt",
+)
+
+
+def validate_secret_strength(s: "Settings") -> list[str]:
+    """Return the signing secrets that are unusable: empty when required, or set
+    but too short to be worth signing with.
+
+    A secret that is empty *and* optional (`mcp_token_secret`,
+    `magic_link_hmac_secret`, the admin bearers) is not reported — there the
+    empty value means the feature is off, which is a legitimate choice."""
+    weak: list[str] = []
+    for name in _SIGNING_SECRETS:
+        value = str(getattr(s, name, "") or "")
+        if not value:
+            if name in _REQUIRED_SECRETS:
+                weak.append(f"{name} (empty — nothing can be signed with it)")
+            continue
+        if len(value.encode("utf-8")) < _MIN_SECRET_BYTES:
+            weak.append(f"{name} ({len(value.encode('utf-8'))} bytes)")
+    return weak
+
+
 def assert_production_safe(s: "Settings") -> None:
     """Fail fast if a production deployment still carries dev-insecure defaults."""
     if s.env != "prod" and not looks_like_production(s):
@@ -524,6 +581,14 @@ def assert_production_safe(s: "Settings") -> None:
             f"(env={s.env!r}, domain={s.domain!r}, ssl_mode={s.ssl_mode!r}). "
             "Set the following ABS_* environment variables to real production "
             f"values:\n  - {bullet}"
+        )
+    weak = validate_secret_strength(s)
+    if weak:
+        bullet = "\n  - ".join(weak)
+        raise RuntimeError(
+            "ABS refusing to boot: these secrets are set, but too short to sign "
+            f"with (minimum {_MIN_SECRET_BYTES} bytes). Generate each one with "
+            "`openssl rand -hex 32`:\n  - " + bullet
         )
 
 

@@ -8,31 +8,42 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "pydantic[email]>=2.8",
-    "pydantic-settings>=2.4",
+    "pydantic-settings>=2.14.2",   # GHSA-4xgf-cpjx-pc3j — secrets_dir traversal
     "sqlmodel>=0.0.22",
     "stripe>=10",
-    "PyJWT[crypto]>=2.9",
-    "cryptography>=43",
+    "PyJWT[crypto]>=2.13",         # PYSEC-2026-175..179 — the session/OAuth token library
+    "cryptography>=46",
     "jinja2>=3.1",
     "bcrypt>=4.2",
-    "python-jose[cryptography]>=3.3",
     "mcp>=1.2",
     "httpx>=0.27",
     "anthropic>=0.40",
-    "cohere>=5.13",          # 008'de venv'e kuruldu, pyproject.toml'a 010'da yazıldı
-    "chromadb>=0.4.22",      # 009'da venv'e kuruldu, pyproject.toml'a 010'da yazıldı
-    "PyYAML>=6.0",           # 013 — sops decrypt çıktısı YAML parse
-    "nats-py>=2.6",          # T-001 — NATS JetStream event bus
-    "inngest>=0.4",          # T-002 — durable workflow engine
-    "alembic>=1.13",         # T-003/T-007 — DB migration tooling
-    "cerbos>=0.10",          # T-004 — Cerbos PDP SDK
-    "qdrant-client>=1.13",   # T-009 — Qdrant vector DB SDK
-    "slowapi>=0.1.9",        # T-Q01 sweep — /v1/* rate limit middleware
-    "neo4j>=5.18",           # Q7 Phase A — graph DB Bolt async driver
-    "docker>=7.1",           # Q7 Phase B — real Docker plugin sandbox launcher
-    "pypdf>=5.1",            # RAG file ingest — lightweight PDF text extraction
-    "python-docx>=1.1",      # RAG file ingest — lightweight DOCX text extraction
-    "openpyxl>=3.1",         # RAG file ingest — lightweight XLSX (Excel) extraction
+    "cohere>=5.13",
+    "chromadb>=0.4.22",            # embedded PersistentClient for the RAG index
+    "PyYAML>=6.0",                 # parses the plaintext of sops-decrypted secrets
+    "nats-py>=2.6",                # NATS JetStream event bus
+    "inngest>=0.4",                # durable workflow engine
+    "alembic>=1.13",               # database migrations
+    "cerbos>=0.10",                # policy decision point
+    "qdrant-client>=1.13",         # tenant vector store
+    "slowapi>=0.1.9",              # rate limiting on /v1/*
+    "neo4j>=5.18",                 # graph store (Bolt async driver)
+    "docker>=7.1",                 # plugin sandbox launcher
+    "pypdf>=6.13.3",               # PDF text extraction — PYSEC-2026-3018, GHSA-jm82-fx9c-mx94:
+                                   # a crafted upload could hang or exhaust memory on ingest
+    "python-docx>=1.1",            # DOCX text extraction
+    "openpyxl>=3.1",               # XLSX text extraction
+
+    # Floors on packages we do not import directly, but which sit in the request
+    # path and had published advisories. Pinned here because a resolver is free to
+    # pick the oldest version a transitive range allows.
+    "starlette>=1.3.1",            # PYSEC-2026-161/248/249/2280/2281 — host header, path, form limits
+    "python-multipart>=0.0.31",    # PYSEC-2026-3036/3037/3039/3040 — every upload and form post
+    "urllib3>=2.7.0",              # PYSEC-2026-141/142 — credentials survived a cross-origin redirect
+    "idna>=3.15",                  # PYSEC-2026-215
+    "mako>=1.3.12",                # PYSEC-2026-2617 (reached via alembic)
+    "joserfc>=1.6.8",              # PYSEC-2026-2528 — forged HMAC tokens accepted (reached via Authlib)
+    "pymdown-extensions>=10.21.3", # PYSEC-2026-2999
 ]
 
 [project.optional-dependencies]
@@ -41,7 +52,8 @@ dev = [
     "pytest-asyncio>=0.24",
     "httpx>=0.27",
     "respx>=0.21",
-    "hypothesis>=6.150",      # Q11-L13 Round 39 — property-based fuzz
+    "hypothesis>=6.150",           # property-based fuzzing
+    "pip-audit>=2.7",              # `pip-audit` in CI — see .github/workflows/ci.yml
 ]
 
 [build-system]
