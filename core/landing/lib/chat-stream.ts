@@ -61,10 +61,17 @@ export interface SessionListItem {
 
 export type SessionEvent =
   | { type: "session"; session_id: number; title: string }
-  | { type: "tool-call"; name: string; args: ToolCall["args"] }
+  | { type: "tool-call"; name: string; args: ToolCall["args"]; level?: string }
   | { type: "tool-result"; name: string; result: string }
   | { type: "citations"; citations: Citation[] }
   | { type: "text"; content: string; provider: string }
+  // Agent mode. The assistant looks things up before it answers, and shows its
+  // work as it goes — a silent spinner through three tool calls reads as a hang.
+  | { type: "mode"; id: "agent" }
+  | { type: "agent-step"; step: number }
+  | { type: "approval-required"; name: string; args: ToolCall["args"] }
+  | { type: "agent-done"; answer: string; degraded?: boolean }
+  | { type: "agent-error"; reason: string; detail?: string }
   | {
       type: "meta";
       provider: string;
@@ -77,6 +84,8 @@ export type SessionEvent =
 interface UseChatOptions {
   initialSessionId?: number;
   onSessionStarted?: (id: number) => void;
+  /** Let the assistant call tools before answering. Off = plain one-shot chat. */
+  agentMode?: boolean;
 }
 
 interface UseChatReturn {
@@ -91,11 +100,14 @@ interface UseChatReturn {
   error: string | null;
   retry: () => void;
   abort: () => void;
+  /** Which agent step is running, while one is. Null in plain chat. */
+  agentStep: number | null;
 }
 
 export function useChat({
   initialSessionId,
   onSessionStarted,
+  agentMode = false,
 }: UseChatOptions = {}): UseChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -106,6 +118,7 @@ export function useChat({
   );
   const [error, setError] = useState<string | null>(null);
   const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
+  const [agentStep, setAgentStep] = useState<number | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -206,6 +219,37 @@ export function useChat({
                 }));
                 break;
               }
+              // --- agent mode ---
+              case "agent-step":
+                setAgentStep(evt.step);
+                break;
+              case "approval-required":
+                // Shown as a tool call that stopped short: the assistant wanted
+                // to do something consequential and is waiting on a person. The
+                // decision itself is made in Approvals, not here.
+                updateLastAssistant((m) => ({
+                  ...m,
+                  toolCalls: [
+                    ...(m.toolCalls ?? []),
+                    {
+                      name: evt.name,
+                      args: evt.args,
+                      result: "Waiting for your approval — see Approvals.",
+                    },
+                  ],
+                }));
+                break;
+              case "agent-done":
+                setAgentStep(null);
+                break;
+              case "agent-error":
+                setAgentStep(null);
+                setError(
+                  evt.reason === "all_providers_failed"
+                    ? "Sağlayıcılara ulaşılamadı; lütfen tekrar deneyin."
+                    : "Agent modu şu an kullanılamıyor.",
+                );
+                break;
             }
           }
         }
@@ -249,6 +293,7 @@ export function useChat({
             session_id: sessionId,
             messages: [{ role: "user", content }],
             stream: true,
+            mode: agentMode ? "agent" : "chat",
           }),
           redirect: "error",
           signal: controller.signal,
@@ -294,10 +339,11 @@ export function useChat({
         }
       } finally {
         setIsStreaming(false);
+        setAgentStep(null);
         abortRef.current = null;
       }
     },
-    [input, isStreaming, sessionId, consumeStream, updateLastAssistant],
+    [input, isStreaming, sessionId, agentMode, consumeStream, updateLastAssistant],
   );
 
   const retry = useCallback(() => {
@@ -330,6 +376,7 @@ export function useChat({
     error,
     retry,
     abort,
+    agentStep,
   };
 }
 

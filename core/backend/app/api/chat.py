@@ -50,6 +50,7 @@ from app.chat import (
     retrieve_citations,
 )
 from app.chat.citations import serialise_citations
+from app.config import settings
 from app.db.models import ChatMessage, ChatSession, User
 from app.db.session import get_engine
 from app.providers.cascade import get_active_providers
@@ -102,6 +103,10 @@ class ChatCompletionsRequest(BaseModel):
     # for cheap factual chat where RAG would just add latency.
     rag_citations: bool = True
     rag_top_k: int = Field(default=5, ge=1, le=20)
+    # Agent mode — let the assistant look things up (system health, spend,
+    # company documents) before it answers, instead of answering from the prompt
+    # alone. Opt-in per request, so plain chat stays the cheap one-shot path.
+    mode: Literal["chat", "agent"] = "chat"
 
 
 class ChatSessionOut(BaseModel):
@@ -687,6 +692,88 @@ async def completions(
                     headers={"Retry-After": "60"},
                 )
 
+    async def agent_stream() -> AsyncGenerator[str, None]:
+        """Agent mode — the assistant may look things up before it answers.
+
+        A separate stream from plain chat on purpose: the loop owns its own
+        provider calls (one per step, whole transcript re-sent) and its own
+        events, and folding that into the single-shot path would leave both
+        harder to follow. What the two share is what the client depends on —
+        the opening `session` frame, the assistant message landing in the
+        session, and `[DONE]`.
+        """
+        from app.agentic.loop import run_agent_loop
+
+        yield f'data: {json.dumps({"type": "session", "session_id": sess_id, "title": sess_title})}\n\n'
+        yield f'data: {json.dumps({"type": "mode", "id": "agent"})}\n\n'
+
+        t_agent = time.perf_counter()
+        try:
+            providers = get_active_providers(skip_paid=False)
+        except Exception:
+            providers = []
+        if not providers:
+            err = "Henüz sağlayıcı yapılandırılmadı. /admin/settings → Providers."
+            yield f'data: {json.dumps({"type": "text", "content": err, "provider": "none"})}\n\n'
+            yield 'data: [DONE]\n\n'
+            return
+
+        answer = ""
+        tool_calls: List[Dict] = []
+        async for event in run_agent_loop(
+            user_message=last_user_content,
+            providers=providers,
+            tenant=tenant,
+            requester=admin_email,
+        ):
+            yield event.sse()
+            if event.type == "tool-call":
+                tool_calls.append({"name": event.data.get("name"),
+                                   "args": event.data.get("args")})
+            elif event.type == "agent-done":
+                answer = str(event.data.get("answer") or "")
+            elif event.type == "agent-error":
+                answer = (
+                    "Sağlayıcılara ulaşılamadı; lütfen tekrar deneyin."
+                    if event.data.get("reason") == "all_providers_failed"
+                    else "Agent modu şu an kullanılamıyor."
+                )
+
+        # The answer is streamed in one frame rather than chunked: the loop has
+        # already given the client something to render at every step, so the
+        # typewriter effect buys nothing and delays the payload.
+        if answer:
+            yield f'data: {json.dumps({"type": "text", "content": answer, "provider": "agent"})}\n\n'
+
+        with Session(get_engine()) as db:
+            db.add(
+                ChatMessage(
+                    session_id=sess_id,
+                    role="assistant",
+                    content=answer,
+                    provider="agent",
+                    latency_ms=int((time.perf_counter() - t_agent) * 1000),
+                    # The transcript keeps the receipt: which tools ran, with
+                    # what arguments. An operator auditing a surprising answer
+                    # can see what the assistant looked at to produce it.
+                    tool_calls=(
+                        json.dumps(tool_calls, ensure_ascii=False)[:8192]
+                        if tool_calls
+                        else None
+                    ),
+                )
+            )
+            touched = db.get(ChatSession, sess_id)
+            if touched is not None:
+                now = datetime.now(timezone.utc)
+                touched.updated_at = now
+                touched.last_activity_at = now
+                touched.message_count = (touched.message_count or 0) + 1
+                db.add(touched)
+            db.commit()
+
+        yield 'data: [DONE]\n\n'
+
     async def stream() -> AsyncGenerator[str, None]:
         yield f'data: {json.dumps({"type": "session", "session_id": sess_id, "title": sess_title})}\n\n'
         yield f'data: {json.dumps({"type": "pipeline", "id": pipeline_used})}\n\n'
@@ -910,8 +997,13 @@ async def completions(
                 db.add(touched)
             db.commit()
 
+    # Agent mode is a request-level choice, and only honoured if the operator
+    # left it enabled on this server: `mode="agent"` from a client cannot switch
+    # on a capability the settings turned off.
+    use_agent = body.mode == "agent" and settings.agent_mode_enabled
+
     return StreamingResponse(
-        stream(),
+        agent_stream() if use_agent else stream(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

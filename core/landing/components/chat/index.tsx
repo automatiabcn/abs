@@ -350,6 +350,9 @@ export function MessageInput({
   onAbort,
   disabled,
   isStreaming,
+  agentMode,
+  onToggleAgent,
+  agentStep,
   placeholder = "Bir mesaj yazın veya / ile komut başlatın…",
 }: {
   value: string;
@@ -358,6 +361,11 @@ export function MessageInput({
   onAbort?: () => void;
   disabled?: boolean;
   isStreaming?: boolean;
+  /** Agent mode — the assistant may look things up before it answers. */
+  agentMode?: boolean;
+  onToggleAgent?: () => void;
+  /** Which step the agent is on, while it runs. */
+  agentStep?: number | null;
   placeholder?: string;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -394,6 +402,31 @@ export function MessageInput({
         />
       )}
       <div className="flex items-end gap-2 rounded-2xl border border-border bg-card/70 p-2 shadow-sm focus-within:border-primary/50">
+        {onToggleAgent && (
+          <button
+            type="button"
+            onClick={onToggleAgent}
+            disabled={isStreaming}
+            aria-pressed={agentMode}
+            data-test="agent-toggle"
+            title={
+              agentMode
+                ? "Agent açık — yanıtlamadan önce sistemi ve dokümanlarınızı sorgular"
+                : "Agent — yanıtlamadan önce sistemi ve dokümanlarınızı sorgulasın"
+            }
+            className={
+              agentMode
+                ? "flex shrink-0 items-center gap-1.5 self-end rounded-full bg-primary-soft px-2.5 py-1.5 text-xs font-medium text-primary transition-colors"
+                : "flex shrink-0 items-center gap-1.5 self-end rounded-full px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-surface-raised hover:text-foreground"
+            }
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            {/* The step counter is the whole reason this label is live: an agent
+                run takes seconds and several provider calls, and a still spinner
+                through that reads as a hang. */}
+            {agentMode && agentStep ? `Adım ${agentStep}` : "Agent"}
+          </button>
+        )}
         <textarea
           ref={textareaRef}
           value={value}
