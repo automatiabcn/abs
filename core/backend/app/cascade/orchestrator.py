@@ -15,7 +15,11 @@ import httpx
 from fastapi import HTTPException
 
 from app.providers.registry import get_provider
-from app.providers.schemas import ProviderError, ProviderResponse
+from app.providers.schemas import (
+    CascadeUnavailable,
+    ProviderError,
+    ProviderResponse,
+)
 
 from .breaker import default_breaker
 from .cache import default_cache, prompt_hash
@@ -71,6 +75,36 @@ def _resolve_owner_key(
     except Exception as exc:  # pragma: no cover — never block a call on this
         logger.debug("per-owner key resolve skipped for %s: %s", provider, exc)
         return None
+
+
+def _meter(resp: ProviderResponse, *, provider: str, tenant_id: str) -> None:
+    """Record one answered request against the tenant's usage.
+
+    It is recorded *here*, at the one place every answer passes through, rather
+    than at each caller. Metering used to live in the `/v1/cascade/run` route
+    alone, so it saw API traffic and nothing else: chat — the surface the whole
+    product is built around — never reached the usage page at all. A customer
+    watching their free-path share, or wondering what a busy week costs, was
+    reading a number that ignored almost everything they had actually done.
+
+    Never raises. A metering failure must not lose an answer the customer has
+    already been given.
+    """
+    try:
+        from app.services import usage_log
+
+        tokens = int(resp.tokens_in or 0) + int(resp.tokens_out or 0)
+        # `_global` is the orchestrator's "no caller context" marker, not a
+        # tenant. Writing it as one would file this call under a tenant nobody
+        # can see, which is how usage goes missing.
+        slug = (tenant_id or "").strip()
+        usage_log.append(
+            provider,
+            tokens=tokens,
+            tenant_slug="default" if slug in ("", "_global") else slug,
+        )
+    except Exception:  # noqa: BLE001 — metering is never worth an outage
+        logger.debug("usage metering skipped", exc_info=True)
 
 
 async def call_with_cascade(
@@ -153,6 +187,7 @@ async def call_with_cascade(
             await default_breaker.record_success(breaker_id)
             if use_cache:
                 await default_cache.set(cache_key, resp)
+            _meter(resp, provider=name, tenant_id=tenant_id)
             return resp
         except ProviderError as exc:
             last_err = exc
@@ -200,19 +235,16 @@ async def call_with_cascade(
         raise last_err
 
     # Otherwise something was temporarily down or rate-limited, and retrying is
-    # honest advice. A structured 503, never a leaked stack trace.
-    detail = {
-        "error": "providers_unavailable",
-        "providers_tried": tried,
-        "retry_after": 60,
-    }
-    if last_err is not None:
-        detail["last_error_class"] = type(last_err).__name__
-        # The class name alone ("ProviderError") tells an operator nothing about
-        # which half of their configuration is wrong. The message does.
-        detail["last_error"] = str(last_err)[:300]
-    raise HTTPException(
-        status_code=503,
-        detail=detail,
-        headers={"Retry-After": "60"},
+    # honest advice.
+    #
+    # This used to raise an HTTPException from here — a web-framework exception
+    # thrown by a library that agents, MCP tools, pipelines and workers all call
+    # from outside any web request. They catch ProviderError; this sailed past
+    # them. `CascadeUnavailable` *is* a ProviderError, so they degrade instead of
+    # dying, and the HTTP layer still answers with the same structured 503 (see
+    # the handler in app/main.py).
+    raise CascadeUnavailable(
+        "every provider in the chain failed; some may recover shortly",
+        providers_tried=tried,
+        last_error=last_err,
     )
