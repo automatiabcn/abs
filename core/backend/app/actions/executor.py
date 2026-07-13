@@ -23,6 +23,7 @@ from typing import Any, Dict, Optional
 
 from sqlmodel import Session, select
 
+from app.agentic.approvals_bridge import AGENT_TOOL_CHANNEL
 from app.consent.service import check_channel
 from app.db.growth_models import ActionExecution, Company, Contact
 from app.db.session import get_engine
@@ -83,6 +84,69 @@ def _to_dict(r: ActionExecution) -> dict:
     }
 
 
+def _run_coroutine_blocking(coro: Any, *, timeout: float = 60.0) -> str:
+    """Run an async tool from this synchronous, request-scoped code path.
+
+    `asyncio.run` cannot be called from inside the running event loop the API
+    endpoint lives in, so the coroutine gets a thread with a loop of its own.
+    """
+    import asyncio
+    import concurrent.futures
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, coro).result(timeout=timeout)
+
+
+def _execute_agent_tool(item: Any, *, tenant: str, base: Dict[str, Any]) -> Dict[str, Any]:
+    """Run the tool call an operator just approved."""
+    from app.agentic import dispatcher
+    from app.agentic.approvals_bridge import payload_of
+    from app.agentic.policy import check
+
+    call = payload_of(item)
+    with Session(get_engine()) as db:
+        if call is None:
+            return _to_dict(_record(
+                db, **base, action_kind="agent_tool", channel=AGENT_TOOL_CHANNEL,
+                status="failed", reason="the approved call could not be read",
+            ))
+
+        tool = dispatcher.get(call["name"])
+        if tool is None:
+            return _to_dict(_record(
+                db, **base, action_kind="agent_tool", channel=AGENT_TOOL_CHANNEL,
+                status="failed", reason=f"unknown tool: {call['name']}",
+            ))
+
+        # The gate again, at the moment of action.
+        decision = check(tool.level)
+        if decision.verdict == "deny":
+            logger.info(
+                "approved agent tool refused at execution: %s (%s)",
+                call["name"], decision.reason,
+            )
+            return _to_dict(_record(
+                db, **base, action_kind="agent_tool", channel=AGENT_TOOL_CHANNEL,
+                status="blocked",
+                reason=f"no longer permitted: {decision.reason}",
+            ))
+
+        try:
+            output = _run_coroutine_blocking(dispatcher.run(call["name"], call["args"]))
+        except Exception as exc:  # noqa: BLE001 — a failing command is an outcome
+            logger.info("approved agent tool failed: %s: %s", call["name"], exc)
+            return _to_dict(_record(
+                db, **base, action_kind="agent_tool", channel=AGENT_TOOL_CHANNEL,
+                status="failed", reason=str(exc)[:512],
+            ))
+
+        logger.info("approved agent tool executed: %s", call["name"])
+        return _to_dict(_record(
+            db, **base, action_kind="agent_tool", channel=AGENT_TOOL_CHANNEL,
+            status="executed", reason=output[:512],
+        ))
+
+
 def execute_for_approval(item: Any, *, tenant_slug: str) -> Dict[str, Any]:
     """Run the action behind an approved item; persist + return the outcome.
 
@@ -96,6 +160,13 @@ def execute_for_approval(item: Any, *, tenant_slug: str) -> Dict[str, Any]:
         agent_id=getattr(item, "agent_id", ""),
         target_company=getattr(item, "target_company", ""), message=message,
     )
+
+    # An agent tool call. Approved by a person, and only now allowed to run — and
+    # re-checked against the policy gate first, because an operator who switched
+    # shell off after the model asked for it has switched it off, and an approval
+    # minted while the door was open is not a key to it.
+    if channel == AGENT_TOOL_CHANNEL:
+        return _execute_agent_tool(item, tenant=tenant, base=base)
 
     with Session(get_engine()) as db:
         # internal action — no external recipient, applies immediately

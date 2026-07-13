@@ -253,6 +253,70 @@ _register(
 )
 
 
+# --- L2 / L3: the tools that change things. Never run on the model's say-so. --
+#
+# Registered exactly like the others, and gated exactly like the others: the
+# policy check happens at dispatch, so what makes these safe is not that they are
+# written carefully — it is that the loop turns them into an approval a person
+# reads, and only the approval path can execute them.
+
+
+async def _fs_write(path: str, content: str) -> str:
+    from app.agentic.write_tools import fs_write
+
+    return await fs_write(path, content)
+
+
+async def _run_command(command: str) -> str:
+    from app.agentic.write_tools import run_command
+
+    return await run_command(command)
+
+
+_register(
+    Tool(
+        name="fs_write",
+        level=Level.WRITE,
+        description=(
+            "Write a text file inside the allowed folders. A person must approve "
+            "the write before it happens, so say plainly what you intend to write "
+            "and where. Overwrites the file if it already exists."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "Full path of the file to write."},
+                "content": {"type": "string", "description": "The complete new contents."},
+            },
+            "required": ["path", "content"],
+        },
+        fn=_fs_write,
+        required=["path", "content"],
+    )
+)
+
+_register(
+    Tool(
+        name="run_command",
+        level=Level.SHELL,
+        description=(
+            "Run a shell command on this server. A person must approve the exact "
+            "command before it runs, so write the command you mean and nothing "
+            "else. Returns its output and exit code."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "command": {"type": "string", "description": "The command to run."},
+            },
+            "required": ["command"],
+        },
+        fn=_run_command,
+        required=["command"],
+    )
+)
+
+
 def catalogue() -> List[Tool]:
     """The tools this server currently offers the model.
 

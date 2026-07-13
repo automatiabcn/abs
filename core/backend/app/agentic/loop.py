@@ -36,6 +36,7 @@ from dataclasses import dataclass
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from app.agentic import dispatcher
+from app.agentic.approvals_bridge import request_tool_approval
 from app.agentic.policy import check
 from app.cascade.orchestrator import call_with_cascade
 from app.config import settings
@@ -195,7 +196,14 @@ async def run_agent_loop(
             continue
 
         name = str(action.get("name") or "")
-        args = action.get("args") or {}
+        # "arguments" is what OpenAI-shaped tool calling names this field, and
+        # models reach for it out of habit however the protocol above is worded.
+        # Taking it silently as "no arguments" turns a well-formed call into a
+        # tool run with nothing in it — which fails in a way that looks like the
+        # tool's fault rather than a naming slip.
+        args = action.get("args")
+        if args is None:
+            args = action.get("arguments")
         if not isinstance(args, dict):
             args = {}
 
@@ -229,15 +237,30 @@ async def run_agent_loop(
             continue
 
         if decision.verdict == "approve":
-            # F1 ships the read-only catalogue, so nothing reaches this branch
-            # yet. It stays because the gate — not the catalogue — is what makes
-            # the guarantee: the day a write tool is registered, it is already
-            # impossible for it to run without a human, and there is one place to
-            # audit that claim.
-            yield AgentEvent("approval-required", {"name": name, "args": args})
+            # The call does not run. It becomes a row in the Approval Center that
+            # a person reads and accepts, and only the approval path can execute
+            # it — which is what makes "the assistant cannot act behind your back"
+            # a property of the system rather than a promise about the model.
+            approval: dict = {}
+            try:
+                approval = request_tool_approval(
+                    name=name,
+                    args=args,
+                    tenant_slug=tenant,
+                    requester=requester,
+                    rationale=f"Asked while answering: {user_message[:400]}",
+                )
+            except Exception:  # noqa: BLE001 — never take the chat down over this
+                logger.exception("could not open an approval for %s", name)
+
+            yield AgentEvent(
+                "approval-required",
+                {"name": name, "args": args, "approval_id": approval.get("id")},
+            )
             turns.append(
                 f"System: '{name}' needs a person to approve it. It has been sent "
-                "for approval; you cannot use its result in this reply."
+                "for approval; you cannot use its result in this reply. Tell the "
+                "user what you asked to do and that it is waiting for them."
             )
             continue
 

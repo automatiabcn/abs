@@ -369,6 +369,10 @@ class Settings(BaseSettings):
     # to let it run shell.
     agent_fs_write_enabled: bool = False
     agent_shell_enabled: bool = False
+    # Where an approved command runs. Defaults to the first file root, so an
+    # operator who opened one folder has not thereby handed over their home
+    # directory as a working directory.
+    agent_shell_cwd: str = ""
     # How many tool calls one question may cost before the agent must answer with
     # what it has — low enough that a confused model cannot spend a minute of
     # provider budget looping.
