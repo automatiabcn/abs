@@ -24,6 +24,7 @@ import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import AuditClient from "@/app/admin/audit/AuditClient";
+import UsageClient from "@/app/admin/usage/UsageClient";
 import UsersClient from "@/app/admin/users/UsersClient";
 
 // The islands refetch on mount. Nothing is listening, and nothing should be: a
@@ -197,5 +198,20 @@ describe("the users page, when the roster could not be read", () => {
       expect(container.textContent).toMatch(/real@customer\.example/),
     );
     expect(at(container, "users-load-error")).toBeNull();
+  });
+});
+
+describe("the usage page, when the numbers could not be read", () => {
+  it("does not confirm the product's own cost claim out of thin air", async () => {
+    // The fallback used to pass `free_path.pct_24h = 1` and a 1,000,000-token
+    // Claude budget nobody set, which the page renders as "100.0 % served free"
+    // — the exact claim the customer opened this page to verify.
+    const { container } = renderWithQuery(
+      <UsageClient initial={null} loadError="The server answered 503." />,
+    );
+
+    await waitFor(() => expect(at(container, "usage-load-error")).not.toBeNull());
+    expect(container.textContent).not.toMatch(/100\.0 %/);
+    expect(container.textContent).not.toMatch(/1,000,000/);
   });
 });

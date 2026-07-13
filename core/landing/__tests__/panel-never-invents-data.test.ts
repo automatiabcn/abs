@@ -94,6 +94,41 @@ describe("the panel never invents data it failed to fetch", () => {
     }
   });
 
+  it("no page declares a stand-in catalogue of its own", () => {
+    // The import guard above only catches a fixture pulled in from elsewhere.
+    // /admin/marketplace kept its own: ten plugin manifests, complete with
+    // permission lists and working Install buttons, rendered whenever the
+    // catalogue request failed — on a page whose heading promises "every plugin
+    // shows you exactly what it can reach before you install it".
+    //
+    // What this looks for is a stand-in *for the server's answer*. Sample content
+    // offered as sample content is a different thing and stays: /admin/graph's
+    // SAMPLE_QUERIES are Cypher snippets a person clicks to fill the editor with,
+    // labelled as suggestions, never dressed up as query results.
+    const offenders: string[] = [];
+    for (const page of serverPages()) {
+      const src = readFileSync(page, "utf8");
+      if (/const\s+(FALLBACK|MOCK_[A-Z_]*|DEMO_[A-Z_]*)\s*[:=]/.test(src)) {
+        offenders.push(page.slice(page.indexOf("app/")));
+      }
+    }
+    expect(
+      offenders,
+      "these pages carry a hardcoded stand-in for data they failed to fetch",
+    ).toEqual([]);
+  });
+
+  it("the usage and marketplace pages have somewhere to put the failure", () => {
+    const usage = readFileSync(join(APP, "admin", "usage", "UsageClient.tsx"), "utf8");
+    const market = readFileSync(join(APP, "admin", "marketplace", "page.tsx"), "utf8");
+    expect(usage).toContain('data-test="usage-load-error"');
+    expect(market).toContain('data-test="marketplace-load-error"');
+    // The numbers that used to be invented: a Claude budget nobody set, and a
+    // "100 % served free" ratio the page's own formatter goes out of its way to
+    // refuse when it has no data.
+    expect(usage).not.toMatch(/1_000_000|1000000/);
+  });
+
   it("both pages have somewhere to put the failure", () => {
     const audit = readFileSync(join(APP, "admin", "audit", "AuditClient.tsx"), "utf8");
     const users = readFileSync(join(APP, "admin", "users", "UsersClient.tsx"), "utf8");

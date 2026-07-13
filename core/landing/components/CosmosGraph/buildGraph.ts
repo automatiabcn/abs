@@ -28,76 +28,87 @@ export interface GraphLink {
   kind?: "cascade" | "deps" | "flow";
 }
 
-export const PROVIDER_NODES: GraphNode[] = [
-  { id: "p:groq", group: "provider", label: "Groq", val: 14, state: "idle" },
-  { id: "p:cerebras", group: "provider", label: "Cerebras", val: 12, state: "idle" },
-  { id: "p:cloudflare", group: "provider", label: "Cloudflare", val: 12, state: "idle" },
-  { id: "p:gemini", group: "provider", label: "Gemini", val: 12, state: "idle" },
-  { id: "p:cohere", group: "provider", label: "Cohere", val: 10, state: "idle" },
-  { id: "p:anthropic", group: "provider", label: "Anthropic", val: 10, state: "idle" },
-  { id: "p:ollama", group: "provider", label: "Ollama", val: 9, state: "idle" },
-];
+/** What this server actually has. Every node in the map comes from here. */
+export interface CosmosWorld {
+  /** Providers the operator configured — from /v1/system/quota_status. */
+  providers: string[];
+  /** Tool categories and their counts — from /v1/panel/tools. */
+  toolCategories: { name: string; count: number }[];
+  /** Workflow definitions — from /v1/workflows/definitions. */
+  workflows: string[];
+  /** Indexed documents — from /v1/rag/documents. */
+  documents: string[];
+}
 
-const TOOL_CATEGORIES = [
-  "provider:44",
-  "quality:16",
-  "judge:8",
-  "rag:5",
-  "workflow:6",
-  "system:8",
-  "fullstack:4",
-  "research:3",
-];
+export const EMPTY_WORLD: CosmosWorld = {
+  providers: [],
+  toolCategories: [],
+  workflows: [],
+  documents: [],
+};
 
-export function buildCosmosGraph(activeProvider?: string): {
+/** Every node in this map is something the server told us about.
+ *
+ * It was not. The map rendered seven providers, four workflows and three RAG
+ * collections named `guvenlik`, `satis-q2` and `sss` — on every install, with no
+ * fetch behind any of them — under a caption reading "live, and moving as the
+ * server works". A customer with one provider and an empty knowledge base saw a
+ * busy constellation of a system they did not have. It was the panel's most
+ * confident screen and its least true.
+ *
+ * A world with nothing in it produces a graph with nothing in it. That is the
+ * correct picture of a server that has nothing in it.
+ */
+export function buildCosmosGraph(
+  world: CosmosWorld = EMPTY_WORLD,
+  activeProvider?: string,
+): {
   nodes: GraphNode[];
   links: GraphLink[];
 } {
-  const nodes: GraphNode[] = PROVIDER_NODES.map((n) => ({
-    ...n,
-    state:
-      activeProvider && n.id === `p:${activeProvider}` ? "active" : "idle",
-  }));
+  const nodes: GraphNode[] = [];
   const links: GraphLink[] = [];
 
-  TOOL_CATEGORIES.forEach((c, i) => {
-    const [name] = c.split(":");
-    const id = `t:${name}`;
+  const providerIds = world.providers.map((p) => {
+    const id = `p:${p}`;
+    nodes.push({
+      id,
+      group: "provider",
+      label: p,
+      val: 12,
+      state: activeProvider && p === activeProvider ? "active" : "idle",
+    });
+    return id;
+  });
+
+  const toolIds: Record<string, string> = {};
+  world.toolCategories.forEach((c, i) => {
+    const id = `t:${c.name}`;
+    toolIds[c.name] = id;
     nodes.push({
       id,
       group: "tool",
-      label: c,
+      label: `${c.name}:${c.count}`,
       val: 6 + (i % 3),
       state: "idle",
     });
-    PROVIDER_NODES.forEach((p) =>
-      links.push({ source: p.id, target: id, kind: "cascade" }),
-    );
+    providerIds.forEach((p) => links.push({ source: p, target: id, kind: "cascade" }));
   });
 
-  ["w:onboarding", "w:lead-triage", "w:incident", "w:digest"].forEach(
-    (id) => {
-      nodes.push({
-        id,
-        group: "workflow",
-        label: id.slice(2),
-        val: 5,
-        state: "idle",
-      });
-      links.push({ source: "t:rag", target: id, kind: "flow" });
-      links.push({ source: "t:quality", target: id, kind: "flow" });
-    },
-  );
+  // Workflows hang off the tool clusters they actually use where we can tell,
+  // and off nothing where we cannot — an invented edge is an invented claim.
+  const anchor = toolIds["workflow"] ?? toolIds["rag"] ?? Object.values(toolIds)[0];
+  world.workflows.forEach((w) => {
+    const id = `w:${w}`;
+    nodes.push({ id, group: "workflow", label: w, val: 5, state: "idle" });
+    if (anchor) links.push({ source: anchor, target: id, kind: "flow" });
+  });
 
-  ["r:guvenlik", "r:satis-q2", "r:sss"].forEach((id) => {
-    nodes.push({
-      id,
-      group: "rag",
-      label: id.slice(2),
-      val: 4,
-      state: "idle",
-    });
-    links.push({ source: "t:rag", target: id, kind: "deps" });
+  const ragAnchor = toolIds["rag"] ?? anchor;
+  world.documents.forEach((d) => {
+    const id = `r:${d}`;
+    nodes.push({ id, group: "rag", label: d, val: 4, state: "idle" });
+    if (ragAnchor) links.push({ source: ragAnchor, target: id, kind: "deps" });
   });
 
   return { nodes, links };

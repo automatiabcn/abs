@@ -28,7 +28,12 @@ import * as THREE from "three";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { buildCosmosGraph, type GraphNode } from "./buildGraph";
+import {
+  EMPTY_WORLD,
+  buildCosmosGraph,
+  type CosmosWorld,
+  type GraphNode,
+} from "./buildGraph";
 import { PALETTE, colourFor, groupTone } from "./colors";
 import { CosmosStaticFallback } from "./StaticFallback";
 
@@ -38,6 +43,12 @@ const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), {
 });
 
 export interface CosmosGraphProps {
+  /**
+   * What this server actually has — providers, tools, workflows, documents.
+   * Every node is drawn from it. Omitted (or empty) means the caller has nothing
+   * to show, and an empty map is what an empty server looks like.
+   */
+  world?: CosmosWorld;
   highlightProvider?: string;
   height?: number;
   /**
@@ -99,6 +110,7 @@ function buildNodeMesh(node: GraphNode): THREE.Object3D {
 }
 
 export function CosmosGraph({
+  world = EMPTY_WORLD,
   highlightProvider,
   height = 420,
   forceStatic = false,
@@ -108,8 +120,8 @@ export function CosmosGraph({
   const [width, setWidth] = useState(800);
 
   const data = useMemo(
-    () => buildCosmosGraph(highlightProvider),
-    [highlightProvider],
+    () => buildCosmosGraph(world, highlightProvider),
+    [world, highlightProvider],
   );
 
   useEffect(() => {
@@ -121,11 +133,25 @@ export function CosmosGraph({
     return () => obs.disconnect();
   }, []);
 
+  if (data.nodes.length === 0) {
+    return (
+      <div
+        data-test="cosmos-empty"
+        className="flex w-full items-center justify-center rounded-xl border border-border bg-background/60 px-6 text-center text-sm text-muted-foreground"
+        style={{ height }}
+      >
+        There is nothing to draw yet. Connect a provider, add a document or define
+        a workflow, and it appears here.
+      </div>
+    );
+  }
+
   if (forceStatic || reduced) {
     return (
       <CosmosStaticFallback
         height={height}
         highlightProvider={highlightProvider}
+        providers={world.providers}
       />
     );
   }

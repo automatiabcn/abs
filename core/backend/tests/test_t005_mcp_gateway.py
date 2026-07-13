@@ -68,6 +68,31 @@ class _FakeCerbos:
         pass
 
 
+@pytest.fixture(autouse=True)
+def _a_real_project():
+    """Seed the project these tests read.
+
+    They used to read it from a hardcoded dict inside the endpoint — so the test
+    and the fabrication propped each other up, and the endpoint's 404 for a
+    customer's actual project was invisible to both. The project is a row now, so
+    the test has to put one there."""
+    from datetime import datetime, timezone
+
+    from sqlmodel import Session, select
+
+    from app.db.session import get_engine
+    from app.db.tenant_models import Project
+
+    with Session(get_engine()) as db:
+        exists = db.exec(select(Project).where(Project.slug == "proj-t1-alice")).first()
+        if exists is None:
+            db.add(Project(
+                slug="proj-t1-alice", tenant_slug="tenant-1", name="Alice Project",
+                owner_subject="alice", created_at=datetime.now(timezone.utc),
+            ))
+            db.commit()
+
+
 @pytest.fixture()
 def install_fake_cerbos():
     def _install(allow: bool) -> _FakeCerbos:
