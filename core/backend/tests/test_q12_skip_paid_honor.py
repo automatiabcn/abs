@@ -53,6 +53,7 @@ def all_keys_admin(client, monkeypatch):
         "cerebras_api_key",
         "gemini_api_key",
         "cf_api_token",
+        "cf_account_id",
         "cohere_api_key",
     ):
         monkeypatch.setattr(settings, attr, REAL_KEY, raising=False)
@@ -78,6 +79,7 @@ def paid_only_admin(client, monkeypatch):
         "cerebras_api_key",
         "gemini_api_key",
         "cf_api_token",
+        "cf_account_id",
         "cohere_api_key",
     ):
         monkeypatch.setattr(settings, attr, "", raising=False)
@@ -120,6 +122,7 @@ def test_get_active_providers_default_free_first_anthropic_last(monkeypatch):
         "cerebras_api_key",
         "gemini_api_key",
         "cf_api_token",
+        "cf_account_id",
         "cohere_api_key",
     ):
         monkeypatch.setattr(settings, attr, REAL_KEY, raising=False)

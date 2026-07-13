@@ -22,7 +22,7 @@ gray out un-configured rows instead of pretending they're idle.
 from __future__ import annotations
 
 import logging
-from typing import Iterable, List, Optional
+from typing import Any, Iterable, List, Optional
 
 from app.config import settings
 
@@ -96,19 +96,55 @@ SETTINGS_KEY_ATTR: dict[str, str] = {
 _MIN_KEY_LENGTH = 8
 
 
+# The strings .env.example ships. They are long enough to pass a length check
+# and they are not keys, and a provider "configured" with one of them joins the
+# cascade, fails every call, and takes the chain down with it. The old check had
+# two identical branches and so accepted them all.
+_PLACEHOLDER_MARKERS = (
+    "replace-with",
+    "replace_with",
+    "replace_me",
+    "changeme",
+    "change-me",
+    "your-key",
+    "your_key",
+    "todo",
+    "xxxxxxxx",
+)
+
+
+def _is_placeholder(value: str) -> bool:
+    lowered = value.strip().lower()
+    return any(marker in lowered for marker in _PLACEHOLDER_MARKERS)
+
+
+def _has_real_value(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    stripped = value.strip()
+    return len(stripped) > _MIN_KEY_LENGTH and not _is_placeholder(stripped)
+
+
 def is_configured(provider: str) -> bool:
-    """Whether the operator has supplied a usable API key for `provider`."""
+    """Whether the operator has supplied a usable API key for `provider`.
+
+    "Usable" is doing real work here. A provider that is *half* configured — a
+    Cloudflare token with the sample account id still in place — is worse than
+    one that is absent: it sits in the chain, 404s on every call, and (before
+    the orchestrator learned to keep going) aborted the whole cascade, so an
+    install with a perfectly good Groq key had no working assistant at all.
+    """
     attr = SETTINGS_KEY_ATTR.get(provider)
     if attr is None:
         return False
-    value = getattr(settings, attr, "") or ""
-    if not isinstance(value, str):
+    if not _has_real_value(getattr(settings, attr, "")):
         return False
-    if value.strip().startswith(("dev-", "REPLACE_", "TODO", "")):
-        # Common placeholder strings shipped in .env.example. Empty string
-        # falls through here too.
-        return len(value.strip()) > _MIN_KEY_LENGTH
-    return len(value.strip()) > _MIN_KEY_LENGTH
+    # Cloudflare needs two halves. The token alone routes nowhere.
+    if provider == "cloudflare" and not _has_real_value(
+        getattr(settings, "cf_account_id", "")
+    ):
+        return False
+    return True
 
 
 def get_active_providers(

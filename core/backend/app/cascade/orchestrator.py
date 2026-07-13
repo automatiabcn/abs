@@ -121,6 +121,11 @@ async def call_with_cascade(
             return cached_copy
 
     last_err: Optional[Exception] = None
+    # Whether anything that failed might succeed on a retry. If nothing did —
+    # every provider was misconfigured or rejected the key — then telling the
+    # caller "try again in 60 seconds" is a lie, and callers that handle a bad
+    # key gracefully (the MCP tools) need the ProviderError itself, not a 503.
+    saw_transient = False
     tried: List[str] = []
     for name in chain:
         breaker_id = _breaker_key(tenant_id, name)
@@ -150,10 +155,24 @@ async def call_with_cascade(
             return resp
         except ProviderError as exc:
             last_err = exc
+            saw_transient = saw_transient or exc.transient
             await default_breaker.record_failure(breaker_id)
-            if not exc.transient:
-                raise
-            logger.info("provider %s transient fail, sıradakine geç: %s", name, exc)
+            # A permanent error means *this provider* cannot serve the request —
+            # a bad key, a model it doesn't have, an account id that routes
+            # nowhere. It does not mean nobody can. Raising here made one
+            # misconfigured provider an outage for the whole cascade: an install
+            # with a working Groq key and a half-filled Cloudflare section had no
+            # assistant at all, because Cloudflare came first in the chain and
+            # its 404 aborted the run before Groq was ever tried.
+            #
+            # So we keep going, and if every provider fails the loop still ends
+            # in the structured 503 below, carrying the last error with it.
+            logger.info(
+                "provider %s failed (%s), trying the next one: %s",
+                name,
+                "transient" if exc.transient else "permanent",
+                exc,
+            )
             continue
         except _TRANSIENT_INFRA_EXCEPTIONS as exc:
             # Sprint 2I UAT-014 — ConnectionError / TimeoutError /
@@ -161,6 +180,7 @@ async def call_with_cascade(
             # Treat them like a transient ProviderError so the next
             # provider gets a chance.
             last_err = exc
+            saw_transient = True
             await default_breaker.record_failure(breaker_id)
             logger.info(
                 "provider %s infra transient (%s), sıradakine geç: %s",
@@ -170,9 +190,18 @@ async def call_with_cascade(
             )
             continue
 
-    # Sprint 2I UAT-044 — every provider failed: surface a structured
-    # 503 instead of leaking the last exception's stack trace to the
-    # client. ``Retry-After`` advises the caller to back off.
+    # Every provider failed, and *how* they failed decides what the caller hears.
+    #
+    # Nothing transient in the pile means nothing here is going to get better in
+    # sixty seconds: the keys are missing or wrong. Hand back the provider's own
+    # error, which says so in words, and which the callers that degrade
+    # gracefully on a missing key already know how to catch.
+    if last_err is not None and not saw_transient and isinstance(last_err, ProviderError):
+        raise last_err
+
+    # Otherwise something was temporarily down or rate-limited, and retrying is
+    # honest advice. Sprint 2I UAT-044 — a structured 503 rather than a leaked
+    # stack trace.
     detail = {
         "error": "providers_unavailable",
         "providers_tried": tried,
@@ -180,6 +209,9 @@ async def call_with_cascade(
     }
     if last_err is not None:
         detail["last_error_class"] = type(last_err).__name__
+        # The class name alone ("ProviderError") tells an operator nothing about
+        # which half of their configuration is wrong. The message does.
+        detail["last_error"] = str(last_err)[:300]
     raise HTTPException(
         status_code=503,
         detail=detail,
