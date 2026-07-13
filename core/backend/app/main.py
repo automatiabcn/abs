@@ -174,7 +174,7 @@ async def lifespan(_app: FastAPI):
     except Exception as exc:
         _lf_logger.warning("optin flip detection skipped: %s", exc)
 
-    # 011 — lisans yoksa demo başlat (idempotent)
+    # No license key on this install → start the demo license (idempotent).
     from app.config import settings as _settings
 
     if not _settings.license_key:
@@ -262,7 +262,7 @@ async def lifespan(_app: FastAPI):
             )
         except Exception as exc:
             _lf_logger.warning("phone_home_skipped: %s", exc)
-    # 014 — provider configs YAML yükle (boot, idempotent)
+    # Load the provider config YAMLs once at boot (idempotent).
     try:
         from app.providers.configs import load_all
 
@@ -272,10 +272,9 @@ async def lifespan(_app: FastAPI):
     except Exception as exc:
         _lf_logger.warning("provider configs load skipped: %s", exc)
 
-    # MCP streamable-http session manager tek sefer `run()` çağrısı kabul eder.
-    # TestClient her fixture'da lifespan açtığı için testlerde skip ediyoruz
-    # (zaten /mcp endpoint'i testlerinde gerçek protokol yerine sadece mount varlığı
-    # kontrol ediliyor).
+    # The MCP streamable-http session manager accepts exactly one `run()` call.
+    # Tests open the lifespan once per fixture, so it is skipped there — the MCP
+    # tests assert the mount exists rather than speaking the protocol.
     import os
 
     if os.environ.get("ABS_TEST_MODE") == "1":
@@ -314,7 +313,7 @@ async def lifespan(_app: FastAPI):
     except Exception as exc:
         _lf_logger.warning("langfuse pre-warm skipped: %s", exc)
 
-    # 014 — health monitor başlat (test_mode skip)
+    # Start the provider health monitor (skipped in test mode).
     try:
         from app.health.monitor import monitor as _hmon
 
@@ -490,23 +489,23 @@ app.include_router(me_consent_router.router)
 app.include_router(me_data_export_router.router)
 app.include_router(panel_router.router)
 
-# panel asset'leri (css/js/img) — /panel/login ve /panel route'larıyla çakışmaz,
-# StaticFiles fallback sadece /panel/assets/* için match eder.
+# Panel assets (css/js/img). Mounted under /panel/assets so the StaticFiles
+# fallback cannot shadow the /panel and /panel/login routes.
 app.mount(
     "/panel/assets",
     StaticFiles(directory=str(PANEL_STATIC_DIR / "assets")),
     name="panel-assets",
 )
 
-# 012 — Setup wizard static assets
+# Setup wizard static assets
 app.mount(
     "/setup/assets",
     StaticFiles(directory=str(SETUP_STATIC_DIR / "assets")),
     name="setup-assets",
 )
 
-# Demo / staticfile fallback — /static/* tüm app/static/ dosyalarını serve eder
-# (admin/index.html, panel/tools.html, connect.html vb.)
+# Static fallback — /static/* serves everything under app/static/
+# (admin/index.html, panel/tools.html, connect.html and friends).
 app.mount(
     "/static",
     StaticFiles(directory=str(Path(__file__).resolve().parent / "static"), html=True),

@@ -26,8 +26,8 @@ from .keys import load_public_key
 logger = logging.getLogger(__name__)
 
 
-# Sprint 2I UAT-027 — beta-license grace window. After expires_at the
-# JTI is read-only for ``GRACE_DAYS``; later the license is hard-rejected.
+# Grace window: past expires_at the license stays read-only for GRACE_DAYS,
+# after which it is hard-rejected.
 GRACE_DAYS = 7
 
 
@@ -38,18 +38,15 @@ class LicenseStatus(str, enum.Enum):
 
 
 def verify_license(token: str) -> dict:
-    """JWT lisans token'ını RS256 + public key ile doğrular.
+    """Verify a license JWT (RS256) against the configured public key.
 
-    Hata durumları:
-        - 401: Süresi dolmuş ya da imza geçersiz
-        - 400: Format bozuk ya da diğer JWT hataları
+    Raises:
+        HTTPException 401 — expired or bad signature.
+        HTTPException 400 — malformed token or any other JWT error.
 
-    Q12-L24-007 (LOW security info-leak) — the catch-all PyJWTError
-    branch previously responded with `f"License verification error:
-    {exc}"`, exposing PyJWT internals (constraint names, decoder state)
-    to clients. Sibling leaks (admin/me_*/secrets/vault) were closed in
-    R14/R18/R19/R22/R25; this branch was the last one. Generic detail +
-    `error_class` taxonomy logged for ops audit only.
+    The generic 400 detail is deliberate: echoing the JWT library's exception
+    text back to a client leaks decoder internals. The exception class is
+    logged instead, for operators only.
     """
 
     public_key_bytes = load_public_key(settings.public_key_path)
@@ -86,8 +83,8 @@ def verify_license(token: str) -> dict:
             detail="license_verify_failed",
         ) from exc
 
-    # Q12 IP-Hardening R1 — hardware fingerprint binding.
-    # Backwards compat: legacy licenses without `machine_fp` stay valid.
+    # Hardware binding. Licenses minted without `machine_fp` stay valid on any
+    # host — the check only applies when the claim is present.
     bound_fp = payload.get("machine_fp")
     if bound_fp:
         try:
@@ -112,8 +109,10 @@ def verify_license(token: str) -> dict:
 
 
 def license_grace_status(payload: dict) -> LicenseStatus:
-    """Sprint 2I UAT-027 — compare License row's ``expires_at`` against
-    the live wall clock so the beta lifecycle has a real grace window.
+    """Compare the License row's ``expires_at`` against the wall clock.
+
+    The JWT's own ``exp`` is not the whole story: a license can be expired and
+    still usable read-only inside the grace window.
 
     Returns:
         ACTIVE — License row missing OR expires_at in the future.

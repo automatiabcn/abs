@@ -3,26 +3,19 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""RSA keypair I/O + image-baked vendor pubkey resolution.
+"""RSA keypair I/O and resolution of the image-baked vendor public key.
 
-BUG-12 (2026-05-09) — customer images bake the vendor's manifest
-pubkey at ``/etc/abs/manifest_pubkey.pem`` (set via ``ABS_PUBLIC_KEY_PATH``
-env in the Dockerfile). Verification reads that pubkey through
-``settings.public_key_path``. Mint, however, used to read whatever
-``private.pem`` happened to live under ``/app/data`` — historically a
-self-generated keypair from first boot. The two never paired, so any
-in-container ``generate_license`` call produced a JWT the verifier
-rejected with "License signature invalid".
+Distributed images bake the vendor's public key at
+``/etc/abs/manifest_pubkey.pem`` and point ``ABS_PUBLIC_KEY_PATH`` at it;
+verification reads it through ``settings.public_key_path``.
 
-The Phase 1 entrypoint patch already skips first-boot keypair
-generation when the vendor pubkey is baked, but stale ``data/private.pem``
-files from earlier rc images linger on persisted volumes. To make the
-failure mode safe and obvious we now refuse to mint when the configured
-private key does not derive the image-baked public key. The vendor's
-shared private key (held offline on Mac/PC, never inside any image)
-remains the only viable mint source. Dev / test environments without an
-image-baked pubkey keep their previous behaviour so the unit suite
-continues to use the conftest-generated tmp keypair.
+Minting must therefore use the private key that pairs with that public key —
+never a keypair a container generated for itself, which would produce licenses
+the verifier rejects as "signature invalid". A stale ``private.pem`` on a
+persisted volume is exactly this trap, so minting is refused when the
+configured private key does not derive the image-baked public key.
+
+Environments with no image-baked public key (dev, test) are unaffected.
 """
 
 from __future__ import annotations
@@ -42,23 +35,23 @@ IMAGE_BAKED_PUBLIC_KEY = Path("/etc/abs/manifest_pubkey.pem")
 
 
 def load_private_key(path: str) -> bytes:
-    """PEM formatında özel anahtarı okur. Dosya yoksa FileNotFoundError (TR)."""
+    """Read a PEM private key. Raises FileNotFoundError when it is missing."""
     p = Path(path)
     if not p.is_file():
-        raise FileNotFoundError(f"Özel anahtar dosyası bulunamadı: {path}")
+        raise FileNotFoundError(f"Private key file not found: {path}")
     return p.read_bytes()
 
 
 def load_public_key(path: str) -> bytes:
-    """PEM formatında genel anahtarı okur. Dosya yoksa FileNotFoundError (TR)."""
+    """Read a PEM public key. Raises FileNotFoundError when it is missing."""
     p = Path(path)
     if not p.is_file():
-        raise FileNotFoundError(f"Genel anahtar dosyası bulunamadı: {path}")
+        raise FileNotFoundError(f"Public key file not found: {path}")
     return p.read_bytes()
 
 
 def generate_keypair(private_path: str, public_path: str) -> None:
-    """2048-bit RSA çifti üretir, PEM olarak yazar. Özel anahtar izni 0o600."""
+    """Generate a 2048-bit RSA pair as PEM. The private key is written 0600."""
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
     private_bytes = private_key.private_bytes(
@@ -126,7 +119,7 @@ def assert_mint_keypair_pairs() -> None:
             f"{IMAGE_BAKED_PUBLIC_KEY} but no private key was found at "
             f"{settings.private_key_path!r}. Mint requires the vendor's "
             "shared private key. Set ABS_PRIVATE_KEY_PATH to the matching "
-            "PEM (held offline on Mac/PC) and retry."
+            "PEM and retry."
         ) from exc
 
     try:
@@ -147,7 +140,7 @@ def assert_mint_keypair_pairs() -> None:
             "license_mint_pair_mismatch — the configured private key "
             f"({settings.private_key_path!r}) does not pair with the "
             f"image-baked public key ({IMAGE_BAKED_PUBLIC_KEY}). Mint must "
-            "use the vendor's shared private key (offline Mac/PC). Set "
+            "use the vendor's private signing key. Set "
             "ABS_PRIVATE_KEY_PATH to that PEM, or set "
             "ABS_LICENSE_MINT_INSECURE=1 only for a dev pair-bootstrap."
         )

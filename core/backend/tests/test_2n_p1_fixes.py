@@ -64,7 +64,7 @@ def test_daily_cost_tool_handles_index_error() -> None:
     assert "try:" in body and "except (IndexError, KeyError)" in body
     assert "today_usd" in body and "0.0" in body
     assert "_diagnostic" in body
-    assert "Maliyet verisi henüz yok" in body
+    assert "No cost data yet" in body
 
 
 # ---- #2M-018 -----------------------------------------------------------------
@@ -105,15 +105,16 @@ def test_env_example_version_is_one_zero_one() -> None:
     )
 
 
-def test_changelog_documents_sprint_2n() -> None:
+def test_changelog_documents_the_hotfix_release() -> None:
+    # The 1.0.1 release closed four P0 and six P1 findings. What the changelog
+    # owes a reader is the version and what it fixed for them — not our internal
+    # bug ids, which mean nothing outside this team and belong nowhere near a
+    # public repo.
     raw = CHANGELOG.read_text()
-    assert "1.0.1" in raw and "Sprint 2N" in raw, (
-        "CHANGELOG.md must document the 1.0.1 / Sprint 2N release"
+    assert "## 1.0.1" in raw, "CHANGELOG.md must document the 1.0.1 release"
+    assert "P0 (4/4)" in raw and "P1 (6/6)" in raw, (
+        "the 1.0.1 entry must still account for every finding it closed"
     )
-    # Every P0 + P1 bug referenced.
-    for bug in ("#2M-003", "#2M-017", "#2M-025", "#2M-026", "#2M-009",
-                "#2M-014", "#2M-018", "#2M-020", "#2M-023", "#2M-024"):
-        assert bug in raw, f"CHANGELOG missing reference to {bug}"
 
 
 # ---- #2M-024 -----------------------------------------------------------------

@@ -5,7 +5,7 @@
 
 """Action executor — fire an approved agent action, gated by consent (Stage E).
 
-The 'onay → aksiyon' bridge. When a reviewer approves an Approval Center item,
+The approval → action bridge. When a reviewer approves an Approval Center item,
 this runs its action and records the outcome in the ActionExecution outbox:
 
   • internal actions (CRM note, merge, field update, route) apply immediately;
@@ -34,13 +34,13 @@ logger = logging.getLogger(__name__)
 _COMMS = {"email", "phone", "sms", "whatsapp", "voice", "call"}
 _GATE_CHANNEL = {"voice": "phone", "call": "phone"}
 
-# gate reason → human-readable Turkish outcome
-_REASON_TR = {
-    "no_consent_on_file": "izin kaydı yok (fail-closed)",
-    "channel_not_consented": "bu kanal için izin yok",
-    "opted_out": "opt-out — gönderilmedi",
-    "do_not_call": "arama yasağı (DNC)",
-    "consent_granted": "izin onaylı · kanala kuyruklandı",
+# gate reason code → the outcome text an operator reads in the outbox
+_REASON_TEXT = {
+    "no_consent_on_file": "no consent record on file (fail-closed)",
+    "channel_not_consented": "no consent for this channel",
+    "opted_out": "opted out — not sent",
+    "do_not_call": "do-not-call list",
+    "consent_granted": "consent on file · queued to the channel",
 }
 
 
@@ -172,7 +172,7 @@ def execute_for_approval(item: Any, *, tenant_slug: str) -> Dict[str, Any]:
         # internal action — no external recipient, applies immediately
         if channel not in _COMMS:
             row = _record(db, **base, action_kind="internal", channel=channel,
-                          status="executed", reason="iç aksiyon uygulandı")
+                          status="executed", reason="internal action applied")
             logger.info("action executed (internal) approval=%s", base["approval_item_id"])
             return _to_dict(row)
 
@@ -180,7 +180,7 @@ def execute_for_approval(item: Any, *, tenant_slug: str) -> Dict[str, Any]:
         email = _resolve_contact_email(db, tenant, base["target_company"])
         if not email:
             row = _record(db, **base, action_kind="message_send", channel=channel,
-                          status="blocked", reason="alıcı çözümlenemedi")
+                          status="blocked", reason="recipient could not be resolved")
             return _to_dict(row)
 
         gate = check_channel(tenant_slug=tenant, contact_email=email,
@@ -188,13 +188,13 @@ def execute_for_approval(item: Any, *, tenant_slug: str) -> Dict[str, Any]:
         if gate.get("allowed"):
             row = _record(db, **base, action_kind="message_send", channel=channel,
                           status="queued", target_contact=email,
-                          reason=_REASON_TR.get(gate.get("reason", ""), "izin onaylı · kuyruklandı"))
+                          reason=_REASON_TEXT.get(gate.get("reason", ""), "consent on file · queued"))
             logger.info("action queued (%s) approval=%s → %s", channel, base["approval_item_id"], email)
             return _to_dict(row)
 
         row = _record(db, **base, action_kind="message_send", channel=channel,
                       status="blocked", target_contact=email,
-                      reason=_REASON_TR.get(gate.get("reason", ""), gate.get("reason", "izin yok")))
+                      reason=_REASON_TEXT.get(gate.get("reason", ""), gate.get("reason", "no consent")))
         logger.info("action blocked (%s) approval=%s reason=%s",
                     channel, base["approval_item_id"], gate.get("reason"))
         return _to_dict(row)

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""028 Modul H — `security_audit` MCP tool.
+"""`security_audit` MCP tool.
 
 Aggregates security-relevant signals across the system:
   - webhook secrets configured + last rotation timestamp

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""027 Modul F — `vault_audit_status` MCP tool."""
+"""`vault_audit_status` MCP tool."""
 
 from __future__ import annotations
 

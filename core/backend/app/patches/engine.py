@@ -3,13 +3,12 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Patch engine — unified diff parse, preview, apply, score.
+"""Patch engine — parse, preview, apply and score unified diffs.
 
-SERVER patch_engine.py'nin MVP portu:
-  - parse_diff(): @@-headerlı hunk'ları listele
-  - preview_patch(): subprocess `patch --dry-run` (macos/linux)
-  - apply_patch(): atomic write + backup
-  - score_patch(): minimalism + hunk konsantrasyonu 0-10
+  - parse_diff():    list the @@-headed hunks
+  - preview_patch(): `patch --dry-run`, so nothing is written to check a patch
+  - apply_patch():   atomic write, with a backup by default
+  - score_patch():   0-10 on minimalism and how concentrated the hunks are
 """
 
 from __future__ import annotations
@@ -49,7 +48,7 @@ class Hunk:
 
 
 def parse_diff(text: str) -> List[Hunk]:
-    """Unified diff → Hunk listesi. Başarısızsa boş."""
+    """Unified diff → hunks. Unparseable input yields an empty list, not an error."""
     hunks: List[Hunk] = []
     current: Optional[Hunk] = None
     header_re = re.compile(r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)$")
@@ -80,10 +79,10 @@ def parse_diff(text: str) -> List[Hunk]:
 
 
 def preview_patch(file_path: str, diff_text: str) -> dict:
-    """`patch --dry-run` ile önizleme. {success, reason} döner."""
+    """Dry-run the patch without touching the file. Returns {success, reason}."""
     target = Path(file_path)
     if not target.is_file():
-        return {"success": False, "reason": f"dosya yok: {file_path}"}
+        return {"success": False, "reason": f"no such file: {file_path}"}
 
     try:
         with tempfile.NamedTemporaryFile("w", suffix=".patch", delete=False) as tmp:
@@ -102,10 +101,10 @@ def preview_patch(file_path: str, diff_text: str) -> dict:
             "stdout": result.stdout[:500],
         }
     except FileNotFoundError:
-        # `patch` binary yok (Docker slim) → yapılandırılabilir; graceful degrade
+        # Slim images ship without `patch` — report it instead of crashing.
         return {
             "success": False,
-            "reason": "`patch` binary yok (apt-get install patch)",
+            "reason": "`patch` binary not available (apt-get install patch)",
         }
     except Exception as exc:
         return {"success": False, "reason": str(exc)[:200]}
@@ -117,10 +116,10 @@ def preview_patch(file_path: str, diff_text: str) -> dict:
 
 
 def apply_patch(file_path: str, diff_text: str, backup: bool = True) -> dict:
-    """Atomic write + opsiyonel backup. {success, reason, backup_path} döner."""
+    """Apply the patch with an atomic write. Returns {success, reason, backup_path}."""
     target = Path(file_path)
     if not target.is_file():
-        return {"success": False, "reason": f"dosya yok: {file_path}"}
+        return {"success": False, "reason": f"no such file: {file_path}"}
 
     backup_path: Optional[str] = None
     if backup:
@@ -169,7 +168,7 @@ def apply_patch(file_path: str, diff_text: str, backup: bool = True) -> dict:
 
 
 def score_patch(diff_text: str) -> dict:
-    """Diff'i minimalism + hunk konsantrasyonu + boyut ile skorla (0-10)."""
+    """Score a diff 0-10 on minimalism, hunk concentration and size."""
     hunks = parse_diff(diff_text)
     if not hunks:
         return {
@@ -186,10 +185,8 @@ def score_patch(diff_text: str) -> dict:
     total_context = sum(len(h.lines) - (h.adds + h.dels) for h in hunks)
     minimal_ratio = total_changes / max(1, total_changes + total_context)
 
-    # Skor kuralları (basit):
-    # - 1-3 hunk + minimal_ratio > 0.3 + max_hunk < 40 → 8-10
-    # - 4-6 hunk → 6-7
-    # - 7+ hunk veya max_hunk > 80 → 4-5
+    # A good patch is small and concentrated: few hunks, little surrounding
+    # context, no single sprawling hunk. Each of those failings costs points.
     score = 10.0
     if hunk_count > 3:
         score -= 1.5
@@ -205,13 +202,13 @@ def score_patch(diff_text: str) -> dict:
 
     teaching = []
     if hunk_count > 6:
-        teaching.append(f"{hunk_count} hunk — dağınık patch; bölerek küçült.")
+        teaching.append(f"{hunk_count} hunks — scattered patch; split it into smaller ones.")
     if max_hunk_size > 80:
-        teaching.append(f"En büyük hunk {max_hunk_size} satır — fonksiyon ayır.")
+        teaching.append(f"Largest hunk is {max_hunk_size} lines — extract a function.")
     if minimal_ratio < 0.2:
-        teaching.append("Context oranı yüksek — hunk'lar genişletilmiş; daraltılabilir.")
+        teaching.append("Lots of context per change — the hunks can be tightened.")
     if not teaching:
-        teaching.append("Dar ve konsantre patch — senior signature'a uygun.")
+        teaching.append("Narrow, concentrated patch.")
 
     return {
         "score": round(score, 1),

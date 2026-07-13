@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""032 Modul G — Unified audit log viewer.
+"""Unified audit log viewer.
 
 GET /v1/admin/audit/recent?limit=200&source=vault|customer|webhook|all&cursor=<b64>
 Combines VaultAuditEntry (027), CustomerAuditEntry (029) and WebhookEvent (017).

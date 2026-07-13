@@ -3,7 +3,8 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Email gönderici — SMTP yapılandırılmamışsa console log fallback."""
+"""Email sender — logs to the console when SMTP is not configured, so a missing
+mail server degrades an install rather than breaking it."""
 
 from __future__ import annotations
 
@@ -26,12 +27,12 @@ _env = Environment(
 
 
 def _render(template_name: str, lang: str = "en", **context) -> tuple[str, str]:
-    """Template'i render eder, (subject, html) döner.
+    """Render a template → (subject, html).
 
-    023 — lang parametresi: önce `<base>_<lang>.html`, yoksa `<base>_en.html`,
-    yoksa orijinal `<base>.html` dosyasına fallback.
+    Language resolution falls back `<base>_<lang>.html` → `<base>_en.html` →
+    `<base>.html`, so a locale with no translation still gets a mail.
 
-    Template'in ilk satırlarında '<!-- subject: ... -->' aranır.
+    The subject is read from a leading '<!-- subject: ... -->' comment.
     """
     base = template_name[:-5] if template_name.endswith(".html") else template_name
     candidates = [f"{base}_{lang}.html", f"{base}_en.html", f"{base}.html"]
@@ -59,7 +60,7 @@ def _render(template_name: str, lang: str = "en", **context) -> tuple[str, str]:
 def send_license_email(
     *, to: str, license_key: str, refund_url: str, lang: str = "en"
 ) -> None:
-    """023 — Lisans email'ini lang-aware gönder. SMTP_HOST boşsa console fallback."""
+    """Send the license delivery mail in the customer's language."""
     subject, html = _render(
         "license_delivery.html",
         lang=lang,
@@ -94,7 +95,7 @@ def send_license_email(
 
 
 def _send_html(*, to: str, subject: str, html: str, kind: str) -> None:
-    """SMTP veya console fallback (012)."""
+    """Send HTML mail; a send failure is logged, never raised at the caller."""
     if not settings.smtp_host:
         logger.info(
             "[email:console-fallback] %s to=%s subject=%r length=%d",
@@ -109,7 +110,7 @@ def _send_html(*, to: str, subject: str, html: str, kind: str) -> None:
     msg["To"] = to
     msg["Subject"] = subject
     msg.set_content(
-        "Email istemciniz HTML göremedi. Lütfen HTML destekli bir istemci kullanın."
+        "Your email client does not display HTML. Please use an HTML-capable client."
     )
     msg.add_alternative(html, subtype="html")
     try:
@@ -124,7 +125,7 @@ def _send_html(*, to: str, subject: str, html: str, kind: str) -> None:
 
 
 def send_refund_email(*, to: str, license_jti: str, refund_date: str) -> None:
-    """012 — İade onay maili. SMTP yoksa console fallback (exception fırlatmaz)."""
+    """Refund confirmation mail. A render or send failure is logged, not raised."""
     try:
         subject, html = _render(
             "license_refund.html",
@@ -140,7 +141,8 @@ def send_refund_email(*, to: str, license_jti: str, refund_date: str) -> None:
 
 _ROLE_LABELS = {
     "en": {"admin": "Administrator", "operator": "Operator", "viewer": "Viewer", "member": "Member"},
-    "tr": {"admin": "Admin", "operator": "Operatör", "viewer": "Okur", "member": "Üye"},
+    # Non-ASCII escaped so the source stays ASCII; the rendered label is unchanged.
+    "tr": {"admin": "Admin", "operator": "Operat\u00f6r", "viewer": "Okur", "member": "\u00dcye"},
     "es": {"admin": "Administrador", "operator": "Operador", "viewer": "Lector", "member": "Miembro"},
 }
 
@@ -207,7 +209,7 @@ def send_account_delete_email(
 
 
 def send_expiration_email(*, to: str, license_jti: str, expired_at: str) -> None:
-    """012 — Lisans süresi doldu maili. SMTP yoksa console fallback."""
+    """License expiry mail. A render or send failure is logged, not raised."""
     try:
         subject, html = _render(
             "license_expired.html",

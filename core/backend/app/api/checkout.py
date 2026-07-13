@@ -3,15 +3,16 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Stripe Checkout Session creation — landing page'den çağrılır (011).
+"""Stripe Checkout Session creation, called from the landing page.
 
 POST /v1/checkout/create-session
   body: {"sku": "self-host" | "team-5" | "team-10", "customer_email": "x@y.com"}
   → {"checkout_url": "https://checkout.stripe.com/...", "session_id": "cs_..."}
 
-Stripe Price ID'leri config'den okunur (`abs_price_self_host`, `abs_price_team_5`,
-`abs_price_team_10`); kullanıcı `infra/scripts/setup_stripe_products.py` ile
-manuel oluşturup `.env`'e yapıştırır.
+Stripe Price IDs are read from config (`abs_price_self_host`,
+`abs_price_team_5`, `abs_price_team_10`). They are not created automatically:
+run `infra/scripts/setup_stripe_products.py` and paste the resulting IDs
+into `.env`.
 """
 
 from __future__ import annotations
@@ -31,7 +32,7 @@ router = APIRouter(prefix="/v1/checkout", tags=["checkout"])
 logger = logging.getLogger(__name__)
 
 
-# (price_id resolver, seat_count) — testlerde mapping tek source-of-truth
+# SKU → (price_id resolver, seat_count). Single source of truth for the mapping.
 _SKU_TO_PRICE: dict[str, tuple] = {
     "self-host": (lambda: settings.abs_price_self_host, 1),
     "team-5": (lambda: settings.abs_price_team_5, 5),
@@ -66,13 +67,7 @@ async def create_session(
     if not price_id:
         raise HTTPException(
             status_code=503,
-            detail=f"Price ID not configured: {body.sku}"
-            if lang == "en"
-            else (
-                f"Price ID yapılandırılmadı: {body.sku}"
-                if lang == "tr"
-                else f"Price ID no configurado: {body.sku}"
-            ),
+            detail=t("errors.price_id_not_configured", lang, sku=body.sku),
         )
 
     stripe.api_key = settings.stripe_secret_key
@@ -91,7 +86,7 @@ async def create_session(
             },
         )
     except stripe.error.StripeError as exc:
-        # Q12-L24-002 — log full exception internally; return only the
+        # Log full exception internally; return only the
         # Stripe-curated user_message (or a generic fallback) to the
         # client. str(exc) can leak account-internal IDs (cus_*, sub_*,
         # acct_*) that adversaries can fingerprint.

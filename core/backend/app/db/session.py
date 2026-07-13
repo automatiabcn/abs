@@ -20,19 +20,17 @@ logger = logging.getLogger(__name__)
 
 _engine = None
 
-# Sprint 2K — request-scoped tenant slug. The FastAPI dependency
-# `set_request_tenant` (app/api/v1/tenant_guc.py) writes this at the
-# start of each request; the SQLAlchemy listener below reads it just
-# before every cursor execute and emits `SET LOCAL abs.tenant_id` so
-# the Postgres RLS policies on the 3 audit tables see the right
-# tenant. On SQLite the listener is a no-op.
+# Request-scoped tenant slug. A FastAPI dependency writes it at the start of
+# each request; the SQLAlchemy listener below reads it before every cursor
+# execute and emits `SET LOCAL abs.tenant_id`, which is what makes the Postgres
+# RLS policies on the audit tables resolve to the right tenant. No-op on SQLite.
 current_tenant: ContextVar[str | None] = ContextVar(
     "abs_current_tenant", default=None
 )
 
 
 def _ensure_sqlite_dir(url: str) -> None:
-    """SQLite kullanılıyorsa DB dosyasının dizinini oluştur."""
+    """Create the parent directory of a SQLite DB file. No-op for other engines."""
     prefix = "sqlite:///"
     if url.startswith(prefix):
         path_str = url[len(prefix):]
@@ -156,12 +154,13 @@ def _reconcile_sqlite_columns(engine) -> None:
 
 
 def init_db() -> None:
-    """Startup hook — tabloları oluştur."""
-    # models'ı import etmek gerekiyor ki SQLModel metadata'sına kaydolsun
+    """Startup hook — create the tables."""
+    # The model modules must be imported before create_all, or their tables are
+    # missing from SQLModel's metadata and never created.
     from app.db import models  # noqa: F401
-    from app.db import tenant_models  # noqa: F401  # T-009
+    from app.db import tenant_models  # noqa: F401
     from app.db import growth_models  # noqa: F401  # Agentic Growth domain
-    from app.auth.oauth import models as _oauth_models  # noqa: F401  # T-003
+    from app.auth.oauth import models as _oauth_models  # noqa: F401
 
     engine = get_engine()
     SQLModel.metadata.create_all(engine)
@@ -170,17 +169,18 @@ def init_db() -> None:
 
 
 def get_session() -> Iterator[Session]:
-    """FastAPI dependency — request scope'lu session."""
+    """FastAPI dependency — one session per request."""
     with Session(get_engine()) as session:
         yield session
 
 
 @contextmanager
 def get_session_sync() -> Iterator[Session]:
-    """017 — MCP tool / non-FastAPI sync context manager.
+    """Sync session context manager for callers outside FastAPI (MCP tools).
 
-    MCP tool'lari async ama DB query'leri sync (SQLModel + sqlite3 driver).
-    `with get_session_sync() as db: ...` pattern ile session lifecycle yonet.
+    Those callers are async, but the DB layer is sync (SQLModel + the sqlite3
+    driver), so they need an explicit `with get_session_sync() as db:` block to
+    bound the session lifetime.
     """
     with Session(get_engine()) as session:
         yield session

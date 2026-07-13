@@ -3,7 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-036 — Email classify (heuristic + LLM-ready interface)."""
+"""Email classification — keyword heuristics behind an LLM-ready interface.
+
+Patterns cover the supported product languages; non-ASCII keywords are written as
+escapes so the source stays ASCII while matching the same words."""
 
 from __future__ import annotations
 
@@ -55,7 +58,7 @@ _PATTERNS: dict[str, tuple[str, ...]] = {
         r"\bpayment\b",
         r"\bstripe\b",
         r"fatura",
-        r"ödeme",
+        r"\u00f6deme",
         r"refund",
     ),
     "tech": (

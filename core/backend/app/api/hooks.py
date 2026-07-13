@@ -3,19 +3,19 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Native hook (Mod A) için HTTP endpoint.
+"""HTTP endpoint backing the native hook integration.
 
-Claude Code ~/.claude/hooks/pre-tool-guard.sh scripti Claude Code'dan gelen
-stdin JSON'ını bu endpoint'e POST eder, response stdout'a geri basılır.
+The installed hook script (~/.claude/hooks/pre-tool-guard.sh) pipes the event
+JSON it receives on stdin to this endpoint and writes the response back to
+stdout, so the request body is a Claude Code PreToolUse event:
 
-İstek formatı (Claude Code PreToolUse event'inden):
   {
     "hook_event_name": "PreToolUse",
     "tool_name": "Bash",
     "tool_input": {"command": "..."}
   }
 
-Yanıt: Claude Code hook JSON output spec uyumlu.
+The response conforms to the Claude Code hook JSON output spec.
 """
 
 from __future__ import annotations
@@ -51,5 +51,6 @@ async def dispatch(req: HookRequest) -> dict:
 
 @router.post("/test")
 async def test_dispatch(req: HookRequest) -> dict:
-    """Dev / test amaçlı — içerik ve deny reason'ı doğrudan görmek için."""
+    """Debug variant of /dispatch: returns the raw dispatcher result (including
+    the deny reason) instead of the hook output spec."""
     return dispatch_hooks(req.tool_name, req.tool_input)

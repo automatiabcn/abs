@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""022 — Setup wizard adım drop-off metrikleri."""
+"""Setup wizard step drop-off metrics."""
 
 from __future__ import annotations
 
@@ -19,10 +19,10 @@ from app.db.session import get_session_sync
 def record_step(
     session_id: str, step_num: int, completed: bool = False
 ) -> WizardEvent:
-    """Adım start veya completion kaydı.
+    """Record a step start or completion.
 
-    Aynı (session_id, step_num) zaten varsa: completion ise completed_at set,
-    yoksa atla.
+    One row per (session_id, step_num): re-entering a step does not restart it,
+    and a completion only ever stamps the first completion time.
     """
     with get_session_sync() as db:
         existing = db.scalars(
@@ -49,9 +49,9 @@ def record_step(
 
 
 def funnel_summary(steps: int = 6) -> dict:
-    """Her adım için: started_count, completed_count, drop_off_pct.
+    """Per step: started_count, completed_count, drop_off_pct.
 
-    drop_off_pct = (started - completed) / started × 100.
+    drop_off_pct = (started - completed) / started x 100.
     """
     out: list[dict] = []
     with get_session_sync() as db:

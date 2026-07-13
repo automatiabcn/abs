@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""022 — Setup wizard funnel MCP tool: drop-off oranı her adım için."""
+"""Setup wizard funnel MCP tool — per-step drop-off."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from app.mcp.tracking import tracker  # noqa: E402
 @mcp_server.tool()
 @with_hooks("wizard_funnel")
 async def wizard_funnel() -> str:
-    """022 — Setup wizard 6-adım drop-off özeti."""
+    """Drop-off across the six wizard steps."""
     await tracker.bump("wizard_funnel")
     from app.wizard.metrics import funnel_summary
 

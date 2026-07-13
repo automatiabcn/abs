@@ -3,7 +3,8 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Batch F — 4 fullstack tool (fullstack, fullstack_plan, fullstack_scan, fullstack_detect)."""
+"""Full-stack tools — detect the layer of a task, then answer it with the model
+that is best at that layer (see _LAYER_MODELS)."""
 
 from __future__ import annotations
 
@@ -64,7 +65,7 @@ def _detect_layer(prompt: str) -> str:
 @mcp_server.tool()
 @with_hooks("fullstack_detect")
 async def fullstack_detect(prompt: str) -> str:
-    """Prompt'tan katman tespit et (frontend/backend/database/devops/testing/docs/architecture)."""
+    """Detect the layer of a prompt: frontend|backend|database|devops|testing|docs|architecture."""
     await tracker.bump("fullstack_detect")
     layer = _detect_layer(prompt)
     provider, model = _LAYER_MODELS[layer]
@@ -77,35 +78,35 @@ async def fullstack_detect(prompt: str) -> str:
 @mcp_server.tool()
 @with_hooks("fullstack")
 async def fullstack(prompt: str, layer: str = "auto") -> str:
-    """Katman-özel kod üretici — auto katman tespit + en uygun model."""
+    """Layer-aware code generation. layer="auto" detects the layer from the prompt."""
     await tracker.bump("fullstack")
     if layer == "auto":
         layer = _detect_layer(prompt)
     pair = _LAYER_MODELS.get(layer)
     if not pair:
-        return f"[HATA] fullstack: bilinmeyen layer '{layer}'"
+        return f"[ERROR] fullstack: unknown layer '{layer}'"
     provider, model = pair
-    system_hint = f"Katman: {layer}. En iyi uygulamalara uyarak üret."
+    system_hint = f"Layer: {layer}. Follow the best practices of that layer."
     try:
         resp = await call_with_cascade(
-            f"{system_hint}\n\nGörev:\n{prompt}",
+            f"{system_hint}\n\nTask:\n{prompt}",
             primary=provider,
             model=model,
         )
         return f"[layer={layer} · model={model}]\n\n{resp.text or ''}"
     except ProviderError as exc:
-        return f"[HATA] fullstack: {exc.message}"
+        return f"[ERROR] fullstack: {exc.message}"
 
 
 @mcp_server.tool()
 @with_hooks("fullstack_scan")
 async def fullstack_scan(project_dir: str) -> str:
-    """Proje dizinini tara — dosya/lang/deps envanteri."""
+    """Inventory a project directory: file counts by extension, size, manifests."""
     await tracker.bump("fullstack_scan")
     root = Path(project_dir)
     if not root.is_dir():
         return json.dumps(
-            {"error": f"dizin yok: {project_dir}"}, ensure_ascii=False
+            {"error": f"not a directory: {project_dir}"}, ensure_ascii=False
         )
     by_ext: Dict[str, int] = {}
     total_files = 0
@@ -146,21 +147,21 @@ async def fullstack_scan(project_dir: str) -> str:
 @mcp_server.tool()
 @with_hooks("fullstack_plan")
 async def fullstack_plan(project_dir: str) -> str:
-    """Scan + gap analizi + görev planı (LLM ile)."""
+    """Scan a project, then have a model turn the inventory into a task plan."""
     await tracker.bump("fullstack_plan")
     scan = await fullstack_scan(project_dir)  # scan text
     prompt = (
-        "Aşağıdaki proje envanterine bakıp eksik/iyileştirilmesi gereken "
-        "maddeleri ve öncelikli 5-7 görevi Türkçe plan olarak listele:\n\n"
+        "Read the project inventory below. List what is missing or weak, then "
+        "give the 5-7 highest-priority tasks as a plan:\n\n"
         + scan
     )
     try:
         resp = await call_with_cascade(
             prompt, primary="groq", model="openai/gpt-oss-120b"
         )
-        return resp.text or "[HATA] fullstack_plan: empty"
+        return resp.text or "[ERROR] fullstack_plan: empty"
     except ProviderError as exc:
-        return f"[HATA] fullstack_plan: {exc.message}"
+        return f"[ERROR] fullstack_plan: {exc.message}"
 
 
 REGISTERED_TOOLS.extend(

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""031 Modul B — Beta onboarding email sequence (5 stages).
+"""Beta onboarding email sequence (5 stages).
 
 Stages:
   1. beta_welcome         — t=0

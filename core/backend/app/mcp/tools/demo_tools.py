@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""033 Modul L — `demo_status` MCP tool.
+"""`demo_status` MCP tool.
 
 Reports whether demo mode is on, seed version, mock-provider state,
 known screenshot paths and demo-video script path.

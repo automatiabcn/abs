@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""030 Modul D — Groq compound (agentic) MCP tools.
+"""Groq compound (agentic) MCP tools.
 
 `groq/compound` and `groq/compound-mini` are Groq's tool-calling agentic
 models. Multi-step reasoning + tool use. Free quota tracked under the
@@ -36,7 +36,7 @@ async def _call_groq(
         )
         return resp.text or ""
     except ProviderError as exc:
-        return f"[HATA] {tool_name}: {exc.message}"
+        return f"[ERROR] {tool_name}: {exc.message}"
 
 
 @mcp_server.tool()

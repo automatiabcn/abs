@@ -3,10 +3,11 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Senior judge — AST + LLM birleşik patch skorlayıcı.
+"""Senior judge — patch scoring from AST metrics plus an LLM opinion.
 
-SERVER senior_judge.py portu. %60 AST fingerprint uyumu + %40 LLM yargısı.
-LLM çağrısı opsiyonel: kota doluysa 0 döner, ama AST skoru yine anlamlı.
+Combined score is 60% AST fingerprint match, 40% LLM judgment. The LLM leg is
+optional: on quota exhaustion or provider error it contributes 0 and the AST
+score still stands on its own.
 """
 
 from __future__ import annotations
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def _ast_score(metrics: Dict[str, float], persona: Dict[str, float]) -> float:
-    """0-10 arası AST fingerprint skoru."""
+    """AST fingerprint score on a 0-10 scale."""
     if not metrics:
         return 0.0
     distance = fingerprint_distance(metrics, persona)
@@ -33,15 +34,15 @@ def _ast_score(metrics: Dict[str, float], persona: Dict[str, float]) -> float:
 
 
 async def _llm_judge(added_code: str) -> Dict[str, Any]:
-    """LLM (gpt-oss-120b) ile kod kalite yargısı."""
+    """Ask the LLM to grade code quality."""
     if not added_code.strip():
         return {"score": 0.0, "teaching": ""}
 
     prompt = (
-        "Bu kod değişikliğini 0-10 arasında değerlendir. Kriterler: naming, "
-        "error handling, readability, minimalism. Kısa JSON döndür:\n"
-        '{"score": 7.5, "teaching": "kısa 1-2 öneri"}\n\n'
-        f"KOD:\n{added_code[:4000]}"
+        "Rate this code change from 0 to 10. Criteria: naming, error handling, "
+        "readability, minimalism. Answer with short JSON only:\n"
+        '{"score": 7.5, "teaching": "1-2 brief suggestions"}\n\n'
+        f"CODE:\n{added_code[:4000]}"
     )
     try:
         provider = get_provider("groq")
@@ -54,7 +55,7 @@ async def _llm_judge(added_code: str) -> Dict[str, Any]:
     import re
 
     text = resp.text or ""
-    # İlk JSON bloğunu yakala
+    # First JSON object in the reply wins; models like to wrap it in prose.
     m = re.search(r"\{[^{}]*\"score\"[^{}]*\}", text, re.DOTALL)
     if not m:
         return {"score": 0.0, "teaching": text[:200]}
@@ -68,7 +69,7 @@ async def _llm_judge(added_code: str) -> Dict[str, Any]:
 
 
 async def judge_diff(diff_text: str, file_path: Optional[str] = None) -> Dict[str, Any]:
-    """Diff skorla — (combined %60 AST + %40 LLM), teaching döndür."""
+    """Score a diff (60% AST + 40% LLM) and return the teaching notes."""
     added_code = extract_added_lines(diff_text)
     is_python = bool(file_path and file_path.endswith(".py"))
 
@@ -92,7 +93,7 @@ async def judge_diff(diff_text: str, file_path: Optional[str] = None) -> Dict[st
             delta = abs(actual - target)
             if delta > 0.2:
                 teaching_lines.append(
-                    f"{k}: {actual:.2f} vs hedef {target:.2f} (fark {delta:.2f})"
+                    f"{k}: {actual:.2f} vs target {target:.2f} (delta {delta:.2f})"
                 )
     if llm.get("teaching"):
         teaching_lines.append(f"LLM: {llm['teaching']}")
@@ -110,7 +111,7 @@ async def judge_diff(diff_text: str, file_path: Optional[str] = None) -> Dict[st
         "teaching": teaching_lines,
     }
 
-    # 009 — judge_log integration (silent fail; log yokken testler kırılmasın)
+    # Judgment logging is best-effort: an unavailable log must not fail a judge.
     try:
         from .log import log_judgment as _log
 

@@ -3,12 +3,12 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""033 Modul C — Provider mock layer for demo mode.
+"""Provider mock layer for demo mode.
 
 When `settings.provider_mock` is True, deterministic responses replace
 live HTTP calls. Latency is simulated to look realistic on screen recording.
 
-Public API (synchronous façade — providers/orchestrator import these):
+Public API (synchronous facade — providers/orchestrator import these):
     - mock_openai_chat(model, prompt) → ProviderResponse
     - mock_anthropic_message(model, prompt) → ProviderResponse
     - mock_stripe_event(event_type) → dict

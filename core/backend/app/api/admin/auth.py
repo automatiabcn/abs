@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""032 Modul A — Admin auth (separate from /auth panel cookie session).
+"""Admin auth (separate from /auth panel cookie session).
 
 POST /v1/admin/login {password}
   → 200 { token, expires_in_seconds }

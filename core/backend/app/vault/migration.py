@@ -46,7 +46,7 @@ def _resolve_env_path(env_path: Optional[str] = None) -> Path:
 
 
 def migrate_plaintext_env_to_vault(env_path: Optional[str] = None) -> int:
-    """Idempotent migration. Migrate edilen kayit sayisini doner."""
+    """Idempotent. Returns how many records were migrated."""
     from app.vault.audit import log_event
     from app.vault.runner import (
         decrypt_all,

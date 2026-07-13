@@ -3,9 +3,9 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-004 — Cerbos PDP client wrapper.
+"""Cerbos PDP client wrapper.
 
-Thin façade over the Cerbos sync HTTP SDK so the rest of the app speaks
+Thin facade over the Cerbos sync HTTP SDK so the rest of the app speaks
 in plain dicts. Test code can monkeypatch `_check` to bypass the live
 PDP and inject decisions directly.
 """

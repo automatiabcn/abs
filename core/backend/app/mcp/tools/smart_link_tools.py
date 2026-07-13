@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""026 Modul G — Smart link MCP tools.
+"""Smart link MCP tools.
 
   smart_link_status() — list connected services + last validation
   provider_validate(provider, api_key) — provider validators wrapper

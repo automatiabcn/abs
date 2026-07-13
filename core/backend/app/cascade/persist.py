@@ -28,7 +28,8 @@ def _state_path() -> Path:
 
 
 def save(states: Dict[str, dict]) -> None:
-    """Açık/half-open state'leri persist et. Format: {provider: {state, fail_count, opened_at_real_time}}."""
+    """Persist open/half-open breaker states so a restart does not forget that a
+    provider is down. Format: {provider: {state, fail_count, opened_at_real_time}}."""
     payload: Dict[str, Any] = {"saved_at": time.time(), "states": states}
     target = _state_path()
     tmp = target.with_suffix(".json.tmp")

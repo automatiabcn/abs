@@ -12,13 +12,14 @@ import asyncio
 from . import runner as _runner
 
 _PERSPECTIVE_TEMPLATE = (
-    "Aşağıdaki istek için kendi bakış açından kısa ama net bir analiz yaz. "
-    "Sadece kendi cevabını ver, başka modelle karşılaştırma.\n\nİstek:\n{prompt}"
+    "Write a short, clear analysis of the request below from your own point of "
+    "view. Give only your own answer; do not compare yourself to other models."
+    "\n\nREQUEST:\n{prompt}"
 )
 _SYNTH_SYSTEM = (
-    "Üç farklı modelin verdiği analizleri tek bir dengeli cevapta birleştir. "
-    "Her görüşün öne çıkardığı trade-off'u koru, ortak noktayı vurgula, "
-    "çelişkili ifadeleri açıkça etiketle. Cevabı kullanıcının istediği dilde ver."
+    "Merge the analyses from three different models into one balanced answer. "
+    "Keep the trade-off each perspective raises, state where they agree, and "
+    "label contradictions explicitly. Answer in the language the user used."
 )
 
 
@@ -58,8 +59,8 @@ async def execute(prompt: str, call_provider: _runner.CallProvider) -> _runner.Q
         f"### {stage.provider}\n{text[:3000]}" for stage, text in survivors
     )
     synth_prompt = (
-        f"{_SYNTH_SYSTEM}\n\nKULLANICI İSTEĞİ:\n{prompt}\n\n"
-        f"PERSPEKTİFLER:\n{perspectives_block}"
+        f"{_SYNTH_SYSTEM}\n\nUSER REQUEST:\n{prompt}\n\n"
+        f"PERSPECTIVES:\n{perspectives_block}"
     )
     synth_stage, synth_text = await _runner.run_stage(
         "qual_analysis", "synthesize", "groq", synth_prompt, call_provider=call_provider

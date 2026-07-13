@@ -68,7 +68,7 @@ async def test_tracker_bump_backward_compat_no_tokens():
 
 
 def test_cost_estimator_uses_real_tokens_when_available(monkeypatch):
-    """Gercek token sayilari varsa breakdown.exact=True, hesap dogru."""
+    """Real token counts → breakdown.exact=True and an exact cost."""
     from app.billing import cost_estimator
     from app.mcp.tracking import tracker
 
@@ -92,7 +92,7 @@ def test_cost_estimator_uses_real_tokens_when_available(monkeypatch):
     assert top["exact"] is True
     assert top["tokens_in"] == 5000
     assert top["tokens_out"] == 2000
-    assert "Gercek token tracking aktif" in out["note"]
+    assert "Real token tracking is active" in out["note"]
 
 
 def test_cost_estimator_falls_back_to_avg(monkeypatch):

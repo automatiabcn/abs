@@ -3,7 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-027 — Action item extractor (mock heuristics + LLM-ready interface)."""
+"""Action item extractor — verb/date heuristics behind an LLM-ready interface.
+
+Hints cover the supported product languages; non-ASCII words are written as
+escapes so the source stays ASCII while matching the same terms."""
 
 from __future__ import annotations
 
@@ -27,12 +30,12 @@ class ActionItem:
 
 
 _VERB_HINTS = (
-    "yapacağım", "yapmalı", "hazırla", "gönder", "ara", "topla",
+    "yapaca\u011f\u0131m", "yapmal\u0131", "haz\u0131rla", "g\u00f6nder", "ara", "topla",
     "investigate", "ship", "draft", "send", "schedule", "follow up",
     "ensure", "fix", "deliver", "review", "kontrol",
 )
 _DUE_HINTS = (
-    (r"yarın", "tomorrow"),
+    (r"yar\u0131n", "tomorrow"),
     (r"bu hafta", "this_week"),
     (r"gelecek hafta", "next_week"),
     (r"by friday", "friday"),

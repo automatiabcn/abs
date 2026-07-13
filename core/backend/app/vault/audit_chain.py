@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""027 Modul C — Vault audit chain with HMAC tamper detection.
+"""Vault audit chain with HMAC tamper detection.
 
 Each `VaultAuditEntry`:
   hmac = HMAC-SHA256(secret, canonical(entry) + prev_hmac)

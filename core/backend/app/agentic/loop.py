@@ -35,6 +35,8 @@ import re
 from dataclasses import dataclass
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
+from fastapi import HTTPException
+
 from app.agentic import dispatcher
 from app.agentic.approvals_bridge import request_tool_approval
 from app.agentic.policy import check
@@ -164,7 +166,14 @@ async def run_agent_loop(
         prompt = _transcript(system, turns, user_message)
         try:
             raw = await _ask(prompt, providers, max_tokens, tenant, requester)
-        except ProviderError as exc:
+        except (ProviderError, HTTPException) as exc:
+            # Both shapes mean the same thing to the person waiting: nobody
+            # answered. The cascade raises ProviderError when every provider
+            # failed permanently, and a structured 503 when they were merely
+            # rate-limited — and the 503 is the one that actually happens on a
+            # busy day. Letting it escape from inside a stream that has already
+            # started kills the connection mid-flight, and the customer is left
+            # watching a chat that never finishes and never explains itself.
             yield AgentEvent("agent-error", {"reason": "all_providers_failed",
                                              "detail": str(exc)})
             return

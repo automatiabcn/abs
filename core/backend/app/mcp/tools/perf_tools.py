@@ -3,9 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""021 — Performance benchmark MCP tool.
+"""Performance benchmark MCP tool.
 
-`perf_summary` — son benchmark çalıştırma sonuçlarını okur (benchmarks/results/*.json).
+`perf_summary` only reads the JSON left behind by the last benchmark run
+(benchmarks/results/*.json) — it never runs a benchmark itself.
 """
 
 from __future__ import annotations
@@ -39,7 +40,7 @@ def _read_json_safe(path: Path) -> dict:
 @mcp_server.tool()
 @with_hooks("perf_summary")
 async def perf_summary() -> str:
-    """Son performance benchmark çalıştırmaları (cascade + vault + symbol + watchdog)."""
+    """Results of the last benchmark run (cascade, vault, symbol, watchdog)."""
     await tracker.bump("perf_summary")
     base = _benchmarks_dir()
     out = {

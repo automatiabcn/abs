@@ -48,9 +48,12 @@ def test_faq_min_300_words_and_15_questions():
     assert len(h3_lines) >= 15
 
 
-def test_changelog_includes_recent_tasks():
+def test_changelog_documents_every_shipped_version():
+    # This used to check for our internal task ids ("Task 010"). A customer
+    # reading the changelog needs the versions they can actually install, and a
+    # public repo should not carry our task numbering at all.
     p = _docs_dir() / "CHANGELOG.md"
     assert p.is_file()
     text = p.read_text(encoding="utf-8")
-    for marker in ("Task 010", "Task 015", "Task 017", "Task 019"):
-        assert marker in text, f"changelog'da {marker} eksik"
+    for version in ("## 1.0.6", "## 1.0.4", "## 1.0.3", "## 1.0.1", "## 1.0.0", "## 0.1.0"):
+        assert version in text, f"CHANGELOG.md no longer documents {version}"

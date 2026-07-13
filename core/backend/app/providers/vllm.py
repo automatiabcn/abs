@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""vLLM provider — self-host cluster (OpenAI-uyumlu)."""
+"""vLLM provider — self-hosted cluster, OpenAI-compatible API."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ class VllmProvider(BaseProvider):
     ) -> ProviderResponse:
         if not settings.vllm_url:
             raise ProviderError(
-                "VLLM_URL tanımlı değil", provider=self.name, transient=False
+                "VLLM_URL is not configured", provider=self.name, transient=False
             )
         base = settings.vllm_url.rstrip("/")
         return await openai_compatible_chat(

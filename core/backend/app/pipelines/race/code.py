@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""race_code: CF Kimi K2.5 vs Groq GPT-OSS 120B — kod için."""
+"""Race_code: CF Kimi K2.5 vs Groq GPT-OSS 120B, first usable answer wins."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ class RaceCodePipeline(BasePipeline):
                 final_response="",
                 total_elapsed_ms=elapsed,
                 prompt=prompt,
-                error="Kod yarışını kimse kazanmadı",
+                error="No provider produced code",
             )
 
         name, resp = winner

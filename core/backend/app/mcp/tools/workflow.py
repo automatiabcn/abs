@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Workflow durability MCP tool'ları — workflow_status (real) + workflow_resume."""
+"""Workflow durability MCP tools — status and resume."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ REGISTERED_TOOLS: List[str] = []
 @mcp_server.tool()
 @with_hooks("workflow_status")
 async def workflow_status() -> str:
-    """Workflow durability snapshot — toplam, by_status, son 5 + db_size_kb."""
+    """Durability snapshot — totals, by_status, running workflows, db_size_kb."""
     await tracker.bump("workflow_status")
     s = stats()
     s["active_workflows"] = list_workflows(limit=10, status="running")
@@ -31,7 +31,8 @@ async def workflow_status() -> str:
 @mcp_server.tool()
 @with_hooks("workflow_resume")
 async def workflow_resume(trace_id: str) -> str:
-    """Bir workflow'un son başarılı adımdan devam state'ini döndür."""
+    """Resume state for a workflow: where it can restart from without redoing
+    the steps that already succeeded."""
     await tracker.bump("workflow_resume")
     return json.dumps(resume(trace_id), ensure_ascii=False, indent=2)
 

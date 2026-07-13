@@ -36,24 +36,23 @@ from app.db.session import get_engine
 def _consent_flags(status: str) -> dict | None:
     """Map a contact's consent label → Consent Ledger channel flags.
 
-    Drives the Stage E action gate: 'izinli/opt-in' → all channels; 'kısmi' →
-    email only; 'yok/opt-out' → none (opted out); blank → no record (fail-closed)."""
+    Drives the Stage E action gate: 'opt-in' → all channels; 'partial' → email
+    only; 'opt-out' → none (opted out); blank → no record (fail-closed)."""
     s = (status or "").strip().lower()
     if not s:
         return None
-    if "yok" in s or "opt-out" in s:
+    if "opt-out" in s:
         return {"email_consent": False, "phone_consent": False, "sms_consent": False,
                 "whatsapp_consent": False, "legal_basis": "", "opted_out": True}
-    if "kısmi" in s or "kismi" in s:
+    if "partial" in s:
         return {"email_consent": True, "phone_consent": False, "sms_consent": False,
                 "whatsapp_consent": False, "legal_basis": "legitimate_interest", "opted_out": False}
-    # izinli / opt-in / opt-in (İYS)
     return {"email_consent": True, "phone_consent": True, "sms_consent": True,
             "whatsapp_consent": True, "legal_basis": "consent", "opted_out": False}
 
 logger = logging.getLogger(__name__)
 
-_SENTINEL = "Demirel Yapı A.Ş."
+_SENTINEL = "Northgate Construction Ltd."
 
 
 def _now() -> datetime:
@@ -63,51 +62,51 @@ def _now() -> datetime:
 # Company, sector, lead score/intent/consent, recommended_action, score breakdown.
 _COMPANIES = [
     {
-        "name": "Demirel Yapı A.Ş.", "sector": "İnşaat", "score": 0.87, "intent": "high",
-        "consent": "izinli", "vkn": "1234567890", "domain": "demirelyapi.com.tr",
-        "evidence": ["Pricing-page 3x ziyaret", "İş ilanı +4 (satınalma)", "ERP'de tekrar sipariş"],
+        "name": "Northgate Construction Ltd.", "sector": "Construction", "score": 0.87, "intent": "high",
+        "consent": "opt-in", "vkn": "1234567890", "domain": "northgate-construction.com",
+        "evidence": ["Pricing page visited 3x", "Job postings +4 (procurement)", "Repeat order in ERP"],
         "merged_count": 3, "match_confidence": 0.96, "lifecycle": "customer",
         "opportunities": [
-            {"name": "Q2 PVC projesi", "stage": "proposal", "amount": 420000, "campaign": "Meta Ads · Q2"},
-            {"name": "Geçmiş teklif", "stage": "closed_won", "amount": 180000, "campaign": ""},
+            {"name": "Q2 window systems project", "stage": "proposal", "amount": 420000, "campaign": "Meta Ads · Q2"},
+            {"name": "Prior quote", "stage": "closed_won", "amount": 180000, "campaign": ""},
         ],
         "score_criteria": {
-            "ICP uyumu": 0.92, "Satın alma ihtimali": 0.84, "Bütçe potansiyeli": 0.78,
-            "Intent sinyali": 0.90, "Hizmet ihtiyacı": 0.81, "CRM geçmişi": 0.70,
-            "ERP geçmişi (tekrar satın)": 0.88, "Zamanlama uygunluğu": 0.86,
-            "İletişim izni": 1.0, "Veri güven skoru": 0.96,
+            "ICP fit": 0.92, "Purchase likelihood": 0.84, "Budget potential": 0.78,
+            "Intent signal": 0.90, "Service need": 0.81, "CRM history": 0.70,
+            "ERP history (repeat purchase)": 0.88, "Timing fit": 0.86,
+            "Contact consent": 1.0, "Data confidence": 0.96,
         },
         "lead_evidence": [
-            {"kind": "rag", "ref": "Geçmiş benzer müşteri teklifi · proposal-archive"},
-            {"kind": "graph", "ref": "Account→2 Opportunity · geçmiş ₺420K fatura (ERP)"},
-            {"kind": "signal", "ref": "Pricing-page ziyareti + iş ilanı artışı (+4)"},
+            {"kind": "rag", "ref": "Quote to a comparable past customer · proposal-archive"},
+            {"kind": "graph", "ref": "Account→2 Opportunity · $420K invoiced previously (ERP)"},
+            {"kind": "signal", "ref": "Pricing page visit + job postings up (+4)"},
         ],
         "buying_group": [
-            {"name": "M. Demirel", "role": "decision_maker"},
-            {"name": "Finans Yetkilisi", "role": "finance_approver"},
-            {"name": "Teknik Değerlendirici 1", "role": "technical_evaluator"},
-            {"name": "Asistan", "role": "gatekeeper"},
+            {"name": "M. Harding", "role": "decision_maker"},
+            {"name": "Finance Approver", "role": "finance_approver"},
+            {"name": "Technical Evaluator 1", "role": "technical_evaluator"},
+            {"name": "Assistant", "role": "gatekeeper"},
         ],
     },
     {
-        "name": "Kaya İnşaat", "sector": "İnşaat", "score": 0.64, "intent": "medium",
-        "consent": "izinli", "vkn": "2345678901", "domain": "kayainsaat.com",
-        "evidence": ["Pricing-page ziyareti", "LinkedIn etkileşim"],
+        "name": "Stonebridge Builders", "sector": "Construction", "score": 0.64, "intent": "medium",
+        "consent": "opt-in", "vkn": "2345678901", "domain": "stonebridgebuilders.com",
+        "evidence": ["Pricing page visit", "LinkedIn engagement"],
     },
     {
-        "name": "Tekno Mühendislik", "sector": "Üretim", "score": 0.58, "intent": "medium",
-        "consent": "kısmi", "vkn": "3456789012", "domain": "teknomuh.com",
-        "evidence": ["Demo formu #2841", "Web crawl: yeni ürün hattı"],
+        "name": "Technova Engineering", "sector": "Manufacturing", "score": 0.58, "intent": "medium",
+        "consent": "partial", "vkn": "3456789012", "domain": "technova-eng.com",
+        "evidence": ["Demo form #2841", "Web crawl: new product line"],
     },
     {
-        "name": "Mavi Lojistik", "sector": "Lojistik", "score": 0.31, "intent": "watching",
-        "consent": "yok", "vkn": "4567890123", "domain": "mavilojistik.com",
-        "evidence": ["Yeni lokasyon açılışı"],
+        "name": "Bluewave Logistics", "sector": "Logistics", "score": 0.31, "intent": "watching",
+        "consent": "opt-out", "vkn": "4567890123", "domain": "bluewavelogistics.com",
+        "evidence": ["New location opening"],
     },
     {
-        "name": "Tekno A.Ş.", "sector": "Üretim", "score": 0.52, "intent": "medium",
-        "consent": "izinli", "vkn": "5678901234", "domain": "tekno.com.tr",
-        "evidence": ["İş ilanı artışı +4", "Sektör raporu eşleşmesi"],
+        "name": "Technova Group", "sector": "Manufacturing", "score": 0.52, "intent": "medium",
+        "consent": "opt-in", "vkn": "5678901234", "domain": "technova-group.com",
+        "evidence": ["Job postings up +4", "Sector report match"],
     },
 ]
 
@@ -116,73 +115,73 @@ _COMPANIES = [
 # (latest run per agent), so AEO / campaign / CRM / signals are data-derived
 # rather than hardcoded in the dashboard service.
 _RUNS = [
-    ("lead_discovery", "İstanbul bölgesinde 12 yeni ICP-uyumlu firma buldu · enrichment kuyruğuna alındı", "low", False, 2, 0.0, {}),
-    ("lead_scoring", '"Demirel Yapı A.Ş." skorladı → 0.87 (yüksek) · 14 kanıt · top-3 RAG kaynak iliştirildi', "medium", False, 5, 0.87, {}),
-    ("inbound_triage", 'Gelen talebi sınıfladı → "pricing_request" · cevap taslağı + CRM notu üretildi', "medium", True, 8, 0.79, {"intent": "pricing_request"}),
-    ("competitive_intel", "Rakip fiyat değişikliği yakaladı · Battlecard Agent tetiklendi", "low", False, 14, 0.0, {}),
-    ("aeo_visibility", "AI-cevaplarında 2 kategoride görünürlük düşüşü tespit etti · içerik-boşluk raporu üretildi", "low", False, 22, 0.0,
+    ("lead_discovery", "Found 12 new ICP-matching companies in the region · queued for enrichment", "low", False, 2, 0.0, {}),
+    ("lead_scoring", '"Northgate Construction Ltd." scored → 0.87 (high) · 14 pieces of evidence · top-3 RAG sources attached', "medium", False, 5, 0.87, {}),
+    ("inbound_triage", 'Classified an inbound request → "pricing_request" · reply draft + CRM note generated', "medium", True, 8, 0.79, {"intent": "pricing_request"}),
+    ("competitive_intel", "Caught a competitor price change · Battlecard Agent triggered", "low", False, 14, 0.0, {}),
+    ("aeo_visibility", "Detected a visibility drop in 2 categories of AI answers · content-gap report generated", "low", False, 22, 0.0,
      {"visibility_pct": 41, "down_categories": 2, "categories_total": 8, "recommended": 3}),
-    ("buying_signal", "16 sinyal türü tarandı · 5 yeni buying-signal füzyonlandı", "low", False, 28, 0.0,
+    ("buying_signal", "Scanned 16 signal types · fused 5 new buying signals", "low", False, 28, 0.0,
      {"signals": [
-         {"icon": "🔥", "label": "Pricing-page ziyareti", "company": "Kaya İnşaat"},
-         {"icon": "📈", "label": "İş ilanı artışı +4", "company": "Tekno A.Ş."},
-         {"icon": "🎯", "label": "Demo talebi", "company": "Form #2841"},
-         {"icon": "🏢", "label": "Yeni lokasyon", "company": "Mavi Lojistik"},
-         {"icon": "↻", "label": "Tekrar satın alma", "company": "ERP · 3 müşteri"},
+         {"icon": "🔥", "label": "Pricing page visit", "company": "Stonebridge Builders"},
+         {"icon": "📈", "label": "Job postings up +4", "company": "Technova Group"},
+         {"icon": "🎯", "label": "Demo request", "company": "Form #2841"},
+         {"icon": "🏢", "label": "New location", "company": "Bluewave Logistics"},
+         {"icon": "↻", "label": "Repeat purchase", "company": "ERP · 3 customers"},
      ], "signal_types": 16}),
-    ("campaign_attribution", "Q2 kampanya → gelir eşlemesi · Meta Ads en yüksek dönüşüm · ERP-doğrulamalı", "medium", False, 35, 0.0,
-     {"attributed_revenue": 1240000, "currency": "₺", "top_channel": "Meta Ads", "period": "Q2"}),
-    ("crm_hygiene", "CRM tarandı · 11 düzeltme önerisi (duplicate + eksik alan)", "medium", False, 45, 0.0,
+    ("campaign_attribution", "Q2 campaign → revenue mapping · Meta Ads converts best · ERP-verified", "medium", False, 35, 0.0,
+     {"attributed_revenue": 1240000, "currency": "$", "top_channel": "Meta Ads", "period": "Q2"}),
+    ("crm_hygiene", "Scanned the CRM · 11 suggested fixes (duplicates + missing fields)", "medium", False, 45, 0.0,
      {"health_pct": 86, "fix_suggestions": 11}),
 ]
 
 # Pending approvals. The first two are detailed cards; the rest populate the
-# "Kuyruk (5 daha)" queue table. `evidence` items are {kind, ref} so the card
-# can split KANIT·RAG / KANIT·GRAPH / CONSENT / POLICY like the mockup.
+# "queue (5 more)" table. `evidence` items are {kind, ref} so the card can split
+# EVIDENCE·RAG / EVIDENCE·GRAPH / CONSENT / POLICY.
 _APPROVALS = [
     {
-        "agent_id": "inbound_triage", "risk": "medium", "consent": "izinli",
-        "policy": "requires_approval", "company": "Demirel Yapı A.Ş.", "channel": "email", "mins": 8,
-        "action": '"Demirel Yapı A.Ş." pricing talebine kaynak-gösteren cevap taslağı → email gönderimi + CRM notu',
-        "rationale": 'Gelen talep "pricing_request" sınıflandı (0.94 güven). Müşteri ICP-uyumlu, daha önce 2 kez teklif aldı. Standart fiyat politikası + benzer müşteri teklif geçmişi kullanıldı.',
-        "message": "Merhaba, talebiniz için teşekkürler. Premium PVC seriniz için fiyat aralığımız [1] ve uygulama süreci [2] ektedir. Önceki projenize benzer bir çözüm önerebiliriz…",
+        "agent_id": "inbound_triage", "risk": "medium", "consent": "opt-in",
+        "policy": "requires_approval", "company": "Northgate Construction Ltd.", "channel": "email", "mins": 8,
+        "action": 'Cited reply draft for the "Northgate Construction Ltd." pricing request → send email + CRM note',
+        "rationale": 'The inbound request was classified "pricing_request" (0.94 confidence). The customer matches the ICP and has received 2 quotes before. Drafted from the standard pricing policy plus quote history for comparable customers.',
+        "message": "Hello, thanks for reaching out. Attached are our price range for the premium series [1] and the installation process [2]. We can propose a solution close to the one from your previous project…",
         "evidence": [
-            {"kind": "rag", "ref": "[1] fiyat-politikasi.pdf"},
-            {"kind": "rag", "ref": "[2] uygulama-sureci.docx"},
-            {"kind": "graph", "ref": "Account→2 Opportunity geçmiş teklif"},
+            {"kind": "rag", "ref": "[1] pricing-policy.pdf"},
+            {"kind": "rag", "ref": "[2] installation-process.docx"},
+            {"kind": "graph", "ref": "Account→2 Opportunity prior quote"},
         ],
     },
     {
-        "agent_id": "outbound_draft", "risk": "high", "consent": "opt-in (İYS)",
-        "policy": "requires approval + audit", "company": "Kaya İnşaat", "channel": "email", "mins": 21,
-        "action": '"Kaya İnşaat" karar-vericisine outbound email (buying-signal: pricing-page ziyareti)',
-        "rationale": "Lead skoru 0.81. Pricing-page ziyareti + iş ilanı artışı sinyali. Consent İYS'de doğrulandı, opt-in kaynağı: web formu. Domain reputation sağlıklı, bounce %0.4.",
-        "message": "Merhaba, inşaat projeleriniz için PVC çözümlerimizi 2 dakikada özetleyebilir miyim?",
+        "agent_id": "outbound_draft", "risk": "high", "consent": "opt-in", "policy": "requires approval + audit",
+        "company": "Stonebridge Builders", "channel": "email", "mins": 21,
+        "action": 'Outbound email to the "Stonebridge Builders" decision maker (buying signal: pricing page visit)',
+        "rationale": "Lead score 0.81. Pricing page visit plus a rise in job postings. Consent verified in the consent registry, opt-in source: web form. Domain reputation is healthy, bounce rate 0.4%.",
+        "message": "Hello, may I summarise our solutions for your construction projects in 2 minutes?",
         "evidence": [
-            {"kind": "consent", "ref": "email izni · 2026-03 İYS kayıtlı"},
+            {"kind": "consent", "ref": "email consent · registered 2026-03"},
             {"kind": "policy", "ref": "requires approval + audit"},
         ],
     },
-    # ── Kuyruk (5 daha) ──
+    # ── queue (5 more) ──
     {"agent_id": "crm_hygiene", "risk": "medium", "consent": "", "policy": "approval",
-     "company": "", "channel": "", "mins": 30, "action": "11 duplicate birleştir", "rationale": "", "message": "", "evidence": []},
+     "company": "", "channel": "", "mins": 30, "action": "Merge 11 duplicates", "rationale": "", "message": "", "evidence": []},
     {"agent_id": "campaign_attribution", "risk": "medium", "consent": "", "policy": "approval",
-     "company": "", "channel": "", "mins": 40, "action": "CRM opportunity alan-güncelle", "rationale": "", "message": "", "evidence": []},
+     "company": "", "channel": "", "mins": 40, "action": "Update CRM opportunity fields", "rationale": "", "message": "", "evidence": []},
     {"agent_id": "social_strategy", "risk": "medium", "consent": "", "policy": "approval",
-     "company": "", "channel": "", "mins": 52, "action": "reklam audience önerisi", "rationale": "", "message": "", "evidence": []},
-    {"agent_id": "voice_call", "risk": "high", "consent": "kısmi", "policy": "consent check",
-     "company": "Tekno Mühendislik", "channel": "voice", "mins": 64, "action": "outbound arama önerisi (10 lead)", "rationale": "", "message": "", "evidence": []},
+     "company": "", "channel": "", "mins": 52, "action": "Ad audience suggestion", "rationale": "", "message": "", "evidence": []},
+    {"agent_id": "voice_call", "risk": "high", "consent": "partial", "policy": "consent check",
+     "company": "Technova Engineering", "channel": "voice", "mins": 64, "action": "Outbound call suggestion (10 leads)", "rationale": "", "message": "", "evidence": []},
     {"agent_id": "outbound_draft", "risk": "high", "consent": "opt-in", "policy": "approval+audit",
-     "company": "Mavi Lojistik", "channel": "whatsapp", "mins": 75, "action": "WhatsApp şablon mesajı", "rationale": "", "message": "", "evidence": []},
+     "company": "Bluewave Logistics", "channel": "whatsapp", "mins": 75, "action": "WhatsApp template message", "rationale": "", "message": "", "evidence": []},
 ]
 
 _CONNECTORS = ["parasut", "hubspot", "gmail"]
 
 # Workflow run history — (name, trigger, step_count, status, approvals, elapsed_ms, mins_ago).
 _WORKFLOW_RUNS = [
-    ("Inbound → Cevap Taslağı", "web form", 7, "done", 1, 4200, 12),
-    ("Inbound → Cevap Taslağı", "email", 7, "partial", 1, 2100, 34),
-    ("Inbound → Cevap Taslağı", "WhatsApp", 7, "done", 0, 5000, 58),
+    ("Inbound → Reply Draft", "web form", 7, "done", 1, 4200, 12),
+    ("Inbound → Reply Draft", "email", 7, "partial", 1, 2100, 34),
+    ("Inbound → Reply Draft", "WhatsApp", 7, "done", 0, 5000, 58),
 ]
 
 
@@ -222,13 +221,13 @@ def seed_growth_demo(tenant_slug: str = "default", *, force: bool = False) -> di
             for op in c.get("opportunities", []):
                 db.add(Opportunity(
                     tenant_slug=tenant, company_id=company.id, name=op["name"],
-                    stage=op["stage"], amount=op["amount"], currency="TRY",
+                    stage=op["stage"], amount=op["amount"], currency="USD",
                     campaign=op.get("campaign", ""),
                 ))
             db.commit()
 
             # Buying group: a rich set for the flagship lead, else one contact.
-            bg = c.get("buying_group") or [{"name": f"{c['name'].split()[0]} Yetkili", "role": "purchasing"}]
+            bg = c.get("buying_group") or [{"name": f"{c['name'].split()[0]} Buyer", "role": "purchasing"}]
             flags = _consent_flags(c["consent"])
             for member in bg:
                 email = f"{member['role']}@{c.get('domain', 'example.com')}"

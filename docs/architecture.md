@@ -1,179 +1,175 @@
-# Automatia ABS — Mimari
+# Automatia ABS — Architecture
 
-Bu belge, ABS'nin teknik mimarisini tanımlar: bileşenler, veri akışı, güvenlik, çalışma akışı, teknoloji seçimleri ve ölçekleme planı.
+This document defines the technical architecture of ABS: components, data flow, security, the customer workflow, technology choices and the scaling plan.
 
-## 1. Genel Mimari Diyagramı
+## 1. Overall Architecture
 
 ```
-┌──────────────── Müşteri Linux Sunucusu (Docker Compose) ────────────────┐
+┌────────────── Customer Linux Server (Docker Compose) ────────────────────┐
 │                                                                          │
-│  Caddy (reverse proxy + Let's Encrypt otomatik SSL)                      │
-│   ├─ /                    → Landing redirect (varsa)                     │
-│   ├─ /login               → Basit admin auth (lisans key'li)             │
-│   ├─ /panel               → Mevcut HTML panel (D hibrit, 7550 satır)     │
-│   ├─ /admin               → Next.js micro-app (opsiyonel)                │
+│  Caddy (reverse proxy + automatic Let's Encrypt SSL)                     │
+│   ├─ /                    → Landing redirect (if present)                │
+│   ├─ /login               → Simple admin auth (licence key)              │
+│   ├─ /panel               → HTML panel (7550 lines)                      │
+│   ├─ /admin               → Next.js micro-app (optional)                 │
 │   ├─ /api                 → Python orchestration backend                 │
-│   ├─ /stream              → SSE (5 event type: metrics, orch, cohere,    │
+│   ├─ /stream              → SSE (5 event types: metrics, orch, cohere,   │
 │   │                         mcp-tools, quota-status)                     │
-│   └─ /mcp                 → MCP endpoint (Claude Code bağlanır)          │
+│   └─ /mcp                 → MCP endpoint (Claude Code connects here)     │
 │                                                                          │
 │  ABS Orchestrator (Python backend)                                       │
-│   ├─ 75 MCP tool (abs_mcp_server port)                                   │
-│   ├─ 5 hook modülü (feature_nudge, delegate_nudge, plan_first,           │
+│   ├─ 75 MCP tools (abs_mcp_server port)                                  │
+│   ├─ 5 hook modules (feature_nudge, delegate_nudge, plan_first,          │
 │   │  rag_inject, enrichment)                                             │
-│   ├─ 13 quality pipeline (qual-code, qual-tr, qual-analysis, ...)        │
-│   ├─ Senior Judge (AST %60 + LLM %40)                                    │
+│   ├─ 13 quality pipelines (qual-code, qual-tr, qual-analysis, ...)       │
+│   ├─ Senior Judge (AST 60% + LLM 40%)                                    │
 │   ├─ Workflow durability (SQLite checkpoint)                             │
-│   ├─ Symbol-aware RAG (10K sembol + 13K callsite)                        │
+│   ├─ Symbol-aware RAG (10K symbols + 13K callsites)                      │
 │   ├─ Cache hit counter                                                   │
 │   └─ Cohere threshold alert                                              │
 │                                                                          │
 │  SQLite DB (MVP, single-user)                                            │
-│  age/sops encrypted secrets volume (API key'ler)                         │
-│  Ollama container (opsiyonel, yerel LLM fallback)                        │
+│  age/sops encrypted secrets volume (API keys)                            │
+│  Ollama container (optional, local LLM fallback)                         │
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
             │
-            ├─── Geliştirici CLI (Claude Code) ── local machine
+            ├─── Developer CLI (Claude Code) ── local machine
             │    `claude mcp add abs https://abs.domain.com/mcp`
             │
-            └─── Web tarayıcı (panel) ── her cihaz
+            └─── Web browser (panel) ── any device
                  https://abs.domain.com/panel
 ```
 
-## 2. Bileşen Detayları
+## 2. Components
 
-| Bileşen | Ne yapar | Kaynak |
+| Component | What it does | Source |
 |---|---|---|
-| Caddy | Reverse proxy, otomatik HTTPS (Let's Encrypt), forward_auth | Upstream |
-| Python Orchestrator | Asıl iş mantığı (MCP + hook + pipeline + cascade + judge + RAG) | SERVER port |
+| Caddy | Reverse proxy, automatic HTTPS (Let's Encrypt), forward_auth | Upstream |
+| Python Orchestrator | The core logic (MCP + hooks + pipelines + provider chain + judge + RAG) | Built-in |
 | SQLite DB | Workflow state + judge log + cache metadata + audit | Native |
-| age/sops | Encrypted secrets at rest (API key, lisans key) | Native |
-| Ollama | Yerel LLM fallback, opsiyonel (GPU varsa performanslı) | Upstream |
-| Mevcut panel HTML | 7550 satır D hibrit, auth proxy arkasına alınır | SERVER port |
-| Next.js admin | Opsiyonel mikro-app — lisans yönetim, provider config UI | Yeni |
+| age/sops | Encrypted secrets at rest (API keys, licence key) | Native |
+| Ollama | Local LLM fallback, optional (fast when a GPU is present) | Upstream |
+| HTML panel | 7550 lines, served behind the auth proxy | Built-in |
+| Next.js admin | Optional micro-app — licence management, provider config UI | New |
 
-## 3. Erişim ve Endpoint Tablosu
+## 3. Access and Endpoints
 
-| URL | Kim erişir | Amaç |
+| URL | Who reaches it | Purpose |
 |---|---|---|
-| `https://abs.domain.com/panel` | Admin (login sonrası) | Dashboard, cosmos, widget'lar |
-| `https://abs.domain.com/admin` | Admin | Lisans, provider, ayar |
-| `https://abs.domain.com/api/*` | İçeriden (panel, CLI) | REST API |
-| `https://abs.domain.com/stream` | İçeriden (panel) | SSE real-time events |
+| `https://abs.domain.com/panel` | Admin (after login) | Dashboard, cosmos, widgets |
+| `https://abs.domain.com/admin` | Admin | Licence, providers, settings |
+| `https://abs.domain.com/api/*` | Internal (panel, CLI) | REST API |
+| `https://abs.domain.com/stream` | Internal (panel) | SSE real-time events |
 | `https://abs.domain.com/mcp` | Claude Code, custom CLI | MCP endpoint |
-| `https://abs.domain.com:443` | Caddy tüm trafik | Otomatik SSL |
+| `https://abs.domain.com:443` | Caddy, all traffic | Automatic SSL |
 
-## 4. Provider Cascade — 7 Katmanlı Koruma
+## 4. Provider Chain — 7 Layers of Protection
 
 ```
 1. Abstraction Layer
-   Müşteri kodu: model="fast-reasoning"
+   Customer code: model="fast-reasoning"
    ABS config: model_alias_map → provider + model_id
-   (Provider değişince JSON güncellenir, kod dokunulmaz)
+   (When a provider changes, the JSON is updated — the code is untouched)
          ↓
 2. Circuit Breaker
-   5 hata / 1dk → "open" state (60s)
-   Half-open: test → full recovery veya tekrar open
+   5 errors / 1 min → "open" state (60s)
+   Half-open: test → full recovery, or open again
          ↓
-3. Cascade Fallback
+3. Provider Chain Fallback
    Groq → Cerebras → CloudFlare → Gemini → Anthropic
-   (müşteri config'ten sıra ayarlanır)
+   (the order is set in the customer's config)
          ↓
-4. Semantic Cache (SHA-256 prompt hash, 5dk TTL)
-   Provider yavaş/down → cache'ten dön
+4. Semantic Cache (SHA-256 prompt hash, 5 min TTL)
+   Provider slow/down → answer from the cache
          ↓
-5. Health Monitor (müşteri sunucusunda, 60s ping)
-   Status panel'de anlık: yeşil/sarı/kırmızı
+5. Health Monitor (on the customer's server, 60s ping)
+   Live status in the panel: green/amber/red
          ↓
-6. Central Watchdog (bizim tarafta, günde 1)
+6. Central Watchdog (vendor side, once a day)
    Provider pricing + changelog + status + synthetic test
          ↓
 7. Update Channel (release-based)
-   provider_configs/*.yaml güncellemesi release'e dahil
+   provider_configs/*.yaml updates ship with the release
 ```
 
-Detay: `docs/operations.md` § 2-5.
+Detail: `docs/operations.md` § 2-5.
 
-## 5. Güvenlik Katmanı
+## 5. Security
 
-| Katman | Mekanizma |
+| Layer | Mechanism |
 |---|---|
-| **API key storage** | age/sops encrypted at rest. Memory'de clear text tutulmaz |
-| **Transport** | Caddy + Let's Encrypt otomatik HTTPS |
-| **Auth** | Admin login (lisans key'li, JWT session) |
-| **Audit log** | Kim ne zaman hangi key'i ekledi/değiştirdi |
-| **Data residency** | Müşteri kodu ABS sunucusunda kalır; provider API'ye gider (müşteri kendi hesabıyla) |
-| **Lisans doğrulama** | JWT RS256 imza, phone-home yok, offline çalışır |
-| **Secret rotation** | Panel'den tek tık |
+| **API key storage** | age/sops encrypted at rest. Never held in memory as cleartext |
+| **Transport** | Caddy + automatic Let's Encrypt HTTPS |
+| **Auth** | Admin login (licence key, JWT session) |
+| **Audit log** | Who added or changed which key, and when |
+| **Data residency** | Customer code stays on the ABS server; it goes to the provider API under the customer's own account |
+| **Licence verification** | JWT RS256 signature, no phone-home, works offline |
+| **Secret rotation** | One click from the panel |
 
-**Önemli:** ABS bulut sunucumuza **hiçbir müşteri verisi gelmez**. Sadece lisans key doğrulama sinyali (hash-based) bizim watchdog'a ulaşır. Prompt'lar ve kod doğrudan müşteri sunucusundan provider API'lerine gider.
+**Important:** **no customer data ever reaches our cloud server.** Only the licence key verification signal (hash-based) reaches our watchdog. Prompts and code go straight from the customer's server to the provider APIs.
 
-## 6. Müşteri Çalışma Akışı
+## 6. Customer Workflow
 
-**Kurulum:**
-1. Müşteri Linux sunucu kiralar (Hetzner, DO, AWS vb.)
+**Installation:**
+1. The customer rents a Linux server (Hetzner, DO, AWS, etc.)
 2. `curl -fsSL https://get.abs.automatiabcn.com/install.sh | bash`
-3. Docker + Docker Compose + ABS container'ları kurulur (~5 dk)
-4. Browser'da `https://sunucu-ip:8443/setup` açılır
-5. 6 adım wizard (admin + lisans + domain/IP + Anthropic key + opsiyonel provider + test)
+3. Docker, Docker Compose and the ABS containers are installed (~5 min)
+4. Open `https://server-ip:8443/setup` in a browser
+5. A 6-step wizard (admin + licence + domain/IP + Anthropic key + optional providers + test)
 
-**Günlük kullanım:**
-1. Geliştirici kendi makinesinde `claude mcp add abs https://abs.company.com/mcp`
-2. Terminal'de `claude` açar
-3. Prompt gönderir → Claude Code MCP üzerinden ABS'ye iletir
-4. ABS **abstraction layer** → **circuit breaker** → **cascade** → provider
-5. Yanıt geri döner, ABS'den Claude Code'a
-6. Panel'de log + metrics + widget güncellenir
+**Daily use:**
+1. The developer runs `claude mcp add abs https://abs.company.com/mcp` on their own machine
+2. They open `claude` in a terminal
+3. They send a prompt → Claude Code forwards it to ABS over MCP
+4. ABS goes **abstraction layer** → **circuit breaker** → **provider chain** → provider
+5. The answer comes back from ABS to Claude Code
+6. The log, metrics and widgets in the panel update
 
 **Monitoring:**
-1. Admin panel'den provider status izler
-2. Audit log görünür
-3. Budget tracker (Anthropic API kullanımı)
-4. Judge skorları, workflow durumları
+1. The admin watches provider status from the panel
+2. The audit log is visible
+3. Budget tracker (Anthropic API usage)
+4. Judge scores, workflow states
 
-## 7. Teknoloji Stack
+## 7. Technology Stack
 
-| Katman | Teknoloji | Neden |
+| Layer | Technology | Why |
 |---|---|---|
-| Reverse proxy | **Caddy** | Otomatik HTTPS, basit Caddyfile |
-| Backend | **Python 3.11+** | SERVER ile aynı, port kolay |
-| Database | **SQLite (MVP)** → **PostgreSQL (Faz 2+)** | Single-user basit, multi-tenant sonra |
-| Auth | **Lucia** (MVP) → **Authentik** (Faz 2+) | MVP single-user, growth multi-user |
-| Admin UI | **Vanilla JS + Alpine.js** veya **SvelteKit** (Next.js ek) | Hafif, mevcut panel stili uyumlu |
-| Secrets | **age** + **sops** | Modern, basit, offline |
-| Container | **Docker Compose** | Tek dosya, dev/prod aynı |
-| LLM fallback | **Ollama** (Linux, Apple Silicon MLX yerine) | Cross-platform |
+| Reverse proxy | **Caddy** | Automatic HTTPS, simple Caddyfile |
+| Backend | **Python 3.11+** | Matches the orchestration code |
+| Database | **SQLite (MVP)** → **PostgreSQL (Phase 2+)** | Simple for single-user; multi-organisation later |
+| Auth | **Lucia** (MVP) → **Authentik** (Phase 2+) | MVP is single-user; growth needs multi-user |
+| Admin UI | **Vanilla JS + Alpine.js** or **SvelteKit** (in addition to Next.js) | Lightweight, consistent with the existing panel style |
+| Secrets | **age** + **sops** | Modern, simple, offline |
+| Container | **Docker Compose** | One file, identical in dev and prod |
+| LLM fallback | **Ollama** (Linux, instead of Apple Silicon MLX) | Cross-platform |
 
-## 8. Ölçekleme Yaklaşımı (MVP → Growth)
+## 8. Scaling Approach (MVP → Growth)
 
-### MVP (Ay 1-3): Single-User Self-Host
-- 1 kurulum = 1 kullanıcı
-- SQLite + Lucia + tek admin
-- Docker Compose tek dosya
-- Müşteri sayısı: 5-20
-- Tavan: kullanıcı başına 1 sunucu
+### MVP (Months 1-3): Single-User Self-Host
+- 1 installation = 1 user
+- SQLite + Lucia + a single admin
+- One Docker Compose file
+- Customers: 5-20
+- Ceiling: one server per user
 
-### Growth (Ay 3-6): Managed Cloud Beta
-- 3-5 beta müşteri bizim sunucumuzda
-- PostgreSQL schema-per-tenant
-- Basit admin dashboard (bizim tarafta)
+### Growth (Months 3-6): Managed Cloud Beta
+- 3-5 beta customers on our servers
+- PostgreSQL, one schema per organisation
+- A simple admin dashboard (on our side)
 - Automatic backup + monitoring
-- $79/ay fiyat (beta)
+- $79/month (beta pricing)
 
-### Scale (Ay 6-12): Managed Cloud Full
-- 20+ müşteri
+### Scale (Months 6-12): Managed Cloud, Full Launch
+- 20+ customers
 - PostgreSQL RLS (row-level security)
-- Authentik multi-tenant
-- Kubernetes değil (overkill solo için) — VPS + Caddy + Docker
-- Uptime %99.5+ SLA
+- Authentik with multi-organisation support
+- Not Kubernetes (overkill for a solo operator) — VPS + Caddy + Docker
+- 99.5%+ uptime SLA
 
-### Enterprise (Yıl 2+): VPC / On-Prem Dedicated
-- Müşteri kendi VPC'sinde dedicated ABS instance
-- Automatia managed (opsiyonel)
-- SOC 2 Type II hazırlığı
+### Enterprise (Year 2+): VPC / On-Prem Dedicated
+- A dedicated ABS instance inside the customer's own VPC
+- Managed by Automatia (optional)
+- SOC 2 Type II preparation
 - Custom SLA
-
----
-
-Uygulama detayları `_agent-tasks/` altında task bazlı yazılacak.

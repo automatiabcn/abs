@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""029 Modul A — Customer-facing audit log API.
+"""Customer-facing audit log API.
 
 GET /v1/me/audit-log?limit=50&offset=0  (Bearer license_key)
 """

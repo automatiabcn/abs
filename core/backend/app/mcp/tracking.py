@@ -3,10 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""MCP tool kullanım sayacı — panel feat-grid + budget için.
+"""In-process MCP tool usage counter — feeds the panel feature grid and budget.
 
-016 — `bump(name, tokens_in=N, tokens_out=M)` token aggregation. Geriye uyumlu:
-eski `bump(name)` çağrıları (tokens_in=0, tokens_out=0) hâlâ çalışır.
+Token arguments to `bump()` are optional, so callers that only count calls keep
+working and simply contribute zero tokens.
 """
 
 from __future__ import annotations
@@ -24,7 +24,6 @@ class ToolUsage:
     count_24h: int = 0
     last_called_at: float = 0.0
     recent_calls: List[float] = field(default_factory=list)  # monotonic timestamps
-    # 016 — token aggregation
     tokens_in_24h: int = 0
     tokens_out_24h: int = 0
 

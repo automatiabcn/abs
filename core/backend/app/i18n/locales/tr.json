@@ -1,5 +1,6 @@
 {
   "errors.stripe_not_configured": "Stripe yapılandırılmadı",
+  "errors.price_id_not_configured": "Price ID yapılandırılmadı: {sku}",
   "errors.signature_missing": "Stripe-Signature header eksik",
   "errors.signature_invalid": "İmza doğrulanamadı",
   "errors.payload_invalid": "Payload geçersiz",

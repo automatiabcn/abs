@@ -3,8 +3,8 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Batch E — 5 system + cache + patch tool (cache_stats, quota_status, model_health,
-code_fingerprint, preview_patch, apply_patch)."""
+"""System, cache and patch tools — cache_stats, quota_status, model_health,
+code_fingerprint, and the two patch tools (off by default, see the note below)."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ REGISTERED_TOOLS: List[str] = []
 @mcp_server.tool()
 @with_hooks("cache_stats")
 async def cache_stats() -> str:
-    """Semantic cache istatistikleri (hit/miss/entries/hit_rate)."""
+    """Semantic cache statistics (hit/miss/entries/hit_rate)."""
     await tracker.bump("cache_stats")
     return json.dumps(default_cache.stats(), ensure_ascii=False)
 
@@ -35,7 +35,7 @@ async def cache_stats() -> str:
 @mcp_server.tool()
 @with_hooks("quota_status")
 async def quota_status() -> str:
-    """Provider kota durumu (breaker state snapshot)."""
+    """Provider quota state, as seen through the circuit breakers."""
     await tracker.bump("quota_status")
     configured = {
         "groq": bool(settings.groq_api_key),
@@ -52,7 +52,7 @@ async def quota_status() -> str:
         {
             "configured": configured,
             "breakers": default_breaker.snapshot(),
-            "note": "Detaylı provider quota (RPM/TPM/TPD) 009+'da provider API'lerinden çekilecek.",
+            "note": "Breaker state only. Per-provider RPM/TPM/TPD is not fetched from the provider APIs.",
         },
         ensure_ascii=False,
         indent=2,
@@ -62,7 +62,7 @@ async def quota_status() -> str:
 @mcp_server.tool()
 @with_hooks("model_health")
 async def model_health() -> str:
-    """Basit model health skoru — breaker state üzerinden."""
+    """Health score per provider, derived from breaker state and failure count."""
     await tracker.bump("model_health")
     breakers = default_breaker.snapshot()
     results = {}
@@ -72,16 +72,16 @@ async def model_health() -> str:
         score = 10.0 if state == "closed" else (5.0 if state == "half_open" else 2.0)
         score -= min(fails * 0.5, 3.0)
         results[name] = {"state": state, "fail_count": fails, "health_score": max(0.0, score)}
-    # hiç çağrı olmamışsa default 10
+    # No calls yet is not ill health — report healthy rather than zero.
     if not results:
-        return json.dumps({"note": "henüz provider çağrısı yok", "default_health": 10.0})
+        return json.dumps({"note": "no provider calls yet", "default_health": 10.0})
     return json.dumps(results, ensure_ascii=False)
 
 
 @mcp_server.tool()
 @with_hooks("code_fingerprint")
 async def code_fingerprint(code: str) -> str:
-    """Kod için fingerprint: SHA-256 + satır/fonksiyon sayısı + basit metrikler."""
+    """Fingerprint a snippet: SHA-256, line count, and AST metrics."""
     await tracker.bump("code_fingerprint")
     from app.judge.ast_metrics import ast_metrics
 
@@ -100,7 +100,7 @@ async def code_fingerprint(code: str) -> str:
 
 @with_hooks("preview_patch")
 async def preview_patch(file_path: str, unified_diff: str) -> str:
-    """Unified diff'i dry-run uygula, success + reason döndür."""
+    """Dry-run a unified diff. Returns success plus the reason it would fail."""
     await tracker.bump("preview_patch")
     return json.dumps(_preview_patch(file_path, unified_diff), ensure_ascii=False)
 
@@ -109,7 +109,8 @@ async def preview_patch(file_path: str, unified_diff: str) -> str:
 async def apply_patch(
     file_path: str, unified_diff: str, backup: bool = True
 ) -> str:
-    """Unified diff'i uygula (atomic + backup). Rollback başarısız olursa reason döner."""
+    """Apply a unified diff atomically, with a backup. On failure the file is
+    rolled back and the reason returned."""
     await tracker.bump("apply_patch")
     return json.dumps(_apply_patch(file_path, unified_diff, backup=backup), ensure_ascii=False)
 

@@ -34,13 +34,17 @@ def _intent_from_score(score: float) -> str:
 
 
 def _recommended_action(intent: str, consent_status: str) -> str:
-    """Mirrors the Lead Intelligence screen's "Önerilen aksiyon" column."""
+    """Fills the Lead Intelligence screen's "recommended action" column.
+
+    Without consent the recommendation never proposes reaching out — the
+    strongest it gets is internal work on the lead.
+    """
     if consent_status == "opt-out" or consent_status == "" and intent == "watching":
-        return "Sadece iç-görev"
+        return "Internal task only"
     if intent == "high":
-        return "Inbound cevap taslağı"
+        return "Inbound reply draft"
     if intent == "medium":
-        return "Outbound öneri (onay)" if consent_status in ("opt-in", "izinli") else "Enrichment gerekli"
+        return "Outbound suggestion (approval)" if consent_status == "opt-in" else "Enrichment needed"
     return "Nurture"
 
 
@@ -120,15 +124,15 @@ async def score_lead(*, tenant_slug: str, lead_id: int, actor: str = "") -> Opti
         if lead is None or lead.tenant_slug != tenant_slug:
             return None
         company = db.get(Company, lead.company_id) if lead.company_id else None
-        company_name = company.name if company else "(bilinmeyen firma)"
+        company_name = company.name if company else "(unknown company)"
         sector = company.sector if company else ""
 
     from app.agents.runtime import run_agent
 
     task = (
-        f"Şu firmayı 15 kritere göre skorla (0..1). JSON payload.score (0..1) ve "
-        f"payload.criteria (kriter→0..1 sözlüğü) döndür. Firma: {company_name} "
-        f"(sektör: {sector or 'bilinmiyor'})."
+        f"Score this company against 15 criteria (0..1). Return JSON with "
+        f"payload.score (0..1) and payload.criteria (a criterion→0..1 map). "
+        f"Company: {company_name} (sector: {sector or 'unknown'})."
     )
     res = await run_agent(
         "lead_scoring", task, tenant_id=tenant_slug, user_subject=actor

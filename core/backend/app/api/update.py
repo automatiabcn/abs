@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""014 — Update channel endpoints (check/changelog/apply/pending)."""
+"""Update channel endpoints (check/changelog/apply/pending)."""
 
 from __future__ import annotations
 
@@ -17,7 +17,8 @@ router = APIRouter(prefix="/v1/update", tags=["update"])
 
 
 def _current_version() -> str:
-    """app.version'i lazy import — circular önler."""
+    """Imported lazily: app.main imports this router, so a module-level import
+    would be circular."""
     from app.main import app as fastapi_app
 
     return fastapi_app.version
@@ -25,22 +26,22 @@ def _current_version() -> str:
 
 @router.get("/check")
 async def check_update():
-    """Public — kullanıcı kontrol edebilir, ama apply admin auth ister."""
+    """Public: anyone may check for an update. Applying one requires admin auth."""
     manifest = await fetch_manifest()
     return update_state(manifest, _current_version())
 
 
 _SAFE_ERROR_CODES = {
     "manifest_fetch_failed",
-    "update_manifest_url tanimli degil",
-    "manifest top-level dict bekleniyor",
+    "update_manifest_url is not configured",
+    "manifest must be a JSON object",
     "signature missing — refused (fail-closed)",
     "signature invalid — refused (fail-closed)",
 }
 
 
 def _safe_error_label(raw: str | None) -> str:
-    """Sprint 2D ITEM-2.3 — never echo raw exception text to clients.
+    """Never echo raw exception text to clients.
 
     Only allow a fixed allowlist of error codes through. Status-code style
     strings ("manifest fetch 502") are reduced to a generic upstream label.
@@ -56,8 +57,8 @@ def _safe_error_label(raw: str | None) -> str:
 
 @router.get("/changelog")
 async def changelog(_admin: dict = Depends(current_admin)):
-    """CJ-012 — manifest yoksa/registry erisilemiyorsa 503 yerine bos changelog
-    dondur. Self-host kurulumlarinda upstream registry opsiyonel."""
+    """Returns an empty changelog rather than 503 when the manifest or registry
+    is unreachable: the upstream registry is optional for self-hosted installs."""
     manifest = await fetch_manifest()
     if "error" in manifest:
         return {

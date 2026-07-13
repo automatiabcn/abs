@@ -35,7 +35,7 @@ _KEY_MAP = {
 
 
 def boot_load() -> int:
-    """Lifespan'de cagrilir — vault'tan settings'e secrets aktar."""
+    """Called at startup: load the secrets out of the vault and into settings."""
     from app.vault.runner import (
         VaultError,
         decrypt_all,

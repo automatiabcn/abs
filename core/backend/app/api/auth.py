@@ -5,8 +5,9 @@
 
 """Panel admin auth — JWT HTTP-only cookie oturumu.
 
-CJ-007: setup wizard'dan yazilan /app/data/admin_credentials.json (email +
-bcrypt hash) login akisinin kaynagidir. Dosya yoksa bootstrap fallback
+The setup wizard writes /app/data/admin_credentials.json (email + bcrypt
+hash); it is the source of truth for login. When the file is absent, the
+bootstrap fallback
 (env'den admin_password_bootstrap + admin@local) calisir; bu sayede ilk-acilis
 ve setup-sonrasi yollarin ikisi de tek endpoint'ten cozulur.
 """
@@ -29,13 +30,12 @@ from pydantic import BaseModel, Field
 
 from app.config import settings
 from app.middleware.rate_limit import limiter
-from app.observability.audit import emit_event  # Q12-L23
-
+from app.observability.audit import emit_event
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
 
 
-# Sprint 2I UAT-041 — per-email exponential backoff thresholds. Lockout
+# Per-email exponential backoff thresholds. Lockout
 # kicks in once attempts cross _LOCKOUT_THRESHOLD; the delay doubles each
 # subsequent attempt up to _LOCKOUT_MAX_SECONDS, then plateaus.
 _LOCKOUT_THRESHOLD = 5
@@ -150,7 +150,7 @@ def _verify_password(raw: str, hashed: bytes) -> bool:
 
 BOOTSTRAP_ADMIN_EMAIL: str = "admin@local"
 COOKIE_NAME = "abs_session"
-COOKIE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60  # 7 gün
+COOKIE_MAX_AGE_SECONDS = 7 * 24 * 60 * 60  # 7 days
 
 
 def _admin_credentials_path() -> Path:
@@ -158,7 +158,7 @@ def _admin_credentials_path() -> Path:
 
 
 def _load_admin_credentials_raw() -> Optional[Dict]:
-    """Round-5 BUG-10 — read admin_credentials.json as a raw dict so callers
+    """Read admin_credentials.json as a raw dict so callers
     that need fields beyond `(email, hash, source)` (e.g. ``tenant_slug``)
     can access them without breaking the legacy 3-tuple contract.
 
@@ -206,8 +206,8 @@ _TENANT_SLUG_RE = __import__("re").compile(r"^[a-z0-9](?:[a-z0-9\-]{0,30}[a-z0-9
 
 
 def _derive_tenant_from_email(email: Optional[str]) -> Optional[str]:
-    """Round-5 BUG-10 fallback — derive tenant_slug from the email domain's
-    first label when no explicit slug is recorded.
+    """Fallback: derive tenant_slug from the email domain's first label when
+    no explicit slug is recorded.
 
     ``admin@demo-acme.com`` → ``demo-acme``. Single-label domains
     (``admin@local``, ``admin``) and slugs that fail the public signup
@@ -226,7 +226,7 @@ def _derive_tenant_from_email(email: Optional[str]) -> Optional[str]:
 
 
 def _lookup_tenant_slug(email: str) -> Optional[str]:
-    """Round-5 BUG-10 — resolve a session's tenant_slug from any source so
+    """Resolve a session's tenant_slug from any source so
     the JWT mint can carry it as a claim.
 
     Order:
@@ -273,7 +273,7 @@ def _lookup_tenant_slug(email: str) -> Optional[str]:
 
 
 def _lookup_user_in_db(email: str) -> Optional[Tuple[str, bytes, str]]:
-    """Q4 P10 — multi-row login: query the `users` table first.
+    """Multi-row login: query the `users` table first.
 
     Returns the same `(email, password_hash, source)` tuple as
     `_load_admin_credentials` so the login handler can treat both paths
@@ -309,7 +309,7 @@ def _lookup_user_in_db(email: str) -> Optional[Tuple[str, bytes, str]]:
 
 
 # Geriye-uyumluluk: bazi testler / modul tuketicileri ADMIN_EMAIL referansi
-# kullaniyor olabilir. Bootstrap email'ini referans olarak yayinla.
+# May still be in use. Publish the bootstrap email as the reference.
 ADMIN_EMAIL: str = BOOTSTRAP_ADMIN_EMAIL
 
 
@@ -319,7 +319,7 @@ class LoginRequest(BaseModel):
 
 
 def _create_token(email: str, tenant: Optional[str] = None) -> str:
-    """Round-5 BUG-10 — embed an optional ``tenant`` claim alongside ``sub``.
+    """Embed an optional ``tenant`` claim alongside ``sub``.
 
     Without the claim, downstream tenant-scoped resolvers (e.g.
     ``marketplace._resolve_admin_tenant``) had to fall back to the bootstrap
@@ -339,21 +339,21 @@ def _create_token(email: str, tenant: Optional[str] = None) -> str:
 
 
 class _SessionExpired(HTTPException):
-    """Q12-L26 — typed exception so audit emission can read the reason
-    without inspecting the (potentially i18n-translated) detail string.
+    """Typed exception so audit emission can read the reason without
+    inspecting the (potentially i18n-translated) detail string.
     """
 
     def __init__(self) -> None:
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Oturum süresi doldu",
+            detail="Session expired",
         )
 
 
 class _SessionInvalid(HTTPException):
-    """Q12-L26 — typed exception (signature mismatch, malformed JWT,
-    tampered payload). Distinct from _SessionExpired so the audit
-    `reason` stays accurate even if the i18n string drifts.
+    """Typed exception (signature mismatch, malformed JWT, tampered payload).
+    Distinct from _SessionExpired so the audit `reason` stays accurate even if
+    the i18n string drifts.
     """
 
     def __init__(self) -> None:
@@ -424,7 +424,7 @@ def _clear_cookie(response: Response) -> None:
 
 
 def current_admin(request: Request) -> Dict:
-    """FastAPI dependency — protected route'larda kullanın."""
+    """FastAPI dependency for protected routes. Returns the session payload."""
     token = request.cookies.get(COOKIE_NAME)
     if not token:
         emit_event(
@@ -434,7 +434,7 @@ def current_admin(request: Request) -> Dict:
             reason="missing_cookie",
         )
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Oturum yok"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No session"
         )
     try:
         payload = _decode_token(token)
@@ -471,22 +471,22 @@ def current_admin(request: Request) -> Dict:
 @router.post("/login")
 @limiter.limit("5/minute")
 def login(payload: LoginRequest, request: Request, response: Response) -> Dict:
-    """E-posta + parola ile oturum aç; JWT cookie set edilir.
+    """Authenticate with email + password; sets the JWT session cookie.
 
-    Q5.CO1 — multi-source verification: gather every (email, hash, source)
-    candidate where the email matches the request, then accept the first
-    candidate whose stored hash matches the submitted password. This lets
-    `users` table rows and `admin_credentials.json` rows for the same email
-    coexist (e.g. when the setup wizard rewrites the file but a DB row from
-    an older magic-link claim still carries a stale hash). Only one source
-    is needed to authenticate.
+    Multi-source verification: gather every (email, hash, source) candidate
+    whose email matches the request, then accept the first candidate whose
+    stored hash matches the submitted password. This lets `users` table rows
+    and `admin_credentials.json` rows for the same email coexist (e.g. when the
+    setup wizard rewrites the file but a DB row from an older magic-link claim
+    still carries a stale hash). Only one source needs to match.
 
-    Sprint 2I UAT-041 — `@limiter.limit("5/minute")` caps IP fan-out brute
-    force, ``FailedLoginAttempt`` enforces per-email exponential backoff.
+    Brute force is capped on two axes: `@limiter.limit("5/minute")` bounds
+    per-IP fan-out, ``FailedLoginAttempt`` enforces per-email exponential
+    backoff.
     """
     bad = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="E-posta veya parola hatalı",
+        detail="Incorrect email or password",
     )
 
     locked_until = _check_locked(payload.email)
@@ -504,18 +504,18 @@ def login(payload: LoginRequest, request: Request, response: Response) -> Dict:
         )
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Çok fazla başarısız deneme, lütfen bekleyin",
+            detail="Too many failed attempts, please wait",
             headers={"Retry-After": str(retry_after)},
         )
 
     candidates: list[Tuple[str, bytes, str]] = []
 
-    # Source 1 — `users` table (Q4 P10 DB-first).
+    # Source 1 — `users` table (DB-first).
     db_match = _lookup_user_in_db(payload.email)
     if db_match is not None and db_match[0] == payload.email:
         candidates.append(db_match)
 
-    # Source 2 — `admin_credentials.json` (CJ-007 setup wizard / claim).
+    # Source 2 — `admin_credentials.json` (setup wizard / claim).
     file_match = _load_admin_credentials()
     if file_match[0] == payload.email:
         candidates.append(file_match)
@@ -579,13 +579,13 @@ def logout(response: Response) -> Dict:
     return {"status": "logged_out"}
 
 
-# CJ-003 — public self-signup. Magic-link akisini /auth/signup tetikler.
+# Public self-signup. /auth/signup starts the magic-link flow.
 class SignupRequest(BaseModel):
     email: str = Field(..., min_length=3, max_length=254)
     tenant_slug: str = Field(
         ..., min_length=2, max_length=32, pattern=r"^[a-z0-9](?:[a-z0-9\-]{0,30}[a-z0-9])?$"
     )
-    # Q3 P2 — optional at signup; if provided, hashed and stored on the
+    # Optional at signup; if provided, hashed and stored on the
     # pending User row so the claim step can promote without a second
     # password-set round-trip.
     password: Optional[str] = Field(default=None, min_length=8, max_length=128)
@@ -617,13 +617,13 @@ def _write_pending_signups(rows: list[dict]) -> None:
     )
 
 
-_MAGIC_TTL_SECONDS = 24 * 60 * 60  # Q3 P2 — 24h claim window
+_MAGIC_TTL_SECONDS = 24 * 60 * 60  # 24h claim window
 
 
 def _persist_user_pending(
     email: str, tenant_slug: str, password: Optional[str], magic_token: str
 ) -> None:
-    """Q3 P2 — also write a `users` row alongside the JSON file so the
+    """Also write a `users` row alongside the JSON file so the
     multi-admin DB-backed lookup has a record. Best-effort: silent fail if
     the table doesn't exist yet (alembic 0006 not applied)."""
     try:
@@ -675,7 +675,7 @@ def _persist_user_pending(
 
 
 def _claim_user_by_token(magic_token: str) -> Optional[Dict]:
-    """Q3 P2 — find pending user by token, promote to active, mirror to
+    """Find pending user by token, promote to active, mirror to
     admin_credentials.json so panel session login keeps working."""
     try:
         from sqlmodel import Session, select
@@ -703,7 +703,7 @@ def _claim_user_by_token(magic_token: str) -> Optional[Dict]:
             db.add(user)
             db.commit()
 
-            # Round-6 BUG-12 — only refresh admin_credentials.json when the
+            # Only refresh admin_credentials.json when the
             # claimed user IS the bootstrap admin already recorded there.
             # Unconditional write let any /auth/signup → magic-claim flow
             # overwrite the setup-wizard bootstrap admin (lockout vector).
@@ -755,11 +755,12 @@ def _claim_user_by_token(magic_token: str) -> Optional[Dict]:
 
 @router.post("/signup", status_code=201)
 def signup(body: SignupRequest) -> Dict:
-    """Self-host kurulumlarinda public self-signup. Magic-link log + pending tenant kaydi.
+    """Public self-signup for self-hosted installs: records a pending tenant and
+    mints a magic token.
 
-    Gercek e-posta gonderimi 011 (Stripe) + 023 (i18n) entegrasyonlarina bagli.
-    Bu endpoint magic_token uretip JSON + DB'ye yazar; SMTP/transactional
-    mailer kayitliysa hooks/event-bus uzerinden tetikler.
+    This endpoint only writes the token to JSON + the DB. It does not send mail
+    itself; delivery happens through the hooks/event bus when a transactional
+    mailer is registered.
     """
     token = secrets.token_urlsafe(32)
     rows = _read_pending_signups()
@@ -775,23 +776,19 @@ def signup(body: SignupRequest) -> Dict:
     )
     _write_pending_signups(rows)
     _persist_user_pending(body.email, body.tenant_slug, body.password, token)
-    # Q12-L24-001 fix — never log the full magic token. It grants admin
-    # session within 24h to anyone with log read access (ops, log
-    # aggregator, accidental disclosure). Only a 6-char hint is logged so
-    # ops can correlate signup → claim attempts without compromising the
-    # claim flow.
+    # Never log the full magic token: for 24h it grants an admin session to
+    # Anyone who can read logs (ops, log aggregator, accidental disclosure).
+    # A 6-char hint is enough to correlate signup → claim attempts.
     logger.info(
         "signup_pending email=%s slug=%s token_hint=%s***",
         body.email,
         body.tenant_slug,
         token[:6],
     )
-    # Honesty fix — self-signup does NOT dispatch its own email. The previous
-    # hard-coded `magic_link_sent: True` / `check_email: True` told the user a
-    # mail was on the way that never came (no sender call here, and SMTP is
-    # unset by default on self-host). Activation is delivered by an admin
-    # invite (panel → copy link, or the invite email when SMTP is configured),
-    # so we report the truth and point the user at that path.
+    # Self-signup does NOT dispatch its own email: there is no sender call here
+    # And SMTP is unset by default on self-host. Activation is delivered by an
+    # Admin invite (panel → copy link, or the invite email once SMTP is
+    # Configured), so the response must not claim a mail is on the way.
     email_configured = bool(settings.smtp_host)
     response: Dict = {
         "status": "pending",
@@ -800,22 +797,22 @@ def signup(body: SignupRequest) -> Dict:
         "check_email": False,
         "tenant_slug": body.tenant_slug,
         "activation_note": (
-            "Kaydınız alındı (beklemede). Hesabınızı etkinleştirmek için "
-            "yöneticinizden sizi panelden davet etmesini veya aktivasyon "
-            "bağlantısını paylaşmasını isteyin."
+            "Your signup was received and is pending. To activate your "
+            "account, ask your administrator to invite you from the panel or "
+            "to share the activation link with you."
         ),
     }
-    # Sprint 2I UAT-045 — production never echoes the magic_link in the
-    # response body (access logs + APM trace storage retain it for 24h
-    # which equals a working credential). Dev / test (env != "prod")
-    # keep it so the existing harness can claim without an SMTP capture.
+    # Production never echoes the magic_link in the response body: access logs
+    # And APM trace storage would retain it for 24h, which is a working
+    # Credential. Dev / test (env != "prod") keep it so the harness can claim
+    # an account without capturing SMTP.
     if settings.env != "prod":
         response["magic_link"] = f"/activate?token={token}"
     return response
 
 
 def _claim_invite_by_token(token: str) -> Optional[Dict]:
-    """Sprint 2B BUG-36 — accept the magic-link plaintext, look up the
+    """Accept the magic-link plaintext, look up the
     matching ``tenant_invites`` row by HMAC digest, validate purpose +
     expiry + status, mark accepted, and return the user payload the
     panel session cookie will be minted from.
@@ -887,10 +884,10 @@ def _claim_invite_by_token(token: str) -> Optional[Dict]:
 
 @router.get("/magic")
 def magic_claim(token: str, request: Request, response: Response) -> Dict:
-    """Q3 P2 — claim a pending signup. Sets the panel session cookie so the
-    next /auth/login is unnecessary; user lands authenticated.
+    """Claim a pending signup. Sets the panel session cookie so the next
+    /auth/login is unnecessary; the user lands authenticated.
 
-    Sprint 2B BUG-36 — also accepts admin-invite tokens minted by
+    Also accepts admin-invite tokens minted by
     ``POST /v1/admin/users/invite``; the invite row carries an HMAC
     digest of the same plaintext so we can look it up here.
 
@@ -1001,9 +998,9 @@ def me(request: Request) -> Dict:
             reason="missing_cookie",
         )
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Oturum yok"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No session"
         )
-    # Q12-L26 — emit audit on decode failure (expired vs invalid).
+    # Emit audit on decode failure (expired vs invalid).
     try:
         payload = _decode_token(token)
     except _SessionExpired:

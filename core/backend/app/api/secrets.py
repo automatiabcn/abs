@@ -52,7 +52,7 @@ async def rotate_secret(
             status_code=503,
             provider="vault",
         )
-        raise HTTPException(status_code=503, detail="Vault yapilandirilmadi")
+        raise HTTPException(status_code=503, detail="The vault is not configured")
     if body.key not in known_keys():
         emit_event(
             request,

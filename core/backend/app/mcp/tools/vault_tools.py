@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""013 — Vault durum sorgulama MCP tool. Cleartext value YAZILMAZ."""
+"""MCP tool reporting vault status. It never returns a secret's value."""
 
 from __future__ import annotations
 

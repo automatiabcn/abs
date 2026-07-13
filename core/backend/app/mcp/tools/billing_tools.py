@@ -3,10 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""015/017 — Billing + learnings MCP tool'lari.
+"""Billing and learnings MCP tools.
 
-015: daily_cost, learnings_recent, learnings_log
-017: billing_status (Stripe + lisans + revenue + son 10 webhook event)
+daily_cost, learnings_recent, learnings_log, and billing_status (Stripe
+products, license counts, revenue, and the most recent webhook events).
 """
 
 from __future__ import annotations
@@ -25,11 +25,12 @@ from app.mcp.server import mcp_server  # noqa: E402
 from app.mcp.tracking import tracker  # noqa: E402
 
 
-# 017 — billing_status helpers (lazy imports to avoid circular import at boot)
+# billing_status helpers. Stripe/DB imports stay lazy: importing them at module
+# scope closes an import cycle at boot.
 _PRODUCT_CACHE: dict = {"data": None, "ts": 0.0}
-_PRODUCT_CACHE_TTL = 300  # 5 dk
+_PRODUCT_CACHE_TTL = 300  # seconds
 
-# 011 SKU pricing — tier × seat_count → USD
+# SKU pricing — (tier, seat_count) → USD
 _PRICE_MAP = {
     ("self-host", 1): 299,
     ("team", 5): 1196,
@@ -73,10 +74,11 @@ def _get_products_cached() -> list[dict]:
 
 
 def _compute_revenue(db) -> dict:
-    """Lisans kayitlarinin tier × seat fiyat toplamindan revenue.
+    """Revenue derived from the license rows, priced by (tier, seat_count).
 
-    022 — Net revenue: gross - refunds - Stripe fees.
-    Stripe fee modeli: %2.9 + $0.30 her başarılı checkout'ta (EU resident kart).
+    Net = gross - refunds - Stripe fees, where the fee is modelled as 2.9% +
+    $0.30 per successful checkout (EU-resident card rate). Stripe is not queried
+    here, so this stays correct with no network and no API key.
     """
     from sqlmodel import select
 
@@ -102,7 +104,6 @@ def _compute_revenue(db) -> dict:
             mtd_usd += amount
         if issued_at >= today_start:
             today_usd += amount
-        # 022 — Stripe fee tahmini her başarılı checkout için
         fees_usd += amount * 0.029 + 0.30
         if lic.revoked_at is not None and lic.revoked_reason == "stripe_refund":
             refunds_usd += amount
@@ -172,11 +173,11 @@ def _recent_events(db, limit: int = 10) -> list[dict]:
 @mcp_server.tool()
 @with_hooks("daily_cost")
 async def daily_cost() -> str:
-    """tracker × provider_configs pricing → bugunku tahmini maliyet.
+    """Estimated cost so far today: tool usage priced against provider configs.
 
-    Sprint 2N FAZ E (P1 #2M-014) — provider-free customer'da
-    estimate_daily_cost veya tracker.snapshot içinde IndexError oluşursa
-    stack trace MCP client'a sızıyordu. Empty fallback shape döndür.
+    An install with no providers configured used to raise out of the estimator
+    and leak a stack trace to the MCP client; the empty fallback keeps the shape
+    stable and says so in `note` instead.
     """
     await tracker.bump("daily_cost")
     from app.billing.cost_estimator import estimate_daily_cost
@@ -191,8 +192,8 @@ async def daily_cost() -> str:
             "breakdown": [],
             "estimated_at": __import__("time").time(),
             "note": (
-                "Maliyet verisi henüz yok — provider konfigürasyonu veya "
-                "tracker geçmişi eksik."
+                "No cost data yet — no provider configuration or no recorded "
+                "tool usage."
             ),
             "_diagnostic": f"{type(exc).__name__}: {exc}",
         }
@@ -202,7 +203,7 @@ async def daily_cost() -> str:
 @mcp_server.tool()
 @with_hooks("learnings_recent")
 async def learnings_recent(limit: int = 20) -> str:
-    """Son N learning kaydi + kategorik istatistikler."""
+    """The most recent N learnings, plus per-category counts."""
     await tracker.bump("learnings_recent")
     from app.learnings.store import recent, stats
 
@@ -218,7 +219,7 @@ async def learnings_recent(limit: int = 20) -> str:
 async def learnings_log(
     category: str, lesson: str, project: Optional[str] = None
 ) -> str:
-    """Manuel learning ekle. category: bugfix|delegation|arch|security|perf|ux."""
+    """Record a learning by hand. category: bugfix|delegation|arch|security|perf|ux."""
     await tracker.bump("learnings_log")
     from app.learnings.store import log
 
@@ -229,7 +230,7 @@ async def learnings_log(
 @mcp_server.tool()
 @with_hooks("billing_status")
 async def billing_status() -> str:
-    """017 — ABS billing dashboard: Stripe + DB lisans + son 10 webhook event."""
+    """Billing dashboard: Stripe products, license counts, revenue, recent webhooks."""
     await tracker.bump("billing_status")
     from app.config import settings
     from app.db.session import get_session_sync

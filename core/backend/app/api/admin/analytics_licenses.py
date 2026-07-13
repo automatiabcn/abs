@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""032 Modul D — License analytics: cohort retention, expiry calendar, tier mix."""
+"""License analytics: cohort retention, expiry calendar, tier mix."""
 
 from __future__ import annotations
 

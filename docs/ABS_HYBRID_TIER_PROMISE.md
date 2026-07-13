@@ -79,7 +79,7 @@ What we observe by direct usage: GPT-OSS-120B output quality is at competitive p
 
 - **`/admin/usage` widget** — real-time `Free path: X %` + `Claude budget: Y %` tiles plus a 7-day Claude-token trend chart. Endpoint: `GET /v1/admin/usage`. Frontend: [`core/landing/app/admin/usage/page.tsx`](../core/landing/app/admin/usage/page.tsx).
 - **LangFuse dashboard** — `claude_tokens_used_pct_month` time-series. Wired in [`core/backend/app/observability/quota_monitor.py`](../core/backend/app/observability/quota_monitor.py) `record()` → `langfuse.score(name=…)`. Active when `ABS_LANGFUSE_ENABLED=true` and the public/secret keys are set.
-- **Audit chain** — every opt-in flip and quota-block event lands on the T-016 SOC2 audit log. Sources: [`app/observability/optin_state.py`](../core/backend/app/observability/optin_state.py) (boot-time flip detection) and [`app/observability/quota_monitor.py`](../core/backend/app/observability/quota_monitor.py) `gate()` (quota.block emit).
+- **Audit chain** — every opt-in flip and quota-block event lands on the SOC2 audit log. Sources: [`app/observability/optin_state.py`](../core/backend/app/observability/optin_state.py) (boot-time flip detection) and [`app/observability/quota_monitor.py`](../core/backend/app/observability/quota_monitor.py) `gate()` (quota.block emit).
 - **Workflow canvas** — `POST /v1/workflows/execute` returns `estimated_cost_usd`; free-tier-only plans return `0.0`, anthropic / openai nodes surface non-zero. Source: [`app/workflow_v10/runner.py`](../core/backend/app/workflow_v10/runner.py) `estimate_cost()`.
 
 ## Promise summary (one paragraph)
@@ -89,4 +89,4 @@ ABS lets the customer keep their Claude Plus subscription as a fixed-cost premiu
 ## Sign-off
 
 > Author: Automatia BCN engineering · 2026-04-29.
-> v1.3 amendment: Sprint Q12 latency/cost/redundancy rewrite · 2026-05-07.
+> v1.3 amendment: latency/cost/redundancy rewrite · 2026-05-07.

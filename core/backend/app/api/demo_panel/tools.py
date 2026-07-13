@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""033 Modul E — MCP tool browser API.
+"""MCP tool browser API.
 
 GET /v1/panel/tools  — every registered tool with name, description,
                        category, params shape.

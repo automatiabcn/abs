@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""023 Modul G — system_validate MCP tool.
+"""system_validate MCP tool.
 
 Wraps `infra/scripts/validate_install.py::validate()` with 5-min cache.
 """

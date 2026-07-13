@@ -34,14 +34,14 @@ async def test_ask_cerebras_qwen_calls_cerebras(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_ask_cerebras_qwen_graceful_when_key_missing(monkeypatch):
-    """Without an API key the tool returns a graceful [HATA] string,
+    """Without an API key the tool returns a graceful [ERROR] string,
     never crashes."""
     from app.mcp.tools.upper_tier_tools import ask_cerebras_qwen
 
     monkeypatch.setattr(settings, "cerebras_api_key", "")
     out = await ask_cerebras_qwen("cerebras-missing-key-uniqueness-probe")
     assert isinstance(out, str)
-    assert "[HATA]" in out
+    assert "[ERROR]" in out
 
 
 @respx.mock

@@ -3,11 +3,11 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Gemini extras — image generation, video generation, Google Search, URL context, structured output.
+"""Gemini extras — image generation, video generation, Google Search grounding,
+URL context, structured output.
 
-REST API çağrıları `app.providers.base.openai_compatible_chat` değil, Gemini'nin
-native endpoint'lerine gider. Base GeminiProvider generateContent paylaşır; buradaki
-fonksiyonlar Gemini-spesifik modality'leri sağlar.
+These modalities have no OpenAI-compatible equivalent, so they call Gemini's
+native endpoints directly rather than going through the shared chat helper.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ _BASE = "https://generativelanguage.googleapis.com/v1beta"
 def _require_key() -> str:
     if not settings.gemini_api_key:
         raise ProviderError(
-            "Gemini API key tanımlı değil", provider="gemini", transient=False
+            "Gemini API key is not configured", provider="gemini", transient=False
         )
     return settings.gemini_api_key
 
@@ -74,7 +74,7 @@ def _collect_text(data: dict) -> str:
 async def gemini_search(
     prompt: str, *, model: str = "gemini-2.5-flash"
 ) -> ProviderResponse:
-    """Google Search grounded yanıt + kaynaklar."""
+    """Answer grounded in Google Search, with its sources appended to the text."""
     key = _require_key()
     body: Dict[str, Any] = {
         "contents": [{"parts": [{"text": prompt}]}],
@@ -85,12 +85,13 @@ async def gemini_search(
     elapsed = int((time.monotonic() - start) * 1000)
     text = _collect_text(data)
 
-    # Grounding metadata (kaynaklar) varsa bağla
+    # Append the grounding sources when Gemini returns them — an answer that
+    # claims to be grounded is only useful if the caller can check it.
     try:
         grounding = data["candidates"][0].get("groundingMetadata") or {}
         citations = grounding.get("groundingChunks") or []
         if citations:
-            text += "\n\nKaynaklar:\n"
+            text += "\n\nSources:\n"
             for i, c in enumerate(citations[:5], 1):
                 uri = (c.get("web") or {}).get("uri", "")
                 title = (c.get("web") or {}).get("title", "")
@@ -102,8 +103,8 @@ async def gemini_search(
     return ProviderResponse(text=text, model=model, provider="gemini", elapsed_ms=elapsed)
 
 
-async def gemini_url(url: str, question: str = "Bu sayfayı özetle", *, model: str = "gemini-2.5-flash") -> ProviderResponse:
-    """URL context — bir URL'yi verip içerik hakkında soru sor."""
+async def gemini_url(url: str, question: str = "Summarize this page", *, model: str = "gemini-2.5-flash") -> ProviderResponse:
+    """URL context — ask a question about the content of a URL; Gemini fetches it."""
     key = _require_key()
     body = {
         "contents": [{"parts": [{"text": f"{question}\n\n{url}"}]}],
@@ -140,13 +141,12 @@ async def gemini_image(
     *,
     model: str = "gemini-2.5-flash-image",
 ) -> ProviderResponse:
-    """Gemini Image generation — base64 PNG döner."""
+    """Gemini image generation — returns a base64 PNG."""
     key = _require_key()
     body = {"contents": [{"parts": [{"text": prompt}]}]}
     start = time.monotonic()
     data = await _post(f"{_BASE}/models/{model}:generateContent", body, key=key, timeout=120.0)
     elapsed = int((time.monotonic() - start) * 1000)
-    # İlk image part'ını al
     text_parts: List[str] = []
     try:
         for p in data["candidates"][0]["content"]["parts"]:
@@ -174,7 +174,7 @@ async def gemini_image_pro(prompt: str) -> ProviderResponse:
 
 
 async def gemini_image_edit(prompt: str, image_base64: str) -> ProviderResponse:
-    """Verilen görseli prompt'a göre düzenle."""
+    """Edit the given image according to the prompt."""
     key = _require_key()
     body = {
         "contents": [
@@ -252,7 +252,8 @@ async def describe_image(
 
 
 async def gemini_video(prompt: str) -> ProviderResponse:
-    """Video generation job başlat. `operation` name döner (sonra gemini_video_status ile sorgu)."""
+    """Start a video generation job. Returns the operation name — generation is
+    long-running, so the caller polls gemini_video_status with it."""
     key = _require_key()
     body = {"instances": [{"prompt": prompt}]}
     start = time.monotonic()
@@ -280,7 +281,7 @@ async def gemini_video(prompt: str) -> ProviderResponse:
 
 
 async def gemini_video_status(operation_name: str) -> ProviderResponse:
-    """Video job status — operation adını sorgular."""
+    """Poll a video job by operation name."""
     key = _require_key()
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:

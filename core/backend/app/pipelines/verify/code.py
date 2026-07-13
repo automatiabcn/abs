@@ -38,15 +38,21 @@ class AutoVerifyCodePipeline(BasePipeline):
                 final_response="",
                 total_elapsed_ms=int((time.monotonic() - total_start) * 1000),
                 prompt=prompt,
-                error="ABS_OLLAMA_URL tanımlı değil — auto_verify_code için yerel Ollama gerekli",
+                error="ABS_OLLAMA_URL is not set — auto_verify_code needs a local Ollama",
             )
 
         code = prompt.strip()[:8000]
         ollama = get_provider("ollama")
 
-        sec_q = "Güvenlik açıkları (SQLi, RCE, hardcoded secret) varsa listele, yoksa 'CLEAN' yaz:\n\n" + code
-        test_q = "Bu kod için 1-2 pytest test fonksiyonu yaz:\n\n" + code
-        lint_q = "Bu kodda linting sorunları var mı? Varsa kısa listele, yoksa 'CLEAN' yaz:\n\n" + code
+        sec_q = (
+            "List any security vulnerabilities (SQLi, RCE, hardcoded secrets). "
+            "Write 'CLEAN' if there are none:\n\n" + code
+        )
+        test_q = "Write 1-2 pytest test functions for this code:\n\n" + code
+        lint_q = (
+            "Are there linting problems in this code? List them briefly, or write "
+            "'CLEAN' if there are none:\n\n" + code
+        )
 
         parallel_start = time.monotonic()
         results = await run_parallel_named(
@@ -78,9 +84,9 @@ class AutoVerifyCodePipeline(BasePipeline):
         for n in ("security", "test", "lint"):
             r = results.get(n)
             if isinstance(r, BaseException):
-                report_parts.append(f"=== {n.upper()} ===\n[HATA] {r}")
+                report_parts.append(f"=== {n.upper()} ===\n[ERROR] {r}")
             elif r is None:
-                report_parts.append(f"=== {n.upper()} ===\n[BOŞ]")
+                report_parts.append(f"=== {n.upper()} ===\n[EMPTY]")
             else:
                 report_parts.append(f"=== {n.upper()} ===\n{r.text[:2000]}")
 

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""033 Modul A — Demo mode status endpoint."""
+"""Demo mode status endpoint."""
 
 from __future__ import annotations
 

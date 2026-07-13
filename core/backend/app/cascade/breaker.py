@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Circuit breaker — provider bazlı hata sayacı."""
+"""Circuit breaker — per-provider failure counter."""
 
 from __future__ import annotations
 
@@ -24,7 +24,8 @@ class _ProviderState:
 
 
 class CircuitBreaker:
-    """5 hata/60s → open; 60s reset sonra half-open; başarıyla closed'a geri."""
+    """Opens after 5 failures in 60s, goes half-open after the reset window,
+    and closes again on the first success."""
 
     def __init__(
         self,
@@ -43,7 +44,7 @@ class CircuitBreaker:
         return time.monotonic()
 
     async def allow(self, provider: str) -> bool:
-        """Provider şu an çağrılabilir mi?"""
+        """True when the provider may be called right now."""
         async with self._lock:
             s = self._states.setdefault(provider, _ProviderState())
             if s.state == "open":
@@ -51,7 +52,7 @@ class CircuitBreaker:
                     s.state = "half_open"
                     return True
                 return False
-            # closed veya half_open → geç
+            # closed or half_open — let it through
             return True
 
     async def record_success(self, provider: str) -> None:
@@ -67,7 +68,7 @@ class CircuitBreaker:
         async with self._lock:
             s = self._states.setdefault(provider, _ProviderState())
             now = self._now()
-            # pencere dışıysa sayacı sıfırla
+            # Failures only count inside the window; outside it the count restarts.
             if s.fail_window_start == 0.0 or now - s.fail_window_start > self.fail_window_seconds:
                 s.fail_count = 1
                 s.fail_window_start = now

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Phase 1 / S19-close — Workflow synthesis + execute HTTP surface.
+"""Workflow synthesis + execute HTTP surface.
 
 POST /v1/workflows/synthesize  intent → JSON workflow (template-matched
                                  fallback when no LLM key, full
@@ -63,13 +63,12 @@ class SynthesizeResponse(BaseModel):
     source: str = "template"  # "llm" when LLM-backed
 
 
-# Q12-L25-002 — workflow execute boundary caps. Pre-fix, ExecuteRequest
-# accepted `workflow: Dict[str, Any]` with no nodes-count cap and no
-# raw-payload cap, so an attacker (admin-auth'd or compromised JWT)
-# could POST a 10k-node / multi-MB payload. runner.plan() walks the
-# whole structure, allocates per-node, and OOMs the worker. Same
-# family as Q12-L25-001 (R17 marketplace InstallBody UNBOUNDED).
-WORKFLOW_NODES_MAX = 200       # generous; KOBİ templates ship with 5–20
+# Workflow execute boundary caps. Without them, ExecuteRequest accepts
+# `workflow: Dict[str, Any]` with no bound on node count or raw payload size,
+# so an admin-authenticated (or JWT-compromised) caller could POST a 10k-node,
+# Multi-MB payload: runner.plan() walks the whole structure and allocates per
+# Node, which OOMs the worker.
+WORKFLOW_NODES_MAX = 200       # generous; shipped templates use 5–20
 WORKFLOW_EDGES_MAX = 500       # ≈ 2.5× nodes (DAG fan-out budget)
 
 
@@ -151,7 +150,7 @@ def _template_fallback(intent: str, locale: str) -> Dict[str, Any]:
     workflow["metadata"]["locale"] = locale
     explanation = (
         f"Template fallback: matched '{best.id}' ({best_score} kw hits). "
-        "No LLM key wired — Sprint Q2.CO4 promotes this to a real ragas-judged synth."
+        "No LLM key wired, so this is a keyword match rather than a synthesis."
     )
     return {
         "workflow": workflow,
@@ -207,7 +206,7 @@ async def synthesize(
     fallback_warning: Optional[str] = None
     if use_llm:
         try:
-            # Sprint 2B BUG-31 — synth_run already retries up to
+            # Synth_run already retries up to
             # max_revisions+1 times on parse / validation errors. Cap at
             # 1 retry (so 2 attempts total) so we don't multiply LLM
             # cost when the cascade is just returning bad JSON; the
@@ -234,10 +233,9 @@ async def synthesize(
                 f"Template fallback after LLM failure: {exc}. "
                 f"{payload['explanation']}"
             )
-            # Sprint 2B BUG-31 — surface a soft warning so the panel
-            # can show a toast ("LLM çıktısı doğrulanamadı; şablon
-            # eşleşmesi gösteriliyor") instead of the operator seeing
-            # the canvas silently revert without any explanation.
+            # Surface a soft warning so the panel can tell the operator the
+            # Canvas fell back to a template match, instead of it silently
+            # Reverting with no explanation.
             fallback_warning = (
                 "LLM synthesis failed, using template match — "
                 f"{type(exc).__name__}: {str(exc)[:120]}"

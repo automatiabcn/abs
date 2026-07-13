@@ -3,15 +3,16 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""011 — MCP tool cagrilarinda lisans/demo enforcement gate.
+"""The licence gate on MCP tool calls.
 
-Public API:
-  - `_gate_status() -> dict` — anlik durum (license_active, demo_active, allowed)
-  - `with_gate(tool_name) -> decorator` — opsiyonel tek-tool wrapper
+  - `_gate_status() -> dict` — where the install stands right now
+    (license_active, demo_active, allowed)
+  - `with_gate(tool_name) -> decorator` — wrap a single tool
 
-Mevcut `with_hooks` decorator'i `_gate_status()` cagirir;
-`mcp_require_license=True` oldugunda allowed=False ise tool calistirilmaz —
-`[LISANS GEREKLI]` mesaji doner.
+The `with_hooks` decorator calls `_gate_status()` on every tool call. When
+`mcp_require_license` is on and the gate says no, the tool does not run and the
+caller gets `_BLOCK_MESSAGE` instead — a refusal that says why, rather than a
+tool that quietly does nothing.
 """
 
 from __future__ import annotations
@@ -34,7 +35,7 @@ _BLOCK_MESSAGE = (
 
 
 def _verify_license_payload() -> Optional[Dict[str, Any]]:
-    """Gecerli license payload'unu dondur, hata veya yoksa None."""
+    """The current licence payload, or None if there is none or it will not verify."""
     if not settings.license_key:
         return None
     try:

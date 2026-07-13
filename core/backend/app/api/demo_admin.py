@@ -3,13 +3,13 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""022 — Demo admin endpoint: reset demo countdown.
+"""Demo admin endpoint: reset the demo countdown.
 
 POST /v1/admin/demo/reset
   Header: Authorization: Bearer <ABS_ADMIN_TOKEN>
-  → 204 No Content (state silindi veya zaten yoktu)
+  → 204 No Content (idempotent: same result whether state existed or not)
 
-Auth fail: 401. Geçersiz token: 403.
+Missing credentials: 401. Wrong token: 403.
 """
 
 from __future__ import annotations

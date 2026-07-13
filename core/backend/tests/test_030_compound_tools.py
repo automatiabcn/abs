@@ -101,10 +101,10 @@ def test_compound_tools_registered_in_server():
 
 @pytest.mark.asyncio
 async def test_ask_compound_graceful_when_key_missing(monkeypatch):
-    """No Groq key → tool returns [HATA] string, never raises."""
+    """No Groq key → tool returns [ERROR] string, never raises."""
     from app.mcp.tools.compound_tools import ask_compound
 
     monkeypatch.setattr(settings, "groq_api_key", "")
     out = await ask_compound("compound-no-key-probe")
     assert isinstance(out, str)
-    assert "[HATA]" in out
+    assert "[ERROR]" in out

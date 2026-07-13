@@ -1,88 +1,91 @@
-# FAQ — Sıkça sorulan sorular
+# FAQ — frequently asked questions
 
-15 kısa soru-cevap. Daha derinleştirmek için ilgili sayfaya yönlendirildin.
+15 short questions and answers. Each one points you to the page with the full story.
 
-## Ürün
+## Product
 
-### 1. ABS nedir?
-Self-host AI orchestration. Claude Code'u extend eden 100+ MCP tool, 6 sağlayıcı
-cascade (Anthropic + Groq + Cerebras + Gemini + Cloudflare + Cohere), RAG hybrid
-ve Türkçe kalite pipeline. Kendi sunucunda çalışır, kullandıkça öder modeli.
+### 1. What is ABS?
+Self-hosted AI orchestration. It extends Claude Code with 100+ MCP tools, a
+6-provider chain (Anthropic + Groq + Cerebras + Gemini + Cloudflare + Cohere),
+hybrid RAG and a Turkish quality pipeline. It runs on your own server and you pay
+per use.
 
-### 2. Anthropic TOS uygun mu?
-Evet. ABS, Anthropic'in pay-per-use API'sini kullanır (Pro abonelik OAuth değil).
-Kendi API anahtarınla bağlanır, prompt'lar Anthropic'e gider, ABS sunucusuna
-hiçbir veri gönderilmez.
+### 2. Does this comply with the Anthropic TOS?
+Yes. ABS uses Anthropic's pay-per-use API (not Pro-subscription OAuth). You
+connect with your own API key, your prompts go to Anthropic, and no data is sent
+to any ABS server.
 
-### 3. Cursor / Cline / Aider varken neden ABS?
-ABS bir IDE eklentisi değil — self-host ağ. Bu IDE'lerle paralel kullanılır.
-6 sağlayıcı cascade + circuit breaker + token tracking + RAG hybrid + Türkçe
-kalite pipeline tek üründe gelir.
+### 3. Why ABS when Cursor / Cline / Aider exist?
+ABS is not an IDE plugin — it is a self-hosted network. You use it alongside those
+IDEs. The 6-provider chain, circuit breaker, token tracking, hybrid RAG and the
+Turkish quality pipeline come in one product.
 
-## Teknik
+## Technical
 
-### 4. Hangi donanım yeterli?
-1 vCPU, 2 GB RAM, 20 GB disk. Hetzner CX22 ($5/ay) veya benzer VPS yeterli.
-Production scale (>10 user) için 2 vCPU, 4 GB RAM önerilir.
+### 4. What hardware do I need?
+1 vCPU, 2 GB RAM, 20 GB disk. A Hetzner CX22 ($5/month) or a similar VPS is enough.
+For production scale (>10 users), 2 vCPU and 4 GB RAM are recommended.
 
-### 5. Hangi DB?
-SQLite + WAL. Toplam 4 tablo: `licenses`, `webhook_events`, `email_queue`,
-plus durability stores (workflow_state, judge_log, rag_chroma).
-Postgres adapter 022+'a deferred.
+### 5. Which database?
+SQLite + WAL. Four tables in total: `licenses`, `webhook_events`, `email_queue`,
+plus the durability stores (workflow_state, judge_log, rag_chroma).
+The Postgres adapter is deferred to 022+.
 
-### 6. Vault nasıl çalışır?
-Mozilla sops + age — Stripe key, Anthropic key, SMTP password disk üzerinde
-her zaman şifreli. Boot'ta backend bellekteki settings nesnesine açar. Master
-age key ayrı volume (read-only) — backend'in commit edemediği güven sınırı.
+### 6. How does the vault work?
+Mozilla sops + age — your Stripe key, Anthropic key and SMTP password are always
+encrypted on disk. At boot the backend decrypts them into the in-memory settings
+object. The age master key lives on a separate read-only volume — a trust boundary
+the backend cannot write to.
 
-### 7. Hangi LLM model'leri destekleniyor?
+### 7. Which LLM models are supported?
 Anthropic Claude (Opus, Sonnet, Haiku), Groq (GPT-OSS 120B, Qwen3 32B, Kimi K2,
 Llama 4 Scout, Llama 3.x), Cerebras Llama, Gemini 2.5 Pro/Flash, Cloudflare
-Workers AI (10+ model), Cohere Command R, ve Apple Silicon MLX (Phi-3, Llama3-8B).
+Workers AI (10+ models), Cohere Command R, and Apple Silicon MLX (Phi-3, Llama3-8B).
 
-## Lisans + Faturalama
+## License and billing
 
-### 8. Lisans nasıl çalışır?
-JWT RS256, public key sunucuda gömülü, online doğrulama yok. Lisansı kaybedersen
-panel'den veya satın alma email'inden tekrar al.
+### 8. How does the license work?
+A JWT signed with RS256; the public key is embedded in the server and there is no
+online check. If you lose your license, get it again from the panel or from your
+purchase email.
 
-### 9. Demo var mı?
-Evet — yeni kurulumda 14 gün otomatik demo aktif. Demo süresince tüm MCP tool'lar
-çalışır. Süre dolduğunda `mcp_require_license=true` ise tool'lar engellenir.
+### 9. Is there a demo?
+Yes — a new install runs a 14-day demo automatically. Every MCP tool works during
+the demo. When it expires, the tools are blocked if `mcp_require_license=true`.
 
-### 10. İade politikası?
-14 gün koşulsuz. Stripe Customer Portal üzerinden self-service. Refund onaylanır
-onaylanmaz lisans `revoked_at` ile pasif olur.
+### 10. What is the refund policy?
+14 days, no questions asked. Self-service through the Stripe Customer Portal. As
+soon as the refund is approved, the license is deactivated with `revoked_at`.
 
-### 11. Yıllık mı, tek seferlik mi?
-Self-Host Lifetime $299 — TEK SEFERLİK. Maintenance $49/yıl opsiyonel.
-Annual subscription tier 022+'a deferred.
+### 11. Annual or one-off?
+Self-Host Lifetime $299 — ONE-OFF. Maintenance $49/year is optional.
+The annual subscription tier is deferred to 022+.
 
-## Veri & Güvenlik
+## Data and security
 
-### 12. Verim Anthropic'e gidiyor mu?
-Sadece Claude API çağrılarındaki prompt'lar. ABS bir köprü değil — sen sunucunda
-istek atıyorsun, Anthropic yanıtlıyor. Automatia BCN sunucularına hiçbir
-müşteri verisi gelmez.
+### 12. Does my data go to Anthropic?
+Only the prompts in your Claude API calls. ABS is not a proxy — you make the
+request from your own server and Anthropic answers it. No customer data reaches
+Automatia BCN servers.
 
-### 13. GDPR uyumlu mu?
-Evet. Veri sorumlusu Automatia BCN (Barcelona). Kullanıcı verisi ABS'i kullananın
-sunucusunda kalır; sadece ödeme verisi Stripe (PCI-DSS) tarafında. AB Madde 15-22
-hakları için `privacy@automatiabcn.com`.
+### 13. Is it GDPR compliant?
+Yes. The data controller is Automatia BCN (Barcelona). User data stays on the
+server of whoever runs ABS; only payment data sits with Stripe (PCI-DSS). For your
+rights under EU Articles 15-22, write to `privacy@automatiabcn.com`.
 
-### 14. Açık kaynak mı?
-Çekirdek (`core/backend`, `core/landing`) Apache 2.0. Premium add-on'lar
-(advanced RAG, team panel, gelecek SaaS modu) kapalı kaynak. Self-Host Lifetime
-sahibi premium add-on'ları da alır.
+### 14. Is it open source?
+The core (`core/backend`, `core/landing`) is Apache 2.0. The premium add-ons
+(advanced RAG, team panel, the future SaaS mode) are closed source. Self-Host
+Lifetime owners get the premium add-ons too.
 
-## Operasyon
+## Operations
 
-### 15. Güncelleme nasıl gelir?
-`docker compose pull && docker compose up -d`. ABS update channel signature
-ile imza doğrular (014). Self-Host Lifetime 1 yıl ücretsiz güncelleme.
-Sonrası Maintenance $49/yıl.
+### 15. How do updates arrive?
+`docker compose pull && docker compose up -d`. ABS verifies the update channel
+signature (014). Self-Host Lifetime includes 1 year of free updates.
+After that it is Maintenance at $49/year.
 
 ---
 
-Daha fazla soru? `support@automatiabcn.com` veya GitHub Discussions.
-Detaylı bilgi: [Setup Guide](setup-guide.md), [API Reference](api-reference.md).
+More questions? `support@automatiabcn.com` or GitHub Discussions.
+Full details: [Setup Guide](setup-guide.md), [API Reference](api-reference.md).

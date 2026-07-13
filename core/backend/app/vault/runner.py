@@ -5,7 +5,7 @@
 
 """013 — sops + age subprocess wrapper.
 
-CLI cagrilari:
+Shell commands:
   sops -d <path>            → stdout: plaintext yaml
   sops -e -i ... <path>     → in-place encrypt
   age-keygen -o <key_path>  → yeni master key (manuel: init_vault.sh)
@@ -120,10 +120,10 @@ def _sops_env() -> Dict[str, str]:
 def decrypt_all() -> Dict[str, Any]:
     """secrets.yaml'i decrypt et, dict dondur. Yoksa bos dict."""
     if not sops_available():
-        raise VaultError("sops/age binary kurulu degil", transient=False)
+        raise VaultError("sops/age is not installed", transient=False)
     if not master_key_exists():
         raise VaultError(
-            f"Master key bulunamadi: {settings.vault_key_path}",
+            f"Master key not found: {settings.vault_key_path}",
             transient=False,
         )
     secrets_path = Path(settings.vault_secrets_path)
@@ -147,7 +147,7 @@ def decrypt_all() -> Dict[str, Any]:
     try:
         parsed = yaml.safe_load(result.stdout) or {}
         if not isinstance(parsed, dict):
-            raise VaultError("vault yaml top-level dict bekleniyor", transient=False)
+            raise VaultError("vault yaml must be a JSON object", transient=False)
         # Backward-compat: a vault written by the pre-fix code (sops binary mode
         # via the ".yaml.tmp" extension) wraps the whole document under a single
         # `data:` string. Unwrap it so an upgraded install recovers its old
@@ -167,16 +167,16 @@ def _read_age_recipient() -> str:
     for line in p.read_text(encoding="utf-8").splitlines():
         if line.startswith("# public key:"):
             return line.split(":", 1)[1].strip()
-    raise VaultError("Master key public recipient bulunamadi", transient=False)
+    raise VaultError("Master key has no public recipient", transient=False)
 
 
 def encrypt_all(data: Dict[str, Any]) -> None:
     """Tum dict'i encrypt et, secrets.yaml'a in-place yaz (atomic)."""
     if not sops_available():
-        raise VaultError("sops/age binary kurulu degil", transient=False)
+        raise VaultError("sops/age is not installed", transient=False)
     if not master_key_exists():
         raise VaultError(
-            f"Master key bulunamadi: {settings.vault_key_path}",
+            f"Master key not found: {settings.vault_key_path}",
             transient=False,
         )
     secrets_path = Path(settings.vault_secrets_path)

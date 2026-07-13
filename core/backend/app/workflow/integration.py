@@ -3,13 +3,13 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Pipeline × workflow_state durability bağlayıcı (010).
+"""Binds pipeline runs to workflow-state durability.
 
-Her pipeline.run() çağrısı:
-  ABS_WORKFLOW_DURABLE=1 → start_workflow + record_step + finish_workflow
-  ABS_WORKFLOW_DURABLE=0 → no-op (eski davranış, default)
+With ``ABS_WORKFLOW_DURABLE=1`` a pipeline run is checkpointed
+(start_workflow / record_step / finish_workflow). Off by default, in which case
+every method here is a no-op and no state is written.
 
-Settings.workflow_durable runtime'da değiştirilebilir (testte monkeypatch ile).
+The setting is read at call time, so it can change at runtime.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class WorkflowSession:
-    """Pipeline tarafında kullanılır. workflow_durable off ise tüm metodlar no-op."""
+    """Pipeline-side handle. Every method is a no-op when durability is off."""
 
     def __init__(self, wf_type: str, prompt: str):
         self.trace_id: Optional[str] = None

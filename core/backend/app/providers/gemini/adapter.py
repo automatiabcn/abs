@@ -32,7 +32,7 @@ class GeminiProvider(BaseProvider):
         _key = kwargs.get("api_key") or settings.gemini_api_key
         if not _key:
             raise ProviderError(
-                "Gemini API key tanımlı değil", provider=self.name, transient=False
+                "Gemini API key is not configured", provider=self.name, transient=False
             )
         model = model or self.default_model
         url = (
@@ -96,7 +96,7 @@ class GeminiProvider(BaseProvider):
             text = "".join(p.get("text", "") for p in parts)
         except (KeyError, IndexError, TypeError) as exc:
             raise ProviderError(
-                f"Gemini beklenmeyen yanıt: {str(data)[:200]}",
+                f"Gemini unexpected response: {str(data)[:200]}",
                 provider=self.name,
                 transient=False,
             ) from exc

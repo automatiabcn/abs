@@ -3,11 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Persona (fingerprint) yükleyici.
+"""Persona (fingerprint) loader.
 
-MVP: `default_python` personası (professional baseline). 009-rag task'ında
-müşteri kendi fingerprint JSON'ını `settings.cache_dir/persona.json`'a koyup
-override edebilir.
+Ships with a professional Python baseline. A deployment can override it by
+dropping its own fingerprint JSON at ``settings.cache_dir/persona.json``.
 """
 
 from __future__ import annotations
@@ -20,7 +19,7 @@ from app.config import settings
 
 
 DEFAULT_PERSONA: Dict[str, float] = {
-    # Hedef oranlar — professional Python kodlama baseline
+    # Target ratios — professional Python baseline.
     "docstring_ratio": 0.60,
     "type_hints_ratio": 0.70,
     "avg_func_lines": 20.0,

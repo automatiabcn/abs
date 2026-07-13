@@ -3,18 +3,14 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""GUARD 3 — Content enrichment + quality gate.
+"""Content enrichment quality gate.
 
-Büyük docs/md/json/html/py/ts Write → quality gate (6 katman):
-1. Boyut (size check)
-2. Dil dağılımı (tr_ratio)
-3. Teknik/metinsel kırılım (code block ratio)
-4. Hedef dil tutarsızlığı
-5. A/B test: mevcut içerik vs qual_code pipeline çıktısı
-6. Geri dönüt kaydet (cache)
+A large Write to a docs/markup/source file is scored over six layers — size,
+non-ASCII language ratio, code-block density, mixed-language content, long
+paragraphs, and file type. Above the threshold the hook suggests running the
+content through a quality pipeline before it is written.
 
-SERVER enrichment.py'nin davranış parity'si korunur, ürün ortamında
-pipeline çağrısı 006'daki `QualCodePipeline` / `QualTrPipeline`'dan yapılır.
+Advisory only: the hook never blocks and never calls a model itself.
 """
 
 from __future__ import annotations
@@ -28,41 +24,40 @@ _RATE_FILE = "enrichment_rate.json"
 _WINDOW_SEC = 600
 
 _ENRICH_EXT = {".md", ".mdx", ".json", ".html", ".py", ".ts", ".tsx"}
-_MIN_SIZE = 2000  # char; altındaki içerik gate atlanır
+_MIN_SIZE = 2000  # content below this many chars skips the gate entirely
+
+# Turkish-specific letters. Their density is the cheap signal for "this text is
+# not English", which selects the localized quality pipeline.
+_TR_CHARS = "\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc"
 
 
 def _score_layers(content: str, ext: str) -> Dict[str, float]:
-    """6-katman puan (0..1, yüksek = daha fazla enrichment ihtiyacı)."""
+    """Score each layer in 0..1, where higher means more in need of enrichment."""
     size = len(content)
     layers: Dict[str, float] = {}
 
-    # L1 — büyüklük
     layers["size"] = min(1.0, size / 8000.0)
 
-    # L2 — tr ratio
-    tr = sum(1 for c in content if c in "çğıöşüÇĞİÖŞÜ")
+    tr = sum(1 for c in content if c in _TR_CHARS)
     layers["tr_ratio"] = min(1.0, tr / max(1, size) * 200)
 
-    # L3 — code block ratio (Markdown için)
     blocks = content.count("```")
     layers["code_blocks"] = min(1.0, blocks / 20.0)
 
-    # L4 — hedef dil tutarsızlığı: .md dosyasında tr chars + en stop words karışık
+    # Mixed language: non-English letters together with English stop words.
     common_en = sum(content.lower().count(w) for w in (" the ", " and ", " of ", " is "))
     layers["lang_mix"] = min(1.0, common_en / 50.0) if tr > 20 else 0.0
 
-    # L5 — uzun paragraf (500+ char single line) sayısı
     long_lines = sum(1 for ln in content.splitlines() if len(ln) > 500)
     layers["long_paragraphs"] = min(1.0, long_lines / 5.0)
 
-    # L6 — extension uygunluğu (ext listedeyse düşük ağırlık; değilse 0)
     layers["ext"] = 0.3 if ext in _ENRICH_EXT else 0.0
 
     return layers
 
 
 def _aggregate(layers: Dict[str, float]) -> float:
-    # Basit ortalama; ağırlıklar L1(size) + L3(code_blocks) biraz yüksek.
+    # Weighted mean; size and code-block density carry the most weight.
     if not layers:
         return 0.0
     weighted = (
@@ -79,10 +74,10 @@ def _aggregate(layers: Dict[str, float]) -> float:
 
 @safe_hook("enrichment")
 def maybe_enrichment_notice(tool: str, tool_input: dict) -> str:
-    """Quality gate skorunu hesaplayıp >=0.45 ise pipeline önerisi döndürür.
+    """Return a pipeline suggestion when the gate score reaches 0.45, else "".
 
-    Not: Gerçek pipeline çağrısı sync ortamda yapılmaz (hook senkron). Pipeline
-    tetikleyici Claude Code tarafında, bu sadece tavsiye döndürür.
+    Hooks run synchronously, so this cannot invoke the pipeline itself — the
+    caller decides whether to act on the suggestion.
     """
     if tool != "Write":
         return ""
@@ -112,10 +107,10 @@ def maybe_enrichment_notice(tool: str, tool_input: dict) -> str:
         pipeline_hint = "qual_tr" if layers["tr_ratio"] >= 0.2 else "qual_analysis"
 
     return (
-        f"ENRICHMENT GATE ({score:.2f}/1.0): {os.path.basename(fp)} büyük + "
-        f"çok katmanlı içerik. Kalite yükseltmek için mcp__abs__{pipeline_hint} "
-        f"pipeline'ından geçirip sonucu tekrar Write ile yazmak önerilir "
-        f"(6 kat.: size={layers['size']:.2f}, tr={layers['tr_ratio']:.2f}, "
+        f"ENRICHMENT GATE ({score:.2f}/1.0): {os.path.basename(fp)} is large and "
+        f"multi-layered. Consider running it through the mcp__abs__{pipeline_hint} "
+        f"pipeline and writing the improved result instead "
+        f"(layers: size={layers['size']:.2f}, tr={layers['tr_ratio']:.2f}, "
         f"code={layers['code_blocks']:.2f}, lang_mix={layers['lang_mix']:.2f}, "
         f"long={layers['long_paragraphs']:.2f})."
     )

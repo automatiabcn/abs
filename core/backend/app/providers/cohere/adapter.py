@@ -5,7 +5,8 @@
 
 """Cohere provider — Command R+, Aya Expanse, Embed, Rerank.
 
-`cohere>=5.13` SDK kullanılır (AsyncClientV2).
+Uses the `cohere>=5.13` SDK (AsyncClientV2), imported lazily so an install
+without the package degrades to a clear ProviderError.
 """
 
 from __future__ import annotations
@@ -32,13 +33,13 @@ class CohereProvider(BaseProvider):
         _key = kwargs.get("api_key") or settings.cohere_api_key
         if not _key:
             raise ProviderError(
-                "Cohere API key tanımlı değil", provider=self.name, transient=False
+                "Cohere API key is not configured", provider=self.name, transient=False
             )
         try:
             import cohere
         except ImportError as exc:
             raise ProviderError(
-                "cohere paketi kurulu değil", provider=self.name, transient=False
+                "cohere package is not installed", provider=self.name, transient=False
             ) from exc
 
         model = model or self.default_model
@@ -100,16 +101,16 @@ class CohereProvider(BaseProvider):
         )
 
     async def embed(self, text: str, model: str = "embed-english-v3.0") -> List[float]:
-        """Metin için tek embedding döndürür (4096-dim modern Cohere)."""
+        """Embed one text. Input is truncated to the model's limit before sending."""
         if not settings.cohere_api_key:
             raise ProviderError(
-                "Cohere API key tanımlı değil", provider=self.name, transient=False
+                "Cohere API key is not configured", provider=self.name, transient=False
             )
         try:
             import cohere
         except ImportError as exc:
             raise ProviderError(
-                "cohere paketi kurulu değil", provider=self.name, transient=False
+                "cohere package is not installed", provider=self.name, transient=False
             ) from exc
 
         client = cohere.AsyncClientV2(api_key=settings.cohere_api_key, timeout=30.0)
@@ -136,16 +137,16 @@ class CohereProvider(BaseProvider):
         top_n: int = 3,
         model: str = "rerank-multilingual-v3.0",
     ) -> List[dict]:
-        """Dokümanları query'e göre sırala. [{index, text, relevance_score}] döner."""
+        """Rank documents against the query. Returns [{index, text, relevance_score}]."""
         if not settings.cohere_api_key:
             raise ProviderError(
-                "Cohere API key tanımlı değil", provider=self.name, transient=False
+                "Cohere API key is not configured", provider=self.name, transient=False
             )
         try:
             import cohere
         except ImportError as exc:
             raise ProviderError(
-                "cohere paketi kurulu değil", provider=self.name, transient=False
+                "cohere package is not installed", provider=self.name, transient=False
             ) from exc
 
         client = cohere.AsyncClientV2(api_key=settings.cohere_api_key, timeout=30.0)

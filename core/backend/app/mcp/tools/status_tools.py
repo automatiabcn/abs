@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""025 Modul F — `status_check` MCP tool.
+"""`status_check` MCP tool.
 
 Wraps `/v1/status` shape + last 24h key business metrics:
   - license_count (active / revoked / expired)

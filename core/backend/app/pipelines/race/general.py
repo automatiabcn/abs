@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""race: gpt-oss-120b vs kimi (CF) vs kimi2 (CF long-ctx) — ilk başarılı kazanır."""
+"""Race: gpt-oss-120b vs kimi (CF) vs kimi2 (CF long-ctx), first success wins."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ class RaceGeneralPipeline(BasePipeline):
                 final_response="",
                 total_elapsed_ms=elapsed,
                 prompt=prompt,
-                error="Hiçbir provider yarışı kazanamadı",
+                error="No provider produced a response",
             )
 
         name, resp = winner

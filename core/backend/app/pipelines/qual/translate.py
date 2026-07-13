@@ -13,8 +13,8 @@ from . import runner as _runner
 from ._json import extract_json
 
 _TRANSLATE_SYSTEM = (
-    "Aşağıdaki metni doğal ve akıcı bir şekilde çevir. "
-    "Yorum yapma, yalnızca çeviriyi döndür."
+    "Translate the following text naturally and fluently. "
+    "Return ONLY the translation, no commentary."
 )
 _BACK_TRANSLATE_SYSTEM = (
     "Translate the following text back into the original language. "
@@ -43,10 +43,13 @@ def _split_request(prompt: str) -> tuple[str, str]:
         return "English", prompt
     instruction = prompt[:delim_idx]
     source = prompt[delim_idx + 1 :].strip()
+    # The target language is named by the user in their own language, so each
+    # Branch matches both the English and the native name. "turkce" is escaped
+    # to keep this file ASCII; it still has to match the accented input.
     target = "English"
     if "ingilizce" in lower or "english" in lower:
         target = "English"
-    elif "türkçe" in lower or "turkish" in lower:
+    elif "t\u00fcrk\u00e7e" in lower or "turkish" in lower:
         target = "Turkish"
     elif "ispanyolca" in lower or "spanish" in lower or "español" in lower:
         target = "Spanish"
