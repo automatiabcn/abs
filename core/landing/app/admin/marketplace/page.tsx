@@ -31,7 +31,7 @@ const FALLBACK: PluginManifest[] = [
     type: "llm-provider",
     entry_point: "ghcr.io/abs-plugins/vllm-endpoint:1.0.0",
     description:
-      "Bring-your-own vLLM HTTP endpoint (OpenAI-uyumlu) — kendi GPU'nuzda lokal çıkarım.",
+      "Bring your own vLLM HTTP endpoint (OpenAI-compatible) — run inference on your own GPU.",
     author: "Automatia BCN",
     homepage: "https://github.com/abs-plugins/vllm-endpoint",
     license: "Apache-2.0",
@@ -52,7 +52,7 @@ const FALLBACK: PluginManifest[] = [
     type: "llm-provider",
     entry_point: "ghcr.io/abs-plugins/aws-bedrock:1.0.0",
     description:
-      "AWS Bedrock yönetilen LLM (Claude, Mistral, Cohere) — SigV4 imzalı erişim.",
+      "Managed LLMs on AWS Bedrock (Claude, Mistral, Cohere) — access signed with SigV4.",
     author: "Automatia BCN",
     homepage: "https://github.com/abs-plugins/aws-bedrock",
     license: "Apache-2.0",
@@ -76,7 +76,7 @@ const FALLBACK: PluginManifest[] = [
     type: "rag-source",
     entry_point: "ghcr.io/abs-plugins/sharepoint-rag:1.0.0",
     description:
-      "Microsoft SharePoint konektörü — doküman kütüphanelerini delta sync ile RAG'a indeksler.",
+      "Microsoft SharePoint connector — indexes document libraries into RAG and keeps them in sync.",
     author: "Automatia BCN",
     homepage: "https://github.com/abs-plugins/sharepoint-rag",
     license: "Apache-2.0",
@@ -97,7 +97,7 @@ const FALLBACK: PluginManifest[] = [
     type: "rag-source",
     entry_point: "ghcr.io/abs-plugins/slack-thread-rag:1.0.0",
     description:
-      "Slack thread/kanal indekslemesi — aranabilir konuşma belleği oluşturur.",
+      "Indexes Slack threads and channels — turns past conversations into searchable memory.",
     author: "Automatia BCN",
     homepage: "https://github.com/abs-plugins/slack-thread-rag",
     license: "Apache-2.0",
@@ -118,7 +118,7 @@ const FALLBACK: PluginManifest[] = [
     type: "mcp-tool",
     entry_point: "ghcr.io/abs-plugins/notion-sync:1.0.0",
     description:
-      "Notion çift yönlü senkronizasyon — sayfa, veritabanı ve eklentiler RAG'a + MCP yazma yoluyla aynalanır.",
+      "Two-way Notion sync — mirrors pages, databases and attachments into RAG, and writes back via MCP.",
     author: "Automatia BCN",
     homepage: "https://github.com/abs-plugins/notion-sync",
     license: "Apache-2.0",
@@ -132,8 +132,8 @@ const FALLBACK: PluginManifest[] = [
       memory_mb: 512,
     },
   },
-  // ── MP5 fix — 5 yeni manifest, Q7 milestone'unun "10 plugin sandbox running"
-  // iddiasıyla uyumlu hale getirir.
+  // ── MP5 fix — 5 more manifests, to match the Q7 milestone claim of
+  // "10 plugin sandbox running".
   {
     id: "stripe-webhook",
     name: "Stripe Webhook Forwarder",
@@ -141,7 +141,7 @@ const FALLBACK: PluginManifest[] = [
     type: "mcp-tool",
     entry_point: "ghcr.io/abs-plugins/stripe-webhook:1.0.0",
     description:
-      "Stripe webhook olaylarını (subscription.*, invoice.*) Inngest workflow'una forward eder.",
+      "Forwards Stripe webhook events (subscription.*, invoice.*) to an Inngest workflow.",
     author: "Automatia BCN",
     homepage: "https://github.com/abs-plugins/stripe-webhook",
     license: "Apache-2.0",
@@ -162,7 +162,7 @@ const FALLBACK: PluginManifest[] = [
     type: "mcp-tool",
     entry_point: "ghcr.io/abs-plugins/github-issues:1.0.0",
     description:
-      "GitHub issue triage + label automation — repo başına okuma/yazma erişimi.",
+      "GitHub issue triage and label automation — read/write access, one repo at a time.",
     author: "Automatia BCN",
     homepage: "https://github.com/abs-plugins/github-issues",
     license: "Apache-2.0",
@@ -183,7 +183,7 @@ const FALLBACK: PluginManifest[] = [
     type: "mcp-tool",
     entry_point: "ghcr.io/abs-plugins/linear-sync:1.0.0",
     description:
-      "Linear ticket oluştur/güncelle — workflow output'larını ürün backlog'una bağlar.",
+      "Create and update Linear tickets — connects workflow output to your product backlog.",
     author: "Automatia BCN",
     homepage: "https://github.com/abs-plugins/linear-sync",
     license: "Apache-2.0",
@@ -204,7 +204,7 @@ const FALLBACK: PluginManifest[] = [
     type: "rag-source",
     entry_point: "ghcr.io/abs-plugins/confluence-rag:1.0.0",
     description:
-      "Atlassian Confluence space indekslemesi — sayfa hiyerarşisi ve eklentiler.",
+      "Indexes Atlassian Confluence spaces — page hierarchy and attachments included.",
     author: "Automatia BCN",
     homepage: "https://github.com/abs-plugins/confluence-rag",
     license: "Apache-2.0",
@@ -225,7 +225,7 @@ const FALLBACK: PluginManifest[] = [
     type: "mcp-tool",
     entry_point: "ghcr.io/abs-plugins/zendesk-tickets:1.0.0",
     description:
-      "Zendesk destek bileti okuma + yorum ekleme — RAG'a ingest + AI draft.",
+      "Read Zendesk support tickets and post replies — ingest into RAG, draft answers with AI.",
     author: "Automatia BCN",
     homepage: "https://github.com/abs-plugins/zendesk-tickets",
     license: "Apache-2.0",
@@ -306,8 +306,9 @@ export default function MarketplacePage() {
           Plugin Marketplace
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          ABS eklentilerini kur ve yönet — LLM sağlayıcıları, RAG kaynakları,
-          MCP araçları, workflow şablonları. Her kurulum açık izin onayı ister.
+          Add providers, RAG sources, MCP tools and workflow templates to your
+          server. Every plugin shows you exactly what it can reach before you
+          install it.
         </p>
       </motion.header>
 

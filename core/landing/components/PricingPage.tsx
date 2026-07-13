@@ -29,17 +29,17 @@ const PricingPage: FC<PricingPageProps> = () => {
     >
       <div className="container mx-auto px-4 text-center">
         <h2 className="mb-2 text-3xl font-bold tracking-tight">
-          Pilot / PoC görüşmesi
+          Pilot / PoC call
         </h2>
         <p className="mb-8 text-muted-foreground">
-          Sistemi kendi ortamınızda denemek için bizimle iletişime geçin.
+          Get in touch to try the system in your own environment.
         </p>
         <a
           href="mailto:support@automatiabcn.com"
           data-testid="pricing-page-cta"
           className="inline-flex h-11 items-center justify-center rounded-md bg-blue-600 px-6 text-sm font-semibold text-white hover:bg-blue-700"
         >
-          İletişime geç
+          Get in touch
         </a>
         <p className="mt-6 text-xs text-muted-foreground">
           support@automatiabcn.com · Barcelona

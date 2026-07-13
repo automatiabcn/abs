@@ -10,7 +10,7 @@
 // What this spec proves:
 //   1. /panel still serves (no 5xx).
 //   2. The four StatCards are rendered server-side (data-test=
-//      "panel-stats" wrapper present, h1 "Genel Bakış" present).
+//      "panel-stats" wrapper present, h1 "Overview" present).
 //   3. The interactive client island still mounts (Tremor charts
 //      and NeuralGraph are dynamic-imported with ssr:false; we only
 //      assert that the chrome is reachable, since the charts mount
@@ -69,7 +69,7 @@ test.describe("Q12-R70 /panel home split-shell", () => {
     // is a layout concern, not an SSR concern). The interactive
     // island scenario below proves the page hydrates and the cards
     // are reachable on desktop.
-    await expect(page.locator('h1', { hasText: "Genel Bakış" })).toBeAttached({
+    await expect(page.locator('h1', { hasText: "Overview" })).toBeAttached({
       timeout: 10_000,
     });
     await expect(page.locator('[data-test="panel-stats"]').first()).toBeAttached();
@@ -77,7 +77,7 @@ test.describe("Q12-R70 /panel home split-shell", () => {
     // The four StatCard titles are static literals — they must be in
     // the SSR HTML regardless of whether useQuery has resolved yet
     // and regardless of viewport.
-    for (const title of ["MCP Tools", "Cascade (24h)", "Claude Kotası", "Sağlayıcılar"]) {
+    for (const title of ["Tools", "Answers today", "Quota used", "Providers"]) {
       await expect(page.locator("text=" + title).first()).toBeAttached();
     }
   });

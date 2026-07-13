@@ -1,18 +1,26 @@
-"""Sprint 2N FAZ A5 — Lesson 11 Türkçe byte-exact CI gate.
+"""Two guards on the words a customer actually reads.
 
-Setup wizard HTML + cascade fallback metinleri UTF-8 byte sequence düzeyinde
-doğrulanır. ASCII düşmüş Türkçe (Ileri, Tum, lutfen, sagla...) BLOCK edilir.
+1. The setup wizard ships a real translation dictionary (EN canonical, TR and
+   ES applied client-side). A translation that loses its accents — "Ileri" for
+   "İleri" — is not a translation, it is a bug that ships silently because
+   nothing in a byte-blind test notices. So the Turkish is asserted at the byte
+   level, and its ASCII-flattened forms are forbidden outright.
 
-Sprint 2M bug log: #2M-003 (setup HTML) + #2M-017 (cascade fallback)
+2. Chat's fallback errors are the opposite case. They are the product speaking
+   for itself when nothing else could answer, they are not part of the
+   dictionary, and the product speaks English. Turkish there is a leak from
+   when this was an internal tool, and it reaches the customer in the chat
+   bubble — so it is banned rather than pinned.
 """
 from __future__ import annotations
 
 import pathlib
+import re
 
 BACKEND_ROOT = pathlib.Path(__file__).resolve().parents[1]
 SETUP_DIR = BACKEND_ROOT / "app" / "static" / "setup"
-# Wizard Türkçesi i18n sözlüğünde (setup.js) yaşıyor: index.html artık EN-default
-# (data-i18n ile çevriliyor). Byte-exact gate Türkçeyi setup.js'te doğrular.
+# The wizard's Turkish lives in setup.js's i18n dictionary; index.html is
+# EN-canonical and translated via data-i18n. So the byte gate looks at setup.js.
 SETUP_JS = SETUP_DIR / "assets" / "setup.js"
 CHAT_PY = BACKEND_ROOT / "app" / "api" / "chat.py"
 
@@ -64,42 +72,51 @@ def test_setup_js_no_ascii_fallen_turkish() -> None:
     )
 
 
-CASCADE_REQUIRED_BYTES = {
-    "Henüz sağlayıcı yapılandırılmadı": (
-        b"Hen\xc3\xbcz sa\xc4\x9flay\xc4\xb1c\xc4\xb1 yap\xc4\xb1land\xc4\xb1r\xc4\xb1lmad\xc4\xb1"
-    ),
-    "Ücretsiz sağlayıcı yapılandırılmadı": (
-        b"\xc3\x9ccretsiz sa\xc4\x9flay\xc4\xb1c\xc4\xb1 yap\xc4\xb1land\xc4\xb1r\xc4\xb1lmad\xc4\xb1"
-    ),
-    "Tüm sağlayıcılar geçici hata verdi": (
-        b"T\xc3\xbcm sa\xc4\x9flay\xc4\xb1c\xc4\xb1lar ge\xc3\xa7ici hata verdi"
-    ),
-    "lütfen tekrar deneyin": b"l\xc3\xbctfen tekrar deneyin",
-    "Cascade canlı uçları henüz aktif değil": (
-        b"Cascade canl\xc4\xb1 u\xc3\xa7lar\xc4\xb1 hen\xc3\xbcz aktif de\xc4\x9fil"
-    ),
-}
-
-CASCADE_FORBIDDEN_ASCII = [
-    b"Henuz saglayici yapilandirilmadi",
-    b"Ucretsiz saglayici yapilandirilmadi",
-    b"Tum saglayicilar gecici hata verdi",
-    b"lutfen tekrar deneyin",
-    b"Cascade canli uclari henuz aktif degil",
+# The strings chat streams into the bubble when no provider could answer. They
+# are what a paying customer reads on the worst day they will have with this
+# product, so each one has to name the problem and the way out of it.
+CHAT_FALLBACKS = [
+    "No provider is set up yet",
+    "Only paid providers are configured",
+    "Every provider failed on this question",
+    "The answer did not come through",
 ]
 
+TURKISH_LETTERS = "şğıçöüŞĞİÇÖÜ"
 
-def test_chat_cascade_fallback_byte_exact() -> None:
-    raw = CHAT_PY.read_bytes()
-    missing = [w for w, b in CASCADE_REQUIRED_BYTES.items() if b not in raw]
+
+def _user_facing_strings(source: str) -> list[str]:
+    """Every quoted string on a line that streams text to the client.
+
+    Comments and docstrings are not the customer's problem; `err_text = "…"`
+    and the `"content": …` frames are.
+    """
+    out: list[str] = []
+    for line in source.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        out.extend(re.findall(r'"([^"]{12,})"', line))
+    return out
+
+
+def test_chat_fallbacks_tell_the_customer_what_to_do() -> None:
+    source = CHAT_PY.read_text(encoding="utf-8")
+    missing = [s for s in CHAT_FALLBACKS if s not in source]
     assert not missing, (
-        f"chat.py cascade fallback eksik Türkçe byte: {missing}"
+        "chat.py no longer says these to the customer when a question cannot "
+        f"be answered: {missing}"
     )
 
 
-def test_chat_cascade_no_ascii_fallen_turkish() -> None:
-    raw = CHAT_PY.read_bytes()
-    leaks = [t.decode() for t in CASCADE_FORBIDDEN_ASCII if t in raw]
-    assert not leaks, (
-        f"chat.py cascade hâlâ ASCII Türkçe içeriyor: {leaks}"
-    )
+def test_chat_never_answers_the_customer_in_turkish() -> None:
+    # This product is sold in English. Turkish in a chat bubble is a leak from
+    # when it was an internal tool — and the customer, not the author, is the
+    # one who finds it.
+    source = CHAT_PY.read_text(encoding="utf-8")
+    leaks = [
+        s
+        for s in _user_facing_strings(source)
+        if any(ch in s for ch in TURKISH_LETTERS)
+    ]
+    assert not leaks, f"chat.py speaks Turkish to the customer: {leaks}"

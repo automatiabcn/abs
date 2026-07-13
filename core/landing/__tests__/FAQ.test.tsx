@@ -13,9 +13,8 @@ describe("FAQ (018 modul C)", () => {
   it("includes 4 new questions: vault, refund, GDPR, open source", () => {
     render(<FAQ />);
     expect(screen.getByText(/sops\/age vault/i)).toBeInTheDocument();
-    // Turkish "İ" → use exact substring match (Unicode case-folding limitation)
-    expect(screen.getByText(/İade nasıl alınır/)).toBeInTheDocument();
+    expect(screen.getByText(/How do refunds work/i)).toBeInTheDocument();
     expect(screen.getByText(/gdpr/i)).toBeInTheDocument();
-    expect(screen.getByText(/Açık kaynak/)).toBeInTheDocument();
+    expect(screen.getByText(/Is it open source\?/i)).toBeInTheDocument();
   });
 });

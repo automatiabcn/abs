@@ -14,43 +14,43 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
-    title: "100+ MCP tool",
+    title: "100+ MCP tools",
     description:
-      "Hazır kurulu, uzatılabilir. Kendi tool'larını ekleyebilirsin (Q1 ölçüm: 122 tool).",
+      "Installed and ready, and extensible. You can add your own tools (Q1 measurement: 122 tools).",
   },
   {
-    title: "13 kalite pipeline'ı",
+    title: "13 quality pipelines",
     description:
-      "qual-code, qual-tr, qual-analysis, judge — birden fazla modeli zincirleyen üretim akışları.",
+      "qual-code, qual-tr, qual-analysis, judge — production flows that chain several models together.",
   },
   {
-    title: "6 sağlayıcı cascade",
+    title: "6-provider cascade",
     description:
-      "Anthropic, Groq, Cerebras, Gemini, CloudFlare, Cohere — biri düşerse diğeri devreye girer.",
+      "Anthropic, Groq, Cerebras, Gemini, CloudFlare, Cohere — if one goes down, the next takes over.",
   },
   {
     title: "Symbol-aware RAG",
     description:
-      "10K+ sembol indeksi ve callsite graph — embedding tabanlı aramadan farkı burada başlıyor.",
+      "A 10K+ symbol index and a callsite graph — this is where it parts ways with embedding-only search.",
   },
   {
     title: "Senior Judge",
     description:
-      "Diff'leri AST metrikleri + LLM yargısı ile birleştirip kalite skoru üretir.",
+      "Combines AST metrics with an LLM verdict on each diff to produce a quality score.",
   },
   {
-    title: "Türkçe kalite pipeline'ı",
+    title: "Turkish quality pipeline",
     description:
-      "Çok dilli modeller için Türkçe'ye özel üret-kontrol-polish akışı.",
+      "A generate-check-polish flow built specifically for Turkish on multilingual models.",
   },
   {
-    title: "16 saniye warm-boot",
-    description: "Docker Compose tek komut. Image cache'liyse cold-start 16s, ilk kurulum dakikalar içinde. SSH bilen herkes kurabilir.",
+    title: "16-second warm boot",
+    description: "One Docker Compose command. Cold start is 16s with a cached image, and the first install takes minutes. Anyone who knows SSH can set it up.",
   },
   {
-    title: "6 ay dogfooding",
+    title: "6 months of dogfooding",
     description:
-      "Kurucu bizzat günlük kullanıyor — her özellik gerçek iş akışından çıktı.",
+      "The founder uses it every day — every feature came out of real work.",
   },
 ];
 
@@ -65,10 +65,10 @@ const Features: FC = () => (
         id="features-title"
         className="text-3xl font-bold tracking-tight sm:text-4xl"
       >
-        Kutudan çıkan yetenekler
+        What comes in the box
       </h2>
       <p className="mt-4 text-muted-foreground">
-        Herhangi bir eklenti marketplace'ine bağlı değilsin — hepsi repoda.
+        You do not depend on any plugin marketplace — it is all in the repo.
       </p>
     </div>
 

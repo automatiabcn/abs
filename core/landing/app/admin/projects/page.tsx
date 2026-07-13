@@ -168,7 +168,7 @@ export default function ProjectsPage() {
     setError(null);
     const ownerId = keyOwnerType === "project" ? selected : undefined;
     if (keyOwnerType === "project" && !selected) {
-      setError("Önce bir proje seçin (project key için).");
+      setError("Pick a project first — a project key needs one.");
       return;
     }
     try {
@@ -211,10 +211,10 @@ export default function ProjectsPage() {
     <main className="mx-auto max-w-5xl space-y-4 p-4">
       <div className="flex items-center gap-2">
         <FolderKanban className="h-5 w-5 text-primary" />
-        <h1 className="text-lg font-semibold">Projeler & Anahtarlar</h1>
+        <h1 className="text-lg font-semibold">Projects &amp; keys</h1>
         {active && (
           <Badge variant="outline" className="ml-auto text-[10px]">
-            Aktif proje: {active}
+            Active project: {active}
           </Badge>
         )}
       </div>
@@ -228,10 +228,10 @@ export default function ProjectsPage() {
       {/* Projects */}
       <Card className="bg-card/70">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Projeler</CardTitle>
+          <CardTitle className="text-base">Projects</CardTitle>
           <CardDescription>
-            Her proje RAG/GraphRAG için ayrı bir çalışma alanıdır. Aktif projeyi
-            seçince RAG sorguları o projeyle sınırlanır.
+            Each project is a separate workspace for your documents and graph.
+            Set one active and every knowledge-base search is limited to it.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -239,18 +239,18 @@ export default function ProjectsPage() {
             <input
               value={newSlug}
               onChange={(e) => setNewSlug(e.target.value)}
-              placeholder="proje-slug"
+              placeholder="project-slug"
               data-test="project-slug"
               className="rounded-md border border-border bg-background p-2 text-sm"
             />
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Proje adı"
+              placeholder="Project name"
               className="flex-1 rounded-md border border-border bg-background p-2 text-sm"
             />
             <Button type="button" onClick={createProject} data-test="project-create">
-              <Plus className="mr-1 h-4 w-4" /> Oluştur
+              <Plus className="mr-1 h-4 w-4" /> Create
             </Button>
           </div>
           <ul className="space-y-1">
@@ -276,12 +276,12 @@ export default function ProjectsPage() {
                     className="h-6 px-2 text-[10px]"
                     onClick={() => setActiveProject(active === p.slug ? "" : p.slug)}
                   >
-                    {active === p.slug ? "Aktif" : "Aktif yap"}
+                    {active === p.slug ? "Active" : "Set active"}
                   </Button>
                   <button
                     type="button"
                     onClick={() => void archiveProject(p.slug)}
-                    aria-label={`${p.slug} arşivle`}
+                    aria-label={`Archive ${p.slug}`}
                     className="rounded p-1 text-muted-foreground hover:text-rose-300"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -290,20 +290,20 @@ export default function ProjectsPage() {
               </li>
             ))}
             {projects.length === 0 && (
-              <li className="text-xs text-muted-foreground">Henüz proje yok.</li>
+              <li className="text-xs text-muted-foreground">No projects yet.</li>
             )}
           </ul>
 
           {selected && (
             <div className="mt-3 rounded-md border border-border p-3">
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Üyeler — {selected}
+                Members — {selected}
               </h4>
               <div className="mb-2 flex flex-wrap gap-2">
                 <input
                   value={memberEmail}
                   onChange={(e) => setMemberEmail(e.target.value)}
-                  placeholder="kullanici@firma.com"
+                  placeholder="name@company.com"
                   className="flex-1 rounded-md border border-border bg-background p-2 text-xs"
                 />
                 <select
@@ -316,7 +316,7 @@ export default function ProjectsPage() {
                   <option value="owner">owner</option>
                 </select>
                 <Button type="button" onClick={addMember} className="h-9 text-xs">
-                  Ekle
+                  Add
                 </Button>
               </div>
               <ul className="space-y-1">
@@ -349,11 +349,12 @@ export default function ProjectsPage() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <KeyRound className="h-4 w-4 text-primary" />
-            Sağlayıcı Anahtarları (BYOK)
+            Your own provider keys (BYOK)
           </CardTitle>
           <CardDescription>
-            Her kullanıcı/proje/org kendi API anahtarını girebilir. İstek anında
-            project → user → org → global sırasıyla çözümlenir.
+            A user, a project or the whole organisation can bring its own API
+            key. On each request we look for a key in that order — project,
+            then user, then organisation, then the server default.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -363,9 +364,9 @@ export default function ProjectsPage() {
               onChange={(e) => setKeyOwnerType(e.target.value)}
               className="rounded-md border border-border bg-background p-2 text-sm"
             >
-              <option value="org">org</option>
-              <option value="user">user (ben)</option>
-              <option value="project">project (seçili)</option>
+              <option value="org">organisation</option>
+              <option value="user">just me</option>
+              <option value="project">selected project</option>
             </select>
             <select
               value={keyProvider}
@@ -382,12 +383,12 @@ export default function ProjectsPage() {
               type="password"
               value={keyValue}
               onChange={(e) => setKeyValue(e.target.value)}
-              placeholder="API anahtarı"
+              placeholder="API key"
               data-test="provider-key-value"
               className="flex-1 rounded-md border border-border bg-background p-2 text-sm"
             />
             <Button type="button" onClick={saveKey} data-test="provider-key-save">
-              Kaydet
+              Save
             </Button>
           </div>
           <ul className="space-y-1">
@@ -413,7 +414,7 @@ export default function ProjectsPage() {
               </li>
             ))}
             {keys.length === 0 && (
-              <li className="text-xs text-muted-foreground">Henüz anahtar yok.</li>
+              <li className="text-xs text-muted-foreground">No keys yet.</li>
             )}
           </ul>
         </CardContent>

@@ -10,7 +10,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "RAG / Bilgi Tabanı — ABS Admin",
+  title: "Knowledge Base — ABS Admin",
   robots: { index: false, follow: false },
 };
 

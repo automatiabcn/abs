@@ -5,10 +5,10 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// S20.7 — `/panel/quota` monthly usage bars + 80%/95% markers + 5dk
+// S20.7 — `/panel/quota` monthly usage bars + 80%/95% markers + 5 min
 // auto-refresh.
 // Q8 / QT1+QT2+QT5+QT6 — Tremor visualisation, Configure CTA per
-// provider, Total Cost summary tile, terminology unified to "Kota".
+// provider, summary tiles, terminology unified to "usage".
 "use client";
 
 import Link from "next/link";
@@ -103,12 +103,12 @@ interface QuotaPayload {
 const REFRESH_MS = 5 * 60 * 1000;
 
 function fmtNumber(n: number): string {
-  return n.toLocaleString("tr-TR");
+  return n.toLocaleString();
 }
 
 function fmtDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString("tr-TR");
+    return new Date(iso).toLocaleDateString();
   } catch {
     return iso;
   }
@@ -139,7 +139,7 @@ function ProviderRow({ slice, name }: { slice: Slice; name: string }) {
           <span className="font-mono text-sm">{slice.label || name}</span>
           {slice.configured === false && (
             <Badge variant="outline" className="text-[10px]">
-              yapılandırılmadı
+              not set up
             </Badge>
           )}
         </div>
@@ -153,7 +153,7 @@ function ProviderRow({ slice, name }: { slice: Slice; name: string }) {
                 className="h-7 text-[11px]"
               >
                 <Settings className="mr-1 h-3 w-3" />
-                Yapılandır
+                Set up
               </Button>
             </Link>
           ) : (
@@ -169,7 +169,7 @@ function ProviderRow({ slice, name }: { slice: Slice; name: string }) {
       {slice.percent >= 0.8 && (
         <div className="mt-1 flex items-center gap-1 text-[11px] text-amber-300">
           <AlertTriangle className="h-3 w-3" />
-          {Math.round(slice.percent * 100)}% — eşik {slice.percent >= 0.95 ? "kritik" : "uyarı"}
+          {Math.round(slice.percent * 100)}% used — {slice.percent >= 0.95 ? "almost out" : "running low"}
         </div>
       )}
     </li>
@@ -213,9 +213,9 @@ export default function QuotaPage() {
         }
       } catch (exc) {
         if (active) {
-          // Q11-L16-002: TR prefix + drop the bare "unknown" EN string.
+          // Q11-L16-002: name what failed instead of a bare "unknown".
           setError(
-            `Kota verisi yüklenemedi: ${exc instanceof Error ? exc.message : "bilinmeyen hata"}`
+            `Couldn't load usage: ${exc instanceof Error ? exc.message : "unknown error"}`
           );
           setLoading(false);
         }
@@ -238,10 +238,10 @@ export default function QuotaPage() {
     0,
   );
   // 3rd-eye audit — the backend QuotaSlice has no `cost_usd` field, so the old
-  // "Tahmini maliyet" tile summed undefined → always $0.00. Quota tracks
+  // "estimated cost" tile summed undefined → always $0.00. This page tracks
   // rate-limit usage, not spend (cost lives on /admin/usage + billing). The
   // tile now surfaces a real, on-topic signal already in the payload: the
-  // count of active threshold warnings.
+  // count of providers running low.
   const warningCount = data?.warnings?.length ?? 0;
   const configuredCount = allSlices.filter(([, s]) => s?.configured !== false).length;
   const freePathPct =
@@ -269,12 +269,12 @@ export default function QuotaPage() {
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
             <BarChart3 className="h-5 w-5 text-primary" />
-            Kota
+            Usage
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {data
-              ? `${fmtDate(data.period_start)} – ${fmtDate(data.period_end)} dönemi`
-              : "Sağlayıcı kullanımı, eşik uyarıları, free-path oranı."}
+              ? `${fmtDate(data.period_start)} – ${fmtDate(data.period_end)}`
+              : "How much of each provider you have used, and what is running low."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -288,7 +288,7 @@ export default function QuotaPage() {
           <Link href="/admin/settings" passHref>
             <Button variant="outline" size="sm">
               <Settings className="mr-2 h-3.5 w-3.5" />
-              Sağlayıcı ayarları
+              Provider settings
             </Button>
           </Link>
         </div>
@@ -301,25 +301,25 @@ export default function QuotaPage() {
       >
         {[
           {
-            label: "Toplam çağrı",
+            label: "Requests used",
             value: fmtNumber(totalCalls),
             icon: Layers,
             tone: "indigo",
           },
           {
-            label: "Eşik uyarısı",
+            label: "Running low",
             value: fmtNumber(warningCount),
             icon: AlertTriangle,
             tone: "emerald",
           },
           {
-            label: "Aktif sağlayıcı",
+            label: "Providers ready",
             value: `${configuredCount}/${allSlices.length}`,
             icon: Zap,
             tone: "amber",
           },
           {
-            label: "Free-path",
+            label: "Free providers",
             value: `${freePathPct}%`,
             icon: BarChart3,
             tone: "violet",
@@ -344,9 +344,9 @@ export default function QuotaPage() {
 
       <Card className="bg-card/60">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Sağlayıcı kullanımı</CardTitle>
+          <CardTitle className="text-base">Providers</CardTitle>
           <CardDescription>
-            80% sarı, 95% kırmızı eşik. Yapılandırılmamış sağlayıcılar Configure CTA gösterir.
+            Amber at 80% used, red at 95%. Providers you haven&apos;t set up yet show a Set up button.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -358,7 +358,7 @@ export default function QuotaPage() {
             </div>
           ) : error ? (
             <div className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">
-              Kota bilgisi yüklenemedi: {error}
+              {error}
             </div>
           ) : (
             <ul className="space-y-2">
@@ -379,7 +379,7 @@ export default function QuotaPage() {
             >
               <div className="mb-1 flex items-center gap-1 font-semibold">
                 <AlertTriangle className="h-3 w-3" />
-                Uyarılar
+                Needs attention
               </div>
               <ul className="list-disc space-y-1 pl-4">
                 {data.warnings.map((w, i) => (

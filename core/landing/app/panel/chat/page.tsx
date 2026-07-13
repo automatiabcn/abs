@@ -33,8 +33,8 @@ const ChatClient = dynamic(() => import("./ChatClient"), {
       <main className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-border px-6 py-3">
           <div>
-            <h1 className="text-base font-semibold tracking-tight">Sohbet</h1>
-            <p className="text-xs text-muted-foreground">Yükleniyor…</p>
+            <h1 className="text-base font-semibold tracking-tight">Chat</h1>
+            <p className="text-xs text-muted-foreground">Loading…</p>
           </div>
         </header>
         <section className="flex-1 overflow-y-auto px-6 py-6">

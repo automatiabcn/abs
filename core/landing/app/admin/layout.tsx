@@ -22,7 +22,7 @@ import { QueryProvider } from "@/lib/query-client";
 
 export const metadata: Metadata = {
   description:
-    "ABS Server yönetici konsolu — cascade sağlayıcı, pipeline, RAG, marketplace, kullanıcı ve denetim kayıtları yönetimi.",
+    "ABS Server admin console — manage providers, pipelines, RAG, plugins, users and the audit log.",
   robots: { index: false, follow: false },
 };
 
@@ -77,16 +77,16 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     // Inline notice (no redirect → no loop for a logged-in non-admin).
     return (
       <main className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-background p-6 text-center text-foreground">
-        <h1 className="text-xl font-semibold">Yönetici yetkisi gerekli</h1>
+        <h1 className="text-xl font-semibold">You need admin access</h1>
         <p className="max-w-md text-sm text-muted-foreground">
-          Bu alan yalnızca yönetici hesapları içindir. Yöneticinizden sizi admin
-          yapmasını isteyin ya da bir yönetici hesabıyla giriş yapın.
+          This console is for admins only. Ask an admin to change your role, or
+          sign in with an admin account.
         </p>
         <a
           href="/login"
           className="rounded-md border border-border px-4 py-2 text-sm hover:bg-accent"
         >
-          Giriş sayfası
+          Go to sign-in
         </a>
       </main>
     );

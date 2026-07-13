@@ -7,8 +7,8 @@
 
 // Agentic Growth — Workflow Designer (Stage D: real interactive editor).
 // The canvas is a live xyflow graph: drag nodes, drag handle→handle to wire or
-// rewire, Delete to remove, click an agent node to inspect. "Kaydet" persists
-// the graph (positions + edges); "Çalıştır" saves then runs the agent chain in
+// rewire, Delete to remove, click an agent node to inspect. "Save" persists
+// the graph (positions + edges); "Run" saves then runs the agent chain in
 // the graph's topological order. GET/PUT /definition, GET palette/agents/runs,
 // POST run.
 "use client";
@@ -50,15 +50,15 @@ const KIND_CHIP: Record<string, string> = {
 };
 
 const ENGINE = [
-  "State checkpoint (SQLite)", "Retry + timeout + compensation",
-  "Human-approval pause / resume", "Step-level audit + tool history",
-  "LangGraph (multi-agent) · gerektiğinde",
+  "Picks up where it left off after a restart", "Retries, times out, and rolls back",
+  "Pauses for your approval, resumes on your click", "Every step and tool call is logged",
+  "Runs several agents together when a step needs it",
 ];
 
 const KIND_LABEL: Record<string, string> = {
-  trigger: "Tetikleyici", retrieval: "RAG/Graph", connector: "Connector",
-  policy: "Policy Gate", consent: "Consent", approval: "Onay Geçidi", action: "Aksiyon",
-  branch: "Dallanma", sub_workflow: "Alt-akış", custom_ai: "Custom AI",
+  trigger: "Trigger", retrieval: "Knowledge", connector: "Connector",
+  policy: "Policy check", consent: "Consent", approval: "Approval", action: "Action",
+  branch: "Branch", sub_workflow: "Sub-workflow", custom_ai: "Custom AI",
 };
 
 // Per-kind editable config fields rendered in the inspector. `as` picks the
@@ -66,24 +66,24 @@ const KIND_LABEL: Record<string, string> = {
 type CfgField = { key: string; label: string; as?: "text" | "textarea" | "number" | "select"; options?: string[]; placeholder?: string };
 const CONFIG_FIELDS: Record<string, CfgField[]> = {
   custom_ai: [
-    { key: "instruction", label: "Talimat (doğal dil)", as: "textarea", placeholder: "Bu adım ne yapsın? Örn: Müşteriye kaynak-gösteren bir teklif taslağı yaz." },
+    { key: "instruction", label: "What should this step do?", as: "textarea", placeholder: "In plain English. E.g. Draft a quote for the customer and cite the price list." },
   ],
   retrieval: [
-    { key: "query", label: "Sorgu (boşsa önceki adım)", as: "text", placeholder: "fiyat listesi" },
-    { key: "top_k", label: "top_k", as: "number", placeholder: "5" },
+    { key: "query", label: "What to look up (blank = the previous step)", as: "text", placeholder: "price list" },
+    { key: "top_k", label: "How many results", as: "number", placeholder: "5" },
   ],
   policy: [
-    { key: "risk_threshold", label: "Risk eşiği", as: "select", options: ["low", "medium", "high"] },
+    { key: "risk_threshold", label: "Stop at this risk level", as: "select", options: ["low", "medium", "high"] },
   ],
   consent: [
-    { key: "channel", label: "Kanal", as: "select", options: ["any", "email", "whatsapp", "sms"] },
+    { key: "channel", label: "Channel", as: "select", options: ["any", "email", "whatsapp", "sms"] },
   ],
   approval: [
-    { key: "role", label: "Onaylayan rol", as: "select", options: ["admin", "manager", "owner"] },
+    { key: "role", label: "Who approves", as: "select", options: ["admin", "manager", "owner"] },
   ],
   action: [
-    { key: "action_type", label: "Aksiyon tipi", as: "select", options: ["note", "email", "route", "crm_update"] },
-    { key: "target", label: "Hedef", as: "text", placeholder: "CRM / kanal / alıcı" },
+    { key: "action_type", label: "What to do", as: "select", options: ["note", "email", "route", "crm_update"] },
+    { key: "target", label: "Where it goes", as: "text", placeholder: "CRM · channel · recipient" },
   ],
   connector: [
     { key: "connector_id", label: "Connector", as: "text", placeholder: "hubspot · parasut · csv_import …" },
@@ -107,7 +107,7 @@ export default function WorkflowDesignerPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [name, setName] = useState("Inbound → Cevap Taslağı");
+  const [name, setName] = useState("Incoming message → draft reply");
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -187,7 +187,7 @@ export default function WorkflowDesignerPage() {
       body: JSON.stringify({ key: "default", name, graph: currentGraph() }),
     });
     const j = await r.json();
-    setSaved(`${j.node_count} node · ${j.edge_count} bağlantı kaydedildi`);
+    setSaved(`Saved · ${j.node_count} steps, ${j.edge_count} connections`);
     return j.ordered_steps ?? [];
   }
 
@@ -207,7 +207,7 @@ export default function WorkflowDesignerPage() {
         (n) => n.kind !== "trigger" && (graph.nodes.length === 1 || wired.has(n.id)),
       );
       if (runnable.length === 0) {
-        setErr("Çalıştırılacak node yok — palette'ten bir node ekleyip bağlayın.");
+        setErr("Nothing to run. Add a step from the palette and connect it.");
         return;
       }
       // Send the whole graph: the engine runs every wired node (agent, retrieval,
@@ -215,11 +215,11 @@ export default function WorkflowDesignerPage() {
       const r = await fetch("/v1/agentic-workflows/run", {
         method: "POST", credentials: "include",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name, graph, input: "Fiyat öğrenmek istiyorum", trigger: "web form", dry_run: dry }),
+        body: JSON.stringify({ name, graph, input: "I would like to know the price", trigger: "web form", dry_run: dry }),
       });
       if (dry) {
         const j = await r.json();
-        setSaved(`Dry-run: ${j.steps_run}/${j.step_count} adım çalıştı · ${j.would_open_approvals} onay açılırdı (kalıcı etki yok)`);
+        setSaved(`Test run: ${j.steps_run}/${j.step_count} steps ran · ${j.would_open_approvals} approvals would open · nothing was changed`);
       } else {
         loadRuns();
       }
@@ -235,13 +235,13 @@ export default function WorkflowDesignerPage() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Workflow Designer · <span className="text-muted-foreground">&quot;{name}&quot;</span></h1>
-          <p className="mt-1 text-[12px] text-muted-foreground">interaktif · sürükle-bağla · event-triggered · human-approval-pause · state + retry + rollback</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">Drag steps, connect them, run. It pauses for your approval and picks up where it left off.</p>
         </div>
         <div className="flex items-center gap-2">
           {saved && <span className="text-[11px] text-emerald-300/80">✓ {saved}</span>}
-          <button onClick={onSave} disabled={busy} className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50" data-test="wf-save">Kaydet</button>
-          <button onClick={() => run(true)} disabled={busy} className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50" data-test="wf-dryrun">Dry-run</button>
-          <button onClick={() => run(false)} disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow disabled:opacity-50" data-test="wf-run">{busy ? "Çalışıyor…" : "▶ Çalıştır"}</button>
+          <button onClick={onSave} disabled={busy} className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50" data-test="wf-save">Save</button>
+          <button onClick={() => run(true)} disabled={busy} className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50" data-test="wf-dryrun">Test run</button>
+          <button onClick={() => run(false)} disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow disabled:opacity-50" data-test="wf-run">{busy ? "Running…" : "▶ Run"}</button>
         </div>
       </div>
       {err && <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">{err}</div>}
@@ -251,7 +251,7 @@ export default function WorkflowDesignerPage() {
         <div className="space-y-6 lg:col-span-2">
           <div className="rounded-xl border bg-card/60 p-4">
             <div className="mb-2 flex items-center justify-between">
-              <div className="text-sm font-semibold">◆ Canvas <span className="font-normal text-muted-foreground">· sürükle · handle&apos;dan handle&apos;a bağla · Delete ile sil</span></div>
+              <div className="text-sm font-semibold">◆ Canvas <span className="font-normal text-muted-foreground">· drag a step · drag handle to handle to connect · Delete to remove</span></div>
             </div>
             <AgenticFlowCanvas
               nodes={flowNodes}
@@ -264,22 +264,22 @@ export default function WorkflowDesignerPage() {
           </div>
 
           <div className="rounded-xl border bg-card/60 p-4">
-            <div className="mb-3 text-sm font-semibold">◍ Workflow Run History <span className="font-normal text-muted-foreground">· state · retry · rollback izlenir</span></div>
+            <div className="mb-3 text-sm font-semibold">◍ Past runs <span className="font-normal text-muted-foreground">· every retry and rollback is recorded</span></div>
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead><tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                   <th className="pb-2 pr-3 font-medium">Run</th><th className="pb-2 pr-3 font-medium">Trigger</th>
-                  <th className="pb-2 pr-3 font-medium">Adım</th><th className="pb-2 pr-3 font-medium">Süre</th><th className="pb-2 font-medium">Durum</th>
+                  <th className="pb-2 pr-3 font-medium">Steps</th><th className="pb-2 pr-3 font-medium">Took</th><th className="pb-2 font-medium">Status</th>
                 </tr></thead>
                 <tbody className="divide-y divide-border">
-                  {runs.length === 0 && <tr><td colSpan={5} className="py-3 text-muted-foreground">Henüz çalıştırma yok.</td></tr>}
+                  {runs.length === 0 && <tr><td colSpan={5} className="py-3 text-muted-foreground">Nothing has run yet.</td></tr>}
                   {runs.map((r) => (
                     <tr key={r.id}>
                       <td className="py-2.5 pr-3 font-mono text-xs">#{r.id} {r.name}</td>
                       <td className="py-2.5 pr-3 text-muted-foreground">{r.trigger || "manual"}</td>
                       <td className="py-2.5 pr-3 font-mono">{r.step_count}</td>
                       <td className="py-2.5 pr-3 font-mono text-muted-foreground">{(r.elapsed_ms / 1000).toFixed(1)}s</td>
-                      <td className="py-2.5"><span className={r.status === "done" ? "text-emerald-300" : "text-amber-300"}>{r.status}{r.approvals_opened > 0 ? ` · ${r.approvals_opened} onay` : ""}</span></td>
+                      <td className="py-2.5"><span className={r.status === "done" ? "text-emerald-300" : "text-amber-300"}>{r.status}{r.approvals_opened > 0 ? ` · ${r.approvals_opened} waiting for approval` : ""}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -291,16 +291,16 @@ export default function WorkflowDesignerPage() {
         {/* ── Right rail: inspector + palette + engine ── */}
         <div className="space-y-6">
           <div className="rounded-xl border bg-card/60 p-4" style={{ boxShadow: "inset 0 2px 0 0 rgba(58,157,255,.5)" }}>
-            <div className="mb-3 text-sm font-semibold">⚡ Node: {selNode?.data.name ?? "—"}</div>
+            <div className="mb-3 text-sm font-semibold">⚡ Step: {selNode?.data.name ?? "—"}</div>
             {selNode?.data.kind === "agent" && sel ? (
               <div className="space-y-0 text-[12px]">
                 {[
-                  ["Tür", "Agent step"],
+                  ["Type", "Agent step"],
                   ["Model", sel.model || "—"],
-                  ["Allowed tools", (sel.tools ?? []).join(" · ") || "—"],
-                  ["Output schema", sel.output_kind || "—"],
+                  ["Tools it may use", (sel.tools ?? []).join(" · ") || "—"],
+                  ["Answer format", sel.output_kind || "—"],
                   ["Risk", sel.risk || "—"],
-                  ["Onay kuralı", sel.requires_approval ? "gönderim öncesi" : "otomatik"],
+                  ["Approval", sel.requires_approval ? "asks you before sending" : "runs on its own"],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between border-b border-border py-1.5 last:border-0">
                     <span className="text-muted-foreground">{k}</span><span className="font-mono text-right">{v}</span>
@@ -310,7 +310,7 @@ export default function WorkflowDesignerPage() {
             ) : selNode && (CONFIG_FIELDS[selNode.data.kind]?.length ?? 0) > 0 ? (
               <div className="space-y-3 text-[12px]">
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                  {KIND_LABEL[selNode.data.kind] ?? selNode.data.kind} · ayarlar
+                  {KIND_LABEL[selNode.data.kind] ?? selNode.data.kind} · settings
                 </div>
                 {CONFIG_FIELDS[selNode.data.kind].map((f) => {
                   const val = (selNode.data.config ?? {})[f.key] ?? "";
@@ -333,18 +333,18 @@ export default function WorkflowDesignerPage() {
                     </label>
                   );
                 })}
-                <p className="text-[10px] text-muted-foreground">Kaydet → ayarlar workflow ile saklanır; Çalıştır'da motor bunları kullanır.</p>
+                <p className="text-[10px] text-muted-foreground">Save to keep these settings. The next run will use them.</p>
               </div>
             ) : (
               <div className="text-[11px] text-muted-foreground">
-                {selNode ? `${KIND_LABEL[selNode.data.kind] ?? selNode.data.kind} node — ${selNode.data.desc || "yapılandırma gerektirmez"}` : "Canvas'ta bir node'a tıklayın."}
+                {selNode ? `${KIND_LABEL[selNode.data.kind] ?? selNode.data.kind} step — ${selNode.data.desc || "nothing to configure"}` : "Click a step on the canvas."}
               </div>
             )}
           </div>
 
           <div className="rounded-xl border bg-card/60 p-4">
-            <div className="mb-2 text-sm font-semibold">⊞ Node Ekle</div>
-            <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Yapı</div>
+            <div className="mb-2 text-sm font-semibold">⊞ Add a step</div>
+            <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Steps</div>
             <div className="mb-3 flex flex-wrap gap-1.5">
               {(palette?.node_kinds ?? []).filter((k) => k !== "agent").map((k) => (
                 <button key={k} onClick={() => addNode(k, null, KIND_LABEL[k] ?? k, "")}
@@ -352,7 +352,7 @@ export default function WorkflowDesignerPage() {
                   data-test={`palette-${k}`}>+ {k.replace("_", "-")}</button>
               ))}
             </div>
-            <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Agent</div>
+            <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Agents</div>
             <div className="flex flex-wrap gap-1.5">
               {Object.values(palette?.agents ?? {}).flat().slice(0, 10).map((a) => (
                 <button key={a.id} onClick={() => addNode("agent", a.id, a.name, a.risk + " risk")}
@@ -363,7 +363,7 @@ export default function WorkflowDesignerPage() {
           </div>
 
           <div className="rounded-xl border bg-card/60 p-4">
-            <div className="mb-3 text-sm font-semibold">⚙ Engine</div>
+            <div className="mb-3 text-sm font-semibold">⚙ What the engine handles</div>
             <ul className="space-y-1.5 text-[12px] text-muted-foreground">
               {ENGINE.map((e) => (<li key={e} className="flex items-start gap-2"><span className="text-emerald-400">✓</span><span>{e}</span></li>))}
             </ul>

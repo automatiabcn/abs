@@ -1,6 +1,8 @@
-"""rag_inject — STUB davranış (009'a kadar placeholder)."""
+"""rag_inject — real hits from the operator's own index, or nothing."""
 
 from __future__ import annotations
+
+from typing import Any, Dict, List
 
 import pytest
 
@@ -13,18 +15,64 @@ def _tmp_cache(monkeypatch, tmp_path):
     monkeypatch.setattr(settings, "cache_dir", str(tmp_path))
 
 
-def test_bash_analyze_triggers_stub_context():
+def _hits(monkeypatch, hits: List[Dict[str, Any]]) -> None:
+    """Stand in for the index without standing in for the hook's own rules."""
+    monkeypatch.setattr(rag_inject, "_run_blocking", lambda _coro: hits)
+
+
+def test_analysis_gets_context_from_the_index(monkeypatch):
+    _hits(monkeypatch, [
+        {"file": "reports/q3.md", "snippet": "Revenue grew 14% on the retainer accounts.", "score": 0.82},
+    ])
     msg = rag_inject.maybe_rag_inject(
         "Bash", {"command": "python3 analyze data for trends"}
     )
-    assert "STUB" in msg or "009" in msg
+    assert "reports/q3.md" in msg
+    assert "Revenue grew 14%" in msg
 
 
-def test_write_python_file_triggers_stub():
+def test_writing_code_gets_context_from_the_index(monkeypatch):
+    _hits(monkeypatch, [
+        {"file": "app/billing.py", "snippet": "def charge(...)", "score": 0.7},
+    ])
     msg = rag_inject.maybe_rag_inject(
         "Write", {"file_path": "/x/y.py", "content": "print(1)"}
     )
-    assert "STUB" in msg or "009" in msg
+    assert "app/billing.py" in msg
+
+
+def test_an_empty_index_says_nothing(monkeypatch):
+    # The old version shipped a placeholder here. A placeholder reads as
+    # context and carries none — worse than silence, because the model
+    # believes it.
+    _hits(monkeypatch, [])
+    msg = rag_inject.maybe_rag_inject(
+        "Write", {"file_path": "/x/y.py", "content": "print(1)"}
+    )
+    assert msg == ""
+
+
+def test_a_weak_match_says_nothing(monkeypatch):
+    # A 0.1 similarity is the index shrugging. Injected, it would look exactly
+    # as authoritative as a real hit.
+    _hits(monkeypatch, [
+        {"file": "unrelated.md", "snippet": "Office plants need watering.", "score": 0.1},
+    ])
+    msg = rag_inject.maybe_rag_inject(
+        "Write", {"file_path": "/x/y.py", "content": "print(1)"}
+    )
+    assert msg == ""
+
+
+def test_a_broken_index_never_breaks_the_tool_call(monkeypatch):
+    def _boom(_coro):
+        raise RuntimeError("qdrant unreachable")
+
+    monkeypatch.setattr(rag_inject, "_run_blocking", _boom)
+    msg = rag_inject.maybe_rag_inject(
+        "Write", {"file_path": "/x/y.py", "content": "print(1)"}
+    )
+    assert msg == ""
 
 
 def test_other_tools_no_context():
@@ -32,8 +80,11 @@ def test_other_tools_no_context():
     assert msg == ""
 
 
-def test_rate_limit_same_category():
+def test_rate_limit_same_category(monkeypatch):
+    _hits(monkeypatch, [
+        {"file": "app/billing.py", "snippet": "def charge(...)", "score": 0.7},
+    ])
     a = rag_inject.maybe_rag_inject("Write", {"file_path": "/a.py", "content": "x"})
     b = rag_inject.maybe_rag_inject("Write", {"file_path": "/b.py", "content": "y"})
     assert a != ""
-    assert b == ""  # aynı kategori için 5dk içinde tek context
+    assert b == ""  # one context per category per five minutes

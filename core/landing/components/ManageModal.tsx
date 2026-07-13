@@ -49,20 +49,20 @@ const ManageModal: React.FC<ManageModalProps> = ({ linkLabel = "Manage" }) => {
         body: JSON.stringify({ customer_email: email }),
       });
       if (res.status === 404) {
-        throw new Error("Lisans bulunamadı, satın alma sayfasına git");
+        throw new Error("No licence found for that email. Check the address, or buy a licence first.");
       }
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error ?? "Portal başlatılamadı");
+        throw new Error(data.error ?? "Could not open the billing portal. Try again.");
       }
       const data = (await res.json()) as { portal_url?: string };
       if (data.portal_url) {
         window.location.href = data.portal_url;
-        return; // modal açık kalır loading gösterirken
+        return; // keep the modal open, still showing the loading state
       }
-      throw new Error("Portal URL alınamadı");
+      throw new Error("Could not open the billing portal. Try again.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Beklenmeyen hata");
+      setError(err instanceof Error ? err.message : "Something went wrong. Try again.");
       setLoading(false);
     }
   };
@@ -99,10 +99,11 @@ const ManageModal: React.FC<ManageModalProps> = ({ linkLabel = "Manage" }) => {
               id="manage-modal-title"
               className="text-lg font-semibold"
             >
-              Aboneliğini yönet
+              Manage your subscription
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Stripe Customer Portal'a yönlendirileceksin. Email gir.
+              Enter the email on your licence and we&apos;ll take you to the
+              Stripe billing portal.
             </p>
 
             <form onSubmit={onSubmit} className="mt-4 space-y-3">
@@ -111,7 +112,7 @@ const ManageModal: React.FC<ManageModalProps> = ({ linkLabel = "Manage" }) => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="ornek@firma.com"
+                placeholder="name@company.com"
                 aria-label="Email"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 disabled={loading}
@@ -128,7 +129,7 @@ const ManageModal: React.FC<ManageModalProps> = ({ linkLabel = "Manage" }) => {
                   disabled={loading}
                   className="text-sm text-muted-foreground hover:text-foreground"
                 >
-                  İptal
+                  Cancel
                 </button>
                 <button
                   type="submit"
@@ -136,7 +137,7 @@ const ManageModal: React.FC<ManageModalProps> = ({ linkLabel = "Manage" }) => {
                   aria-busy={loading}
                   className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
-                  {loading ? "Açılıyor…" : "Portal Aç"}
+                  {loading ? "Opening…" : "Open billing portal"}
                 </button>
               </div>
             </form>

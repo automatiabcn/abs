@@ -9,7 +9,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Satın alma tamam",
+  title: "Purchase complete",
   robots: { index: false, follow: false },
 };
 
@@ -43,11 +43,11 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           </svg>
         </div>
         <h1 className="mt-8 text-3xl font-bold tracking-tight sm:text-4xl">
-          Satın alman tamam
+          Your purchase is complete
         </h1>
         <p className="mt-4 text-muted-foreground">
-          Lisans anahtarını birkaç dakika içinde e-posta adresine göndereceğiz.
-          Stripe makbuzu ayrıca iletilir.
+          We will email your license key within a few minutes. Your Stripe
+          receipt arrives separately.
         </p>
         {sessionId && (
           <p className="mt-2 font-mono text-xs text-muted-foreground">
@@ -59,17 +59,17 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
             href="https://abs.automatiabcn.com/docs/install"
             className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            Kurulum rehberine git
+            Go to the installation guide
           </Link>
           <Link
             href="/"
             className="inline-flex h-11 items-center justify-center rounded-md border border-input px-8 text-sm font-medium hover:bg-muted"
           >
-            Ana sayfaya dön
+            Back to home
           </Link>
         </div>
         <p className="mt-8 text-sm text-muted-foreground">
-          Sorun yaşıyorsan:{" "}
+          Running into trouble?{" "}
           <a
             href="mailto:support@automatiabcn.com"
             className="underline"

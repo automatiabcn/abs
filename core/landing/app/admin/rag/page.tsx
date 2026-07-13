@@ -157,7 +157,7 @@ export default function RagPage() {
           if (isTextFile(file)) {
             const text = await file.text().catch(() => "");
             if (!text.trim()) {
-              failures.push(`${file.name}: boş dosya`);
+              failures.push(`${file.name}: the file is empty`);
               continue;
             }
             res = await fetch("/v1/rag/ingest", {
@@ -216,7 +216,7 @@ export default function RagPage() {
         }
       }
       if (failures.length > 0) {
-        setError(`Yükleme hatası: ${failures.join(" · ")}`);
+        setError(`Upload failed: ${failures.join(" · ")}`);
       }
       if (successes.length > 0) {
         setDocs((prev) => [...successes, ...prev]);
@@ -249,7 +249,7 @@ export default function RagPage() {
       if (!res.ok) {
         const detail = await res.text().catch(() => "");
         setError(
-          `Backend /v1/rag/query-by-image döndü ${res.status}: ${detail.slice(0, 280) || "boş yanıt"}`,
+          `Image search failed — /v1/rag/query-by-image returned ${res.status}: ${detail.slice(0, 280) || "no response body"}`,
         );
         return;
       }
@@ -295,7 +295,7 @@ export default function RagPage() {
         // warming up / Qdrant unreachable so they can fix infra.
         const detail = await res.text().catch(() => "");
         setError(
-          `Backend /v1/rag/query döndü ${res.status}: ${detail.slice(0, 280) || "boş yanıt"}`,
+          `Search failed — /v1/rag/query returned ${res.status}: ${detail.slice(0, 280) || "no response body"}`,
         );
         return;
       }
@@ -309,13 +309,13 @@ export default function RagPage() {
     }
   }
 
-  // Deleting a doc removes all of its vector chunks for the tenant and can't
-  // be undone — confirm first (the trash icon sits inline in a dense list,
-  // one mis-tap from the filename).
+  // Deleting a doc removes every one of its indexed chunks for the organisation
+  // and can't be undone — confirm first (the trash icon sits inline in a dense
+  // list, one mis-tap from the filename).
   function confirmDelete(d: { id: string; filename: string; chunks: number }) {
     if (
       window.confirm(
-        `"${d.filename}" silinecek (${d.chunks} chunk). Bu işlem geri alınamaz. Emin misiniz?`,
+        `Delete "${d.filename}" and its ${d.chunks} indexed chunks? This cannot be undone.`,
       )
     ) {
       void deleteDoc(d.id);
@@ -333,7 +333,7 @@ export default function RagPage() {
       if (!res.ok) {
         const detail = await res.text().catch(() => "");
         setError(
-          `Silme başarısız (${res.status}): ${detail.slice(0, 200) || "boş yanıt"}`,
+          `Could not delete the document (${res.status}): ${detail.slice(0, 200) || "no response body"}`,
         );
         return;
       }
@@ -361,11 +361,12 @@ export default function RagPage() {
       >
         <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
           <Database className="h-5 w-5 text-primary" />
-          RAG / Bilgi Tabanı
+          Knowledge Base
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Doküman yükle, semantik sorgu çalıştır. Tenant koleksiyonu otomatik
-          izole edilir (cross-tenant ALLOW = 0 — T-015 garantisi).
+          Upload your documents, then ask questions of them. Each organisation
+          gets its own isolated collection — a search never reaches another
+          organisation&apos;s documents.
         </p>
       </motion.header>
 
@@ -374,14 +375,14 @@ export default function RagPage() {
         className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4"
       >
         {[
-          { label: "Doküman", value: docs.length, icon: FileText },
-          { label: "Chunk", value: totalChunks, icon: Sparkles },
+          { label: "Documents", value: docs.length, icon: FileText },
+          { label: "Indexed chunks", value: totalChunks, icon: Sparkles },
           {
-            label: "Toplam boyut",
+            label: "Total size",
             value: formatSize(totalBytes),
             icon: Database,
           },
-          { label: "Top-K", value: topK, icon: Search },
+          { label: "Results per search", value: topK, icon: Search },
         ].map((s) => {
           const Icon = s.icon;
           return (
@@ -408,19 +409,19 @@ export default function RagPage() {
           values. */}
       <section className="mb-6">
         <div className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-          Kalite hedefleri · yapılandırılmış eşikler (canlı ölçüm değil)
+          Quality targets · configured thresholds (not a live measurement)
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {[
-            { label: "Faithfulness", target: "≥ 0.85", hint: "RAGAS CI eşiği" },
-            { label: "Citation correctness", target: "100%", hint: "her cevap kaynak göstermeli" },
-            { label: "Hallucination", target: "≤ 3%", hint: "grounding guard hedefi" },
+            { label: "Faithfulness", target: "≥ 0.85", hint: "RAGAS CI threshold" },
+            { label: "Citation correctness", target: "100%", hint: "every answer must cite its sources" },
+            { label: "Hallucination", target: "≤ 3%", hint: "grounding guard target" },
           ].map((s) => (
             <Card key={s.label} className="border-dashed bg-card/40">
               <CardContent className="py-3">
                 <div className="flex items-center justify-between">
                   <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
-                  <span className="rounded-full border border-border px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-muted-foreground">hedef</span>
+                  <span className="rounded-full border border-border px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-muted-foreground">target</span>
                 </div>
                 <div className="mt-0.5 font-mono text-xl font-semibold text-muted-foreground">{s.target}</div>
                 <div className="mt-0.5 text-[10px] text-muted-foreground">{s.hint}</div>
@@ -430,35 +431,36 @@ export default function RagPage() {
         </div>
       </section>
 
-      {/* ── Doküman Lifecycle (mockup 06) — versioning · chunk-quality ── */}
+      {/* ── Document lifecycle (mockup 06) — versioning · chunk-quality ── */}
       <section data-test="rag-lifecycle" className="mb-6">
         <Card className="bg-card/70">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <FileText className="h-4 w-4 text-primary" />
-              Doküman Lifecycle
+              Document lifecycle
             </CardTitle>
             <CardDescription>
-              Tür · versiyon · indeksli chunk · chunk-kalite (hedef ~400 karakter).
-              Eski/iri chunk'lar tekrar-indeksleme önerir.
+              Type · version · indexed chunks · chunk quality (we aim for ~400
+              characters per chunk). Oversized chunks answer worse — re-upload
+              those documents to index them again.
             </CardDescription>
           </CardHeader>
           <CardContent>
             {docs.length === 0 ? (
               <p className="py-4 text-center text-xs text-muted-foreground">
-                Henüz doküman yok — yukarıdan yükleyin.
+                No documents yet — upload one below.
               </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
                     <tr className="border-b border-border">
-                      <th className="py-2 pr-3 font-medium">Doküman</th>
-                      <th className="py-2 pr-3 font-medium">Tür</th>
-                      <th className="py-2 pr-3 font-medium">Versiyon</th>
-                      <th className="py-2 pr-3 font-medium">Durum</th>
-                      <th className="py-2 pr-3 text-right font-medium">Chunk</th>
-                      <th className="py-2 pr-3 font-medium">Kalite</th>
+                      <th className="py-2 pr-3 font-medium">Document</th>
+                      <th className="py-2 pr-3 font-medium">Type</th>
+                      <th className="py-2 pr-3 font-medium">Version</th>
+                      <th className="py-2 pr-3 font-medium">Status</th>
+                      <th className="py-2 pr-3 text-right font-medium">Chunks</th>
+                      <th className="py-2 pr-3 font-medium">Quality</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -468,12 +470,12 @@ export default function RagPage() {
                         ext === "pdf" ? "PDF"
                           : ext === "docx" || ext === "doc" ? "Word"
                           : ext === "xlsx" || ext === "xls" ? "Excel"
-                          : ext === "txt" || ext === "log" ? "Metin"
+                          : ext === "txt" || ext === "log" ? "Text"
                           : ext === "md" || ext === "markdown" ? "Markdown"
                           : ext === "json" || ext === "csv" ? ext.toUpperCase()
                           : (ext || "?").toUpperCase();
                       // Real, explainable chunk-quality signal: avg bytes/chunk.
-                      // ~400-char target ⇒ ≲1100 bytes/chunk (UTF-8 TR). Larger
+                      // ~400-char target ⇒ ≲1100 bytes/chunk (UTF-8). Larger
                       // means the doc was indexed with oversized chunks (the old
                       // 2048-char default) and benefits from re-ingestion.
                       const avg = d.chunks > 0 ? d.size_bytes / d.chunks : 0;
@@ -494,7 +496,7 @@ export default function RagPage() {
                               variant="outline"
                               className="border-emerald-500/40 text-[10px] text-emerald-300"
                             >
-                              güncel
+                              indexed
                             </Badge>
                           </td>
                           <td className="py-2 pr-3 text-right font-mono">{d.chunks}</td>
@@ -508,7 +510,7 @@ export default function RagPage() {
                                   : "border-emerald-500/40 text-emerald-300",
                               )}
                             >
-                              {oversized ? "tekrar-chunk" : "iyi"}
+                              {oversized ? "re-index" : "good"}
                             </Badge>
                           </td>
                         </tr>
@@ -528,11 +530,12 @@ export default function RagPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <CloudUpload className="h-4 w-4 text-primary" />
-              Doküman yükle
+              Upload documents
             </CardTitle>
             <CardDescription>
-              PDF · DOCX · XLSX · MD · TXT · 🖼️ PNG/JPG/WEBP (≤ 25 MB).
-              Görseller Gemini ile betimlenip aynı index'e eklenir. Sürükle-bırak veya seç.
+              PDF · DOCX · XLSX · MD · TXT · 🖼️ PNG/JPG/WEBP (≤ 25 MB). Images
+              are described automatically and land in the same index, so a
+              search finds them too. Drag them in, or pick them below.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -563,9 +566,9 @@ export default function RagPage() {
             >
               <CloudUpload className="h-8 w-8 text-muted-foreground" />
               <p className="text-sm font-medium">
-                Dosyaları buraya bırakın
+                Drop your files here
               </p>
-              <p className="text-xs text-muted-foreground">veya</p>
+              <p className="text-xs text-muted-foreground">or</p>
               <div className="flex items-center gap-2">
                 <label className="cursor-pointer">
                   <input
@@ -580,7 +583,7 @@ export default function RagPage() {
                     }}
                   />
                   <span className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
-                    Dosya seç
+                    Choose files
                   </span>
                 </label>
                 <label className="cursor-pointer">
@@ -600,22 +603,22 @@ export default function RagPage() {
                     }}
                   />
                   <span className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted">
-                    Klasör seç
+                    Choose a folder
                   </span>
                 </label>
               </div>
               {uploading && (
                 <p className="text-xs text-muted-foreground">
                   {uploadProgress
-                    ? `Yükleniyor… ${uploadProgress.done}/${uploadProgress.total}`
-                    : "Yükleniyor…"}
+                    ? `Uploading… ${uploadProgress.done}/${uploadProgress.total}`
+                    : "Uploading…"}
                 </p>
               )}
             </div>
 
             <div className="mt-4">
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Mevcut dokümanlar
+                Your documents
               </h4>
               <ul className="space-y-1">
                 {docs.map((d) => (
@@ -630,14 +633,14 @@ export default function RagPage() {
                     </div>
                     <div className="ml-2 flex shrink-0 items-center gap-2">
                       <span className="text-muted-foreground">
-                        {d.chunks} chunk · {formatSize(d.size_bytes)}
+                        {d.chunks} chunks · {formatSize(d.size_bytes)}
                       </span>
                       <button
                         type="button"
                         onClick={() => confirmDelete(d)}
                         disabled={deletingId === d.id}
                         data-test="rag-doc-delete"
-                        aria-label={`${d.filename} dokümanını sil`}
+                        aria-label={`Delete ${d.filename}`}
                         className="rounded p-1 text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-300 disabled:opacity-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -655,10 +658,11 @@ export default function RagPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Search className="h-4 w-4 text-primary" />
-              Sorgu test
+              Ask your documents
             </CardTitle>
             <CardDescription>
-              BGE-M3 dense + opsiyonel cross-encoder rerank.
+              Semantic search across everything you have uploaded, with an
+              optional reranking pass for sharper results.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -666,13 +670,13 @@ export default function RagPage() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="örn. CTO geçen ay neyi onayladı?"
+              placeholder="e.g. What did the CTO approve last month?"
               className="w-full rounded-md border border-border bg-background p-2 text-sm outline-none focus:border-primary/50"
               data-test="rag-query-input"
             />
             <div className="flex flex-wrap items-center gap-3 text-xs">
               <label className="flex items-center gap-1">
-                <span className="text-muted-foreground">Top-K:</span>
+                <span className="text-muted-foreground">Results:</span>
                 <input
                   type="number"
                   min={1}
@@ -690,7 +694,7 @@ export default function RagPage() {
                   onChange={(e) => setHybrid(e.target.checked)}
                   data-test="rag-rerank-toggle"
                 />
-                <span className="text-muted-foreground">Cross-encoder rerank</span>
+                <span className="text-muted-foreground">Rerank for accuracy</span>
               </label>
               <label className="flex items-center gap-1">
                 <input
@@ -699,7 +703,7 @@ export default function RagPage() {
                   onChange={(e) => setWantAnswer(e.target.checked)}
                   data-test="rag-answer-toggle"
                 />
-                <span className="text-muted-foreground">Cevap üret (LLM)</span>
+                <span className="text-muted-foreground">Write an answer</span>
               </label>
               {/* Unified-index modality filter — one search spans docs + images;
                   scope it here without a separate query. */}
@@ -708,9 +712,9 @@ export default function RagPage() {
                 data-test="rag-kind-filter"
               >
                 {([
-                  ["all", "Tümü"],
-                  ["docs", "📄 Doküman"],
-                  ["images", "🖼️ Görsel"],
+                  ["all", "All"],
+                  ["docs", "📄 Documents"],
+                  ["images", "🖼️ Images"],
                 ] as [KindFilter, string][]).map(([k, label]) => (
                   <button
                     key={k}
@@ -736,7 +740,7 @@ export default function RagPage() {
                 disabled={searching || !query.trim()}
                 data-test="rag-run-query"
               >
-                {searching ? "Sorgulanıyor…" : "Sorguyu çalıştır"}
+                {searching ? "Searching…" : "Search"}
               </Button>
               {/* image-as-query: search the index using an uploaded image */}
               <label className="cursor-pointer">
@@ -753,7 +757,7 @@ export default function RagPage() {
                   }}
                 />
                 <span className="inline-flex items-center rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-muted">
-                  🖼️ Görselle ara
+                  🖼️ Search with an image
                 </span>
               </label>
             </div>
@@ -764,7 +768,7 @@ export default function RagPage() {
                 className="rounded-md border border-violet-500/30 bg-violet-500/5 p-3 text-xs"
               >
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-violet-300">
-                  Görselden çıkarılan sorgu
+                  What we read from your image
                 </div>
                 <p className="text-foreground/90">{imgDesc}</p>
               </div>
@@ -783,13 +787,13 @@ export default function RagPage() {
               >
                 <div className="mb-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-primary">
                   <Sparkles className="h-3 w-3" />
-                  Cevap
+                  Answer
                 </div>
                 <p className="whitespace-pre-wrap text-xs text-foreground/90">
                   {answer}
                 </p>
                 <p className="mt-2 text-[10px] text-muted-foreground">
-                  Aşağıdaki kaynaklardan üretildi — numaralar [n] kaynakları gösterir.
+                  Written from the sources below — each [n] points to one of them.
                 </p>
               </div>
             )}
@@ -815,7 +819,7 @@ export default function RagPage() {
                           className="border-violet-500/40 text-[10px] text-violet-300"
                           data-test="rag-hit-kind"
                         >
-                          🖼️ Görsel
+                          🖼️ Image
                           {h.metadata.source_filename
                             ? ` · ${h.metadata.source_filename}`
                             : ""}
@@ -826,7 +830,7 @@ export default function RagPage() {
                           className="border-sky-500/40 text-[10px] text-sky-300"
                           data-test="rag-hit-kind"
                         >
-                          📄 Doküman
+                          📄 Document
                         </Badge>
                       )}
                       <Badge variant="outline" className="font-mono text-[10px]">
@@ -842,7 +846,7 @@ export default function RagPage() {
                     <p className="text-xs text-foreground/90">
                       {h.metadata?.kind === "image" ? (
                         <span className="mr-1 text-[10px] uppercase tracking-wider text-violet-300/80">
-                          görsel açıklaması:
+                          image description:
                         </span>
                       ) : null}
                       {h.text}
@@ -858,21 +862,21 @@ export default function RagPage() {
       {/* ── Ingestion sources · Pipeline · Security (mockup 06) ── */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="bg-card/60">
-          <CardHeader className="pb-2"><CardTitle className="text-base">↓ İngestion Kaynakları</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base">↓ Where documents can come from</CardTitle></CardHeader>
           <CardContent className="space-y-1.5 text-[12px] text-muted-foreground">
             {[
-              "Manual upload · Drive · SharePoint", "Website crawler (ToS-güvenli)",
+              "Manual upload · Drive · SharePoint", "Website crawler (respects robots + ToS)",
               "CRM notes · Support tickets", "Call transcripts · Meeting notes",
               "Email threads · Notion · Confluence", "ERP product catalog · Proposal archive",
             ].map((s) => (<div key={s} className="flex items-start gap-2"><span className="text-emerald-400">✓</span><span>{s}</span></div>))}
           </CardContent>
         </Card>
         <Card className="bg-card/60">
-          <CardHeader className="pb-2"><CardTitle className="text-base">⚙ Pipeline</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base">⚙ What happens to a document</CardTitle></CardHeader>
           <CardContent>
             <ol className="space-y-1.5 text-[12px] text-muted-foreground">
               {[
-                "Extract (PDF/Word/Excel/HTML)", "Clean + PII detection + dil tespit",
+                "Extract (PDF/Word/Excel/HTML)", "Clean + PII detection + language detection",
                 "Chunk (400c) + contextual prefix", "Embed (BGE-M3 GPU) + keyword index",
                 "Graph linking + entity tag", "Quality validation + publish",
               ].map((s, i) => (<li key={s} className="flex gap-2"><span className="font-mono text-primary">{i + 1}</span><span>{s}</span></li>))}
@@ -880,10 +884,10 @@ export default function RagPage() {
           </CardContent>
         </Card>
         <Card className="bg-card/60">
-          <CardHeader className="pb-2"><CardTitle className="text-base">⛨ RAG Güvenlik</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base">⛨ Who sees what</CardTitle></CardHeader>
           <CardContent>
             <p className="text-[12px] leading-relaxed text-muted-foreground">
-              tenant + role + department + sensitivity + PII + agent-allowed-source kontrolü → agentin görmemesi gereken doküman sonuca girmez.
+              Every result is checked against organisation, role, department, sensitivity, PII and the sources an agent is allowed to read — a document an agent may not see never reaches the answer.
             </p>
           </CardContent>
         </Card>

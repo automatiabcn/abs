@@ -174,18 +174,18 @@ function ToolDetailSheet({
 
             <section className="mt-6">
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Girdi şeması
+                Input schema
               </h4>
               {tool.input_schema.properties.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Parametre yok.</p>
+                <p className="text-sm text-muted-foreground">No parameters.</p>
               ) : (
                 <div className="rounded-md border border-border bg-card/40">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                       <tr>
-                        <th className="px-3 py-2 text-left">İsim</th>
-                        <th className="px-3 py-2 text-left">Tür</th>
-                        <th className="px-3 py-2 text-left">Zorunlu</th>
+                        <th className="px-3 py-2 text-left">Name</th>
+                        <th className="px-3 py-2 text-left">Type</th>
+                        <th className="px-3 py-2 text-left">Required</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -196,10 +196,10 @@ function ToolDetailSheet({
                           <td className="px-3 py-2">
                             {tool.input_schema.required.includes(p.name) ? (
                               <Badge variant="outline" className="text-[10px]">
-                                gerekli
+                                required
                               </Badge>
                             ) : (
-                              <span className="text-xs text-muted-foreground">opsiyonel</span>
+                              <span className="text-xs text-muted-foreground">optional</span>
                             )}
                           </td>
                         </tr>
@@ -212,16 +212,16 @@ function ToolDetailSheet({
 
             <section className="mt-6">
               <h4 className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <span>Dene</span>
+                <span>Try it</span>
                 <Badge variant="outline" className="text-[10px]">
-                  cascade router
+                  auto-picks a provider
                 </Badge>
               </h4>
               <textarea
                 rows={3}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={`${tool.name} aracını test etmek için bir prompt yazın`}
+                placeholder={`Write a prompt to try ${tool.name}`}
                 className="w-full rounded-md border border-border bg-background p-2 text-sm outline-none focus:border-primary/50"
                 data-test="tool-tryit-input"
               />
@@ -232,7 +232,7 @@ function ToolDetailSheet({
                 className="mt-2 w-full"
                 data-test="tool-tryit-run"
               >
-                {result.status === "running" ? "Çalıştırılıyor…" : "Çalıştır"}
+                {result.status === "running" ? "Running…" : "Run"}
               </Button>
               {result.status !== "idle" && (
                 <div
@@ -301,7 +301,7 @@ export default function ToolsPage() {
           <button
             type="button"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            aria-label="Tool sütununu sırala"
+            aria-label="Sort by tool"
             // Q11-L12-002: bumped to min-h-6 (24px) so the column-header
             // sort button clears the WCAG 2.5.8 touch baseline on
             // mobile/tablet without breaking the desktop table density.
@@ -318,12 +318,12 @@ export default function ToolsPage() {
       },
       {
         accessorKey: "category",
-        header: "Kategori",
+        header: "Category",
         cell: ({ row }) => <CategoryBadge category={row.original.category} />,
       },
       {
         accessorKey: "description",
-        header: "Açıklama",
+        header: "Description",
         cell: ({ row }) => (
           <span className="line-clamp-2 text-xs text-muted-foreground">
             {row.original.description || "—"}
@@ -332,7 +332,7 @@ export default function ToolsPage() {
       },
       {
         id: "params",
-        header: "Param",
+        header: "Params",
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
             {row.original.input_schema.properties.length}
@@ -373,7 +373,7 @@ export default function ToolsPage() {
         className="hidden w-56 shrink-0 flex-col gap-1 lg:flex"
       >
         <div className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Kategoriler
+          Categories
         </div>
         <button
           type="button"
@@ -385,7 +385,7 @@ export default function ToolsPage() {
               : "text-muted-foreground hover:bg-accent hover:text-foreground",
           )}
         >
-          <span>Tümü</span>
+          <span>All</span>
           <span className="text-xs">{tools.data?.total ?? 0}</span>
         </button>
         <div className="-mx-1 flex-1 overflow-y-auto px-1">
@@ -431,12 +431,11 @@ export default function ToolsPage() {
             MCP Tool Browser
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            ABS Server üzerinde kayıtlı{" "}
             <strong className="text-foreground">
               {tools.data?.total ?? "…"}
             </strong>{" "}
-            MCP tool. Sol panelden kategoriye filtreleyin, satıra tıklayarak
-            detayı görün.
+            tools your assistant can call. Filter by category, click a row for
+            details.
           </p>
         </motion.header>
 
@@ -444,7 +443,7 @@ export default function ToolsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Araç adı veya açıklamasında ara…"
+              placeholder="Search tools…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-8"
@@ -455,7 +454,7 @@ export default function ToolsPage() {
             className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground"
             data-test="tools-result-count"
           >
-            {filtered.length} sonuç
+            {filtered.length} shown
           </span>
         </div>
 
@@ -493,7 +492,7 @@ export default function ToolsPage() {
                       colSpan={columns.length}
                       className="px-3 py-12 text-center text-sm text-muted-foreground"
                     >
-                      Filtreyle eşleşen araç yok.
+                      No tools match that filter.
                     </td>
                   </tr>
                 ) : (
@@ -519,7 +518,7 @@ export default function ToolsPage() {
 
         <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
           <div>
-            Sayfa {table.getState().pagination.pageIndex + 1}/
+            Page {table.getState().pagination.pageIndex + 1}/
             {table.getPageCount() || 1}
           </div>
           <div className="flex items-center gap-1">
@@ -528,7 +527,7 @@ export default function ToolsPage() {
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              aria-label="Önceki sayfa"
+              aria-label="Previous page"
             >
               <ArrowLeft className="h-3 w-3" aria-hidden="true" />
             </Button>
@@ -537,7 +536,7 @@ export default function ToolsPage() {
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              aria-label="Sonraki sayfa"
+              aria-label="Next page"
             >
               <ArrowRight className="h-3 w-3" aria-hidden="true" />
             </Button>

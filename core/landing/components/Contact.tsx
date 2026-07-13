@@ -18,12 +18,11 @@ const Contact: FC = () => (
         id="contact-title"
         className="text-3xl font-bold tracking-tight sm:text-4xl"
       >
-        Pilot / PoC Görüşmesi
+        Pilot / PoC call
       </h2>
       <p className="mt-4 text-muted-foreground">
-        Sistemi kendi ortamınızda denemek için bizimle iletişime geçin. Pilot,
-        PoC veya beta partner seçenekleri arasından sizin için en uygun olanı
-        birlikte belirleyelim.
+        Get in touch to try the system in your own environment. We will work out
+        together which option fits you best: pilot, PoC or beta partner.
       </p>
     </div>
 
@@ -31,22 +30,22 @@ const Contact: FC = () => (
       <div className="rounded-lg border border-border bg-card p-6">
         <h3 className="text-base font-semibold">PoC</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Helm chart + dokümantasyon + temel destek. Kendi sunucunuza kurun,
-          deneyin, kararınızı verin.
+          Helm chart, documentation and basic support. Install it on your own
+          server, try it, then decide.
         </p>
       </div>
       <div className="rounded-lg border border-border bg-card p-6">
         <h3 className="text-base font-semibold">Pilot</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          2 hafta özel entegrasyon, sizin sistemlerinizle bağlantı, yerinde
-          destek.
+          Two weeks of custom integration, connected to your own systems, with
+          on-site support.
         </p>
       </div>
       <div className="rounded-lg border border-border bg-card p-6">
         <h3 className="text-base font-semibold">Beta Partner</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          30 gün boyunca tam erişim, geri bildirim ortağı. Sınırlı sayıda
-          partner alıyoruz.
+          Full access for 30 days as a feedback partner. We take a limited number
+          of partners.
         </p>
       </div>
     </div>
@@ -59,7 +58,7 @@ const Contact: FC = () => (
         support@automatiabcn.com
       </a>
       <p className="mt-3 text-xs text-muted-foreground">
-        24 saat içinde dönüş yapıyoruz.
+        We reply within 24 hours.
       </p>
     </div>
   </section>

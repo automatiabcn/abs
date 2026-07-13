@@ -222,14 +222,14 @@ async def _run_cascade(
     project_slug: Optional[str] = None,
     user_subject: Optional[str] = None,
 ) -> CascadeResponse:
-    """Bypass the FastAPI route's auth dependency and call the cascade
-    via the live orchestrator (`call_with_cascade`).
+    """Call the cascade through the live orchestrator (`call_with_cascade`),
+    bypassing the FastAPI route's auth dependency.
 
-    Round-4 BUG-9 fix: previously raised `live_cascade_pending` 503 even
-    when providers were configured; the chat SSE swallowed that into a
-    "Cascade canlı uçları henüz aktif değil." stub message. The /v1/cascade/run
-    route was wired in Round 2 but this helper was missed — chat path
-    bypasses the route layer, so it stayed stubbed until Round 4.
+    This helper once raised `live_cascade_pending` even when providers were
+    configured, and the chat stream turned that into a stub apology — so chat
+    looked broken on a server that was perfectly capable of answering. The
+    lesson it left: chat does not go through the route layer, so anything wired
+    up at the route has to be wired up here too.
     """
     fallback_chain: List[str] = []
     # `cascade_req` only feeds the mock helper below; the real cascade call
@@ -717,7 +717,7 @@ async def completions(
                         "error": "all_providers_unavailable",
                         "providers_tried": [],
                         "retry_after": 60,
-                        "hint": "/admin/settings → Providers'ta en az bir API anahtarı yapılandırın.",
+                        "hint": "Add at least one provider key under Settings → Providers.",
                     },
                     headers={"Retry-After": "60"},
                 )
@@ -743,7 +743,10 @@ async def completions(
         except Exception:
             providers = []
         if not providers:
-            err = "Henüz sağlayıcı yapılandırılmadı. /admin/settings → Providers."
+            err = (
+                "No provider is set up yet, so there is nothing to answer with. "
+                "Add a key under Settings → Providers."
+            )
             yield f'data: {json.dumps({"type": "text", "content": err, "provider": "none"})}\n\n'
             yield 'data: [DONE]\n\n'
             return
@@ -764,9 +767,9 @@ async def completions(
                 answer = str(event.data.get("answer") or "")
             elif event.type == "agent-error":
                 answer = (
-                    "Sağlayıcılara ulaşılamadı; lütfen tekrar deneyin."
+                    "No provider answered. Try again in a moment."
                     if event.data.get("reason") == "all_providers_failed"
-                    else "Agent modu şu an kullanılamıyor."
+                    else "Agent mode is not available right now."
                 )
 
         # The answer is streamed in one frame rather than chunked: the loop has
@@ -899,21 +902,21 @@ async def completions(
             detail_str = str(exc.detail or "")
             if detail_str.startswith("no_providers_configured"):
                 err_text = (
-                    "Henüz sağlayıcı yapılandırılmadı. "
-                    "/admin/settings → Providers."
+                    "No provider is set up yet, so there is nothing to answer "
+                    "with. Add a key under Settings → Providers."
                 )
             elif detail_str.startswith("no_free_providers_configured"):
                 err_text = (
-                    "Ücretsiz sağlayıcı yapılandırılmadı "
-                    "(skip_paid aktif)."
+                    "Only paid providers are configured, and this server is set "
+                    "to use free ones. Add a free provider, or allow paid ones."
                 )
             elif detail_str.startswith("all_providers_failed"):
                 err_text = (
-                    "Tüm sağlayıcılar geçici hata verdi; "
-                    "lütfen tekrar deneyin."
+                    "Every provider failed on this question. Try again in a "
+                    "moment."
                 )
             else:
-                err_text = "Cascade canlı uçları henüz aktif değil."
+                err_text = "The answer did not come through. Try again."
             yield f'data: {json.dumps({"type": "text", "content": err_text, "provider": "none"})}\n\n'
             yield 'data: [DONE]\n\n'
             with Session(get_engine()) as db:

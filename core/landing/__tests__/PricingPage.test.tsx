@@ -27,7 +27,7 @@ describe("PricingPage — Pilot/PoC outreach (post Q6 PA)", () => {
   it("renders the Pilot/PoC outreach section", () => {
     render(<PricingPage lang="en" />);
     expect(screen.getByTestId("pricing-page")).toBeInTheDocument();
-    expect(screen.getByText(/Pilot \/ PoC görüşmesi/)).toBeInTheDocument();
+    expect(screen.getByText(/Pilot \/ PoC call/)).toBeInTheDocument();
   });
 
   it("ships a mailto CTA to the support inbox", () => {
