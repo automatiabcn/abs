@@ -26,9 +26,9 @@ import { cookies } from "next/headers";
 
 import PanelHomeClient from "./PanelHomeClient";
 import {
-  MOCK_CASCADE,
-  MOCK_QUOTA,
-  MOCK_TOOLS,
+  EMPTY_CASCADE,
+  EMPTY_QUOTA,
+  EMPTY_TOOLS,
   type CascadeResponse,
   type QuotaResponse,
   type ToolsResponse,
@@ -72,9 +72,9 @@ export default async function PanelHome() {
   // produced post-hydration, but co-located with render so it's part
   // of the response rather than three round-trips after first paint.
   const [initialTools, initialQuota, initialCascade] = await Promise.all([
-    fetchSlice<ToolsResponse>("/v1/panel/tools", MOCK_TOOLS),
-    fetchSlice<QuotaResponse>("/v1/system/quota_status", MOCK_QUOTA),
-    fetchSlice<CascadeResponse>("/v1/panel/cascade/recent", MOCK_CASCADE),
+    fetchSlice<ToolsResponse>("/v1/panel/tools", EMPTY_TOOLS),
+    fetchSlice<QuotaResponse>("/v1/system/quota_status", EMPTY_QUOTA),
+    fetchSlice<CascadeResponse>("/v1/panel/cascade/recent", EMPTY_CASCADE),
   ]);
 
   return (

@@ -49,9 +49,14 @@ async function fetchAudit(): Promise<AuditEntry[]> {
 
 interface AuditClientProps {
   initialEntries: AuditEntry[];
+  /** Set when the server-side fetch failed. Non-null means: show that, show no rows. */
+  loadError?: string | null;
 }
 
-export default function AuditClient({ initialEntries }: AuditClientProps) {
+export default function AuditClient({
+  initialEntries,
+  loadError = null,
+}: AuditClientProps) {
   const [actor, setActor] = useState("");
   const [action, setAction] = useState("");
   const [verifyState, setVerifyState] = useState<
@@ -66,6 +71,12 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
     initialData: initialEntries,
     initialDataUpdatedAt: 0,
   });
+
+  // The log could not be read — from the server render, or from the 30-second
+  // refresh, or both. We only say so while we genuinely have nothing: a failed
+  // refresh on top of rows that did load is not worth throwing the rows away.
+  const rowCount = audit.data?.length ?? 0;
+  const failed = (loadError !== null || audit.isError) && rowCount === 0;
 
   const filtered = useMemo(() => {
     let list = audit.data ?? [];
@@ -194,6 +205,8 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
             variant="outline"
             size="sm"
             onClick={exportCsv}
+            // Nothing was read, so there is nothing to hand to an auditor.
+            disabled={failed}
             data-test="audit-export"
           >
             <Download className="mr-2 h-3.5 w-3.5" />
@@ -236,7 +249,33 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
           <CardDescription>Refreshes every 30 seconds.</CardDescription>
         </CardHeader>
         <CardContent>
-          {audit.isLoading && filtered.length === 0 ? (
+          {failed ? (
+            <div
+              data-test="audit-load-error"
+              className="rounded-md border border-amber-500/40 bg-amber-500/5 p-4 text-sm"
+            >
+              <p className="flex items-center gap-2 font-medium text-amber-300">
+                <ShieldX className="h-4 w-4" />
+                The audit log could not be read
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                {loadError ?? "The server could not be reached."} No entries are
+                shown, because showing anything here that did not come from the
+                log would be worse than showing nothing. This does not mean
+                nothing happened — it means we cannot currently tell you what
+                did.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => audit.refetch()}
+                data-test="audit-retry"
+              >
+                Try again
+              </Button>
+            </div>
+          ) : audit.isLoading && filtered.length === 0 ? (
             <div className="space-y-2">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-14 w-full" />

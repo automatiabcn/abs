@@ -98,12 +98,15 @@ test.describe("Q12-R65 /admin/users split-shell", () => {
       page.locator('[data-page="admin-users"]').first(),
     ).toBeVisible();
 
-    // Either the backend returned non-empty users (rows present) or
-    // returned empty/failed (MOCK_USERS = 3 fallback rows). Either
-    // path renders user-row elements server-side. The test passes if
-    // at least one row is in the DOM after domcontentloaded — that
-    // proves initialData → SSR pipeline.
+    // The page must render the *result of the server fetch* in the first paint —
+    // either the real rows, or, when the fetch failed, the notice saying so.
+    //
+    // This assertion used to accept fallback rows as proof the pipeline worked,
+    // which meant it passed identically whether the roster loaded or the backend
+    // was unreachable and three fictional colleagues were rendered instead. The
+    // fallback is gone; the test now has to name which of the two it got.
     const row = page.locator('[data-test="user-row"]').first();
-    await expect(row).toBeVisible({ timeout: 8_000 });
+    const failure = page.locator('[data-test="users-load-error"]').first();
+    await expect(row.or(failure)).toBeVisible({ timeout: 8_000 });
   });
 });

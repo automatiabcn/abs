@@ -40,16 +40,22 @@ export interface CascadeResponse {
   timeseries?: CascadePoint[];
 }
 
-export const MOCK_TOOLS: ToolsResponse = {
+// Fallbacks for a slice that would not load. They are empty on purpose: zero
+// tools, zero quota, zero flows. A panel that cannot reach the server is allowed
+// to show nothing; it is not allowed to make something up, which is what these
+// were called (MOCK_*) and what the same fallback on /admin/audit and
+// /admin/users was actually doing — inventing signed audit entries and a
+// colleague who did not exist.
+export const EMPTY_TOOLS: ToolsResponse = {
   total: 0,
   category_counts: {},
 };
 
-export const MOCK_QUOTA: QuotaResponse = {
+export const EMPTY_QUOTA: QuotaResponse = {
   claude_plus: { used: 0, limit: 0, percent: 0, label: "claude_plus" },
 };
 
-export const MOCK_CASCADE: CascadeResponse = {
+export const EMPTY_CASCADE: CascadeResponse = {
   count: 0,
   providers_active: 0,
   timeseries: [],
