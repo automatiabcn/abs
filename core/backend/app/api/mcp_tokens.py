@@ -73,13 +73,29 @@ def _b64url_decode(s: str) -> bytes:
     return base64.urlsafe_b64decode(s + pad)
 
 
+def _signing_key() -> bytes:
+    """Key for minted MCP tokens.
+
+    These tokens used to be signed with `session_secret` — the same key
+    that signs panel login cookies. That coupled two very different
+    lifetimes: rotating the panel secret (a routine response to a stolen
+    cookie) silently invalidated every delegated MCP token our customers
+    had wired into their Claude Code installs, and one leaked secret
+    opened both surfaces at once.
+
+    `mcp_token_secret` is the key when set. It falls back to
+    `session_secret` so tokens minted before this split keep verifying;
+    an operator who sets the new variable rotates MCP tokens alone.
+    """
+    secret = (settings.mcp_token_secret or "").strip() or settings.session_secret
+    return secret.encode("utf-8")
+
+
 def _sign(payload: Dict) -> str:
     body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode(
         "utf-8"
     )
-    sig = hmac.new(
-        settings.session_secret.encode("utf-8"), body, hashlib.sha256
-    ).digest()
+    sig = hmac.new(_signing_key(), body, hashlib.sha256).digest()
     return f"abs_mcp_{_b64url(body)}.{_b64url(sig)}"
 
 
@@ -113,9 +129,7 @@ def verify_token(token: str) -> Dict:
             status.HTTP_401_UNAUTHORIZED, "malformed_token"
         ) from exc
 
-    expected = hmac.new(
-        settings.session_secret.encode("utf-8"), body, hashlib.sha256
-    ).digest()
+    expected = hmac.new(_signing_key(), body, hashlib.sha256).digest()
     if not hmac.compare_digest(provided, expected):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "bad_signature")
 

@@ -29,6 +29,7 @@ from pathlib import Path
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
+from app.auth.bearer import token_matches
 from app.config import settings
 from app.db.models import OAuthState
 from app.db.session import get_engine
@@ -124,7 +125,7 @@ def _check_admin(
             status_code=401,
         )
         raise HTTPException(401, "Authorization header missing")
-    if not settings.admin_token or token != settings.admin_token:
+    if not token_matches(token, settings.admin_token):
         emit_event(
             request,
             action="smart_link.admin.gate",

@@ -114,3 +114,12 @@ core/landing/.localrun_*.mjs
 *.bak
 .env.bak.*
 infra/*.bak
+
+# Sprint screenshots dropped in the repo root by Playwright/manual runs.
+# The reviewed visual baselines live under core/landing/__tests__/ and the
+# published demo shots under infra/docs/demo/ — those stay tracked.
+/*.png
+
+# Local Claude Code / editor state. Committing it shipped an internal
+# permission-bypass config to customers.
+.claude/settings.local.json

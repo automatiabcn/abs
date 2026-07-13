@@ -440,10 +440,46 @@ async def set_setup_lang(body: SetupLangBody, request: Request) -> Dict[str, Any
     return {"ok": True, "lang": body.lang}
 
 
+def _assert_no_existing_admin(request: Request) -> None:
+    """Refuse to (re)write admin credentials when an admin already exists.
+
+    The wizard is intentionally unauthenticated — it is how the very first
+    admin is created. Its only gate used to be `setup_state.completed`,
+    which lives in a JSON file next to the DB. Anyone who could make that
+    file disappear (a restore that misses it, a wiped data volume, an
+    operator "resetting" the wizard) reopened step 1 to the whole network,
+    and step 1 overwrites `admin_credentials.json` — a full panel takeover
+    with no credentials required.
+
+    The credentials file itself is the durable fact, so we gate on it: if
+    an admin exists, step 1 is closed regardless of what the state file
+    says. Recovering a lost admin password now requires host access
+    (delete the credentials file), which is the correct trust boundary.
+    """
+    if not admin_credentials_path().is_file():
+        return
+    emit_event(
+        request,
+        action="setup.step.gate",
+        outcome="denied",
+        reason="admin_already_exists",
+        resource_type="admin",
+        status_code=409,
+    )
+    raise HTTPException(
+        status_code=409,
+        detail=(
+            "An administrator already exists. Setup cannot re-create it. "
+            "Sign in, or remove admin_credentials.json on the host to recover."
+        ),
+    )
+
+
 @router.post("/step/admin", status_code=status.HTTP_200_OK)
 async def step_admin(body: AdminBody, request: Request) -> Dict[str, Any]:
     with _state_lock():  # Q12-L22-001
         state = read_state()
+        _assert_no_existing_admin(request)
         _ensure_step(state, 1, request, "admin")
         pwd_hash = bcrypt.hashpw(body.password.encode("utf-8"), bcrypt.gensalt()).decode(
             "utf-8"
