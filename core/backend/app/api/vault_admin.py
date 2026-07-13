@@ -17,6 +17,7 @@ from typing import Optional
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel
 
+from app.auth.bearer import extract_bearer, token_matches
 from app.config import settings
 from app.observability.audit import emit_event  # Q12-L22 sweep 2
 from app.vault.audit_chain import stats as audit_stats
@@ -48,10 +49,8 @@ def _check_admin(
 ) -> None:
     if _panel_session_is_admin(request):
         return
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(401, "Authorization header missing")
-    token = authorization.split(None, 1)[1].strip()
-    if not settings.admin_token or token != settings.admin_token:
+    token = extract_bearer(authorization)
+    if not token_matches(token, settings.admin_token):
         raise HTTPException(403, "Invalid admin token")
 
 

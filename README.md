@@ -5,9 +5,9 @@
 [![License: BUSL-1.1](https://img.shields.io/badge/License-BUSL--1.1-orange.svg)](LICENSE)
 [![CI](https://github.com/automatiabcn/abs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/automatiabcn/abs/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/automatiabcn/abs/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/automatiabcn/abs/actions/workflows/codeql.yml)
-[![Tests](https://img.shields.io/badge/tests-2065%20passing-brightgreen.svg)](#testing)
-[![Lighthouse](https://img.shields.io/badge/lighthouse-100%2F100%2F100%2F100-brightgreen.svg)](docs/performance.md)
-[![Tools](https://img.shields.io/badge/MCP%20tools-123-blue.svg)](docs/api-reference.md)
+[![Tests](https://img.shields.io/badge/tests-2665%20passing-brightgreen.svg)](#testing)
+[![Lighthouse](https://img.shields.io/badge/lighthouse-%E2%89%A590%20enforced-brightgreen.svg)](docs/performance.md)
+[![Tools](https://img.shields.io/badge/MCP%20tools-121-blue.svg)](docs/api-reference.md)
 [![Made in Barcelona](https://img.shields.io/badge/Made%20in-Barcelona%20%F0%9F%87%AA%F0%9F%87%B8-blue.svg)](https://automatiabcn.com)
 
 > **Automate the chaos — on your own server.** Pair your Anthropic API key (or Claude
@@ -37,7 +37,7 @@ ABS is that orchestrator.
 ## Features at a glance
 
 - ⚡ **6-provider cascade** with circuit breaker + cost dashboard.
-- 🛠️ **123 MCP tools**: code review, test generation, RAG hybrid, judge ML, fullstack mode, billing.
+- 🛠️ **121 MCP tools**: code review, test generation, RAG hybrid, judge ML, fullstack mode, billing.
 - 🌍 **i18n out of the box** — English default, Türkçe + Español alternatives (24 email templates × 3 languages).
 - 🔐 **sops + age vault** — Stripe / Anthropic / SMTP secrets stay encrypted at rest.
 - 💳 **Stripe-ready** — checkout, webhook (idempotent), refund, customer portal.
@@ -74,7 +74,7 @@ fronts everything with Caddy (auto Let's Encrypt). Detailed setup:
 1. **Install** ABS on your VPS via Docker Compose.
 2. **Connect** Claude Code: `claude mcp add abs https://abs.your-domain.com/mcp`.
 3. **Activate** the license JWT you received by email.
-4. **Use** any of the 123 MCP tools from your normal Claude Code workflow.
+4. **Use** any of the 121 MCP tools from your normal Claude Code workflow.
 
 ABS speaks the **Model Context Protocol** natively, so Claude Code can call ABS tools
 the same way it calls built-in tools. There is no proxy, no man-in-the-middle —
@@ -87,7 +87,7 @@ prompts go from your machine to your ABS server to Anthropic, and stay private.
 - **MCP** — `mcp.server.fastmcp` (Anthropic-maintained Python SDK).
 - **Vault** — Mozilla sops + age (4096-bit RSA optional).
 - **Deploy** — Docker Compose + Caddy.
-- **Tests** — pytest (2065) + vitest (53) + Playwright (41) + Lighthouse (100/100/100/100).
+- **Tests** — pytest (2665) + vitest (190) + Playwright + Lighthouse (CI gate: performance ≥90).
 
 Architecture: [docs/architecture.md](docs/architecture.md).
 API reference: [docs/api-reference.md](docs/api-reference.md).
