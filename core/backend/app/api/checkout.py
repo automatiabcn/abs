@@ -72,8 +72,21 @@ async def create_session(
 
     stripe.api_key = settings.stripe_secret_key
     try:
+        # A recurring price must be sold in subscription mode; Stripe refuses it in
+        # payment mode, and a one-time price refuses subscription mode. The mode was
+        # hardcoded to "payment", so the moment an annual (renewing) price is wired
+        # to a SKU here, checkout would break — or, worse, keep working against a
+        # price that was quietly created as one-time. Ask the price what it is.
+        mode = "payment"
+        try:
+            price = stripe.Price.retrieve(price_id)
+            if getattr(price, "recurring", None):
+                mode = "subscription"
+        except Exception:  # noqa: BLE001 — an unreadable price is not a reason to
+            pass          # refuse a sale; the Session.create below will still fail loudly
+
         session = stripe.checkout.Session.create(
-            mode="payment",
+            mode=mode,
             payment_method_types=["card"],
             line_items=[{"price": price_id, "quantity": 1}],
             customer_email=body.customer_email,
