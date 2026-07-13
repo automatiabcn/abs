@@ -40,9 +40,17 @@ def test_next_config_no_longer_redirects_four_admin_routes():
         ), f"unexpected redirect for {source}"
 
 
-def test_sidebar_uses_canonical_admin_routes():
-    sidebar = _read("components/panel/PanelSidebar.tsx")
-    # "Genel Bakış" now lands on /admin/dashboard, not /panel.
-    assert 'href: "/admin/dashboard", label: "Genel Bakış"' in sidebar
-    # "Kota" now lands on /admin/quota, not /panel/quota.
-    assert 'href: "/admin/quota", label: "Kota"' in sidebar
+def test_nav_uses_canonical_admin_routes():
+    # The nav must advertise the real /admin/* pages rather than the /panel/*
+    # URLs they used to 308 to — otherwise every click spends a redirect and the
+    # address bar shows a route the product no longer calls canonical.
+    #
+    # The nav itself moved: the 27-item PanelSidebar became seven domains in
+    # components/shell/domains.ts, and its labels are English now. The promise
+    # this test was written to protect is about *where the links point*, so it
+    # follows the links to their new home rather than dying with the old file.
+    nav = _read("components/shell/domains.ts")
+    assert 'href: "/admin/dashboard"' in nav
+    assert 'href: "/admin/quota"' in nav
+    # And it must not have quietly gone back to the legacy targets.
+    assert '"/panel/quota"' not in nav.split("REDIRECT_EQUIVALENTS")[0]
