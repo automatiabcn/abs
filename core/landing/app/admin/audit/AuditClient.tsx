@@ -60,7 +60,7 @@ export default function AuditClient({
   const [actor, setActor] = useState("");
   const [action, setAction] = useState("");
   const [verifyState, setVerifyState] = useState<
-    "idle" | "loading" | "ok" | "broken" | "error"
+    "idle" | "loading" | "ok" | "empty" | "broken" | "error"
   >("idle");
   const [verifyDetail, setVerifyDetail] = useState<string>("");
 
@@ -128,9 +128,19 @@ export default function AuditClient({
       });
       if (!res.ok) throw new Error(`verify_${res.status}`);
       const r = await res.json();
-      if (r.ok) {
+      const checked = Number(r.total_entries ?? 0);
+      if (r.ok && checked === 0) {
+        // An empty chain is not tampered with, so the API is right to say ok.
+        // But "Log intact" over nothing checked is a green tick on no work — and
+        // it is exactly what this button showed for months while the recorder
+        // was writing to a logger with no handler and the page below was
+        // rendering fabricated rows. Whatever else is true, an empty log is a
+        // thing the operator needs to know about, not be reassured about.
+        setVerifyState("empty");
+        setVerifyDetail("");
+      } else if (r.ok) {
         setVerifyState("ok");
-        setVerifyDetail(`${r.total_entries ?? 0} entries`);
+        setVerifyDetail(`${checked} entries checked`);
       } else {
         setVerifyState("broken");
         setVerifyDetail(
@@ -183,6 +193,11 @@ export default function AuditClient({
               <>
                 <ShieldCheck className="mr-2 h-3.5 w-3.5 text-emerald-400" />
                 Log intact{verifyDetail ? ` · ${verifyDetail}` : ""}
+              </>
+            ) : verifyState === "empty" ? (
+              <>
+                <ShieldX className="mr-2 h-3.5 w-3.5 text-amber-400" />
+                Nothing recorded yet
               </>
             ) : verifyState === "broken" ? (
               <>
