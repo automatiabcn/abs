@@ -74,7 +74,7 @@ from app.api import me_audit as me_audit_router
 from app.api import me_consent as me_consent_router
 from app.api import me_data_export as me_data_export_router
 from app.api import panel as panel_router
-from app.api import cascade as cascade_router  # Q4 P10 — /v1/cascade/*
+from app.api import cascade as cascade_router  # /v1/cascade/*
 from app.api import agent_caps as agent_caps_router  # /v1/agent/capabilities
 from app.api import chat as chat_router  # Q8 Phase A — /v1/chat/*
 from app.api import mcp_tokens as mcp_tokens_router  # Q8 Phase N — /v1/mcp/tokens
@@ -108,7 +108,7 @@ from app.middleware.demo_mode import DemoModeMiddleware
 from app.middleware.first_run import FirstRunMiddleware
 from app.middleware.i18n import I18nMiddleware
 from app.middleware.rate_limit import install_rate_limit
-from app.middleware.request_id import RequestIDMiddleware  # Q12-L23
+from app.middleware.request_id import RequestIDMiddleware
 
 PANEL_STATIC_DIR = Path(__file__).resolve().parent / "static" / "panel"
 SETUP_STATIC_DIR = Path(__file__).resolve().parent / "static" / "setup"
@@ -123,7 +123,7 @@ async def lifespan(_app: FastAPI):
     init_db()
     _lf_logger = logging.getLogger("app.lifespan")
 
-    # 014 — restore persisted circuit-breaker state on boot. The breaker writes
+    # Restore persisted circuit-breaker state on boot. The breaker writes
     # every open/half-open transition to disk (persist.py) so a provider that
     # tripped before a deploy/restart stays isolated instead of being hammered
     # again on the first post-restart request. The restore method existed but
@@ -163,7 +163,7 @@ async def lifespan(_app: FastAPI):
     except Exception as exc:
         _lf_logger.warning("url sanitizer install skipped: %s", exc)
 
-    # 013 — vault: plaintext .env migration + boot decrypt → settings'e bind
+    # Vault: plaintext .env migration + boot decrypt → settings'e bind
     try:
         from app.vault.migration import migrate_plaintext_env_to_vault
 
@@ -248,7 +248,7 @@ async def lifespan(_app: FastAPI):
                     "license_offline_grace_expired — paid providers blocked"
                 )
 
-            # BUG-21 — periodic heartbeat so a server-side revoke
+            # Periodic heartbeat so a server-side revoke
             # propagates to /v1/chat/completions within one interval
             # instead of waiting for the next manual restart. Default
             # 60s for live pilots; production deployments override via
@@ -307,7 +307,7 @@ async def lifespan(_app: FastAPI):
         yield
         return
 
-    # T-018 — pre-warm Cerbos PDP client + LangFuse client so the first
+    # Pre-warm Cerbos PDP client + LangFuse client so the first
     # request doesn't pay the connection cost (closes T-005 caveat).
     try:
         from cerbos.sdk.client import CerbosClient
@@ -362,7 +362,7 @@ async def lifespan(_app: FastAPI):
             asyncio.create_task(_federate_bg())
             yield
     finally:
-        # BUG-21 — cancel the heartbeat loop before shutdown so a stuck
+        # Cancel the heartbeat loop before shutdown so a stuck
         # CF Worker call doesn't hold the lifespan-finalisation open.
         if _heartbeat_task is not None:
             _heartbeat_task.cancel()
@@ -371,7 +371,7 @@ async def lifespan(_app: FastAPI):
             except (asyncio.CancelledError, Exception):
                 pass
 
-        # T-018 — flush LangFuse + close Cerbos pre-warmed client
+        # Flush LangFuse + close Cerbos pre-warmed client
         try:
             from app.observability.langfuse_client import close_langfuse
 
@@ -396,9 +396,9 @@ async def lifespan(_app: FastAPI):
 from app.config import settings as _app_settings  # noqa: E402
 
 app = FastAPI(title="Automatia ABS", version=_app_settings.version, lifespan=lifespan)
-install_rate_limit(app)  # 028 — must run before include_router so decorators work
+install_rate_limit(app)  # must run before include_router so decorators work
 
-# Sprint 2K — convert RLS write-side violations (Postgres SQLSTATE 42501)
+# Convert RLS write-side violations (Postgres SQLSTATE 42501)
 # into a typed 403 tenant_isolation_required response. Without this any
 # request that tried to insert into an RLS-guarded audit table without a
 # matching tenant GUC would surface a generic 500.
@@ -436,11 +436,11 @@ install_audience_enforcer(app, _abs_settings_for_audience)
 app.add_middleware(FirstRunMiddleware)
 app.add_middleware(I18nMiddleware)
 app.add_middleware(DemoModeMiddleware)
-# Q12-L25 sweep 3 — Content-Length cap before any body parse (DoS mitigation).
+# Content-Length cap before any body parse (DoS mitigation).
 from app.middleware.body_size_limit import install_body_size_limit
 
 install_body_size_limit(app)
-# Sprint 2L — pin the request's tenant to the RLS ContextVar so the Postgres
+# Pin the request's tenant to the RLS ContextVar so the Postgres
 # RLS policies (0015 audit tables + 0019 tenant tables) actually engage in the
 # live request path. Sprint 2K shipped the policies + GUC listener but never
 # attached a populator, so the GUC stayed unset outside the postgres_only
@@ -449,7 +449,7 @@ install_body_size_limit(app)
 from app.middleware.tenant_context import install_tenant_context
 
 install_tenant_context(app)
-# Q12-L23 — outermost so request_id is set before all other middleware run.
+# Outermost so request_id is set before all other middleware run.
 # Starlette wraps LIFO: the last add_middleware call is the outermost.
 app.add_middleware(RequestIDMiddleware)
 
@@ -457,9 +457,9 @@ app.include_router(auth_router.router)
 app.include_router(
     auth_router.claim_v1_router
 )  # /v1/auth/magic-claim (SPA /activate page)
-app.include_router(oauth_router)  # T-003 — OAuth 2.1 + PKCE + JWKS
-app.include_router(v1_projects_router)  # T-005 — MCP gateway v1
-app.include_router(v1_rag_router)  # T-011 — RAG ingest/query
+app.include_router(oauth_router)  # OAuth 2.1 + PKCE + JWKS
+app.include_router(v1_projects_router)  # MCP gateway v1
+app.include_router(v1_rag_router)  # RAG ingest/query
 app.include_router(v1_agents_router)  # Agentic Growth — Agent Registry + Runtime
 app.include_router(v1_approvals_router)  # Agentic Growth — Approval Center
 app.include_router(v1_inbound_router)  # Agentic Growth — Inbound + Knowledge MVP
@@ -525,7 +525,7 @@ app.include_router(system_feature_usage_router.router)  # S20.3
 app.include_router(marketplace_router.router)  # CJ-008
 app.include_router(meetings_router.router)  # S20.4
 app.include_router(workflows_router.router)  # P1 S19 close
-app.include_router(cascade_router.router)  # Q4 P10 — /v1/cascade/*
+app.include_router(cascade_router.router)  # /v1/cascade/*
 app.include_router(chat_router.router)  # Q8 Phase A — /v1/chat/*
 app.include_router(agent_caps_router.router)  # what agent mode may do
 app.include_router(mcp_tokens_router.router)  # Q8 Phase N — /v1/mcp/tokens
@@ -571,7 +571,7 @@ app.mount(
 
 @app.get("/setup", include_in_schema=False)
 async def setup_index():
-    """012 — Setup wizard UI (vanilla HTML/JS)."""
+    """Setup wizard UI (vanilla HTML/JS)."""
     return FileResponse(SETUP_STATIC_DIR / "index.html", media_type="text/html")
 
 
@@ -597,7 +597,7 @@ if not getattr(_app_settings, "mcp_auth_enforce", True):
     )
 app.mount("/mcp", McpTokenAuthASGI(mcp_http_app()))
 
-# T-002 — Inngest durable workflow engine. Functions are auto-discovered by the
+# Inngest durable workflow engine. Functions are auto-discovered by the
 # Inngest dev server (`npx inngest-cli@latest dev`) via /api/inngest.
 try:
     from inngest import fast_api as _inngest_fastapi

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""015 — Learnings (bugfix/delegation/arch dersleri) JSONL store paketi."""
+"""Learnings (bugfix/delegation/arch dersleri) JSONL store paketi."""
 
 from .store import log, recent, recent_count, stats
 

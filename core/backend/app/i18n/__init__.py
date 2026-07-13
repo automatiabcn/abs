@@ -3,10 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""023 — i18n module: t(key, lang) + Accept-Language detection.
+"""i18n module: t(key, lang) + Accept-Language detection.
 
 Locale JSON flat key dot notation (errors.stripe_not_configured).
-EN default; TR/ES eksik anahtar varsa EN fallback.
+EN is the default; a key missing from TR/ES falls back to EN.
 """
 
 from __future__ import annotations

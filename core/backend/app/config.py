@@ -74,10 +74,10 @@ class Settings(BaseSettings):
     # Discord webhook — unset is a no-op, never a boot failure
     discord_webhook_url: str = ""
 
-    # 028 — Slack signing secret (HMAC SHA256)
+    # Slack signing secret (HMAC SHA256)
     slack_signing_secret: str = ""
 
-    # 028 — GitHub App (parallel to OAuth)
+    # GitHub App (parallel to OAuth)
     github_app_id: str = ""
     github_app_private_key: str = ""  # PEM, multi-line OK
     github_app_webhook_secret: str = ""
@@ -89,43 +89,43 @@ class Settings(BaseSettings):
     github_client_id: str = ""
     github_client_secret: str = ""
 
-    # 028 — Rate limiting (slowapi)
+    # Rate limiting (slowapi)
     rate_limit_enabled: bool = True
     rate_limit_storage_uri: str = "memory://"  # Redis: redis://host:6379/0
-    # Sprint 2I UAT-042 — comma-separated proxy IPs whose X-Forwarded-For
+    # Comma-separated proxy IPs whose X-Forwarded-For
     # header may be trusted. Anything outside this allowlist falls back
     # to request.client.host so a malicious origin cannot spoof its IP.
     trusted_proxies: str = "127.0.0.1,::1"
 
-    # T-058 — X-ABS-Audience header enforcement (caveat #11)
+    # X-ABS-Audience header enforcement (caveat #11)
     audience_enforce: bool = False
     audience_value: str = "abs-mcp"
 
-    # 029 — GDPR audit log IP hashing + delete confirmation JWT
+    # GDPR audit log IP hashing + delete confirmation JWT
     audit_ip_salt: str = "dev-insecure-audit-salt-change-in-prod"
     delete_confirm_jwt_secret: str = "dev-insecure-delete-jwt-secret"
 
-    # 031 — Beta portal
+    # Beta portal
     beta_auto_approve: bool = False
     beta_admin_token: str = "dev-insecure-beta-admin-change-in-prod"
 
-    # 032 — Admin dashboard (separate from panel /auth)
+    # Admin dashboard (separate from panel /auth)
     admin_password_hash: str = ""  # bcrypt hash; empty = login disabled
     admin_jwt_secret: str = "dev-insecure-admin-jwt-change-in-prod"
     admin_ip_whitelist: str = ""  # comma-separated; empty = no IP filter
     churn_threshold: float = 0.5
 
-    # Sprint 2B BUG-36 — HMAC secret for magic-link token hashing.
+    # HMAC secret for magic-link token hashing.
     # Empty falls back to admin_jwt_secret (still per-install random in
     # prod) so existing customers don't have to set a new env var.
     magic_link_hmac_secret: str = ""
 
-    # Sprint 2B BUG-36 — public hostname used to build magic-link URLs in
+    # Public hostname used to build magic-link URLs in
     # invite emails. Defaults to the dev/local origin; customer compose
     # overrides via ABS_PUBLIC_HOSTNAME.
     public_hostname: str = "http://localhost:3000"
 
-    # 033 — Demo readiness
+    # Demo readiness
     demo_mode: bool = False
     provider_mock: bool = False  # forces app.providers.mock for live calls
     demo_seed_version: str = "v1"
@@ -148,13 +148,13 @@ class Settings(BaseSettings):
 
     # Provider API keys (encrypted at rest via the sops vault below)
     anthropic_api_key: str = ""
-    # T-F03 — Claude API is opt-in (paid). Default off; set ABS_ANTHROPIC_ENABLED=true to enable.
+    # Claude API is opt-in (paid). Default off; set ABS_ANTHROPIC_ENABLED=true to enable.
     anthropic_enabled: bool = False
     claude_monthly_token_limit: int = 1_000_000
-    # Q3 P3 — mock mode for cascade fallback testing without a real API key.
+    # Mock mode for cascade fallback testing without a real API key.
     # Values: off | ok | rate_limit | timeout | provider_500 | random
     anthropic_mock_mode: str = "off"
-    # Q4 P7-live — RAGAS evaluator backend toggle: mock | groq
+    # RAGAS evaluator backend toggle: mock | groq
     ragas_backend: str = "mock"
     groq_api_key: str = ""
     groq_whisper_model: str = "whisper-large-v3"
@@ -165,12 +165,10 @@ class Settings(BaseSettings):
     cohere_api_key: str = ""
     openrouter_api_key: str = ""
     vllm_url: str = ""
-    vllm_api_key: str = (
-        ""  # T-Q08 — self-hosted vLLM ignores it; pass org token if needed
-    )
+    vllm_api_key: str = ""  # self-hosted vLLM ignores it; pass org token if needed
     ollama_url: str = ""
 
-    # T-R03 fix #4 — Ollama-first cascade (yerel $0 → groq cloud → anthropic).
+    # Ollama-first cascade (local $0 -> groq cloud -> anthropic).
     ollama_first_enabled: bool = False
     ollama_first_health_timeout_s: float = 1.5
 
@@ -221,9 +219,9 @@ class Settings(BaseSettings):
     hooks_mode: str = "middleware"  # "middleware" | "native" | "both"
     cache_dir: str = "/app/data/cache"
     artifacts_dir: str = "/app/data/artifacts"
-    data_dir: str = "/app/data"  # 009 — workflow_state.db, judge_log.jsonl, rag_chroma/
+    data_dir: str = "/app/data"  # workflow_state.db, judge_log.jsonl, rag_chroma/
 
-    # 010 — Workflow durability + MLX
+    # Workflow durability + MLX
     workflow_durable: bool = False  # persist pipeline state to workflow_state.db
     mlx_url: str = ""  # Apple Silicon Neural Engine bridge (unset degrades gracefully)
 
@@ -245,36 +243,36 @@ class Settings(BaseSettings):
     abs_annual_offer_strike: float = 0.0
     abs_annual_offer_price: float = 0.0
 
-    # 013 — Encrypted secrets vault (sops + age)
+    # Encrypted secrets vault (sops + age)
     vault_key_path: str = (
         "/app/vault-key/age.key"  # master key — mount on its own volume
     )
     vault_secrets_path: str = "/app/data/secrets.yaml"  # encrypted secrets file
 
-    # 027 — Vault production hardening
+    # Vault production hardening
     vault_require_sops: bool = False  # production=True; boot fail-fast if sops missing
     vault_audit_hmac_secret: str = "dev-insecure-vault-hmac-change-in-prod"
     vault_min_sops_version: str = "3.7.0"
 
-    # 014 — Update channel + health monitor
+    # Update channel + health monitor
     update_manifest_url: str = "https://abs.automatiabcn.com/releases/manifest.json"
     health_interval_seconds: int = 60
 
-    # 015 — Manifest RS256 signature (production: True / dev/test: False)
+    # Manifest RS256 signature (production: True / dev/test: False)
     update_signature_required: bool = True
 
-    # T-001 — NATS JetStream event bus
+    # NATS JetStream event bus
     nats_url: str = "nats://nats:4222"
     nats_event_stream: str = "ABS_EVENTS"
     nats_event_subjects: str = "abs.events.>"  # comma-separated for multi-subject
 
-    # T-003 — OAuth 2.1 issuer (used in JWT iss + OIDC discovery)
+    # OAuth 2.1 issuer (used in JWT iss + OIDC discovery)
     oauth_issuer: str = "https://abs.local"
 
-    # T-004 — Cerbos PDP host (HTTP transport; gRPC available via cerbos:3593)
+    # Cerbos PDP host (HTTP transport; gRPC available via cerbos:3593)
     cerbos_host: str = "http://cerbos:3592"
 
-    # T-009 — Qdrant vector DB (multi-tenant via payload index)
+    # Qdrant vector DB (multi-tenant via payload index)
     qdrant_url: str = "http://qdrant:6333"
     qdrant_api_key: str = ""
     qdrant_default_collection: str = "abs_documents"
@@ -304,7 +302,7 @@ class Settings(BaseSettings):
     embedding_batch_size: int = 32
     embedding_min_batch: int = 4
 
-    # T-013 — Reranker (Qwen3-Reranker-4B + Cohere fallback + mock)
+    # Reranker (Qwen3-Reranker-4B + Cohere fallback + mock)
     # "auto" resolves to what this server can actually do (cohere → onnx → none).
     # It was "mock" — Jaccard word overlap, behind an API field that says
     # "cross-encoder rerank", and measurably worse than not reranking at all.
@@ -314,11 +312,11 @@ class Settings(BaseSettings):
     rerank_cache_ttl_seconds: int = 3600
     rerank_cache_max_entries: int = 4096
 
-    # T-016 — RAG cost + usage tracking (LangFuse-compatible JSONL pre-T-018)
+    # RAG cost + usage tracking (LangFuse-compatible JSONL pre-T-018)
     usage_log_path: str = "data/rag_usage.jsonl"
     usage_log_sample_rate: float = 1.0  # 0.0..1.0; production=1.0, dev=0.1
 
-    # T-018 — LangFuse client (no-op when disabled)
+    # LangFuse client (no-op when disabled)
     langfuse_enabled: bool = False
     langfuse_host: str = "https://langfuse.abs.local"
     langfuse_public_key: str = ""
@@ -328,7 +326,7 @@ class Settings(BaseSettings):
     cosign_skip: bool = True  # dev default; prod must set ABS_COSIGN_SKIP=false
     cosign_public_key_path: str = "/etc/abs/cosign.pub"
 
-    # T-019 — Text2SQL guard-rails
+    # Text2SQL guard-rails
     text2sql_backend: str = "mock"
     text2sql_model_name: str = ""
     text2sql_training_path: str = ""
@@ -337,10 +335,10 @@ class Settings(BaseSettings):
     cortex_api_key: str = ""
     cortex_endpoint: str = ""
 
-    # T-023 — Prompt management
+    # Prompt management
     prompt_store_path: str = "data/prompts.jsonl"
 
-    # T-024 — RAGAS CI eval
+    # RAGAS CI eval
     ragas_backend: str = "mock"
     ragas_baseline_path: str = "tests/fixtures/ragas_baseline.json"
     ragas_max_drop: float = 0.05
@@ -355,7 +353,7 @@ class Settings(BaseSettings):
     elevenlabs_api_key: str = ""
     elevenlabs_voice_id: str = ""
     elevenlabs_budget_usd: float = 50.0
-    # T-F02 — ElevenLabs is opt-in (paid SaaS). Free tier uses "coqui"/"piper".
+    # ElevenLabs is opt-in (paid SaaS). Free tier uses "coqui"/"piper".
     elevenlabs_enabled: bool = False
     tts_backend: str = "mock"  # "mock" | "coqui" | "piper" | "elevenlabs"
     tts_output_dir: str = "data/tts"
@@ -394,14 +392,14 @@ class Settings(BaseSettings):
     # provider budget looping.
     agent_max_steps: int = 8
 
-    # T-Q03 — SaaS integration env vars (Gmail / Recall / Deepgram / WhisperX / ElevenLabs)
+    # SaaS integration env vars (Gmail / Recall / Deepgram / WhisperX / ElevenLabs)
     gmail_oauth_client_id: str = ""
     gmail_oauth_client_secret: str = ""
     gmail_oauth_redirect: str = ""
     recall_backend: str = "mock"  # "mock" | "local" | "recall"
     recall_ai_api_key: str = ""
     recall_ai_cost_cap_usd_per_day: float = 50.0
-    # T-F01 — Recall.ai is opt-in (paid SaaS). Free tier uses "local".
+    # Recall.ai is opt-in (paid SaaS). Free tier uses "local".
     recall_enabled: bool = False
     meeting_local_runner: str = "meetily"  # "meetily" | "jitsi"
     meeting_local_jobs_dir: str = "/tmp/abs-meetings"
@@ -464,7 +462,7 @@ class Settings(BaseSettings):
     )
 
 
-# T-Q01: production secret-leak guard.
+# Production secret-leak guard.
 # Listed defaults are intentionally `dev-insecure-*` / `CHANGEME` so the
 # unit tests have a non-empty HMAC/JWT key. In production we must refuse
 # to boot with any of them still in place.
@@ -478,7 +476,7 @@ _DEV_INSECURE_DEFAULTS: dict[str, str] = {
     "session_secret": "dev-insecure-change-in-prod",
     "admin_password_bootstrap": "CHANGEME",
     "vault_audit_hmac_secret": "dev-insecure-vault-hmac-change-in-prod",
-    # Sprint 2I #13 — block production boot if the operator forgot to
+    # Block production boot if the operator forgot to
     # override the Neo4j placeholder password.
     "neo4j_password": "AbsNeo2026!",
 }

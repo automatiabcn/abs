@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-042 — Stripe TEST-mode billing wrapper.
+"""Stripe TEST-mode billing wrapper.
 
 ⚠ NEVER swap to live keys autonomously. The mode flip is a manual-approval
 gate per the v10 worker brief. This module hard-asserts that the configured

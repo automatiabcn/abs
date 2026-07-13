@@ -137,7 +137,7 @@ def _consent_counts() -> dict:
 @mcp_server.tool()
 @with_hooks("compliance_status")
 async def compliance_status() -> str:
-    """029 — GDPR compliance posture dashboard."""
+    """GDPR compliance posture dashboard."""
     await tracker.bump("compliance_status")
 
     docs = {

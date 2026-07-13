@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-045 — Checkout deep-link helper for the landing pricing page.
+"""Checkout deep-link helper for the landing pricing page.
 
 Builds a stable URL the frontend can hit to start the Stripe checkout for a
 given tier + tenant. Does NOT call Stripe — the actual session creation lives

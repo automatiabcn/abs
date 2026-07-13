@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""014 — Provider config YAML loader.
+"""Provider config YAML loader.
 
 Boot'ta `infra/provider-configs/*.yaml` okunur, model alias map + pricing dict'e
 yuklenir. Docker container'da `ABS_PROVIDER_CONFIGS_DIR` env ile path override edilebilir.
@@ -41,7 +41,7 @@ _loaded: Dict[str, dict] = {}
 
 
 def load_all(directory: Optional[Path] = None) -> Dict[str, dict]:
-    """Tum *.yaml dosyalarini oku, dict (provider_name → config) dondur."""
+    """Read every *.yaml and return a dict of provider_name -> config."""
     d = directory or _default_dir()
     if not d.is_dir():
         logger.warning("provider config directory not found: %s", d)

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""ABS feature usage tracker (Sprint 20 T-F05).
+"""ABS feature usage tracker.
 
 Counts every MCP tool / pipeline / cascade invocation so operators can
 spot ABS features that ship but never run. Append-only JSON-line ledger

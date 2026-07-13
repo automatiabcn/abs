@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-009 — Qdrant client wrapper enforcing payload-based multi-tenant isolation.
+"""Qdrant client wrapper enforcing payload-based multi-tenant isolation.
 
 Every read/write demands a non-empty tenant_id; the public API surface keeps
 direct unsafe queries impossible. Defense-in-depth on top of Cerbos pre-filter.

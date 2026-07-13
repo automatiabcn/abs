@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q12-L25 sweep 3 — request body size cap (DoS mitigation).
+"""request body size cap (DoS mitigation).
 
 Enforces a per-path Content-Length cap **before** FastAPI/Pydantic parses
 the body. Without this, a client could ship a 100 MB JSON payload to any

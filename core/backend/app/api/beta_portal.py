@@ -138,25 +138,24 @@ def _notify_discord(*, kind: str, req: BetaRequest, jti: Optional[str] = None) -
 @router.post("/request")
 @limiter.limit("3/hour")
 async def beta_request(body: BetaRequestBody, request: Request) -> dict:
-    """Sprint 2I UAT-022/023/024 — beta intake hardening.
+    """beta intake hardening.
 
     - Honeypot now logs an 8-char sha256 prefix of the email instead of
-      the plaintext PII (UAT-023).
+      the plaintext PII.
     - Duplicate-recent-request returns the same neutral 200 body as a
       first-time request so the endpoint cannot be used as an email
-      enumeration oracle (UAT-024).
+      enumeration oracle.
     - Auto-approve no longer echoes the license JTI in the response
-      body; the customer receives the JTI by email magic-link only
-      (UAT-022).
+      body; the customer receives the JTI by email magic-link only.
     """
     # Honeypot: silently 200 to bots so they don't retry. Email reduced
-    # to an 8-char digest before logging (UAT-023).
+    # to an 8-char digest before logging.
     if body.website:
         logger.info("[beta] honeypot triggered email_hash=%s", _email_hash(body.email))
         return _QUEUED_RESPONSE
 
     if _has_recent_request(body.email):
-        # UAT-024 — quiet duplicate. No 429 + no diagnostic body so the
+        # Quiet duplicate. No 429 + no diagnostic body so the
         # endpoint cannot leak which emails are already in the queue.
         logger.info(
             "[beta] duplicate within 24h email_hash=%s", _email_hash(body.email)
@@ -168,7 +167,7 @@ async def beta_request(body: BetaRequestBody, request: Request) -> dict:
     if settings.beta_auto_approve:
         jti = _auto_issue_license(req)
         _notify_discord(kind="approved", req=req, jti=jti)
-        # UAT-022 — JTI travels via the magic-link email only. Response
+        # JTI travels via the magic-link email only. Response
         # body must not let a public caller harvest tenant identifiers.
         return _QUEUED_RESPONSE
 

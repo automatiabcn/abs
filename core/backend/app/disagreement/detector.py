@@ -118,5 +118,5 @@ async def ask_disagree(prompt: str, analyzer_model: str | None = None) -> Dict:
         "similarity_matrix": sim_matrix,
         "consensus_score": round(consensus, 3) if consensus is not None else None,
         "consensus_level": level,
-        "note": "Cohere embed yoksa Jaccard fallback.",
+        "note": "Jaccard similarity — no Cohere embedding available.",
     }

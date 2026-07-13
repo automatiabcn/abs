@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-024 — RAGAS-style evaluation for CI gates (mock + deferred ragas SDK).
+"""RAGAS-style evaluation for CI gates (mock + deferred ragas SDK).
 
 Mock backend works offline so the CI gate runs every PR without GPU. Real
 `ragas` backend gated behind a deferred import. `regression_check` returns a

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-018 — LangFuse client wrapper + @observe decorator.
+"""LangFuse client wrapper + @observe decorator.
 
 The runtime singleton wraps `langfuse.Langfuse` when configured; otherwise
 falls back to a no-op client so dev/test environments incur zero overhead

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""026 — Smart Link production: OAuth, vault encrypt, provider validate, dashboard.
+"""Smart Link production: OAuth, vault encrypt, provider validate, dashboard.
 
 Endpoints:
   GET    /v1/smart-link/providers          — supported integrations list
@@ -33,7 +33,7 @@ from app.auth.bearer import token_matches
 from app.config import settings
 from app.db.models import OAuthState
 from app.db.session import get_engine
-from app.observability.audit import emit_event  # Q12-L23 sweep 4
+from app.observability.audit import emit_event
 from app.smart_link.provider_validators import VALIDATORS, validate as validate_provider
 from app.smart_link.vault_secrets import (
     decrypt_secret,
@@ -242,7 +242,7 @@ async def github_authorize(body: GithubAuthorizeRequest) -> GithubAuthorizeRespo
 async def github_callback(code: str, state: str, request: Request) -> dict:
     redirect = _consume_state(state, "github")
     if redirect is None:
-        # Q12-L23 sweep 4 — emit BEFORE raising. Replayed/forged/expired
+        # Emit BEFORE raising. Replayed/forged/expired
         # OAuth state is *exactly* the kind of probe ops needs to see.
         emit_event(
             request,

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-013 — Cross-encoder reranker (Qwen3-Reranker-4B + Cohere fallback + mock).
+"""Cross-encoder reranker (Qwen3-Reranker-4B + Cohere fallback + mock).
 
 Default backend is "auto": Cohere if a key is configured, the local ONNX
 cross-encoder if a model path is, and otherwise no reranking at all — the dense

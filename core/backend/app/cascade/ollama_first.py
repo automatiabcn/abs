@@ -3,9 +3,9 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-R03 fix #4 — Ollama-first cascade chain.
+"""Ollama-first cascade chain.
 
-Priority order: yerel Ollama (cost = $0) → Groq (cloud fast, $0 free quota)
+Priority order: local Ollama (cost = $0) → Groq (cloud fast, $0 free quota)
 → Anthropic (cloud quality, paid). The standard `call_with_cascade` already
 fails-through on `ProviderError(transient=True)`; OllamaProvider raises that
 shape on connect-error or timeout, so the chain Just Works.

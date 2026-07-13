@@ -282,7 +282,7 @@ class TTSReminder:
         try:
             result = self._impl.synthesize(text, target_dir=target)  # type: ignore[attr-defined]
         except TTSBackendUnavailable:
-            # T-F02 — Coqui → Piper auto-fallback when GPU/Coqui not present.
+            # Coqui → Piper auto-fallback when GPU/Coqui not present.
             if self.backend == "coqui" and getattr(settings, "tts_auto_fallback", True):
                 logger.warning("tts_coqui_unavailable_falling_back_to_piper")
                 self._impl = _PiperBackend(

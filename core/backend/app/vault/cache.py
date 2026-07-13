@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""013 — Memory cache; vault'tan boot'ta okunan secrets'larin runtime'da settings'e bind edilmesi."""
+"""Memory cache; vault'tan boot'ta okunan secrets'larin runtime'da settings'e bind edilmesi."""
 
 from __future__ import annotations
 
@@ -78,5 +78,5 @@ def is_loaded(key: str) -> bool:
 
 
 def clear_for_test() -> None:
-    """Sadece testlerde kullan — fixture state reset."""
+    """Test-only: reset the fixture state."""
     _cache.clear()

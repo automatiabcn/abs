@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-022 — LangFuse-compatible custom price tier per provider/model.
+"""LangFuse-compatible custom price tier per provider/model.
 
 Pricing in USD per 1M tokens. Self-host BGE-M3 / Qwen3-Reranker have
 zero API cost but a non-zero compute cost we account for via energy

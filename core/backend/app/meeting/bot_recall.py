@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-026 — Recall.ai meeting bot wrapper (calendar event → bot → audio).
+"""Recall.ai meeting bot wrapper (calendar event → bot → audio).
 
 Mock backend simulates the bot lifecycle with deterministic state transitions
 so tests don't need a Recall.ai account. Real backend gated behind deferred
@@ -83,7 +83,7 @@ class _MockBackend:
 
 
 class _RecallBackend:
-    """T-Q03 — real Recall.ai client using httpx.
+    """real Recall.ai client using httpx.
 
     Endpoints (per https://docs.recall.ai/reference):
       POST   /api/v1/bot           schedule a new bot
@@ -186,12 +186,12 @@ class MeetingBot:
         if backend == "mock":
             self._impl: Any = _MockBackend()
         elif backend == "local":
-            # T-F01 — self-hosted meetily/jitsi backend (free tier default).
+            # Self-hosted meetily/jitsi backend (free tier default).
             from .bot_local import LocalMeetingBackend
 
             self._impl = LocalMeetingBackend()
         elif backend == "recall":
-            # T-F01 — Recall.ai is now opt-in. Require explicit env flag.
+            # Recall.ai is now opt-in. Require explicit env flag.
             recall_enabled = bool(getattr(settings, "recall_enabled", False))
             if not recall_enabled:
                 raise ValueError(

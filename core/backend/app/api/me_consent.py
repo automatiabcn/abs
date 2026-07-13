@@ -26,7 +26,7 @@ from app.customer_audit.consent import (
 )
 from app.customer_audit.logger import log_customer_action
 from app.licensing import verify_license
-from app.observability.audit import emit_event  # Q12-L24 sweep 3
+from app.observability.audit import emit_event
 
 router = APIRouter(prefix="/v1/me", tags=["me"])
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ def _verify_bearer_license(
         )
         raise
     except Exception as exc:
-        # Q12-L24 sweep 3 — pre-fix the response body included the
+        # Pre-fix the response body included the
         # PyJWT exc text (matches R18/R19 me_account / me_data_export
         # leak family). Generic detail; error_class to audit only.
         emit_event(

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-014 — RAG gateway auth/authz stack (organisational re-export).
+"""RAG gateway auth/authz stack (organisational re-export).
 
 The actual middleware/dependency wiring lives in T-005 and T-012:
     `get_auth_context` (JWT verify + tenant claim parse, X-ABS-Audience honored)

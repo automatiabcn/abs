@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-035 — Gmail MCP server (read/draft/send/label) with per-tenant token vault.
+"""Gmail MCP server (read/draft/send/label) with per-tenant token vault.
 
 Mock backend simulates the Gmail API; real backend gated behind
 `google-api-python-client` deferred import. OAuth 2.0 PKCE token storage
@@ -134,7 +134,7 @@ class _MockBackend:
 
 
 class _GoogleBackend:
-    """T-Q03 — real Gmail REST client.
+    """real Gmail REST client.
 
     Uses the Gmail v1 REST endpoints directly via httpx instead of the
     `google-api-python-client` SDK so we avoid pulling a 30 MB dependency

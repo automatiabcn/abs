@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""013 — Vault rotation + status API (admin auth zorunlu).
+"""Vault rotation + status API (admin auth zorunlu).
 
 POST /v1/secrets/rotate {key, new_value} → write_secret + invalidate cache + audit
 GET  /v1/secrets/status                  → vault_enabled + per-key configured (NO CLEARTEXT)
@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.api.auth import current_admin
-from app.observability.audit import emit_event  # Q12-L24 sweep 3
+from app.observability.audit import emit_event
 
 router = APIRouter(prefix="/v1/secrets", tags=["secrets"])
 
@@ -66,7 +66,7 @@ async def rotate_secret(
     try:
         write_secret(body.key, body.new_value)
     except VaultError as exc:
-        # Q12-L24 sweep 3 — pre-fix `f"Vault yazma hatasi: {exc}"`
+        # Pre-fix this read `f"Vault write failed: {exc}"`
         # leaked sops/age stderr (file paths, key fingerprints,
         # subprocess details). Generic detail; error_class to audit only.
         emit_event(
@@ -92,7 +92,7 @@ async def rotate_secret(
 
 @router.get("/status")
 async def secrets_status(_admin: dict = Depends(current_admin)) -> Dict[str, Any]:
-    """Cleartext yok — sadece configured/not-configured listesi + binary durumu."""
+    """No cleartext: a configured/not-configured list plus the binary status."""
     from app.vault.cache import is_loaded, known_keys
     from app.vault.runner import master_key_exists, sops_available
 

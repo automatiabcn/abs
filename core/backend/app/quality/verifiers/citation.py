@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-054 — Citation verifier (REFCHECKER lite).
+"""Citation verifier (REFCHECKER lite).
 
 Splits an answer into claim sentences, finds the strongest matching context for
 each, and reports orphan claims (no support) + unused contexts.

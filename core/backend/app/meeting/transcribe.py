@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-025 — Meeting transcribe + diarization dispatcher.
+"""Meeting transcribe + diarization dispatcher.
 
 Default backend "mock" produces deterministic segments from a script string
 so unit tests don't need WhisperX/pyannote. Real backends are gated behind
@@ -97,7 +97,7 @@ class _MockBackend:
 
 
 class _WhisperXBackend:
-    """T-Q03 — local WhisperX model (GPU-bound, deferred import).
+    """local WhisperX model (GPU-bound, deferred import).
 
     `whisperx.load_model` is heavy; we cache the loaded model on the instance.
     Caller receives the same Transcript shape as the mock backend.
@@ -156,7 +156,7 @@ class _WhisperXBackend:
 
 
 class _DeepgramBackend:
-    """T-Q03 — Deepgram /v1/listen REST client (httpx)."""
+    """Deepgram /v1/listen REST client (httpx)."""
 
     BASE_URL = "https://api.deepgram.com/v1/listen"
 

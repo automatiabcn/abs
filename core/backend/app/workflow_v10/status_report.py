@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-039 — Weekly status report aggregator.
+"""Weekly status report aggregator.
 
 Pulls Linear closed tickets, GitHub merged PRs, Slack highlights, and logged
 hours via injected callables. Outputs a structured `StatusReport` ready for

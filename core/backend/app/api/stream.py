@@ -203,7 +203,7 @@ def _build_budget() -> dict:
 
 
 def _build_license_status() -> dict:
-    """011 — Panel banner feed: demo countdown + license/refund durumu."""
+    """Panel banner feed: demo countdown + license/refund durumu."""
     from app.licensing.demo import status as demo_status
     from app.mcp.gate import _gate_status
 
@@ -222,7 +222,7 @@ def _build_license_status() -> dict:
 
 
 async def _build_update_available() -> dict:
-    """014 — Async builder: remote manifest fetch + version compare."""
+    """Async builder: remote manifest fetch + version compare."""
     from app.main import app as fastapi_app
     from app.update.manifest import fetch_manifest, update_state
 

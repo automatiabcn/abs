@@ -8,7 +8,7 @@
 GET /v1/admin/audit/recent?limit=200&source=vault|customer|webhook|all&cursor=<b64>
 Combines VaultAuditEntry (027), CustomerAuditEntry (029) and WebhookEvent (017).
 
-Sprint 2I UAT-034 — pagination is now mandatory. The previous
+Pagination is now mandatory. The previous
 `db.scalars(select(...)).all()` walk loaded every row into Python before
 sorting; a tenant with 1M+ rows would OOM the worker. Each source is now
 ordered + limited at the SQL layer (max 1000), and the optional ``cursor``

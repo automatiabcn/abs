@@ -3,9 +3,9 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-044 — Stripe webhook idempotency + replay protection + audit log.
+"""Stripe webhook idempotency + replay protection + audit log.
 
-.. deprecated:: Sprint 2I (UAT-043)
+.. deprecated::
 
    The DB-backed implementation in
    ``app.api.webhooks.idempotency.claim_event`` (``WebhookEvent``
@@ -28,7 +28,7 @@ from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
-# Sprint 2I UAT-043 — warn anyone importing this module so future
+# Warn anyone importing this module so future
 # refactors know to migrate to ``app.api.webhooks.idempotency``.
 warnings.warn(
     "app.billing_v10.webhook_idempotent is deprecated; use "

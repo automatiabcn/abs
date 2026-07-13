@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-046 — SOC2 audit log retention helpers (HMAC chain + S3 hand-off plan).
+"""SOC2 audit log retention helpers (HMAC chain + S3 hand-off plan).
 
 ⚠ Activating the 7-year S3 retention policy in production is a MANUAL approval
 gate per the v10 worker brief. This module ships the helpers + a dry-run

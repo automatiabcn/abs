@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""012 — Setup Wizard 6-step state machine + endpoint'leri.
+"""Setup Wizard 6-step state machine + endpoint'leri.
 
 State file: <data_dir>/setup_state.json
 Adimlar:
@@ -106,7 +106,7 @@ def _initial_state() -> Dict[str, Any]:
         "completed_steps": [],
         "started_at": time.time(),
         "completed_at": None,
-        "lang": "en",  # 023 — preferred wizard language (en|tr|es)
+        "lang": "en",  # preferred wizard language (en|tr|es)
         "data": {
             "admin": None,
             "license": None,
@@ -119,7 +119,7 @@ def _initial_state() -> Dict[str, Any]:
 
 
 def read_state() -> Dict[str, Any]:
-    """Setup state'i oku, yoksa initial state dondur (yazmaz)."""
+    """Read the setup state, or return the initial state. Never writes."""
     p = setup_state_path()
     if not p.is_file():
         return _initial_state()
@@ -284,7 +284,7 @@ _STEP_NUMBERS = {
 
 
 def _emit_funnel_step(state: Dict[str, Any], step_key: str) -> None:
-    """T-Q07: extracted from _advance so the wizard-completion logic and the
+    """extracted from _advance so the wizard-completion logic and the
     metric emission stay independently testable. Best-effort; metric errors
     must never block the wizard transition."""
     try:

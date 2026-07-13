@@ -31,7 +31,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.observability.audit import emit_event  # Q12-L23 sweep 4
+from app.observability.audit import emit_event
 
 router = APIRouter(prefix="/v1/admin", tags=["admin"])
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ def _client_ip(request: Request) -> str:
           ``_too_many_failures`` keyed on this IP is its only throttle).
 
     We defer to the same trusted-proxy gate the rate-limiter already uses
-    (UAT-042): ``X-Forwarded-For`` is honoured only when the immediate hop
+    ``X-Forwarded-For`` is honoured only when the immediate hop
     (``request.client.host``) is listed in ``ABS_TRUSTED_PROXIES``; otherwise
     the raw socket address is used and the header is ignored.
     """
@@ -234,7 +234,7 @@ def admin_required(
         token = request.cookies.get(ADMIN_COOKIE, "")
 
     if token:
-        # Q12-L23 sweep 4 — wrap so JWT exp/invalid/scope denials emit audit.
+        # Wrap so JWT exp/invalid/scope denials emit audit.
         try:
             return verify_admin_jwt(token)
         except HTTPException as exc:

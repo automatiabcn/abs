@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-031 — Voice fingerprint → user_id mapping (consent + GDPR-compliant).
+"""Voice fingerprint → user_id mapping (consent + GDPR-compliant).
 
 Mock backend stores SHA-256 of an arbitrary fingerprint blob. Real backend
 will plug in pyannote speaker embeddings; identical interface keeps the

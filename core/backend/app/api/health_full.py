@@ -149,7 +149,7 @@ def _check_data_dir() -> dict:
 
 @router.get("/full")
 async def health_full() -> dict:
-    """024 — Aggregate dependency health (DB, vault, providers, RAG, MCP, email, data dir)."""
+    """Aggregate dependency health (DB, vault, providers, RAG, MCP, email, data dir)."""
     checks = [
         _check_db(),
         _check_vault(),

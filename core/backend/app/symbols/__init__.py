@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""016 — Symbol graph paketi (Python AST → SQLite store + neighbors BFS)."""
+"""Symbol graph paketi (Python AST → SQLite store + neighbors BFS)."""
 
 from .index import index_path
 from .parser import Symbol, parse_directory, parse_python_file

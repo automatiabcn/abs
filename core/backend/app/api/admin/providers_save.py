@@ -73,7 +73,7 @@ def _full_mask(provider_id: str) -> str:
 
 
 class _PersistError(RuntimeError):
-    """Sprint 2I UAT-012 — raised when vault/env persistence cannot be
+    """raised when vault/env persistence cannot be
     completed atomically. The caller is expected to translate this to
     HTTP 500 + rollback the in-memory ``settings`` attribute."""
 
@@ -81,7 +81,7 @@ class _PersistError(RuntimeError):
 def _persist_secret(
     provider_id: str, value: str, previous: Optional[str] = None
 ) -> Dict[str, bool]:
-    """Sprint 2I UAT-012 — atomic vault + .env persistence.
+    """atomic vault + .env persistence.
 
     Previous behaviour swallowed every ``Exception`` so a vault write
     that succeeded followed by an ``IOError`` on the .env patch left a

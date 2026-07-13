@@ -55,7 +55,7 @@ def _last_rotation_days_ago() -> int | None:
 @mcp_server.tool()
 @with_hooks("security_audit")
 async def security_audit() -> str:
-    """028 — Aggregate security signals (admin-grade dashboard)."""
+    """Aggregate security signals (admin-grade dashboard)."""
     await tracker.bump("security_audit")
     from app.config import settings
     from app.middleware.rate_limit import breach_count_24h

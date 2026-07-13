@@ -20,7 +20,7 @@ from sqlmodel import Session, select
 from app.db.models import CustomerAuditEntry
 from app.db.session import get_engine
 from app.licensing import verify_license
-from app.observability.audit import emit_event  # Q12-L24 sweep 3
+from app.observability.audit import emit_event
 
 router = APIRouter(prefix="/v1/me", tags=["me"])
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ def _verify_bearer_license(
         )
         raise
     except Exception as exc:
-        # Q12-L24 sweep 3 — same PyJWT internals leak as me_account /
+        # Same PyJWT internals leak as me_account /
         # me_data_export / me_consent. Generic detail; error_class to
         # audit only.
         emit_event(

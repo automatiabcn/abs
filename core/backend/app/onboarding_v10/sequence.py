@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-047 — Onboarding email sequence (welcome / walkthrough / first_success / expiry)."""
+"""Onboarding email sequence (welcome / walkthrough / first_success / expiry)."""
 
 from __future__ import annotations
 
