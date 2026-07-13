@@ -5,10 +5,10 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// FAZ B (2026-05-08) — searchable prompt-library drawer. Sits to the
+// Phase B (2026-05-08) — searchable prompt-library drawer. Sits to the
 // right of the chat main area; users open it from the chat sidebar
-// or the empty-state CTA, browse 48 categorised prompts in TR/EN/ES,
-// pick one, and the prompt content lands in the chat input via the
+// or the empty-state CTA, browse 48 categorised prompts, pick one,
+// and the prompt content lands in the chat input via the
 // `onPick` callback provided by ChatClient. Self-contained: no global
 // state, no router dependency.
 "use client";
@@ -31,19 +31,19 @@ import { cn } from "@/lib/utils";
 
 const HEADER_TEXT: Record<PromptLang, string> = {
   en: "Prompt Library",
-  tr: "Prompt Kütüphanesi",
+  tr: "Prompt Library",
   es: "Biblioteca de Prompts",
 };
 
 const SEARCH_PLACEHOLDER: Record<PromptLang, string> = {
   en: "Search prompts…",
-  tr: "Prompt ara…",
+  tr: "Search prompts…",
   es: "Buscar prompts…",
 };
 
 const NO_RESULTS: Record<PromptLang, string> = {
   en: "No prompts match that search.",
-  tr: "Aramayla eşleşen prompt yok.",
+  tr: "No prompts match that search.",
   es: "Ningún prompt coincide con la búsqueda.",
 };
 

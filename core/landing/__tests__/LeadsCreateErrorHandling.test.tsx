@@ -48,7 +48,7 @@ describe("Leads create error handling", () => {
 
     // error is shown
     await waitFor(() =>
-      expect(screen.getByText(/oluşturulamadı/i)).toBeTruthy(),
+      expect(screen.getByText(/could not create the lead/i)).toBeTruthy(),
     );
     // form was NOT cleared — the typed value survives the failure
     expect(nameInput.value).toBe("Demirel Yapı A.Ş.");

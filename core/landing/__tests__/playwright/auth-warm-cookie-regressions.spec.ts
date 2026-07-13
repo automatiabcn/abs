@@ -74,20 +74,20 @@ test.describe("chat send button a11y (BUG-3)", () => {
 
 test.describe("page title sweep", () => {
   const TITLES: Array<[string, RegExp]> = [
-    ["/panel", /Genel Bakış — ABS Panel/],
+    ["/panel", /Overview — ABS Panel/],
     ["/panel/chat", /Sohbet — ABS Panel/],
     ["/panel/tools", /MCP Tool Browser — ABS Panel/],
-    ["/panel/quota", /Kota — ABS Panel/],
-    ["/panel/meetings", /Toplantılar — ABS Panel/],
-    ["/panel/transcription", /Canlı Transkripsiyon — ABS Panel/],
-    ["/admin/settings", /Ayarlar — ABS Admin/],
-    ["/admin/providers", /Provider Cascade — ABS Admin/],
+    ["/panel/quota", /Usage — ABS Panel/],
+    ["/panel/meetings", /Meetings — ABS Panel/],
+    ["/panel/transcription", /Live Transcription — ABS Panel/],
+    ["/admin/settings", /Settings — ABS Admin/],
+    ["/admin/providers", /Providers — ABS Admin/],
     ["/admin/marketplace", /Plugin Marketplace — ABS Admin/],
     ["/admin/workflow-builder", /Workflow Builder — ABS Admin/],
     ["/admin/pipelines", /Quality Pipelines — ABS Admin/],
-    ["/admin/rag", /RAG \/ Bilgi Tabanı — ABS Admin/],
-    ["/admin/audit", /Denetim — ABS Admin/],
-    ["/admin/users", /Kullanıcılar — ABS Admin/],
+    ["/admin/rag", /Knowledge Base — ABS Admin/],
+    ["/admin/audit", /Audit — ABS Admin/],
+    ["/admin/users", /Users — ABS Admin/],
     ["/admin/graph", /Knowledge Graph — ABS Admin/],
   ];
 

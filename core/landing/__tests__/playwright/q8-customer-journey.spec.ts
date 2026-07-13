@@ -39,7 +39,7 @@ const STEPS: Step[] = [
   {
     slug: "01-panel-home",
     path: "/panel",
-    title: "Genel Bakış",
+    title: "Overview",
     selector: '[data-test="panel-stats"]',
     authGated: true,
     minBytes: 5_000,
@@ -96,7 +96,7 @@ const STEPS: Step[] = [
   {
     slug: "09-quota",
     path: "/panel/quota",
-    title: "Kota (Phase I)",
+    title: "Usage",
     selector: '[data-page="panel-quota"]',
     authGated: true,
   },

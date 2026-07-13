@@ -119,11 +119,13 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
       const r = await res.json();
       if (r.ok) {
         setVerifyState("ok");
-        setVerifyDetail(`${r.total_entries ?? 0} kayıt`);
+        setVerifyDetail(`${r.total_entries ?? 0} entries`);
       } else {
         setVerifyState("broken");
         setVerifyDetail(
-          r.tampered_entry_id != null ? `#${r.tampered_entry_id} bozuk` : "",
+          r.tampered_entry_id != null
+            ? `altered at #${r.tampered_entry_id}`
+            : "",
         );
       }
     } catch {
@@ -145,11 +147,12 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            Denetim
+            Audit
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            HMAC zinciriyle imzalı audit log. GDPR Madde 15 + SOC2 CC7.2 veri
-            kaynağı.
+            What happened on this server and who did it. Every entry is signed
+            and chained, so a deleted or edited record shows up. Export it for
+            GDPR Article 15 or SOC 2 CC7.2 evidence.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -163,27 +166,27 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
             {verifyState === "loading" ? (
               <>
                 <ShieldCheck className="mr-2 h-3.5 w-3.5 animate-pulse" />
-                Doğrulanıyor…
+                Checking…
               </>
             ) : verifyState === "ok" ? (
               <>
                 <ShieldCheck className="mr-2 h-3.5 w-3.5 text-emerald-400" />
-                Zincir doğrulandı{verifyDetail ? ` · ${verifyDetail}` : ""}
+                Log intact{verifyDetail ? ` · ${verifyDetail}` : ""}
               </>
             ) : verifyState === "broken" ? (
               <>
                 <ShieldX className="mr-2 h-3.5 w-3.5 text-rose-400" />
-                Zincir kırık{verifyDetail ? ` · ${verifyDetail}` : ""}
+                Log tampered with{verifyDetail ? ` · ${verifyDetail}` : ""}
               </>
             ) : verifyState === "error" ? (
               <>
                 <ShieldX className="mr-2 h-3.5 w-3.5 text-amber-400" />
-                Doğrulanamadı
+                Check failed — try again
               </>
             ) : (
               <>
                 <ShieldCheck className="mr-2 h-3.5 w-3.5" />
-                Zinciri doğrula
+                Check the log
               </>
             )}
           </Button>
@@ -203,23 +206,23 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Filter className="h-4 w-4 text-primary" />
-            Filtreler
+            Filters
           </CardTitle>
           <CardDescription>
-            Aktör, eylem veya kaynak ile süzün.
+            Narrow the log down to a person or an action.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input
             value={actor}
             onChange={(e) => setActor(e.target.value)}
-            placeholder="Aktör (e-posta veya 'system')"
+            placeholder="Who (an email, or 'system')"
             data-test="audit-filter-actor"
           />
           <Input
             value={action}
             onChange={(e) => setAction(e.target.value)}
-            placeholder="Eylem (login, secret.read, cascade.fallback…)"
+            placeholder="What (login, secret.read, cascade.fallback…)"
             data-test="audit-filter-action"
           />
         </CardContent>
@@ -228,9 +231,9 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
       <Card className="bg-card/70">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">
-            Son olaylar ({filtered.length})
+            Recent events ({filtered.length})
           </CardTitle>
-          <CardDescription>30 saniyede bir auto-refresh.</CardDescription>
+          <CardDescription>Refreshes every 30 seconds.</CardDescription>
         </CardHeader>
         <CardContent>
           {audit.isLoading && filtered.length === 0 ? (
@@ -241,7 +244,7 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
             </div>
           ) : filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Filtreyle eşleşen olay yok.
+              No events match these filters.
             </p>
           ) : (
             <ul className="space-y-2">
@@ -262,13 +265,15 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
                     <Badge variant="outline" className="font-mono">
                       {e.action}
                     </Badge>
-                    <span className="text-muted-foreground">
-                      {/* Pin timeZone so SSR (UTC container) and the client
-                          render the same string — avoids React #418 hydration
-                          mismatch on timestamps. */}
-                      {new Date(e.ts).toLocaleString("tr-TR", {
-                        timeZone: "Europe/Istanbul",
-                      })}
+                    {/* Rendered in the viewer's own locale and time zone, so
+                        the server (UTC container) and the client can disagree
+                        on the string — suppress the hydration warning rather
+                        than pin a locale nobody asked for (React #418). */}
+                    <span
+                      className="text-muted-foreground"
+                      suppressHydrationWarning
+                    >
+                      {new Date(e.ts).toLocaleString()}
                     </span>
                     <span className="font-mono text-muted-foreground">
                       {e.actor}
@@ -276,7 +281,7 @@ export default function AuditClient({ initialEntries }: AuditClientProps) {
                   </div>
                   {e.resource && (
                     <div className="text-muted-foreground">
-                      kaynak:{" "}
+                      resource:{" "}
                       <code className="font-mono">{e.resource}</code>
                     </div>
                   )}

@@ -64,14 +64,14 @@ export default function AgentRegistryPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight">Agent Registry</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Her agent kısıtlı tool + veri + model + risk + onay kuralı ile tanımlı ·
-          structured output zorunlu
+          Every agent has a fixed set of tools, its own model, a risk level and
+          an approval rule
         </p>
       </div>
 
       {error && (
         <div className="rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">
-          Yüklenemedi: {error}
+          Couldn&apos;t load the agents: {error}
         </div>
       )}
 
@@ -82,10 +82,10 @@ export default function AgentRegistryPage() {
       {data && (
         <>
           <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat label="Kayıtlı Agent" value={String(data.total)} hint="5 kategori · 120 MCP tool" />
-            <Stat label="Onay-Kapılı" value={String(data.approval_gated)} hint="orta+ risk → Approval" />
-            <Stat label="Structured Output" value="Zorunlu" hint="şema ile zorunlu · evidence_id + confidence" />
-            <Stat label="Kategori" value={String(data.categories.length)} hint="discovery · intel · engage · ops" />
+            <Stat label="Agents" value={String(data.total)} hint="5 categories · 120 tools" />
+            <Stat label="Need approval" value={String(data.approval_gated)} hint="medium risk and above ask you first" />
+            <Stat label="Answer format" value="Fixed" hint="every answer carries its evidence and confidence" />
+            <Stat label="Categories" value={String(data.categories.length)} hint="discovery · intel · engage · ops" />
           </div>
 
           {data.categories.map((cat) => (

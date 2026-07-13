@@ -55,15 +55,15 @@ export default function InboundKnowledgePage() {
     <div className="mx-auto w-full max-w-4xl px-6 py-10">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Inbound Intelligence + Knowledge Base</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Gelen talebi sınıfla + kaynak-gösteren taslak (→ Approval) · bilgi tabanından kaynak-gösteren cevap</p>
+        <p className="mt-1 text-sm text-muted-foreground">Sort an incoming message and draft a reply with its sources · ask your knowledge base and get a cited answer</p>
       </div>
 
       <div className="mb-8 rounded-xl border bg-card/60 p-4">
         <div className="mb-2 text-sm font-semibold">⇄ Inbound Triage</div>
         <textarea value={msg} onChange={(e) => setMsg(e.target.value)} rows={2}
-          placeholder="Gelen müşteri mesajı… (ör. 'Premium PVC fiyatı nedir?')"
+          placeholder="Paste a customer message… (e.g. 'How much is Premium PVC?')"
           className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
-        <button onClick={runInbound} disabled={busy} className="mt-2 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">Sınıfla + Taslak</button>
+        <button onClick={runInbound} disabled={busy} className="mt-2 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">Sort and draft a reply</button>
         {triage && (
           <div className="mt-3 space-y-2 text-sm">
             <div className="flex flex-wrap gap-2">
@@ -81,9 +81,9 @@ export default function InboundKnowledgePage() {
 
       <div className="rounded-xl border bg-card/60 p-4">
         <div className="mb-2 text-sm font-semibold">▥ Knowledge Base</div>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Soru… (ör. 'Hangi hizmetleri sunuyorsunuz?')"
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask a question… (e.g. 'What services do you offer?')"
           className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
-        <button onClick={ask} disabled={busy} className="mt-2 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">Sor</button>
+        <button onClick={ask} disabled={busy} className="mt-2 rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-50">Ask</button>
         {ans && (
           <div className="mt-3 space-y-2 text-sm">
             <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs">{ans.answer}</div>

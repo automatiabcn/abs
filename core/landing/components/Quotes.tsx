@@ -16,18 +16,18 @@ interface Quote {
 
 const QUOTES: Quote[] = [
   {
-    text: "Stack'imdeki Cursor + 5 farklı SaaS'ı tek bir self-host orchestrator ile değiştirdik. ROI 3 haftada geri döndü.",
+    text: "We replaced Cursor plus 5 different SaaS tools in our stack with a single self-hosted orchestrator. It paid for itself in 3 weeks.",
     author: "Murat K.",
-    role: "Tech Lead, 12 kişilik fintech",
+    role: "Tech Lead, 12-person fintech",
   },
   {
-    text: "Anthropic API + Groq cascade sayesinde günlük token maliyetimiz %60 düştü. Kalite pipeline'ı bonus.",
+    text: "The Anthropic API + Groq cascade cut our daily token cost by 60%. The quality pipeline is a bonus.",
     author: "Carlos V.",
     role: "Indie Hacker, Barcelona",
   },
   {
-    text: "Setup wizard 12 dakikada bitirdi. Vault sops/age ile şifreli olduğu için CTO'ma rahat sundum.",
-    author: "Aslı D.",
+    text: "The setup wizard finished in 12 minutes. The vault is encrypted with sops/age, so I had no trouble presenting it to my CTO.",
+    author: "Asli D.",
     role: "Founding Engineer, B2B SaaS",
   },
 ];
@@ -43,10 +43,10 @@ const Quotes: FC = () => (
         id="quotes-title"
         className="text-3xl font-bold tracking-tight sm:text-4xl"
       >
-        Beta kullananlar ne diyor
+        What beta users say
       </h2>
       <p className="mt-4 text-muted-foreground">
-        İlk 5 beta tester'ımızın geri bildirimleri.
+        Feedback from our first 5 beta testers.
       </p>
     </div>
 

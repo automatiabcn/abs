@@ -142,8 +142,8 @@ export default function BetaRequestForm() {
           className="mt-1 w-full rounded-md border bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400"
         >
           <option value="en">English</option>
-          <option value="tr">Türkçe</option>
-          <option value="es">Español</option>
+          <option value="tr">Turkish</option>
+          <option value="es">Spanish</option>
         </select>
       </div>
       {/* Honeypot — visually hidden; bots fill it. */}

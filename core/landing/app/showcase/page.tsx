@@ -155,20 +155,20 @@ export default function ShowcasePage() {
 
         {/* Pilot/PoC contact options */}
         <section>
-          <h2 className="mb-4 text-xl font-semibold">Pilot / PoC opsiyonları</h2>
+          <h2 className="mb-4 text-xl font-semibold">Pilot / PoC options</h2>
           <div className="grid gap-6 md:grid-cols-3">
             <PricingTierCard
               tier="self-host"
               name="PoC"
               price=""
-              cadence="kendi sunucunuza kurulum"
-              badge="Hızlı başla"
+              cadence="installed on your own server"
+              badge="Start fast"
               highlight
               features={[
-                "Helm chart + dokümantasyon",
-                "Temel email desteği",
-                "100+ MCP tool dahil",
-                "Kendi ortamınızda çalışır",
+                "Helm chart + documentation",
+                "Basic email support",
+                "100+ MCP tools included",
+                "Runs in your own environment",
               ]}
               cta={
                 <a
@@ -179,7 +179,7 @@ export default function ShowcasePage() {
                     color: "#ffffff",
                   }}
                 >
-                  İletişime geç
+                  Get in touch
                 </a>
               }
             />
@@ -187,11 +187,11 @@ export default function ShowcasePage() {
               tier="maintenance"
               name="Pilot"
               price=""
-              cadence="2 hafta özel entegrasyon"
+              cadence="2 weeks of custom integration"
               features={[
-                "Sizin sistemlerinizle bağlantı",
-                "Yerinde destek",
-                "Custom workflow tasarımı",
+                "Connected to your own systems",
+                "On-site support",
+                "Custom workflow design",
               ]}
               cta={
                 <a
@@ -202,7 +202,7 @@ export default function ShowcasePage() {
                     color: "var(--abs-brand-text)",
                   }}
                 >
-                  Pilot başlat
+                  Start a pilot
                 </a>
               }
             />
@@ -210,11 +210,11 @@ export default function ShowcasePage() {
               tier="managed"
               name="Beta Partner"
               price=""
-              cadence="30 gün"
+              cadence="30 days"
               features={[
-                "Tam erişim",
-                "Geri bildirim ortağı",
-                "Sınırlı kontenjan",
+                "Full access",
+                "Feedback partner",
+                "Limited spots",
               ]}
               cta={
                 <a
@@ -225,7 +225,7 @@ export default function ShowcasePage() {
                     color: "var(--abs-foreground)",
                   }}
                 >
-                  Başvur
+                  Apply
                 </a>
               }
             />

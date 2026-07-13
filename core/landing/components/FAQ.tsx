@@ -14,53 +14,53 @@ interface QA {
 
 const QUESTIONS: QA[] = [
   {
-    q: "Anthropic TOS ihlali değil mi?",
-    a: "Hayır. ABS, Anthropic'in ticari API koşulları (pay-per-use) üzerinden çalışır. Pro aboneliğine bağlı OAuth token'ı değil, doğrudan API anahtarı kullanılır; bu kullanım Anthropic tarafından açıkça desteklenir.",
+    q: "Does this violate Anthropic's terms of service?",
+    a: "No. ABS runs on Anthropic's commercial API terms (pay-per-use). It uses a direct API key, not an OAuth token tied to a Pro subscription; Anthropic explicitly supports this usage.",
   },
   {
-    q: "Kurulum teknik bilgi gerektiriyor mu?",
-    a: "Temel Docker bilgisi yeterli. `docker compose up -d` tek komutla dakikalar içinde ABS ayağa kalkar (warm restart 16 saniye, ilk image pull dahil ~5-10 dakika). SSH veya terminal kullanabilen bir geliştirici için sorun çıkarmaz.",
+    q: "Does installation require technical knowledge?",
+    a: "Basic Docker knowledge is enough. A single `docker compose up -d` brings ABS up in minutes (16 seconds on a warm restart, ~5-10 minutes including the first image pull). Any developer who can use SSH or a terminal will manage.",
   },
   {
-    q: "Lisansımı kaybedersem ne olur?",
-    a: "Lisans anahtarı hem satın alma sonrası e-postanızda hem de ABS yönetim panelinde saklıdır. Kaybederseniz destekle iletişime geçerek mevcut ödemenizle tekrar alabilirsiniz.",
+    q: "What happens if I lose my license?",
+    a: "The license key is stored both in the email you receive after purchase and in the ABS admin panel. If you lose it, contact support and you can get it again under your existing payment.",
   },
   {
-    q: "İade garantisi var mı?",
-    a: "Evet. 14 gün içinde koşulsuz iade alabilirsiniz — doğrudan Stripe üzerinden, soru sormadan. İade sonrası lisans anahtarı iptal edilir.",
+    q: "Is there a refund guarantee?",
+    a: "Yes. You can get an unconditional refund within 14 days — directly through Stripe, no questions asked. The license key is revoked after a refund.",
   },
   {
-    q: "Destek nasıl çalışır?",
-    a: "Temel planda e-posta desteği standarttır (support@automatiabcn.com). Bakım paketi alanlar için 48 saat yanıt SLA'sı geçerlidir.",
+    q: "How does support work?",
+    a: "Email support is standard on the base plan (support@automatiabcn.com). Customers on the maintenance package get a 48-hour response SLA.",
   },
   {
-    q: "Kodum Anthropic'e veya Automatia'ya gönderiliyor mu?",
-    a: "Automatia sunucusuna gelmez. ABS sizin sunucunuzda çalışır ve doğrudan sizin Anthropic API anahtarınızla konuşur. Claude API çağrılarında istek içeriği Anthropic'e gider — bu her Claude kullanımının doğal parçasıdır.",
+    q: "Is my code sent to Anthropic or to Automatia?",
+    a: "Nothing reaches an Automatia server. ABS runs on your server and talks directly to your own Anthropic API key. On a Claude API call the request content goes to Anthropic — that is an inherent part of any Claude usage.",
   },
   {
-    q: "Cursor / Cline / Aider varken neden ABS?",
-    a: "ABS bir IDE eklentisi değil, self-host bir AI ağı. 100+ MCP tool (122 ölçüldü), 6 sağlayıcı cascade (Anthropic, Groq, Cerebras, Gemini, CloudFlare, Cohere), kalite pipeline'ları ve RAG birlikte gelir. Kurucu 6 aydır ürünü bizzat kullanarak geliştiriyor.",
+    q: "Why ABS when Cursor / Cline / Aider exist?",
+    a: "ABS is not an IDE plugin, it is a self-hosted AI network. It ships with 100+ MCP tools (122 measured), a 6-provider cascade (Anthropic, Groq, Cerebras, Gemini, CloudFlare, Cohere), quality pipelines and RAG. The founder has been building it while using it daily for 6 months.",
   },
   {
-    q: "Güncellemeler nasıl gelir?",
-    a: "`docker compose pull && docker compose up -d` komutu yeterli. Self-Host Lifetime planı 1 yıl güncelleme alır; Maintenance paketi aldığınız sürece güncellemeler sürekli gelir.",
+    q: "How do updates arrive?",
+    a: "`docker compose pull && docker compose up -d` is all it takes. The Self-Host Lifetime plan includes 1 year of updates; with the Maintenance package updates keep coming for as long as you hold it.",
   },
-  // 018 — yeni 4 soru
+  // 018 — 4 new questions
   {
-    q: "Anthropic API anahtarımı sops/age vault nasıl koruyor?",
-    a: "ABS, sops + age ile şifrelenmiş bir vault kullanır. ANTHROPIC_API_KEY, ABS_STRIPE_SECRET_KEY ve ABS_STRIPE_WEBHOOK_SECRET disk üzerinde her zaman şifreli durur; sadece backend boot sırasında bellekteki settings nesnesine açılır. Yedeği age private key dosyasıdır — onu cold storage'da saklarsınız, kaybedilirse vault sıfırdan yeniden oluşturulur.",
-  },
-  {
-    q: "İade nasıl alınır, kaç gün geçerli?",
-    a: "Satın alma tarihinden itibaren 14 gün içinde Stripe portal üzerinden tek tıkla iade alabilirsiniz. POST /v1/billing/portal endpoint'i sayfanın üstündeki Manage butonu ile açılır; email girersiniz, Stripe Customer Portal'a yönlendirilirsiniz. İade onaylanır onaylanmaz lisans anahtarı revoked_at = now ile pasif olur ve refund email gelir.",
+    q: "How does the sops/age vault protect my Anthropic API key?",
+    a: "ABS uses a vault encrypted with sops + age. ANTHROPIC_API_KEY, ABS_STRIPE_SECRET_KEY and ABS_STRIPE_WEBHOOK_SECRET are always encrypted on disk; they are only decrypted into the in-memory settings object while the backend boots. The backup is the age private key file — you keep it in cold storage, and if it is lost the vault is recreated from scratch.",
   },
   {
-    q: "GDPR ve veri ikametgâhı (data residency) nasıl ele alınıyor?",
-    a: "ABS sizin sunucunuzda çalıştığı için tüm müşteri verisi sizin yargı bölgenizde kalır — Automatia BCN sunucularına hiçbir kullanıcı verisi gönderilmez. Sadece Stripe ödeme verisi (email + ödeme detayı) Stripe'ın altyapısında işlenir; bu PCI-DSS Level 1 sertifikalıdır. Kullanıcı talep ederse Stripe Dashboard'dan veri silme talebi gerçekleştirilebilir.",
+    q: "How do refunds work, and how many days do I have?",
+    a: "You can get a refund with a single click through the Stripe portal within 14 days of the purchase date. The POST /v1/billing/portal endpoint is opened by the Manage button at the top of the page; you enter your email and are sent to the Stripe Customer Portal. As soon as the refund is approved the license key is deactivated with revoked_at = now and a refund email is sent.",
   },
   {
-    q: "Açık kaynak mı? Lisans modeli nedir?",
-    a: "Backend ve landing açık kaynaktır (Apache 2.0). Premium add-on'lar (advanced RAG, team panel, gelecekteki SaaS modu) kapalı modüllerdir. Self-Host Lifetime satın aldığınızda hem açık çekirdeği hem premium add-on'ları ömür boyu kullanım hakkına sahip olursunuz.",
+    q: "How are GDPR and data residency handled?",
+    a: "Because ABS runs on your server, all customer data stays in your jurisdiction — no user data is ever sent to Automatia BCN servers. Only the Stripe payment data (email + payment details) is processed on Stripe's infrastructure, which is PCI-DSS Level 1 certified. If a user asks, a data deletion request can be carried out from the Stripe Dashboard.",
+  },
+  {
+    q: "Is it open source? What is the license model?",
+    a: "The backend and the landing site are open source (Apache 2.0). The premium add-ons (advanced RAG, team panel, and the future SaaS mode) are closed modules. When you buy Self-Host Lifetime you get the right to use both the open core and the premium add-ons for life.",
   },
 ];
 
@@ -72,7 +72,7 @@ const FAQ: FC = () => (
   >
     <div className="mx-auto max-w-2xl text-center">
       <h2 id="faq-title" className="text-3xl font-bold tracking-tight sm:text-4xl">
-        Sık sorulan sorular
+        Frequently asked questions
       </h2>
     </div>
 

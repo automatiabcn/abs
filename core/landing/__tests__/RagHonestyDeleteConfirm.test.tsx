@@ -29,8 +29,8 @@ describe("RAG panel — honest quality targets + delete confirm", () => {
 
   it("frames RAG quality numbers as configured targets, not fabricated live values", async () => {
     render(<RagPage />);
-    // The honest framing: targets/thresholds + a "hedef" tag.
-    expect(await screen.findByText(/Kalite hedefleri/i)).toBeTruthy();
+    // The honest framing: targets/thresholds + a "target" tag.
+    expect(await screen.findByText(/Quality targets/i)).toBeTruthy();
     expect(screen.getByText("≥ 0.85")).toBeTruthy();
     // The old fabricated "current" values must be gone.
     expect(screen.queryByText("0.91")).toBeNull();

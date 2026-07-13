@@ -12,8 +12,8 @@
 // `/v1/panel/cascade/recent`) with the caller's session cookie
 // forwarded, hands the payloads to <PanelHomeClient> as
 // `initial{Tools,Quota,Cascade}`. The client island uses each as
-// React Query `initialData` so the four StatCards (MCP Tools,
-// Cascade 24h, Claude Kotası, Sağlayıcılar) and the role="alert"
+// React Query `initialData` so the four StatCards (tools, answers
+// today, Claude usage, providers) and the role="alert"
 // banner have data on the very first paint instead of shipping
 // "…" placeholders that swap in after hydration.
 //
@@ -42,7 +42,7 @@ export const revalidate = 0;
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Genel Bakış — ABS Panel",
+  title: "Overview — ABS Panel",
   robots: { index: false, follow: false },
 };
 

@@ -81,7 +81,7 @@ export default function LoginPage() {
       setMessage(payload.detail ?? `HTTP ${res.status}`);
       setState("error");
     } catch (exc) {
-      setMessage(`Ağ hatası: ${(exc as Error).message}`);
+      setMessage(`Network error: ${(exc as Error).message}`);
       setState("error");
     }
   };
@@ -91,10 +91,10 @@ export default function LoginPage() {
       data-page="auth-login"
       className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-6 py-12 text-zinc-900 dark:text-zinc-100"
     >
-      <h1 className="text-2xl font-semibold">Automatia ABS · Giriş</h1>
+      <h1 className="text-2xl font-semibold">Automatia ABS · Sign in</h1>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-        Setup wizard ya da magic-link ile aldığın e-posta + parolayla
-        oturum aç.
+        Sign in with the email and password you set up in the setup wizard or
+        received through a magic link.
       </p>
 
       {backendUnreachable && (
@@ -103,7 +103,7 @@ export default function LoginPage() {
           data-testid="backend-unreachable-banner"
           className="mt-4 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
         >
-          Backend şu an erişilemez. Lütfen birkaç dakika sonra tekrar deneyin.
+          The backend is unreachable right now. Please try again in a few minutes.
         </p>
       )}
 
@@ -115,7 +115,7 @@ export default function LoginPage() {
       >
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-zinc-800 dark:text-zinc-100">
-            E-posta
+            Email
           </span>
           <input
             type="email"
@@ -130,7 +130,7 @@ export default function LoginPage() {
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-zinc-800 dark:text-zinc-100">
-            Parola
+            Password
           </span>
           <input
             type="password"
@@ -147,7 +147,7 @@ export default function LoginPage() {
           data-testid="login-submit"
           className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
-          {state === "submitting" ? "Giriş yapılıyor…" : "Oturum aç"}
+          {state === "submitting" ? "Signing in…" : "Sign in"}
         </button>
       </form>
 
@@ -161,13 +161,13 @@ export default function LoginPage() {
       )}
 
       <p className="mt-6 text-xs text-zinc-600 dark:text-zinc-400">
-        Hesabın yok mu?{" "}
+        Don&apos;t have an account?{" "}
         <a className="underline" href="/signup">
-          Yeni kayıt
+          Sign up
         </a>{" "}
         ·{" "}
         <a className="underline" href="/auth/magic">
-          Magic-link bağlantın
+          Use your magic link
         </a>
       </p>
     </main>

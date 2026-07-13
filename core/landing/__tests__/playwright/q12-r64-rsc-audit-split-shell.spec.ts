@@ -63,7 +63,7 @@ test.describe("Q12-R64 /admin/audit split-shell", () => {
     const resp = await page.goto("/admin/audit", { waitUntil: "domcontentloaded" });
     expect(resp?.status() ?? 0).toBeLessThan(500);
 
-    await expect(page.locator('h1', { hasText: "Denetim" })).toBeVisible({
+    await expect(page.locator('h1', { hasText: "Audit" })).toBeVisible({
       timeout: 10_000,
     });
 
@@ -90,7 +90,7 @@ test.describe("Q12-R64 /admin/audit split-shell", () => {
 
     // We assert on the wrapper presence; the rows count depends on
     // whether the local backend has any audit entries. The empty-state
-    // text "Filtreyle eşleşen olay yok" or the rendered <ul> are both
+    // text "No events match these filters." or the rendered <ul> are both
     // valid — both prove server-rendered initialData reached the DOM.
     const resp = await page.goto("/admin/audit", { waitUntil: "domcontentloaded" });
     expect(resp?.status() ?? 0).toBeLessThan(500);
@@ -100,7 +100,7 @@ test.describe("Q12-R64 /admin/audit split-shell", () => {
     ).toBeVisible();
 
     const rendered = page.locator(
-      'ul:has([data-test="audit-row"]), p:has-text("Filtreyle eşleşen olay yok")',
+      'ul:has([data-test="audit-row"]), p:has-text("No events match these filters")',
     );
     await expect(rendered.first()).toBeVisible({ timeout: 8_000 });
   });

@@ -11,31 +11,31 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class LicensePayload(BaseModel):
-    """Lisans token'ının payload'ını tanımlar.
+    """What a licence says.
 
-    Alanlar:
-        customer_id: Lisansın ait olduğu müşterinin kimliği.
-        tier: Lisans seviyesi — self-host | team | enterprise.
-        seat_count: Lisansın kapsadığı kullanıcı (seat) sayısı.
-        iat: Token oluşturma zamanı (UTC epoch saniye).
-        exp: Token geçerlilik sonu (UTC epoch saniye).
-        jti: Token'ın benzersiz kimliği (JWT ID).
-        machine_fp: Q12 IP-Hardening R1 — opsiyonel hardware fingerprint
-            binding. Mevcutsa, doğrulama sırasında host'un canlı FP'si ile
-            karşılaştırılır; eşleşmezse 403. ``None`` (legacy) lisanslar
-            geriye dönük uyumluluk için makineye bağlanmaz.
+    Fields:
+        customer_id: who the licence belongs to.
+        tier: self-host | team | enterprise.
+        seat_count: how many people it covers.
+        iat: when it was issued (UTC epoch seconds).
+        exp: when it stops being valid (UTC epoch seconds).
+        jti: the licence's own id.
+        machine_fp: optional — binds the licence to one machine. When set, it is
+            compared against the host's live fingerprint on every check and a
+            mismatch is refused. Licences issued without it are not bound to a
+            machine, and stay valid.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    customer_id: str = Field(..., description="Müşteri kimliği")
+    customer_id: str = Field(..., description="Who the licence belongs to")
     tier: Literal["self-host", "team", "enterprise", "beta"] = Field(
-        "self-host", description="Lisans seviyesi"
+        "self-host", description="Which plan this licence is for"
     )
-    seat_count: int = Field(..., ge=1, description="Kullanıcı (seat) sayısı")
-    iat: int = Field(..., description="Oluşturma zamanı (UTC epoch)")
-    exp: int = Field(..., description="Geçerlilik sonu (UTC epoch)")
-    jti: str = Field(..., description="Token benzersiz kimliği")
+    seat_count: int = Field(..., ge=1, description="How many people it covers")
+    iat: int = Field(..., description="When it was issued (UTC epoch)")
+    exp: int = Field(..., description="When it stops being valid (UTC epoch)")
+    jti: str = Field(..., description="The licence's own id")
     machine_fp: Optional[str] = Field(
         None, description="Hardware fingerprint binding (SHA-256 hex)"
     )

@@ -25,7 +25,7 @@ function getStripe(): Stripe {
   if (!stripeClient) {
     const secret = process.env.STRIPE_SECRET_KEY;
     if (!secret) {
-      throw new Error("STRIPE_SECRET_KEY yapılandırılmamış");
+      throw new Error("STRIPE_SECRET_KEY is not configured");
     }
     stripeClient = new Stripe(secret, {
       apiVersion: "2025-02-24.acacia",
@@ -54,12 +54,12 @@ export async function POST(req: Request) {
     const tier = body.tier;
 
     if (!tier || !VALID_TIERS.has(tier)) {
-      return NextResponse.json({ error: "Geçersiz tier" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
 
     if (!process.env.STRIPE_SECRET_KEY) {
       return NextResponse.json(
-        { error: "Stripe henüz yapılandırılmadı" },
+        { error: "Stripe is not configured yet" },
         { status: 503 },
       );
     }
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     const priceId = priceIdMap[tier];
     if (!priceId) {
       return NextResponse.json(
-        { error: `Price ID tanımlı değil: ${tier}` },
+        { error: `Price ID is not defined: ${tier}` },
         { status: 500 },
       );
     }
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Checkout session creation failed:", error);
     return NextResponse.json(
-      { error: "Ödeme oturumu oluşturulamadı" },
+      { error: "Could not create the checkout session" },
       { status: 500 },
     );
   }

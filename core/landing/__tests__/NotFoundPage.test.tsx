@@ -1,4 +1,4 @@
-// Polish round R10 — guarantee the global 404 ships in Turkish with
+// Polish round R10 — guarantee the global 404 ships in English with
 // both return CTAs.
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
@@ -10,12 +10,12 @@ const NOT_FOUND = readFileSync(
 );
 
 describe("/app/not-found.tsx — global 404", () => {
-  it("declares the Turkish title", () => {
-    expect(NOT_FOUND).toContain("Sayfa bulunamadı");
+  it("declares the English title", () => {
+    expect(NOT_FOUND).toContain("Page not found");
   });
 
-  it("uses lang=tr so screen readers pick TR pronunciation", () => {
-    expect(NOT_FOUND).toMatch(/lang=["']tr["']/);
+  it("uses lang=en so screen readers pick EN pronunciation", () => {
+    expect(NOT_FOUND).toMatch(/lang=["']en["']/);
   });
 
   it("links back to both / and /admin/usage", () => {

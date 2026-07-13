@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Provider yanıt şemaları."""
+"""What a provider gives back, in one shape whoever answered."""
 
 from __future__ import annotations
 
@@ -13,20 +13,20 @@ from pydantic import BaseModel, Field
 
 
 class ProviderResponse(BaseModel):
-    """Bir provider çağrısının normalize yanıtı."""
+    """One provider's answer, normalised."""
 
-    text: str = Field(default="", description="Modelin döndürdüğü metin")
-    model: str = Field(default="", description="Kullanılan model adı")
-    provider: str = Field(default="", description="Provider adı (groq, gemini, …)")
-    elapsed_ms: int = Field(default=0, description="İsteğin bitiş süresi (ms)")
-    tokens_in: Optional[int] = Field(default=None, description="Prompt token sayısı")
-    tokens_out: Optional[int] = Field(default=None, description="Yanıt token sayısı")
-    cached: bool = Field(default=False, description="Semantic cache'ten mi döndü")
-    error: Optional[str] = Field(default=None, description="Hata mesajı (varsa)")
+    text: str = Field(default="", description="The answer itself")
+    model: str = Field(default="", description="Which model answered")
+    provider: str = Field(default="", description="Which provider answered (groq, gemini, …)")
+    elapsed_ms: int = Field(default=0, description="How long it took, in milliseconds")
+    tokens_in: Optional[int] = Field(default=None, description="Tokens in the question")
+    tokens_out: Optional[int] = Field(default=None, description="Tokens in the answer")
+    cached: bool = Field(default=False, description="True if this came from the cache, not the provider")
+    error: Optional[str] = Field(default=None, description="Why it failed, if it did")
 
 
 class ProviderError(Exception):
-    """Provider çağrısı başarısız — caller cascade için yakalar."""
+    """A provider call failed. The cascade catches this and tries the next one."""
 
     def __init__(self, message: str, provider: str = "", transient: bool = True):
         super().__init__(message)

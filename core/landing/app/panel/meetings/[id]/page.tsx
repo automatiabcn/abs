@@ -57,16 +57,16 @@ export default function MeetingDetailPage() {
         return (await res.json()) as MeetingDetail;
       })
       .then(setData)
-      // Q11-L16-002: prefix raw error with TR context so the user
-      // sees a full sentence instead of a bare HTTP code.
-      .catch((exc: Error) => setError(`Toplantı yüklenemedi: ${exc.message}`));
+      // Q11-L16-002: prefix the raw error with context so the user sees a
+      // full sentence instead of a bare HTTP code.
+      .catch((exc: Error) => setError(`Could not load this meeting: ${exc.message}`));
   }, [params?.id]);
 
   if (error) {
     return (
       <main className="mx-auto max-w-3xl px-6 py-12">
         <p role="alert" className="text-rose-700 dark:text-rose-300">
-          Detay yüklenemedi: {error}
+          {error}
         </p>
       </main>
     );
@@ -75,7 +75,7 @@ export default function MeetingDetailPage() {
   if (!data) {
     return (
       <main className="mx-auto max-w-3xl px-6 py-12 text-zinc-500">
-        Yükleniyor…
+        Loading…
       </main>
     );
   }
@@ -91,32 +91,32 @@ export default function MeetingDetailPage() {
         href="/panel/meetings"
         className="text-xs text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
       >
-        ← Toplantılar
+        ← Meetings
       </Link>
       <h1 className="mt-2 text-2xl font-semibold">{data.filename}</h1>
       <dl className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
         <div>
-          <dt className="text-xs uppercase text-zinc-500">Süre</dt>
+          <dt className="text-xs uppercase text-zinc-500">Length</dt>
           <dd className="font-mono">{fmtTime(data.duration_sec)}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase text-zinc-500">Konuşmacı</dt>
+          <dt className="text-xs uppercase text-zinc-500">Speakers</dt>
           <dd className="font-mono">{data.speaker_count}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase text-zinc-500">Durum</dt>
+          <dt className="text-xs uppercase text-zinc-500">Status</dt>
           <dd className="font-mono">{data.status}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase text-zinc-500">Yüklenme</dt>
-          <dd className="font-mono">{new Date(data.created_at).toLocaleString("tr-TR")}</dd>
+          <dt className="text-xs uppercase text-zinc-500">Uploaded</dt>
+          <dd className="font-mono">{new Date(data.created_at).toLocaleString()}</dd>
         </div>
       </dl>
 
       {data.summary && (
         <section className="mt-6 rounded border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-800 dark:bg-zinc-900">
           <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Özet
+            Summary
           </h2>
           <p>{data.summary}</p>
         </section>
@@ -133,7 +133,7 @@ export default function MeetingDetailPage() {
 
       <section className="mt-6">
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-          Konuşmacılar
+          Speakers
         </h2>
         <ul className="flex flex-wrap gap-2">
           {data.speakers.map((sp) => (
@@ -154,7 +154,7 @@ export default function MeetingDetailPage() {
 
       <section className="mt-6">
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-          Transkript
+          Transcript
         </h2>
         <ol className="space-y-2 text-sm">
           {data.segments.map((seg, idx) => (

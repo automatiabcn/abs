@@ -23,8 +23,10 @@ async def test_with_hooks_appends_nudge_to_response():
 
     out = await fake_tool("test prompt")
     assert out.startswith("ANSWER: test prompt")
+    # The tool's own answer comes first and intact; the nudge is appended below
+    # a marker, so a caller can tell the two apart.
     assert "[HOOK]" in out
-    assert "FEATURE NUDGE" in out
+    assert "mcp__abs__race_code" in out
 
 
 @pytest.mark.asyncio

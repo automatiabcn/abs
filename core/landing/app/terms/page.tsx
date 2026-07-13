@@ -8,139 +8,144 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Kullanım Koşulları",
+  title: "Terms of Service",
   description:
-    "Automatia ABS self-host orchestrator için kullanım koşulları. Lisans, ödeme, sorumluluk, fesih.",
+    "Terms of service for the Automatia ABS self-host orchestrator. License, payment, liability, termination.",
 };
 
 export default function TermsPage() {
   return (
     <main className="container mx-auto max-w-3xl px-4 py-16">
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-        Kullanım Koşulları
+        Terms of Service
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Son güncelleme: 27 Nisan 2026.
+        Last updated: 27 April 2026.
       </p>
 
       <div className="prose prose-neutral mt-8 space-y-6 text-sm leading-relaxed">
         <section>
-          <h2 className="text-lg font-semibold">1. Taraflar</h2>
+          <h2 className="text-lg font-semibold">1. Parties</h2>
           <p>
-            Bu sözleşme, <strong>Automatia BCN</strong> (Barcelona, İspanya — bundan sonra
-            “Sağlayıcı”) ile Automatia ABS lisansını satın alan veya kullanan
-            müşteri (“Kullanıcı”) arasında akdedilir. Hizmeti kullanmak için
-            18 yaşından büyük olmanız gerekir.
+            This agreement is entered into between <strong>Automatia BCN</strong>{" "}
+            (Barcelona, Spain — hereinafter the &ldquo;Provider&rdquo;) and the
+            customer who purchases or uses an Automatia ABS license (the
+            &ldquo;User&rdquo;). You must be over 18 to use the service.
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold">2. Lisans Kapsamı</h2>
+          <h2 className="text-lg font-semibold">2. Scope of the License</h2>
           <p>
-            Self-Host Lifetime ödemesi karşılığında Sağlayıcı, Kullanıcıya ABS
-            yazılımını kendi sunucularında çalıştırma hakkı tanır.
-            Lisans <strong>kişiseldir / kuruma özeldir</strong>; üçüncü taraflara
-            devredilemez veya yeniden satılamaz. Team paketleri seat sayısına
-            bağlı eşzamanlı kullanım sınırı taşır.
+            In exchange for the Self-Host Lifetime payment, the Provider grants
+            the User the right to run the ABS software on the User&apos;s own
+            servers. The license is{" "}
+            <strong>personal / specific to one organization</strong>; it may not
+            be transferred or resold to third parties. Team packages carry a
+            concurrent-use limit tied to the number of seats.
           </p>
           <p>
-            Açık kaynak çekirdek (Apache 2.0) için ek ticari kısıtlama yoktur;
-            kapalı premium add-on'lar (advanced RAG, team panel) lisans şartlarına
-            tâbidir.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold">3. Ödeme ve Faturalama</h2>
-          <p>
-            Tüm ödemeler Stripe Payments Europe Ltd. üzerinden işlenir.
-            Faturalandırma KDV dahil olmayan tutarlardır; AB içi B2B alımlarda
-            VIES ile doğrulama sonrası reverse charge uygulanabilir. Faturalar
-            ödeme onayı sonrası 7 gün içinde email ile gönderilir.
+            There is no additional commercial restriction on the open-source core
+            (Apache 2.0); the closed premium add-ons (advanced RAG, team panel)
+            are subject to the license terms.
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold">4. İade Politikası</h2>
+          <h2 className="text-lg font-semibold">3. Payment and Invoicing</h2>
           <p>
-            Satın alma tarihinden itibaren <strong>14 gün içinde</strong>
-            koşulsuz iade hakkı vardır. İade edilen lisansın anahtarı{" "}
-            <code>revoked_at</code> olarak işaretlenir ve devre dışı bırakılır.
-            Detay için <a href="/refund" className="underline">İade Politikası</a> sayfasına bakın.
+            All payments are processed through Stripe Payments Europe Ltd. Billed
+            amounts exclude VAT; for B2B purchases inside the EU, the reverse
+            charge may apply once the VAT number is validated through VIES.
+            Invoices are emailed within 7 days of payment confirmation.
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold">5. Yasak Kullanımlar</h2>
+          <h2 className="text-lg font-semibold">4. Refund Policy</h2>
+          <p>
+            You have an unconditional right to a refund{" "}
+            <strong>within 14 days</strong> of the purchase date. The key of a
+            refunded license is marked <code>revoked_at</code> and deactivated.
+            See the <a href="/refund" className="underline">Refund Policy</a> page
+            for details.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold">5. Prohibited Uses</h2>
           <ul className="list-disc pl-6">
-            <li>Yazılımı tersine mühendislik yaparak premium add-on'ları çıkarmak.</li>
-            <li>Lisans anahtarını birden fazla kuruluşa dağıtmak.</li>
+            <li>Reverse-engineering the software to extract the premium add-ons.</li>
+            <li>Distributing the license key to more than one organization.</li>
             <li>
-              ABS aracılığıyla yasa dışı içerik üretmek veya bilgi güvenliği
-              ihlali yapmak.
+              Generating illegal content through ABS, or committing an
+              information-security breach with it.
             </li>
-            <li>Stripe'a sahte chargeback başlatmak.</li>
+            <li>Filing a fraudulent chargeback with Stripe.</li>
           </ul>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold">6. Hizmet Seviyesi (SLA)</h2>
+          <h2 className="text-lg font-semibold">6. Service Level (SLA)</h2>
           <p>
-            Self-Host kurulumlarında uptime sorumluluğu Kullanıcıya aittir.
-            Maintenance paketinde Sağlayıcı, kritik güvenlik yamalarını 7 gün
-            içinde duyurur ve email desteğine 48 saat içinde yanıt verir.
+            In Self-Host installations, uptime is the User&apos;s responsibility.
+            Under the Maintenance package, the Provider announces critical
+            security patches within 7 days and answers email support within 48
+            hours.
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold">7. Sorumluluğun Sınırlandırılması</h2>
+          <h2 className="text-lg font-semibold">7. Limitation of Liability</h2>
           <p>
-            Sağlayıcı, dolaylı zararlardan (kâr kaybı, veri kaybı, iş kesintisi)
-            sorumlu değildir. Toplam sorumluluk, son 12 ayda ödenen tutarla
-            sınırlıdır. Bu sınır kasıt veya ağır ihmal hâlinde uygulanmaz.
+            The Provider is not liable for indirect damages (loss of profit, loss
+            of data, business interruption). Total liability is limited to the
+            amount paid in the last 12 months. This limit does not apply in cases
+            of intent or gross negligence.
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold">8. Üçüncü Taraf API'lar</h2>
+          <h2 className="text-lg font-semibold">8. Third-Party APIs</h2>
           <p>
-            ABS, Anthropic Claude API, Groq, Cerebras, Google Gemini,
-            Cloudflare Workers AI ve Cohere API'larına bağlanır. Bu sağlayıcıların
-            kendi kullanım şartları geçerlidir; API anahtarlarınızı korumak
-            sizin sorumluluğunuzdadır.
+            ABS connects to the Anthropic Claude API, Groq, Cerebras, Google
+            Gemini, Cloudflare Workers AI and Cohere APIs. Those providers&apos;
+            own terms of use apply; keeping your API keys safe is your
+            responsibility.
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold">9. Fesih</h2>
+          <h2 className="text-lg font-semibold">9. Termination</h2>
           <p>
-            Kullanıcı, herhangi bir zamanda hizmeti kullanmayı bırakabilir.
-            Sağlayıcı, sözleşmenin maddi ihlalinde 14 gün ihtarla lisansı
-            sonlandırma hakkını saklı tutar.
+            The User may stop using the service at any time. In the event of a
+            material breach of this agreement, the Provider reserves the right to
+            terminate the license with 14 days&apos; notice.
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold">10. Uygulanacak Hukuk</h2>
+          <h2 className="text-lg font-semibold">10. Governing Law</h2>
           <p>
-            Bu sözleşme İspanya Krallığı kanunlarına tâbidir. Anlaşmazlıklar,
-            zorunlu tüketici hukuku saklı kalmak kaydıyla, Barcelona
-            mahkemelerinde çözülür.
+            This agreement is governed by the laws of the Kingdom of Spain.
+            Disputes are settled in the courts of Barcelona, without prejudice to
+            mandatory consumer law.
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold">11. Güncellemeler</h2>
+          <h2 className="text-lg font-semibold">11. Updates</h2>
           <p>
-            Sağlayıcı, bu koşulları güncelleme hakkını saklı tutar. Önemli
-            değişiklikler kayıtlı email ile 30 gün önceden duyurulur.
+            The Provider reserves the right to update these terms. Material
+            changes are announced 30 days in advance by email to the registered
+            address.
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold">12. İletişim</h2>
+          <h2 className="text-lg font-semibold">12. Contact</h2>
           <p>
-            Sözleşmeyle ilgili sorular için{" "}
+            For questions about this agreement, write to{" "}
             <a href="mailto:legal@automatiabcn.com" className="underline">
               legal@automatiabcn.com
             </a>

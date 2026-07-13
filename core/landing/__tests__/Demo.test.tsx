@@ -15,7 +15,7 @@ describe("Demo (018 modul D)", () => {
       "https://www.loom.com/embed/abc123";
     render(<Demo />);
     expect(
-      screen.getByRole("heading", { name: /3 dakikada/i }),
+      screen.getByRole("heading", { name: /3-minute tour/i }),
     ).toBeInTheDocument();
     const iframe = screen.getByTitle("ABS demo screencast");
     expect(iframe.tagName.toLowerCase()).toBe("iframe");
@@ -29,6 +29,6 @@ describe("Demo (018 modul D)", () => {
     expect(
       screen.queryByTitle("ABS demo screencast"),
     ).not.toBeInTheDocument();
-    expect(screen.getByText(/yakında/i)).toBeInTheDocument();
+    expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
   });
 });

@@ -48,20 +48,20 @@ function MagicClaimInner() {
           setState("ok");
         } else if (res.status === 410) {
           setState("expired");
-          setMessage("Bağlantının süresi doldu — lütfen yeniden kayıt olun.");
+          setMessage("This link has expired — please sign up again.");
         } else if (res.status === 404) {
           setState("error");
-          setMessage("Token bulunamadı veya zaten kullanıldı.");
+          setMessage("Token not found, or it has already been used.");
         } else {
           const detail = await res.text().catch(() => `HTTP ${res.status}`);
           setState("error");
-          setMessage(`Hata: ${detail.slice(0, 200)}`);
+          setMessage(`Error: ${detail.slice(0, 200)}`);
         }
       })
       .catch((exc) => {
         if (cancelled) return;
         setState("error");
-        setMessage(`Ağ hatası: ${(exc as Error).message}`);
+        setMessage(`Network error: ${(exc as Error).message}`);
       });
     return () => {
       cancelled = true;
@@ -74,11 +74,11 @@ function MagicClaimInner() {
       data-state={state}
       className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-6 py-12 text-zinc-900 dark:text-zinc-100"
     >
-      <h1 className="text-2xl font-semibold">Hesap Doğrulama</h1>
+      <h1 className="text-2xl font-semibold">Account verification</h1>
 
       {state === "submitting" && (
         <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-          Magic-link doğrulanıyor…
+          Verifying your magic link…
         </p>
       )}
 
@@ -87,25 +87,25 @@ function MagicClaimInner() {
           role="alert"
           className="mt-4 text-sm text-rose-700 dark:text-rose-300"
         >
-          Token eksik. Sign-up sonrasında aldığın e-postadaki bağlantıyı
-          tıkla.
+          Token missing. Open the link in the email you received after
+          signing up.
         </p>
       )}
 
       {state === "ok" && data && (
         <section className="mt-4 rounded border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
           <p>
-            Hesabın oluşturuldu.{" "}
-            <strong className="font-mono">{data.email}</strong> kullanıcı
-            olarak <strong className="font-mono">{data.tenant_slug}</strong>{" "}
-            tenant&apos;ına bağlandın.
+            Your account has been created.{" "}
+            <strong className="font-mono">{data.email}</strong> is now connected
+            as a user of the{" "}
+            <strong className="font-mono">{data.tenant_slug}</strong> tenant.
           </p>
           <p className="mt-3">
             <a
               href="/panel"
               className="inline-block rounded bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-800"
             >
-              Panel&apos;e git →
+              Go to the panel →
             </a>
           </p>
         </section>
@@ -116,13 +116,13 @@ function MagicClaimInner() {
           role="alert"
           className="mt-4 rounded border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-700 dark:bg-rose-950 dark:text-rose-200"
         >
-          {message || "Bilinmeyen hata."}
+          {message || "Unknown error."}
           <p className="mt-3">
             <a
               href="/signup"
               className="text-xs underline hover:text-rose-900 dark:hover:text-rose-100"
             >
-              Yeniden kayıt ol
+              Sign up again
             </a>
           </p>
         </section>
@@ -136,7 +136,7 @@ export default function MagicClaimPage() {
     <Suspense
       fallback={
         <main className="mx-auto max-w-md px-6 py-12 text-zinc-500">
-          Yükleniyor…
+          Loading…
         </main>
       }
     >

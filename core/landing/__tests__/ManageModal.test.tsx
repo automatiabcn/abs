@@ -39,7 +39,7 @@ describe("ManageModal (018 modul E)", () => {
     render(<ManageModal />);
     await openModal();
     await fillEmail("user@x.co");
-    await userEvent.click(screen.getByRole("button", { name: "Portal Aç" }));
+    await userEvent.click(screen.getByRole("button", { name: "Open billing portal" }));
 
     // Resolve microtask: location should be set
     await new Promise((r) => setTimeout(r, 10));
@@ -54,10 +54,10 @@ describe("ManageModal (018 modul E)", () => {
     render(<ManageModal />);
     await openModal();
     await fillEmail("missing@x.co");
-    await userEvent.click(screen.getByRole("button", { name: "Portal Aç" }));
+    await userEvent.click(screen.getByRole("button", { name: "Open billing portal" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      /lisans bulunamadı/i,
+      /no licence found/i,
     );
   });
 
@@ -67,7 +67,7 @@ describe("ManageModal (018 modul E)", () => {
     render(<ManageModal />);
     await openModal();
     await fillEmail("user@x.co");
-    await userEvent.click(screen.getByRole("button", { name: "Portal Aç" }));
+    await userEvent.click(screen.getByRole("button", { name: "Open billing portal" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Network down");
   });

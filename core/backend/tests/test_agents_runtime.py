@@ -71,10 +71,12 @@ async def test_run_agent_degrades_without_provider(monkeypatch, _no_rag) -> None
         return "", ""
     monkeypatch.setattr("app.agents.runtime._complete", _none)
 
-    res = await run_agent("knowledge_base", "fiyat nedir?", tenant_id="t1")
-    # degraded but structured — never raises, confidence floored
+    res = await run_agent("knowledge_base", "what does it cost?", tenant_id="t1")
+    # Degraded but structured: it never raises, the confidence is floored, and
+    # the summary says plainly that nothing usable came back — a degraded run
+    # must not be mistaken for a real proposal.
     assert res.confidence == 0.0
-    assert "yapılandırılamadı" in res.summary
+    assert "no usable answer" in res.summary
     assert res.requires_approval is False
 
 

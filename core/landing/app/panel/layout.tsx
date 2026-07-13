@@ -22,7 +22,7 @@ import { QueryProvider } from "@/lib/query-client";
 
 export const metadata: Metadata = {
   description:
-    "ABS Server admin paneli — cascade sağlayıcılar, MCP araçları, RAG ingest ve kota izleme tek bir self-hosted yüzeyde.",
+    "ABS Server admin panel — providers, tools, knowledge base and usage limits on one self-hosted surface.",
   robots: { index: false, follow: false },
 };
 
@@ -69,16 +69,16 @@ export default async function PanelLayout({ children }: { children: ReactNode })
   if (!(await _isAdmin())) {
     return (
       <main className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-background p-6 text-center text-foreground">
-        <h1 className="text-xl font-semibold">Yönetici yetkisi gerekli</h1>
+        <h1 className="text-xl font-semibold">You need admin access</h1>
         <p className="max-w-md text-sm text-muted-foreground">
-          Bu alan yalnızca yönetici hesapları içindir. Yöneticinizden sizi admin
-          yapmasını isteyin ya da bir yönetici hesabıyla giriş yapın.
+          This area is for admin accounts only. Sign in with an admin account,
+          or ask an admin in your organisation to give you access.
         </p>
         <a
           href="/login"
           className="rounded-md border border-border px-4 py-2 text-sm hover:bg-accent"
         >
-          Giriş sayfası
+          Go to sign in
         </a>
       </main>
     );

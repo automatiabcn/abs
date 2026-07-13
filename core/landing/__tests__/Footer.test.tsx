@@ -13,7 +13,7 @@ describe("Footer (018 modul F)", () => {
     expect(automatiaHeading).toBeInTheDocument();
     expect(screen.getAllByText(/Automatia BCN/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/Barcelona/)).toBeInTheDocument();
-    expect(screen.getByText(/GDPR uyumlu/)).toBeInTheDocument();
+    expect(screen.getByText(/GDPR compliant/)).toBeInTheDocument();
   });
 
   it("links to /privacy and /terms pages", () => {
@@ -22,10 +22,10 @@ describe("Footer (018 modul F)", () => {
     // the dedicated /refund page (deep link from privacy), not the
     // global footer.
     render(<Footer />);
-    const privacy = screen.getByRole("link", { name: /gizlilik politikası/i });
+    const privacy = screen.getByRole("link", { name: /privacy policy/i });
     expect(privacy).toHaveAttribute("href", "/privacy");
 
-    const terms = screen.getByRole("link", { name: /kullanım koşulları/i });
+    const terms = screen.getByRole("link", { name: /terms of service/i });
     expect(terms).toHaveAttribute("href", "/terms");
   });
 

@@ -56,6 +56,6 @@ describe("BYOK provider-keys panel", () => {
     fireEvent.click(screen.getByTestId("pk-probe"));
     await waitFor(() => expect(screen.getByTestId("pk-probe-result")).toBeTruthy());
     expect(cap.test).toMatchObject({ provider: "groq", value: "gsk_probe" });
-    expect(screen.getByTestId("pk-probe-result").textContent).toContain("çalışıyor");
+    expect(screen.getByTestId("pk-probe-result").textContent).toContain("works");
   });
 });

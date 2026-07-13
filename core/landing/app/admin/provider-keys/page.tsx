@@ -80,7 +80,7 @@ export default function ProviderKeysPage() {
       if (!r.ok) { setErr(`Kaydedilemedi (HTTP ${r.status})`); return; }
       setValue("");
       load();
-    } catch { setErr("Kaydedilemedi — ağ hatası."); }
+    } catch { setErr("Could not save — the server did not answer."); }
     finally { setBusy(false); }
   }
 
@@ -97,7 +97,7 @@ export default function ProviderKeysPage() {
         body: JSON.stringify({ ...scopeBody(), value: value.trim() }),
       });
       const j = await r.json().catch(() => ({}));
-      setProbe(j.ok ? "✓ Anahtar çalışıyor" : `✗ ${j.reason || "geçersiz anahtar"}`);
+      setProbe(j.ok ? "✓ The key works" : `✗ ${j.reason || "the provider rejected this key"}`);
     } catch { setProbe("✗ test edilemedi"); }
     finally { setBusy(false); }
   }
@@ -121,7 +121,7 @@ export default function ProviderKeysPage() {
   }
 
   async function remove(row: ProviderKeyRow) {
-    if (!window.confirm(`${row.provider} (${row.owner_type}) anahtarı silinsin mi?`)) return;
+    if (!window.confirm(`Remove your ${row.provider} key (${row.owner_type})? Questions will go back to the free providers.`)) return;
     setBusy(true);
     try {
       await fetch("/v1/admin/provider-keys", {
@@ -142,25 +142,27 @@ export default function ProviderKeysPage() {
     <div className="mx-auto w-full max-w-5xl px-6 py-8">
       <div className="mb-6">
         <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-          <KeyRound className="h-5 w-5 text-primary" /> Sağlayıcı Anahtarları (BYOK)
+          <KeyRound className="h-5 w-5 text-primary" /> Your provider keys
         </h1>
         <p className="mt-1 text-[12px] text-muted-foreground">
-          Kendi sağlayıcı anahtarlarınızı org · kullanıcı · proje kapsamında ekleyin.
-          Çözümleme sırası: proje → kullanıcı → org → global. Anahtarlar şifreli saklanır,
-          asla geri gösterilmez.
+          Bring your own provider. A key you add here answers your questions first,
+          and the free providers stay behind it as the fallback — so you keep working
+          even when your provider is down or out of quota. A key on a project beats one
+          on your account, which beats one on the organisation. Keys are stored
+          encrypted and never shown again.
         </p>
       </div>
 
       {/* Add form */}
       <Card className="mb-6 bg-card/60">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Anahtar ekle</CardTitle>
-          <CardDescription>Kaydetmeden önce “Test et” ile doğrulayabilirsiniz.</CardDescription>
+          <CardTitle className="text-base">Add a key</CardTitle>
+          <CardDescription>Check it works before you save it.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <label className="space-y-1 text-[12px]">
-              <span className="text-muted-foreground">Sağlayıcı</span>
+              <span className="text-muted-foreground">Provider</span>
               <select value={provider} onChange={(e) => setProvider(e.target.value)}
                 data-test="pk-provider"
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm">
@@ -168,19 +170,19 @@ export default function ProviderKeysPage() {
               </select>
             </label>
             <label className="space-y-1 text-[12px]">
-              <span className="text-muted-foreground">Kapsam</span>
+              <span className="text-muted-foreground">Applies to</span>
               <select value={ownerType} onChange={(e) => setOwnerType(e.target.value as typeof ownerType)}
                 data-test="pk-owner-type"
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm">
-                <option value="org">org (tenant geneli)</option>
-                <option value="user">user</option>
-                <option value="project">project</option>
+                <option value="org">everyone in the organisation</option>
+                <option value="user">one person</option>
+                <option value="project">one project</option>
               </select>
             </label>
             {ownerType !== "org" && (
               <label className="space-y-1 text-[12px]">
                 <span className="text-muted-foreground">
-                  {ownerType === "project" ? "Proje ID *" : "Kullanıcı (boş=siz)"}
+                  {ownerType === "project" ? "Project *" : "Person (leave empty for yourself)"}
                 </span>
                 <Input value={ownerId} onChange={(e) => setOwnerId(e.target.value)}
                   data-test="pk-owner-id"
@@ -189,14 +191,14 @@ export default function ProviderKeysPage() {
             )}
           </div>
           <Input type="password" value={value} onChange={(e) => setValue(e.target.value)}
-            data-test="pk-value" placeholder="API anahtarı" />
+            data-test="pk-value" placeholder="API key" />
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" onClick={save} disabled={busy || !value.trim()} data-test="pk-save">
-              Kaydet
+              Save
             </Button>
             <Button type="button" variant="outline" onClick={probeValue}
               disabled={busy || !value.trim()} data-test="pk-probe">
-              Test et
+              Test it
             </Button>
             {probe && (
               <span data-test="pk-probe-result"
@@ -216,19 +218,19 @@ export default function ProviderKeysPage() {
 
       {/* Key list */}
       <Card className="bg-card/60">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Kayıtlı anahtarlar</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Your keys</CardTitle></CardHeader>
         <CardContent>
           {keys === null ? (
-            <p className="text-xs text-muted-foreground">Yükleniyor…</p>
+            <p className="text-xs text-muted-foreground">Loading…</p>
           ) : keys.length === 0 ? (
-            <p className="text-xs text-muted-foreground" data-test="pk-empty">Henüz anahtar yok.</p>
+            <p className="text-xs text-muted-foreground" data-test="pk-empty">No keys yet — you are on the free providers.</p>
           ) : (
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-                  <th className="pb-2 pr-3 font-medium">Sağlayıcı</th>
-                  <th className="pb-2 pr-3 font-medium">Kapsam</th>
-                  <th className="pb-2 pr-3 font-medium">Doğrulama</th>
+                  <th className="pb-2 pr-3 font-medium">Provider</th>
+                  <th className="pb-2 pr-3 font-medium">Applies to</th>
+                  <th className="pb-2 pr-3 font-medium">Checked</th>
                   <th className="pb-2 font-medium"></th>
                 </tr>
               </thead>
@@ -242,15 +244,15 @@ export default function ProviderKeysPage() {
                     <td className="py-2.5 pr-3">
                       {k.last_validated_ok === true ? (
                         <span className="inline-flex items-center gap-1 text-emerald-400" data-test="pk-validated">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> doğrulandı
+                          <CheckCircle2 className="h-3.5 w-3.5" /> working
                         </span>
                       ) : k.last_validated_ok === false ? (
                         <span className="inline-flex items-center gap-1 text-rose-400">
-                          <XCircle className="h-3.5 w-3.5" /> başarısız
+                          <XCircle className="h-3.5 w-3.5" /> rejected
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-muted-foreground">
-                          <CircleHelp className="h-3.5 w-3.5" /> test edilmedi
+                          <CircleHelp className="h-3.5 w-3.5" /> not checked yet
                         </span>
                       )}
                     </td>
@@ -263,7 +265,7 @@ export default function ProviderKeysPage() {
                         <button type="button" onClick={() => remove(k)} disabled={busy}
                           data-test="pk-delete"
                           className="inline-flex items-center gap-1 rounded-md border border-rose-500/40 px-2.5 py-1 text-[11px] text-rose-300">
-                          <Trash2 className="h-3 w-3" /> Sil
+                          <Trash2 className="h-3 w-3" /> Remove
                         </button>
                       </div>
                     </td>

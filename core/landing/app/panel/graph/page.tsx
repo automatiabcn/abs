@@ -30,13 +30,13 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 const ER_STEPS = [
-  "Normalize · TR-aware (A.Ş./Ltd. ayrıştır)",
-  "Blocking · VKN + domain k-NN",
-  "Deterministic · VKN/email tam eşleşme",
-  "Fuzzy · Jaro-Winkler + adres",
+  "Normalise · strip legal suffixes (Ltd., Inc., GmbH…)",
+  "Blocking · tax ID + domain k-NN",
+  "Deterministic · exact tax ID / email match",
+  "Fuzzy · Jaro-Winkler + address",
   "Embedding · BGE-M3 cosine",
-  "Canonical · survivorship (ERP>CRM>web)",
-  "Human-in-loop · düşük-güven review",
+  "Canonical · survivorship (ERP > CRM > web)",
+  "Review · you check the low-confidence matches",
 ];
 
 export default function ContextGraphPage() {
@@ -89,11 +89,11 @@ export default function ContextGraphPage() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Growth Context Graph</h1>
-          <p className="mt-1 text-[12px] text-muted-foreground">CRM + ERP + web tek canonical node&apos;a birleşir · entity resolution · 1-2 hop graph-RAG · tenant-scoped</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">Your CRM, ERP and website merged into one record per company · duplicates matched · answers cite the graph</p>
         </div>
-        <button onClick={resolve} disabled={busy} className="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-50">{busy ? "Çalışıyor…" : "⚖ Entity Resolution çalıştır"}</button>
+        <button onClick={resolve} disabled={busy} className="rounded-lg border px-3 py-1.5 text-sm disabled:opacity-50">{busy ? "Matching…" : "⚖ Match duplicates"}</button>
       </div>
-      {err && <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">Yüklenemedi: {err}</div>}
+      {err && <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">Couldn&apos;t load the graph: {err}</div>}
       {!d && !err && <div className="h-64 w-full animate-pulse rounded-md bg-muted/40" />}
 
       {d && (
@@ -101,10 +101,10 @@ export default function ContextGraphPage() {
           {/* ── Scorecards ─────────────────────────── */}
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
             {[
-              ["Entity", String(d.stats.nodes), "Company · Account · Contact · Lead · Opp…"],
-              ["İlişki (edge)", String(d.stats.edges), "valid-time · merge geçmişi"],
-              ["ER merge (bekleyen)", String(d.stats.merges), "düşük-güven → review kuyruğu"],
-              ["Match accuracy", `%${Math.round(d.stats.match_accuracy * 100)}`, "canonical entity · TR-aware"],
+              ["Records", String(d.stats.nodes), "companies · accounts · contacts · leads · deals"],
+              ["Connections", String(d.stats.edges), "who is linked to what, and since when"],
+              ["Waiting for review", String(d.stats.merges), "possible duplicates we were not sure about"],
+              ["Match accuracy", `${Math.round(d.stats.match_accuracy * 100)}%`, "how often duplicates are merged correctly"],
             ].map(([l, v, h]) => (
               <div key={l} className="rounded-xl border bg-card/60 p-4">
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{l}</div>
@@ -119,7 +119,7 @@ export default function ContextGraphPage() {
             <div className="rounded-xl border bg-card/60 p-3 lg:col-span-2">
               <div className="relative h-[440px] overflow-hidden rounded-xl border"
                 style={{ background: "radial-gradient(circle at 50% 45%, rgba(58,157,255,.06), transparent 65%)" }}>
-                {!layout && <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Henüz entity yok.</div>}
+                {!layout && <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Nothing here yet.</div>}
                 {layout && (
                   <>
                     <svg className="pointer-events-none absolute inset-0 h-full w-full">
@@ -148,12 +148,12 @@ export default function ContextGraphPage() {
                   <div className="mb-3 text-sm font-semibold">⬡ {layout.center.label}</div>
                   <div className="space-y-0 text-[12px]">
                     {[
-                      ["Canonical match", (d.stats.match_accuracy).toFixed(2)],
-                      ["Kaynak", "ERP+CRM+web"],
-                      ["Birleşen kayıt", `${layout.center.merged_count ?? 1} → 1`],
-                      ["VKN", "deterministik ✓"],
-                      ["Lifecycle", layout.center.lifecycle ?? "lead"],
-                      ["Buying group", `${layout.placed.filter((p) => p.node.type === "contact").length || 1} rol`],
+                      ["Match confidence", (d.stats.match_accuracy).toFixed(2)],
+                      ["Sources", "ERP + CRM + web"],
+                      ["Merged from", `${layout.center.merged_count ?? 1} records`],
+                      ["Tax ID", "exact match ✓"],
+                      ["Stage", layout.center.lifecycle ?? "lead"],
+                      ["People involved", `${layout.placed.filter((p) => p.node.type === "contact").length || 1}`],
                     ].map(([k, v]) => (
                       <div key={k} className="flex justify-between border-b border-border py-1.5 last:border-0">
                         <span className="text-muted-foreground">{k}</span><span className="font-mono">{v}</span>
@@ -164,7 +164,7 @@ export default function ContextGraphPage() {
               )}
 
               <div className="rounded-xl border bg-card/60 p-4">
-                <div className="mb-3 text-sm font-semibold">⚖ Entity Resolution</div>
+                <div className="mb-3 text-sm font-semibold">⚖ How duplicates are matched</div>
                 <ol className="space-y-1.5 text-[12px] text-muted-foreground">
                   {ER_STEPS.map((s, i) => (
                     <li key={i} className="flex gap-2"><span className="font-mono text-primary">{i + 1}</span><span>{s}</span></li>
@@ -173,10 +173,10 @@ export default function ContextGraphPage() {
               </div>
 
               <div className="rounded-xl border bg-card/60 p-4">
-                <div className="mb-2 text-sm font-semibold">▦ Graph-RAG retrieval</div>
+                <div className="mb-2 text-sm font-semibold">▦ How an answer is found</div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  sorgu → Qdrant top-k chunk → entity-mention → 1-2 hop subgraph → rerank → LLM (chunk + subgraph) →{" "}
-                  <span className="text-foreground">kaynak + entity cite</span>
+                  question → matching passages → the companies they mention → their neighbours in the graph → re-rank → answer →{" "}
+                  <span className="text-foreground">with sources and records cited</span>
                 </p>
               </div>
             </div>
