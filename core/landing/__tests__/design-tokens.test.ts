@@ -110,6 +110,84 @@ describe("design tokens", () => {
     expect(undeclared).toEqual([]);
   });
 
+  // Contrast is a property of a *pairing*, and the pairings are fixed by the
+  // components: subtle labels sit on raised surfaces, a teal pill carries teal
+  // text. The first pass of this palette was chosen by eye and three of these
+  // landed between 3.5:1 and 4.5:1 — pleasant, and below AA for the small text
+  // they exist to set. Ratios are cheap to compute and impossible to eyeball,
+  // so they are asserted rather than trusted.
+  describe("contrast", () => {
+    const channels = (block: string, token: string): [number, number, number] => {
+      const match = block.match(new RegExp(`--abs-${token}-rgb:\\s*([\\d\\s]+);`));
+      if (!match) throw new Error(`token not found: --abs-${token}-rgb`);
+      const parts = match[1].trim().split(/\s+/).map(Number);
+      return [parts[0], parts[1], parts[2]];
+    };
+
+    // WCAG 2.1 relative luminance.
+    const luminance = ([r, g, b]: [number, number, number]) => {
+      const lin = (c: number) => {
+        const s = c / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    };
+
+    const ratio = (
+      fg: [number, number, number],
+      bg: [number, number, number],
+    ) => {
+      const [hi, lo] = [luminance(fg), luminance(bg)].sort((a, b) => b - a);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+
+    const lightBlock = TOKENS_CSS.split(":root {")[1]?.split("}")[0] ?? "";
+    const darkBlock = TOKENS_CSS.split(":root.dark {")[1]?.split("}")[0] ?? "";
+
+    // Every pairing the components actually render, in both themes.
+    const PAIRINGS: [string, string][] = [
+      ["fg", "canvas"],
+      ["fg", "surface"],
+      ["fg", "surface-raised"],
+      ["fg-muted", "canvas"],
+      ["fg-muted", "surface"],
+      ["fg-muted", "surface-raised"],
+      ["fg-subtle", "canvas"],
+      ["fg-subtle", "surface"],
+      ["fg-subtle", "surface-raised"],
+      ["brand", "surface"],
+      ["brand", "brand-soft"],
+      ["brand-fg", "brand"],
+      ["success", "success-soft"],
+      ["warning", "warning-soft"],
+      ["danger", "danger-soft"],
+      ["info", "info-soft"],
+    ];
+
+    for (const [theme, block] of [
+      ["light", lightBlock],
+      ["dark", darkBlock],
+    ] as const) {
+      it(`meets AA (4.5:1) for every text pairing in ${theme}`, () => {
+        // Dark restates only what changes; anything it omits it inherits.
+        const resolve = (token: string) => {
+          try {
+            return channels(block, token);
+          } catch {
+            return channels(lightBlock, token);
+          }
+        };
+
+        const failures = PAIRINGS.map(([fg, bg]) => ({
+          pairing: `${fg} on ${bg}`,
+          ratio: Number(ratio(resolve(fg), resolve(bg)).toFixed(2)),
+        })).filter((result) => result.ratio < 4.5);
+
+        expect(failures).toEqual([]);
+      });
+    }
+  });
+
   it("gives light and dark a value for the same tokens", () => {
     // A token defined only in light leaves dark inheriting a colour built for a
     // white ground — the failure mode that stranded the sidebar logo dark-on-dark.

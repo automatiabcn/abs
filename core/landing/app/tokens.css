@@ -40,20 +40,26 @@
   /* Text */
   --abs-fg-rgb: 20 24 29;
   --abs-fg-muted-rgb: 74 83 94;
-  --abs-fg-subtle-rgb: 120 130 142;
+  /* 4.76:1 on the lightest ground it ever sits on (surface-raised). The first
+   * pass used a lighter grey that measured 3.5:1 — comfortable to look at,
+   * and below AA for the small labels and captions this token exists to set. */
+  --abs-fg-subtle-rgb: 100 109 121;
   --abs-fg-inverted-rgb: 255 255 255;
 
   /* Brand — signal teal. Deliberately not the generic AI blue/violet. */
   --abs-brand-rgb: 11 124 116;
   --abs-brand-hover-rgb: 9 105 97;
-  --abs-brand-soft-rgb: 221 240 238;
+  /* Soft grounds carry their own semantic text (a teal pill has teal type), so
+   * each one is tuned until that pairing clears 4.5:1, not until it looks
+   * pleasant. Measured, not eyeballed. */
+  --abs-brand-soft-rgb: 233 247 245;
   --abs-brand-fg-rgb: 255 255 255;
 
   /* Semantic state. Separate from brand: a green button is not an accent. */
   --abs-success-rgb: 31 122 77;
-  --abs-success-soft-rgb: 224 239 231;
+  --abs-success-soft-rgb: 231 243 237;
   --abs-warning-rgb: 168 90 18;
-  --abs-warning-soft-rgb: 251 235 220;
+  --abs-warning-soft-rgb: 252 240 228;
   --abs-danger-rgb: 179 38 30;
   --abs-danger-soft-rgb: 251 228 226;
   --abs-danger-fg-rgb: 255 255 255;
@@ -78,7 +84,7 @@
 
   --abs-fg-rgb: 237 240 243;
   --abs-fg-muted-rgb: 167 177 188;
-  --abs-fg-subtle-rgb: 115 125 137;
+  --abs-fg-subtle-rgb: 138 148 160;
   --abs-fg-inverted-rgb: 15 18 22;
 
   --abs-brand-rgb: 78 205 194;
@@ -112,7 +118,7 @@
 
     --abs-fg-rgb: 237 240 243;
     --abs-fg-muted-rgb: 167 177 188;
-    --abs-fg-subtle-rgb: 115 125 137;
+    --abs-fg-subtle-rgb: 138 148 160;
     --abs-fg-inverted-rgb: 15 18 22;
 
     --abs-brand-rgb: 78 205 194;
