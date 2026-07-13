@@ -3,16 +3,14 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Polish round R7 — provider key configuration status (no secrets exposed).
+"""Provider key configuration status (no secrets exposed).
 
-The Settings → Sağlayıcılar tab needs to render a status badge per provider
-without ever shipping the raw API key to the browser. This endpoint reports
+The Settings → Providers tab renders a status badge per provider, and must do
+so without ever shipping the raw API key to the browser. This endpoint reports
 whether each cascade provider is configured (true/false) plus a small
 ``label`` map the UI can use as the canonical capitalised name.
 
 GET /v1/admin/providers/status
-
-Sprint 2B BUG-33 extends this router with:
 
 POST /v1/admin/providers/{id}/test  — synthetic prompt against the named
                                        cascade provider; returns latency
@@ -70,8 +68,8 @@ async def providers_status(_admin: dict = Depends(admin_required)) -> Dict[str, 
         configured = bool(raw.strip())
         # Cloudflare Workers AI needs BOTH the API token (cf_api_token) AND the
         # account id (cf_account_id) — its run URL is /accounts/{id}/ai/run/….
-        # Without this, a token-only save reported "configured" but every call
-        # failed at runtime with "account_id veya api_token tanımlı değil".
+        # Without this check a token-only save reports "configured" while every
+        # Call fails at runtime for the missing account id.
         if spec["id"] == "cloudflare":
             account = getattr(settings, "cf_account_id", "") or ""
             configured = configured and bool(account.strip())
@@ -85,7 +83,7 @@ async def providers_status(_admin: dict = Depends(admin_required)) -> Dict[str, 
     return {"providers": items}
 
 
-# ---------- Sprint 2B BUG-33 — provider test endpoint ---------------------
+# ---------- provider test endpoint ----------------------------------------
 
 
 _TEST_PROMPT = "Reply with the single word OK."
@@ -121,7 +119,7 @@ async def test_provider(
     flip. It only ever measures whether the operator's stored key is
     accepted and returns ``{ok, latency_ms, model?, error?}``.
 
-    Sprint 2I UAT-019 — `@limiter.limit("5/minute")` caps abusive
+    `@limiter.limit("5/minute")` caps abusive
     automation that would otherwise burn through real provider quota
     on every keystroke.
     """

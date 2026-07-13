@@ -1,6 +1,6 @@
 # Troubleshooting
 
-ABS'i kurarken ya da çalıştırırken karşılaşabileceğin yaygın hatalar ve çözümleri.
+Common errors you will hit while installing or running ABS, and how to fix them.
 
 ## Landing routes 404 after adding a new page
 
@@ -22,65 +22,65 @@ npx next dev
 
 ### `vault disabled (binary or master key missing)`
 
-**Sebep:** Container içinde `sops` veya `age` binary'leri eksik, veya
-`/app/vault-key/age.txt` mount edilmemiş.
+**Cause:** the `sops` or `age` binaries are missing inside the container, or
+`/app/vault-key/age.txt` is not mounted.
 
-**Çözüm:**
+**Fix:**
 ```bash
-docker compose exec backend which sops age   # ikisi de bulunmalı
-ls -la vault-key/age.txt                     # host tarafında dosya var mı?
-docker compose down && docker compose up -d  # mount yenilensin
+docker compose exec backend which sops age   # both must resolve
+ls -la vault-key/age.txt                     # does the file exist on the host?
+docker compose down && docker compose up -d  # remount
 ```
 
-`age.txt` içeriği `# created: ...` ve `AGE-SECRET-KEY-1...` satırlarını içermeli.
+`age.txt` must contain the `# created: ...` and `AGE-SECRET-KEY-1...` lines.
 
 ### `sops: failed to decrypt`
 
-**Sebep:** age public key (.env'deki `ABS_VAULT_AGE_PUBLIC_KEY`) ile
-şifrelenen secret farklı bir public key ile encrypt edildi.
+**Cause:** the secret was encrypted with a different public key than the age
+public key in `.env` (`ABS_VAULT_AGE_PUBLIC_KEY`).
 
-**Çözüm:** `vault-key/age.txt` dosyasından doğru public key'i çıkar
-(`grep public-key vault-key/age.txt`). `.env`'yi güncelle, restart.
+**Fix:** get the correct public key out of `vault-key/age.txt`
+(`grep public-key vault-key/age.txt`). Update `.env` and restart.
 
 ## Stripe webhook
 
-### `400 Stripe-Signature header eksik`
+### `400 Stripe-Signature header missing`
 
-**Sebep:** Webhook endpoint'i Stripe'tan değil başka bir client'tan geldi.
+**Cause:** the request to the webhook endpoint came from some client other than Stripe.
 
-**Çözüm:** Stripe Dashboard → Webhooks → endpoint URL'i `/webhooks/stripe`
-olarak doğrula. Test webhook gönder.
+**Fix:** Stripe Dashboard → Webhooks → confirm the endpoint URL is `/webhooks/stripe`.
+Send a test webhook.
 
-### `400 İmza doğrulanamadı`
+### `400 Signature verification failed`
 
-**Sebep:** `ABS_STRIPE_WEBHOOK_SECRET` yanlış. Live mode'a geçişte secret
-değişmiş olabilir.
+**Cause:** `ABS_STRIPE_WEBHOOK_SECRET` is wrong. The secret may have changed when
+you switched to live mode.
 
-**Çözüm:** Stripe Dashboard → Webhooks → endpoint detail → `Roll secret`
-veya görüntüle → vault'a yaz → backend restart.
+**Fix:** Stripe Dashboard → Webhooks → endpoint detail → `Roll secret`, or reveal
+the current one → write it into the vault → restart the backend.
 
-### Refund webhook gelmiyor
+### Refund webhooks never arrive
 
-**Sebep:** Stripe Dashboard → Webhooks → endpoint events listesinde
-`charge.refunded` ekli değil.
+**Cause:** `charge.refunded` is not in the endpoint's event list in
+Stripe Dashboard → Webhooks.
 
-**Çözüm:** Endpoint detail → Add events → `charge.refunded` + `customer.subscription.deleted`
-seç. Test webhook gönder.
+**Fix:** endpoint detail → Add events → select `charge.refunded` +
+`customer.subscription.deleted`. Send a test webhook.
 
 ## MCP / Claude Code
 
-### `[LISANS GEREKLI] ABS şu anda lisans gerektiriyor`
+### `[LICENSE REQUIRED] ABS currently requires a license`
 
-**Sebep:** `ABS_MCP_REQUIRE_LICENSE=true` ama lisans yok / demo süresi dolmuş.
+**Cause:** `ABS_MCP_REQUIRE_LICENSE=true` but there is no licence, or the demo period expired.
 
-**Çözüm:** Setup wizard'a gir → lisans aktive et. Demo'yu uzatmak istiyorsan
-`/app/data/demo_state.json` dosyasını silip restart et (14 gün başlar).
+**Fix:** open the setup wizard and activate a licence. To extend the demo, delete
+`/app/data/demo_state.json` and restart (a fresh 14 days starts).
 
 ### `MCP tool not found: ask_xyz`
 
-**Sebep:** Tool registry'de yok. Versiyon güncel olmayabilir.
+**Cause:** the tool is not in the registry. Your version may be out of date.
 
-**Çözüm:**
+**Fix:**
 ```bash
 docker compose exec backend python -c \
   "from app.mcp.server import mcp_server; import asyncio; \
@@ -88,74 +88,75 @@ docker compose exec backend python -c \
    print(sorted(t.name for t in tools))" | grep ask_xyz
 ```
 
-Boş çıkıyorsa `git pull && docker compose pull && docker compose up -d`.
+If the output is empty, run `git pull && docker compose pull && docker compose up -d`.
 
-### Claude Code MCP bağlanmıyor
+### Claude Code will not connect to MCP
 
-**Sebep:** URL'de `/mcp` path'i eksik veya HTTPS yok.
+**Cause:** the `/mcp` path is missing from the URL, or the URL is not HTTPS.
 
-**Çözüm:**
+**Fix:**
 ```bash
 claude mcp remove abs
-claude mcp add abs https://abs.firmaadi.com/mcp
-claude mcp list   # status: connected olmalı
+claude mcp add abs https://abs.yourcompany.com/mcp
+claude mcp list   # status must be: connected
 ```
 
-## Provider hataları
+## Provider errors
 
 ### `circuit_breaker_open: anthropic`
 
-**Sebep:** Anthropic API son 5 dakikada üst üste 5 hata verdi (014 cascade).
+**Cause:** the Anthropic API returned 5 consecutive errors within the last 5 minutes,
+so the provider chain opened its breaker.
 
-**Çözüm:**
+**Fix:**
 ```bash
-ask "breaker_status" gptoss   # state'i incele
-# manuel reset:
+ask "breaker_status" gptoss   # inspect the state
+# manual reset:
 docker compose exec backend python -c \
   "from app.cascade.breaker import reset_breaker; reset_breaker('anthropic')"
 ```
 
-Anthropic status sayfasına bak: `status.anthropic.com`.
+Check the Anthropic status page: `status.anthropic.com`.
 
 ### `rate_limited: groq`
 
-**Sebep:** Groq free tier rate limit (TPM 6000).
+**Cause:** you hit the Groq free tier rate limit (6000 TPM).
 
-**Çözüm:** `qual-code` / `race` gibi paralel pipeline'lar yerine `kimi` veya
-`gptoss` tek-shot kullan. Veya Groq Dev Tier'a yükselt.
+**Fix:** use a single-shot call such as `kimi` or `gptoss` instead of parallel
+pipelines like `qual-code` / `race`. Or upgrade to the Groq Dev Tier.
 
-### Email gönderilmiyor
+### Email is not being sent
 
-**Sebep:** `ABS_SMTP_HOST` boş — console fallback aktif (loglara yazıyor).
+**Cause:** `ABS_SMTP_HOST` is empty — the console fallback is active (it only writes to the logs).
 
-**Çözüm:** Real SMTP yapılandır:
+**Fix:** configure a real SMTP server:
 ```ini
 ABS_SMTP_HOST=smtp.resend.com
 ABS_SMTP_PORT=587
 ABS_SMTP_USER=resend
 ABS_SMTP_PASSWORD=re_xxxxxxxx
-ABS_SMTP_FROM=noreply@firmaadi.com
+ABS_SMTP_FROM=noreply@yourcompany.com
 ```
 
-`docker compose logs email-cron | tail -20` ile tick çıktısını izle.
+Watch the tick output with `docker compose logs email-cron | tail -20`.
 
 ## Database
 
 ### `sqlite3.OperationalError: database is locked`
 
-**Sebep:** SQLite WAL'a yazarken iki process aynı anda erişti
-(çok nadir, genelde cron + manual query çakışması).
+**Cause:** two processes wrote to the SQLite WAL at the same time (rare, usually a
+cron job colliding with a manual query).
 
-**Çözüm:** Genelde 1-2sn'de geçer. Süreklise:
+**Fix:** it normally clears in 1-2 seconds. If it persists:
 ```bash
 docker compose exec backend sqlite3 /app/data/abs.db "PRAGMA journal_mode=WAL;"
 ```
 
 ### `no such table: webhook_events`
 
-**Sebep:** Migration boot'ta çalışmadı (çok eski versiyondan upgrade).
+**Cause:** the migration did not run at boot (upgrade from a very old version).
 
-**Çözüm:**
+**Fix:**
 ```bash
 docker compose exec backend python -c \
   "from app.db.session import init_db; init_db()"
@@ -163,11 +164,11 @@ docker compose exec backend python -c \
 
 ## Setup Wizard
 
-### Setup yarıda kaldı, panel açılmıyor
+### Setup stopped halfway, the panel will not open
 
-**Sebep:** First-run middleware aktif, `setup_state.json` `completed:false`.
+**Cause:** the first-run middleware is active and `setup_state.json` still has `completed:false`.
 
-**Çözüm:** `/setup`'a git, kaldığın yerden devam. Veya manuel:
+**Fix:** go to `/setup` and continue where you left off. Or do it manually:
 ```bash
 docker compose exec backend python -c \
   "import json, time, pathlib; \
@@ -177,13 +178,13 @@ docker compose exec backend python -c \
 
 ## Cerbos / Helm
 
-### `helm upgrade abs` Cerbos pod'u CrashLoopBackOff'a düşüyor
+### `helm upgrade abs` puts the Cerbos pod into CrashLoopBackOff
 
-**Sebep:** `infra/helm/abs/values*.yaml` Cerbos için K8s sürümünüzle uyumlu
-olmayan field'lar tutuyor olabilir (`policy_compile_failed`). Güncel
-`values.production.yaml` bu sorunu kapatır.
+**Cause:** `infra/helm/abs/values*.yaml` may carry fields that Cerbos does not accept
+on your Kubernetes version (`policy_compile_failed`). The current
+`values.production.yaml` closes this off.
 
-**Çözüm:**
+**Fix:**
 
 ```bash
 cd infra/helm/abs
@@ -193,21 +194,21 @@ helm upgrade --install abs . \
     --atomic --timeout 5m
 ```
 
-**Doğrulama:**
+**Verification:**
 
 1. `kubectl -n abs-prod rollout status deployment/abs-cerbos`
-2. `kubectl -n abs-prod logs deployment/abs-cerbos --tail 50` — `policy_compile_failed` görünmemeli
+2. `kubectl -n abs-prod logs deployment/abs-cerbos --tail 50` — `policy_compile_failed` must not appear
 3. `kubectl -n abs-prod exec deployment/abs-api -- curl -s localhost:3592/_cerbos/healthz` → `{"status":"SERVING"}`
-4. `kubectl -n abs-prod exec deployment/abs-api -- curl -s localhost:3592/api/check` örnek policy isteği → 200
+4. `kubectl -n abs-prod exec deployment/abs-api -- curl -s localhost:3592/api/check` with a sample policy request → 200
 
-## Bilinmeyen hatalar
+## Unknown errors
 
-`docker compose logs backend | tail -100` çıktısını
-`support@automatiabcn.com` adresine gönder. Maintenance müşterileri için 24h
-yanıt; diğerleri için 48h.
+Send the output of `docker compose logs backend | tail -100` to
+`support@automatiabcn.com`. Maintenance customers get a response within 24h;
+everyone else within 48h.
 
-İhtiyacın olabilecek diğer kaynaklar:
+Other resources you may need:
 
-- [FAQ](faq.md) — kısa cevaplar
-- [Setup Guide](setup-guide.md) — sıfırdan kurulum
-- [API Reference](api-reference.md) — MCP tool listesi
+- [FAQ](faq.md) — short answers
+- [Setup Guide](setup-guide.md) — installation from scratch
+- [API Reference](api-reference.md) — the MCP tool list

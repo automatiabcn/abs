@@ -3,10 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Workflow durability — SQLite checkpoint.
+"""Workflow durability — SQLite checkpoints.
 
-SERVER orchestrator/workflow_state.py portu. Pipeline / multi-step iş akışları
-SQLite'a yazılıp gerekirse `resume(trace_id)` ile son başarılı adımdan devam edilebilir.
+Multi-step pipelines record each step, so a run interrupted halfway can be
+picked up from its last successful step with `resume(trace_id)`.
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ def _connect():
 
 
 def _make_trace_id() -> str:
-    """16-char uuid4 hex parçası — kısa ve unique."""
+    """Short unique trace id — the first 16 hex chars of a uuid4."""
     return uuid.uuid4().hex[:16]
 
 
@@ -80,7 +80,7 @@ def _prompt_hash(prompt: str) -> str:
 
 
 def start_workflow(wf_type: str, prompt: str) -> str:
-    """Yeni workflow başlat. Trace ID döner."""
+    """Start a workflow and return its trace id."""
     trace_id = _make_trace_id()
     with _connect() as conn:
         conn.execute(
@@ -97,7 +97,7 @@ def record_step(
     status: str = "ok",
     result: Optional[Dict[str, Any]] = None,
 ) -> int:
-    """Workflow'a yeni adım kaydı ekle. step_idx döner."""
+    """Append a step record to a workflow and return its step index."""
     now = time.time()
     with _connect() as conn:
         row = conn.execute(
@@ -161,7 +161,7 @@ def get_workflow(trace_id: str) -> Dict[str, Any]:
 
 
 def resume(trace_id: str) -> Dict[str, Any]:
-    """Workflow son başarılı adımdan devam state'ini döner."""
+    """Return the state needed to continue from the last successful step."""
     wf = get_workflow(trace_id)
     if not wf:
         return {"error": f"workflow yok: {trace_id}"}
@@ -175,7 +175,7 @@ def resume(trace_id: str) -> Dict[str, Any]:
         "status": wf["status"],
         "total_steps": len(wf["steps"]),
         "last_ok_step": last_ok,
-        "remaining": "Devam noktası uygulamaya bağlı (pipeline tarafı yorumlar)",
+        "remaining": "Resume point is pipeline-defined; the caller interprets it",
     }
 
 
@@ -209,7 +209,8 @@ def list_workflows(
 
 
 def cleanup_old(days: int = 30) -> int:
-    """N günden eski tamamlanmış workflow'ları + step'lerini sil. Silinen workflow sayısı."""
+    """Delete finished workflows older than `days`, and their steps. Returns the
+    number of workflows removed. Unfinished workflows are never touched."""
     cutoff = time.time() - days * 86400
     with _connect() as conn:
         ids_rows = conn.execute(
@@ -233,7 +234,7 @@ def cleanup_old(days: int = 30) -> int:
 
 
 def stats() -> Dict[str, Any]:
-    """Workflow tablosu özet istatistikleri (panel widget feed)."""
+    """Summary counters over the workflow table, for dashboards."""
     with _connect() as conn:
         total = conn.execute("SELECT COUNT(*) c FROM workflows").fetchone()["c"]
         by_status = {

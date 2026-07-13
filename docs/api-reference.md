@@ -1,265 +1,265 @@
 # API Reference — MCP Tools
-Bu sayfa otomatik üretilir (`python scripts/gen_api_reference.py`). Manuel düzenleme yapma.
-Toplam **104 tool** — kategorilere göre alfabetik sıralı.
-Her MCP tool, Claude Code'da `claude mcp add abs <url>` sonrası `mcp__abs__<tool>` olarak veya orchestrator alias'larla (`ask "..." gptoss` vb.) çağrılabilir.
+This page is generated automatically (`python scripts/gen_api_reference.py`). Do not edit it by hand.
+**104 tools** in total — grouped by category, alphabetical within each.
+After `claude mcp add abs <url>`, every MCP tool is callable from Claude Code as `mcp__abs__<tool>`, or through the orchestrator aliases (`ask "..." gptoss`, etc.).
 
-## Sistem & Sağlık
+## System & Health
 
-_38 tool_
+_38 tools_
 
 ### `apply_patch`
-Unified diff'i uygula (atomic + backup). Rollback başarısız olursa reason döner.
+Apply a unified diff (atomic + backup). Returns a reason if the rollback fails.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `file_path` | `string` | ✓ |  |
 | `unified_diff` | `string` | ✓ |  |
 | `backup` | `boolean` |  |  |
 
 ### `auto_verify_code`
-PC GPU paralel kod doğrulama — granite-2b security + codellama test + deepseek lint.
+Parallel code verification on the local GPU — granite-2b security + codellama tests + deepseek lint.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `code` | `string` | ✓ |  |
 
 ### `auto_verify_turkish`
-Türkçe metin kalite kontrolü — aya-8b ile gramer/stil.
+Quality check for Turkish text — grammar and style via aya-8b.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `text` | `string` | ✓ |  |
 
 ### `billing_status`
-017 — ABS billing dashboard: Stripe + DB lisans + son 10 webhook event.
+ABS billing dashboard: Stripe + database licence + the last 10 webhook events.
 
 ### `breaker_status`
-Cascade circuit breaker state'leri (open/half_open/closed).
+Circuit breaker states for the provider chain (open/half_open/closed).
 
 ### `cache_stats`
-Semantic cache istatistikleri (hit/miss/entries/hit_rate).
+Semantic cache statistics (hit/miss/entries/hit_rate).
 
 ### `code_fingerprint`
-Kod için fingerprint: SHA-256 + satır/fonksiyon sayısı + basit metrikler.
+Fingerprint for a piece of code: SHA-256 + line/function counts + basic metrics.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `code` | `string` | ✓ |  |
 
 ### `code_review`
-Code review — tier auto (quick <50 sat, standard 50-200, exhaustive 200+).
+Code review — tier chosen automatically (quick <50 lines, standard 50-200, exhaustive 200+).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `code` | `string` | ✓ |  |
 | `tier` | `string` |  |  |
 
 ### `daily_cost`
-tracker × provider_configs pricing → bugunku tahmini maliyet.
+tracker × provider_configs pricing → estimated cost for today.
 
 ### `demo_status`
-Demo countdown durum (started/expired/days_remaining).
+Demo countdown state (started/expired/days_remaining).
 
 ### `email_queue_status`
-ABS onboarding email kuyruk dashboard.
+ABS onboarding email queue dashboard.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `limit` | `integer` |  |  |
 
 ### `freeze`
-Freeze mode'u aç: sadece verilen dizin içinde Write/Edit'e izin ver.
+Turn on freeze mode: allow Write/Edit only inside the given directory.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `project_dir` | `string` |  |  |
 
 ### `health_status`
-Tum provider'larin real-time ping durumu.
+Real-time ping status for every provider.
 
 ### `humanize_score`
-Input metninin 'AI-written' heuristik skoru (0=insani, 1=AI). JSON döner.
+Heuristic 'AI-written' score for the input text (0=human, 1=AI). Returns JSON.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `text` | `string` | ✓ |  |
 
 ### `investigate`
-Investigate mode — kök neden araştırma modu aç. Hook'lar uyarı verir.
+Investigate mode — turn on root-cause investigation. Hooks emit warnings.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `topic` | `string` |  |  |
 
 ### `judge_outcome`
-Bir judgment'a outcome işaretle (accept|reject).
+Mark the outcome of a judgment (accept|reject).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `judgment_id` | `string` | ✓ |  |
 | `outcome` | `string` |  |  |
 
 ### `judge_patch`
-SENIOR JUDGE — diff AST + LLM birleşik skoru. %60 fingerprint + %40 LLM.
+SENIOR JUDGE — combined diff AST + LLM score. 60% fingerprint + 40% LLM.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `unified_diff` | `string` | ✓ |  |
 | `file_path` | `string` |  |  |
 
 ### `judge_persona_predict`
-ML model ile bu skorlarin accept olasiligini tahmin et.
+Predict the accept probability of these scores with the ML model.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `ast_score` | `number` | ✓ |  |
 | `llm_score` | `number` | ✓ |  |
 | `persona_drift` | `number` | ✓ |  |
 
 ### `judge_persona_reset`
-Persona'yı DEFAULT_PERSONA'ya geri al (history dosyası korunur).
+Reset the persona back to DEFAULT_PERSONA (the history file is preserved).
 
 ### `judge_persona_status`
-Mevcut persona threshold'ları + son training meta + history boyutu.
+Current persona thresholds + last training metadata + history size.
 
 ### `judge_persona_train`
-judge_log outcome'larından persona dynamic adjust. min_samples altında 'insufficient_data'.
+Dynamically adjust the persona from judge_log outcomes. Returns 'insufficient_data' below min_samples.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `min_samples` | `integer` |  |  |
 
 ### `judge_recent`
-Son N judgment kaydı (id, ts, file, ast/llm/combined, outcome).
+The last N judgment records (id, ts, file, ast/llm/combined, outcome).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `limit` | `integer` |  |  |
 
 ### `judge_stats`
-Son N günün judgment ortalamaları + drift_signal + outcome_counts + top_files.
+Judgment averages for the last N days + drift_signal + outcome_counts + top_files.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `window_days` | `integer` |  |  |
 
 ### `learnings_log`
-Manuel learning ekle. category: bugfix|delegation|arch|security|perf|ux.
+Add a learning manually. category: bugfix|delegation|arch|security|perf|ux.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `category` | `string` | ✓ |  |
 | `lesson` | `string` | ✓ |  |
 | `project` | `?` |  |  |
 
 ### `learnings_recent`
-Son N learning kaydi + kategorik istatistikler.
+The last N learning records + statistics per category.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `limit` | `integer` |  |  |
 
 ### `license_status`
-ABS lisans + demo durum snapshot — JSON doner.
+ABS licence + demo state snapshot — returns JSON.
 
 ### `model_health`
-Basit model health skoru — breaker state üzerinden.
+Simple model health score, derived from the circuit breaker state.
 
 ### `preview_patch`
-Unified diff'i dry-run uygula, success + reason döndür.
+Apply a unified diff as a dry run; returns success + reason.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `file_path` | `string` | ✓ |  |
 | `unified_diff` | `string` | ✓ |  |
 
 ### `quota_status`
-Provider kota durumu (breaker state snapshot).
+Provider quota state (circuit breaker state snapshot).
 
 ### `score_patch_quality`
-Patch'e 0-10 minimalism + hunk konsantrasyon skoru ver.
+Score a patch 0-10 on minimalism + hunk concentration.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `unified_diff` | `string` | ✓ |  |
 
 ### `setup_status`
-Müşteri kurulum wizard'ının mevcut durumu — JSON döner.
+Current state of the customer setup wizard — returns JSON.
 
 ### `system_status`
-ABS sistem durumu — lisans, provider breaker state, cache, tool kullanımı.
+ABS system status — licence, provider circuit breaker state, cache, tool usage.
 
 ### `update_check`
 Remote release manifest → version compare → state JSON.
 
 ### `vault_status`
-Vault snapshot — configured key listesi + audit son 5 olay. Cleartext YOK.
+Vault snapshot — list of configured keys + the last 5 audit events. No cleartext.
 
 ### `workflow_resume`
-Bir workflow'un son başarılı adımdan devam state'ini döndür.
+Return the state a workflow can resume from, starting at its last successful step.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `trace_id` | `string` | ✓ |  |
 
 ### `workflow_status`
-Workflow durability snapshot — toplam, by_status, son 5 + db_size_kb.
+Workflow durability snapshot — total, by_status, last 5 + db_size_kb.
 
 ### `write_docs`
-Modül / fonksiyon için Türkçe API dokümantasyonu (markdown).
+Turkish API documentation (markdown) for a module or function.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `module_info` | `string` | ✓ |  |
 
 ### `write_tests`
-Fonksiyon imzaları için pytest unit test üret. Happy + edge + error.
+Generate pytest unit tests for the given function signatures. Happy path + edge + error.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `function_signatures` | `string` | ✓ |  |
 
@@ -267,23 +267,23 @@ Fonksiyon imzaları için pytest unit test üret. Happy + edge + error.
 
 ## Provider — Anthropic
 
-_2 tool_
+_2 tools_
 
 ### `ask_smart`
-Akıllı router — gptoss-120b primary + CF + Cerebras fallback.
+Smart router — gptoss-120b primary + CF and Cerebras fallback.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_sonnet`
-Claude Sonnet 4.6 — dengeli kalite/hız. Kod + analiz için default.
+Claude Sonnet 4.6 — balanced quality/speed. The default for code and analysis.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
@@ -291,86 +291,86 @@ Claude Sonnet 4.6 — dengeli kalite/hız. Kod + analiz için default.
 
 ## Provider — Groq
 
-_9 tool_
+_9 tools_
 
 ### `ask_aya`
-Aya 8B (Cohere) — Türkçe gramer + stil. Yerel Ollama üzerinden.
+Aya 8B (Cohere) — Turkish grammar and style. Runs through the local Ollama.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_deepseek`
-DeepSeek Coder v2 16B — bug finder, satır bazlı review.
+DeepSeek Coder v2 16B — bug finder, line-by-line review.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_granite`
-IBM Granite 3.1 8B — düşük hallucination fact-check.
+IBM Granite 3.1 8B — fact-checking with low hallucination.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_granite_fast`
-Granite 2B — mikro doğrulayıcı (<2s).
+Granite 2B — micro verifier (<2s).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_groq_fast`
-Llama 3.1 8B (Groq) — ultra hızlı (<0.3s). Kısa sorular, sınıflandırma.
+Llama 3.1 8B (Groq) — ultra fast (<0.3s). Short questions, classification.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_kimi`
-Kimi K2.5 (CloudFlare) — kod üretimi + strateji. 256K context.
+Kimi K2.5 (CloudFlare) — code generation + strategy. 256K context.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_reasoner`
 CF DeepSeek R1 Distill Qwen 32B — edge reasoning.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_rerank`
 Cohere Command R+ — rerank-capable chat; cache-aware.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_scout`
-Llama 4 Scout 17B (Groq) — talimat takibi + kısa görev.
+Llama 4 Scout 17B (Groq) — instruction following + short tasks.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
@@ -381,11 +381,11 @@ Llama 4 Scout 17B (Groq) — talimat takibi + kısa görev.
 _1 tool_
 
 ### `ask_cerebras`
-Cerebras Qwen3 235B — 235B MoE, ~0.3s latency. 1M tok/gün.
+Cerebras Qwen3 235B — 235B MoE, ~0.3s latency. 1M tokens/day.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
@@ -393,116 +393,116 @@ Cerebras Qwen3 235B — 235B MoE, ~0.3s latency. 1M tok/gün.
 
 ## Provider — Gemini
 
-_12 tool_
+_12 tools_
 
 ### `ask_gemini`
-Gemini 2.5 Flash — hızlı multimodal. Template, kısa üretim.
+Gemini 2.5 Flash — fast multimodal. Templates, short generation.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_gemini_pro`
-Gemini 2.5 Pro — 1M context, derin analiz, multimodal.
+Gemini 2.5 Pro — 1M context, deep analysis, multimodal.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `gemini_image`
-Gemini 2.5 Flash Image — prompt'tan görsel üret (base64 PNG).
+Gemini 2.5 Flash Image — generate an image from a prompt (base64 PNG).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `gemini_image_edit`
-Verilen base64 görseli prompt'a göre düzenle.
+Edit the supplied base64 image according to the prompt.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 | `image_base64` | `string` | ✓ |  |
 
 ### `gemini_image_pro`
-Gemini Image Pro (Nano Banana Pro) — yüksek kalite görsel.
+Gemini Image Pro (Nano Banana Pro) — high-quality image generation.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `gemini_lite`
-Gemini Flash Lite — hızlı ve düşük maliyetli tek-shot yanıt.
+Gemini Flash Lite — fast, low-cost single-shot answer.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `gemini_search`
-Google Search grounded yanıt + kaynak URL'leri.
+Google Search grounded answer + source URLs.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `gemini_structured`
-JSON schema-guaranteed output. schema_json geçerli JSON schema string'i.
+JSON schema-guaranteed output. schema_json must be a valid JSON schema string.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 | `schema_json` | `string` | ✓ |  |
 
 ### `gemini_url`
-URL context — bir URL'nin içeriği hakkında soru sor.
+URL context — ask a question about the contents of a URL.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `url` | `string` | ✓ |  |
 | `question` | `string` |  |  |
 
 ### `gemini_video`
-Veo 3.0 ile video jobu başlat; operation name döner (sonra status).
+Start a video job with Veo 3.0; returns an operation name (query its status afterwards).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `gemini_video_status`
-Video job durumu sorgula (gemini_video'dan dönen operation name ile).
+Query the status of a video job (using the operation name returned by gemini_video).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `operation_name` | `string` | ✓ |  |
 
 ### `gemini_video_wait`
-Video job bitene kadar bekle (polling her 15s). Basit placeholder.
+Wait until a video job finishes (polls every 15s). Simple placeholder.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `operation_name` | `string` | ✓ |  |
 | `max_seconds` | `integer` |  |  |
@@ -511,23 +511,23 @@ Video job bitene kadar bekle (polling her 15s). Basit placeholder.
 
 ## Provider — Cloudflare
 
-_2 tool_
+_2 tools_
 
 ### `ask_cf`
 CloudFlare Llama 3.3 70B FP8 Fast — edge latency.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_cf_gptoss`
-CloudFlare GPT-OSS 120B — edge 120B model, Groq alternatifi.
+CloudFlare GPT-OSS 120B — 120B model at the edge, alternative to Groq.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
@@ -535,245 +535,245 @@ CloudFlare GPT-OSS 120B — edge 120B model, Groq alternatifi.
 
 ## Provider — Cohere
 
-_5 tool_
+_5 tools_
 
 ### `ask_cohere_command_r`
-Cohere Command R+ 08-2024 — enterprise chat, RAG uyumlu.
+Cohere Command R+ 08-2024 — enterprise chat, RAG compatible.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_cohere_embed`
-Cohere embed-english-v3.0 — 1024-dim embedding döndürür (JSON).
+Cohere embed-english-v3.0 — returns a 1024-dim embedding (JSON).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `text` | `string` | ✓ |  |
 
 ### `cohere_alert_ack`
-Bir alert'i acknowledge işaretle.
+Mark an alert as acknowledged.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `alert_id` | `string` | ✓ |  |
 
 ### `cohere_alert_status`
-Cohere kullanım + son alert + severity (ok|warn|danger|limit_hit).
+Cohere usage + last alert + severity (ok|warn|danger|limit_hit).
 
 ### `cohere_alerts_recent`
-Son N alert kaydı (en yeni önce).
+The last N alert records (newest first).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `limit` | `integer` |  |  |
 
 ---
 
-## Provider — Lokal
+## Provider — Local
 
-_11 tool_
+_11 tools_
 
 ### `ask_codellama`
-CodeLlama 7B — hafif kod + unit test üretici.
+CodeLlama 7B — lightweight code and unit test generator.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_gemma2`
-Gemma 2 9B — factual, düşük hallucination.
+Gemma 2 9B — factual, low hallucination.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_llava`
-Llava 7B — yerel görsel anlama (multimodal).
+Llava 7B — local image understanding (multimodal).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_longcontext`
 Kimi K2.5 (CF) — 256K context long-context alias.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_mlx`
-MLX Neural Engine — Apple Silicon (M4) llama3-8b ~0.3-1s.
+MLX Neural Engine — llama3-8b on Apple Silicon, ~0.3-1s.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_mlx_fast`
-MLX Fast — phi3-mini ultra hızlı sınıflandırma <0.5s.
+MLX Fast — phi3-mini, ultra fast classification <0.5s.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_or_minimax`
-OpenRouter MiniMax M2 :free — cache_control destekli.
+OpenRouter MiniMax M2 :free — supports cache_control.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_or_qwen_coder`
 OpenRouter Qwen3 Coder 480B :free — SWE-Bench 69.6%.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_phi4`
-Phi-4 (yerel Ollama) — reasoning. OLLAMA_URL tanımlıysa çalışır.
+Phi-4 (local Ollama) — reasoning. Works when OLLAMA_URL is set.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_starcoder`
-StarCoder2 3B — FIM kod tamamlama + hızlı lint.
+StarCoder2 3B — FIM code completion + fast lint.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_vllm`
-vLLM cluster — self-host (ABS_VLLM_URL gerekli).
+vLLM cluster — self-hosted (requires ABS_VLLM_URL).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ---
 
-## Pipeline — Kalite
+## Pipeline — Quality
 
-_10 tool_
+_10 tools_
 
 ### `ask_disagree`
-3 provider paralel çağrı + cosine/jaccard similarity + consensus skoru.
+Calls 3 providers in parallel + cosine/jaccard similarity + a consensus score.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `qual_analysis`
-KALİTE ANALİZ PIPELINE — 3 perspektif (gptoss + kimi2 + gemini-pro) → sentez.
+QUALITY ANALYSIS PIPELINE — 3 perspectives (gptoss + kimi2 + gemini-pro) → synthesis.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `qual_code`
-KALİTE KOD PIPELINE — Üret(kimi+gpt-oss-20b paralel) → codellama verify → gpt-oss-120b fix.
+QUALITY CODE PIPELINE — generate (kimi + gpt-oss-20b in parallel) → codellama verify → gpt-oss-120b fix.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `qual_code_human`
-QUAL CODE + HUMANIZE — qual-code çıktısını AI-yorumları kaldırarak yeniden yazar.
+QUAL CODE + HUMANIZE — rewrites the qual-code output with the AI-style comments stripped out.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `qual_human`
-QUAL + HUMANIZE — qual-tr çıktısını AI-detector'dan düşük puan alacak şekilde dönüştürür.
+QUAL + HUMANIZE — rewrites the qual-tr output so that it scores low with AI detectors.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `qual_tr`
-KALİTE TÜRKÇE PIPELINE — Üret(qwen32b+gemini paralel) → aya review → kimi2 polish.
+QUALITY TURKISH PIPELINE — generate (qwen32b + gemini in parallel) → aya review → kimi2 polish.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `qual_translate`
-KALİTE ÇEVİRİ PIPELINE — çevir → geri-çevir → karşılaştır → refine.
+QUALITY TRANSLATION PIPELINE — translate → back-translate → compare → refine.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `race`
-RACE — gpt-oss-120b vs kimi vs kimi2 paralel, ilk başarılı kazanır.
+RACE — gpt-oss-120b vs kimi vs kimi2 in parallel, first success wins.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `race_code`
-RACE CODE — CF Kimi K2.5 vs Groq GPT-OSS 120B, ilk başarılı.
+RACE CODE — CF Kimi K2.5 vs Groq GPT-OSS 120B, first success wins.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `race_tr`
-RACE TR — Qwen32B vs Gemini 2.5 Flash, ilk başarılı.
+RACE TR — Qwen32B vs Gemini 2.5 Flash, first success wins.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
@@ -781,23 +781,23 @@ RACE TR — Qwen32B vs Gemini 2.5 Flash, ilk başarılı.
 
 ## RAG
 
-_6 tool_
+_6 tools_
 
 ### `rag_clear`
-Tüm koleksiyonu veya yalnızca bir project'in chunk'larını sil.
+Delete the whole collection, or only the chunks of one project.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `project` | `?` |  |  |
 
 ### `rag_hybrid`
 RAG hybrid retrieval — BM25 + cosine fusion. alpha_semantic 0=BM25, 1=cosine.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `question` | `string` | ✓ |  |
 | `project_filter` | `?` |  |  |
@@ -805,36 +805,36 @@ RAG hybrid retrieval — BM25 + cosine fusion. alpha_semantic 0=BM25, 1=cosine.
 | `alpha_semantic` | `number` |  |  |
 
 ### `rag_index`
-Bir dosya/dizini RAG index'ine ekle. chunk_strategy: 'semantic' | 'char'.
+Add a file or directory to the RAG index. chunk_strategy: 'semantic' | 'char'.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `path` | `string` | ✓ |  |
 | `project` | `string` |  |  |
 | `chunk_strategy` | `string` |  |  |
 
 ### `rag_query`
-Index'lenmiş chunk'larda anlam bazlı arama; en yakın top_k snippet döner.
+Semantic search over the indexed chunks; returns the closest top_k snippets.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `question` | `string` | ✓ |  |
 | `project_filter` | `?` |  |  |
 | `top_k` | `integer` |  |  |
 
 ### `rag_status`
-RAG koleksiyon ve disk kullanım özeti.
+Summary of the RAG collection and its disk usage.
 
 ### `symbol_search`
-Symbol DB substring search — name LIKE %q%, opsiyonel kind=function|class|import.
+Substring search over the symbol DB — name LIKE %q%, optional kind=function|class|import.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `q` | `string` | ✓ |  |
 | `kind` | `?` |  |  |
@@ -844,84 +844,84 @@ Symbol DB substring search — name LIKE %q%, opsiyonel kind=function|class|impo
 
 ## Fullstack
 
-_4 tool_
+_4 tools_
 
 ### `fullstack`
-Katman-özel kod üretici — auto katman tespit + en uygun model.
+Layer-specific code generator — detects the layer automatically and picks the best-suited model.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 | `layer` | `string` |  |  |
 
 ### `fullstack_detect`
-Prompt'tan katman tespit et (frontend/backend/database/devops/testing/docs/architecture).
+Detect the layer from the prompt (frontend/backend/database/devops/testing/docs/architecture).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `fullstack_plan`
-Scan + gap analizi + görev planı (LLM ile).
+Scan + gap analysis + task plan (produced by an LLM).
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `project_dir` | `string` | ✓ |  |
 
 ### `fullstack_scan`
-Proje dizinini tara — dosya/lang/deps envanteri.
+Scan a project directory — inventory of files, languages and dependencies.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `project_dir` | `string` | ✓ |  |
 
 ---
 
-## Diğer
+## Other
 
-_4 tool_
+_4 tools_
 
 ### `ask_cohere_aya`
-Cohere Aya Expanse 32B — 101 dil, çok-dilli görev + Türkçe.
+Cohere Aya Expanse 32B — 101 languages, multilingual tasks including Turkish.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_haiku`
-Claude Haiku 4.5 — Anthropic'in hızlı modeli. Kısa görev, sınıflandırma.
+Claude Haiku 4.5 — Anthropic's fast model. Short tasks, classification.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `ask_opus`
-Claude Opus 4.7 — Anthropic'in en güçlü modeli. Derin analiz, kritik görev.
+Claude Opus 4.7 — Anthropic's most capable model. Deep analysis, critical work.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 
 ### `race_local`
-RACE LOCAL — Ollama phi4 vs gemma2. ABS_OLLAMA_URL gerekli.
+RACE LOCAL — Ollama phi4 vs gemma2. Requires ABS_OLLAMA_URL.
 
-**Parametreler:**
+**Parameters:**
 
-| İsim | Tip | Zorunlu | Açıklama |
+| Name | Type | Required | Description |
 |---|---|:-:|---|
 | `prompt` | `string` | ✓ |  |
 

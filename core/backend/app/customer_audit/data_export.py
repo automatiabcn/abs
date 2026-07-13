@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""029 Modul B — GDPR data export (Article 15 right of access).
+"""GDPR data export (Article 15 right of access).
 
 Builds a ZIP containing all data tied to a license:
   - license.json

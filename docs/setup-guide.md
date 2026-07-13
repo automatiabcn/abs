@@ -1,23 +1,23 @@
-# Setup Guide — 15 dakikada ABS kur
+# Setup Guide — install ABS in 15 minutes
 
-Bu rehber Automatia ABS'i sıfırdan production-ready bir self-host kurulumu olarak kuruyor.
-Kurulumu 15 dakikada bitirmek için **Docker Compose** kullanıyoruz; manuel kurulum
-sonu (`pip install`) için son bölüme bakın.
+This guide takes Automatia ABS from nothing to a production-ready self-hosted install.
+To finish in 15 minutes we use **Docker Compose**; for the manual route
+(`pip install`) see the last section.
 
-## Önkoşullar
+## Prerequisites
 
-- Linux sunucu (Ubuntu 22.04+, Debian 12, veya AlmaLinux 9 — 1 vCPU, 2 GB RAM, 20 GB disk yeterli).
-- Docker Engine 24+ ve Docker Compose v2 (`docker compose version`).
-- DNS A kaydı: `abs.firmaadi.com` → sunucu IP.
-- Açık portlar: 80 + 443.
-- Anthropic API anahtarı (`sk-ant-...`) — [console.anthropic.com](https://console.anthropic.com/).
-- Stripe live key (`sk_live_...`) ve webhook secret (`whsec_...`) — opsiyonel,
-  kendi ödeme akışın için.
+- A Linux server (Ubuntu 22.04+, Debian 12 or AlmaLinux 9 — 1 vCPU, 2 GB RAM, 20 GB disk is enough).
+- Docker Engine 24+ and Docker Compose v2 (`docker compose version`).
+- A DNS A record: `abs.yourcompany.com` → your server IP.
+- Open ports: 80 and 443.
+- An Anthropic API key (`sk-ant-...`) — [console.anthropic.com](https://console.anthropic.com/).
+- A Stripe live key (`sk_live_...`) and webhook secret (`whsec_...`) — optional,
+  only if you run your own payment flow.
 
-## Adım 1 — Lisans ve repo
+## Step 1 — License and repository
 
-ABS'i satın al — `https://abs.automatiabcn.com/` üzerinden Stripe Checkout. Email ile
-gelen lisans anahtarını sakla; setup wizard'a Adım 4'te girmen gerekecek.
+Buy ABS at `https://abs.automatiabcn.com/` through Stripe Checkout. Keep the license
+key that arrives by email; you enter it in the setup wizard at Step 4.
 
 ```bash
 git clone https://github.com/automatiabcn/abs.git
@@ -25,104 +25,99 @@ cd abs/infra
 cp .env.example .env
 ```
 
-`.env` dosyasında en az şu değeri doldur:
+Fill in at least these values in `.env`:
 
 ```ini
-ABS_LICENSE_KEY=eyJhbGciOiJSUzI1NiIs...   # email'den geldi
-ABS_DOMAIN=abs.firmaadi.com
-ABS_ADMIN_EMAIL=admin@firmaadi.com
-ABS_ADMIN_PASSWORD_BOOTSTRAP=ilk-girisiniz-icin-gecici-sifre
+ABS_LICENSE_KEY=eyJhbGciOiJSUzI1NiIs...   # from the email
+ABS_DOMAIN=abs.yourcompany.com
+ABS_ADMIN_EMAIL=admin@yourcompany.com
+ABS_ADMIN_PASSWORD_BOOTSTRAP=temporary-password-for-your-first-login
 ```
 
-## Adım 2 — Vault başlat (sops/age)
+## Step 2 — Initialise the vault (sops/age)
 
-Stripe + Anthropic secret'larını disk üzerinde plaintext bırakmamak için **sops + age**
-vault aktiftir (013):
+So that your Stripe and Anthropic secrets are never on disk in plaintext, the
+**sops + age** vault is enabled (013):
 
 ```bash
-# age master key oluştur (TEK SEFER — yedek al, kaybolursa vault sıfırdan)
+# Create the age master key (ONCE — back it up; if you lose it, the vault starts over)
 mkdir -p vault-key
 docker run --rm -v $(pwd)/vault-key:/k alpine \
     sh -c "apk add --no-cache age && age-keygen -o /k/age.txt && cat /k/age.txt | grep public"
 
-# public key çıktısını kopyala → ABS_VAULT_AGE_PUBLIC_KEY .env'ye yaz
+# copy the public key from the output → write it into .env as ABS_VAULT_AGE_PUBLIC_KEY
 echo "ABS_VAULT_AGE_PUBLIC_KEY=age1xxxxx..." >> .env
 ```
 
-Yedek planı: `vault-key/age.txt` dosyasını 1Password / Bitwarden gibi şifreli vault'a yedekle.
-Kaybolursa şifreli secret'lara erişimini kaybedersin.
+Backup plan: copy `vault-key/age.txt` into an encrypted vault such as 1Password or Bitwarden.
+If you lose it, you lose access to the encrypted secrets.
 
-## Adım 3 — Docker Compose ile başlat
+## Step 3 — Start with Docker Compose
 
 ```bash
 docker compose up -d
 docker compose ps
 ```
 
-3 service ayağa kalkmalı:
+Three services must come up:
 
-| Service | Port | Sağlık |
+| Service | Port | Health |
 |---|---|---|
 | `backend` | 8000 (internal) | `curl localhost:8000/healthz` → 200 |
-| `email-cron` | — | logs `sent=N failed=M` her 5dk |
-| `caddy` | 80, 443 | otomatik HTTPS Let's Encrypt |
+| `email-cron` | — | logs `sent=N failed=M` every 5 min |
+| `caddy` | 80, 443 | automatic HTTPS via Let's Encrypt |
 
-## Adım 4 — Setup wizard (6 adım, ~5dk)
+## Step 4 — Setup wizard (6 steps, ~5 min)
 
-`https://abs.firmaadi.com/setup` adresine git. ABS first-run middleware seni otomatik buraya yönlendirecek.
+Go to `https://abs.yourcompany.com/setup`. The ABS first-run middleware sends you there automatically.
 
-1. **Admin hesabı** — email + bcrypt'le saklanacak şifre.
-2. **Lisans** — Adım 1'de aldığın `ABS_LICENSE_KEY`. Online doğrulama yok; JWT RS256 imzalı.
-3. **Domain** — bir önceki adımda yazdığın `ABS_DOMAIN` (otomatik dolu).
-4. **Anthropic API** — `sk-ant-...` anahtarı vault'a şifreli yazılır.
-5. **Provider'lar** — Groq / Cerebras / Gemini / Cohere / Cloudflare API key'leri.
-   Hepsi opsiyonel — boş bırakırsan o sağlayıcı circuit breaker tarafından devre dışı
-   kalır.
-6. **Test** — `system_status` MCP tool çalışır; provider sağlık ve cache durumu gelir.
+1. **Admin account** — email plus a password, stored with bcrypt.
+2. **License** — the `ABS_LICENSE_KEY` from Step 1. No online check; it is an RS256-signed JWT.
+3. **Domain** — the `ABS_DOMAIN` you set in the previous step (pre-filled).
+4. **Anthropic API** — your `sk-ant-...` key, written to the vault encrypted.
+5. **Providers** — Groq / Cerebras / Gemini / Cohere / Cloudflare API keys.
+   All optional — leave one blank and the circuit breaker keeps that provider
+   disabled.
+6. **Test** — runs the `system_status` MCP tool; you get provider health and cache state.
 
-Setup tamamlanınca `setup_state.json` `completed:true` olur ve middleware `/panel`'e yönlendirir.
+When setup finishes, `setup_state.json` flips to `completed:true` and the middleware sends you to `/panel`.
 
-## Adım 5 — Claude Code'a bağla
+## Step 5 — Connect Claude Code
 
-Claude Code'da MCP server ekle:
-
-```bash
-claude mcp add abs https://abs.firmaadi.com/mcp
-```
-
-Test et:
+Add the MCP server in Claude Code:
 
 ```bash
-ask "system_status" gptoss
+claude mcp add abs https://abs.yourcompany.com/mcp
 ```
 
-Beklenen JSON çıktısı: 100+ tool registered, 6 provider configured, vault loaded.
+Test it by calling the `system_status` tool from Claude Code. The expected JSON output:
+100+ tools registered, 6 providers configured, vault loaded.
 
-## Adım 6 — Stripe billing (opsiyonel, kendi ödeme akışın için)
+## Step 6 — Stripe billing (optional, for your own payment flow)
 
-Kendi müşterilerine ABS satıyorsan Stripe altyapısını da etkinleştir:
+If you resell ABS to your own customers, enable the Stripe side as well:
 
-1. `https://dashboard.stripe.com` → Developers → API keys → live key kopyala.
-2. Webhook endpoint ekle: `https://abs.firmaadi.com/webhooks/stripe`. Events:
+1. `https://dashboard.stripe.com` → Developers → API keys → copy the live key.
+2. Add a webhook endpoint: `https://abs.yourcompany.com/webhooks/stripe`. Events:
    `checkout.session.completed`, `charge.refunded`, `customer.subscription.deleted`.
-3. Vault'a yaz:
+3. Write them into the vault:
    ```bash
    sops --age=$(cat vault-key/age.pub) -e -i secrets/billing.enc.json
-   # editor: ABS_STRIPE_SECRET_KEY ve ABS_STRIPE_WEBHOOK_SECRET
+   # editor: ABS_STRIPE_SECRET_KEY and ABS_STRIPE_WEBHOOK_SECRET
    docker compose restart backend
    ```
-4. Live products oluştur:
+4. Create the live products:
    ```bash
    ABS_STRIPE_SECRET_KEY=sk_live_... \
      python infra/scripts/setup_stripe_products.py --mode live
    ```
-5. İlk live test (kendi kart) → Dashboard'dan refund.
+5. Run one live test with your own card, then refund it from the Dashboard.
 
-Ayrıntı: [Billing Runbook](billing-runbook.md).
+Details: [Billing Runbook](billing-runbook.md).
 
-## Adım 7 — Backup ve monitoring
+## Step 7 — Backup and monitoring
 
-Günde 1 cron önerilir:
+A daily cron job is recommended:
 
 ```bash
 # /etc/cron.daily/abs-backup
@@ -131,57 +126,57 @@ mv /tmp/abs-*.tar.gz /var/backups/abs/
 find /var/backups/abs -mtime +30 -delete
 ```
 
-Monitoring için `health_status` MCP tool'unu Cloudflare Worker veya UptimeRobot'a
-bağla — provider down olursa Slack alert.
+For monitoring, wire the `health_status` MCP tool into a Cloudflare Worker or
+UptimeRobot — you get a Slack alert when a provider goes down.
 
-## Adım 8 — Güncelleme
+## Step 8 — Updating
 
-Yeni versiyon çıktığında:
+When a new version ships:
 
 ```bash
 cd abs/infra
 git pull
 docker compose pull && docker compose up -d
-docker compose logs backend | tail -50    # migration log'u kontrol et
+docker compose logs backend | tail -50    # check the migration log
 ```
 
-ABS update channel signature ile imza doğrular (014). Bozuk imzayı reddeder.
+ABS verifies the update channel signature (014). A broken signature is rejected.
 
-## Fresh Install — test/QA verilerini temizle
+## Fresh install — clear test/QA data
 
-Repo'da geliştirme + QA sırasında üretilmiş test admin'leri, sohbet geçmişi
-ve örnek RAG dosyaları bulunabilir (örnek: `l24scan@test.local`, `tester-…@test.local`).
-Production handoff'tan önce bu verileri temizle:
+The repository can carry test admins, chat history and sample RAG files created
+during development and QA (for example `l24scan@test.local`, `tester-…@test.local`).
+Clear them before you hand a production install over:
 
 ```bash
-# 1) Önce dry-run — neyin silineceğini gör
+# 1) Dry run first — see what would be deleted
 docker compose exec backend python /app/scripts/audit_test_data.py
-#   → JSON çıktı + artifacts/test_data_audit.md
+#   → JSON output + artifacts/test_data_audit.md
 
-# 2) Onayladıktan sonra confirm
+# 2) Once you are happy with it, confirm
 docker compose exec backend python /app/scripts/reset_test_data.py --confirm --purge-rag
 ```
 
-**Otomatik (ilk açılış):** `.env` içine `ABS_FRESH_INSTALL=true` ekleyip
-`infra/scripts/first-boot-reset.sh` script'ini çalıştır — script flag'i kontrol eder,
-gerçek müşteri kurulumlarında atlanır:
+**Automatic (first boot):** add `ABS_FRESH_INSTALL=true` to `.env` and run
+`infra/scripts/first-boot-reset.sh` — the script checks the flag and skips itself
+on real customer installs:
 
 ```bash
 ABS_FRESH_INSTALL=true bash infra/scripts/first-boot-reset.sh
 ```
 
-Kurallar:
+Rules:
 
-- `admin@demo-acme.com` (bootstrap admin) ve `system@abs.local` **silinmez**.
-- `tier ∈ {self-host, team, enterprise}` lisansları **silinmez** (sadece `beta`).
-- Real-customer tenant verisi (`demo-acme`, `default`) için tüm silmeler
-  per-row email pattern bazlı; tenant-only sweep yapılmaz.
-- İkinci `--confirm` çalıştırması idempotent: `total_deleted == 0`.
+- `admin@demo-acme.com` (the bootstrap admin) and `system@abs.local` are **never deleted**.
+- Licenses with `tier ∈ {self-host, team, enterprise}` are **never deleted** (only `beta` ones are).
+- For real customer organisation data (`demo-acme`, `default`) every deletion is
+  matched per row against the email pattern; there is no organisation-wide sweep.
+- A second `--confirm` run is idempotent: `total_deleted == 0`.
 
-## Sonraki adımlar
+## Next steps
 
-- [API Reference](api-reference.md) — 100+ MCP tool
-- [Troubleshooting](troubleshooting.md) — yaygın hatalar
-- [FAQ](faq.md) — kısa cevaplar
+- [API Reference](api-reference.md) — 100+ MCP tools
+- [Troubleshooting](troubleshooting.md) — common errors
+- [FAQ](faq.md) — short answers
 
-Kuruluma yardım gerekiyorsa `support@automatiabcn.com` — Maintenance müşterileri için 24h SLA.
+If you need help with the install, write to `support@automatiabcn.com` — 24h SLA for Maintenance customers.

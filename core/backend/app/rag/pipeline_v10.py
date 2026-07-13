@@ -95,11 +95,11 @@ def _clean_text(text: str) -> str:
     """Normalize extracted text so the vector store sees clean, consistent
     content. Text must be converted and stripped of unreadable characters
     BEFORE chunking — feeding raw extracted bytes makes the embeddings
-    unreliable (+ Turkish-character handling).
+    unreliable, especially for non-ASCII scripts.
 
     Steps, order matters:
-      1. Unicode NFC — composes Turkish letters (i̇/ş/ğ/ç/ö/ü) into single code
-         points so "şirket" embeds identically however the source encoded it.
+      1. Unicode NFC — composes accented/diacritic letters into single code
+         points so a word embeds identically however the source encoded it.
       2. Expand Latin ligatures (ﬁ→fi) that PDF layers emit as one glyph.
       3. Drop zero-width / soft-hyphen / BOM noise.
       4. Drop the U+FFFD replacement char (the tell-tale of a mis-decoded byte).

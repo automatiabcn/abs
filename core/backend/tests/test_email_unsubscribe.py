@@ -31,7 +31,7 @@ def test_unsubscribe_endpoint_marks_rows(client):
     token = _make_unsubscribe_token("jti_unsub_ep")
     r = client.get(f"/v1/email/unsubscribe?token={token}")
     assert r.status_code == 200
-    assert "Çıkış başarılı" in r.text or "başarılı" in r.text
+    assert "You have been unsubscribed" in r.text
 
     with Session(get_engine()) as s:
         rows = s.scalars(

@@ -5,7 +5,7 @@
 ## What you'll have at the end
 
 - ABS backend running locally on `http://localhost:8000`.
-- A tenant + project provisioned via OAuth.
+- An organisation (a "tenant" in the API) + project provisioned via OAuth.
 - One document indexed in Qdrant.
 - A successful `/v1/rag/query` returning grounded results.
 
@@ -32,10 +32,10 @@ Edit `core/backend/.env`:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 ABS_AUDIENCE_ENFORCE=false   # leave off for local
-ABS_LICENSE_KEY=demo-30min   # Sprint 2J FAZ F: ABS_ prefix is the
-                             # canonical name; legacy LICENSE_KEY
-                             # is auto-promoted with a deprecation
-                             # warning for one release.
+ABS_LICENSE_KEY=demo-30min   # the ABS_ prefix is the canonical name;
+                             # the legacy LICENSE_KEY is auto-promoted
+                             # with a deprecation warning for one
+                             # release.
 ```
 
 ## Step 2 — Boot the stack (10 minutes)
@@ -60,7 +60,7 @@ docker compose exec backend alembic -c alembic.ini upgrade head
 
 You should see `0000_init_baseline → … → 0003_tenant_projects`.
 
-## Step 4 — Provision tenant + project (5 minutes)
+## Step 4 — Provision your organisation + project (5 minutes)
 
 ```bash
 # 1. Register an OAuth client.
@@ -87,8 +87,8 @@ curl -fsS -X POST http://localhost:8000/v1/projects \
 curl -fsS -X POST http://localhost:8000/v1/rag/ingest \
   -H "Authorization: Bearer $TOKEN" \
   -H "X-ABS-Audience: abs-mcp" \
-  -F "file=@README.md" \
-  -F "project_slug=acme/handbook"
+  -H "Content-Type: application/json" \
+  -d '{"text":"ABS is a self-hosted AI orchestrator.","project_slug":"acme/handbook","title":"Handbook"}'
 ```
 
 ## Step 6 — Run a RAG query (2 minutes)
@@ -117,7 +117,7 @@ You should get a JSON response with cited chunks + a generated answer.
 [Troubleshooting](troubleshooting.md). If you're stuck, open a GitHub issue with
 the trace ID from the LangFuse dashboard.
 
-## Sprint 2N (1.0.1) notes
+## Release notes (1.0.1)
 
 - **First boot 60-90s is normal.** The backend health probe loops 6×15s
   while Cerbos pre-warms and BGE-M3 lazy-init kicks in. Don't kill the
@@ -136,16 +136,15 @@ the trace ID from the LangFuse dashboard.
   extra config.
 - **KVKK / GDPR self-service endpoints** live at `/me/data-export`,
   `/me/account/delete-request`, `/me/account/delete-confirm`,
-  `/me/consents`, `/me/audit-log`. From Sprint 2N onwards Caddy routes
-  every `/me/*` to the FastAPI backend (previously fell into the
-  Next.js 404 page on customer compose).
+  `/me/consents`, `/me/audit-log`. Caddy now routes every `/me/*` to
+  the FastAPI backend (previously these fell into the Next.js 404 page
+  on the customer compose file).
 - **Canonical chat endpoint** is `POST /v1/chat/completions` (SSE). The
   former `/v1/chat`, `/v1/cascade/test`, `/v1/admin/cascade/breaker`
   paths are retired; use `/v1/admin/providers/status` for circuit
   inspection and `/v1/system/quota_status` for quota.
-- **MCP tool inventory** is **122 tools** (1 legacy entry retired
-  during Sprint 19 hexagonal restructure — STOP CRITERIA #8 floor is
-  <80, this is well above it).
+- **MCP tool inventory** is **122 tools** (one legacy entry was retired
+  during the hexagonal restructure).
 - **RAG ingest body is JSON** (`{"text": "...", "project_slug":
   "...", "title": "..."}` POST to `/v1/rag/ingest`). The old multipart
   `-F file=@...` example is retired; the endpoint never accepted

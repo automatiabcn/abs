@@ -13,7 +13,7 @@ from .state import (
     start_workflow,
     stats,
 )
-from .integration import WorkflowSession  # noqa: E402  (state önce import edilmeli)
+from .integration import WorkflowSession  # noqa: E402  (must import after state)
 
 __all__ = [
     "start_workflow",

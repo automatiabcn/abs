@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""qual_human: qual-tr çıktısını humanize chain'den geçirir."""
+"""Qual_human: runs the qual-tr output through the humanize chain."""
 
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ class QualHumanPipeline(BasePipeline):
                 final_response="",
                 total_elapsed_ms=int((time.monotonic() - total_start) * 1000),
                 prompt=prompt,
-                error=tr_result.error or "qual-tr boş döndü",
+                error=tr_result.error or "qual-tr returned nothing",
                 workflow_trace_id=wf.trace_id,
             )
 

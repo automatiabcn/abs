@@ -100,7 +100,7 @@ class ConsentRecord(SQLModel, table=True):
     sms_consent: bool = Field(default=False)
     whatsapp_consent: bool = Field(default=False)
     do_not_call: bool = Field(default=False)
-    opt_in_source: str = Field(default="", max_length=64)   # web_form|İYS|import|...
+    opt_in_source: str = Field(default="", max_length=64)   # web_form|IYS|import|...
     opt_in_at: Optional[datetime] = Field(default=None)
     opt_out_at: Optional[datetime] = Field(default=None)
     legal_basis: str = Field(default="", max_length=48)     # consent|legitimate_interest

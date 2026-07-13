@@ -3,7 +3,8 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Batch G — 2 hook companion tool (freeze, investigate)."""
+"""Companions to the hooks: the tools that arm and disarm freeze and investigate
+mode. The hooks read the state files these write."""
 
 from __future__ import annotations
 
@@ -24,34 +25,35 @@ _INVESTIGATE_FILE = Path(settings.cache_dir) / ".investigate-mode.txt"
 @mcp_server.tool()
 @with_hooks("freeze")
 async def freeze(project_dir: str = "") -> str:
-    """Freeze mode'u aç: sadece verilen dizin içinde Write/Edit'e izin ver.
+    """Arm freeze mode: Write/Edit is allowed only under project_dir.
 
-    project_dir boşsa freeze kapatılır.
+    An empty project_dir disarms it.
     """
     await tracker.bump("freeze")
     _FREEZE_FILE.parent.mkdir(parents=True, exist_ok=True)
     if not project_dir:
         if _FREEZE_FILE.exists():
             _FREEZE_FILE.unlink()
-        return "Freeze mode kapatıldı."
+        return "Freeze mode off."
     _FREEZE_FILE.write_text(project_dir)
-    return f"Freeze aktif: yalnızca {project_dir} altına Write/Edit izinli."
+    return f"Freeze on: Write/Edit allowed only under {project_dir}."
 
 
 @mcp_server.tool()
 @with_hooks("investigate")
 async def investigate(topic: str = "") -> str:
-    """Investigate mode — kök neden araştırma modu aç. Hook'lar uyarı verir."""
+    """Arm investigate mode: hooks warn on an edit that was not preceded by
+    reading the code. An empty topic disarms it."""
     await tracker.bump("investigate")
     _INVESTIGATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     if not topic:
         if _INVESTIGATE_FILE.exists():
             _INVESTIGATE_FILE.unlink()
-        return "Investigate mode kapatıldı."
+        return "Investigate mode off."
     _INVESTIGATE_FILE.write_text(topic)
     return (
-        f"Investigate mode aktif — konu: '{topic}'. Hook'lar düzenleme öncesi "
-        f"Read/Grep yapılmadıysa uyarı verecek."
+        f"Investigate mode on — topic: '{topic}'. Hooks will warn about an edit "
+        f"made without reading or searching the code first."
     )
 
 

@@ -3,10 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Judge log üzerinden agregasyon + drift signal.
-
-SERVER orchestrator/judge_stats.py portu (özet sürüm).
-"""
+"""Aggregation and drift signal over the judge log."""
 
 from __future__ import annotations
 
@@ -25,11 +22,12 @@ def _avg(values: List[float]) -> Optional[float]:
 
 
 def aggregate(window_days: int = 7) -> Dict[str, Any]:
-    """Son `window_days` günü kapsayan judgment'ları özetle, drift sinyali çıkar."""
+    """Summarize the judgments of the last `window_days` days and derive a
+    drift signal by comparing them with the window before that."""
     cutoff = time.time() - window_days * 86400
     cutoff_prev = cutoff - window_days * 86400
 
-    # Geniş bir slice oku — son 1000 yeterli
+    # Read a slice wide enough to cover both windows.
     entries = read_recent(limit=1000)
 
     cur_window = [e for e in entries if (e.get("ts") or 0) >= cutoff]
@@ -46,7 +44,8 @@ def aggregate(window_days: int = 7) -> Dict[str, Any]:
     if avg_combined is not None and prev_avg is not None:
         diff = avg_combined - prev_avg
         if diff <= -0.5:
-            drift_signal = "tightening"  # skor düşüyor → kalite kriteri sertleşiyor / kod kötüleşiyor
+            # Scores falling: either the bar rose or the code got worse.
+            drift_signal = "tightening"
         elif diff >= 0.5:
             drift_signal = "loosening"
 

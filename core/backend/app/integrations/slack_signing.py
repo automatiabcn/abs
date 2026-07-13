@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""028 Modul A — Slack webhook signing verification.
+"""Slack webhook signing verification.
 
 Slack signs every events_api callback with:
 

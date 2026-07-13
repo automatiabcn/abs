@@ -114,7 +114,7 @@ def train_ml(min_samples: int = 20) -> Dict[str, Any]:
 def predict_accept(
     ast_score: float, llm_score: float, persona_drift: float
 ) -> Dict[str, Any]:
-    """Yuklu modelle accept olasiligi predict et."""
+    """Probability that this patch is accepted, from the trained model."""
     p = _model_path()
     if not p.is_file():
         return {"error": "model not trained yet — call train_ml first"}

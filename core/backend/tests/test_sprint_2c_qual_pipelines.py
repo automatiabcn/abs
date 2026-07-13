@@ -94,9 +94,10 @@ async def test_qual_tr_polish_runs_on_review_issues():
     review_payload = json.dumps([{"issue": "yabancı kelime", "suggestion": "öneri"}])
 
     async def call(provider, prompt):
-        if "Sadece düzeltilmiş" in prompt or "yeniden yaz" in prompt:
+        # Route on the stage's system prompt: polish, then review, else draft.
+        if "Rewrite the Turkish text" in prompt:
             return "Daha akıcı türkçe versiyon."
-        if "JSON listesi" in prompt or "gramer" in prompt:
+        if "JSON list" in prompt or "grammar errors" in prompt:
             return review_payload
         return "Bu bir taslak Türkçe metindir."
 
@@ -111,7 +112,8 @@ async def test_qual_tr_polish_runs_on_review_issues():
 @pytest.mark.asyncio
 async def test_qual_analysis_three_perspectives_are_synthesised():
     async def call(provider, prompt):
-        if "birleştir" in prompt or "Üç farklı" in prompt:
+        # The synthesis stage is the one carrying the merge instruction.
+        if "Merge the analyses" in prompt:
             return "Sentez: hız, kalite, esneklik karışımı."
         return f"{provider}-perspective-text"
 

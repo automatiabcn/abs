@@ -5,11 +5,10 @@
 
 """Panel route — legacy `/panel` deprecated 2026-05-07.
 
-Tasarım kararı: legacy ABS HTML panel (Cosmos balls + monolithic
-index.html) müşteriye gitmiyor. Tek frontend = Next.js admin under
-`/admin/*`. Bu modül artık sadece geriye dönük uyumluluk için redirect
-sağlar; login sayfası `/admin/login`'a, panel ana sayfası
-`/admin/dashboard`'a yönlendirilir.
+The legacy monolithic HTML panel is not shipped. The only frontend is the
+Next.js admin under `/admin/*`, so this module exists purely for backwards
+compatibility: it redirects the login page to `/admin/login` and the panel
+index to `/admin/dashboard`.
 """
 
 from __future__ import annotations
@@ -34,25 +33,23 @@ def panel_login() -> Response:
 
 @router.get("/panel")
 def panel_index(request: Request) -> Response:
-    """Legacy panel → /admin redirect (Next.js admin once deployed).
-
-    Cookie kontrolü hedef tarafta yapılır.
-    """
+    """Legacy panel → /admin redirect. The target enforces the session cookie;
+    this handler deliberately does not."""
     return RedirectResponse(url="/admin", status_code=308)
 
 
-# Tek-seferlik fallback: hâlâ eski panel/index.html'i serve eden
-# legacy linkler (örn. embed iframe) için DEPRECATED hint döndür.
+# Kept so old links to the removed panel/index.html (e.g. an embedded iframe)
+# Get an explicit "gone" signal instead of a bare 404.
 @router.get("/panel/legacy")
 def panel_legacy_disabled(request: Request) -> Response:
-    """Legacy panel index — disabled. Müşteri delivery için 410 GONE."""
+    """Legacy panel index — disabled, answers 410 GONE."""
     if not request.cookies.get(COOKIE_NAME):
         return RedirectResponse(url="/admin/login", status_code=302)
     try:
         current_admin(request)
     except Exception:
         return RedirectResponse(url="/admin/login", status_code=302)
-    # Kullanıcı admin olsa bile artık sunulmuyor — bilinçli fail.
+    # Authenticated admins are refused too: the page is gone, not protected.
     return Response(
         content=(
             "Legacy panel removed. Use /admin/dashboard "
@@ -63,24 +60,20 @@ def panel_legacy_disabled(request: Request) -> Response:
     )
 
 
-# Sprint 2N FAZ E (P1 #2M-009) — catch-all `/panel/{path}` → `/admin/{path}`.
-# Brief'in `/panel/quota`, `/panel/tools`, `/panel/chat`, `/panel/meetings`
-# çağrıları Sprint 2M sırasında 404 dönüyordu çünkü yalnızca `/panel`,
-# `/panel/login` ve `/panel/legacy` redirect handler'ları kayıtlı.
+# Catch-all, so that any legacy `/panel/<x>` link redirects instead of 404ing:
+# Only `/panel`, `/panel/login` and `/panel/legacy` have explicit handlers.
 #
-# `/panel/assets/*` (StaticFiles mount'u tarafından serve edilir) exclude
-# edilir — main.py panel_router include'undan SONRA StaticFiles mount eder,
-# ama Starlette route order'ı declaration'a göredir, bu yüzden burada
-# exclude etmeliyiz. `assets/` prefix'li path'ler 404'e düşerse Starlette
-# router zinciri devam edemez; bu nedenle 404 yerine doğrudan static
-# dosyayı serve eden FileResponse döner. Bu sayede main.py mount'una
-# bağlı kalmadan catch-all + static dosya servisi birlikte çalışır.
+# `/panel/assets/*` must be excluded. main.py mounts StaticFiles AFTER this
+# Router, but Starlette matches routes in declaration order, so the catch-all
+# Would shadow the mount. Once a request matches here the router chain stops,
+# so an asset path cannot be handed on to the mount — it has to be served
+# Directly with FileResponse rather than 404ed.
 @router.get("/panel/{path:path}")
 def panel_subpath_compat_redirect(path: str) -> Response:
     """Legacy `/panel/<x>` → `/admin/<x>` 308 redirect.
 
-    `/panel/assets/*` istekleri StaticFiles dosyalarına yönlendirilir,
-    redirect uygulanmaz.
+    `/panel/assets/*` is served from the static panel directory instead of
+    being redirected.
     """
     if path.startswith("assets/"):
         asset_path = PANEL_DIR / path

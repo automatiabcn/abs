@@ -80,7 +80,7 @@ def test_outbound_blocked_when_recipient_unresolved():
     out = execute_for_approval(
         _Item(channel="email", target_company="Yok Şirketi"), tenant_slug="t_act_unresolved")
     assert out["status"] == "blocked"
-    assert "çözümlenemedi" in out["reason"]
+    assert "could not be resolved" in out["reason"]
 
 
 # ── idempotency: re-deciding must not re-fire the action ─────────────────────

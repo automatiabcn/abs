@@ -6,463 +6,436 @@
 
 ---
 
-## İçindekiler / Contents
+## Contents
 
-1. [Hoş geldiniz](#hoşgeldiniz)
-2. [Satın alma akışı](#1-satın-alma-akışı)
-3. [VPS hazırlama](#2-vps-hazırlama)
-4. [ABS kurulumu](#3-abs-kurulumu)
-5. [İlk yapılandırma (Setup Wizard)](#4-i̇lk-yapılandırma-setup-wizard)
-6. [Sağlayıcı API anahtarları](#5-sağlayıcı-api-anahtarları)
-7. [İlk sohbet](#6-i̇lk-sohbet)
-8. [RAG bilgi tabanı](#7-rag-bilgi-tabanı)
+1. [Welcome](#welcome)
+2. [Buying ABS](#1-buying-abs)
+3. [Preparing the VPS](#2-preparing-the-vps)
+4. [Installing ABS](#3-installing-abs)
+5. [First configuration (Setup Wizard)](#4-first-configuration-setup-wizard)
+6. [Provider API keys](#5-provider-api-keys)
+7. [Your first chat](#6-your-first-chat)
+8. [RAG knowledge base](#7-rag-knowledge-base)
 9. [Quality Pipelines](#8-quality-pipelines)
 10. [Workflow Builder](#9-workflow-builder)
 11. [Knowledge Graph](#10-knowledge-graph)
 12. [Plugin Marketplace](#11-plugin-marketplace)
-13. [Yönetim ayarları](#12-yönetim-ayarları)
-14. [Lisans & iade](#13-lisans--i̇ade)
-15. [Sorun giderme](#14-sorun-giderme)
-16. [Yasal uyarılar & marka bildirimi](#yasal-uyarılar--marka-bildirimi)
+13. [Admin settings](#12-admin-settings)
+14. [License and refunds](#13-license-and-refunds)
+15. [Troubleshooting](#14-troubleshooting)
+16. [Legal notices and trademarks](#legal-notices-and-trademarks)
 
 ---
 
-## Hoş geldiniz
+## Welcome
 
-ABS (Automation Backbone System), kendi sunucunuzda çalışan bir AI orkestratördür. 100+ MCP tool, 6 sağlayıcılı cascade router (Anthropic, Groq, Cerebras, Gemini, Cloudflare, Cohere) ve hibrit RAG ile kurumsal AI altyapısı sunar.
+ABS (Automation Backbone System) is an AI orchestrator that runs on your own server. It gives you 100+ MCP tools, a router across 6 providers (Anthropic, Groq, Cerebras, Gemini, Cloudflare, Cohere) and hybrid RAG as a single AI infrastructure.
 
-**Kullanım hakları:** Müşteri olarak ABS'yi kendi sunucunuzda **production** ortamında kullanma hakkına sahipsiniz. BSL 1.1 lisansı 4 yıl sonra (2030-05-07) Apache 2.0'a otomatik dönüşür.
+**Usage rights:** As a customer you may run ABS in **production** on your own server. The BSL 1.1 license converts to Apache 2.0 automatically after 4 years (2030-05-07).
 
-**Bu rehberin kapsamı:** Satın aldıktan sonra kuruluma kadar geçen 30 dakikalık akış + temel kullanım. İleri seviye konular için [docs/api-reference.md](api-reference.md) ve [docs/runbooks/](runbooks/).
-
----
-
-## 1. Satın alma akışı
-
-### 1.1 Ürün sayfası
-
-[automatiabcn.com/products/abs](https://automatiabcn.com/products/abs) — 3 tier seçeneği:
-
-| Tier | Fiyat | Kapsam |
-|------|-------|--------|
-| Self-Host | $299 (tek seferlik) | 1 seat · 1 deployment · email destek (48h) |
-| Team 5 | $1,196/yıl | 5 seat · priority email (24h) · onboarding call |
-| Team 10 | $2,093/yıl | 10 seat · 24h SLA · öncelikli destek hattı |
-
-> Her tier 14 gün koşulsuz iade garantilidir. İade için bkz. [Bölüm 13](#13-lisans--i̇ade).
-
-**Ekran**: `faz_c_phase1_1_landing_en.png` — Hero, özellikler, fiyatlandırma kartları, FAQ.
-
-### 1.2 Ödeme
-
-"Buy now" butonu sizi güvenli ödeme sayfasına yönlendirir (3D Secure desteklenir). Bilgi formu:
-
-- E-posta (lisans bu adrese gönderilir — doğru girin)
-- Kart numarası, son kullanma, CVC
-- Kart sahibi adı + ülke
-
-**Ekran**: `faz_c_phase1_2_stripe_filled.png` — Çoklu ödeme yöntemi (kart, Link, Amazon Pay) + güvenli sandbox işlem.
-
-### 1.3 Onay
-
-Ödeme onaylandıktan sonra "Thanks for your payment" sayfası görünür ve:
-
-1. **Welcome email** (sipariş + kurulum 7 adımı) ~1 dakika içinde geldiği e-postaya iletilir.
-2. **Bildirim** Automatia BCN ekibine düşer.
-3. **Lisans JWT** Automatia BCN ekibi tarafından mint edilip ayrı bir e-postayla 24 saat içinde gönderilir.
-
-**Ekran**: `faz_c_phase1_2b_stripe_paid.png` — Ödeme tamamlandı bildirimi.
-
-> **Email ulaşmadı mı?** Spam klasörünü kontrol edin. Hâlâ yoksa `info@automatiabcn.com` adresine sipariş ID'nizle yazın.
+**Scope of this guide:** the 30-minute path from purchase to a running install, plus basic usage. For advanced topics see [docs/api-reference.md](api-reference.md) and [docs/runbooks/](runbooks/).
 
 ---
 
-## 2. VPS hazırlama
+## 1. Buying ABS
 
-ABS herhangi bir Linux x86_64 / ARM64 sunucusunda çalışır. **Minimum gereksinim:** 2 vCPU, 4 GB RAM, 40 GB SSD, Ubuntu 22.04 LTS önerilir.
+### 1.1 Product page
 
-### 2.1 Önerilen sağlayıcılar
+[automatiabcn.com/products/abs](https://automatiabcn.com/products/abs) — three tiers:
 
-| Sağlayıcı | Plan | Aylık | Bölge |
-|-----------|------|-------|-------|
-| Hetzner Cloud | CPX22 (AMD, 2vCPU, 4GB, 80GB NVMe) | ≈ €4.99 | Almanya/Finlandiya/ABD |
+| Tier | Price | Includes |
+|------|-------|----------|
+| Self-Host | $299 (one-off) | 1 seat · 1 deployment · email support (48h) |
+| Team 5 | $1,196/year | 5 seats · priority email (24h) · onboarding call |
+| Team 10 | $2,093/year | 10 seats · 24h SLA · priority support line |
+
+> Every tier comes with a 14-day no-questions-asked refund. See [Section 13](#13-license-and-refunds).
+
+### 1.2 Payment
+
+The "Buy now" button takes you to a secure payment page (3D Secure supported). The form asks for:
+
+- Email (your license is sent to this address — enter it correctly)
+- Card number, expiry, CVC
+- Cardholder name and country
+
+### 1.3 Confirmation
+
+Once payment is approved you see a "Thanks for your payment" page, and:
+
+1. A **welcome email** (order summary + the 7 install steps) reaches that address within about a minute.
+2. A **notification** goes to the Automatia BCN team.
+3. Your **license JWT** is minted by the Automatia BCN team and sent in a separate email within 24 hours.
+
+> **No email?** Check your spam folder. If it is still missing, write to `info@automatiabcn.com` with your order ID.
+
+---
+
+## 2. Preparing the VPS
+
+ABS runs on any Linux x86_64 / ARM64 server. **Minimum:** 2 vCPU, 4 GB RAM, 40 GB SSD. Ubuntu 22.04 LTS is recommended.
+
+### 2.1 Suggested providers
+
+| Provider | Plan | Monthly | Regions |
+|----------|------|---------|---------|
+| Hetzner Cloud | CPX22 (AMD, 2 vCPU, 4 GB, 80 GB NVMe) | ≈ €4.99 | Germany/Finland/USA |
 | DigitalOcean | Basic 4GB | ≈ $24 | Frankfurt/Amsterdam/NYC |
 | Linode (Akamai) | Linode 4GB | ≈ $24 | global |
 | Vultr | Cloud Compute 4GB | ≈ $24 | global |
-| Kendi sunucunuz | Bare-metal / Proxmox VM | — | yerel |
+| Your own server | Bare-metal / Proxmox VM | — | on-premises |
 
-> Bu liste yalnızca yönlendiricidir; satışa aracılık etmiyoruz. Ürün adları ilgili şirketlerin tescilli markalarıdır.
+> This list is guidance only; we do not resell any of it. Product names are trademarks of their respective companies.
 
-### 2.2 Sunucu oluşturma (genel adımlar)
+### 2.2 Creating the server (general steps)
 
-1. Sağlayıcının web panelinde yeni sunucu oluşturun: 2 vCPU + 4 GB RAM minimum.
-2. İmaj: **Ubuntu 22.04 LTS**.
-3. SSH anahtarınızı yükleyin (yoksa `ssh-keygen -t ed25519 -C "abs-customer"` ile oluşturun, public anahtarı paneline yapıştırın).
-4. Sunucu oluştuğunda **public IPv4** adresini not alın.
-5. SSH ile bağlanın: `ssh -i ~/.ssh/abs-customer root@<IPv4>`.
+1. Create a new server in your provider's web panel: 2 vCPU + 4 GB RAM minimum.
+2. Image: **Ubuntu 22.04 LTS**.
+3. Upload your SSH key (if you do not have one, create it with `ssh-keygen -t ed25519 -C "abs-customer"` and paste the public key into the panel).
+4. When the server is up, note its **public IPv4** address.
+5. Connect over SSH: `ssh -i ~/.ssh/abs-customer root@<IPv4>`.
 
-> **Domain isteğe bağlıdır.** Domain yoksa `<IPv4>.sslip.io` formatı (örn. `203-0-113-7.sslip.io`) Caddy'nin Let's Encrypt sertifikasını otomatik üretmesini sağlar. DNS kaydı eklemenize gerek kalmaz.
+> **A domain is optional.** Without one, use the `<IPv4>.sslip.io` form (for example `203-0-113-7.sslip.io`) and Caddy will issue a Let's Encrypt certificate automatically. You do not need to add a DNS record.
 
 ---
 
-## 3. ABS kurulumu
+## 3. Installing ABS
 
-### 3.1 Docker kurulumu
+### 3.1 Install Docker
 
-Ubuntu 22.04 üzerinde:
+On Ubuntu 22.04:
 
 ```bash
 apt-get update
 apt-get install -y docker.io docker-compose-v2 docker-buildx
 systemctl enable --now docker
-docker --version          # 24+ olmalı
-docker compose version    # v2.20+ olmalı
+docker --version          # must be 24+
+docker compose version    # must be v2.20+
 ```
 
-### 3.2 ABS deposu
+### 3.2 Get the ABS repository
 
 ```bash
 git clone https://github.com/automatiabcn/abs.git /opt/abs
 cd /opt/abs
 ```
 
-> Repo herkese açıktır (BSL 1.1). Kaynak kod inceleyebilir, ancak ticari kullanım için lisans gerekir.
+> The repository is public (BSL 1.1). You can read the source, but commercial use requires a license.
 
-### 3.3 Ortam dosyası (.env)
+### 3.3 Environment file (.env)
 
 ```bash
 cp .env.example .env
 nano .env
 ```
 
-Doldurulması gereken alanlar (welcome email'inde örnekleri var):
+Fill in these values (the welcome email has examples):
 
 ```env
-ABS_LICENSE_KEY=<lisans-jwt-mailden>
-ABS_PUBLIC_HOSTNAME=<domain veya 203-0-113-7.sslip.io>
+ABS_LICENSE_KEY=<license-jwt-from-email>
+ABS_PUBLIC_HOSTNAME=<domain or 203-0-113-7.sslip.io>
 ABS_PUBLIC_URL=https://${ABS_PUBLIC_HOSTNAME}
-ABS_ACME_EMAIL=<sertifika-bildirim-adresiniz>
+ABS_ACME_EMAIL=<address-for-certificate-notices>
 ABS_VAULT_KEY=$(openssl rand -base64 32)
 ABS_VERSION=1.0.0-rc4
-ANTHROPIC_API_KEY=sk-ant-...   # Bölüm 5'te alacaksınız
+ANTHROPIC_API_KEY=sk-ant-...   # you will get this in Section 5
 ```
 
-### 3.4 Stack başlatma
+### 3.4 Start the stack
 
 ```bash
 docker compose up -d
-docker compose ps          # 4 container "healthy" durumunda olmalı (≈30 sn)
+docker compose ps          # 4 containers must be "healthy" (≈30 s)
 ```
 
-İlk başlangıçta arka uç GHCR'dan yaklaşık 1.3 GB indirir.
+On first start the backend pulls about 1.3 GB from GHCR.
 
-### 3.5 Sağlık kontrolü
+### 3.5 Health check
 
 ```bash
 curl -s https://${ABS_PUBLIC_HOSTNAME}/healthz
-# beklenen yanıt: {"status":"ok","service":"abs-backend"}
+# expected response: {"status":"ok","service":"abs-backend"}
 ```
 
-> Caddy ilk açılışta ~30 sn içinde Let's Encrypt sertifikasını üretir. Tarayıcıda ilk istek bu süreyi bekleyebilir.
+> On first boot Caddy issues the Let's Encrypt certificate within about 30 s. Your first browser request may wait for that.
 
 ---
 
-## 4. İlk yapılandırma (Setup Wizard)
+## 4. First configuration (Setup Wizard)
 
-Tarayıcıda `https://<ABS_PUBLIC_HOSTNAME>/setup` adresini açın. 6 adımlı sihirbaz karşılar.
+Open `https://<ABS_PUBLIC_HOSTNAME>/setup` in your browser. A 6-step wizard starts.
 
-**Ekran**: `faz_c_phase3_5_setup_wizard_landed.png` — Adım listesi sol nav, "Automate the Chaos" markası.
+### Step 1 — Admin account
 
-### Adım 1 — Yönetici hesabı
+Define the main account that signs in to the panel:
+- Email (for example `admin@yourcompany.com`)
+- Password (at least 8 characters)
 
-Panel girişi yapacak ana hesabı tanımlayın:
-- E-posta (örn. `admin@şirketiniz.com`)
-- Parola (en az 8 karakter)
+### Step 2 — License
 
-### Adım 2 — Lisans
+Paste the JWT token from your email, then click "Activate". The backend verifies the signature.
 
-Mailden gelen JWT token'ını yapıştırın → "Aktive et". Backend imzayı doğrular.
+### Step 3 — Domain
 
-### Adım 3 — Domain
+Pick a mode:
+- **IP**: a one-off smoke test (`<IP>.sslip.io`).
+- **Domain**: your own domain (recommended).
 
-Mode seçimi:
-- **IP**: tek seferlik smoke test (`<IP>.sslip.io`).
-- **Domain**: kendi alanınız (önerilen).
+SSL mode: **ACME** (Let's Encrypt) is the default.
 
-SSL modu: **ACME** (Let's Encrypt) varsayılan.
+### Step 4 — Anthropic API key
 
-### Adım 4 — Anthropic API key
+Create an API key in the Anthropic Console ([console.anthropic.com](https://console.anthropic.com/)) and paste it in. The key must start with `sk-ant-`. For the full provider sign-up flow see [Section 5](#5-provider-api-keys).
 
-Anthropic Console'dan ([console.anthropic.com](https://console.anthropic.com/)) bir API anahtarı oluşturup yapıştırın. Anahtar `sk-ant-` ile başlamalıdır. Detaylı sağlayıcı kayıt akışı için [Bölüm 5](#5-sağlayıcı-api-anahtarları).
+### Step 5 — Other providers (optional)
 
-### Adım 5 — Diğer sağlayıcılar (opsiyonel)
-
-Cascade router için ek sağlayıcılar:
+Additional providers for the router:
 - Groq (`gsk_...`)
 - Gemini / Google AI (`AIza...`)
 - Cerebras (`csk-...`)
 - Cohere (`...`)
 - Cloudflare Workers AI (Account ID + API Token)
 
-Hangisini girerseniz fallback zincirine eklenir.
+Whichever you enter is added to the fallback chain.
 
-### Adım 6 — Test
+### Step 6 — Test
 
-Yapılandırılan sağlayıcılar için ping testi sonuçlarını gösterir. PASS olunca sihirbaz tamamlanır.
+Shows the ping test result for each configured provider. When they PASS, the wizard completes.
 
 ---
 
-## 5. Sağlayıcı API anahtarları
+## 5. Provider API keys
 
-ABS, sağlayıcı API'lerini **siz kendi hesabınızdan** alır ve yine **kendi hesabınızdan** ücretlendirilirsiniz. ABS aracı ücreti almaz.
+You get provider API keys **from your own accounts**, and those providers bill **your own accounts**. ABS takes no commission.
 
-### 5.1 Anthropic Claude (önerilir, primary)
+### 5.1 Anthropic Claude (recommended, primary)
 
 1. [console.anthropic.com](https://console.anthropic.com/) → Settings → API Keys → "Create Key"
-2. İsim: `abs-orchestrator-prod`
-3. Workspace: kendi varsayılanınız
-4. Anahtar bir kez gösterilir — güvenli yere kaydedin (`sk-ant-api03-...`)
-5. Setup Wizard Adım 4'e yapıştırın
+2. Name: `abs-orchestrator-prod`
+3. Workspace: your default
+4. The key is shown once — store it somewhere safe (`sk-ant-api03-...`)
+5. Paste it into Setup Wizard Step 4
 
-> **Maliyet:** Claude API kullanım başına faturalanır (token bazlı). Pro plan $20/ay aboneliği API faturasını kapsar.
+> **Cost:** the Claude API is billed per use (by token). The $20/month Pro plan covers the API bill.
 
-### 5.2 Groq (ücretsiz tier, hızlı)
+### 5.2 Groq (free tier, fast)
 
-1. [console.groq.com](https://console.groq.com/keys) → "Create API Key" 
-2. Anahtar `gsk_` ile başlar
-3. Setup Wizard Adım 5
+1. [console.groq.com](https://console.groq.com/keys) → "Create API Key"
+2. The key starts with `gsk_`
+3. Setup Wizard Step 5
 
-> Ücretsiz tier yüksek hız (Llama 3.3 70B) için mükemmel. Rate limit: 30 req/dk.
+> The free tier is excellent for high speed (Llama 3.3 70B). Rate limit: 30 requests/minute.
 
-### 5.3 Google Gemini (ücretsiz tier)
+### 5.3 Google Gemini (free tier)
 
 1. [aistudio.google.com](https://aistudio.google.com/app/apikey) → "Create API key"
-2. Anahtar `AIza` ile başlar
-3. Setup Wizard Adım 5
+2. The key starts with `AIza`
+3. Setup Wizard Step 5
 
-> Gemini 2.5 Flash ücretsiz limit yüksek. Pro plan opsiyonel.
+> The Gemini 2.5 Flash free limit is generous. The Pro plan is optional.
 
-### 5.4 Cerebras (ultra hızlı)
+### 5.4 Cerebras (very fast)
 
 1. [cloud.cerebras.ai](https://cloud.cerebras.ai/) → API Keys
-2. Anahtar `csk-` ile başlar
-3. Setup Wizard Adım 5
+2. The key starts with `csk-`
+3. Setup Wizard Step 5
 
-> Cerebras WSE-3 ile saniyeler yerine milisaniyeler.
+> The Cerebras WSE-3 answers in milliseconds rather than seconds.
 
-### 5.5 Cohere (ücretsiz trial)
+### 5.5 Cohere (free trial)
 
 1. [dashboard.cohere.com](https://dashboard.cohere.com/api-keys) → "API Keys"
-2. Trial key başlar
-3. Setup Wizard Adım 5
+2. You start with a trial key
+3. Setup Wizard Step 5
 
 ### 5.6 Cloudflare Workers AI
 
 1. [dash.cloudflare.com](https://dash.cloudflare.com/) → AI → Workers AI
-2. Account ID: sağ alt köşeden kopyalayın
+2. Account ID: copy it from the bottom-right corner
 3. API Token: My Profile → API Tokens → Workers AI Read template
 
-> **Marka uyarısı:** Anthropic, Claude, Groq, Gemini, Cerebras, Cohere ve Cloudflare ilgili şirketlerin tescilli markalarıdır. ABS bu hizmetlerin müşteri tarafı entegrasyonunu sağlar; resmi ortaklık veya destek anlamına gelmez.
+> **Trademark note:** Anthropic, Claude, Groq, Gemini, Cerebras, Cohere and Cloudflare are trademarks of their respective companies. ABS provides the customer-side integration with these services; that is not an official partnership or endorsement.
 
 ---
 
-## 6. İlk sohbet
+## 6. Your first chat
 
-Panel girişi: `https://<domain>/login` → Setup Wizard'da tanımladığınız admin email/parola.
+Sign in to the panel at `https://<domain>/login` with the admin email and password you set in the Setup Wizard.
 
-**Ekran**: `faz_c_phase4_admin_dashboard.png` — Sol nav: Sohbet, Workflow, Kullanım, MCP Tools, RAG, Quality Pipelines.
+### 6.1 Start a chat
 
-### 6.1 Sohbet başlatma
+In the left nav go to **Chat** → New chat → type your message. The answer comes back through the provider router.
 
-Sol navdan **Sohbet** → Yeni sohbet → mesajınızı yazın. Yanıt cascade router'dan gelir.
+The `meta` block shows which provider answered (`provider: anthropic`), the token count and the latency.
 
-`meta` blokunda yanıt veren sağlayıcı (`provider: anthropic`), token sayısı ve gecikme görünür.
+### 6.2 Choosing a pipeline
 
-### 6.2 Pipeline seçimi
+A standard chat uses the `auto_direct` pipeline. The advanced pipelines are:
 
-Standart sohbet `auto_direct` pipeline kullanır. İleri seviye pipeline'lar:
+| Pipeline | Purpose | Time |
+|----------|---------|------|
+| `auto_direct` | Single model, fast answer | ~1-3 s |
+| `qual_code` | Code generation (generate → verify → fix) | ~3-8 s |
+| `qual_tr` | Turkish text (generate → check → polish) | ~3-8 s |
+| `qual_translate` | Translation (translate → back-translate → verify) | ~3-8 s |
+| `qual_analysis` | 3-perspective analysis + synthesis | ~10-15 s |
+| `race_code` | 3 models race, the fastest wins | ~2-5 s |
 
-| Pipeline | Amaç | Süre |
-|----------|------|------|
-| `auto_direct` | Tek model hızlı yanıt | ~1-3 sn |
-| `qual_code` | Kod üretimi (üret→doğrula→düzelt) | ~3-8 sn |
-| `qual_tr` | Türkçe metin (üret→kontrol→cilala) | ~3-8 sn |
-| `qual_translate` | Çeviri (çevir→geri-çevir→doğrula) | ~3-8 sn |
-| `qual_analysis` | 3-perspektif analiz + sentez | ~10-15 sn |
-| `race_code` | 3 model yarışı, en hızlı kazanır | ~2-5 sn |
-
-Pipeline UI'da kart olarak görünür. Tıklayıp prompt yazın → Çalıştır.
-
-**Ekran**: `faz_c_test_admin_pipelines.png`, `faz_c_test_pipelines_qual_code_run.png`.
+Each pipeline appears as a card in the UI. Click it, write your prompt, then run it.
 
 ---
 
-## 7. RAG bilgi tabanı
+## 7. RAG knowledge base
 
-Sol nav → **RAG Bilgi Tabanı**.
+Left nav → **RAG Knowledge Base**. The page shows the document count, chunk count, total size and the top-K setting.
 
-**Ekran**: `faz_c_phase4_rag.png` — Doküman sayısı, chunk, toplam boyut, top-K ayarı.
+### 7.1 Uploading documents
 
-### 7.1 Doküman yükleme
+PDF · MD · TXT · DOCX (≤ 25 MB). Drag and drop, or click "Choose file". ABS chunks and indexes the document automatically with BGE-M3 dense embeddings.
 
-PDF · MD · TXT · DOCX formatları (≤ 25 MB). Sürükle-bırak veya "Dosya seç". BGE-M3 dense embedding ile otomatik chunk + index.
+### 7.2 Querying
 
-### 7.2 Sorgu
+Type a question into the query box in any language and click "Run query". You get the top-K results (5 by default) with their scores.
 
-"Sorgu test" alanına Türkçe veya İngilizce soru yazın → "Sorguyu çalıştır". Top-K (varsayılan 5) sonuç + skor.
-
-> **Veri güvenliği:** RAG indeksi tamamen sunucunuzda (ChromaDB + Qdrant). Anthropic'e veya başka bir sağlayıcıya doküman içeriği iletilmez — yalnızca sorgu + retrieved chunks LLM'e geçer (yanıt oluşturma için).
+> **Data security:** the RAG index stays entirely on your server (ChromaDB + Qdrant). No document content is sent to Anthropic or any other provider — only your query plus the retrieved chunks go to the LLM, so it can compose an answer.
 
 ---
 
 ## 8. Quality Pipelines
 
-Tek model değil, zincir: ABS kalite imzası — üret → doğrula → düzelt veya yarış (en hızlı kazanır).
+Not a single model but a chain: generate → verify → fix, or a race where the fastest answer wins.
 
-9 pipeline mevcut. Detay [Bölüm 6.2](#62-pipeline-seçimi).
+There are 9 pipelines. See [Section 6.2](#62-choosing-a-pipeline) for the details.
 
-**Ekran**: `faz_c_test_admin_pipelines.png`.
-
-> Pipeline'lar Anthropic + diğer sağlayıcıları paralel kullanır; çıktı kalitesi tek modele göre artar, maliyet ölçülü kalır (cascade Claude düşerken Groq devreye girer).
+> The pipelines use Anthropic and the other providers in parallel; output quality goes up compared with a single model while cost stays in check (when Claude is down, Groq takes over).
 
 ---
 
 ## 9. Workflow Builder
 
-Doğal dilde anlattığınız iş akışını otomatik n8n-uyumlu node grafiğine dönüştürür.
+Describe a workflow in plain language and ABS turns it into an n8n-compatible node graph.
 
-**Ekran**: `faz_c_test_admin_workflow.png` — RAG-grounded customer chat örneği: Cerbos check → RAG query → Compose answer → Return JSON.
+### 9.1 Creating a workflow
 
-### 9.1 Workflow oluşturma
+1. Describe the workflow in the "Describe your workflow" box (for example, "Classify incoming Gmail messages and draft a reply to anything tagged sales").
+2. **Synthesize** → ABS generates the workflow JSON with an LLM.
+3. Edit it → you can add a human-approval (HITL) step.
+4. **Dry run** → simulate it.
+5. **Save** → it is added to your organisation's workflow list and can be exported to n8n.
 
-1. "Workflow'unu anlat" alanına Türkçe açıklama yazın (örn. "Gelen Gmail mesajlarını sınıflandır ve satış etiketli e-postalara yanıt taslağı hazırla").
-2. **Sentezle** → ABS LLM ile JSON workflow üretir.
-3. Düzenle → HITL (insan onayı) adımı ekleyebilirsiniz.
-4. **Kuru çalıştır** → simülasyon.
-5. **Kaydet** → tenant workflow listesine eklenir, n8n'e export edilebilir.
-
-> Çalıştırma başına tahmini maliyet panelde gösterilir.
+> The estimated cost per run is shown in the panel.
 
 ---
 
 ## 10. Knowledge Graph
 
-Neo4j 5 üzerine kurulu kurum graph'ı: Person, Org, Project, Ticket node'ları + WORKS_AT, OWNS, MANAGES, ASSIGNED_TO ilişki tipleri.
-
-**Ekran**: `faz_c_test_admin_graph.png` — Schema, hazır sorgular, Cypher editörü, doğal dil sorgu.
+A company graph built on Neo4j 5: Person, Org, Project and Ticket nodes, plus WORKS_AT, OWNS, MANAGES and ASSIGNED_TO relationships. The page gives you the schema, saved queries, a Cypher editor and natural-language query.
 
 ### 10.1 Cypher editor
 
-Read-only kullanıcılar yalnızca MATCH/RETURN çalıştırabilir. Örnek:
+Read-only users can run only MATCH/RETURN. For example:
 
 ```cypher
 MATCH (p:Person)-[:WORKS_AT]->(o:Org {name:"Acme"})
 RETURN p.name, p.email LIMIT 25
 ```
 
-### 10.2 Doğal dil sorgu
+### 10.2 Natural-language query
 
-"Acme şirketinde çalışan tüm kişileri bul" → Cypher üretir → Çalıştır.
+"Find everyone who works at Acme" → ABS generates the Cypher → you run it.
 
-> Neo4j Bolt protokolü Inc. Cypher Neo4j Inc. tescilli markasıdır. Kullanım Neo4j Community Edition lisansına tabidir.
+> Neo4j and Cypher are trademarks of Neo4j, Inc. Use is subject to the Neo4j Community Edition license.
 
 ---
 
 ## 11. Plugin Marketplace
 
-Sol nav → **Marketplace**. ABS ekosistemi: LLM sağlayıcıları, RAG kaynakları, MCP araçları, workflow şablonları.
+Left nav → **Marketplace**. The ABS ecosystem: LLM providers, RAG sources, MCP tools and workflow templates — for example Slack Receiver, Gmail Archiver, Linear Bridge, Notion Sync and Postgres Mirror.
 
-**Ekran**: `faz_c_test_admin_marketplace.png` — Slack Receiver, Gmail Archiver, Linear Bridge, Notion Sync, Postgres Mirror.
+### 11.1 Installing a plugin
 
-### 11.1 Plugin kurma
+1. Click **Install** on the plugin card → a "Review permissions" modal opens.
+2. It lists network egress, mounts, secrets, resource usage (CPU/RAM) and the scope within your organisation.
+3. Tick the confirmation box → **Approve & Install**.
+4. The plugin starts inside a sandbox cgroup and the install is written to the audit log.
 
-1. Plugin kartında **Kur** → "Review permissions" modal açılır.
-2. Network egress, mount'lar, secrets, kaynak kullanımı (CPU/RAM), tenant kapsamı listelenir.
-3. Onay kutusunu işaretleyin → **Onayla & Kur**.
-4. Plugin sandbox cgroup içinde başlatılır, audit'e düşer.
+### 11.2 Filtering
 
-**Ekran**: `faz_c_test_marketplace_install.png` — Slack Receiver permission review.
+Use the category chips at the top (LLM Provider / RAG Source / MCP Tool / Workflow Template) and the search box.
 
-### 11.2 Filtreleme
-
-Üstteki kategori chip'leri (LLM Sağlayıcı / RAG Kaynağı / MCP Aracı / Workflow Şablonu) + arama kutusu.
-
-> Slack, Gmail, Linear, Notion, Postgres ilgili şirketlerin tescilli markalarıdır. Plugin'ler bu hizmetlerin müşteri tarafı API'lerini kullanır.
+> Slack, Gmail, Linear, Notion and Postgres are trademarks of their respective companies. The plugins use the customer-side APIs of those services.
 
 ---
 
-## 12. Yönetim ayarları
+## 12. Admin settings
 
-Sol nav → **Ayarlar**. 7 sub-tab:
+Left nav → **Settings**. Seven sub-tabs:
 
-| Tab | İçerik |
-|-----|--------|
-| Genel | Tenant adı, slug, domain, SSL |
-| Lisans | Aktif lisans durumu, JWT yenileme |
-| Sağlayıcılar | Cascade sırası, mock mode, her sağlayıcı için "Yapılandır" |
-| Webhook'lar | Slack, e-posta, Discord webhook URL'leri |
-| Uyarılar | Quota uyarı eşiği, latency p95 SLO |
-| Marka | Logo, favicon, brand renk, login mesajı |
-| Güvenlik | Magic-link ömrü, oturum süresi, audience kontrolü |
+| Tab | Contents |
+|-----|----------|
+| General | Organisation name, slug, domain, SSL |
+| License | Active license status, JWT renewal |
+| Providers | Provider order, mock mode, "Configure" for each provider |
+| Webhooks | Slack, email and Discord webhook URLs |
+| Alerts | Quota alert threshold, p95 latency SLO |
+| Branding | Logo, favicon, brand colour, login message |
+| Security | Magic-link lifetime, session length, audience checks |
 
-**Ekran**: `faz_c_test_admin_settings.png`, `faz_c_test_settings_after_rc3.png`, `faz_c_test_webhook_save.png`.
-
-> Her değişiklik tenant başına izole edilir, audit log'a düşer (Bölüm 14'e bakın: Denetim).
+> Every change is isolated to your organisation and written to the audit log.
 
 ---
 
-## 13. Lisans & İade
+## 13. License and refunds
 
-### 13.1 14 gün koşulsuz iade
+### 13.1 14-day no-questions-asked refund
 
-Self-Host: 14 gün içinde iade talep ederseniz tam ücret iade edilir, lisansınız Cloudflare Worker'da revoke edilir, ABS örneğiniz bir sonraki heartbeat'te (≤60 sn) chat çağrılarını reddetmeye başlar.
+Self-Host: if you ask for a refund within 14 days you get the full amount back, your license is revoked in the Cloudflare Worker, and your ABS instance starts rejecting chat calls at the next heartbeat (≤60 s).
 
-**İade prosedürü:**
+**How to get a refund:**
 
-1. `info@automatiabcn.com` adresine sipariş ID'nizi yazın.
-2. 5 iş günü içinde Stripe iade işlemi başlar (kartınıza geri 5-10 iş günü sürebilir, bankaya bağlı).
-3. Lisans token'ınız revoke edilir; backend `license_state.valid = False` durumuna geçer.
-4. Yeni chat çağrıları 403 ile reddedilir; mevcut local config (admin parolası, RAG indeksi) bozulmaz.
+1. Email your order ID to `info@automatiabcn.com`.
+2. The Stripe refund starts within 5 business days (it can take another 5-10 business days to reach your card, depending on your bank).
+3. Your license token is revoked; the backend moves to `license_state.valid = False`.
+4. New chat calls are rejected with 403. Your local configuration (admin password, RAG index) is left intact.
 
-### 13.2 Yenileme (Maintenance Pack)
+### 13.2 Renewal (Maintenance Pack)
 
-12 ay sonra **isteğe bağlı** $49/yıl Maintenance Pack ile güncellemeler + email destek devam eder. Almazsanız ABS o anki sürümde sınırsız çalışmaya devam eder, ancak yeni image güncellemelerine erişim kapanır.
+After 12 months, the **optional** $49/year Maintenance Pack keeps updates and email support running. If you skip it, ABS keeps running on its current version indefinitely, but you lose access to new image updates.
 
-### 13.3 Lisans aktarımı
+### 13.3 Moving your license
 
-Donanım fingerprint binding **opsiyonel** yapılandırmadır (CJ-005). Lisans mintinde fingerprint atanmadıysa (`machine_fp: null`), lisansı başka makineye taşıyabilirsiniz; CF Worker activation o anda yeni IP/fingerprint'i kaydeder.
-
----
-
-## 14. Sorun giderme
-
-| Belirti | Çözüm |
-|---------|-------|
-| `docker compose up -d` "exec format error" | Image rc4+ multi-arch — eski tag (rc1/rc2) Apple Silicon'da çalışmaz. `ABS_VERSION=1.0.0-rc4` set edin. |
-| Caddy 502 / TLS hatası | Port 80+443 firewall'da açık olmalı (Let's Encrypt HTTP-01). `ufw allow 80,443/tcp`. |
-| Setup Wizard "License signature invalid" | Lisans mint imzası container public key ile uyumsuz olabilir; Automatia BCN ekibiyle iletişime geçin. |
-| Chat "license_invalid" 403 | Heartbeat lisansı revoke gördü. Lisans email'inizi kontrol edin veya yenileyin. |
-| RAG sorgu boş sonuç | Doküman henüz indekslenmedi. `docker compose logs backend` → "embedding done" mesajı bekleyin. |
-| Knowledge Graph "Internal Server Error" | Neo4j tenant init eksik olabilir. `docker compose restart` deneyin, sonra Automatia BCN destek. |
-| Email gelmedi | Spam klasörünü kontrol; SMTP relay yapılandırmanız varsa Settings → Webhook'lar → Email alerts. |
-| Yüksek RAM kullanımı | Whisper/TTS modelleri opsiyonel; `.env`'de `ABS_DISABLE_TTS=1` ile kapatın. |
-
-> Cevap bulamazsanız `info@automatiabcn.com` (24h yanıt) veya kendi support kanalınız.
+Hardware fingerprint binding is **optional** (CJ-005). If no fingerprint was assigned when the license was minted (`machine_fp: null`), you can move the license to another machine; the Cloudflare Worker records the new IP/fingerprint on activation.
 
 ---
 
-## Yasal uyarılar & marka bildirimi
+## 14. Troubleshooting
 
-- **Automatia ABS™** Automatia BCN'in tescilli markasıdır.
-- **Anthropic®, Claude®, Cohere®, Cerebras®, Groq®, Gemini™, Cloudflare®, Stripe®, Hetzner®, DigitalOcean®, Linode®, Vultr®, Slack®, Gmail™, Linear®, Notion®, PostgreSQL®, Neo4j®, Docker®, Caddy®, Let's Encrypt®** ilgili şirketlerin tescilli markalarıdır. Bu rehberdeki referanslar yalnızca müşteri tarafı entegrasyon bilgisidir; resmi ortaklık veya destek anlamına gelmez.
-- Sağlayıcı API kullanımı **müşterinin kendi hesabından** ücretlendirilir. Automatia BCN bu ücretlerden pay almaz, fatura kesmez.
-- Bu rehberdeki ekran görüntüleri Automatia BCN'in kendi UI'sıdır. Üçüncü taraf hizmet UI'larının (sağlayıcı konsolları, ödeme akışı dış kısımları) ekran görüntüleri rehbere dahil edilmemiştir; ilgili sağlayıcının dokümantasyonuna başvurun.
-- ABS, BSL 1.1 lisansı kapsamında dağıtılır (`LICENSE` dosyası). 2030-05-07 itibariyle Apache License 2.0'a otomatik geçer.
-- GDPR / KVKK kapsamında veri işleyici sıfatınızla **siz kendi sunucunuzda** kişisel verileri işlersiniz. Automatia BCN bu verilere erişmez. Veri saklama süreleri için Settings → Güvenlik.
+| Symptom | Fix |
+|---------|-----|
+| `docker compose up -d` says "exec format error" | The image is multi-arch from rc4 on — the older tags (rc1/rc2) do not run on Apple Silicon. Set `ABS_VERSION=1.0.0-rc4`. |
+| Caddy 502 / TLS error | Ports 80 and 443 must be open in the firewall (Let's Encrypt HTTP-01). Run `ufw allow 80,443/tcp`. |
+| Setup Wizard says "License signature invalid" | The license signature may not match the public key in the container; contact the Automatia BCN team. |
+| Chat returns "license_invalid" 403 | The heartbeat saw the license as revoked. Check your license email or renew it. |
+| RAG query returns nothing | The document is not indexed yet. Run `docker compose logs backend` and wait for the "embedding done" message. |
+| Knowledge Graph returns "Internal Server Error" | The Neo4j initialisation for your organisation may be incomplete. Try `docker compose restart`, then contact Automatia BCN support. |
+| Email never arrived | Check your spam folder; if you run your own SMTP relay, check Settings → Webhooks → Email alerts. |
+| High RAM usage | The Whisper/TTS models are optional; turn them off with `ABS_DISABLE_TTS=1` in `.env`. |
+
+> If you cannot find an answer, email `info@automatiabcn.com` (24h response) or use your own support channel.
 
 ---
 
-**Son güncelleme:** 2026-05-09 · v1.0  
-**İletişim:** info@automatiabcn.com  
+## Legal notices and trademarks
+
+- **Automatia ABS™** is a trademark of Automatia BCN.
+- **Anthropic®, Claude®, Cohere®, Cerebras®, Groq®, Gemini™, Cloudflare®, Stripe®, Hetzner®, DigitalOcean®, Linode®, Vultr®, Slack®, Gmail™, Linear®, Notion®, PostgreSQL®, Neo4j®, Docker®, Caddy®, Let's Encrypt®** are trademarks of their respective companies. The references in this guide are customer-side integration information only; they do not imply an official partnership or endorsement.
+- Provider API usage is billed **to the customer's own account**. Automatia BCN takes no share of those charges and does not invoice them.
+- ABS is distributed under the BSL 1.1 license (see the `LICENSE` file). It converts to the Apache License 2.0 automatically on 2030-05-07.
+- Under GDPR (and Turkey's KVKK) you process personal data **on your own server**, as the data processor. Automatia BCN has no access to that data. For retention periods see Settings → Security.
+
+---
+
+**Last updated:** 2026-05-09 · v1.0  
+**Contact:** info@automatiabcn.com  
 **Source:** [github.com/automatiabcn/abs](https://github.com/automatiabcn/abs)  
-**Made in Barcelona** 🇪🇸 — *Automate the chaos*
+**Made in Barcelona** — *Automate the chaos*

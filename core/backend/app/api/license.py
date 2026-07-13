@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Lisans aktivasyon ve durum sorgulama endpoint'leri."""
+"""License activation and status endpoints."""
 
 from __future__ import annotations
 
@@ -23,15 +23,17 @@ router = APIRouter(prefix="/v1/license", tags=["license"])
 
 
 class ActivateRequest(BaseModel):
-    """Aktivasyon isteği gövdesi."""
+    """Activation request body."""
 
     license_key: str = Field(..., min_length=10)
 
 
 def _persist_license_key_to_env(key: str, env_path: str) -> bool:
-    """Lisans anahtarını .env dosyasına kalıcı olarak yazar.
+    """Persist the license key to the .env file.
 
-    Dosya yoksa False döner (test/dev ortamında persist zorunlu değil).
+    Written through a temp file + move so a crash mid-write cannot truncate an
+    existing .env. Returns False when the file does not exist; persistence is
+    not required in dev/test.
     """
     env_file = Path(env_path)
     if not env_file.is_file():
@@ -65,7 +67,7 @@ def _persist_license_key_to_env(key: str, env_path: str) -> bool:
 
 @router.post("/activate", status_code=status.HTTP_200_OK)
 async def activate_license(body: ActivateRequest) -> Dict[str, Any]:
-    """Lisans anahtarını doğrular, runtime ve .env'e kaydeder."""
+    """Verify a license key, then store it in runtime settings and .env."""
     payload = verify_license(body.license_key)
 
     settings.license_key = body.license_key
@@ -85,7 +87,7 @@ async def activate_license(body: ActivateRequest) -> Dict[str, Any]:
 
 @router.get("/status", status_code=status.HTTP_200_OK)
 async def license_status() -> Dict[str, Any]:
-    """Mevcut lisansın durumunu döndürür."""
+    """Current license status."""
     if not settings.license_key:
         return {"status": "unconfigured"}
 
@@ -93,13 +95,14 @@ async def license_status() -> Dict[str, Any]:
         payload = verify_license(settings.license_key)
     except HTTPException as exc:
         det = str(exc.detail or "").lower()
-        if exc.status_code == status.HTTP_401_UNAUTHORIZED and (
-            "süresi dolmuş" in det or "expired" in det or "expirado" in det
-        ):
+        # Verify_license reports expiry only through the detail text, so the
+        # 401 has to be classified by substring; anything else is "invalid".
+        if exc.status_code == status.HTTP_401_UNAUTHORIZED and "expired" in det:
             return {"status": "expired"}
         return {"status": "invalid", "detail": exc.detail}
 
-    # 022 — DB'de revoked_at kontrolü (refund/chargeback sonrası)
+    # A signature-valid license can still have been revoked after a refund or
+    # Chargeback, which only the DB knows about.
     revoked_info = _check_revoked_at(payload.get("jti"))
     if revoked_info is not None:
         return {
@@ -122,7 +125,11 @@ async def license_status() -> Dict[str, Any]:
 
 
 def _check_revoked_at(jti: str | None) -> dict | None:
-    """022 — License DB'de revoked_at NOT NULL ise reason+date döner."""
+    """Returns reason + date when the License row has revoked_at set, else None.
+
+    Any DB failure is swallowed: a license that verifies cryptographically must
+    not be rejected because the revocation lookup broke.
+    """
     if not jti:
         return None
     try:
@@ -148,7 +155,7 @@ def _check_revoked_at(jti: str | None) -> dict | None:
 
 @router.get("/demo-status", status_code=status.HTTP_200_OK)
 async def demo_status_endpoint() -> Dict[str, Any]:
-    """011 — Demo countdown durumu. UI banner'ı bu endpoint'i poll'lar."""
+    """Demo countdown state. Polled by the UI banner."""
     from app.licensing.demo import status as demo_status
 
     return demo_status()
@@ -156,7 +163,7 @@ async def demo_status_endpoint() -> Dict[str, Any]:
 
 @router.get("/info", status_code=status.HTTP_200_OK)
 async def license_info() -> Dict[str, Any]:
-    """Polish round R6 — single source of truth for the Settings → Lisans tab.
+    """Single source of truth for the Settings → License tab.
 
     Combines ``/status`` and ``/demo-status`` into one shape so the frontend
     no longer hardcodes the tier / jti / expires_at trio. Returns ``demo``
@@ -180,9 +187,9 @@ async def license_info() -> Dict[str, Any]:
         payload = verify_license(settings.license_key)
     except HTTPException as exc:
         det = str(exc.detail or "").lower()
-        if exc.status_code == status.HTTP_401_UNAUTHORIZED and (
-            "süresi dolmuş" in det or "expired" in det or "expirado" in det
-        ):
+        # Verify_license reports expiry only through the detail text, so the
+        # 401 has to be classified by substring; anything else is "invalid".
+        if exc.status_code == status.HTTP_401_UNAUTHORIZED and "expired" in det:
             return {
                 "status": "expired",
                 "tier": None,

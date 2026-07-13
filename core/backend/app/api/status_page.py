@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""025 Modul D — Public status page.
+"""Public status page.
 
 GET /v1/status         — JSON (services, overall, uptime, version)
 GET /status            — HTML page with 30s auto-refresh
@@ -265,7 +265,7 @@ def _mrr_estimate_usd() -> int:
 
 
 def _panel_session_is_admin(request) -> bool:
-    """CJ-010 — bootstrap/single-admin self-host icin panel oturumu kabul et."""
+    """Accept a panel session: a self-hosted install may have only one admin."""
     if request is None:
         return False
     try:

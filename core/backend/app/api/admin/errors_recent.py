@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""032 Modul F — Recent error monitor.
+"""Recent error monitor.
 
 GET /v1/admin/errors/recent?limit=100&severity=error|warn|all
 

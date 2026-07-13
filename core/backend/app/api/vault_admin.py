@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""027 Modul B — Vault admin endpoints.
+"""Vault admin endpoints.
 
 POST /v1/admin/vault/rotate-key   — rotate age master key (Bearer admin auth)
 GET  /v1/admin/vault/audit         — recent audit entries + integrity (Bearer)
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 def _panel_session_is_admin(request: Optional[Request]) -> bool:
-    """CJ-010 — bootstrap/single-admin self-host icin panel oturumu kabul et."""
+    """Accept a panel session: a self-hosted install may have only one admin."""
     if request is None:
         return False
     try:

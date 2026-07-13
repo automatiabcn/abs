@@ -35,7 +35,7 @@ class Symbol:
 
 
 def parse_python_file(path: Path) -> List[Symbol]:
-    """Tek bir .py dosyasindan sembolleri cikar. Hata durumunda bos liste."""
+    """Symbols from one .py file. An unparseable file yields an empty list, not an error."""
     try:
         text = safe_read_text(path, encoding="utf-8")
     except (PermissionError, FileNotFoundError, OSError):

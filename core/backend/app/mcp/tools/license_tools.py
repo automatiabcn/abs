@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""011 — Lisans/demo durum sorgulama MCP tool'lari (2 tool)."""
+"""MCP tools that report where the licence and the demo period stand."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ REGISTERED_TOOLS: List[str] = []
 @mcp_server.tool()
 @with_hooks("license_status")
 async def license_status() -> str:
-    """ABS lisans + demo durum snapshot — JSON doner."""
+    """Licence and demo status, as JSON."""
     await tracker.bump("license_status")
     g = _gate_status()
     d = demo_status_fn()

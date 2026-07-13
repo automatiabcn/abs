@@ -3,12 +3,13 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""015 — Learnings JSONL append-only store.
+"""Learnings — append-only JSONL store.
 
 Format: {ts, category, lesson, source, project, hash}
-6 kategori: bugfix | delegation | arch | security | perf | ux
+Categories: bugfix | delegation | arch | security | perf | ux
 
-Idempotent: ayni hash 24h icinde 2x → skip (None doner).
+The same lesson recorded twice inside the dedup window is skipped (returns None),
+so a recurring failure does not bury the store in copies of itself.
 Path: data_dir/learnings.jsonl
 """
 
@@ -51,14 +52,15 @@ def log(
     source: str = "manual",
     project: Optional[str] = None,
 ) -> Optional[str]:
-    """Yeni learning ekle. Validation/dedup başarısızsa None doner."""
+    """Append a learning. Returns None when it is invalid or a recent duplicate."""
     if category not in _VALID_CATEGORIES:
         return None
     lesson = (lesson or "").strip()
     if not lesson:
         return None
     h = _hash_lesson(lesson)
-    # Idempotency: son 50 entry'de aynı hash varsa skip
+    # The same lesson within the dedup window is not recorded twice — a repeated
+    # failure should not flood the store with identical entries.
     now = time.time()
     for entry in recent(limit=50):
         if entry.get("hash") == h and (now - float(entry.get("ts", 0) or 0)) < _DEDUP_WINDOW:

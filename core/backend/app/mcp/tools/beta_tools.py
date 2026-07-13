@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""031 Modul H — `beta_metrics` MCP tool.
+"""`beta_metrics` MCP tool.
 
 Reports waitlist + conversion + recent-signup signals from `beta_requests` and
 `licenses`. Read-only; no live external API.

@@ -5,8 +5,9 @@
 
 """Stripe webhook endpoint.
 
-`checkout.session.completed` event'ini yakalar: lisans üretir, DB'ye kaydeder,
-müşteriye email gönderir. Diğer event'ler 200 "ignored" döner.
+On `checkout.session.completed` it issues a license, stores it, and emails it
+to the customer. Refund and subscription-cancellation events revoke the
+license. Every other event type is answered 200 "ignored".
 """
 
 from __future__ import annotations
@@ -29,22 +30,20 @@ from app.db.session import get_session
 from app.email.sender import send_license_email
 from app.i18n import t
 from app.licensing import generate_license, verify_license
-from app.observability.audit import emit_event  # Q12-L24 sweep 2
-
+from app.observability.audit import emit_event
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 logger = logging.getLogger(__name__)
 
-# module-level: boot'ta tek sefer (per-request mutation race'ini önler)
+# Set once at import: mutating stripe.api_key per request would race.
 stripe.api_key = settings.stripe_secret_key
 
-# Sprint 2I UAT-047 — Stripe webhook body 1 MiB cap so an attacker
-# cannot force the FastAPI worker to buffer a multi-GB POST before the
-# signature check rejects it.
+# Cap the webhook body at 1 MiB so an attacker cannot force the worker to
+# Buffer a multi-GB POST before the signature check rejects it.
 STRIPE_WEBHOOK_MAX_BODY_BYTES = 1 * 1024 * 1024  # 1 MiB
 
 
 def _parse_seat_count(raw) -> int:
-    """Stripe metadata'dan gelen seat_count'u güvenli şekilde parse et."""
+    """Parse seat_count from Stripe metadata. Anything unusable yields 1."""
     if raw is None:
         return 1
     s = str(raw).strip()
@@ -58,10 +57,10 @@ async def stripe_webhook(
     request: Request,
     db: Session = Depends(get_session),
 ) -> dict:
-    """Stripe webhook işleyicisi — imza doğrula, event'e göre aksiyon al."""
+    """Verify the signature, then act on the event type."""
     lang = getattr(request.state, "lang", "en")
 
-    # Sprint 2I UAT-047 — short-circuit before reading the body when
+    # Short-circuit before reading the body when
     # Content-Length advertises an oversize payload so the worker never
     # buffers a multi-GB request.
     content_length_header = request.headers.get("content-length")
@@ -140,7 +139,7 @@ async def stripe_webhook(
             payload, sig_header, settings.stripe_webhook_secret
         )
     except ValueError as exc:
-        # Q12-L24 sweep 2 — exc carries Stripe SDK internals (`Could
+        # Exc carries Stripe SDK internals (`Could
         # not deserialize key data...`). Keep response generic via i18n
         # and route taxonomy + error_class to the audit channel.
         emit_event(
@@ -171,7 +170,7 @@ async def stripe_webhook(
             detail=t("errors.signature_invalid", lang),
         ) from exc
 
-    # 017 — idempotency claim: aynı event_id tekrar gelirse 200 + duplicate döner.
+    # Idempotency claim: a re-sent event_id is answered 200 + duplicate.
     event_id = (event.get("id") if isinstance(event, dict) else None) or ""
     event_type = (event.get("type") if isinstance(event, dict) else None) or ""
     if not event_type:
@@ -217,7 +216,7 @@ async def stripe_webhook(
         )
         payload_dict = verify_license(token)
 
-        # idempotency — aynı jti ile daha önce kaydedildiyse atla
+        # Second idempotency layer: the license itself may already be stored.
         existing = db.scalars(
             select(License).where(License.jti == payload_dict["jti"])
         ).first()
@@ -249,17 +248,18 @@ async def stripe_webhook(
                 refund_url="https://abs.automatiabcn.com/refund",
             )
         except Exception as exc:
-            logger.exception("email gönderimi başarısız: %s", exc)
+            logger.exception("license email delivery failed: %s", exc)
 
-        # 019 — onboarding email serisi (4 email scheduled, first_success ayrı)
+        # Onboarding series. Delivery failures must not fail the webhook: the
+        # License is already issued and Stripe would retry the whole event.
         try:
             from app.email.scheduler import schedule_onboarding
 
             schedule_onboarding(license_jti=payload_dict["jti"], email=email, db=db)
         except Exception as exc:
-            logger.exception("onboarding scheduling başarısız: %s", exc)
+            logger.exception("onboarding scheduling failed: %s", exc)
 
-        # 025 — Discord webhook (no-op if URL not configured)
+        # Discord webhook (no-op if URL not configured)
         try:
             from app.integrations.discord_webhook import notify_license_purchased
 
@@ -276,7 +276,7 @@ async def stripe_webhook(
             mark_processed(db, evt_row, license_jti=payload_dict["jti"])
         return {"status": "ok", "jti": payload_dict["jti"]}
 
-    # 011 — Refund / subscription cancellation: lisansı revoke et
+    # Refund / subscription cancellation: revoke the license.
     if event["type"] in ("charge.refunded", "customer.subscription.deleted"):
         obj = event["data"]["object"]
         stripe_cust = obj.get("customer", "") or ""
@@ -322,7 +322,8 @@ async def stripe_webhook(
         db.add(license_row)
         db.commit()
 
-        # 012 — İade/iptal onay emaili (sessiz, SMTP yoksa console fallback)
+        # Refund/cancellation confirmation email (falls back to console when
+        # SMTP is unset; never fails the webhook).
         if license_row.customer_email:
             try:
                 from app.email.sender import send_refund_email
@@ -333,9 +334,9 @@ async def stripe_webhook(
                     refund_date=license_row.revoked_at.strftime("%Y-%m-%d"),
                 )
             except Exception as exc:
-                logger.exception("refund email gönderim: %s", exc)
+                logger.exception("refund email delivery failed: %s", exc)
 
-        # 025 — Discord webhook for refund/cancel
+        # Discord webhook for refund/cancel
         try:
             from app.integrations.discord_webhook import notify_refund
 

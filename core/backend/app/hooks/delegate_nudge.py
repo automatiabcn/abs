@@ -3,10 +3,12 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""GUARD 11 — Delegation self-enforcement.
+"""Delegation nudges.
 
-Bash inline `python3 -c` analiz + curl→python pipe + büyük docs Write tespiti.
-Her pattern için 15dk rate-limit.
+Detects work that belongs on a provider rather than in the local shell: inline
+`python3 -c` analysis, a curl output piped into python, and hand-written long
+documentation. Each pattern is rate-limited so a session sees it at most once
+per window.
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ import re
 from .common import allow_once, load_rate, persist_rate, safe_hook
 
 _RATE_FILE = "delegate_nudge_rate.json"
-_WINDOW_SEC = 900  # 15 dakika
+_WINDOW_SEC = 900
 
 _ANALYSIS_KW = (
     "analyze", "analiz", "calculate", "hesapla", "summari", "ozetle",
@@ -90,7 +92,12 @@ def maybe_delegate_nudge(tool: str, tool_input: dict) -> str:
         if not is_docs or len(content) <= 3000:
             return ""
 
-        tr_chars = sum(1 for c in content if c in "çğıöşüÇĞİÖŞÜ")
+        # Turkish-specific letters \u2014 their density picks the multilingual model.
+        tr_chars = sum(
+            1
+            for c in content
+            if c in "\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc"
+        )
         tr_ratio = tr_chars / max(len(content), 1)
         is_tr_heavy = tr_ratio > 0.005
         code_blocks = content.count("```")

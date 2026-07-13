@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Semantic cache — SHA-256 tabanlı LRU + 5dk TTL."""
+"""Semantic cache — SHA-256 keyed LRU with a 5-minute TTL."""
 
 from __future__ import annotations
 
@@ -20,16 +20,16 @@ T = TypeVar("T")
 def prompt_hash(
     prompt: str, model: str = "", tenant_id: str = "_global", owner: str = ""
 ) -> str:
-    """Sprint 2I UAT-016 — tenant-scoped cache key.
+    """Tenant-scoped cache key.
 
-    The cache namespace is keyed by ``tenant_id`` so two tenants sending
-    the identical prompt+model do not collide. ``"_global"`` is used when
-    no tenant context is available (CLI / internal warmup paths).
+    ``tenant_id`` namespaces the key so two tenants sending the same
+    prompt+model never collide. ``"_global"`` covers callers with no tenant
+    context (CLI, internal warmup).
 
-    MT Phase 1: ``owner`` (project/user identity) further namespaces the key
-    when a per-owner provider key is in play, so a response produced with one
-    owner's BYOK key is never served from cache to a different owner in the
-    same tenant. Empty ``owner`` keeps the legacy tenant-only namespace.
+    ``owner`` (a project or user identity) namespaces it further when a
+    per-owner provider key is in play, so a response produced with one owner's
+    key is never served to another owner in the same tenant. An empty ``owner``
+    keeps the tenant-only namespace.
     """
     h = hashlib.sha256()
     h.update(tenant_id.encode("utf-8"))

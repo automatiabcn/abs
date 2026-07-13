@@ -62,7 +62,7 @@ async def fetch_manifest(force: bool = False) -> Dict[str, Any]:
             return cached
     url = settings.update_manifest_url
     if not url:
-        return {"error": "update_manifest_url tanimli degil"}
+        return {"error": "update_manifest_url is not configured"}
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             r = await client.get(url)
@@ -71,7 +71,7 @@ async def fetch_manifest(force: bool = False) -> Dict[str, Any]:
         manifest_bytes = r.content
         manifest = r.json()
         if not isinstance(manifest, dict):
-            return {"error": "manifest top-level dict bekleniyor"}
+            return {"error": "manifest must be a JSON object"}
     except Exception:
         # Sprint 2D ITEM-2.3 — CodeQL py/stack-trace-exposure (#12/#13). The
         # caller (api/update.py) embeds this `error` field in HTTP responses;
@@ -98,7 +98,7 @@ async def fetch_manifest(force: bool = False) -> Dict[str, Any]:
 
 
 def compare_versions(current: str, latest: str) -> int:
-    """Semver-lite compare. -1 current<latest, 0 esit, 1 current>latest. Hata olursa 0."""
+    """Semver-lite compare: -1 current<latest, 0 equal, 1 current>latest. 0 on any parse error."""
 
     def _parse(v: str) -> tuple:
         return tuple(int(x) for x in v.split(".")[:3])

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""AST metrikleri — docstring ratio, type hints, ortalama fonksiyon satır sayısı."""
+"""AST metrics — docstring ratio, type hint ratio, average function length."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from typing import Dict
 
 
 def extract_added_lines(diff_text: str) -> str:
-    """Unified diff'ten eklenen satırları (+ ile başlayan) çıkar."""
+    """Pull the added lines out of a unified diff, without the '+' marker."""
     lines = []
     for line in diff_text.splitlines():
         if line.startswith("+") and not line.startswith("+++"):
@@ -21,7 +21,7 @@ def extract_added_lines(diff_text: str) -> str:
 
 
 def ast_metrics(code: str) -> Dict[str, float]:
-    """Python kodun AST metrikleri."""
+    """AST metrics for a Python snippet. Unparseable code yields {}."""
     try:
         tree = ast.parse(code)
     except SyntaxError:
@@ -53,7 +53,7 @@ def ast_metrics(code: str) -> Dict[str, float]:
 
 
 def fingerprint_distance(metrics: Dict[str, float], persona: Dict[str, float]) -> float:
-    """Persona target'larına olan ortalama mutlak fark (0..1)."""
+    """Mean absolute distance from the persona targets, in 0..1."""
     if not metrics or not persona:
         return 0.0
     keys = ("docstring_ratio", "type_hints_ratio")

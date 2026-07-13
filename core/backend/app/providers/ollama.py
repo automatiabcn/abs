@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Ollama (yerel) provider — /api/chat endpoint'i."""
+"""Ollama provider — local models over /api/chat."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ class OllamaProvider(BaseProvider):
     ) -> ProviderResponse:
         if not settings.ollama_url:
             raise ProviderError(
-                "OLLAMA_URL tanımlı değil — yerel Ollama yok",
+                "OLLAMA_URL is not configured — no local Ollama",
                 provider=self.name,
                 transient=False,
             )

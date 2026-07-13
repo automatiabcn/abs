@@ -3,12 +3,12 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""humanize_score: input metninin 'AI-written' izlenimi için heuristik skor.
+"""Humanize_score: heuristic score for how "AI-written" a text reads.
 
-SERVER humanizer/ modülünün hafif kopyası: özel işaretler (aşırı parallel yapı,
-metinsel "certainly", "as an AI" gibi stock phrase'ler) basit bir sayaçla 0-1 arasında
-skorlanır. 0 = insana benzer, 1 = AI izlenimi yüksek. Gelecek task'ta ML scorer ile
-yer değiştirilebilir.
+Counts tells — stock phrases ("as an AI", "in conclusion"), heavy parallel
+structure, uniformly long sentences — and maps the hit count onto 0-1.
+0 = reads human, 1 = reads machine-generated. It is a counter, not a
+classifier: the score is only meaningful in aggregate.
 """
 
 from __future__ import annotations
@@ -23,8 +23,11 @@ STOCK_PHRASES = [
     r"\bin conclusion\b",
     r"\bit's (important|worth) (to )?(note|noting)\b",
     r"\bhere (is|are) (a|some)\b",
-    r"\bsaygılarımla\b",
-    r"\bumarım yardımcı olur\b",
+    # Turkish stock phrases ("saygilarimla", "umarim yardimci olur"), escaped
+    # Rather than written literally so the source stays ASCII. The dotless i
+    # is significant: these must keep matching Turkish output.
+    "\\bsayg\u0131lar\u0131mla\\b",
+    "\\bumar\u0131m yard\u0131mc\u0131 olur\\b",
     r"\bdelve into\b",
     r"\boverall\b",
     r"\blastly\b",
@@ -38,7 +41,7 @@ PARALLEL_MARKERS = ["firstly", "secondly", "thirdly", "moreover", "however"]
 
 @dataclass
 class HumanizeScore:
-    score: float  # 0..1, 1 = AI izlenimi yüksek
+    score: float  # 0..1, higher = reads more machine-generated
     matches: List[str]
     length: int
     sentence_count: int
@@ -59,13 +62,14 @@ def humanize_score_text(text: str) -> HumanizeScore:
     if parallel_hits >= 3:
         matches.append(f"parallel-markers:{parallel_hits}")
 
-    # Uzun, düzgün cümleler → AI eğilimi yüksek olabilir (heuristik).
+    # Uniformly long sentences are a weak tell on their own, so this only
+    # Contributes one more hit rather than dominating the score.
     sentences = [s for s in re.split(r"[.!?]+", text) if s.strip()]
     avg_len = sum(len(s.split()) for s in sentences) / max(1, len(sentences))
     if avg_len > 22:
         matches.append(f"avg-sentence-len:{avg_len:.1f}")
 
-    # Toplam skor: her match 0.12 ağırlık, upper cap 1.0
+    # Each hit is worth 0.12, capped at 1.0.
     raw = min(1.0, len(matches) * 0.12)
     return HumanizeScore(
         score=round(raw, 2),

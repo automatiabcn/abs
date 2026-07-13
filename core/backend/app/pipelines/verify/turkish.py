@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""auto_verify_turkish: aya:8b ile Türkçe gramer/stil kontrol."""
+"""Auto_verify_turkish: Turkish grammar/style check via the local aya:8b."""
 
 from __future__ import annotations
 
@@ -35,13 +35,14 @@ class AutoVerifyTurkishPipeline(BasePipeline):
                 final_response="",
                 total_elapsed_ms=int((time.monotonic() - total_start) * 1000),
                 prompt=prompt,
-                error="ABS_OLLAMA_URL tanımlı değil — auto_verify_turkish için yerel Ollama gerekli",
+                error="ABS_OLLAMA_URL is not set — auto_verify_turkish needs a local Ollama",
             )
 
         ollama = get_provider("ollama")
         q = (
-            "Aşağıdaki Türkçe metni gramer, yazım, akıcılık açısından kontrol et. "
-            "Sorunlu cümleleri listele veya 'TAMAM' yaz:\n\n" + prompt[:6000]
+            "Check the Turkish text below for grammar, spelling and fluency. "
+            "List the problem sentences, or write 'TAMAM' if there are "
+            "none:\n\n" + prompt[:6000]
         )
         step, resp = await timed_step(
             "aya-review",

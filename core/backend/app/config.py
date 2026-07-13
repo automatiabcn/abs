@@ -41,15 +41,16 @@ _promote_legacy_license_key_env()
 
 
 class Settings(BaseSettings):
-    # Genel
+    # General
     admin_email: str = ""
     domain: str = "abs.local"
     ssl_mode: str = "internal"  # "internal" | "acme"
 
-    # Lisans (müşteri tarafında kullanılır)
+    # License (set on the customer side)
     license_key: str = ""
 
-    # Lisans anahtarları (bizim tarafta üretim için; müşteri tarafında sadece public)
+    # License signing keys. Only the public key is needed to verify a license;
+    # the private key stays with whoever issues them.
     private_key_path: str = "/app/data/private.pem"
     public_key_path: str = "/app/data/public.pem"
 
@@ -57,20 +58,20 @@ class Settings(BaseSettings):
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
 
-    # SMTP (boşsa console fallback devreye girer)
+    # SMTP — unset falls back to logging the mail to the console
     smtp_host: str = ""
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_from: str = "noreply@automatiabcn.com"
 
-    # 019 — Unsubscribe JWT secret (HS256, 1 yıl exp)
+    # Unsubscribe JWT secret (HS256, 1 year expiry)
     unsubscribe_jwt_secret: str = "dev-insecure-unsubscribe-change-in-prod"
 
-    # 022 — Admin Bearer token (demo reset, vb.)
+    # Admin bearer token (demo reset, etc.)
     admin_token: str = "dev-insecure-admin-change-in-prod"
 
-    # 025 — Discord webhook (boşsa no-op, boot crash yok)
+    # Discord webhook — unset is a no-op, never a boot failure
     discord_webhook_url: str = ""
 
     # 028 — Slack signing secret (HMAC SHA256)
@@ -145,7 +146,7 @@ class Settings(BaseSettings):
     # cookies and long-lived MCP tokens should not share one key.
     mcp_token_secret: str = ""
 
-    # Provider API anahtarları (005 — sops ile şifrelenmesi 008+ task)
+    # Provider API keys (encrypted at rest via the sops vault below)
     anthropic_api_key: str = ""
     # T-F03 — Claude API is opt-in (paid). Default off; set ABS_ANTHROPIC_ENABLED=true to enable.
     anthropic_enabled: bool = False
@@ -172,7 +173,7 @@ class Settings(BaseSettings):
     ollama_first_health_timeout_s: float = 1.5
 
     # MCP
-    mcp_require_license: bool = False  # MVP: kapalı, 008'de aç
+    mcp_require_license: bool = False
     # Enforce the minted abs_mcp_ bearer token on every /mcp transport request.
     # Default ON: without it the streamable-http endpoint serves all tools to
     # any caller that passes the host allowlist (no per-user auth). Set
@@ -221,10 +222,10 @@ class Settings(BaseSettings):
     data_dir: str = "/app/data"  # 009 — workflow_state.db, judge_log.jsonl, rag_chroma/
 
     # 010 — Workflow durability + MLX
-    workflow_durable: bool = False  # pipeline'lar workflow_state.db'ye yazsın mı
-    mlx_url: str = ""  # Apple Silicon Neural Engine bridge (boşsa graceful)
+    workflow_durable: bool = False  # persist pipeline state to workflow_state.db
+    mlx_url: str = ""  # Apple Silicon Neural Engine bridge (unset degrades gracefully)
 
-    # 011 — Stripe Price ID'leri (manuel setup_stripe_products.py'den .env'e elle yapıştır)
+    # Stripe Price IDs — copy them from setup_stripe_products.py output into .env
     abs_price_self_host: str = ""   # Stripe Price ID — self-host SKU
     abs_price_team_5: str = ""      # Stripe Price ID — team-pack 5 seat SKU
     abs_price_team_10: str = ""     # Stripe Price ID — team-pack 10 seat SKU
@@ -243,8 +244,8 @@ class Settings(BaseSettings):
     abs_annual_offer_price: float = 0.0
 
     # 013 — Encrypted secrets vault (sops + age)
-    vault_key_path: str = "/app/vault-key/age.key"  # master key (ayrı volume!)
-    vault_secrets_path: str = "/app/data/secrets.yaml"  # encrypted secrets dosyası
+    vault_key_path: str = "/app/vault-key/age.key"  # master key — mount on its own volume
+    vault_secrets_path: str = "/app/data/secrets.yaml"  # encrypted secrets file
 
     # 027 — Vault production hardening
     vault_require_sops: bool = False  # production=True; boot fail-fast if sops missing

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""race_local: Ollama phi4 vs gemma2 — yerel model yarışı (Ollama gerektirir)."""
+"""Race_local: Ollama phi4 vs gemma2. Requires a reachable local Ollama."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ class RaceLocalPipeline(BasePipeline):
                 final_response="",
                 total_elapsed_ms=elapsed,
                 prompt=prompt,
-                error="Yerel Ollama yarışı kaybetti (ABS_OLLAMA_URL tanımlı mı?)",
+                error="No local model responded (is ABS_OLLAMA_URL set?)",
             )
 
         name, resp = winner

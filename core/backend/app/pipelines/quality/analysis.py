@@ -76,7 +76,7 @@ class QualAnalysisPipeline(BasePipeline):
                 final_response="",
                 total_elapsed_ms=int((time.monotonic() - total_start) * 1000),
                 prompt=prompt,
-                error="3 perspektif de başarısız",
+                error="All three perspectives failed",
                 workflow_trace_id=wf.trace_id,
             )
 
@@ -84,8 +84,9 @@ class QualAnalysisPipeline(BasePipeline):
             f"=== {n.upper()} ===\n{perspectives[n].text[:2500]}" for n in ok_names
         )
         synth_prompt = (
-            "Farklı açılardan yapılan bu analizleri sentezleyen bir rapor oluştur. "
-            "Ortak noktalar, çelişkiler, öneriler:\n\n" + combined
+            "Write a report synthesising these analyses, which were made from "
+            "different angles. Cover agreements, contradictions and "
+            "recommendations:\n\n" + combined
         )
         synth_step, synth = await timed_step(
             "synthesis",

@@ -21,7 +21,7 @@ async def query(
     project_filter: Optional[str] = None,
     top_k: int = 5,
 ) -> List[Dict[str, Any]]:
-    """En yakın N chunk'ı döner: file, snippet, score, project."""
+    """Return the nearest ``top_k`` chunks: file, snippet, score, project."""
     if not question.strip():
         return []
     try:
@@ -58,7 +58,7 @@ async def query(
 
 
 def status() -> Dict[str, Any]:
-    """RAG koleksiyon durumu — total_chunks + db_size_mb."""
+    """Collection health — total_chunks + on-disk size."""
     try:
         client = _client()
         cols = client.list_collections()

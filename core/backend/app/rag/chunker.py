@@ -3,16 +3,14 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""010 — AST-aware RAG chunker.
+"""AST-aware RAG chunker.
 
-Python: top-level function/class boundary.
-Markdown: heading-based (#..######).
-Diğer: char-fallback _CHAR_FALLBACK boyutunda.
+Python: split on top-level function/class boundaries.
+Markdown: split on headings (#..######).
+Anything else: fixed-size character chunks.
 
-`chunk_for_path(path, text, strategy)` her durumda iter[(idx, chunk)] döner.
-strategy="char" → her uzantı için char-split. "semantic" (default) → AST-aware.
-
-Exception-free contract: invalid Python parse hatası char-fallback'e düşer.
+`chunk_for_path(path, text, strategy)` always yields (idx, chunk) and never
+raises: a file that fails to parse falls back to character chunks.
 """
 
 from __future__ import annotations
@@ -23,7 +21,7 @@ from pathlib import Path
 from typing import Iterable, Tuple
 
 _CHAR_FALLBACK = 1500
-_MAX_CHUNK_BYTES = 8000  # tek dev fonksiyon edge case → re-split
+_MAX_CHUNK_BYTES = 8000  # a single huge function still gets re-split
 
 
 def chunk_chars(text: str, size: int = _CHAR_FALLBACK) -> Iterable[Tuple[int, str]]:
@@ -36,7 +34,7 @@ def chunk_chars(text: str, size: int = _CHAR_FALLBACK) -> Iterable[Tuple[int, st
 
 
 def _explode_oversized(text: str, base_idx: int) -> Iterable[Tuple[int, str]]:
-    """Tek chunk _MAX_CHUNK_BYTES'ı aşarsa char-split."""
+    """Character-split a chunk that exceeds _MAX_CHUNK_BYTES."""
     if len(text) <= _MAX_CHUNK_BYTES:
         yield base_idx, text
         return
@@ -47,7 +45,8 @@ def _explode_oversized(text: str, base_idx: int) -> Iterable[Tuple[int, str]]:
 
 
 def chunk_python(text: str) -> Iterable[Tuple[int, str]]:
-    """Top-level def/class boundary'lerinde böl. Boundary öncesi 'preamble' chunk."""
+    """Split on top-level def/class boundaries; text before the first one is
+    its own preamble chunk."""
     try:
         tree = ast.parse(text)
     except SyntaxError:
@@ -77,7 +76,7 @@ _MD_HEADING = re.compile(r"^#{1,6}\s", re.MULTILINE)
 
 
 def chunk_markdown(text: str) -> Iterable[Tuple[int, str]]:
-    """Heading bazlı bölme. Heading yoksa char-fallback."""
+    """Split on headings; with no heading, fall back to character chunks."""
     matches = list(_MD_HEADING.finditer(text))
     if not matches:
         yield from chunk_chars(text)
@@ -102,7 +101,7 @@ def chunk_markdown(text: str) -> Iterable[Tuple[int, str]]:
 def chunk_for_path(
     path: Path, text: str, strategy: str = "semantic"
 ) -> Iterable[Tuple[int, str]]:
-    """Strategy + uzantıya göre chunker'a yönlendir. Exception fırlatmaz."""
+    """Pick a chunker from the strategy and file suffix. Never raises."""
     if strategy == "char":
         yield from chunk_chars(text)
         return
@@ -114,5 +113,5 @@ def chunk_for_path(
             yield from chunk_markdown(text)
         else:
             yield from chunk_chars(text)
-    except Exception:  # pragma: no cover — son kale
+    except Exception:  # pragma: no cover — last resort
         yield from chunk_chars(text)

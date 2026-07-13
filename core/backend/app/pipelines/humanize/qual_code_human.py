@@ -3,7 +3,8 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""qual_code_human: qual-code + comment/kodu 'insan izi' taşıyacak şekilde rewrite."""
+"""Qual_code_human: qual-code, then a rewrite pass that strips AI-tells from
+the code and its comments."""
 
 from __future__ import annotations
 
@@ -44,15 +45,15 @@ class QualCodeHumanPipeline(BasePipeline):
                 final_response="",
                 total_elapsed_ms=int((time.monotonic() - total_start) * 1000),
                 prompt=prompt,
-                error=code_result.error or "qual-code boş döndü",
+                error=code_result.error or "qual-code returned nothing",
                 workflow_trace_id=wf.trace_id,
             )
 
         humanize_prompt = (
-            "Bu kodu sıfırdan yazmış bir insan yazar gibi yeniden düzenle. "
-            "Gereksiz AI-stili yorum satırlarını kaldır (ör. 'Bu fonksiyon ...', "
-            "'# Step 1: ...'), değişken adlarını daha özgün yap, anlamı koru. "
-            "Kod çalışır durumda kalmalı.\n\nKOD:\n" + text[:6000]
+            "Rewrite this code as a human would have written it from scratch. "
+            "Remove filler AI-style comments (e.g. 'This function ...', "
+            "'# Step 1: ...'), give variables less generic names, and preserve "
+            "the behaviour. The code must still run.\n\nCODE:\n" + text[:6000]
         )
         provider = get_provider("cloudflare")
         step, resp = await timed_step(

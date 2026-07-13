@@ -9,7 +9,7 @@
     (used: int, limit: int)
 
 Veri kaynagi: app/db/models.py UsageLog tablosu (provider, tokens, ts).
-Tablo yoksa graceful 0/0 doner — bootstrap'ta UI bos durumu gosterir.
+Returns 0/0 when the table does not exist yet, so a fresh install shows an empty state rather than an error.
 
 Quota tablosu (Sprint 20 brief'inden):
 - anthropic: 1M tokens / month  (Claude Plus dahil paid tier)
@@ -74,7 +74,7 @@ QUOTAS: dict[str, dict] = {
 
 
 def _monthly_limit(provider: str) -> int:
-    """Provider icin aylik limit. Daily kotalari 30 ile carpip aylik'a normalize et."""
+    """Monthly limit for a provider. Daily quotas are normalised by multiplying by 30."""
     if provider == "anthropic":
         return _anthropic_monthly_limit()
     cfg = QUOTAS.get(provider, {})
@@ -108,7 +108,7 @@ async def _query_usage_sum(provider: str, start: datetime, end: datetime) -> int
 async def get_monthly_usage(
     provider: str, start: datetime, end: datetime
 ) -> Tuple[int, int]:
-    """Provider icin (used, limit) cifti. Bilinmeyen provider → (0, 0)."""
+    """(used, limit) for a provider. An unknown provider is (0, 0)."""
     if provider not in QUOTAS:
         return 0, 0
     used = await _query_usage_sum(provider, start, end)

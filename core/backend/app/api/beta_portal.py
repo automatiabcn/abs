@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""031 Modul A — Beta access request portal (public).
+"""Beta access request portal (public).
 
 POST /v1/beta/request
   body: {email, name, company, use_case, lang}

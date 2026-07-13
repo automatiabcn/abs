@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""032 Modul E — Churn detection.
+"""Churn detection.
 
 Heuristic: per-license tool-call rate over last 7 days vs. last 30 days.
 If `last_7d_avg < threshold * last_30d_avg` (default 0.5) the license is flagged.

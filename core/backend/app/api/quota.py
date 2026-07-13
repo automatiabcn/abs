@@ -3,9 +3,9 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Provider quota radar endpoint'i (stub).
+"""Provider quota radar endpoint (stub).
 
-Gerçek cascade kotası 006-provider-cascade task'ında bağlanacak.
+Shape is final; the counters are zeroed until the cascade reports real usage.
 """
 
 from __future__ import annotations
@@ -32,5 +32,5 @@ async def get_quota_status(_admin: dict = Depends(current_admin)) -> dict:
             "cloudflare": {"used": 0, "limit": None, "pct": 0},
             "cohere": {"used": 0, "limit": 1000, "pct": 0},
         },
-        "note": "Gerçek cascade quota verisi 006-provider-cascade task'ında bağlanacak",
+        "note": "Live cascade quota data is not wired up yet",
     }

@@ -5,7 +5,8 @@
 
 """RAG indexer — char-split chunk + ChromaDB persist + nomic embed.
 
-Multi-tenant: her chunk metadata'sında `project` alanı; query tarafında filtre.
+Multi-tenant: every chunk carries a `project` metadata field that the query
+side filters on.
 """
 
 from __future__ import annotations
@@ -149,19 +150,19 @@ async def index_path(
     extensions: Optional[List[str]] = None,
     chunk_strategy: str = "semantic",
 ) -> Dict[str, Any]:
-    """Bir dosya/dizini chunk'la, embedding al, Chroma'ya yaz.
+    """Chunk a file or directory, embed it, and persist to Chroma.
 
-    chunk_strategy: "semantic" (default — AST/heading-aware) veya "char" (eski 1500 char split).
+    chunk_strategy: "semantic" (default, AST/heading-aware) or "char".
     """
     root = Path(path)
     if not root.exists():
-        return {"error": f"yol yok: {path}", "indexed": 0, "skipped": 0}
+        return {"error": f"path not found: {path}", "indexed": 0, "skipped": 0}
 
     # CWE-22 guard — refuse to index secret/system paths.
     unsafe = _unsafe_index_path(root)
     if unsafe:
         return {
-            "error": f"güvenlik: bu yol indekslenemez ({unsafe})",
+            "error": f"security: this path cannot be indexed ({unsafe})",
             "indexed": 0,
             "skipped": 0,
         }
@@ -192,7 +193,7 @@ async def index_path(
         for idx, chunk in chunk_for_path(fp, text, chunk_strategy):
             doc_hash = _hash_chunk(chunk)
             doc_id = f"{project}:{fp}:{idx}:{doc_hash}"
-            # Idempotency — aynı id varsa atla
+            # Idempotency — an id already present is left untouched.
             try:
                 existing = coll.get(ids=[doc_id])
                 if existing and existing.get("ids"):
@@ -238,7 +239,7 @@ async def index_path(
 
 
 def clear(project: Optional[str] = None) -> Dict[str, Any]:
-    """Tüm collection veya yalnızca bir project metadata'lı chunk'ları sil."""
+    """Delete the whole collection, or only the chunks of one project."""
     coll = _collection()
     if project is None:
         try:

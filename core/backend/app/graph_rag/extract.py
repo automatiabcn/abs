@@ -87,11 +87,15 @@ class ExtractionResult:
 
 
 def _slug(name: str) -> str:
-    """Accent-folded, lowercased, hyphenated slug — TR-aware ( İ/ı/ş/ğ/ç/ö/ü)."""
+    """Accent-folded, lowercased, hyphenated slug.
+
+    Turkish letters that NFKD does not decompose are folded explicitly, written
+    as escapes to keep the source ASCII.
+    """
     folded = unicodedata.normalize("NFKD", name)
     folded = "".join(c for c in folded if not unicodedata.combining(c))
-    folded = folded.lower().replace("ı", "i").replace("ş", "s").replace("ğ", "g")
-    folded = folded.replace("ç", "c").replace("ö", "o").replace("ü", "u")
+    folded = folded.lower().replace("\u0131", "i").replace("\u015f", "s").replace("\u011f", "g")
+    folded = folded.replace("\u00e7", "c").replace("\u00f6", "o").replace("\u00fc", "u")
     folded = re.sub(r"[^a-z0-9]+", "-", folded).strip("-")
     return folded
 

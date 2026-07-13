@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""029 Modul D — GDPR Article 7 consent tracking helpers.
+"""GDPR Article 7 consent tracking helpers.
 
 Consent types tracked:
   - tos                    — Terms of Service

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""029 Modul A — Customer audit log helper.
+"""Customer audit log helper.
 
 Public API:
   - log_customer_action(license_jti, action, ...) — write a CustomerAuditEntry

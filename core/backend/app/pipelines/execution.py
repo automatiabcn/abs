@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Pipeline step yürütme yardımcıları — timing, paralel, error yakalama."""
+"""Helpers for running pipeline steps: timing, parallel fan-out, error capture."""
 
 from __future__ import annotations
 
@@ -22,7 +22,11 @@ async def timed_step(
     coro: Awaitable[Any],
     model_hint: str = "",
 ) -> Tuple[PipelineStep, Optional[Any]]:
-    """Bir coroutine'i timing + try/except ile yürüt, (PipelineStep, result) döndür."""
+    """Await a coroutine and return (PipelineStep, result).
+
+    A failing step never propagates: it comes back as an un-ok PipelineStep
+    with result None, so one dead provider cannot abort the pipeline.
+    """
     start = time.monotonic()
     try:
         result = await coro
@@ -31,7 +35,8 @@ async def timed_step(
             getattr(result, "model", "") or getattr(result, "provider", "")
         )
         step = PipelineStep(name=name, model=model, elapsed_ms=elapsed, ok=True)
-        # 016 — ProviderResponse token sayilarini step.meta'ya forward et
+        # Forward the ProviderResponse token counts so cost can be attributed
+        # Per step rather than per pipeline.
         ti = getattr(result, "tokens_in", None)
         to = getattr(result, "tokens_out", None)
         if ti is not None:
@@ -39,7 +44,7 @@ async def timed_step(
         if to is not None:
             step.meta["tokens_out"] = int(to)
         return step, result
-    except Exception as exc:  # noqa: BLE001 (pipeline step geniş yakalar)
+    except Exception as exc:  # noqa: BLE001 (a step must never raise)
         elapsed = int((time.monotonic() - start) * 1000)
         logger.info("pipeline step %s failed: %s", name, exc)
         return (
@@ -55,14 +60,14 @@ async def timed_step(
 
 
 async def run_parallel_named(coros: Dict[str, Awaitable[Any]]) -> Dict[str, Any]:
-    """Paralel coro çalıştır — return_exceptions=True ile {name: result|Exception}."""
+    """Run coroutines concurrently → {name: result | Exception}. Never raises."""
     names = list(coros.keys())
     results = await asyncio.gather(*coros.values(), return_exceptions=True)
     return dict(zip(names, results))
 
 
 def pick_longest_success(results: Dict[str, Any]) -> Optional[Tuple[str, Any]]:
-    """ProviderResponse içerenlerden en uzun `text`'e sahip olanı seç."""
+    """Pick the result with the longest `text`, ignoring failures and empties."""
     best: Optional[Tuple[str, Any]] = None
     for name, r in results.items():
         if isinstance(r, BaseException):
@@ -78,7 +83,10 @@ def pick_longest_success(results: Dict[str, Any]) -> Optional[Tuple[str, Any]]:
 async def race_first_success(
     coros: Dict[str, Coroutine[Any, Any, Any]],
 ) -> Optional[Tuple[str, Any]]:
-    """İlk başarılı coroutine'in (name, result)'ını döndür. Hepsi fail → None."""
+    """Return (name, result) of the first coroutine to produce non-empty text.
+
+    Cancels the losers, including on an early exit. None if all of them fail.
+    """
     tasks = {asyncio.create_task(c): name for name, c in coros.items()}
     try:
         while tasks:
@@ -87,9 +95,10 @@ async def race_first_success(
                 name = tasks.pop(t)
                 try:
                     result = t.result()
-                    # text varsa başarı
+                    # Non-empty text is the success condition; an empty
+                    # Response means the provider answered nothing useful.
                     if getattr(result, "text", ""):
-                        # kalan task'ları iptal et
+                        # Winner found — stop paying for the rest.
                         for other in tasks:
                             other.cancel()
                         return name, result

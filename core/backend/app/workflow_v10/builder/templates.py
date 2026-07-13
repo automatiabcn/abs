@@ -3,7 +3,11 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""ABS NL workflow builder — 50 KOBİ templates (Sprint 19 T-S03.1)."""
+"""Natural-language workflow builder — 50 small-business templates.
+
+Every template carries an English `title` and a localized `title_tr`. Both are
+product content: template search matches against either one.
+"""
 
 from __future__ import annotations
 

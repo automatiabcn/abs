@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""13 pipeline MCP tool wrapper — qual/race/humanize/verify."""
+"""MCP wrappers for the multi-step pipelines — qual, race, humanize, verify."""
 
 from __future__ import annotations
 
@@ -30,7 +30,11 @@ REGISTERED_TOOLS: List[str] = []
 
 
 def _format_meta(result) -> str:
-    """Pipeline sonucunu text + meta (steps) formatında döndür."""
+    """Render a pipeline result as its text plus a per-step trace.
+
+    The step trace is part of the answer on purpose: a pipeline that quietly
+    dropped a step should be visible to whoever reads the output.
+    """
     body = result.final_response or ""
     meta_lines = [f"[pipeline: {result.pipeline_type} · total: {result.total_elapsed_ms}ms]"]
     for s in result.steps:
@@ -42,7 +46,8 @@ def _format_meta(result) -> str:
 
 
 def _sum_tokens(result) -> tuple[int, int]:
-    """016 — Pipeline step.meta'dan toplam tokens_in/out cikar."""
+    """Sum tokens_in/out across pipeline steps, so a multi-model run is billed
+    for everything it spent, not just the final call."""
     total_in = 0
     total_out = 0
     for s in result.steps:
@@ -57,7 +62,7 @@ def _sum_tokens(result) -> tuple[int, int]:
 
 @mcp_server.tool()
 async def qual_code(prompt: str) -> str:
-    """KALİTE KOD PIPELINE — Üret(kimi+gpt-oss-20b paralel) → codellama verify → gpt-oss-120b fix."""
+    """QUALITY CODE — generate (kimi + gpt-oss-20b in parallel) -> verify -> fix."""
     res = await QualCodePipeline().run(prompt)
     ti, to = _sum_tokens(res)
     await tracker.bump("qual_code", tokens_in=ti, tokens_out=to)
@@ -66,7 +71,7 @@ async def qual_code(prompt: str) -> str:
 
 @mcp_server.tool()
 async def qual_tr(prompt: str) -> str:
-    """KALİTE TÜRKÇE PIPELINE — Üret(qwen32b+gemini paralel) → aya review → kimi2 polish."""
+    """QUALITY TURKISH — generate (qwen32b + gemini in parallel) -> review -> polish."""
     res = await QualTrPipeline().run(prompt)
     ti, to = _sum_tokens(res)
     await tracker.bump("qual_tr", tokens_in=ti, tokens_out=to)
@@ -75,7 +80,7 @@ async def qual_tr(prompt: str) -> str:
 
 @mcp_server.tool()
 async def qual_analysis(prompt: str) -> str:
-    """KALİTE ANALİZ PIPELINE — 3 perspektif (gptoss + kimi2 + gemini-pro) → sentez."""
+    """QUALITY ANALYSIS — three independent takes (gptoss, kimi2, gemini-pro) -> synthesis."""
     res = await QualAnalysisPipeline().run(prompt)
     ti, to = _sum_tokens(res)
     await tracker.bump("qual_analysis", tokens_in=ti, tokens_out=to)
@@ -84,7 +89,7 @@ async def qual_analysis(prompt: str) -> str:
 
 @mcp_server.tool()
 async def qual_translate(prompt: str) -> str:
-    """KALİTE ÇEVİRİ PIPELINE — çevir → geri-çevir → karşılaştır → refine."""
+    """QUALITY TRANSLATION — translate -> back-translate -> compare -> refine."""
     res = await QualTranslatePipeline().run(prompt)
     ti, to = _sum_tokens(res)
     await tracker.bump("qual_translate", tokens_in=ti, tokens_out=to)
@@ -95,28 +100,28 @@ async def qual_translate(prompt: str) -> str:
 
 @mcp_server.tool()
 async def race(prompt: str) -> str:
-    """RACE — gpt-oss-120b vs kimi vs kimi2 paralel, ilk başarılı kazanır."""
+    """RACE — gpt-oss-120b vs kimi vs kimi2 in parallel; first success wins."""
     await tracker.bump("race")
     return _format_meta(await RaceGeneralPipeline().run(prompt))
 
 
 @mcp_server.tool()
 async def race_code(prompt: str) -> str:
-    """RACE CODE — CF Kimi K2.5 vs Groq GPT-OSS 120B, ilk başarılı."""
+    """RACE CODE — CF Kimi K2.5 vs Groq GPT-OSS 120B; first success wins."""
     await tracker.bump("race_code")
     return _format_meta(await RaceCodePipeline().run(prompt))
 
 
 @mcp_server.tool()
 async def race_tr(prompt: str) -> str:
-    """RACE TR — Qwen32B vs Gemini 2.5 Flash, ilk başarılı."""
+    """RACE TR — Qwen32B vs Gemini 2.5 Flash; first success wins."""
     await tracker.bump("race_tr")
     return _format_meta(await RaceTrPipeline().run(prompt))
 
 
 @mcp_server.tool()
 async def race_local(prompt: str) -> str:
-    """RACE LOCAL — Ollama phi4 vs gemma2. ABS_OLLAMA_URL gerekli."""
+    """RACE LOCAL — Ollama phi4 vs gemma2. Requires ABS_OLLAMA_URL."""
     await tracker.bump("race_local")
     return _format_meta(await RaceLocalPipeline().run(prompt))
 
@@ -125,21 +130,22 @@ async def race_local(prompt: str) -> str:
 
 @mcp_server.tool()
 async def qual_human(prompt: str) -> str:
-    """QUAL + HUMANIZE — qual-tr çıktısını AI-detector'dan düşük puan alacak şekilde dönüştürür."""
+    """QUAL + HUMANIZE — rewrites the qual-tr output to read less like model output."""
     await tracker.bump("qual_human")
     return _format_meta(await QualHumanPipeline().run(prompt))
 
 
 @mcp_server.tool()
 async def qual_code_human(prompt: str) -> str:
-    """QUAL CODE + HUMANIZE — qual-code çıktısını AI-yorumları kaldırarak yeniden yazar."""
+    """QUAL CODE + HUMANIZE — rewrites the qual-code output without the model's
+    narration comments."""
     await tracker.bump("qual_code_human")
     return _format_meta(await QualCodeHumanPipeline().run(prompt))
 
 
 @mcp_server.tool()
 async def humanize_score(text: str) -> str:
-    """Input metninin 'AI-written' heuristik skoru (0=insani, 1=AI). JSON döner."""
+    """Heuristic 'AI-written' score for a text (0 = human, 1 = model). Returns JSON."""
     await tracker.bump("humanize_score")
     score = humanize_score_text(text)
     return json.dumps(
@@ -157,14 +163,14 @@ async def humanize_score(text: str) -> str:
 
 @mcp_server.tool()
 async def auto_verify_code(code: str) -> str:
-    """PC GPU paralel kod doğrulama — granite-2b security + codellama test + deepseek lint."""
+    """Verify code with three local models in parallel — security, tests, lint."""
     await tracker.bump("auto_verify_code")
     return _format_meta(await AutoVerifyCodePipeline().run(code))
 
 
 @mcp_server.tool()
 async def auto_verify_turkish(text: str) -> str:
-    """Türkçe metin kalite kontrolü — aya-8b ile gramer/stil."""
+    """Turkish text quality check — grammar and style, via aya-8b."""
     await tracker.bump("auto_verify_turkish")
     return _format_meta(await AutoVerifyTurkishPipeline().run(text))
 

@@ -44,7 +44,7 @@ def load_all(directory: Optional[Path] = None) -> Dict[str, dict]:
     """Tum *.yaml dosyalarini oku, dict (provider_name → config) dondur."""
     d = directory or _default_dir()
     if not d.is_dir():
-        logger.warning("provider configs dir bulunamadi: %s", d)
+        logger.warning("provider config directory not found: %s", d)
         return {}
     out: Dict[str, dict] = {}
     for f in sorted(d.glob("*.yaml")):

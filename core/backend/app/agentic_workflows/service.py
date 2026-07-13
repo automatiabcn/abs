@@ -40,19 +40,19 @@ def palette() -> Dict[str, Any]:
 
 # ── Workflow graph definition (Stage D — interactive editor) ──────────────────
 def _default_graph() -> Dict[str, Any]:
-    """Canonical 'Inbound → Cevap Taslağı' graph — mirrors the mockup-03 layout
-    so a tenant with no saved definition still opens a meaningful flow."""
+    """Canonical 'Inbound → Reply Draft' graph, so a tenant with no saved
+    definition still opens a meaningful flow instead of a blank canvas."""
     return {
-        "name": "Inbound → Cevap Taslağı",
+        "name": "Inbound → Reply Draft",
         "nodes": [
-            {"id": "trigger", "kind": "trigger", "name": "Inbound talep", "desc": "form · email · WhatsApp", "x": 20, "y": 160, "agent_id": None},
-            {"id": "triage", "kind": "agent", "name": "Triage", "desc": "intent sınıflandırma", "x": 250, "y": 160, "agent_id": "inbound_triage"},
+            {"id": "trigger", "kind": "trigger", "name": "Inbound request", "desc": "form · email · WhatsApp", "x": 20, "y": 160, "agent_id": None},
+            {"id": "triage", "kind": "agent", "name": "Triage", "desc": "intent classification", "x": 250, "y": 160, "agent_id": "inbound_triage"},
             {"id": "retrieval", "kind": "retrieval", "name": "RAG + Graph", "desc": "hybrid · cite", "x": 480, "y": 60, "agent_id": None},
             {"id": "policy", "kind": "policy", "name": "Policy Engine", "desc": "Cerbos · risk", "x": 480, "y": 280, "agent_id": None},
-            {"id": "knowledge", "kind": "agent", "name": "Knowledge", "desc": "kaynak-gösteren taslak", "x": 710, "y": 60, "agent_id": "knowledge_base"},
-            {"id": "consent", "kind": "policy", "name": "Consent Ledger", "desc": "kanal izni", "x": 710, "y": 280, "agent_id": None},
-            {"id": "approval", "kind": "approval", "name": "Approval Gate", "desc": "orta-risk → onay", "x": 940, "y": 60, "agent_id": None},
-            {"id": "action", "kind": "action", "name": "CRM Note + Route", "desc": "yönlendir", "x": 940, "y": 280, "agent_id": None},
+            {"id": "knowledge", "kind": "agent", "name": "Knowledge", "desc": "cited draft", "x": 710, "y": 60, "agent_id": "knowledge_base"},
+            {"id": "consent", "kind": "policy", "name": "Consent Ledger", "desc": "channel consent", "x": 710, "y": 280, "agent_id": None},
+            {"id": "approval", "kind": "approval", "name": "Approval Gate", "desc": "medium risk → approval", "x": 940, "y": 60, "agent_id": None},
+            {"id": "action", "kind": "action", "name": "CRM Note + Route", "desc": "route", "x": 940, "y": 280, "agent_id": None},
         ],
         "edges": [
             {"source": "trigger", "target": "triage"},
@@ -262,10 +262,10 @@ async def run_workflow_graph(
                 status = "partial"
                 continue
             task = input_text if not prev_summary else (
-                f"{input_text}\n\nÖnceki adım çıktısı: {prev_summary}"
+                f"{input_text}\n\nOutput of the previous step: {prev_summary}"
             )
             if context_snippets:
-                task += "\n\nİlgili bağlam:\n- " + "\n- ".join(context_snippets[:5])
+                task += "\n\nRelevant context:\n- " + "\n- ".join(context_snippets[:5])
             try:
                 res = await run_agent(
                     agent_id, task, tenant_id=tenant_slug, user_subject=actor
@@ -313,9 +313,9 @@ async def run_workflow_graph(
             # summary + retrieved context threaded in. No code sandbox — safer and
             # native to an AI-orchestration product.
             instruction = (cfg.get("instruction") or n.get("desc") or nm).strip()
-            ctx = f"\n\nÖnceki adım çıktısı: {prev_summary}" if prev_summary else ""
+            ctx = f"\n\nOutput of the previous step: {prev_summary}" if prev_summary else ""
             if context_snippets:
-                ctx += "\n\nİlgili bağlam:\n- " + "\n- ".join(context_snippets[:5])
+                ctx += "\n\nRelevant context:\n- " + "\n- ".join(context_snippets[:5])
             prompt = f"{instruction}{ctx}"
             try:
                 from app.cascade.orchestrator import call_with_cascade
@@ -575,8 +575,8 @@ async def run_workflow(
             status = "partial"
             continue
         task = input_text if not prev_summary else (
-            f"{input_text}\n\nÖnceki adım ({results[-1].get('agent_id','')}) çıktısı: "
-            f"{prev_summary}"
+            f"{input_text}\n\nOutput of the previous step "
+            f"({results[-1].get('agent_id','')}): {prev_summary}"
         )
         try:
             res = await run_agent(

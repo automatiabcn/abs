@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Cascade orchestrator — cache → breaker → provider fallback zinciri."""
+"""Cascade orchestrator — cache, then circuit breaker, then provider fallback."""
 
 from __future__ import annotations
 
@@ -23,9 +23,9 @@ from .cache import default_cache, prompt_hash
 logger = logging.getLogger(__name__)
 
 
-# Sprint 2I UAT-014 — transient infra failures (network, timeout) used
-# to bypass the cascade fallback. We catch them alongside ProviderError
-# and treat them as ``transient=True``.
+# Infra failures (network, timeout) are caught alongside ProviderError and
+# treated as transient — otherwise they would escape the cascade and no
+# fallback would ever run.
 _TRANSIENT_INFRA_EXCEPTIONS = (
     ConnectionError,
     asyncio.TimeoutError,
@@ -35,12 +35,11 @@ _TRANSIENT_INFRA_EXCEPTIONS = (
 
 
 def _breaker_key(tenant_id: str, provider: str) -> str:
-    """Sprint 2I UAT-016 — tenant-scoped breaker key.
+    """Tenant-scoped breaker key.
 
-    Tenant A tripping a provider must not block tenant B from using
-    the same provider. ``"_global"`` keeps the legacy single-namespace
-    behaviour for internal warmup paths that do not carry tenant
-    context.
+    One tenant tripping a provider must not open the breaker for every other
+    tenant. Callers with no tenant context (internal warmup) pass ``"_global"``
+    and share a single namespace.
     """
     return f"{tenant_id}|{provider}"
 
@@ -52,9 +51,11 @@ def _resolve_owner_key(
     project_slug: Optional[str],
     user_subject: Optional[str],
 ) -> Optional[str]:
-    """MT Phase 1 — per-owner (project→user→org) key override. DB-only
-    (include_global=False): a missing DB key returns None so the adapter falls
-    back to its global ``settings`` key exactly as before. Never raises."""
+    """Per-owner (project → user → org) key override, from the DB only.
+
+    Returns None when no owner key exists, which leaves the adapter on its
+    global ``settings`` key. Never raises — a key lookup must not fail a call.
+    """
     if not (project_slug or user_subject):
         return None
     try:
@@ -84,20 +85,20 @@ async def call_with_cascade(
     user_subject: Optional[str] = None,
     **kwargs,
 ) -> ProviderResponse:
-    """Primary provider → fallback zinciri ile çağır.
+    """Call the primary provider, falling back down the chain on failure.
 
-    - Cache kontrolü (5dk TTL, tenant-scoped — UAT-016)
-    - Her provider için CircuitBreaker.allow() (tenant-scoped)
-    - ProviderError transient=True ise sıradaki fallback
-    - transient=False → direkt raise
-    - MT Phase 1: ``project_slug``/``user_subject`` verilirse provider başına
-      per-owner key (DB) çözümlenir ve adapter'a ``api_key`` olarak geçilir;
-      yoksa global ``settings`` key'i kullanılır (geriye dönük uyumlu).
+    The cache and the circuit breaker are both tenant-scoped. A provider that
+    fails hands the request to the next one in the chain; if every provider
+    fails, the failure the caller sees depends on whether any of them looked
+    retryable (see below).
+
+    When ``project_slug`` or ``user_subject`` is given, a per-owner key from the
+    DB is resolved for each provider and passed to the adapter; without one the
+    adapter uses the global key from ``settings``.
     """
-    # MT Phase 1 (W3): when no explicit caller context was passed, fall back to
-    # the MCP request context (set by the transport auth from the bearer token)
-    # so per-owner keys (BYOK) apply to delegated MCP tool calls too. Explicit
-    # callers (panel chat / cascade route) always win.
+    # With no explicit caller context, fall back to the MCP request context so
+    # per-owner keys also apply to delegated MCP tool calls. An explicit caller
+    # always wins.
     if tenant_id == "_global" and project_slug is None and user_subject is None:
         try:
             from app.mcp.context import get_mcp_caller
@@ -109,8 +110,8 @@ async def call_with_cascade(
             pass
 
     chain: List[str] = [primary, *fallbacks]
-    # MT Phase 1: when a per-owner key may be used, namespace the cache by the
-    # owner so one owner's BYOK answer is never served to another in the tenant.
+    # When a per-owner key may be used, the cache is namespaced by owner so one
+    # owner's answer is never served to another inside the same tenant.
     owner = f"p:{project_slug}" if project_slug else (f"u:{user_subject}" if user_subject else "")
     cache_key = prompt_hash(prompt, model or "", tenant_id=tenant_id, owner=owner)
 
@@ -130,12 +131,12 @@ async def call_with_cascade(
     for name in chain:
         breaker_id = _breaker_key(tenant_id, name)
         if not await default_breaker.allow(breaker_id):
-            logger.info("breaker open, provider atlandı: %s", breaker_id)
+            logger.info("breaker open, provider skipped: %s", breaker_id)
             continue
         try:
             provider = get_provider(name)
         except KeyError:
-            logger.warning("bilinmeyen provider: %s", name)
+            logger.warning("unknown provider: %s", name)
             continue
         tried.append(name)
         call_kwargs = kwargs
@@ -175,15 +176,14 @@ async def call_with_cascade(
             )
             continue
         except _TRANSIENT_INFRA_EXCEPTIONS as exc:
-            # Sprint 2I UAT-014 — ConnectionError / TimeoutError /
-            # httpx.HTTPError used to bypass the cascade and raise 500.
-            # Treat them like a transient ProviderError so the next
-            # provider gets a chance.
+            # Network-level failures are transient by definition: treat them
+            # like a transient ProviderError so the next provider gets a turn
+            # instead of the request dying with a 500.
             last_err = exc
             saw_transient = True
             await default_breaker.record_failure(breaker_id)
             logger.info(
-                "provider %s infra transient (%s), sıradakine geç: %s",
+                "provider %s infra transient (%s), moving to the next one: %s",
                 name,
                 type(exc).__name__,
                 exc,
@@ -200,8 +200,7 @@ async def call_with_cascade(
         raise last_err
 
     # Otherwise something was temporarily down or rate-limited, and retrying is
-    # honest advice. Sprint 2I UAT-044 — a structured 503 rather than a leaked
-    # stack trace.
+    # honest advice. A structured 503, never a leaked stack trace.
     detail = {
         "error": "providers_unavailable",
         "providers_tried": tried,

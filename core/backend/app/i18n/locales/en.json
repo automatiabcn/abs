@@ -1,5 +1,6 @@
 {
   "errors.stripe_not_configured": "Stripe not configured",
+  "errors.price_id_not_configured": "Price ID not configured: {sku}",
   "errors.signature_missing": "Stripe-Signature header missing",
   "errors.signature_invalid": "Signature verification failed",
   "errors.payload_invalid": "Invalid payload",

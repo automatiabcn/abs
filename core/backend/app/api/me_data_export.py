@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""029 Modul B — GDPR data export (Article 15) HTTP endpoints.
+"""GDPR data export (Article 15) HTTP endpoints.
 
 POST /v1/me/data-export             — start async export job
 GET  /v1/me/data-export/{job_id}    — status + (when ready) download URL

@@ -6,7 +6,7 @@
 """S20.1 — Piper TTS service client.
 
 Piper (MIT, https://github.com/rhasspy/piper) replaces Coqui XTTS-v2 as the
-self-host TTS engine; CPML lisans riski yok, attribution `THIRD_PARTY_LICENSES.md`'de.
+Self-hosted TTS engine. Attribution is in `THIRD_PARTY_LICENSES.md`.
 
 Container: `piper` (compose service) on :5002 — see infra/piper/Dockerfile.
 

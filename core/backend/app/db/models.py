@@ -12,12 +12,12 @@ from sqlmodel import Field, SQLModel
 
 
 class License(SQLModel, table=True):
-    """Üretilen lisansların kalıcı kaydı."""
+    """Durable record of every license minted."""
 
     __tablename__ = "licenses"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    jti: str = Field(index=True, unique=True, description="JWT benzersiz id")
+    jti: str = Field(index=True, unique=True, description="Unique JWT id")
     customer_email: str = Field(default="", index=True)
     customer_id_stripe: str = Field(default="", index=True)
     tier: str = Field(default="self-host")
@@ -29,23 +29,25 @@ class License(SQLModel, table=True):
     revoked_at: Optional[datetime] = Field(default=None)
     revoked_reason: Optional[str] = Field(default=None)
 
-    # 019 — first_success trigger
+    # first_success trigger
     first_tool_call_at: Optional[datetime] = Field(default=None)
 
-    # 023 — preferred email language (en|tr|es) — Stripe customer locale'inden parse
+    # Preferred email language (en|tr|es), parsed from the billing customer locale.
     preferred_lang: str = Field(default="en", max_length=8)
 
-    # 029 — GDPR Article 17 (right to erasure)
+    # GDPR Article 17 (right to erasure)
     scheduled_delete_at: Optional[datetime] = Field(default=None)
     purged_at: Optional[datetime] = Field(default=None)
 
 
 class EmailQueue(SQLModel, table=True):
-    """019 — Onboarding email serisi için kuyruk.
+    """Queue for the onboarding email series.
 
     `kind`: welcome|walkthrough|first_success|expiry_warning|recovery
-    Scheduler her 5dk tick eder, scheduled_at <= now AND sent_at IS NULL row'lari
-    gönderir. Idempotent: sent_at NOT NULL satirlari atlanir.
+
+    The scheduler ticks every 5 minutes and sends rows whose `scheduled_at` has
+    passed and whose `sent_at` is NULL. Rows with `sent_at` set are skipped, so
+    a repeated tick cannot send the same mail twice.
     """
 
     __tablename__ = "email_queue"
@@ -113,14 +115,14 @@ class VaultAuditEntry(SQLModel, table=True):
     detail: Optional[str] = Field(default=None, max_length=512)
     hmac: str = Field(max_length=64)
     prev_hmac: str = Field(default="", max_length=64)
-    # Sprint 2K — Postgres RLS tenant column. Defaults to "_unknown" for
-    # rows seeded before the backfill migration runs; runtime writes
-    # populate it from the request ContextVar (see app.db.session).
+    # Postgres RLS tenant column. Rows seeded before the backfill migration
+    # keep "_unknown"; runtime writes populate it from the request context
+    # (see app.db.session).
     tenant_id: str = Field(default="_unknown", max_length=64, index=True)
 
 
 class CustomerAuditEntry(SQLModel, table=True):
-    """029 — Per-customer audit log (GDPR Article 15 right of access)."""
+    """Per-customer audit log (GDPR Article 15, right of access)."""
 
     __tablename__ = "customer_audit_entries"
 
@@ -134,12 +136,12 @@ class CustomerAuditEntry(SQLModel, table=True):
     ts: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc), index=True
     )
-    # Sprint 2K — Postgres RLS tenant column (see VaultAuditEntry).
+    # Postgres RLS tenant column (see VaultAuditEntry).
     tenant_id: str = Field(default="_unknown", max_length=64, index=True)
 
 
 class Consent(SQLModel, table=True):
-    """029 — User consent tracking (GDPR Article 7)."""
+    """User consent tracking (GDPR Article 7)."""
 
     __tablename__ = "consents"
 
@@ -153,7 +155,7 @@ class Consent(SQLModel, table=True):
 
 
 class DataExportJob(SQLModel, table=True):
-    """029 — GDPR data export async job tracker."""
+    """GDPR data-export async job tracker."""
 
     __tablename__ = "data_export_jobs"
 
@@ -192,10 +194,10 @@ class BetaRequest(SQLModel, table=True):
 
 
 class WizardEvent(SQLModel, table=True):
-    """022 — Setup wizard adım bazlı drop-off metrik.
+    """Per-step drop-off metrics for the setup wizard.
 
-    Her adım transitionunda 1 row insert. Aynı session_id × step_num kombinasyonu
-    ikinci kez gelirse `completed_at` güncellenir (idempotent upsert).
+    One row per step transition. A repeated (session_id, step_num) pair updates
+    `completed_at` instead of inserting again.
     """
 
     __tablename__ = "wizard_events"
@@ -210,11 +212,11 @@ class WizardEvent(SQLModel, table=True):
 
 
 class WebhookEvent(SQLModel, table=True):
-    """017 — Stripe webhook idempotency: event_id bir kez işlenir.
+    """Webhook idempotency: an event_id is processed exactly once.
 
-    Stripe aynı event'i retry'larda tekrar gönderebilir. Bu tablo
-    'tam-kez-işle' garantisi sağlar: handler önce INSERT dener,
-    UNIQUE constraint patlarsa duplicate olarak 200 döner.
+    Payment providers retry the same event. The handler inserts first; a UNIQUE
+    violation means the event was already handled, and it answers 200 without
+    doing the work twice.
     """
 
     __tablename__ = "webhook_events"
@@ -227,15 +229,15 @@ class WebhookEvent(SQLModel, table=True):
     processed_at: Optional[datetime] = Field(default=None)
     license_jti: Optional[str] = Field(default=None, max_length=64, index=True)
     error: Optional[str] = Field(default=None, max_length=512)
-    # Sprint 2K — Postgres RLS tenant column (see VaultAuditEntry).
+    # Postgres RLS tenant column (see VaultAuditEntry).
     tenant_id: str = Field(default="_unknown", max_length=64, index=True)
 
 
-# ───── Sprint 20 — feature_usage + meetings ─────────────────────────────
+# ───── feature_usage + meetings ─────────────────────────────────────────
 
 
 class FeatureUsageLog(SQLModel, table=True):
-    """S20.3 — append-only feature usage events.
+    """Append-only feature usage events.
 
     Aggregation done at query time via GROUP BY (SQLite has no materialized
     views; rows expected to stay under 1M for a self-host single-tenant
@@ -313,16 +315,16 @@ class UsageLog(SQLModel, table=True):
     )
 
 
-# ───── Sprint Q8 / Phase A — chat sessions + messages ───────────────────
+# ───── chat sessions + messages ─────────────────────────────────────────
 
 
 class ChatSession(SQLModel, table=True):
-    """Q8 / Phase A — multi-tenant chat session header.
+    """Multi-tenant chat session header.
 
-    Q12 / Brief 3 R4 added four threading columns: `pinned`,
-    `archived_at`, `last_activity_at` (sidebar sort key, denormalised
-    from chat_messages.created_at), and `message_count` (counter cache
-    so the sidebar avoids a per-row COUNT()).
+    Four columns exist for the sidebar rather than for the chat itself:
+    `pinned`, `archived_at`, `last_activity_at` (sort key, denormalised from
+    chat_messages.created_at) and `message_count` (a counter cache that spares
+    the sidebar a per-row COUNT()).
     """
 
     __tablename__ = "chat_sessions"
@@ -332,14 +334,14 @@ class ChatSession(SQLModel, table=True):
         max_length=64, index=True, default="default"
     )
     user_email: str = Field(max_length=254, index=True)
-    title: str = Field(max_length=200, default="Yeni sohbet")
+    title: str = Field(max_length=200, default="New chat")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc), index=True
     )
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
-    # Q12 / Brief 3 R4 — threading metadata
+    # Threading metadata
     pinned: bool = Field(default=False)
     archived_at: Optional[datetime] = Field(default=None, index=True)
     last_activity_at: datetime = Field(
@@ -349,7 +351,7 @@ class ChatSession(SQLModel, table=True):
 
 
 class ChatMessage(SQLModel, table=True):
-    """Q8 / Phase A — single chat message (1:N to ChatSession)."""
+    """A single chat message (1:N to ChatSession)."""
 
     __tablename__ = "chat_messages"
 
@@ -399,7 +401,7 @@ class User(SQLModel, table=True):
 
 
 class TenantInvite(SQLModel, table=True):
-    """Sprint 2B BUG-36 — pending tenant invite + magic-link hash.
+    """Pending tenant invite plus the magic-link hash.
 
     The plaintext magic-link token is mailed to the recipient; only the
     HMAC-SHA256 digest is stored here so a database read cannot recover
@@ -429,7 +431,7 @@ class TenantInvite(SQLModel, table=True):
 
 
 class TenantInstalledPlugin(SQLModel, table=True):
-    """Sprint 2B BUG-34 — durable record of a tenant's plugin install.
+    """Durable record of a tenant's plugin install.
 
     Marketplace install handler writes one row per ``(tenant, plugin)``
     pair. ``uninstalled_at`` is set on /uninstall instead of deleting the
@@ -499,7 +501,7 @@ class MintedTokenRecord(SQLModel, table=True):
 
 
 class FailedLoginAttempt(SQLModel, table=True):
-    """Sprint 2I UAT-041 — per-email backoff state for /auth/login.
+    """Per-email backoff state for /auth/login.
 
     Each unsuccessful login increments ``attempts_count`` for the
     submitted email; the exponential-backoff helper extends

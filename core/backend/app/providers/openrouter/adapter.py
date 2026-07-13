@@ -3,10 +3,11 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""OpenRouter provider — OpenAI uyumlu passthrough.
+"""OpenRouter provider — OpenAI-compatible passthrough.
 
-Free models pool: DeepSeek R1, Qwen3 Coder, Gemma 3 family, MiniMax M2.
-Rate limit pool ile ücretsiz modeller ağır — fallback'i tek çağrıda zorlamayın.
+Free model pool: DeepSeek R1, Qwen3 Coder, Gemma 3 family, MiniMax M2. The free
+tier shares one rate-limit pool and is slow under load — do not stack several
+OpenRouter fallbacks behind a single call.
 """
 
 from __future__ import annotations

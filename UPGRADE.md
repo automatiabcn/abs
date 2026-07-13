@@ -1,73 +1,74 @@
-# ABS — Yeni Sürüm Yükseltme Kılavuzu
+# ABS — Upgrade Guide
 
-> Bu sürüm güvenlik + kullanıcı-yönetimi + MCP düzeltmeleri içerir. Müşteri
-> hiçbir config dosyasını **elle açıp düzenlemez**; aşağıdaki adımlar dosya
-> *değiştirme* (yenisini çekme) + komut çalıştırmadan ibarettir.
+> This release contains security, user-management and MCP fixes. You never have
+> to **open and hand-edit** a config file; the steps below are limited to
+> *replacing* files (pulling the new ones) and running commands.
 
-## Bu sürümde ne değişti
+## What changed in this release
 
-**Güvenlik (kritik):**
-- 🔒 **Vault encryption-at-rest artık gerçekten çalışıyor.** Önceki sürümde sops
-  yanlış format (`--input-type` eksik) nedeniyle sağlayıcı anahtarlarını şifreli
-  vault'a yazamıyor, sessizce plaintext `.env`'e düşüyordu. Artık anahtarlar
-  şifreli `secrets.yaml`'da saklanıyor.
-- 🔒 **`/mcp` artık token zorunlu kılıyor.** Token'sız erişim 401. (Önceden
-  token enforce edilmiyordu — herkes 122 aracı çağırabiliyordu.)
-- 🔒 **MCP token scope enforce ediliyor** (`hooks` scope'lu token `/mcp`'yi
-  kullanamaz).
-- 🔒 **`rag_index` yol kısıtlaması** — keyfi sunucu dosyası (vault key, DB,
-  `/etc`) indekslenemez (path-traversal kapatıldı).
-- 🔒 **Güvenlik header'ları** (X-Frame-Options, X-Content-Type-Options,
-  Referrer-Policy, HSTS) Caddy'ye eklendi.
+**Security (critical):**
+- 🔒 **Vault encryption-at-rest now actually works.** In the previous release
+  sops used the wrong format (missing `--input-type`), so provider keys were
+  never written to the encrypted vault and silently fell back to a plaintext
+  `.env`. Keys are now stored in an encrypted `secrets.yaml`.
+- 🔒 **`/mcp` now requires a token.** Access without a token returns 401.
+  (Previously the token was not enforced — anyone could call all 122 tools.)
+- 🔒 **MCP token scope is enforced** (a token with the `hooks` scope cannot use
+  `/mcp`).
+- 🔒 **`rag_index` path restriction** — arbitrary server files (vault key, DB,
+  `/etc`) can no longer be indexed (path traversal closed).
+- 🔒 **Security headers** (X-Frame-Options, X-Content-Type-Options,
+  Referrer-Policy, HSTS) added to Caddy.
 
-**Kullanıcı yönetimi:**
-- Davet akışı: SMTP yoksa **kopyalanabilir aktivasyon linki** döner (artık
-  davet maili "gitti" yalanı yok).
-- **Çok-admin RBAC**: bir kullanıcıyı panelden Admin yapmak gerçek admin yetkisi
-  verir; demote anında geri alır. Son aktif admin korunur. Self-signup artık
-  `member` (admin değil) — yetki yükseltme kapatıldı.
-- Yeni **MCP Token sayfası** (`/admin/mcp-tokens`) — token üret + Claude Code /
-  Codex çalıştırma komutu + revoke.
+**User management:**
+- Invite flow: when SMTP is not configured, it returns a **copyable activation
+  link** (no more "the invite email was sent" when it was not).
+- **Multi-admin RBAC**: promoting a user to Admin from the panel grants real
+  admin permissions; demoting revokes them immediately. The last active admin is
+  protected. Self-signup now creates a `member` (not an admin) — the privilege
+  escalation path is closed.
+- New **MCP Token page** (`/admin/mcp-tokens`) — generate a token, get the
+  ready-to-run Claude Code / Codex command, revoke.
 
-**Otomasyon:**
-- **vault-init** servisi — vault anahtarını ilk açılışta otomatik üretir
-  (manuel `init_vault.sh` adımı kalktı).
-- Cascade free-first (groq/gemini/... → anthropic son). Ekstra Anthropic
-  anahtarı gerekmez.
+**Automation:**
+- **vault-init** service — generates the vault key automatically on first boot
+  (the manual `init_vault.sh` step is gone).
+- Cascade is free-first (groq/gemini/… → anthropic last). No extra Anthropic key
+  is required.
 
-## Yükseltme adımları (müşteri)
+## Upgrade steps (customer)
 
-| Adım | Komut | Elle dosya düzenleme? |
-|------|-------|-----------------------|
-| 1. Yeni compose + .env şablonunu çek | `git pull` *veya* yeni `docker-compose.customer.yml` indir | Hayır (dosyayı değiştir) |
-| 2. Yeni image'ları çek | `docker compose pull` | Hayır |
-| 3. Stack'i güncelle | `docker compose up -d` | Hayır |
+| Step | Command | Hand-edit a file? |
+|------|---------|-------------------|
+| 1. Pull the new compose + .env template | `git pull` *or* download the new `docker-compose.customer.yml` | No (replace the file) |
+| 2. Pull the new images | `docker compose pull` | No |
+| 3. Update the stack | `docker compose up -d` | No |
 
-> **Neden compose'u da güncellemek gerekiyor?** `vault-init` servisi image'de
-> değil **compose dosyasında** tanımlı. Sadece `docker compose pull` (image)
-> yeterli değil — yeni compose dosyasını da almalısınız.
+> **Why does compose have to be updated too?** The `vault-init` service is
+> defined in the **compose file**, not in the image. `docker compose pull` (the
+> image) alone is not enough — you must take the new compose file as well.
 
-### MCP bağlantısı (Claude Code / Codex)
-- **Zaten token ile bağlandıysanız: hiçbir şey yapmanıza gerek yok.** Token'lar
-  `ABS_SESSION_SECRET` değişmediği sürece geçerli kalır.
-- Token'sız bağlandıysanız (artık reddedilir): panelde **MCP Token** sayfasından
-  bir token üretip oradaki **tek komutu** çalıştırın:
+### MCP connection (Claude Code / Codex)
+- **If you already connect with a token: there is nothing to do.** Tokens stay
+  valid as long as `ABS_SESSION_SECRET` does not change.
+- If you connected without a token (now rejected): generate a token on the panel
+  **MCP Token** page and run the **single command** shown there:
   ```
   claude mcp add --transport http abs https://<domain>/mcp --header "Authorization: Bearer abs_mcp_..."
   ```
-  Bu komut `~/.claude.json`'ı **otomatik** düzenler — elle dosya açmazsınız.
-  (Codex için: `codex mcp add abs --url https://<domain>/mcp --bearer-token-env-var ABS_MCP_TOKEN`.)
+  This command edits `~/.claude.json` **for you** — you never open the file.
+  (For Codex: `codex mcp add abs --url https://<domain>/mcp --bearer-token-env-var ABS_MCP_TOKEN`.)
 
-## Yükseltme sonrası kontrol
-- [ ] `docker compose ps` — tüm servisler healthy (vault-init `exited (0)`).
-- [ ] Panel → **Sağlayıcılar**: anahtarlar "Yapılandırıldı" (vault'tan yüklendi).
-- [ ] Panel → **MCP Token**: token üret → `claude mcp list` → `abs ✓ Connected`.
-- [ ] **Mevcut kullanıcıları denetle**: eski sürümde self-signup ile oluşan
-      `role=admin` kullanıcılar varsa (yeni RBAC ile admin erişimi kazanırlar)
-      Panel → Kullanıcılar'dan rollerini gözden geçirin.
+## Post-upgrade checks
+- [ ] `docker compose ps` — all services healthy (vault-init `exited (0)`).
+- [ ] Panel → **Providers**: keys show as "Configured" (loaded from the vault).
+- [ ] Panel → **MCP Token**: generate a token → `claude mcp list` → `abs ✓ Connected`.
+- [ ] **Audit your existing users**: if the old release created any `role=admin`
+      users through self-signup, they now gain real admin access under the new
+      RBAC — review their roles under Panel → Users.
 
-## Notlar
-- **Sağlayıcı anahtarları:** Her müşteri **kendi** anahtarlarını girer (panel /
-  setup wizard). Ürün anahtarsız gelir.
-- **Veri kaybı yok:** Mevcut `.env`'deki anahtarlar korunur; yükseltme sonrası
-  panelden bir anahtarı yeniden kaydederseniz artık şifreli vault'a da yazılır.
+## Notes
+- **Provider keys:** every customer enters **their own** keys (panel / setup
+  wizard). The product ships without keys.
+- **No data loss:** the keys in your existing `.env` are preserved; after the
+  upgrade, re-saving a key from the panel also writes it to the encrypted vault.

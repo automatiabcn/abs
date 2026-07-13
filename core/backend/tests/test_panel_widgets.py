@@ -48,7 +48,9 @@ def test_disagreement_stub_reachable(client):
     assert body["status"] == "empty"
     assert body["models"] == []
     assert body["consensus_score"] is None
-    assert "008-ask-disagree" in body["note"]
+    # The note has to say the feature is not wired up yet — an empty widget with
+    # no explanation reads as a broken one.
+    assert "not wired up" in body["note"]
 
 
 def test_widget_endpoints_require_auth(client):

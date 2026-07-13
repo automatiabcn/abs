@@ -1,68 +1,68 @@
 # ABS Central Watchdog
 
-Bizim tarafta (Automatia BCN) çalışan cron servis — provider pricing/changelog değişikliklerini günde 1 kere tarar ve değişiklik tespit edilirse Discord webhook'una bildirir.
+A cron service run by Automatia BCN — it scans provider pricing/changelog changes once a day and posts to a Discord webhook when it detects a change.
 
-**Müşteri tarafına etkisi YOK** — bu servis backend container'ında çalışmaz, ABS sunucusunun bir parçası değildir.
+**No impact on the customer side** — this service does not run in the backend container and is not part of the ABS server.
 
-## Deploy (Hetzner VPS, ~$5-10/ay)
+## Deploy (VPS, ~$5-10/month)
 
 ```bash
-# 1. VPS'e SSH bağlan
+# 1. SSH into the VPS
 ssh root@watchdog.automatiabcn.com
 
-# 2. Repo'yu kopyala (yalnızca infra/watchdog/)
+# 2. Copy the repo (only infra/watchdog/)
 mkdir -p /opt/abs-watchdog
 rsync -avz infra/watchdog/ root@watchdog.automatiabcn.com:/opt/abs-watchdog/watchdog/
 
-# 3. Python venv + bağımlılıklar
+# 3. Python venv + dependencies
 cd /opt/abs-watchdog
 python3 -m venv .venv
 .venv/bin/pip install httpx pyyaml
 
-# 4. Discord webhook env (systemd EnvironmentFile veya doğrudan crontab)
+# 4. Discord webhook env (systemd EnvironmentFile, or straight into crontab)
 echo 'WATCHDOG_DISCORD_WEBHOOK=https://discord.com/api/webhooks/...' > /etc/abs-watchdog.env
 
 # 5. crontab
 crontab -e
-# Ekle:
+# Add:
 # 0 6 * * * cd /opt/abs-watchdog && set -a && . /etc/abs-watchdog.env && set +a && .venv/bin/python -m watchdog.cron >> /var/log/abs-watchdog.log 2>&1
 ```
 
-## MVP Scope (014)
+## MVP scope
 
-- ✅ İskelet (`scanner.py`, `alerter.py`, `cron.py`) — import çalışıyor
-- ✅ `scan_all()` 6 provider için stub döner
-- ✅ `send_discord_alert()` webhook yoksa False döner (exception yok)
+- ✅ Skeleton (`scanner.py`, `alerter.py`, `cron.py`) — imports work
+- ✅ `scan_all()` returns a stub for each of the 6 providers
+- ✅ `send_discord_alert()` returns False when no webhook is set (no exception)
 
-## 015 Eklenen
+## Added since the MVP
 
-- ✅ `deploy.sh` — Hetzner / DO VPS otomatik kurulum scripti (Python venv + cron + logrotate)
-- ✅ `docs/operations.md § 11` — VPS kurulum talimatı + Discord webhook setup
-- ✅ `docs/operations.md § 12` — Manifest release flow (signing + S3 upload)
+- ✅ `deploy.sh` — automatic VPS install script (Python venv + cron + logrotate)
+- ✅ `docs/operations.md § 11` — VPS install instructions + Discord webhook setup
+- ✅ `docs/operations.md § 12` — manifest release flow (signing + S3 upload)
 
-## 016+ Scope
+## Planned
 
-- Provider başına gerçek HTML scrape parser (BeautifulSoup veya lxml)
-- Önceki snapshot ile diff (cache JSON dosyası)
-- Email alert (SMTP) opsiyonu
-- Kritik fiyat değişiklikleri için multiple alert kanalı
-- ABS müşterileri için panel'de "model deprecated" uyarı entegrasyonu
+- Real HTML scrape parser per provider (BeautifulSoup or lxml)
+- Diff against the previous snapshot (cached JSON file)
+- Email alert (SMTP) option
+- Multiple alert channels for critical price changes
+- "Model deprecated" warning in the panel for ABS customers
 
-## Manifest Signing Flow (Bizim Taraf)
+## Manifest signing flow (vendor side)
 
-Yeni release yayını adımları (`docs/operations.md § 12` detaylı):
+Steps to publish a new release (details in `docs/operations.md § 12`):
 
 ```bash
-# 1) Manifest hazırla
+# 1) Prepare the manifest
 vim manifest.json
 
-# 2) İmzala (1Password'dan private.pem çıkar)
+# 2) Sign it (fetch private.pem from the secret store)
 openssl dgst -sha256 -sign manifest-keys/private.pem -out manifest.json.sig.bin manifest.json
 base64 manifest.json.sig.bin > manifest.json.sig
 
-# 3) S3'e upload
+# 3) Upload to S3
 aws s3 cp manifest.json     s3://abs-releases/manifest.json
 aws s3 cp manifest.json.sig s3://abs-releases/manifest.json.sig
 ```
 
-Müşteri tarafında `app/update/manifest_pubkey.pem` ile fail-closed verify yapılır.
+On the customer side, verification is fail-closed against `app/update/manifest_pubkey.pem`.

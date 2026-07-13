@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""030 Modul F — `news_digest` MCP tool.
+"""`news_digest` MCP tool.
 
 Fans out 5 parallel `gemini_search` queries (Anthropic / OpenAI / Gemini /
 GitHub trending / MCP) and assembles a markdown digest. 1h disk cache;

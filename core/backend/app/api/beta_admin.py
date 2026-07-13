@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""031 Modul E — Beta admin queue + approve/reject (Bearer admin).
+"""Beta admin queue + approve/reject (Bearer admin).
 
 GET    /v1/admin/beta/queue?status=pending
 POST   /v1/admin/beta/{request_id}/approve

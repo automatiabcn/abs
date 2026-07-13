@@ -3,17 +3,17 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""022 — TypeScript / JavaScript symbol parser (regex-based, no tree-sitter).
+"""TypeScript / JavaScript symbol parser — regex-based, no tree-sitter.
 
-Tree-sitter binary 50+ MB; bunun yerine basit regex pattern'lar ile fonksiyon /
-class / variable / import yakalanır. Tam AST değil, %85 hit rate yeterli (016
-hybrid retrieval için signal olarak kullanılır).
+A tree-sitter binary costs 50+ MB in the image; these patterns are not a full
+AST, but hybrid retrieval only needs symbols as a ranking signal, and a partial
+hit rate is worth more than the dependency.
 
-Desteklenen pattern'lar:
-- `function name(...)` veya `async function name(...)`
+Recognised forms:
+- `function name(...)` and `async function name(...)`
 - `const name = (...) => {}` (arrow function)
-- `class Name {` veya `class Name extends X {`
-- `export { ... } from '...'` veya `import ... from '...'`
+- `class Name {` and `class Name extends X {`
+- `export { ... } from '...'` and `import ... from '...'`
 - `interface Name {` (TS only)
 - `type Name = ...` (TS only)
 """
@@ -50,7 +50,7 @@ _RE_IMPORT = re.compile(
 
 
 def parse_typescript_file(path: Path) -> List[Symbol]:
-    """TS / JS / TSX / JSX dosyasını regex ile parse et, sembolleri döndür."""
+    """Parse a TS / JS / TSX / JSX file and return the symbols it declares."""
     try:
         text = safe_read_text(path, encoding="utf-8", errors="ignore")
     except (PermissionError, FileNotFoundError, OSError):

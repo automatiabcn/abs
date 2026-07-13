@@ -1,13 +1,13 @@
 site_name: Automatia ABS Documentation
 site_url: https://docs.automatiabcn.com/
-site_description: Self-host AI orchestration for Claude Code — 100+ MCP tools, 6 provider cascade, RAG hybrid, Türkçe quality pipeline.
+site_description: Self-host AI orchestration for Claude Code — 100+ MCP tools, 6 provider cascade, RAG hybrid, multilingual quality pipelines.
 site_author: Automatia BCN
 repo_url: https://github.com/automatiabcn/abs
 edit_uri: edit/main/docs/
 
 theme:
   name: material
-  language: tr
+  language: en
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -15,14 +15,14 @@ theme:
       accent: blue
       toggle:
         icon: material/brightness-7
-        name: Karanlık moda geç
+        name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: blue
       accent: blue
       toggle:
         icon: material/brightness-4
-        name: Aydınlık moda geç
+        name: Switch to light mode
   features:
     - navigation.tabs
     - navigation.sections
@@ -34,7 +34,7 @@ theme:
     - content.code.annotate
 
 nav:
-  - Ana Sayfa: index.md
+  - Home: index.md
   - Setup Guide: setup-guide.md
   - Quickstart (30 min): quickstart-30min.md
   - Architecture: architecture.md

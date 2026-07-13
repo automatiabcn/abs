@@ -3,7 +3,8 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""9 basic provider MCP tool — her biri cascade orchestrator'a delege eder."""
+"""The nine baseline provider tools. Each one goes through the cascade, so a
+dead primary fails over instead of surfacing as a tool error."""
 
 from __future__ import annotations
 
@@ -26,7 +27,8 @@ async def _call(
     model: str,
     fallbacks: tuple = (),
 ) -> str:
-    """Ortak tool gövdesi: tracking + cascade + TR hata mesajı."""
+    """Shared tool body: usage tracking, cascade call, and a provider failure
+    returned as text rather than raised — an MCP tool must not throw at a client."""
     await tracker.bump(tool_name)
     try:
         resp = await call_with_cascade(
@@ -37,12 +39,12 @@ async def _call(
         )
         return resp.text or ""
     except ProviderError as exc:
-        return f"[HATA] {tool_name}: {exc.message}"
+        return f"[ERROR] {tool_name}: {exc.message}"
 
 
 @mcp_server.tool()
 async def ask_groq_fast(prompt: str) -> str:
-    """Llama 3.1 8B (Groq) — ultra hızlı (<0.3s). Kısa sorular, sınıflandırma."""
+    """Llama 3.1 8B (Groq) — ultra fast (<0.3s). Short questions, classification."""
     return await _call(
         tool_name="ask_groq_fast",
         prompt=prompt,
@@ -55,7 +57,7 @@ async def ask_groq_fast(prompt: str) -> str:
 @mcp_server.tool()
 @with_hooks("ask_scout")
 async def ask_scout(prompt: str) -> str:
-    """Llama 4 Scout 17B (Groq) — talimat takibi + kısa görev."""
+    """Llama 4 Scout 17B (Groq) — instruction following, short tasks."""
     return await _call(
         tool_name="ask_scout",
         prompt=prompt,
@@ -67,7 +69,7 @@ async def ask_scout(prompt: str) -> str:
 
 @mcp_server.tool()
 async def ask_cerebras(prompt: str) -> str:
-    """Cerebras Qwen3 235B — 235B MoE, ~0.3s latency. 1M tok/gün."""
+    """Cerebras — 235B MoE, ~0.3s latency, 1M tokens/day on the free tier."""
     return await _call(
         tool_name="ask_cerebras",
         prompt=prompt,
@@ -78,7 +80,7 @@ async def ask_cerebras(prompt: str) -> str:
 
 @mcp_server.tool()
 async def ask_gemini(prompt: str) -> str:
-    """Gemini 2.5 Flash — hızlı multimodal. Template, kısa üretim."""
+    """Gemini 2.5 Flash — fast multimodal. Templates, short generation."""
     return await _call(
         tool_name="ask_gemini",
         prompt=prompt,
@@ -89,7 +91,7 @@ async def ask_gemini(prompt: str) -> str:
 
 @mcp_server.tool()
 async def ask_gemini_pro(prompt: str) -> str:
-    """Gemini 2.5 Pro — 1M context, derin analiz, multimodal."""
+    """Gemini 2.5 Pro — 1M context, deep analysis, multimodal."""
     return await _call(
         tool_name="ask_gemini_pro",
         prompt=prompt,
@@ -111,7 +113,7 @@ async def ask_cf(prompt: str) -> str:
 
 @mcp_server.tool()
 async def ask_cf_gptoss(prompt: str) -> str:
-    """CloudFlare GPT-OSS 120B — edge 120B model, Groq alternatifi."""
+    """CloudFlare GPT-OSS 120B — 120B at the edge; alternative to the Groq route."""
     return await _call(
         tool_name="ask_cf_gptoss",
         prompt=prompt,
@@ -122,7 +124,7 @@ async def ask_cf_gptoss(prompt: str) -> str:
 
 @mcp_server.tool()
 async def ask_kimi(prompt: str) -> str:
-    """Kimi K2.5 (CloudFlare) — kod üretimi + strateji. 256K context."""
+    """Kimi K2.5 (CloudFlare) — code generation and planning. 256K context."""
     return await _call(
         tool_name="ask_kimi",
         prompt=prompt,
@@ -133,7 +135,7 @@ async def ask_kimi(prompt: str) -> str:
 
 @mcp_server.tool()
 async def ask_phi4(prompt: str) -> str:
-    """Phi-4 (yerel Ollama) — reasoning. OLLAMA_URL tanımlıysa çalışır."""
+    """Phi-4 via local Ollama — reasoning. Requires OLLAMA_URL to be set."""
     return await _call(
         tool_name="ask_phi4",
         prompt=prompt,

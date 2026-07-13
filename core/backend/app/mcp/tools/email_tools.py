@@ -3,12 +3,11 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""019 — Email queue MCP tool: kuyruk durumu + breakdown.
+"""Email queue MCP tool — one call an operator can read the whole queue from.
 
-Solo operatör için günlük email durumu kontrolü:
-  - by_status: sent / pending / failed
-  - by_kind: welcome / walkthrough / first_success / expiry_warning / recovery
-  - recent: son N kayıt (kind, scheduled_at, sent_at, attempts, error)
+  - by_status: sent / pending / failed  (failed == 3 attempts exhausted)
+  - by_kind:   welcome / walkthrough / first_success / expiry_warning / recovery
+  - recent:    last N rows (kind, scheduled_at, sent_at, attempts, error)
 """
 
 from __future__ import annotations
@@ -27,7 +26,7 @@ from app.mcp.tracking import tracker  # noqa: E402
 @mcp_server.tool()
 @with_hooks("email_queue_status")
 async def email_queue_status(limit: int = 50) -> str:
-    """ABS onboarding email kuyruk dashboard."""
+    """Onboarding email queue dashboard."""
     await tracker.bump("email_queue_status")
     from datetime import datetime, timezone
 

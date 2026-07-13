@@ -38,10 +38,10 @@ async def triage_inbound(
     Returns the structured triage result for the Inbound Intelligence UI.
     """
     task = (
-        "Gelen müşteri talebini sınıflandır ve firma bilgi tabanından "
-        "KAYNAK-GÖSTEREN bir cevap taslağı üret. JSON payload.intent alanına "
-        f"şu seçeneklerden TAM birini yaz: {', '.join(INTENTS)}. "
-        "payload.draft alanına cevap taslağını yaz.\n\nTALEP: " + (message or "")
+        "Classify this inbound customer request and draft a reply that CITES its "
+        "sources from the company knowledge base. Put EXACTLY one of these values "
+        f"in JSON payload.intent: {', '.join(INTENTS)}. "
+        "Put the reply draft in payload.draft.\n\nREQUEST: " + (message or "")
     )
     res = await run_agent(
         "inbound_triage", task, tenant_id=tenant_slug,

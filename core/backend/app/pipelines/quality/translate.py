@@ -46,7 +46,7 @@ class QualTranslatePipeline(BasePipeline):
                 final_response="",
                 total_elapsed_ms=int((time.monotonic() - total_start) * 1000),
                 prompt=prompt,
-                error="Çeviri adımı başarısız",
+                error="Translation step failed",
                 workflow_trace_id=wf.trace_id,
             )
 
@@ -63,8 +63,10 @@ class QualTranslatePipeline(BasePipeline):
         final_text = translated
         if back is not None and back.text:
             compare_prompt = (
-                "Bu iki metin aynı anlama mı geliyor? Anlam kaymasını listele:\n\n"
-                f"ORIJINAL:\n{prompt[:2000]}\n\nGERİ-ÇEVRİLMİŞ:\n{back.text[:2000]}"
+                "Do these two texts mean the same thing? List any drift in "
+                "meaning:\n\n"
+                f"ORIGINAL:\n{prompt[:2000]}\n\n"
+                f"BACK-TRANSLATED:\n{back.text[:2000]}"
             )
             cmp_step, cmp_result = await timed_step(
                 "compare",
@@ -81,10 +83,10 @@ class QualTranslatePipeline(BasePipeline):
                 and len(cmp_result.text) > 20
             ):
                 refine_prompt = (
-                    "Çeviriyi iyileştir. Anlam kaymaları:\n"
+                    "Improve the translation. Meaning drift found:\n"
                     f"{cmp_result.text[:1500]}\n\n"
-                    f"Mevcut çeviri:\n{translated[:4000]}\n\n"
-                    "Daha iyi çeviri döndür."
+                    f"Current translation:\n{translated[:4000]}\n\n"
+                    "Return a better translation."
                 )
                 refine_step, refine = await timed_step(
                     "refine",

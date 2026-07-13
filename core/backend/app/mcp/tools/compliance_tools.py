@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""029 Modul I — `compliance_status` MCP tool.
+"""`compliance_status` MCP tool.
 
 Aggregates GDPR-relevant signals into a single dashboard payload:
   - audit_log_retention_days   (config + actual oldest row age)
