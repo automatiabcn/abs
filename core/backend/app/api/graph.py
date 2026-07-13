@@ -89,6 +89,36 @@ def _has_forbidden_clause(cypher: str) -> bool:
     return bool(_FORBIDDEN_CLAUSE_RE.search(stripped))
 
 
+def _serves_more_than_one_tenant() -> bool:
+    """Is there actually more than one tenant on this server?
+
+    Raw Cypher cannot be safely tenant-scoped — a query that RETURNs a scalar
+    (`RETURN n.email AS e`) carries no tenant_id key and slips past the row
+    filter — so it must be refused wherever one customer could read another's
+    rows. That is not everywhere: on a single-tenant self-host there is no other
+    customer, and the raw console is a tool the owner of the data is entitled to.
+
+    Tying the refusal to `multi_tenant_strict` alone would have taken the console
+    away from every self-hoster the moment that flag defaulted on. Tying it to
+    whether a second tenant exists refuses it exactly where the leak is possible.
+    """
+    from sqlmodel import Session, select
+
+    from app.db.session import get_engine
+    from app.db.tenant_models import Tenant
+
+    try:
+        with Session(get_engine()) as db:
+            return len(db.exec(select(Tenant.slug).limit(2)).all()) > 1
+    except Exception:  # noqa: BLE001 — cannot count tenants → assume the worst
+        return True
+
+
+def _refuse_raw_cypher_if_shared() -> None:
+    if settings.multi_tenant_strict and _serves_more_than_one_tenant():
+        raise HTTPException(status_code=403, detail="raw_cypher_disabled_strict_mt")
+
+
 def _resolve_tenant(auth: AuthContext) -> str:
     tenant = (auth.tenant_id or "").strip()
     if not tenant:
@@ -202,13 +232,10 @@ async def cypher(
     auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
 ) -> Dict[str, Any]:
     tenant = _resolve_tenant(auth)
-    # Strict multi-tenant SaaS: raw Cypher cannot be safely tenant-scoped — a
-    # query that RETURNs scalar/aliased properties (e.g. `RETURN n.email AS e`)
-    # carries no tenant_id key and slips past `_filter_rows_by_tenant`. Refuse
-    # the raw surface; the templated endpoints (schema/ego/paths/resolve) stay
-    # open. Single-tenant (flag off) keeps the raw console.
-    if settings.multi_tenant_strict:
-        raise HTTPException(status_code=403, detail="raw_cypher_disabled_strict_mt")
+    # Raw Cypher cannot be safely tenant-scoped (see _serves_more_than_one_tenant).
+    # Refused on a shared server; the templated endpoints (schema/ego/paths/resolve)
+    # stay open there, and a single-tenant self-host keeps its console.
+    _refuse_raw_cypher_if_shared()
     if not (body.cypher or "").strip():
         raise HTTPException(status_code=422, detail="empty_cypher")
     if _has_forbidden_clause(body.cypher):
@@ -305,11 +332,9 @@ async def nl_query(
     auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
 ) -> Dict[str, Any]:
     tenant = _resolve_tenant(auth)
-    # Strict multi-tenant SaaS: NL→Cypher emits raw Cypher that flows through
-    # the same scalar-bypassable row filter as /cypher, so refuse it too. The
-    # templated graph endpoints remain the safe multi-tenant surface.
-    if settings.multi_tenant_strict:
-        raise HTTPException(status_code=403, detail="raw_cypher_disabled_strict_mt")
+    # NL→Cypher emits raw Cypher through the same scalar-bypassable row filter,
+    # so it is refused wherever /cypher is.
+    _refuse_raw_cypher_if_shared()
     if not (body.intent or "").strip():
         raise HTTPException(status_code=422, detail="empty_intent")
     # Lazy-import the cascade stack to keep the router importable on minimal
