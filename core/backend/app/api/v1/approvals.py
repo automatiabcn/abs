@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 from app.actions import list_actions
 from app.api.v1.deps import AuthContext, get_admin_or_bearer_auth_context
 from app.approvals import decide_approval, get_approval, list_approvals
+from app.approvals.service import AlreadyDecided
 
 router = APIRouter(prefix="/v1/approvals", tags=["approvals"])
 
@@ -76,6 +77,11 @@ async def decide_approval_item(
             note=body.note,
             edited_message=body.edited_message,
         )
+    except AlreadyDecided as exc:
+        # 409, not 200: the caller asked to change something that is already
+        # settled, and telling them it worked would be a lie the audit log has
+        # to live with.
+        raise HTTPException(409, str(exc))
     except ValueError as exc:
         raise HTTPException(400, str(exc))
     if row is None:

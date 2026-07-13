@@ -80,8 +80,7 @@ def test_claim_pending_transition_wins_exactly_once() -> None:
 
 
 def test_decide_fires_action_at_most_once(monkeypatch: pytest.MonkeyPatch) -> None:
-    """End-to-end: re-deciding an already-decided item never re-fires the
-    consent-gated outbound action (the won_transition gate, not prev_status)."""
+    """Deciding an item twice sends once — and the second decision is refused."""
     import app.actions as actions_mod
 
     res = _result()
@@ -97,12 +96,60 @@ def test_decide_fires_action_at_most_once(monkeypatch: pytest.MonkeyPatch) -> No
         return {"status": "queued", "reason": "ok"}
 
     monkeypatch.setattr(actions_mod, "execute_for_approval", _fake_exec)
-    for _ in range(2):
+    service.decide_approval(
+        tenant_slug="tFire", item_id=item["id"], decision="approve",
+        decided_by="b@x.io",
+    )
+    with pytest.raises(service.AlreadyDecided):
         service.decide_approval(
             tenant_slug="tFire", item_id=item["id"], decision="approve",
             decided_by="b@x.io",
         )
     assert calls["n"] == 1
+
+
+def test_a_rejection_cannot_be_rewritten_into_an_approval(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A decision is a record of what a person chose, and it stands.
+
+    The send was never the risk here — nothing re-fires. The risk was the row:
+    a re-decide used to overwrite `status` and report success, so an item a
+    person had rejected could end up reading "approved", with a timestamp and a
+    name against it, and nothing actually sent. Whoever read that row later
+    would believe a message went out. The refusal has to survive being asked
+    again.
+    """
+    import app.actions as actions_mod
+
+    res = _result()
+    rid = service.log_agent_run(res, tenant_slug="tKeep", actor="")
+    item = service.create_approval_from_result(
+        res, tenant_slug="tKeep", requester="", agent_run_id=rid,
+        target_company="Kaya", channel="email", consent_status="opt-in",
+    )
+    calls = {"n": 0}
+
+    def _fake_exec(row, *, tenant_slug):  # noqa: ANN001
+        calls["n"] += 1
+        return {"status": "queued", "reason": "ok"}
+
+    monkeypatch.setattr(actions_mod, "execute_for_approval", _fake_exec)
+
+    rejected = service.decide_approval(
+        tenant_slug="tKeep", item_id=item["id"], decision="reject",
+        decided_by="boss@x.io",
+    )
+    assert rejected["status"] == "rejected"
+
+    with pytest.raises(service.AlreadyDecided):
+        service.decide_approval(
+            tenant_slug="tKeep", item_id=item["id"], decision="approve",
+            decided_by="someone@x.io",
+        )
+
+    still = service.get_approval(tenant_slug="tKeep", item_id=item["id"])
+    assert still["status"] == "rejected", "a rejection was rewritten into an approval"
+    assert still["decided_by"] == "boss@x.io", "the record named the wrong person"
+    assert calls["n"] == 0, "a rejected action was sent"
 
 
 def test_accept_rate_is_none_until_a_decision_exists() -> None:

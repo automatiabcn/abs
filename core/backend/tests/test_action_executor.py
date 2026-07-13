@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import pytest
 from sqlmodel import Session
 
 from app.actions import execute_for_approval, list_actions
@@ -99,10 +100,18 @@ def test_decide_fires_action_at_most_once():
         db.refresh(ap)
         ap_id = ap.id
 
+    from app.approvals.service import AlreadyDecided
+
     d1 = decide_approval(tenant_slug=t, item_id=ap_id, decision="approve", decided_by="u")
-    d2 = decide_approval(tenant_slug=t, item_id=ap_id, decision="approve", decided_by="u")
     assert d1["action"] is not None        # first decision fires
-    assert d2["action"] is None            # re-decide does not re-fire
+
+    # The second decision is refused outright now, rather than quietly rewriting
+    # the row and returning 200 with no action attached. Nothing re-fired before
+    # either — but the record could be left saying "approved" over a decision
+    # somebody had made the other way, which is a lie the outbox cannot see.
+    with pytest.raises(AlreadyDecided):
+        decide_approval(tenant_slug=t, item_id=ap_id, decision="approve", decided_by="u")
+
     assert list_actions(tenant_slug=t)["total"] == 1
 
 
