@@ -4,10 +4,32 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
 from sqlmodel import Session
 
+from app.api.auth import current_admin
 from app.db.models import CustomerAuditEntry
 from app.db.session import get_engine
+from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def _signed_in():
+    """These routes are the operator's, so the caller signs in as one.
+
+    They used to answer anybody. That meant a stranger who knew a customer's URL
+    could read the whole tool catalogue, and — through `/panel/cascade/recent` —
+    which providers that company uses and a timestamp for every tool call it has
+    made. The panel pages in front of these routes were behind a login the whole
+    time, which is how it went unnoticed.
+
+    Note what this fixture does *not* change: the contracts below. Only the door.
+    `test_panel_endpoints_do_not_leak_license_jti` still matters — a signed-in
+    operator has no business seeing another tenant's licence id either.
+    """
+    app.dependency_overrides[current_admin] = lambda: {"sub": "admin@local"}
+    yield
+    app.dependency_overrides.pop(current_admin, None)
 
 
 # ---------- E: tool browser ----------

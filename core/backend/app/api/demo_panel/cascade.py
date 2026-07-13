@@ -18,9 +18,15 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-router = APIRouter(prefix="/v1/panel/cascade", tags=["panel"])
+from app.api.auth import current_admin
+
+# Signed-in operators only. Open, this told a stranger which providers a company
+# uses and when its people are working — every tool call is a timestamp.
+router = APIRouter(
+    prefix="/v1/panel/cascade", tags=["panel"], dependencies=[Depends(current_admin)]
+)
 
 
 def _norm(dt: Optional[datetime]) -> Optional[datetime]:
@@ -39,11 +45,12 @@ def _synthesise_from_audit(limit: int) -> list[dict]:
     cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     out: list[dict] = []
     with Session(get_engine()) as db:
-        # DB-side filter + order + limit. This endpoint is UNAUTHENTICATED and
-        # the audit table grows with every tool call; loading it all into memory
-        # per request was an unbounded memory/CPU DoS. Fetch at most `capped`
-        # most-recent tool_call rows; the 7-day cutoff is a cheap Python filter
-        # over that bounded set.
+        # DB-side filter + order + limit. The audit table grows with every tool
+        # call; loading it all into memory per request was an unbounded memory/CPU
+        # DoS. Fetch at most `capped` most-recent tool_call rows; the 7-day cutoff
+        # is a cheap Python filter over that bounded set. (This route now requires
+        # a signed-in operator, which it did not when that DoS was found — keep the
+        # bound anyway: a signed-in caller can still ask for a lot.)
         rows = list(db.scalars(
             select(CustomerAuditEntry)
             .where(CustomerAuditEntry.action == "tool_call")

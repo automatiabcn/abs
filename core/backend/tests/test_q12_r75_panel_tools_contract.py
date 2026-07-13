@@ -24,6 +24,25 @@ the registry, not the HTTP endpoint shape. R75 fills the gap with
 """
 from __future__ import annotations
 
+import pytest
+
+from app.api.auth import current_admin
+from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def _signed_in():
+    """The panel forwards the caller's session cookie, as the note above says.
+
+    These tests never sent one — the route was open, so nothing made them. It is
+    not open any more (a stranger could pull the whole tool catalogue off a
+    customer's server), so they sign in like the panel does. The contract they
+    assert on is unchanged; only the doorway is.
+    """
+    app.dependency_overrides[current_admin] = lambda: {"sub": "admin@local"}
+    yield
+    app.dependency_overrides.pop(current_admin, None)
+
 
 def _get(client, path: str):
     r = client.get(path)

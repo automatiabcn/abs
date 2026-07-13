@@ -14,8 +14,10 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
+
+from app.api.auth import current_admin
 
 from app.providers.cascade import configured_map
 from app.services.quota_monitor import (
@@ -25,7 +27,13 @@ from app.services.quota_monitor import (
     threshold_warnings,
 )
 
-router = APIRouter(prefix="/v1/system", tags=["system"])
+# How much of each provider's allowance a company has burned, and which
+# providers it has configured at all. That is operator data, and it was readable
+# by anyone who could reach the server — while `/v1/quota/status`, the near-twin
+# route next door, was correctly behind a login the whole time.
+router = APIRouter(
+    prefix="/v1/system", tags=["system"], dependencies=[Depends(current_admin)]
+)
 
 
 class QuotaSlice(BaseModel):
