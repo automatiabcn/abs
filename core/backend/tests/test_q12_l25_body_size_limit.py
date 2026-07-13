@@ -182,3 +182,20 @@ def test_no_content_length_header_passes_through(client: TestClient) -> None:
         headers={"Content-Type": "application/json"},
     )
     assert resp.status_code != 413
+
+
+def test_a_meeting_recording_is_not_capped_at_the_admin_default() -> None:
+    """A real recording is bigger than 5 MB, and the endpoint promised 250.
+
+    Found by uploading actual audio: the meetings route had no entry in the cap
+    table, so it fell to the generic admin default while `/v1/meetings/upload`
+    advertised MAX_UPLOAD_BYTES = 250 MB. Both numbers could not be true, and
+    the middleware's ran first — in practice you could upload about two minutes
+    of a meeting before a 413 came back talking about a limit the endpoint did
+    not have.
+    """
+    from app.api.meetings import MAX_UPLOAD_BYTES
+    from app.middleware.body_size_limit import BodySizeLimitMiddleware
+
+    mw = BodySizeLimitMiddleware(app=None)
+    assert mw._cap_for("/v1/meetings/upload") == MAX_UPLOAD_BYTES
