@@ -31,7 +31,7 @@ from qdrant_client.models import (
     PointStruct,
 )
 
-from app.api.v1.deps import AuthContext, get_auth_context
+from app.api.v1.deps import AuthContext
 from app.config import settings
 from app.middleware.cerbos_rag_filter import RAGAuth, rag_action_dep
 from app.observability.langfuse_client import observe
@@ -126,9 +126,7 @@ def _active_project(request: Request, auth: AuthContext) -> str | None:
 
 def _tenant_collection(auth: AuthContext) -> str:
     if not auth.tenant_id:
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN, detail="missing_tenant_claim"
-        )
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="missing_tenant_claim")
     return settings.qdrant_default_collection
 
 
@@ -196,9 +194,7 @@ def _synthesize_answer(
     active = get_active_providers()
     if not active or not hits:
         return None
-    numbered = "\n\n".join(
-        f"[{i + 1}] {h.text[:1200]}" for i, h in enumerate(hits)
-    )
+    numbered = "\n\n".join(f"[{i + 1}] {h.text[:1200]}" for i, h in enumerate(hits))
     prompt = (
         "Answer the question using ONLY the numbered sources below. Cite the "
         "sources you use inline as [1], [2]. If the sources don't contain the "
@@ -345,9 +341,7 @@ def ingest_text(
         contextual_prefix=body.contextual_prefix,
     )
     if not chunks:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, detail="no_chunkable_content"
-        )
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="no_chunkable_content")
 
     inserted = _ingest_chunks(
         tenant_id=auth.tenant_id or "",
@@ -392,9 +386,7 @@ def ingest_text(
     )
 
 
-_DOCX_MIME = (
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-)
+_DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 _XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 _EXT_MIME = {
     ".pdf": "application/pdf",
@@ -453,9 +445,7 @@ def ingest_file(
 
     chunks = late_chunks(doc)
     if not chunks:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, detail="no_chunkable_content"
-        )
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="no_chunkable_content")
 
     project_id = _active_project(request, auth)
     inserted = _ingest_chunks(
@@ -504,8 +494,11 @@ def ingest_file(
 
 
 _IMAGE_EXT_MIME = {
-    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-    ".webp": "image/webp", ".gif": "image/gif",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
 }
 _MAX_IMAGE_BYTES = 8 * 1024 * 1024  # 8 MiB
 
@@ -543,7 +536,9 @@ def ingest_image(
     if not raw:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="empty_upload")
     if len(raw) > _MAX_IMAGE_BYTES:
-        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="image_too_large")
+        raise HTTPException(
+            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="image_too_large"
+        )
     ext = _os.path.splitext(file.filename or "")[1].lower()
     ctype = (file.content_type or "").lower()
     mime = _IMAGE_EXT_MIME.get(ext) or (ctype if ctype.startswith("image/") else None)
@@ -597,7 +592,11 @@ def ingest_image(
     tokens = estimate_token_count(desc)
     logger.info(
         "rag_ingest_image tenant=%s doc=%s mime=%s chunks=%d ms=%.1f",
-        auth.tenant_id, doc.doc_id, mime, inserted, elapsed,
+        auth.tenant_id,
+        doc.doc_id,
+        mime,
+        inserted,
+        elapsed,
     )
     get_usage_logger().record(
         make_event(
@@ -611,8 +610,11 @@ def ingest_image(
             output_tokens=inserted,
             model_version=f"gemini-vision+{settings.embedding_backend}",
             metadata={
-                "doc_id": doc.doc_id, "collection": collection,
-                "chunks": inserted, "filename": file.filename or "", "kind": "image",
+                "doc_id": doc.doc_id,
+                "collection": collection,
+                "chunks": inserted,
+                "filename": file.filename or "",
+                "kind": "image",
             },
         )
     )
@@ -652,9 +654,7 @@ def _rag_extra_filter(
         if want == {"image"}:
             must.append(FieldCondition(key="kind", match=MatchValue(value="image")))
         elif want and "image" not in want:
-            must_not.append(
-                FieldCondition(key="kind", match=MatchValue(value="image"))
-            )
+            must_not.append(FieldCondition(key="kind", match=MatchValue(value="image")))
     if not must and not must_not:
         return None
     return Filter(must=must or None, must_not=must_not or None)
@@ -763,9 +763,7 @@ def query(
         if body.answer
         else None
     )
-    return QueryResponse(
-        query=body.query, hits=hits, elapsed_ms=elapsed, answer=answer
-    )
+    return QueryResponse(query=body.query, hits=hits, elapsed_ms=elapsed, answer=answer)
 
 
 class ImageQueryResponse(BaseModel):
@@ -805,7 +803,9 @@ def query_by_image(
     if not raw:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="empty_upload")
     if len(raw) > _MAX_IMAGE_BYTES:
-        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="image_too_large")
+        raise HTTPException(
+            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="image_too_large"
+        )
     ext = _os.path.splitext(file.filename or "")[1].lower()
     ctype = (file.content_type or "").lower()
     mime = _IMAGE_EXT_MIME.get(ext) or (ctype if ctype.startswith("image/") else None)
@@ -835,9 +835,7 @@ def query_by_image(
     _ensure_qdrant_collection(collection, vector_size=embedder.dim)
     vector = embedder.embed_one(description)
     kind_list = [k for k in (kinds.split(",") if kinds else []) if k.strip()]
-    extra_filter = _rag_extra_filter(
-        project_id=project_id, kinds=kind_list or None
-    )
+    extra_filter = _rag_extra_filter(project_id=project_id, kinds=kind_list or None)
     try:
         raw_hits = qc.search(
             collection=collection,
@@ -856,7 +854,10 @@ def query_by_image(
     elapsed = (time.perf_counter() - started) * 1000.0
     logger.info(
         "rag_query_by_image tenant=%s mime=%s hits=%d ms=%.1f",
-        auth.tenant_id, mime, len(hits), elapsed,
+        auth.tenant_id,
+        mime,
+        len(hits),
+        elapsed,
     )
     get_usage_logger().record(
         make_event(
@@ -872,9 +873,7 @@ def query_by_image(
             metadata={"hits": len(hits), "kind": "image_query"},
         )
     )
-    return ImageQueryResponse(
-        description=description, hits=hits, elapsed_ms=elapsed
-    )
+    return ImageQueryResponse(description=description, hits=hits, elapsed_ms=elapsed)
 
 
 @router.get("/documents")

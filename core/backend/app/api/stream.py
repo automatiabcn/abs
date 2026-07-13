@@ -77,10 +77,7 @@ def _build_orchestrator() -> dict:
 
     snap = _monitor.snapshot()
     if not snap:
-        snap = [
-            {"name": p, "state": "unknown", "latency_ms": 0}
-            for p in _PROVIDERS
-        ]
+        snap = [{"name": p, "state": "unknown", "latency_ms": 0} for p in _PROVIDERS]
     head = snap[0]
     return {
         "providers": snap,
@@ -108,7 +105,9 @@ def _build_judge_placeholder() -> dict:
     import time
 
     now = time.time()
-    if _JUDGE_CACHE["data"] is not None and (now - _JUDGE_CACHE["ts"] < _JUDGE_CACHE_TTL):
+    if _JUDGE_CACHE["data"] is not None and (
+        now - _JUDGE_CACHE["ts"] < _JUDGE_CACHE_TTL
+    ):
         return _JUDGE_CACHE["data"]
     try:
         from app.judge.stats import aggregate as judge_aggregate

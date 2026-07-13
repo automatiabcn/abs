@@ -97,15 +97,11 @@ def test_revoke_invite_flips_status_to_revoked(client, monkeypatch):
         json={"email": "revoke@demo-acme.com", "role": "member"},
     )
     invite_id = posted.json()["invite_id"]
-    r = client.delete(
-        f"/v1/admin/users/invite/{invite_id}", headers=headers
-    )
+    r = client.delete(f"/v1/admin/users/invite/{invite_id}", headers=headers)
     assert r.status_code == 204
 
     # Revoking again should now fail with 409 (status_revoked).
-    r2 = client.delete(
-        f"/v1/admin/users/invite/{invite_id}", headers=headers
-    )
+    r2 = client.delete(f"/v1/admin/users/invite/{invite_id}", headers=headers)
     assert r2.status_code == 409
 
 

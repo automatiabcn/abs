@@ -80,10 +80,7 @@ def test_cleanup_deletes_expired_only():
     mod.main(["--minutes", "10"])
 
     with Session(get_engine()) as s:
-        states = {
-            r.state
-            for r in s.scalars(select(OAuthState)).all()
-        }
+        states = {r.state for r in s.scalars(select(OAuthState)).all()}
         assert "exp_old" not in states
         assert "fresh_keep" in states
 

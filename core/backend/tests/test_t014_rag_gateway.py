@@ -27,9 +27,11 @@ from app.rag import reranker as rr
 
 
 def _challenge(verifier: str) -> str:
-    return base64.urlsafe_b64encode(
-        hashlib.sha256(verifier.encode("ascii")).digest()
-    ).rstrip(b"=").decode("ascii")
+    return (
+        base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode("ascii")
+    )
 
 
 def _seed_client(client_id: str) -> None:
@@ -262,9 +264,7 @@ def test_rerank_request_with_no_hits_short_circuits(
     monkeypatch.setattr(rag_routes.qc, "search", lambda *a, **k: [])
 
     spy = MagicMock()
-    monkeypatch.setattr(
-        rag_routes, "get_reranker", lambda: SimpleNamespace(rerank=spy)
-    )
+    monkeypatch.setattr(rag_routes, "get_reranker", lambda: SimpleNamespace(rerank=spy))
 
     with TestClient(app) as c:
         token = _issue(

@@ -41,7 +41,9 @@ def _runner() -> str:
 
 
 def _jobs_dir() -> pathlib.Path:
-    base = pathlib.Path(getattr(settings, "meeting_local_jobs_dir", "/tmp/abs-meetings"))
+    base = pathlib.Path(
+        getattr(settings, "meeting_local_jobs_dir", "/tmp/abs-meetings")
+    )
     base.mkdir(parents=True, exist_ok=True)
     return base
 

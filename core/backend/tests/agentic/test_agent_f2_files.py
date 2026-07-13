@@ -32,8 +32,12 @@ def workspace(tmp_path, monkeypatch):
     """An allowed root, a sibling that must stay unreachable, and a secret."""
     root = tmp_path / "data"
     root.mkdir()
-    (root / "notes.md").write_text("The Q3 plan is to double revenue.", encoding="utf-8")
-    (root / "contract.txt").write_text("Party A agrees to pay Party B.", encoding="utf-8")
+    (root / "notes.md").write_text(
+        "The Q3 plan is to double revenue.", encoding="utf-8"
+    )
+    (root / "contract.txt").write_text(
+        "Party A agrees to pay Party B.", encoding="utf-8"
+    )
     (root / ".env").write_text("ABS_GROQ_API_KEY=sk-live-secret", encoding="utf-8")
     (root / "private.pem").write_text("-----BEGIN PRIVATE KEY-----", encoding="utf-8")
     sub = root / "vault"
@@ -82,7 +86,9 @@ class TestBoundary:
         with pytest.raises(PathDenied, match="not enabled"):
             resolve("/anything")
 
-    def test_a_root_that_does_not_exist_is_dropped_not_trusted(self, monkeypatch, tmp_path):
+    def test_a_root_that_does_not_exist_is_dropped_not_trusted(
+        self, monkeypatch, tmp_path
+    ):
         # A typo in settings must narrow what the agent reaches, never widen it.
         monkeypatch.setattr(settings, "agent_fs_roots", [str(tmp_path / "nope")])
         with pytest.raises(PathDenied, match="not enabled"):
@@ -132,7 +138,9 @@ class TestTools:
             await fs_tools.fs_read(str(workspace["outside"] / "passwd.txt"))
 
     @pytest.mark.asyncio
-    async def test_read_refuses_a_file_too_large_to_be_a_document(self, workspace, monkeypatch):
+    async def test_read_refuses_a_file_too_large_to_be_a_document(
+        self, workspace, monkeypatch
+    ):
         big = workspace["root"] / "dump.log"
         big.write_text("x" * 2000, encoding="utf-8")
         monkeypatch.setattr("app.agentic.paths.MAX_FILE_BYTES", 1000)
@@ -183,11 +191,11 @@ class TestCatalogueWiring:
         from app.agentic.policy import check
 
         assert check(Level.READ_FILE).verdict == "allow"
-        assert all(
-            tool.level is not Level.WRITE for tool in dispatcher.catalogue()
-        )
+        assert all(tool.level is not Level.WRITE for tool in dispatcher.catalogue())
 
     @pytest.mark.asyncio
     async def test_the_dispatcher_runs_a_file_tool_end_to_end(self, workspace):
-        out = await dispatcher.run("fs_read", {"path": str(workspace["root"] / "contract.txt")})
+        out = await dispatcher.run(
+            "fs_read", {"path": str(workspace["root"] / "contract.txt")}
+        )
         assert "Party A" in out

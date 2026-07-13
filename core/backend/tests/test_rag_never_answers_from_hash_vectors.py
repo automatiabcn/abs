@@ -34,12 +34,19 @@ def test_mock_backend_returns_no_citations_rather_than_random_ones(monkeypatch):
 
     def _search(**kwargs):  # the store is never even asked
         searched["n"] += 1
-        return [{"id": "c1", "score": 0.9,
-                 "payload": {"text": "an unrelated chunk", "filename": "x.md"}}]
+        return [
+            {
+                "id": "c1",
+                "score": 0.9,
+                "payload": {"text": "an unrelated chunk", "filename": "x.md"},
+            }
+        ]
 
     monkeypatch.setattr(qc, "search", _search)
 
-    cits = asyncio.run(cit.retrieve_citations("when is the pricing audit?", project="t1"))
+    cits = asyncio.run(
+        cit.retrieve_citations("when is the pricing audit?", project="t1")
+    )
 
     assert cits == [], "the mock backend served hash collisions as citations"
     assert searched["n"] == 0, "a search that cannot mean anything was still run"
@@ -169,9 +176,7 @@ def test_the_health_check_is_not_green_during_the_outage_it_reports(monkeypatch)
         def model_id(self):
             return "mock"
 
-    monkeypatch.setattr(
-        "app.rag.embedding_bge.get_embedder", lambda: _Broken()
-    )
+    monkeypatch.setattr("app.rag.embedding_bge.get_embedder", lambda: _Broken())
     result = status_page._check_rag()
     assert result["ok"] is False, "rag reported healthy with no working embedder"
     assert "ABS_EMBEDDING_BACKEND" in result["detail"]  # and says how to fix it
@@ -183,17 +188,21 @@ def test_the_health_check_is_not_green_during_the_outage_it_reports(monkeypatch)
         def model_id(self):
             return "ollama:bge-m3"
 
-    monkeypatch.setattr(
-        "app.rag.embedding_bge.get_embedder", lambda: _Working()
-    )
+    monkeypatch.setattr("app.rag.embedding_bge.get_embedder", lambda: _Working())
     assert status_page._check_rag()["ok"] is True
 
 
-@pytest.mark.parametrize("backend,semantic", [("mock", False), ("ollama", True),
-                                              ("cohere", True)])
+@pytest.mark.parametrize(
+    "backend,semantic", [("mock", False), ("ollama", True), ("cohere", True)]
+)
 def test_semantic_flag_tracks_reality(backend, semantic, monkeypatch):
-    monkeypatch.setattr(emb.BGEEmbedder, "__init__",
-                        lambda self, b: (setattr(self, "backend", b),
-                                         setattr(self, "semantic", b != "mock"),
-                                         setattr(self, "dim", 1024))[0])
+    monkeypatch.setattr(
+        emb.BGEEmbedder,
+        "__init__",
+        lambda self, b: (
+            setattr(self, "backend", b),
+            setattr(self, "semantic", b != "mock"),
+            setattr(self, "dim", 1024),
+        )[0],
+    )
     assert emb.BGEEmbedder(backend).semantic is semantic

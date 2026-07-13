@@ -24,20 +24,36 @@ logger = logging.getLogger(__name__)
 
 
 def _is_mcp_tool(tool_name: str) -> bool:
-    return tool_name.startswith("mcp__") or tool_name.startswith("ask_") or tool_name in (
-        "qual_code", "qual_tr", "qual_analysis", "qual_translate",
-        "race", "race_code", "race_tr", "race_local",
-        "qual_human", "qual_code_human", "humanize_score",
-        "auto_verify_code", "auto_verify_turkish",
-        "ask_haiku", "ask_sonnet", "ask_opus",
-        "system_status",
+    return (
+        tool_name.startswith("mcp__")
+        or tool_name.startswith("ask_")
+        or tool_name
+        in (
+            "qual_code",
+            "qual_tr",
+            "qual_analysis",
+            "qual_translate",
+            "race",
+            "race_code",
+            "race_tr",
+            "race_local",
+            "qual_human",
+            "qual_code_human",
+            "humanize_score",
+            "auto_verify_code",
+            "auto_verify_turkish",
+            "ask_haiku",
+            "ask_sonnet",
+            "ask_opus",
+            "system_status",
+        )
     )
 
 
 def _strip_prefix(tool_name: str) -> str:
     """mcp__abs__ask_gptoss → ask_gptoss."""
     if tool_name.startswith("mcp__abs__"):
-        return tool_name[len("mcp__abs__"):]
+        return tool_name[len("mcp__abs__") :]
     return tool_name
 
 
@@ -77,11 +93,18 @@ def dispatch_hooks(tool_name: str, tool_input: Dict[str, Any] | None) -> Dict[st
             ctx_parts.append(msg)
     elif _is_mcp_tool(tool_name):
         stripped = _strip_prefix(tool_name)
-        msg = _safe("feature_nudge_mcp", feature_nudge.maybe_feature_nudge_mcp, stripped, tool_input)
+        msg = _safe(
+            "feature_nudge_mcp",
+            feature_nudge.maybe_feature_nudge_mcp,
+            stripped,
+            tool_input,
+        )
         if msg:
             ctx_parts.append(msg)
 
-    msg = _safe("delegate_nudge", delegate_nudge.maybe_delegate_nudge, tool_name, tool_input)
+    msg = _safe(
+        "delegate_nudge", delegate_nudge.maybe_delegate_nudge, tool_name, tool_input
+    )
     if msg:
         ctx_parts.append(msg)
 

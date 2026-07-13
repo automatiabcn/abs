@@ -37,7 +37,9 @@ def _valid_manifest_kwargs() -> dict:
     }
 
 
-def _sig_for(payload: bytes, cert: str = "dummy_cert", bundle: str = "dummy_bundle") -> PluginSignature:
+def _sig_for(
+    payload: bytes, cert: str = "dummy_cert", bundle: str = "dummy_bundle"
+) -> PluginSignature:
     return PluginSignature(
         cosign_bundle=bundle,
         certificate_chain=cert,
@@ -188,7 +190,9 @@ def test_verify_signature_no_cosign_module():
 
 
 def test_check_permissions_scope_within_allowlist():
-    perms = PluginPermissions(network_egress=["example.com"], cpu_quota=1.0, memory_mb=512)
+    perms = PluginPermissions(
+        network_egress=["example.com"], cpu_quota=1.0, memory_mb=512
+    )
     allowlist = PluginPermissions(
         network_egress=["example.com", "other.example.com"],
         cpu_quota=2.0,

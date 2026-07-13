@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, Literal
 
 State = Literal["closed", "open", "half_open"]
@@ -69,7 +69,10 @@ class CircuitBreaker:
             s = self._states.setdefault(provider, _ProviderState())
             now = self._now()
             # Failures only count inside the window; outside it the count restarts.
-            if s.fail_window_start == 0.0 or now - s.fail_window_start > self.fail_window_seconds:
+            if (
+                s.fail_window_start == 0.0
+                or now - s.fail_window_start > self.fail_window_seconds
+            ):
                 s.fail_count = 1
                 s.fail_window_start = now
             else:

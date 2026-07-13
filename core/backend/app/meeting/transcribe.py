@@ -279,7 +279,9 @@ class Transcriber:
     backend: str
 
     def __init__(self, backend_name: str | None = None) -> None:
-        backend = backend_name or getattr(settings, "transcribe_backend", "mock") or "mock"
+        backend = (
+            backend_name or getattr(settings, "transcribe_backend", "mock") or "mock"
+        )
         self.backend = backend
         if backend == "mock":
             self._impl = _MockBackend()

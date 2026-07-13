@@ -22,8 +22,8 @@ _BACK_TRANSLATE_SYSTEM = (
 )
 _DRIFT_SYSTEM = (
     "Compare the original text and the back-translation. Report a JSON "
-    "object {\"score\": float between 0 and 1, "
-    "\"issues\": [\"...\"]} where score=1 means identical meaning."
+    'object {"score": float between 0 and 1, '
+    '"issues": ["..."]} where score=1 means identical meaning.'
 )
 _RETRY_SYSTEM = (
     "Re-translate the source text taking the issues into account. "
@@ -58,15 +58,23 @@ def _split_request(prompt: str) -> tuple[str, str]:
     return target, source or instruction
 
 
-async def execute(prompt: str, call_provider: _runner.CallProvider) -> _runner.QualResult:
-    result = _runner.QualResult(pipeline_id="qual_translate", completion="", verified=False)
+async def execute(
+    prompt: str, call_provider: _runner.CallProvider
+) -> _runner.QualResult:
+    result = _runner.QualResult(
+        pipeline_id="qual_translate", completion="", verified=False
+    )
     target_lang, source = _split_request(prompt)
 
     translate_prompt = (
         f"{_TRANSLATE_SYSTEM}\n\nHedef dil: {target_lang}\n\nMetin:\n{source[:5000]}"
     )
     t_stage, translation = await _runner.run_stage(
-        "qual_translate", "translate", "groq", translate_prompt, call_provider=call_provider
+        "qual_translate",
+        "translate",
+        "groq",
+        translate_prompt,
+        call_provider=call_provider,
     )
     result.stages.append(t_stage)
     if t_stage.ok:
@@ -80,15 +88,21 @@ async def execute(prompt: str, call_provider: _runner.CallProvider) -> _runner.Q
         result.fallback_reason = "translate_failed"
         return result
 
-    back_prompt = (
-        f"{_BACK_TRANSLATE_SYSTEM}\n\nText:\n{translation[:5000]}"
-    )
+    back_prompt = f"{_BACK_TRANSLATE_SYSTEM}\n\nText:\n{translation[:5000]}"
     b_stage, back = await _runner.run_stage(
-        "qual_translate", "back-translate", "cerebras", back_prompt, call_provider=call_provider
+        "qual_translate",
+        "back-translate",
+        "cerebras",
+        back_prompt,
+        call_provider=call_provider,
     )
     if not b_stage.ok:
         b_stage, back = await _runner.run_stage(
-            "qual_translate", "back-translate", "groq", back_prompt, call_provider=call_provider
+            "qual_translate",
+            "back-translate",
+            "groq",
+            back_prompt,
+            call_provider=call_provider,
         )
     result.stages.append(b_stage)
     if b_stage.ok:

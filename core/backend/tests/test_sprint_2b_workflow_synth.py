@@ -20,17 +20,15 @@ def panel_admin(client, monkeypatch):
         json.dumps(
             {
                 "email": "admin@local",
-                "password_hash": bcrypt.hashpw(
-                    b"s3cret", bcrypt.gensalt()
-                ).decode("utf-8"),
+                "password_hash": bcrypt.hashpw(b"s3cret", bcrypt.gensalt()).decode(
+                    "utf-8"
+                ),
                 "tenant_slug": "tnt-workflow-test",
             }
         ),
         encoding="utf-8",
     )
-    r = client.post(
-        "/auth/login", json={"email": "admin@local", "password": "s3cret"}
-    )
+    r = client.post("/auth/login", json={"email": "admin@local", "password": "s3cret"})
     assert r.status_code == 200, r.text
     yield
 
@@ -60,8 +58,7 @@ def test_synth_fallback_emits_explicit_warning(client, monkeypatch, panel_admin)
     # Sprint 2B BUG-31 — the synth helper now inserts a leading
     # warning describing the fallback so the frontend can act on it.
     assert any(
-        "LLM synthesis failed, using template match" in w
-        for w in body["warnings"]
+        "LLM synthesis failed, using template match" in w for w in body["warnings"]
     )
 
 

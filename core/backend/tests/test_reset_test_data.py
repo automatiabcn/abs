@@ -34,9 +34,7 @@ LIB_PATH = REPO_ROOT / "scripts" / "_test_data_lib.py"
 
 
 def _load_lib():
-    spec = importlib.util.spec_from_file_location(
-        "_test_data_lib_under_test", LIB_PATH
-    )
+    spec = importlib.util.spec_from_file_location("_test_data_lib_under_test", LIB_PATH)
     assert spec and spec.loader, "lib module not loadable"
     module = importlib.util.module_from_spec(spec)
     sys.modules.setdefault(spec.name, module)
@@ -64,14 +62,8 @@ def _seed_test_data():
 
     with Session(get_engine()) as db:
         for em in seeded_user_emails:
-            tenant = (
-                "demo-acme" if em == "admin@demo-acme.com" else "default"
-            )
-            status = (
-                "active"
-                if "@" in em and "test" not in em
-                else "pending"
-            )
+            tenant = "demo-acme" if em == "admin@demo-acme.com" else "default"
+            status = "active" if "@" in em and "test" not in em else "pending"
             db.add(
                 User(
                     email=em,
@@ -107,9 +99,7 @@ def _seed_test_data():
         db.commit()
         db.refresh(sess)
         db.add(ChatMessage(session_id=sess.id, role="user", content="hi"))
-        db.add(
-            ChatMessage(session_id=sess.id, role="assistant", content="hey")
-        )
+        db.add(ChatMessage(session_id=sess.id, role="assistant", content="hey"))
         db.add(
             BetaRequest(
                 email=seeded_beta_email,
@@ -134,14 +124,10 @@ def _seed_test_data():
             for u in db.exec(select(User).where(User.email == em)).all():
                 db.delete(u)
         for jti in seeded_license_jtis:
-            for lic in db.exec(
-                select(License).where(License.jti == jti)
-            ).all():
+            for lic in db.exec(select(License).where(License.jti == jti)).all():
                 db.delete(lic)
         for cs in db.exec(
-            select(ChatSession).where(
-                ChatSession.user_email == seeded_chat_email
-            )
+            select(ChatSession).where(ChatSession.user_email == seeded_chat_email)
         ).all():
             for m in db.exec(
                 select(ChatMessage).where(ChatMessage.session_id == cs.id)
@@ -197,8 +183,7 @@ def test_reset_confirm_counts(_seed_test_data):
 
     for cat in confirmed["categories"]:
         assert (
-            confirmed["categories"][cat]["deleted"]
-            == dry["categories"][cat]["matched"]
+            confirmed["categories"][cat]["deleted"] == dry["categories"][cat]["matched"]
         ), f"category {cat} deleted!=matched"
 
     assert confirmed["total_deleted"] == dry["total_matched"]
@@ -222,10 +207,7 @@ def test_protected_emails_never_touched(_seed_test_data):
 
     with Session(get_engine()) as db:
         users_left = {u.email for u in db.exec(select(User)).all()}
-        licences_left = {
-            (lic.jti, lic.tier)
-            for lic in db.exec(select(License)).all()
-        }
+        licences_left = {(lic.jti, lic.tier) for lic in db.exec(select(License)).all()}
 
     assert "admin@demo-acme.com" in users_left
     assert any("@acme.com" in e for e in users_left)

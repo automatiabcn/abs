@@ -36,7 +36,10 @@ def _resolve_admin_tenant(admin: dict) -> str:
     request time. Aligning both ends keeps BYOK + project scoping consistent."""
     from app.api.chat import _resolve_tenant
 
-    return _resolve_tenant(str(admin.get("sub") or admin.get("email") or "")) or "default"
+    return (
+        _resolve_tenant(str(admin.get("sub") or admin.get("email") or "")) or "default"
+    )
+
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1/admin/provider-keys", tags=["admin", "provider-keys"])
@@ -72,7 +75,9 @@ class ProviderKeyTest(BaseModel):
     value: str | None = Field(default=None, max_length=8192)
 
 
-async def _ping_provider(provider: str, key: str, tenant: str) -> tuple[bool, str | None]:
+async def _ping_provider(
+    provider: str, key: str, tenant: str
+) -> tuple[bool, str | None]:
     """Live one-shot ping of a provider with a SPECIFIC key (api_key override).
     Returns (ok, reason). Never raises — a bad key is a result, not a 500."""
     import asyncio
@@ -82,8 +87,13 @@ async def _ping_provider(provider: str, key: str, tenant: str) -> tuple[bool, st
 
         resp = await asyncio.wait_for(
             call_with_cascade(
-                "ping", primary=provider, fallbacks=(), use_cache=False,
-                tenant_id=tenant or "_global", api_key=key, max_tokens=4,
+                "ping",
+                primary=provider,
+                fallbacks=(),
+                use_cache=False,
+                tenant_id=tenant or "_global",
+                api_key=key,
+                max_tokens=4,
             ),
             timeout=12.0,
         )
@@ -93,7 +103,9 @@ async def _ping_provider(provider: str, key: str, tenant: str) -> tuple[bool, st
         return (False, str(exc)[:160])
 
 
-def _resolve_owner(admin: dict, tenant: str, owner_type: str, owner_id: str | None) -> str:
+def _resolve_owner(
+    admin: dict, tenant: str, owner_type: str, owner_id: str | None
+) -> str:
     owner_type = (owner_type or "").strip()
     if owner_type == pk.OWNER_ORG:
         return tenant
@@ -131,7 +143,11 @@ async def set_key(body: ProviderKeyIn, admin: dict = Depends(admin_required)) ->
         raise HTTPException(422, str(exc)) from exc
     logger.info(
         "provider_key_set tenant=%s owner=%s:%s provider=%s by=%s",
-        tenant, body.owner_type, owner_id, body.provider, _admin_subject(admin),
+        tenant,
+        body.owner_type,
+        owner_id,
+        body.provider,
+        _admin_subject(admin),
     )
     # Someone put a credential on this server that can spend the company's money.
     # The line above says so to stderr; this one says it to the log a person can
@@ -155,7 +171,9 @@ async def set_key(body: ProviderKeyIn, admin: dict = Depends(admin_required)) ->
 
 
 @router.post("/test")
-async def test_key(body: ProviderKeyTest, admin: dict = Depends(admin_required)) -> dict:
+async def test_key(
+    body: ProviderKeyTest, admin: dict = Depends(admin_required)
+) -> dict:
     """Live-validate a BYOK provider key — either a raw value (pre-save check)
     or the stored key for this owner. On a stored key, the result is persisted
     to last_validated_ok/at so the panel can show a freshness badge."""
@@ -165,8 +183,10 @@ async def test_key(body: ProviderKeyTest, admin: dict = Depends(admin_required))
     owner_id = _resolve_owner(admin, tenant, body.owner_type, body.owner_id)
     raw = (body.value or "").strip()
     key = raw or pk.get_owner_key(
-        tenant_slug=tenant, owner_type=body.owner_type,
-        owner_id=owner_id, provider=body.provider,
+        tenant_slug=tenant,
+        owner_type=body.owner_type,
+        owner_id=owner_id,
+        provider=body.provider,
     )
     if not key:
         raise HTTPException(404, "no_key_to_test")
@@ -174,19 +194,34 @@ async def test_key(body: ProviderKeyTest, admin: dict = Depends(admin_required))
     if not raw:
         # only persist validation state for a STORED key (not a pre-save probe)
         pk.mark_key_validated(
-            tenant_slug=tenant, owner_type=body.owner_type, owner_id=owner_id,
-            provider=body.provider, ok=ok,
+            tenant_slug=tenant,
+            owner_type=body.owner_type,
+            owner_id=owner_id,
+            provider=body.provider,
+            ok=ok,
         )
     logger.info(
         "provider_key_test tenant=%s owner=%s:%s provider=%s ok=%s by=%s",
-        tenant, body.owner_type, owner_id, body.provider, ok, _admin_subject(admin),
+        tenant,
+        body.owner_type,
+        owner_id,
+        body.provider,
+        ok,
+        _admin_subject(admin),
     )
-    return {"ok": ok, "provider": body.provider, "reason": reason,
-            "owner_type": body.owner_type, "owner_id": owner_id}
+    return {
+        "ok": ok,
+        "provider": body.provider,
+        "reason": reason,
+        "owner_type": body.owner_type,
+        "owner_id": owner_id,
+    }
 
 
 @router.delete("")
-async def delete_key(body: ProviderKeyDel, admin: dict = Depends(admin_required)) -> dict:
+async def delete_key(
+    body: ProviderKeyDel, admin: dict = Depends(admin_required)
+) -> dict:
     tenant = _resolve_admin_tenant(admin)
     owner_id = _resolve_owner(admin, tenant, body.owner_type, body.owner_id)
     removed = pk.delete_provider_key(

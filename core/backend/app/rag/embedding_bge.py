@@ -102,9 +102,7 @@ class _CohereBackend:
 
     def __init__(self, model: str | None = None) -> None:
         if not (getattr(settings, "cohere_api_key", "") or ""):
-            raise ValueError(
-                "embedding_backend=cohere requires ABS_COHERE_API_KEY"
-            )
+            raise ValueError("embedding_backend=cohere requires ABS_COHERE_API_KEY")
         try:
             import cohere  # noqa: F401
         except ImportError as exc:
@@ -123,9 +121,7 @@ class _CohereBackend:
         import cohere
 
         async def _run() -> list[list[float]]:
-            client = cohere.AsyncClientV2(
-                api_key=settings.cohere_api_key, timeout=30.0
-            )
+            client = cohere.AsyncClientV2(api_key=settings.cohere_api_key, timeout=30.0)
             resp = await client.embed(
                 texts=[t[:8000] for t in texts],
                 model=self.model,
@@ -172,7 +168,9 @@ class _OllamaBackend:
         self.dim = len(self._embed_batch(["dimension probe"])[0])
         logger.info(
             "embedding_ollama_init model=%s url=%s dim=%d",
-            self.model, self.url, self.dim,
+            self.model,
+            self.url,
+            self.dim,
         )
 
     def _embed_batch(self, texts: list[str]) -> list[list[float]]:
@@ -232,9 +230,7 @@ class _SentenceTransformersBackend:
 class _OnnxBackend:
     def __init__(self, model_path: str, providers: list[str]) -> None:
         if not model_path:
-            raise ValueError(
-                "embedding_model_path must be set for the ONNX backend"
-            )
+            raise ValueError("embedding_model_path must be set for the ONNX backend")
         try:
             import onnxruntime as ort  # noqa: F401
             from transformers import AutoTokenizer  # noqa: F401
@@ -255,9 +251,7 @@ class _OnnxBackend:
             self.dim = int(tail) if isinstance(tail, int) and tail > 0 else 1024
         except Exception:
             self.dim = 1024
-        logger.info(
-            "embedding_onnx_init providers=%s dim=%d", providers, self.dim
-        )
+        logger.info("embedding_onnx_init providers=%s dim=%d", providers, self.dim)
 
     def _embed_batch(self, texts: list[str]) -> list[list[float]]:
         import numpy as np
@@ -432,9 +426,7 @@ class BGEEmbedder:
         into every chunk's payload so a corpus embedded by a previous backend
         can be recognised as stale rather than silently searched against.
         """
-        name = getattr(self._impl, "model", "") or getattr(
-            self._impl, "model_name", ""
-        )
+        name = getattr(self._impl, "model", "") or getattr(self._impl, "model_name", "")
         return f"{self.backend}:{name}" if name else self.backend
 
     def embed(self, texts: list[str]) -> list[list[float]]:
@@ -461,9 +453,7 @@ class BGEEmbedder:
                     raise
                 old = batch_size
                 batch_size = max(batch_size // 2, min_batch)
-                logger.warning(
-                    "embedding_oom_reduce from=%d to=%d", old, batch_size
-                )
+                logger.warning("embedding_oom_reduce from=%d to=%d", old, batch_size)
         return results
 
     def embed_one(self, text: str) -> list[float]:
@@ -488,7 +478,9 @@ def get_embedder() -> BGEEmbedder:
         _embedder = BGEEmbedder(backend)
         logger.info(
             "embedder_singleton_init backend=%s dim=%d semantic=%s",
-            backend, _embedder.dim, _embedder.semantic,
+            backend,
+            _embedder.dim,
+            _embedder.semantic,
         )
     return _embedder
 

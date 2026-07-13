@@ -10,10 +10,7 @@ from pathlib import Path
 
 def _script() -> Path:
     return (
-        Path(__file__).resolve().parents[3]
-        / "infra"
-        / "scripts"
-        / "deploy_hetzner.sh"
+        Path(__file__).resolve().parents[3] / "infra" / "scripts" / "deploy_hetzner.sh"
     )
 
 

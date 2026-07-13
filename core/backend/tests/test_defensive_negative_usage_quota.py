@@ -50,8 +50,8 @@ def test_quota_read_used_ignores_negative_and_garbage_rows(tmp_path):
             json.dumps(r)
             for r in [
                 {"month": month, "tokens": 1000},
-                {"month": month, "tokens": -999999},   # poison row
-                {"month": month, "tokens": "abc"},      # garbage
+                {"month": month, "tokens": -999999},  # poison row
+                {"month": month, "tokens": "abc"},  # garbage
                 {"month": month, "tokens": 500},
             ]
         )

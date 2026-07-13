@@ -25,7 +25,6 @@ import logging
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from fastapi import HTTPException
@@ -77,7 +76,9 @@ def _isolate_data_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     )
 
 
-def _signup(client: TestClient, email: str, slug: str, password: str = "TestPass2026!") -> str:
+def _signup(
+    client: TestClient, email: str, slug: str, password: str = "TestPass2026!"
+) -> str:
     r = client.post(
         "/auth/signup",
         json={"email": email, "tenant_slug": slug, "password": password},
@@ -128,9 +129,9 @@ def test_token_24h_expiry_then_reuse_blocked_410(client: TestClient):
 
     # Force the User row's magic_expires_at into the past.
     with Session(get_engine()) as db:
-        user = db.execute(
-            select(User).where(User.magic_token == token)
-        ).scalars().first()
+        user = (
+            db.execute(select(User).where(User.magic_token == token)).scalars().first()
+        )
         assert user is not None, "magic token must persist to users table"
         user.magic_expires_at = datetime.now(timezone.utc) - timedelta(seconds=10)
         db.add(user)
@@ -151,9 +152,11 @@ def test_admin_a_invites_admin_b_same_tenant(client: TestClient):
     _signup(client, "admin_b_tenant@r87.local", "r87-team")
 
     with Session(get_engine()) as db:
-        rows = db.execute(
-            select(User).where(User.tenant_slug == "r87-team")
-        ).scalars().all()
+        rows = (
+            db.execute(select(User).where(User.tenant_slug == "r87-team"))
+            .scalars()
+            .all()
+        )
     emails = sorted(u.email for u in rows)
     assert "admin_a_tenant@r87.local" in emails
     assert "admin_b_tenant@r87.local" in emails
@@ -176,9 +179,11 @@ def test_two_admins_both_active_in_tenant(client: TestClient):
     assert r2.status_code == 200, r2.text
 
     with Session(get_engine()) as db:
-        rows = db.execute(
-            select(User).where(User.tenant_slug == "r87-pair")
-        ).scalars().all()
+        rows = (
+            db.execute(select(User).where(User.tenant_slug == "r87-pair"))
+            .scalars()
+            .all()
+        )
     statuses = {u.email: u.status for u in rows}
     assert statuses.get("admin_a_active@r87.local") == "active"
     assert statuses.get("admin_b_active@r87.local") == "active"
@@ -254,9 +259,11 @@ def test_magic_claim_does_not_overwrite_bootstrap_admin(
     # New admin row must still be promoted in the User table even though
     # the file write was suppressed.
     with Session(get_engine()) as db:
-        new_user = db.execute(
-            select(User).where(User.email == "newadmin@demo-acme.com")
-        ).scalars().first()
+        new_user = (
+            db.execute(select(User).where(User.email == "newadmin@demo-acme.com"))
+            .scalars()
+            .first()
+        )
         assert new_user is not None
         assert new_user.status == "active"
         assert new_user.magic_token is None

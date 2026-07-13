@@ -32,8 +32,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Evidence:
-    kind: str           # rag | graph | signal
-    ref: str            # source / node / signal id
+    kind: str  # rag | graph | signal
+    ref: str  # source / node / signal id
     excerpt: str = ""
 
     def to_dict(self) -> dict:
@@ -53,7 +53,7 @@ class AgentResult:
     requires_approval: bool = False
     provider: str = ""
     elapsed_ms: int = 0
-    degraded: bool = False   # no provider / unparseable model output
+    degraded: bool = False  # no provider / unparseable model output
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -66,8 +66,10 @@ def _system_prompt(agent: Agent, task: str, evidence: List[Evidence]) -> str:
     must answer with STRUCTURED JSON citing the evidence it was given."""
     ev_block = ""
     if evidence:
-        lines = [f"[{i + 1}] ({e.kind}:{e.ref}) {e.excerpt}".strip()
-                 for i, e in enumerate(evidence)]
+        lines = [
+            f"[{i + 1}] ({e.kind}:{e.ref}) {e.excerpt}".strip()
+            for i, e in enumerate(evidence)
+        ]
         ev_block = "\nEVIDENCE:\n" + "\n".join(lines)
     tools = ", ".join(agent.tools) or "(none)"
     return (
@@ -99,19 +101,25 @@ async def _gather_evidence(
 
             cits = await retrieve_citations(task, project=tenant_id, top_k=5)
             for c in cits or []:
-                ev.append(Evidence(
-                    kind="rag",
-                    ref=getattr(c, "source", "") or "",
-                    excerpt=(getattr(c, "excerpt", "") or "")[:240],
-                ))
+                ev.append(
+                    Evidence(
+                        kind="rag",
+                        ref=getattr(c, "source", "") or "",
+                        excerpt=(getattr(c, "excerpt", "") or "")[:240],
+                    )
+                )
         except Exception as exc:  # pragma: no cover — context is best-effort
             logger.debug("agent %s rag context skipped: %s", agent.id, exc)
     return ev
 
 
 async def _complete(
-    agent: Agent, prompt: str, *, tenant_id: str,
-    project_slug: Optional[str], user_subject: Optional[str],
+    agent: Agent,
+    prompt: str,
+    *,
+    tenant_id: str,
+    project_slug: Optional[str],
+    user_subject: Optional[str],
 ) -> tuple[str, str]:
     """Call the Model Gateway. Returns (text, provider). Degrades to ("","")
     when no provider is usable so the runtime still returns a structured
@@ -137,23 +145,33 @@ async def _complete(
         except Exception as exc:  # noqa: BLE001 — BYOK is a bonus, never a blocker
             logger.debug("agent BYOK lookup skipped: %s", exc)
 
-        active = get_active_providers(prefer=agent.provider_hint, extra_configured=extra)
+        active = get_active_providers(
+            prefer=agent.provider_hint, extra_configured=extra
+        )
         if not active:
             return "", ""
         primary, *rest = active
         resp = await call_with_cascade(
-            prompt, primary=primary, fallbacks=tuple(rest), max_tokens=900,
+            prompt,
+            primary=primary,
+            fallbacks=tuple(rest),
+            max_tokens=900,
             # low temperature → more deterministic, more reliably-valid JSON
             temperature=0.1,
             # Groq honours json_object mode → reliably valid JSON; providers that
             # don't support it ignore the kwarg (the robust parse + retry cover
             # the fallback path). Handoff SP-4.
             response_format={"type": "json_object"},
-            tenant_id=tenant_id, project_slug=project_slug, user_subject=user_subject,
+            tenant_id=tenant_id,
+            project_slug=project_slug,
+            user_subject=user_subject,
         )
         # ProviderResponse exposes the model text as `.text` (NOT `.completion`)
         # — reading the wrong field made every agent degrade silently.
-        return (getattr(resp, "text", "") or "", getattr(resp, "provider", "") or primary)
+        return (
+            getattr(resp, "text", "") or "",
+            getattr(resp, "provider", "") or primary,
+        )
     except Exception as exc:  # noqa: BLE001 — degrade, never 500 the runtime
         logger.info("agent %s completion degraded: %s", agent.id, exc)
         return "", ""
@@ -187,7 +205,7 @@ def _parse(text: str) -> dict:
                 depth -= 1
                 if depth == 0:
                     try:
-                        out = json.loads(t[start:i + 1])
+                        out = json.loads(t[start : i + 1])
                         return out if isinstance(out, dict) else {}
                     except Exception:
                         break
@@ -215,8 +233,11 @@ async def run_agent(
     )
     prompt = _system_prompt(agent, task, evidence)
     text, provider = await _complete(
-        agent, prompt, tenant_id=tenant_id,
-        project_slug=project_slug, user_subject=user_subject,
+        agent,
+        prompt,
+        tenant_id=tenant_id,
+        project_slug=project_slug,
+        user_subject=user_subject,
     )
     parsed = _parse(text)
     # The model occasionally answers in prose instead of JSON. It's stochastic,
@@ -235,8 +256,11 @@ async def run_agent(
             "no explanation, no prose."
         )
         text, provider = await _complete(
-            agent, retry_prompt, tenant_id=tenant_id,
-            project_slug=project_slug, user_subject=user_subject,
+            agent,
+            retry_prompt,
+            tenant_id=tenant_id,
+            project_slug=project_slug,
+            user_subject=user_subject,
         )
         parsed = _parse(text)
 
@@ -245,7 +269,8 @@ async def run_agent(
         summary = (
             f"{agent.name}: no usable answer — either no provider replied, or "
             "the reply was not the structured result this agent needs."
-            if not text else text[:240]
+            if not text
+            else text[:240]
         )
     try:
         confidence = float(parsed.get("confidence", 0.0) or 0.0)
@@ -262,7 +287,9 @@ async def run_agent(
         agent_id=agent.id,
         output_kind=agent.output_kind,
         summary=summary,
-        payload=parsed.get("payload") if isinstance(parsed.get("payload"), dict) else {},
+        payload=parsed.get("payload")
+        if isinstance(parsed.get("payload"), dict)
+        else {},
         evidence=evidence,
         confidence=confidence,
         recommended_action=str(parsed.get("recommended_action") or "").strip(),

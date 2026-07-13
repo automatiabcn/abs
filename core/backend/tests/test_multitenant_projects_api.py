@@ -30,15 +30,21 @@ def _reset_admin_state():
 
 def test_projects_require_admin(client):
     assert client.get("/v1/admin/projects").status_code in (401, 403)
-    assert client.post("/v1/admin/projects", json={"slug": "x"}).status_code in (401, 403)
+    assert client.post("/v1/admin/projects", json={"slug": "x"}).status_code in (
+        401,
+        403,
+    )
 
 
 def test_create_list_archive_project(client, monkeypatch):
     tok = _admin_token(client, monkeypatch)
     h = {"Authorization": f"Bearer {tok}"}
 
-    r = client.post("/v1/admin/projects", headers=h,
-                    json={"slug": "islam-felsefesi", "name": "İslam Felsefesi"})
+    r = client.post(
+        "/v1/admin/projects",
+        headers=h,
+        json={"slug": "islam-felsefesi", "name": "İslam Felsefesi"},
+    )
     assert r.status_code == 200, r.text
     assert r.json()["slug"] == "islam-felsefesi"
 
@@ -65,9 +71,11 @@ def test_duplicate_slug_rejected(client, monkeypatch):
 
 def test_invalid_slug_rejected(client, monkeypatch):
     tok = _admin_token(client, monkeypatch)
-    r = client.post("/v1/admin/projects",
-                    headers={"Authorization": f"Bearer {tok}"},
-                    json={"slug": "Bad Slug!"})
+    r = client.post(
+        "/v1/admin/projects",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={"slug": "Bad Slug!"},
+    )
     assert r.status_code == 422
 
 
@@ -83,13 +91,18 @@ def test_creator_becomes_owner_and_membership_crud(client, monkeypatch):
     assert owners, mr.text
 
     # add an editor
-    ar = client.post("/v1/admin/projects/erken-hristiyanlik/members", headers=h,
-                     json={"user_subject": "ayse@x.com", "role": "editor"})
+    ar = client.post(
+        "/v1/admin/projects/erken-hristiyanlik/members",
+        headers=h,
+        json={"user_subject": "ayse@x.com", "role": "editor"},
+    )
     assert ar.status_code == 200
-    members = client.get("/v1/admin/projects/erken-hristiyanlik/members",
-                         headers=h).json()["members"]
-    assert any(m["user_subject"] == "ayse@x.com" and m["role"] == "editor"
-               for m in members)
+    members = client.get(
+        "/v1/admin/projects/erken-hristiyanlik/members", headers=h
+    ).json()["members"]
+    assert any(
+        m["user_subject"] == "ayse@x.com" and m["role"] == "editor" for m in members
+    )
 
     # remove
     dr = client.delete(
@@ -100,9 +113,11 @@ def test_creator_becomes_owner_and_membership_crud(client, monkeypatch):
 
 def test_add_member_unknown_project_404(client, monkeypatch):
     tok = _admin_token(client, monkeypatch)
-    r = client.post("/v1/admin/projects/ghost/members",
-                    headers={"Authorization": f"Bearer {tok}"},
-                    json={"user_subject": "a@x.com", "role": "viewer"})
+    r = client.post(
+        "/v1/admin/projects/ghost/members",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={"user_subject": "a@x.com", "role": "viewer"},
+    )
     assert r.status_code == 404
 
 
@@ -110,6 +125,9 @@ def test_invalid_role_rejected(client, monkeypatch):
     tok = _admin_token(client, monkeypatch)
     h = {"Authorization": f"Bearer {tok}"}
     client.post("/v1/admin/projects", headers=h, json={"slug": "role-test"})
-    r = client.post("/v1/admin/projects/role-test/members", headers=h,
-                    json={"user_subject": "a@x.com", "role": "boss"})
+    r = client.post(
+        "/v1/admin/projects/role-test/members",
+        headers=h,
+        json={"user_subject": "a@x.com", "role": "boss"},
+    )
     assert r.status_code == 422

@@ -6,9 +6,7 @@ from pathlib import Path
 
 
 def _next_config() -> Path:
-    return (
-        Path(__file__).resolve().parents[3] / "core" / "landing" / "next.config.ts"
-    )
+    return Path(__file__).resolve().parents[3] / "core" / "landing" / "next.config.ts"
 
 
 def test_next_config_has_required_security_headers():
@@ -26,11 +24,7 @@ def test_next_config_has_required_security_headers():
 def test_html_lang_default_en_for_landing():
     """Landing root html lang attribute = 'en' (i18n default)."""
     layout = (
-        Path(__file__).resolve().parents[3]
-        / "core"
-        / "landing"
-        / "app"
-        / "layout.tsx"
+        Path(__file__).resolve().parents[3] / "core" / "landing" / "app" / "layout.tsx"
     )
     text = layout.read_text(encoding="utf-8")
     assert 'lang="en"' in text, "Landing <html lang> must be 'en' default"

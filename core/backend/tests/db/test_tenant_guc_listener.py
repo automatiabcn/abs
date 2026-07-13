@@ -42,9 +42,7 @@ class _RecordingCursor:
 
 def _call_listener(dialect: str) -> _RecordingCursor:
     cur = _RecordingCursor()
-    _set_tenant_guc(
-        _FakeConn(dialect), cur, "SELECT 1", {}, None, False
-    )
+    _set_tenant_guc(_FakeConn(dialect), cur, "SELECT 1", {}, None, False)
     return cur
 
 

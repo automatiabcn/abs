@@ -60,7 +60,9 @@ FEATURE_IDS: tuple[str, ...] = (
     "consent_withdraw",
     "magic_link_claim",
 )
-assert len(FEATURE_IDS) == 29, "FEATURE_IDS must stay at 29 — bump migration if you change."
+assert len(FEATURE_IDS) == 29, (
+    "FEATURE_IDS must stay at 29 — bump migration if you change."
+)
 
 
 def is_known(feature_id: str) -> bool:
@@ -104,8 +106,7 @@ def get_usage(
     """
     requested = list(feature_ids) if feature_ids else list(FEATURE_IDS)
     rows: dict[str, dict] = {
-        fid: {"feature_id": fid, "count": 0, "last_used_at": None}
-        for fid in requested
+        fid: {"feature_id": fid, "count": 0, "last_used_at": None} for fid in requested
     }
     try:
         with Session(get_engine()) as db:
@@ -122,9 +123,7 @@ def get_usage(
                 if fid not in rows:
                     continue
                 rows[fid]["count"] = int(cnt or 0)
-                rows[fid]["last_used_at"] = (
-                    last.isoformat() if last else None
-                )
+                rows[fid]["last_used_at"] = last.isoformat() if last else None
     except Exception as exc:
         logger.debug("feature_usage read failed: %s", exc)
     return list(rows.values())

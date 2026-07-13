@@ -29,9 +29,9 @@ from app.mcp.external.client import ExternalMcpError, _assert_safe_url
 
 # Every cloud's metadata service, plus the general link-local range they live in.
 METADATA_URLS = [
-    "http://169.254.169.254/latest/meta-data/",          # AWS, GCP, Azure, DO…
-    "http://169.254.170.2/v2/credentials/",              # ECS task role
-    "http://[fe80::a9fe:a9fe]/",                         # the IPv6 side of the same door
+    "http://169.254.169.254/latest/meta-data/",  # AWS, GCP, Azure, DO…
+    "http://169.254.170.2/v2/credentials/",  # ECS task role
+    "http://[fe80::a9fe:a9fe]/",  # the IPv6 side of the same door
 ]
 
 
@@ -57,8 +57,8 @@ def test_the_metadata_endpoint_is_refused_in_production(monkeypatch, url):
 
 def test_the_flag_still_does_the_job_it_exists_for(dev_box):
     """Locking the door must not brick the dogfood workflow it was opened for."""
-    _assert_safe_url("http://127.0.0.1:8000/mcp/")   # the box itself
-    _assert_safe_url("http://192.168.1.44:9000/mcp") # the server on the desk
+    _assert_safe_url("http://127.0.0.1:8000/mcp/")  # the box itself
+    _assert_safe_url("http://192.168.1.44:9000/mcp")  # the server on the desk
 
 
 def test_without_the_flag_the_laptop_is_off_limits_again(monkeypatch):

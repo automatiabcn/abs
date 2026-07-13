@@ -71,9 +71,7 @@ class OAuthState(SQLModel, table=True):
     state: str = Field(primary_key=True, max_length=64)
     provider: str = Field(max_length=32, index=True)
     redirect_url: str = Field(max_length=512)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ConnectedSecret(SQLModel, table=True):
@@ -85,9 +83,7 @@ class ConnectedSecret(SQLModel, table=True):
     key_name: str = Field(index=True, unique=True, max_length=64)
     provider: str = Field(max_length=32, index=True)
     encrypted_value: str = Field(max_length=8192)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_validated_at: Optional[datetime] = Field(default=None)
     last_validated_ok: Optional[bool] = Field(default=None)
     last_validated_error: Optional[str] = Field(default=None, max_length=512)
@@ -106,9 +102,7 @@ class VaultAuditEntry(SQLModel, table=True):
     __tablename__ = "vault_audit_entries"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    ts: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc), index=True
-    )
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
     action: str = Field(max_length=32, index=True)
     actor: str = Field(default="system", max_length=64)
     target_key: Optional[str] = Field(default=None, max_length=128)
@@ -133,9 +127,7 @@ class CustomerAuditEntry(SQLModel, table=True):
     detail: Optional[str] = Field(default=None, max_length=512)
     ip_hash: Optional[str] = Field(default=None, max_length=32)
     user_agent_short: Optional[str] = Field(default=None, max_length=128)
-    ts: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc), index=True
-    )
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
     # Postgres RLS tenant column (see VaultAuditEntry).
     tenant_id: str = Field(default="_unknown", max_length=64, index=True)
 
@@ -165,9 +157,7 @@ class DataExportJob(SQLModel, table=True):
     customer_email: str = Field(max_length=256)
     status: str = Field(default="queued", max_length=16)
     output_path: Optional[str] = Field(default=None, max_length=512)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = Field(default=None)
     expires_at: Optional[datetime] = Field(default=None)
 
@@ -205,9 +195,7 @@ class WizardEvent(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     session_id: str = Field(index=True, max_length=64)
     step_num: int = Field(index=True)
-    started_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = Field(default=None)
 
 
@@ -223,9 +211,7 @@ class WebhookEvent(SQLModel, table=True):
 
     event_id: str = Field(primary_key=True, max_length=64)
     event_type: str = Field(max_length=64, index=True)
-    received_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    received_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     processed_at: Optional[datetime] = Field(default=None)
     license_jti: Optional[str] = Field(default=None, max_length=64, index=True)
     error: Optional[str] = Field(default=None, max_length=512)
@@ -250,9 +236,7 @@ class FeatureUsageLog(SQLModel, table=True):
     tenant_slug: str = Field(max_length=64, index=True, default="default")
     feature_id: str = Field(max_length=64, index=True)
     actor_email: Optional[str] = Field(default=None, max_length=254)
-    ts: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc), index=True
-    )
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
 
 
 class Meeting(SQLModel, table=True):
@@ -310,9 +294,7 @@ class UsageLog(SQLModel, table=True):
     tokens: int = Field(default=0)
     cost_usd: float = Field(default=0.0)
     request_id: Optional[str] = Field(default=None, max_length=64)
-    ts: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc), index=True
-    )
+    ts: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
 
 
 # ───── chat sessions + messages ─────────────────────────────────────────
@@ -330,17 +312,13 @@ class ChatSession(SQLModel, table=True):
     __tablename__ = "chat_sessions"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    tenant_slug: str = Field(
-        max_length=64, index=True, default="default"
-    )
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
     user_email: str = Field(max_length=254, index=True)
     title: str = Field(max_length=200, default="New chat")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc), index=True
     )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     # Threading metadata
     pinned: bool = Field(default=False)
     archived_at: Optional[datetime] = Field(default=None, index=True)
@@ -390,13 +368,9 @@ class User(SQLModel, table=True):
     tenant_slug: str = Field(max_length=64, index=True, default="default")
     role: str = Field(max_length=32, default="admin")
     status: str = Field(max_length=32, default="pending", index=True)
-    magic_token: Optional[str] = Field(
-        default=None, max_length=128, index=True
-    )
+    magic_token: Optional[str] = Field(default=None, max_length=128, index=True)
     magic_expires_at: Optional[datetime] = Field(default=None)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     claimed_at: Optional[datetime] = Field(default=None)
 
 
@@ -425,9 +399,7 @@ class TenantInvite(SQLModel, table=True):
     accepted_at: Optional[datetime] = Field(default=None)
     revoked_at: Optional[datetime] = Field(default=None)
     status: str = Field(max_length=20, default="pending")
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class TenantInstalledPlugin(SQLModel, table=True):
@@ -445,9 +417,7 @@ class TenantInstalledPlugin(SQLModel, table=True):
     plugin_id: str = Field(index=True, max_length=64)
     version: str = Field(max_length=32)
     sandbox_container_id: Optional[str] = Field(default=None, max_length=64)
-    installed_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    installed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     uninstalled_at: Optional[datetime] = Field(default=None)
 
 
@@ -606,9 +576,5 @@ class SavedWorkflow(SQLModel, table=True):
     # The full WorkflowDefinition JSON (nodes/edges/trigger) as a string.
     definition_json: str = Field(default="{}")
     created_by: str = Field(max_length=254, default="")
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

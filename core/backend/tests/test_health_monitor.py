@@ -41,9 +41,7 @@ async def test_ping_one_ok_when_provider_succeeds(monkeypatch):
                 text="ok", model="m", provider="groq", elapsed_ms=42
             )
 
-    monkeypatch.setattr(
-        monitor_mod, "get_registry", lambda: {"groq": FakeProvider()}
-    )
+    monkeypatch.setattr(monitor_mod, "get_registry", lambda: {"groq": FakeProvider()})
     h = HealthMonitor()
     result = await h._ping_one("groq")
     assert result.state == "ok"

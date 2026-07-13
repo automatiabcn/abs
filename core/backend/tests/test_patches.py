@@ -6,10 +6,7 @@ from app.patches.engine import parse_diff, score_patch
 
 
 def test_parse_diff_extracts_hunks():
-    diff = (
-        "--- a/x.py\n+++ b/x.py\n@@ -1,3 +1,3 @@\n"
-        "-old line\n+new line\n common\n"
-    )
+    diff = "--- a/x.py\n+++ b/x.py\n@@ -1,3 +1,3 @@\n-old line\n+new line\n common\n"
     hunks = parse_diff(diff)
     assert len(hunks) == 1
     h = hunks[0]

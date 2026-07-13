@@ -100,9 +100,7 @@ def _issue_delete_token(jti: str) -> str:
     return pyjwt.encode(payload, settings.delete_confirm_jwt_secret, algorithm="HS256")
 
 
-def _verify_delete_token(
-    token: str, request: Optional[Request] = None
-) -> str:
+def _verify_delete_token(token: str, request: Optional[Request] = None) -> str:
     try:
         payload = pyjwt.decode(
             token,
@@ -170,9 +168,7 @@ async def delete_request(
             outcome="error",
             reason="smtp_not_configured",
         )
-        raise HTTPException(
-            503, "deletion_flow_requires_smtp_in_production"
-        )
+        raise HTTPException(503, "deletion_flow_requires_smtp_in_production")
 
     token = _issue_delete_token(jti)
     now = datetime.now(timezone.utc)

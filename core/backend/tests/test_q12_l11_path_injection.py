@@ -168,7 +168,11 @@ def test_piper_voice_id_rejects_traversal(tmp_path, monkeypatch):
     # Stub out the piper extra (only installed in the TTS image).
     fake_piper = types.ModuleType("piper")
     fake_piper_voice = types.ModuleType("piper.voice")
-    setattr(fake_piper_voice, "PiperVoice", type("Stub", (), {"load": staticmethod(lambda *a, **k: None)}))
+    setattr(
+        fake_piper_voice,
+        "PiperVoice",
+        type("Stub", (), {"load": staticmethod(lambda *a, **k: None)}),
+    )
     monkeypatch.setitem(sys.modules, "piper", fake_piper)
     monkeypatch.setitem(sys.modules, "piper.voice", fake_piper_voice)
     # Redirect MODEL_DIR to tmp_path so module init doesn't try /models.

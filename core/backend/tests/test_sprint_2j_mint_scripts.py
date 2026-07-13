@@ -100,7 +100,9 @@ def test_customer_onboard_mints_jwt_with_extractable_jti():
         )
 
         keys_dir = _REPO_ROOT / "customer-keys"
-        candidates = sorted(p for p in keys_dir.iterdir() if p.name.startswith("abs2jcheck"))
+        candidates = sorted(
+            p for p in keys_dir.iterdir() if p.name.startswith("abs2jcheck")
+        )
         assert candidates, f"no abs2jcheck-* slug under {keys_dir}"
         slug_dir = candidates[-1]
 

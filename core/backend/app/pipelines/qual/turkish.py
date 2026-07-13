@@ -20,7 +20,7 @@ _GEN_SYSTEM = (
 _REVIEW_SYSTEM = (
     "Find any grammar errors, awkward phrasing, stray foreign-language words or "
     "inconsistencies in the Turkish text below. Return ONLY a JSON list of "
-    "[{\"issue\": str, \"suggestion\": str}]; return [] if there is nothing wrong."
+    '[{"issue": str, "suggestion": str}]; return [] if there is nothing wrong.'
 )
 _POLISH_SYSTEM = (
     "Rewrite the Turkish text below to fix the listed issues. Return only the "
@@ -28,16 +28,26 @@ _POLISH_SYSTEM = (
 )
 
 
-async def execute(prompt: str, call_provider: _runner.CallProvider) -> _runner.QualResult:
+async def execute(
+    prompt: str, call_provider: _runner.CallProvider
+) -> _runner.QualResult:
     result = _runner.QualResult(pipeline_id="qual_tr", completion="", verified=False)
 
     gen_prompt = f"{_GEN_SYSTEM}\n\nREQUEST:\n{prompt}"
     primary, secondary = await asyncio.gather(
         _runner.run_stage(
-            "qual_tr", "generate-primary", "groq", gen_prompt, call_provider=call_provider
+            "qual_tr",
+            "generate-primary",
+            "groq",
+            gen_prompt,
+            call_provider=call_provider,
         ),
         _runner.run_stage(
-            "qual_tr", "generate-secondary", "gemini", gen_prompt, call_provider=call_provider
+            "qual_tr",
+            "generate-secondary",
+            "gemini",
+            gen_prompt,
+            call_provider=call_provider,
         ),
     )
     result.stages.extend([primary[0], secondary[0]])

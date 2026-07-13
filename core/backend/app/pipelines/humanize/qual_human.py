@@ -34,7 +34,10 @@ class QualHumanPipeline(BasePipeline):
         wf.step(
             "qual-tr",
             "ok" if not tr_result.error else "fail",
-            {"nested_trace_id": tr_result.workflow_trace_id, "step_count": len(tr_result.steps)},
+            {
+                "nested_trace_id": tr_result.workflow_trace_id,
+                "step_count": len(tr_result.steps),
+            },
         )
 
         text = tr_result.final_response
@@ -69,7 +72,11 @@ class QualHumanPipeline(BasePipeline):
             model_hint="@cf/moonshotai/kimi-k2.5",
         )
         steps.append(transform_step)
-        wf.step("humanize-transform", "ok" if transform_step.ok else "fail", _step_payload(transform_step))
+        wf.step(
+            "humanize-transform",
+            "ok" if transform_step.ok else "fail",
+            _step_payload(transform_step),
+        )
         if not new_text:
             new_text = text
 

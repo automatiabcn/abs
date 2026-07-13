@@ -45,7 +45,15 @@ MAX_OUTPUT_CHARS = 4000
 
 # Names the server's own credentials live under. A shell command inherits the
 # server's environment, and the server's environment is where the vault key is.
-_SECRET_ENV_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL", "DSN", "DATABASE_URL")
+_SECRET_ENV_MARKERS = (
+    "KEY",
+    "TOKEN",
+    "SECRET",
+    "PASSWORD",
+    "CREDENTIAL",
+    "DSN",
+    "DATABASE_URL",
+)
 
 
 async def fs_write(path: str, content: str) -> str:
@@ -100,7 +108,9 @@ async def run_command(command: str) -> str:
         env=_clean_env(),
     )
     try:
-        raw, _ = await asyncio.wait_for(proc.communicate(), timeout=SHELL_TIMEOUT_SECONDS)
+        raw, _ = await asyncio.wait_for(
+            proc.communicate(), timeout=SHELL_TIMEOUT_SECONDS
+        )
     except asyncio.TimeoutError:
         proc.kill()
         await proc.wait()
@@ -114,5 +124,7 @@ async def run_command(command: str) -> str:
 
     # A non-zero exit is a fact about the command, not a failure of the tool: the
     # model needs to see it to reason about what to do next.
-    status = "finished" if proc.returncode == 0 else f"exited with code {proc.returncode}"
+    status = (
+        "finished" if proc.returncode == 0 else f"exited with code {proc.returncode}"
+    )
     return f"$ {command}\n[{status}]\n{output or '(no output)'}"

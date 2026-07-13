@@ -56,9 +56,7 @@ async def test_ask_gemini_latest_uses_flash_latest_model(monkeypatch):
         return_value=httpx.Response(
             200,
             json={
-                "candidates": [
-                    {"content": {"parts": [{"text": "flash latest reply"}]}}
-                ]
+                "candidates": [{"content": {"parts": [{"text": "flash latest reply"}]}}]
             },
         )
     )
@@ -79,14 +77,13 @@ async def test_ask_gemini_pro_latest_uses_pro_latest_model(monkeypatch):
         return_value=httpx.Response(
             200,
             json={
-                "candidates": [
-                    {"content": {"parts": [{"text": "pro latest reply"}]}}
-                ]
+                "candidates": [{"content": {"parts": [{"text": "pro latest reply"}]}}]
             },
         )
     )
     out = await ask_gemini_pro_latest("hi")
     assert "pro latest reply" in out
+    assert route.called, "the pro-latest model URL was never actually requested"
 
 
 def test_upper_tier_tools_registered_in_server():

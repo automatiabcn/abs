@@ -144,9 +144,7 @@ class TestProductionSecretGuard:
         overrides = {
             name: f"real-{name}-value".ljust(64, "0") for name in _DEV_INSECURE_DEFAULTS
         }
-        s = Settings(
-            domain="abs.customer.com", ssl_mode="acme", env="dev", **overrides
-        )
+        s = Settings(domain="abs.customer.com", ssl_mode="acme", env="dev", **overrides)
 
         assert_production_safe(s)  # must not raise
 
@@ -215,9 +213,7 @@ class TestMcpTokenSecretSplit:
 
         monkeypatch.setattr(settings, "session_secret", "panel-key-v1")
         monkeypatch.setattr(settings, "mcp_token_secret", "mcp-key")
-        token = mcp_tokens._sign(
-            {"sub": "svc", "scope": "read", "exp": 9_999_999_999}
-        )
+        token = mcp_tokens._sign({"sub": "svc", "scope": "read", "exp": 9_999_999_999})
 
         # Panel cookie secret rotates; the delegated token must still verify.
         monkeypatch.setattr(settings, "session_secret", "panel-key-v2")

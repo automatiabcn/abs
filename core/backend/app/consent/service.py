@@ -46,8 +46,13 @@ def _to_dict(r: ConsentRecord) -> dict:
         "legal_basis": r.legal_basis,
         "opt_out_at": r.opt_out_at.isoformat() if r.opt_out_at else None,
         "allowed_channels": [
-            ch for ch, f in (("email", "email_consent"), ("phone", "phone_consent"),
-                             ("sms", "sms_consent"), ("whatsapp", "whatsapp_consent"))
+            ch
+            for ch, f in (
+                ("email", "email_consent"),
+                ("phone", "phone_consent"),
+                ("sms", "sms_consent"),
+                ("whatsapp", "whatsapp_consent"),
+            )
             if getattr(r, f) and not r.opt_out_at
         ],
     }
@@ -67,10 +72,24 @@ def set_consent(*, tenant_slug: str, contact_email: str, **fields: Any) -> dict:
         if row is None:
             row = ConsentRecord(tenant_slug=tenant_slug, contact_email=contact_email)
         for k, v in fields.items():
-            if hasattr(ConsentRecord, k) and k not in ("id", "tenant_slug", "contact_email"):
+            if hasattr(ConsentRecord, k) and k not in (
+                "id",
+                "tenant_slug",
+                "contact_email",
+            ):
                 setattr(row, k, v)
-        if any(fields.get(c) for c in ("email_consent", "phone_consent",
-                                       "sms_consent", "whatsapp_consent")) and row.opt_in_at is None:
+        if (
+            any(
+                fields.get(c)
+                for c in (
+                    "email_consent",
+                    "phone_consent",
+                    "sms_consent",
+                    "whatsapp_consent",
+                )
+            )
+            and row.opt_in_at is None
+        ):
             row.opt_in_at = _now()
         row.updated_at = _now()
         db.add(row)
@@ -92,7 +111,9 @@ def get_consent(*, tenant_slug: str, contact_email: str) -> Optional[dict]:
         return _to_dict(row) if row else None
 
 
-def check_channel(*, tenant_slug: str, contact_email: str, channel: str) -> Dict[str, Any]:
+def check_channel(
+    *, tenant_slug: str, contact_email: str, channel: str
+) -> Dict[str, Any]:
     """The gate: may we contact this person on this channel? Fail-closed."""
     field = _CHANNEL_FIELD.get((channel or "").strip().lower())
     if field is None:
@@ -105,10 +126,17 @@ def check_channel(*, tenant_slug: str, contact_email: str, channel: str) -> Dict
     if channel in ("phone", "call") and rec.get("do_not_call"):
         return {"allowed": False, "reason": "do_not_call", "status": "dnc"}
     consent_key = {
-        "email": "email_consent", "phone": "phone_consent", "call": "phone_consent",
-        "sms": "sms_consent", "whatsapp": "whatsapp_consent",
+        "email": "email_consent",
+        "phone": "phone_consent",
+        "call": "phone_consent",
+        "sms": "sms_consent",
+        "whatsapp": "whatsapp_consent",
     }[channel]
     if rec.get(consent_key):
-        return {"allowed": True, "reason": "consent_granted", "status": "opt-in",
-                "legal_basis": rec.get("legal_basis", "")}
+        return {
+            "allowed": True,
+            "reason": "consent_granted",
+            "status": "opt-in",
+            "legal_basis": rec.get("legal_basis", ""),
+        }
     return {"allowed": False, "reason": "channel_not_consented", "status": "unknown"}

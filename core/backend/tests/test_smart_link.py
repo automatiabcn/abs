@@ -39,10 +39,13 @@ def test_github_callback_consumes_state_once(client, monkeypatch):
 
     def _post(self, url, *args, **kwargs):
         if "github.com/login/oauth/access_token" in str(url):
+
             class _R:
                 status_code = 200
+
                 def json(self):
                     return {"access_token": "ghs_smoke_xyz"}
+
             return _R()
         return real_post(self, url, *args, **kwargs)
 
@@ -72,6 +75,7 @@ def test_api_key_store_validates_provider_and_length(client, monkeypatch):
     class _R:
         def __init__(self, code):
             self.status_code = code
+
         def json(self):
             return {"id": "x"}
 

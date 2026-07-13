@@ -12,6 +12,7 @@ auto-RAG actually injects context.) ``_run_cascade`` now clamps the validation /
 mock copy of the request; the real orchestrator call still receives the full
 augmented prompt.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -30,8 +31,7 @@ async def test_run_cascade_clamps_rag_augmented_oversized_prompt(_mock_mode):
     """An augmented prompt longer than CascadeRequest's 8000-char user cap (a
     max-length message + RAG context) must not raise ValidationError."""
     augmented = (
-        "You are answering using the sources below. Cite inline.\n\n"
-        + "a" * 9000
+        "You are answering using the sources below. Cite inline.\n\n" + "a" * 9000
     )
     assert len(augmented) > 8000
     # The key assertion is that this call RETURNS (no ValidationError raised on

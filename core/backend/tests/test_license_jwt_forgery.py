@@ -4,6 +4,7 @@ The license JWT gates the whole product, so the verifier must resist the
 classic JWT attacks. Each forgery below MUST be rejected (HTTPException);
 test_valid_token_passes is the control proving a legit token still works.
 """
+
 from __future__ import annotations
 
 import base64
@@ -58,9 +59,11 @@ def test_rs_hs_alg_confusion_rejected():
     header = _b64({"alg": "HS256", "typ": "JWT"})
     body = _b64(_claims())
     signing_input = f"{header}.{body}".encode()
-    sig = base64.urlsafe_b64encode(
-        hmac.new(pub, signing_input, hashlib.sha256).digest()
-    ).rstrip(b"=").decode()
+    sig = (
+        base64.urlsafe_b64encode(hmac.new(pub, signing_input, hashlib.sha256).digest())
+        .rstrip(b"=")
+        .decode()
+    )
     forged = f"{header}.{body}.{sig}"
     with pytest.raises(HTTPException):
         verify_license(forged)

@@ -11,9 +11,7 @@ from app.meeting import bot_recall as br
 @pytest.fixture(autouse=True)
 def _reset(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "recall_backend", "mock", raising=False)
-    monkeypatch.setattr(
-        settings, "recall_ai_cost_cap_usd_per_day", 50.0, raising=False
-    )
+    monkeypatch.setattr(settings, "recall_ai_cost_cap_usd_per_day", 50.0, raising=False)
     br.close_bot()
     yield
     br.close_bot()
@@ -32,9 +30,7 @@ def test_schedule_returns_job_with_cost_estimate() -> None:
 
 
 def test_schedule_budget_guard_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        settings, "recall_ai_cost_cap_usd_per_day", 0.10, raising=False
-    )
+    monkeypatch.setattr(settings, "recall_ai_cost_cap_usd_per_day", 0.10, raising=False)
     bot = br.MeetingBot("mock")
     with pytest.raises(br.RecallBudgetExceeded):
         bot.schedule(

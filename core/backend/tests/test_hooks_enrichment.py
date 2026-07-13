@@ -37,7 +37,5 @@ def test_unsupported_extension_ignored():
 
 
 def test_non_write_tool_ignored():
-    msg = enrichment.maybe_enrichment_notice(
-        "Bash", {"command": "echo hello"}
-    )
+    msg = enrichment.maybe_enrichment_notice("Bash", {"command": "echo hello"})
     assert msg == ""

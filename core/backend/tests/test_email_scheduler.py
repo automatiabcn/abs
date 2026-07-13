@@ -40,9 +40,7 @@ def _seed_license(jti: str, email: str = "user@x.co") -> None:
 
 def _purge_queue(jti: str) -> None:
     with Session(get_engine()) as s:
-        rows = s.scalars(
-            select(EmailQueue).where(EmailQueue.license_jti == jti)
-        ).all()
+        rows = s.scalars(select(EmailQueue).where(EmailQueue.license_jti == jti)).all()
         for r in rows:
             s.delete(r)
         s.commit()
@@ -152,8 +150,6 @@ def test_unsubscribe_token_marks_rows():
     assert info == "jti_sched_unsub"
     with Session(get_engine()) as s:
         rows = s.scalars(
-            select(EmailQueue).where(
-                EmailQueue.license_jti == "jti_sched_unsub"
-            )
+            select(EmailQueue).where(EmailQueue.license_jti == "jti_sched_unsub")
         ).all()
         assert all(r.unsubscribed for r in rows)

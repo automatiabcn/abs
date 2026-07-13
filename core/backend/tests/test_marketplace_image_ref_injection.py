@@ -15,6 +15,7 @@ from app.marketplace.manifest_schema import _IMAGE_REF_RE
 
 # ---- manifest validator (regex) --------------------------------------------
 
+
 @pytest.mark.parametrize(
     "ref",
     [
@@ -37,7 +38,7 @@ def test_valid_image_refs_accepted(ref):
         "-v/host:/host",
         "--network=host",
         "image with space",
-        "UPPER/CASE:tag",          # repo must be lowercase
+        "UPPER/CASE:tag",  # repo must be lowercase
         "  leading-space:tag",
         "-",
         "",
@@ -75,6 +76,7 @@ def test_manifest_rejects_flag_entry_point():
 
 
 # ---- render_argv exec-boundary guard ---------------------------------------
+
 
 def _spec(image):
     return sandbox_mod.SandboxSpec(

@@ -58,9 +58,7 @@ async def _query_qdrant_tenant(question: str, top_k: int) -> dict:
                     "score": h.get("score"),
                     "text": (h.get("payload") or {}).get("text", ""),
                     "metadata": {
-                        k: v
-                        for k, v in (h.get("payload") or {}).items()
-                        if k != "text"
+                        k: v for k, v in (h.get("payload") or {}).items() if k != "text"
                     },
                 }
                 for h in hits

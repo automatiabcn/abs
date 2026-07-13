@@ -21,6 +21,7 @@ from fastapi import HTTPException
 
 # --- 1. empty-bearer admin gates -------------------------------------------
 
+
 def test_smart_link_check_admin_empty_bearer_is_401_not_500():
     with pytest.raises(HTTPException) as exc:
         smart_link_mod._check_admin("bearer ")  # trailing space, no token
@@ -41,6 +42,7 @@ def test_status_page_require_admin_empty_bearer_is_401_not_500():
 
 # --- 2. stripe webhook missing type ----------------------------------------
 
+
 def test_webhook_valid_signature_missing_type_is_400(client, monkeypatch):
     monkeypatch.setattr(
         stripe.Webhook,
@@ -56,6 +58,7 @@ def test_webhook_valid_signature_missing_type_is_400(client, monkeypatch):
 
 
 # --- 3. connector sync with unreadable credentials --------------------------
+
 
 async def test_connector_sync_unreadable_credentials_is_graceful(monkeypatch):
     from app.connectors import service as svc

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime, timedelta, timezone
 
 from sqlmodel import Session, select
@@ -14,9 +13,7 @@ from app.licensing import generate_license
 
 
 def _seed_license_and_settings(monkeypatch):
-    token = generate_license(
-        customer_id="cus_fs_test", tier="self-host", seat_count=1
-    )
+    token = generate_license(customer_id="cus_fs_test", tier="self-host", seat_count=1)
     from app.licensing import verify_license
 
     payload = verify_license(token)

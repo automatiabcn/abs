@@ -35,9 +35,7 @@ def test_next_config_no_longer_redirects_four_admin_routes():
         "/admin/quota",
         "/admin/dashboard",
     ):
-        assert (
-            f'source: "{source}"' not in cfg
-        ), f"unexpected redirect for {source}"
+        assert f'source: "{source}"' not in cfg, f"unexpected redirect for {source}"
 
 
 def test_nav_uses_canonical_admin_routes():

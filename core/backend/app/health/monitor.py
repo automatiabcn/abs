@@ -109,9 +109,7 @@ class HealthMonitor:
             except Exception as exc:
                 logger.warning("health monitor cycle fail: %s", exc)
             try:
-                await asyncio.wait_for(
-                    self._stop_event.wait(), timeout=self.interval
-                )
+                await asyncio.wait_for(self._stop_event.wait(), timeout=self.interval)
             except asyncio.TimeoutError:
                 pass
 

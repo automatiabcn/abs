@@ -38,7 +38,6 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
-from typing import Any
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -79,9 +78,7 @@ def fresh_setup_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 # ----------------------------------------------------------------------
 
 
-async def _post_admin(
-    client: AsyncClient, email: str, password: str
-) -> int:
+async def _post_admin(client: AsyncClient, email: str, password: str) -> int:
     r = await client.post(
         "/v1/setup/step/admin",
         json={"email": email, "password": password},
@@ -102,9 +99,7 @@ class TestQ12L22SetupWizardRace:
         from app.main import app
 
         transport = ASGITransport(app=app)
-        async with AsyncClient(
-            transport=transport, base_url="http://t"
-        ) as client:
+        async with AsyncClient(transport=transport, base_url="http://t") as client:
             results = await asyncio.gather(
                 _post_admin(client, "alice@l22.test", "AlicePass2026!"),
                 _post_admin(client, "bob@l22.test", "BobPass2026!"),
@@ -133,9 +128,7 @@ class TestQ12L22SetupWizardRace:
             f"after one successful step/admin (got current_step={state['current_step']})"
         )
         # 'admin' must appear exactly once in completed_steps.
-        admin_count = sum(
-            1 for k in state["completed_steps"] if k == "admin"
-        )
+        admin_count = sum(1 for k in state["completed_steps"] if k == "admin")
         assert admin_count == 1, (
             f"Q12-L22-001 REGRESSION: 'admin' completed {admin_count} times "
             "(double-advance leak)"
@@ -153,9 +146,7 @@ class TestQ12L22SetupWizardRace:
         from app.main import app
 
         transport = ASGITransport(app=app)
-        async with AsyncClient(
-            transport=transport, base_url="http://t"
-        ) as client:
+        async with AsyncClient(transport=transport, base_url="http://t") as client:
             r1 = await client.post(
                 "/v1/setup/step/admin",
                 json={"email": "alice@l22.test", "password": "AlicePass2026!"},

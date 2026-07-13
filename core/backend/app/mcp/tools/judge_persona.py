@@ -32,7 +32,9 @@ async def judge_persona_train(min_samples: int = 10) -> str:
     """Retune the persona from recorded judge outcomes. Below min_samples it
     refuses with 'insufficient_data' rather than fitting to noise."""
     await tracker.bump("judge_persona_train")
-    return json.dumps(train_persona(min_samples=min_samples), ensure_ascii=False, indent=2)
+    return json.dumps(
+        train_persona(min_samples=min_samples), ensure_ascii=False, indent=2
+    )
 
 
 @mcp_server.tool()

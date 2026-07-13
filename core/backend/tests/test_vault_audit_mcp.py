@@ -52,7 +52,9 @@ def test_vault_audit_status_reports_tamper():
 
     # Tamper with second entry
     with Session(get_engine()) as s:
-        rows = list(s.scalars(select(VaultAuditEntry).order_by(VaultAuditEntry.id)).all())
+        rows = list(
+            s.scalars(select(VaultAuditEntry).order_by(VaultAuditEntry.id)).all()
+        )
         rows[1].target_key = "tampered"
         s.add(rows[1])
         s.commit()

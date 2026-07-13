@@ -106,9 +106,7 @@ class MeetingRAGIndexer:
             {"id": c["id"], "vector": v, "payload": c["payload"]}
             for c, v in zip(chunks, vectors)
         ]
-        n = self._upsert(
-            collection=self.collection, tenant_id=tenant_id, points=points
-        )
+        n = self._upsert(collection=self.collection, tenant_id=tenant_id, points=points)
         logger.info(
             "meeting_index meeting=%s tenant=%s chunks=%d",
             meeting_id,

@@ -10,19 +10,12 @@ from pathlib import Path
 
 def _script() -> Path:
     return (
-        Path(__file__).resolve().parents[3]
-        / "infra"
-        / "scripts"
-        / "compose_smoke.sh"
+        Path(__file__).resolve().parents[3] / "infra" / "scripts" / "compose_smoke.sh"
     )
 
 
 def _compose_file() -> Path:
-    return (
-        Path(__file__).resolve().parents[3]
-        / "infra"
-        / "docker-compose.yml"
-    )
+    return Path(__file__).resolve().parents[3] / "infra" / "docker-compose.yml"
 
 
 def test_compose_smoke_script_exists_and_executable():

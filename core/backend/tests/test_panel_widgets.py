@@ -25,7 +25,9 @@ def test_symbol_graph_stub_reachable(client):
     body = r.json()
     # DB henüz indexlenmediğinde 'not_found' döner; indexlenmişse 'ok'
     assert body["status"] in {"not_found", "ok"}
-    assert body.get("name") == "ask_groq" or body.get("root", {}).get("name") == "ask_groq"
+    assert (
+        body.get("name") == "ask_groq" or body.get("root", {}).get("name") == "ask_groq"
+    )
 
 
 def test_quota_status_stub_reachable(client):

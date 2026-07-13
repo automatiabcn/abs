@@ -68,9 +68,7 @@ class GeminiProvider(BaseProvider):
         elapsed_ms = int((time.monotonic() - start) * 1000)
 
         if r.status_code == 429:
-            raise ProviderError(
-                "Gemini rate limit", provider=self.name, transient=True
-            )
+            raise ProviderError("Gemini rate limit", provider=self.name, transient=True)
         if r.status_code >= 500:
             raise ProviderError(
                 f"Gemini 5xx: {r.status_code}", provider=self.name, transient=True

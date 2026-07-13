@@ -109,9 +109,7 @@ def has_consent(*, license_jti: str, consent_type: str) -> bool:
 def list_consents(*, license_jti: str) -> List[dict]:
     with Session(get_engine()) as db:
         rows = list(
-            db.scalars(
-                select(Consent).where(Consent.license_jti == license_jti)
-            ).all()
+            db.scalars(select(Consent).where(Consent.license_jti == license_jti)).all()
         )
     return [
         {

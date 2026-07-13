@@ -34,7 +34,6 @@ from app.api.auth import current_admin
 from app.cascade.orchestrator import call_with_cascade
 from app.config import settings
 from app.providers.anthropic_mock import (
-    AnthropicMockProvider,
     RateLimitError,
     get_mock_provider,
 )

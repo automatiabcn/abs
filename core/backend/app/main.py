@@ -19,9 +19,15 @@ from app.api.v1.approvals import router as v1_approvals_router  # Approval Cente
 from app.api.v1.inbound import router as v1_inbound_router  # MVP: Inbound + Knowledge
 from app.api.v1.dashboard import router as v1_dashboard_router  # Growth Dashboard
 from app.api.v1.leads import router as v1_leads_router  # Lead Intelligence
-from app.api.v1.context_graph import router as v1_context_graph_router  # Context Graph + ER
-from app.api.v1.connectors import router as v1_connectors_router  # Connector Marketplace
-from app.api.v1.agentic_workflows import router as v1_agentic_wf_router  # Workflow Designer
+from app.api.v1.context_graph import (
+    router as v1_context_graph_router,
+)  # Context Graph + ER
+from app.api.v1.connectors import (
+    router as v1_connectors_router,
+)  # Connector Marketplace
+from app.api.v1.agentic_workflows import (
+    router as v1_agentic_wf_router,
+)  # Workflow Designer
 from app.api.v1.consent import router as v1_consent_router  # Consent Ledger
 from app.auth.oauth.routes import router as oauth_router
 from app.api import beta_admin as beta_admin_router
@@ -39,10 +45,18 @@ from app.api.admin import users as admin_users_router  # Q8.5 finalize — /v1/a
 from app.api.admin import widget_pricing as admin_widget_pricing_router  # Q12-R84
 from app.api.admin import providers_status as admin_providers_status_router  # Polish R7
 from app.api.admin import tenant as admin_tenant_router  # Sprint 2C ITEM-1
-from app.api.admin import providers_save as admin_providers_save_router  # Sprint 2C ITEM-2
-from app.api.admin import provider_keys as admin_provider_keys_router  # MT Phase 1 — per-owner keys
-from app.api.admin import projects as admin_projects_router  # MT Phase 1 — project CRUD + membership
-from app.api.admin import settings_store as admin_settings_store_router  # /admin/settings persistence
+from app.api.admin import (
+    providers_save as admin_providers_save_router,
+)  # Sprint 2C ITEM-2
+from app.api.admin import (
+    provider_keys as admin_provider_keys_router,
+)  # MT Phase 1 — per-owner keys
+from app.api.admin import (
+    projects as admin_projects_router,
+)  # MT Phase 1 — project CRUD + membership
+from app.api.admin import (
+    settings_store as admin_settings_store_router,
+)  # /admin/settings persistence
 from app.api import demo_mode as demo_mode_router
 from app.api.demo_panel import cascade as panel_cascade_router
 from app.api.demo_panel import pipeline as panel_pipeline_router
@@ -60,21 +74,23 @@ from app.api import me_audit as me_audit_router
 from app.api import me_consent as me_consent_router
 from app.api import me_data_export as me_data_export_router
 from app.api import panel as panel_router
-from app.api import cascade as cascade_router            # Q4 P10 — /v1/cascade/*
-from app.api import agent_caps as agent_caps_router      # /v1/agent/capabilities
-from app.api import chat as chat_router                  # Q8 Phase A — /v1/chat/*
-from app.api import mcp_tokens as mcp_tokens_router      # Q8 Phase N — /v1/mcp/tokens
-from app.api import claude_code_hooks as cc_hooks_router # Q8 Phase P — /v1/hooks/*
+from app.api import cascade as cascade_router  # Q4 P10 — /v1/cascade/*
+from app.api import agent_caps as agent_caps_router  # /v1/agent/capabilities
+from app.api import chat as chat_router  # Q8 Phase A — /v1/chat/*
+from app.api import mcp_tokens as mcp_tokens_router  # Q8 Phase N — /v1/mcp/tokens
+from app.api import claude_code_hooks as cc_hooks_router  # Q8 Phase P — /v1/hooks/*
 from app.api import marketplace as marketplace_router  # CJ-008 — /v1/marketplace/*
-from app.api import meetings as meetings_router          # S20.4 — /v1/meetings
-from app.api import workflows as workflows_router        # P1 S19 — /v1/workflows
+from app.api import meetings as meetings_router  # S20.4 — /v1/meetings
+from app.api import workflows as workflows_router  # P1 S19 — /v1/workflows
 from app.api import graph as graph_router  # Q7 Phase A — /v1/graph
 from app.api import graph_rag as graph_rag_router  # GraphRAG — /v1/graph-rag
 from app.api import quota as quota_router
-from app.api.system import quota as system_quota_router  # CJ-009 — /v1/system/quota_status
+from app.api.system import (
+    quota as system_quota_router,
+)  # CJ-009 — /v1/system/quota_status
 from app.api.system import feature_usage as system_feature_usage_router  # S20.3
-from app.api import transcribe as transcribe_router      # S20.2
-from app.api import tts as tts_router                    # S20.1
+from app.api import transcribe as transcribe_router  # S20.2
+from app.api import tts as tts_router  # S20.1
 from app.api import secrets as secrets_router
 from app.api import setup as setup_router
 from app.api import smart_link as smart_link_router
@@ -91,7 +107,7 @@ from app.mcp.server import mcp_server
 from app.middleware.demo_mode import DemoModeMiddleware
 from app.middleware.first_run import FirstRunMiddleware
 from app.middleware.i18n import I18nMiddleware
-from app.middleware.rate_limit import install_rate_limit, limiter
+from app.middleware.rate_limit import install_rate_limit
 from app.middleware.request_id import RequestIDMiddleware  # Q12-L23
 
 PANEL_STATIC_DIR = Path(__file__).resolve().parent / "static" / "panel"
@@ -224,7 +240,10 @@ async def lifespan(_app: FastAPI):
                 result.get("valid"),
                 result.get("reason"),
             )
-            if not result.get("valid") and result.get("reason") == "offline_grace_expired":
+            if (
+                not result.get("valid")
+                and result.get("reason") == "offline_grace_expired"
+            ):
                 _lf_logger.critical(
                     "license_offline_grace_expired — paid providers blocked"
                 )
@@ -435,19 +454,21 @@ install_tenant_context(app)
 app.add_middleware(RequestIDMiddleware)
 
 app.include_router(auth_router.router)
-app.include_router(auth_router.claim_v1_router)  # /v1/auth/magic-claim (SPA /activate page)
+app.include_router(
+    auth_router.claim_v1_router
+)  # /v1/auth/magic-claim (SPA /activate page)
 app.include_router(oauth_router)  # T-003 — OAuth 2.1 + PKCE + JWKS
 app.include_router(v1_projects_router)  # T-005 — MCP gateway v1
-app.include_router(v1_rag_router)       # T-011 — RAG ingest/query
-app.include_router(v1_agents_router)    # Agentic Growth — Agent Registry + Runtime
-app.include_router(v1_approvals_router) # Agentic Growth — Approval Center
-app.include_router(v1_inbound_router)   # Agentic Growth — Inbound + Knowledge MVP
-app.include_router(v1_dashboard_router) # Agentic Growth — Growth Dashboard
-app.include_router(v1_leads_router)     # Agentic Growth — Lead Intelligence
+app.include_router(v1_rag_router)  # T-011 — RAG ingest/query
+app.include_router(v1_agents_router)  # Agentic Growth — Agent Registry + Runtime
+app.include_router(v1_approvals_router)  # Agentic Growth — Approval Center
+app.include_router(v1_inbound_router)  # Agentic Growth — Inbound + Knowledge MVP
+app.include_router(v1_dashboard_router)  # Agentic Growth — Growth Dashboard
+app.include_router(v1_leads_router)  # Agentic Growth — Lead Intelligence
 app.include_router(v1_context_graph_router)  # Agentic Growth — Context Graph + ER
-app.include_router(v1_connectors_router)     # Agentic Growth — Connector Marketplace
-app.include_router(v1_agentic_wf_router)      # Agentic Growth — Workflow Designer
-app.include_router(v1_consent_router)         # Agentic Growth — Consent Ledger
+app.include_router(v1_connectors_router)  # Agentic Growth — Connector Marketplace
+app.include_router(v1_agentic_wf_router)  # Agentic Growth — Workflow Designer
+app.include_router(v1_consent_router)  # Agentic Growth — Consent Ledger
 app.include_router(admin_auth_router.router)
 app.include_router(admin_dashboard_router.router)
 app.include_router(admin_analytics_router.router)
@@ -457,11 +478,21 @@ app.include_router(admin_errors_router.router)
 app.include_router(admin_audit_router.router)
 app.include_router(admin_users_router.router)  # Q8.5 finalize — /v1/admin/users
 app.include_router(admin_usage_router.router)  # BUG-V1 — /v1/admin/usage
-app.include_router(admin_widget_pricing_router.router)  # Q12-R84 — /v1/admin/widget_pricing
-app.include_router(admin_providers_status_router.router)  # Polish R7 — /v1/admin/providers/status
-app.include_router(admin_tenant_router.router)  # Sprint 2C ITEM-1 — /v1/admin/tenant + /v1/admin/branding
-app.include_router(admin_providers_save_router.router)  # Sprint 2C ITEM-2 — POST /v1/admin/providers/{id}
-app.include_router(admin_provider_keys_router.router)  # MT Phase 1 — /v1/admin/provider-keys
+app.include_router(
+    admin_widget_pricing_router.router
+)  # Q12-R84 — /v1/admin/widget_pricing
+app.include_router(
+    admin_providers_status_router.router
+)  # Polish R7 — /v1/admin/providers/status
+app.include_router(
+    admin_tenant_router.router
+)  # Sprint 2C ITEM-1 — /v1/admin/tenant + /v1/admin/branding
+app.include_router(
+    admin_providers_save_router.router
+)  # Sprint 2C ITEM-2 — POST /v1/admin/providers/{id}
+app.include_router(
+    admin_provider_keys_router.router
+)  # MT Phase 1 — /v1/admin/provider-keys
 app.include_router(admin_projects_router.router)  # MT Phase 1 — /v1/admin/projects
 app.include_router(admin_settings_store_router.router)  # /v1/admin/settings/{section}
 app.include_router(beta_portal_router.router)
@@ -487,22 +518,23 @@ app.include_router(stripe_webhook_router.router)
 app.include_router(stream_router.router)
 app.include_router(symbol_graph_router.router)
 app.include_router(quota_router.router)
-app.include_router(graph_router.router)        # Q7 Phase A — /v1/graph
-app.include_router(graph_rag_router.router)    # GraphRAG — /v1/graph-rag
+app.include_router(graph_router.router)  # Q7 Phase A — /v1/graph
+app.include_router(graph_rag_router.router)  # GraphRAG — /v1/graph-rag
 app.include_router(system_quota_router.router)  # CJ-009
 app.include_router(system_feature_usage_router.router)  # S20.3
-app.include_router(marketplace_router.router)   # CJ-008
-app.include_router(meetings_router.router)      # S20.4
-app.include_router(workflows_router.router)     # P1 S19 close
-app.include_router(cascade_router.router)       # Q4 P10 — /v1/cascade/*
-app.include_router(chat_router.router)          # Q8 Phase A — /v1/chat/*
-app.include_router(agent_caps_router.router)    # what agent mode may do
-app.include_router(mcp_tokens_router.router)    # Q8 Phase N — /v1/mcp/tokens
+app.include_router(marketplace_router.router)  # CJ-008
+app.include_router(meetings_router.router)  # S20.4
+app.include_router(workflows_router.router)  # P1 S19 close
+app.include_router(cascade_router.router)  # Q4 P10 — /v1/cascade/*
+app.include_router(chat_router.router)  # Q8 Phase A — /v1/chat/*
+app.include_router(agent_caps_router.router)  # what agent mode may do
+app.include_router(mcp_tokens_router.router)  # Q8 Phase N — /v1/mcp/tokens
 from app.api import external_mcp as external_mcp_router  # External MCP federation
+
 app.include_router(external_mcp_router.router)  # /v1/admin/external-mcp (flag-gated)
-app.include_router(cc_hooks_router.router)      # Q8 Phase P — /v1/hooks/*
-app.include_router(transcribe_router.router)    # S20.2
-app.include_router(tts_router.router)           # S20.1
+app.include_router(cc_hooks_router.router)  # Q8 Phase P — /v1/hooks/*
+app.include_router(transcribe_router.router)  # S20.2
+app.include_router(tts_router.router)  # S20.1
 app.include_router(disagreement_router.router)
 app.include_router(email_unsubscribe_router.router)
 app.include_router(health_full_router.router)
@@ -609,5 +641,3 @@ def healthz(response: Response):
         response.status_code = 503
         return {"status": "degraded", "service": "abs-backend", "db": "down"}
     return {"status": "ok", "service": "abs-backend", "db": "up"}
-
-

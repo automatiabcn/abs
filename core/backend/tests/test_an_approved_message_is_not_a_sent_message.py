@@ -54,7 +54,12 @@ class _FakeSMTP:
 def smtp(monkeypatch):
     from app.config import settings
 
-    _FakeSMTP.sent, _FakeSMTP.fail_with, _FakeSMTP.tls, _FakeSMTP.logins = [], None, 0, []
+    _FakeSMTP.sent, _FakeSMTP.fail_with, _FakeSMTP.tls, _FakeSMTP.logins = (
+        [],
+        None,
+        0,
+        [],
+    )
     monkeypatch.setattr(settings, "smtp_host", "mail.test", raising=False)
     monkeypatch.setattr(settings, "smtp_port", 587, raising=False)
     monkeypatch.setattr(settings, "smtp_user", "postmaster", raising=False)
@@ -70,7 +75,7 @@ def test_an_email_is_delivered_over_tls_and_reported_as_sent(smtp):
     assert out.sent is True
     assert "a@b.com" in out.detail
     assert len(smtp.sent) == 1
-    assert smtp.tls == 1                      # never in the clear
+    assert smtp.tls == 1  # never in the clear
     assert smtp.logins == ["postmaster"]
     assert smtp.sent[0]["Subject"] == "Hi"
 
@@ -78,7 +83,9 @@ def test_an_email_is_delivered_over_tls_and_reported_as_sent(smtp):
 def test_the_body_is_escaped_in_the_html_part(smtp):
     """A drafted message is model output. It does not get to inject markup."""
     delivery.deliver(
-        channel="email", to="a@b.com", subject="Hi",
+        channel="email",
+        to="a@b.com",
+        subject="Hi",
         message="<script>alert(1)</script> & co",
     )
 
@@ -102,7 +109,9 @@ def test_a_channel_with_no_integration_never_reports_a_send(smtp, channel):
 
 
 def test_an_unknown_channel_says_it_is_unknown(smtp):
-    out = delivery.deliver(channel="carrier_pigeon", to="a@b.com", subject="Hi", message="B")
+    out = delivery.deliver(
+        channel="carrier_pigeon", to="a@b.com", subject="Hi", message="B"
+    )
     assert out.sent is False
     assert "carrier_pigeon" in out.detail
 

@@ -121,8 +121,10 @@ def test_dockerfile_carries_build_hash_label():
     text = _read("core/backend/Dockerfile")
     assert "ARG BUILD_HASH" in text
     assert "ENV ABS_BUILD_HASH=${BUILD_HASH}" in text
-    assert 'LABEL abs.build.hash="${BUILD_HASH}"' in text or \
-           'abs.build.hash="${BUILD_HASH}"' in text, (
+    assert (
+        'LABEL abs.build.hash="${BUILD_HASH}"' in text
+        or 'abs.build.hash="${BUILD_HASH}"' in text
+    ), (
         "Dockerfile must apply the abs.build.hash OCI label so the "
         "activation server can verify the image at phone-home time"
     )

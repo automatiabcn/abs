@@ -17,7 +17,14 @@ def test_mcp_server_has_instructions():
 def test_instructions_name_headline_tools():
     text = MCP_INSTRUCTIONS.lower()
     # A representative tool from each delegation category should be mentioned.
-    for tool in ("ask_gptoss", "ask_qwen32b", "ask_kimi", "qual_code", "race", "rag_query"):
+    for tool in (
+        "ask_gptoss",
+        "ask_qwen32b",
+        "ask_kimi",
+        "qual_code",
+        "race",
+        "rag_query",
+    ):
         assert tool in text, f"delegation instructions should mention {tool}"
 
 

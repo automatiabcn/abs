@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from app.api.auth import current_admin
 from app.update.applier import clear_pending, pending_status, trigger_pull

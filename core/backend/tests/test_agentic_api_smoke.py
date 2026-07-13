@@ -13,7 +13,9 @@ from __future__ import annotations
 
 
 def _login(client) -> None:
-    r = client.post("/auth/login", json={"email": "admin@local", "password": "CHANGEME"})
+    r = client.post(
+        "/auth/login", json={"email": "admin@local", "password": "CHANGEME"}
+    )
     assert r.status_code == 200, r.text
 
 
@@ -37,7 +39,9 @@ def test_dashboard_endpoint(client) -> None:
 
 def test_lead_create_and_priority(client) -> None:
     _login(client)
-    r = client.post("/v1/leads", json={"company_name": "Smoke A.Ş.", "sector": "İnşaat"})
+    r = client.post(
+        "/v1/leads", json={"company_name": "Smoke A.Ş.", "sector": "İnşaat"}
+    )
     assert r.status_code == 200, r.text
     lid = r.json()["id"]
     r = client.get("/v1/leads")
@@ -70,7 +74,9 @@ def test_inbound_endpoint(client) -> None:
 
 def test_knowledge_ask_endpoint(client) -> None:
     _login(client)
-    r = client.post("/v1/knowledge/ask", json={"question": "Hangi hizmetleri sunuyorsunuz?"})
+    r = client.post(
+        "/v1/knowledge/ask", json={"question": "Hangi hizmetleri sunuyorsunuz?"}
+    )
     assert r.status_code == 200, r.text
     assert "answer" in r.json()
 

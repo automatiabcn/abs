@@ -126,9 +126,7 @@ def test_first_customer_11_step_full_sweep(client, _fresh_state):
     license_token = generate_license(
         customer_id="cus_first_run", tier="self-host", seat_count=1
     )
-    r2 = client.post(
-        "/v1/setup/step/license", json={"license_key": license_token}
-    )
+    r2 = client.post("/v1/setup/step/license", json={"license_key": license_token})
     assert r2.status_code == 200, r2.text
     assert r2.json()["current_step"] == 3
 
@@ -196,9 +194,7 @@ def test_first_customer_11_step_full_sweep(client, _fresh_state):
     assert any(s["id"] == session_payload["id"] for s in sessions)
 
 
-def test_first_customer_post_setup_workflow_synth_and_dry_run(
-    client, _fresh_state
-):
+def test_first_customer_post_setup_workflow_synth_and_dry_run(client, _fresh_state):
     """Steps 11 cont. — workflow synthesize + dry-run execute, after the same
     setup/login walk. Split off as its own test because workflow execute
     plumbing is independent of chat/RAG and a failure here should not mask
@@ -213,9 +209,7 @@ def test_first_customer_post_setup_workflow_synth_and_dry_run(
         "/v1/setup/step/admin",
         json={"email": admin_email, "password": admin_password},
     )
-    client.post(
-        "/v1/setup/step/license", json={"license_key": license_token}
-    )
+    client.post("/v1/setup/step/license", json={"license_key": license_token})
     client.post(
         "/v1/setup/step/domain",
         json={"mode": "ip", "domain": None, "ssl_mode": "internal"},
@@ -259,9 +253,7 @@ def test_first_customer_post_setup_workflow_synth_and_dry_run(
     assert "estimate_s" in exec_out
 
 
-def test_first_customer_post_setup_rag_smoke(
-    client, _fresh_state, _rag_mocks
-):
+def test_first_customer_post_setup_rag_smoke(client, _fresh_state, _rag_mocks):
     """Step 11c — RAG ingest+query smoke. The /v1/rag/* surface authenticates
     via JWT bearer + tenant claim, not the admin cookie, so this test only
     exercises the contract that the endpoints exist + accept a happy-path
@@ -279,9 +271,7 @@ def test_first_customer_post_setup_rag_smoke(
         "/v1/setup/step/admin",
         json={"email": "rag@first.run", "password": "FreshInstall2026!"},
     )
-    client.post(
-        "/v1/setup/step/license", json={"license_key": license_token}
-    )
+    client.post("/v1/setup/step/license", json={"license_key": license_token})
     client.post(
         "/v1/setup/step/domain",
         json={"mode": "ip", "domain": None, "ssl_mode": "internal"},

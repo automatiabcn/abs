@@ -79,9 +79,7 @@ class TestQ12L25MarketplaceInstallBoundary:
             f"tenant (status={r.status_code})"
         )
 
-    def test_shell_metachar_plugin_id_rejected(
-        self, client: TestClient
-    ) -> None:
+    def test_shell_metachar_plugin_id_rejected(self, client: TestClient) -> None:
         _login(client)
         for evil in ("evil;rm -rf /", "evil`whoami`", "evil$(date)"):
             r = client.post(
@@ -93,9 +91,7 @@ class TestQ12L25MarketplaceInstallBoundary:
                 f"metachars in plugin_id={evil!r} (status={r.status_code})"
             )
 
-    def test_safe_plugin_id_passes_validation(
-        self, client: TestClient
-    ) -> None:
+    def test_safe_plugin_id_passes_validation(self, client: TestClient) -> None:
         _login(client)
         r = client.post(
             "/v1/marketplace/install",
@@ -173,17 +169,13 @@ class TestQ12L25WorkflowSynthesizeBoundary:
         r = client.post("/v1/workflows/synthesize", json=body)
         assert r.status_code != 500
 
-    def test_intent_over_cap_returns_422(
-        self, client: TestClient
-    ) -> None:
+    def test_intent_over_cap_returns_422(self, client: TestClient) -> None:
         _login(client)
         body = {"intent": "i" * 2_001, "locale": "tr"}
         r = client.post("/v1/workflows/synthesize", json=body)
         assert r.status_code == 422
 
-    def test_intent_under_min_returns_422(
-        self, client: TestClient
-    ) -> None:
+    def test_intent_under_min_returns_422(self, client: TestClient) -> None:
         _login(client)
         body = {"intent": "short", "locale": "tr"}
         r = client.post("/v1/workflows/synthesize", json=body)
@@ -198,10 +190,7 @@ class TestQ12L25WorkflowSynthesizeBoundary:
 class TestQ12L25WorkflowExecuteNodesGraceful:
     def test_100_node_workflow_no_500(self, client: TestClient) -> None:
         _login(client)
-        nodes = [
-            {"id": f"n{i}", "type": "noop", "params": {}}
-            for i in range(100)
-        ]
+        nodes = [{"id": f"n{i}", "type": "noop", "params": {}} for i in range(100)]
         body = {"workflow": {"nodes": nodes, "edges": []}, "dry_run": True}
         r = client.post("/v1/workflows/execute", json=body)
         assert r.status_code != 500, (

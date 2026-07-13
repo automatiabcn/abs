@@ -31,6 +31,7 @@ try:
 except IndexError:
     # Container layout differs from monorepo — fall back to env or /app.
     import os as _os
+
     REPO_ROOT = Path(_os.environ.get("ABS_REPO_ROOT", "/app"))
 SCREENSHOT_DIR = REPO_ROOT / "docs" / "demo" / "screenshots"
 VIDEO_SCRIPT = REPO_ROOT / "docs" / "demo" / "video-script.md"

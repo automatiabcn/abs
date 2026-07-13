@@ -109,7 +109,9 @@ def test_an_optional_secret_that_is_unset_is_not_a_weak_secret() -> None:
     """`mcp_token_secret` and `magic_link_hmac_secret` default to empty: the
     feature they key is simply off. Reporting them would train the operator to
     ignore this error."""
-    weak = validate_secret_strength(_prod(mcp_token_secret="", magic_link_hmac_secret=""))
+    weak = validate_secret_strength(
+        _prod(mcp_token_secret="", magic_link_hmac_secret="")
+    )
     assert weak == []
 
 

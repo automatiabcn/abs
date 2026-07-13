@@ -62,10 +62,7 @@ class SpeakerRegistry:
         consent_at: str,
         metadata: dict[str, str] | None = None,
     ) -> SpeakerProfile:
-        if (
-            getattr(settings, "meeting_voice_consent_required", True)
-            and not consent_at
-        ):
+        if getattr(settings, "meeting_voice_consent_required", True) and not consent_at:
             raise ConsentRequired("explicit consent_at timestamp required")
         digest = self._hash(fingerprint)
         profile = SpeakerProfile(
@@ -77,7 +74,10 @@ class SpeakerRegistry:
         )
         self._profiles[digest] = profile
         logger.info(
-            "speaker_enroll user=%s tenant=%s digest=%s", user_id, tenant_id, digest[:12]
+            "speaker_enroll user=%s tenant=%s digest=%s",
+            user_id,
+            tenant_id,
+            digest[:12],
         )
         return profile
 
@@ -92,9 +92,7 @@ class SpeakerRegistry:
 
     def forget(self, *, user_id: str) -> int:
         """GDPR Article 17 — purge a user's profile(s); returns count removed."""
-        to_remove = [
-            d for d, p in self._profiles.items() if p.user_id == user_id
-        ]
+        to_remove = [d for d, p in self._profiles.items() if p.user_id == user_id]
         for d in to_remove:
             del self._profiles[d]
         if to_remove:

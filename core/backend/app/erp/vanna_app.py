@@ -42,13 +42,22 @@ class SafetyError(RuntimeError):
 
 
 _FORBIDDEN = (
-    "drop", "delete", "insert", "update", "truncate", "alter",
-    "create", "grant", "revoke", "attach", "copy", "vacuum",
-    "replace", "merge",
+    "drop",
+    "delete",
+    "insert",
+    "update",
+    "truncate",
+    "alter",
+    "create",
+    "grant",
+    "revoke",
+    "attach",
+    "copy",
+    "vacuum",
+    "replace",
+    "merge",
 )
-_FORBIDDEN_RE = re.compile(
-    r"\b(" + "|".join(_FORBIDDEN) + r")\b", flags=re.IGNORECASE
-)
+_FORBIDDEN_RE = re.compile(r"\b(" + "|".join(_FORBIDDEN) + r")\b", flags=re.IGNORECASE)
 
 
 def assert_safe_sql(sql: str) -> None:
@@ -109,9 +118,7 @@ class _VannaBackend:
         try:
             import vanna  # noqa: F401
         except ImportError as exc:
-            raise ImportError(
-                "Vanna backend requires `pip install vanna`"
-            ) from exc
+            raise ImportError("Vanna backend requires `pip install vanna`") from exc
         self.model_name = model_name
         self.training_data_path = training_data_path
         logger.info("text2sql_vanna_init model=%s", model_name)

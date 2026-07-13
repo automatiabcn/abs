@@ -44,8 +44,11 @@ def _provider(name: str, tokens_in: int = 10, tokens_out: int = 5):
 
         async def call(self, prompt, model=None, **kwargs):  # noqa: ANN001
             return ProviderResponse(
-                text="answer", provider=name, model="m",
-                tokens_in=tokens_in, tokens_out=tokens_out,
+                text="answer",
+                provider=name,
+                model="m",
+                tokens_in=tokens_in,
+                tokens_out=tokens_out,
             )
 
     _P.name = name
@@ -97,8 +100,11 @@ async def test_the_provider_that_actually_answered_is_the_one_billed(
     monkeypatch.setattr(orchestrator, "get_provider", _get)
 
     resp = await orchestrator.call_with_cascade(
-        "anything", primary="anthropic", fallbacks=("groq",),
-        tenant_id="acme", use_cache=False,
+        "anything",
+        primary="anthropic",
+        fallbacks=("groq",),
+        tenant_id="acme",
+        use_cache=False,
     )
 
     assert resp.provider == "groq"
@@ -124,7 +130,10 @@ async def test_a_failed_request_is_not_counted_as_usage(recorded, monkeypatch):
 
     with pytest.raises(Exception):
         await orchestrator.call_with_cascade(
-            "anything", primary="groq", tenant_id="acme", use_cache=False,
+            "anything",
+            primary="groq",
+            tenant_id="acme",
+            use_cache=False,
         )
 
     assert recorded == [], "a request nobody answered was counted as usage"
@@ -141,7 +150,9 @@ async def test_a_cached_answer_is_not_counted_twice(recorded, monkeypatch):
 
     for _ in range(2):
         await orchestrator.call_with_cascade(
-            "the same question, twice", primary="groq", tenant_id="acme",
+            "the same question, twice",
+            primary="groq",
+            tenant_id="acme",
             use_cache=True,
         )
 
@@ -161,7 +172,8 @@ async def test_a_call_with_no_caller_context_is_not_filed_under_a_phantom_tenant
 
     await orchestrator.call_with_cascade(
         "a delegated MCP tool call, with no tenant attached",
-        primary="groq", use_cache=False,
+        primary="groq",
+        use_cache=False,
     )
 
     assert recorded[0]["tenant"] == "default"
@@ -180,6 +192,9 @@ async def test_metering_failure_never_costs_the_customer_their_answer(monkeypatc
     monkeypatch.setattr(orchestrator, "get_provider", lambda n: _provider(n))
 
     resp = await orchestrator.call_with_cascade(
-        "anything", primary="groq", tenant_id="acme", use_cache=False,
+        "anything",
+        primary="groq",
+        tenant_id="acme",
+        use_cache=False,
     )
     assert resp.text == "answer"

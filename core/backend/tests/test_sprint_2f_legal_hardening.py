@@ -232,8 +232,10 @@ def test_item8_phone_home_doc_discloses_fields_and_opt_out():
 def test_item8_phone_home_doc_states_no_customer_payload():
     body = PRIVACY_PHONE_HOME.read_text(encoding="utf-8").lower()
     # The doc must state explicitly that no customer payload leaves the host.
-    assert "no customer payload" in body or "no customer-data" in body or (
-        "never leave" in body and "customer" in body
+    assert (
+        "no customer payload" in body
+        or "no customer-data" in body
+        or ("never leave" in body and "customer" in body)
     ), "PRIVACY_PHONE_HOME.md must state that no customer payload is transmitted"
 
 

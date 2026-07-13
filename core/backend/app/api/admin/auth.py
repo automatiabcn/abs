@@ -122,9 +122,7 @@ def _issue_jwt() -> tuple[str, int]:
 
 def verify_admin_jwt(token: str) -> dict:
     try:
-        payload = pyjwt.decode(
-            token, settings.admin_jwt_secret, algorithms=["HS256"]
-        )
+        payload = pyjwt.decode(token, settings.admin_jwt_secret, algorithms=["HS256"])
     except pyjwt.ExpiredSignatureError as exc:
         raise HTTPException(401, "admin_token_expired") from exc
     except pyjwt.InvalidTokenError as exc:
@@ -157,9 +155,7 @@ def _is_active_admin_user(email: str) -> bool:
 
         with Session(get_engine()) as db:
             user = db.exec(select(User).where(User.email == email)).first()
-            return bool(
-                user and user.role == "admin" and user.status == "active"
-            )
+            return bool(user and user.role == "admin" and user.status == "active")
     except Exception as exc:  # pragma: no cover — defensive only
         logger.debug("active-admin lookup skipped (non-fatal): %s", exc)
         return False
@@ -280,9 +276,7 @@ class LoginBody(BaseModel):
 
 
 @router.post("/login")
-async def admin_login(
-    body: LoginBody, request: Request, response: Response
-) -> dict:
+async def admin_login(body: LoginBody, request: Request, response: Response) -> dict:
     ip = _client_ip(request)
     if not settings.admin_password_hash:
         emit_event(
@@ -353,7 +347,9 @@ async def admin_login(
 
 
 @router.post("/logout")
-async def admin_logout(response: Response, _admin: dict = Depends(admin_required)) -> dict:
+async def admin_logout(
+    response: Response, _admin: dict = Depends(admin_required)
+) -> dict:
     response.delete_cookie(key=ADMIN_COOKIE, path="/")
     return {"ok": True}
 

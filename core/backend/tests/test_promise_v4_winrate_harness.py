@@ -16,6 +16,7 @@ What we lock down:
      `artifacts/promise_verify/` so CI / founder audits can reference
      a stable path.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -52,8 +53,9 @@ def test_promise_v4_dataset_balanced_after_v2_expansion():
     counts: dict[str, int] = {}
     for r in rows:
         counts[r["category"]] = counts.get(r["category"], 0) + 1
-    assert counts == {"code": 25, "analysis": 25,
-                      "translation": 25, "writing": 25}, counts
+    assert counts == {"code": 25, "analysis": 25, "translation": 25, "writing": 25}, (
+        counts
+    )
     for r in rows:
         assert {"id", "category", "task", "expected_traits"} <= set(r.keys())
         assert r["task"].strip(), f"empty task in {r['id']}"

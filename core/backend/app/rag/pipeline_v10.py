@@ -28,6 +28,7 @@ _CHUNK_NAMESPACE = uuid.UUID("8a3b9f2c-1e4d-4f5a-9c7e-2b1d3e4f5a6b")
 def _chunk_uuid(doc_id: str, seq: int) -> str:
     return str(uuid.uuid5(_CHUNK_NAMESPACE, f"{doc_id}/{seq}"))
 
+
 logger = logging.getLogger(__name__)
 
 __all__ = [
@@ -66,9 +67,7 @@ def estimate_token_count(text: str) -> int:
 
 # Zero-width / BOM / word-joiner code points that PDF + DOCX extractors leak
 # into the text and that pollute embeddings without adding meaning.
-_ZERO_WIDTH = dict.fromkeys(
-    map(ord, "​‌‍⁠﻿­"), None
-)
+_ZERO_WIDTH = dict.fromkeys(map(ord, "​‌‍⁠﻿­"), None)
 # Latin typographic ligatures that PDF text layers emit as single glyphs; left
 # as-is they fragment a word ("ﬁnance" ≠ "finance") and hurt recall.
 _LIGATURES = {
@@ -180,9 +179,7 @@ def _extract_binary_text(content: bytes, mime_type: str) -> str:
             tmp_path = tmp.name
         try:
             elements = partition(filename=tmp_path)
-            return "\n\n".join(
-                el.text for el in elements if getattr(el, "text", None)
-            )
+            return "\n\n".join(el.text for el in elements if getattr(el, "text", None))
         finally:
             try:
                 os.unlink(tmp_path)
@@ -228,7 +225,9 @@ def _extract_binary_text(content: bytes, mime_type: str) -> str:
         except ImportError as exc:  # pragma: no cover
             raise RuntimeError("openpyxl is required for XLSX parsing") from exc
         try:
-            wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+            wb = openpyxl.load_workbook(
+                io.BytesIO(content), read_only=True, data_only=True
+            )
         except Exception as exc:  # noqa: BLE001 — surface as clean 422, not 500
             raise RuntimeError(f"xlsx_parse_failed: {exc}") from exc
         # Flatten each sheet to "Sheet: name" + tab-joined non-empty rows so a
@@ -248,7 +247,9 @@ def _extract_binary_text(content: bytes, mime_type: str) -> str:
             pass
         text = "\n\n".join(parts)
         if not text.strip():
-            raise RuntimeError("xlsx_no_extractable_text: the spreadsheet has no readable cells.")
+            raise RuntimeError(
+                "xlsx_no_extractable_text: the spreadsheet has no readable cells."
+            )
         return text
 
     raise RuntimeError(f"no_parser_for_mime: {mime_type}")
@@ -268,9 +269,7 @@ def parse_document(
         joined = _extract_binary_text(content, mime_type)
         return parse_text(joined, mime_type=mime_type, filename=filename)
 
-    logger.warning(
-        "rag_parser_unknown_mime mime=%s falling_back=text/plain", mime_type
-    )
+    logger.warning("rag_parser_unknown_mime mime=%s falling_back=text/plain", mime_type)
     return parse_text(content, mime_type=mime_type, filename=filename)
 
 

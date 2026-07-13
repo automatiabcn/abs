@@ -13,7 +13,7 @@ def test_recovery_runbook_has_4_scenarios_and_min_words():
     p = _runbook()
     assert p.is_file()
     text = p.read_text(encoding="utf-8")
-    assert len(text.split()) >= 800, f"runbook < 800 words"
+    assert len(text.split()) >= 800, "runbook < 800 words"
     for scenario in (
         "Scenario 1 — Master key file deleted",
         "Scenario 2 — Master key compromised",

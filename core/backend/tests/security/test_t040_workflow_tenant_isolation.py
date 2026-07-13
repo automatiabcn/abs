@@ -29,13 +29,17 @@ def two_tenant_transcript() -> tuple[Transcript, Transcript]:
     a = Transcript(
         language="auto",
         duration=2.0,
-        segments=[TranscriptSegment(speaker="Ahmet", start=0, end=1, text="confidential A")],
+        segments=[
+            TranscriptSegment(speaker="Ahmet", start=0, end=1, text="confidential A")
+        ],
         backend="mock",
     )
     b = Transcript(
         language="auto",
         duration=2.0,
-        segments=[TranscriptSegment(speaker="Bob", start=0, end=1, text="confidential B")],
+        segments=[
+            TranscriptSegment(speaker="Bob", start=0, end=1, text="confidential B")
+        ],
         backend="mock",
     )
     return a, b
@@ -160,6 +164,4 @@ def test_gmail_mcp_rate_limit_keyed_per_tenant() -> None:
     assert len(msgs_a) == 1
     assert len(msgs_b) == 1
     # Crossing tenants: list_inbox of t1 returns no t2 message ids.
-    assert {m.message_id for m in msgs_a}.isdisjoint(
-        {m.message_id for m in msgs_b}
-    )
+    assert {m.message_id for m in msgs_a}.isdisjoint({m.message_id for m in msgs_b})

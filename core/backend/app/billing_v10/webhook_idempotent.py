@@ -95,9 +95,7 @@ class WebhookProcessor:
     def _audit_hash(self, event_id: str, event_type: str, payload: dict) -> str:
         prev = self._audit[-1]["audit_hash"] if self._audit else ""
         digest = hashlib.sha256(
-            f"{prev}|{event_id}|{event_type}|{sorted(payload.items())}".encode(
-                "utf-8"
-            )
+            f"{prev}|{event_id}|{event_type}|{sorted(payload.items())}".encode("utf-8")
         ).hexdigest()
         return digest
 
@@ -112,9 +110,7 @@ class WebhookProcessor:
             raise ValueError("event_id required")
         seen_at = self._seen.get(event_id)
         if seen_at is not None and (time.time() - seen_at) < self.replay_window_seconds:
-            raise ReplayedWebhookError(
-                f"event_id {event_id!r} already processed"
-            )
+            raise ReplayedWebhookError(f"event_id {event_id!r} already processed")
         ts = time.time()
         self._seen[event_id] = ts
         record = WebhookEvent(

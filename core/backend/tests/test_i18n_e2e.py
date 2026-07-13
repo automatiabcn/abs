@@ -40,6 +40,7 @@ def _post_portal(client, headers):
 
 # ---- Webhook signature missing ----------------------------------------------
 
+
 def test_webhook_missing_sig_en(client):
     r = _post_no_sig(client, {"Accept-Language": "en"})
     assert r.status_code == 400
@@ -60,6 +61,7 @@ def test_webhook_missing_sig_es(client):
 
 # ---- Checkout no Stripe key -------------------------------------------------
 
+
 def test_checkout_no_key_en(client, _no_stripe):
     r = _post_checkout(client, {"Accept-Language": "en"})
     assert r.status_code == 503
@@ -79,6 +81,7 @@ def test_checkout_no_key_es(client, _no_stripe):
 
 
 # ---- Portal no Stripe key ---------------------------------------------------
+
 
 def test_portal_no_key_en(client, _no_stripe):
     r = _post_portal(client, {"Accept-Language": "en"})

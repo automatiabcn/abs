@@ -25,6 +25,7 @@ source fallback. R69 adds boundary + contract tests:
 All tests use the same admin-login + monkeypatch pattern as the
 sibling 032 suite.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -216,12 +217,7 @@ def test_q12_r69_per_source_keys_present(client, monkeypatch, _seed_three_source
     # same db session may have left rows behind.
     rows_by_source = {}
     for row in body["entries"]:
-        marker = (
-            row.get("license_jti")
-            or row.get("id")
-            or row.get("resource")
-            or ""
-        )
+        marker = row.get("license_jti") or row.get("id") or row.get("resource") or ""
         if isinstance(marker, str) and suffix in marker:
             rows_by_source[row["source"]] = row
 
@@ -237,16 +233,11 @@ def test_q12_r69_per_source_keys_present(client, monkeypatch, _seed_three_source
         assert rows_by_source["customer"]["actor"] == "customer"
     if "webhook" in rows_by_source:
         assert rows_by_source["webhook"]["id"].endswith(suffix)
-        assert (
-            rows_by_source["webhook"]["action"]
-            == "r69.checkout.session.completed"
-        )
+        assert rows_by_source["webhook"]["action"] == "r69.checkout.session.completed"
         assert rows_by_source["webhook"]["actor"] == "system"
 
 
-def test_q12_audit_actor_present_all_sources(
-    client, monkeypatch, _seed_three_sources
-):
+def test_q12_audit_actor_present_all_sources(client, monkeypatch, _seed_three_sources):
     """Regression: customer + webhook entries used to omit `actor`, so the
     panel CSV export (`actor.replace(...)`) and actor filter crashed on
     undefined. Every row, regardless of source, must expose a string actor."""

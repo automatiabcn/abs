@@ -43,7 +43,11 @@ def _check_db() -> dict:
         }
     except Exception as exc:
         logger.exception("health_full database check failed")
-        return {"name": "database", "ok": False, "detail": {"error_class": type(exc).__name__}}
+        return {
+            "name": "database",
+            "ok": False,
+            "detail": {"error_class": type(exc).__name__},
+        }
 
 
 def _check_vault() -> dict:
@@ -62,7 +66,11 @@ def _check_vault() -> dict:
         }
     except Exception as exc:
         logger.exception("health_full vault check failed")
-        return {"name": "vault", "ok": False, "detail": {"error_class": type(exc).__name__}}
+        return {
+            "name": "vault",
+            "ok": False,
+            "detail": {"error_class": type(exc).__name__},
+        }
 
 
 def _check_providers() -> dict:
@@ -112,7 +120,11 @@ def _check_mcp() -> dict:
         }
     except Exception as exc:
         logger.exception("health_full mcp check failed")
-        return {"name": "mcp", "ok": False, "detail": {"error_class": type(exc).__name__}}
+        return {
+            "name": "mcp",
+            "ok": False,
+            "detail": {"error_class": type(exc).__name__},
+        }
 
 
 def _check_email() -> dict:
@@ -129,7 +141,8 @@ def _check_email() -> dict:
 def _check_data_dir() -> dict:
     return {
         "name": "data_dir",
-        "ok": os.path.isdir(settings.data_dir) and os.access(settings.data_dir, os.W_OK),
+        "ok": os.path.isdir(settings.data_dir)
+        and os.access(settings.data_dir, os.W_OK),
         "detail": {"path": settings.data_dir},
     }
 

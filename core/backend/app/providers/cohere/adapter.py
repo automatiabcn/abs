@@ -57,7 +57,11 @@ class CohereProvider(BaseProvider):
             )
         except Exception as exc:
             name = type(exc).__name__
-            transient = name in {"TooManyRequestsError", "ServiceUnavailableError", "TimeoutError"}
+            transient = name in {
+                "TooManyRequestsError",
+                "ServiceUnavailableError",
+                "TimeoutError",
+            }
             raise ProviderError(
                 f"Cohere {name}: {str(exc)[:200]}",
                 provider=self.name,
@@ -121,7 +125,9 @@ class CohereProvider(BaseProvider):
                 input_type="search_document",
                 embedding_types=["float"],
             )
-            floats = getattr(resp.embeddings, "float", None) or getattr(resp.embeddings, "float_", None)
+            floats = getattr(resp.embeddings, "float", None) or getattr(
+                resp.embeddings, "float_", None
+            )
             if not floats:
                 return []
             return list(floats[0])

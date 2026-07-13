@@ -69,12 +69,8 @@ def upgrade() -> None:
         ["tenant_slug", "project_slug"],
         unique=True,
     )
-    op.create_index(
-        "ix_tenant_projects_tenant", "tenant_projects", ["tenant_slug"]
-    )
-    op.create_index(
-        "ix_tenant_projects_project", "tenant_projects", ["project_slug"]
-    )
+    op.create_index("ix_tenant_projects_tenant", "tenant_projects", ["tenant_slug"])
+    op.create_index("ix_tenant_projects_project", "tenant_projects", ["project_slug"])
 
 
 def downgrade() -> None:

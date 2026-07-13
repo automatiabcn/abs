@@ -44,7 +44,9 @@ def _mint_license_bearer(jti: str = "test-jti-l23s2") -> str:
     return generate_license(jti, valid_days=30)
 
 
-def _mint_delete_token(jti: str, *, expired: bool = False, scope: str = "account.delete") -> str:
+def _mint_delete_token(
+    jti: str, *, expired: bool = False, scope: str = "account.delete"
+) -> str:
     from app.config import settings
 
     now = datetime.now(timezone.utc)
@@ -56,9 +58,7 @@ def _mint_delete_token(jti: str, *, expired: bool = False, scope: str = "account
         "exp": int(exp.timestamp()),
         "scope": scope,
     }
-    return pyjwt.encode(
-        payload, settings.delete_confirm_jwt_secret, algorithm="HS256"
-    )
+    return pyjwt.encode(payload, settings.delete_confirm_jwt_secret, algorithm="HS256")
 
 
 def _audits_for(records, action_prefix: str) -> list[dict]:
@@ -85,9 +85,7 @@ class TestQ12L23Sweep2MeAccountAuth:
             r = client.post("/v1/me/account/delete-request")
         assert r.status_code == 401
         events = _audits_for(caplog.records, "me.account.auth")
-        assert events, (
-            "Q12-L23 sweep2: missing bearer must emit me.account.auth audit"
-        )
+        assert events, "Q12-L23 sweep2: missing bearer must emit me.account.auth audit"
         assert events[-1]["reason"] == "missing_bearer"
         assert events[-1]["outcome"] == "denied"
 

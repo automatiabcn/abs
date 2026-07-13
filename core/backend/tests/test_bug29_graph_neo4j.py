@@ -16,6 +16,7 @@ Sprint 2A:
 
 These tests guard the policy without booting Neo4j (driver calls are stubbed).
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -113,9 +114,7 @@ def test_cypher_auto_injects_tenant_param(
         captured["params"] = params or {}
         return [{"n": {"tenant_id": admin_ctx.tenant_id, "id": "p-anna"}}]
 
-    monkeypatch.setattr(
-        graph_routes.Neo4jClient, "query", _fake_query, raising=True
-    )
+    monkeypatch.setattr(graph_routes.Neo4jClient, "query", _fake_query, raising=True)
     r = admin_client.post(
         "/v1/graph/cypher",
         json={
@@ -142,9 +141,7 @@ def test_cypher_post_filters_cross_tenant_rows(
             {"n": {"tenant_id": "tenant-b", "id": "p-mallory"}},
         ]
 
-    monkeypatch.setattr(
-        graph_routes.Neo4jClient, "query", _fake_query, raising=True
-    )
+    monkeypatch.setattr(graph_routes.Neo4jClient, "query", _fake_query, raising=True)
     r = admin_client.post(
         "/v1/graph/cypher",
         json={"cypher": "MATCH (n:Person) RETURN n", "params": {}},
@@ -170,9 +167,7 @@ def test_cypher_elapsed_ms_is_measured_not_hardcoded(
         await asyncio.sleep(0.02)
         return [{"n": {"tenant_id": admin_ctx.tenant_id, "id": "p-anna"}}]
 
-    monkeypatch.setattr(
-        graph_routes.Neo4jClient, "query", _slow_query, raising=True
-    )
+    monkeypatch.setattr(graph_routes.Neo4jClient, "query", _slow_query, raising=True)
     r = admin_client.post(
         "/v1/graph/cypher",
         json={"cypher": "MATCH (n:Person) RETURN n", "params": {}},

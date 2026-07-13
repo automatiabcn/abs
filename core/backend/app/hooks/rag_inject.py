@@ -88,7 +88,8 @@ def _category_for(tool: str, tool_input: dict) -> str:
     fp = (tool_input or {}).get("file_path", "") or ""
 
     if tool == "Bash" and any(
-        k in cmd.lower() for k in ("analyze", "analyse", "compare", "filter", "aggregate")
+        k in cmd.lower()
+        for k in ("analyze", "analyse", "compare", "filter", "aggregate")
     ):
         return "bash_analysis"
     if tool in ("Write", "Edit"):

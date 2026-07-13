@@ -7,7 +7,6 @@ import hmac
 import json
 import time
 
-import pytest
 
 from app.config import settings
 from app.integrations.slack_signing import verify_slack_signature
@@ -67,7 +66,9 @@ def test_empty_secret_fails_safe():
 def test_url_verification_challenge_accepted(client, monkeypatch):
     monkeypatch.setattr(settings, "slack_signing_secret", _SECRET)
     ts = str(int(time.time()))
-    body = json.dumps({"type": "url_verification", "challenge": "test_chal_123"}).encode()
+    body = json.dumps(
+        {"type": "url_verification", "challenge": "test_chal_123"}
+    ).encode()
     sig = _sign(_SECRET, ts, body)
 
     r = client.post(

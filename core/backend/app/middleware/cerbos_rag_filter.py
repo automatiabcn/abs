@@ -56,9 +56,7 @@ def rag_action_dep(action: str):
             )
         resource_id = f"{tenant}-rag"
         principal = auth.as_principal()
-        resource = build_resource(
-            resource_id, _RAG_COLLECTION_KIND, tenant_id=tenant
-        )
+        resource = build_resource(resource_id, _RAG_COLLECTION_KIND, tenant_id=tenant)
         if not is_allowed(principal, resource, action, client=cerbos):
             logger.info(
                 "rag_cerbos_denied subject=%s tenant=%s action=%s",

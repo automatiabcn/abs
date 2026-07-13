@@ -49,14 +49,21 @@ def _seed_client(client_id: str, redirect: str = "https://app.local/callback") -
         db.commit()
 
 
-def _seed_user(email: str, role: str, status: str = "active", pw: str = "pw12345!") -> str:
+def _seed_user(
+    email: str, role: str, status: str = "active", pw: str = "pw12345!"
+) -> str:
     from app.db.models import User
 
     h = bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
     with Session(get_engine()) as s:
         s.add(
-            User(email=email, password_hash=h, tenant_slug="default",
-                 role=role, status=status)
+            User(
+                email=email,
+                password_hash=h,
+                tenant_slug="default",
+                role=role,
+                status=status,
+            )
         )
         s.commit()
     return pw

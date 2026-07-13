@@ -39,8 +39,12 @@ async def test_branch_prunes_the_untaken_path():
         ],
     }
     out = await run_workflow_graph(
-        tenant_slug="tB", name="branch", graph=graph, input_text="go",
-        trigger="manual", actor="a@x.io",
+        tenant_slug="tB",
+        name="branch",
+        graph=graph,
+        input_text="go",
+        trigger="manual",
+        actor="a@x.io",
     )
     assert _result(out, "branch")["decision"] == "true"
     assert _by_name(out, "YesPath")["status"] == "executed"
@@ -52,8 +56,12 @@ async def test_branch_condition_false_prunes_true_path():
     graph = {
         "nodes": [
             {"id": "t", "kind": "trigger", "name": "Start"},
-            {"id": "b", "kind": "branch", "name": "Gate",
-             "config": {"condition_expr": "1 == 2"}},
+            {
+                "id": "b",
+                "kind": "branch",
+                "name": "Gate",
+                "config": {"condition_expr": "1 == 2"},
+            },
             {"id": "yes", "kind": "action", "name": "YesPath"},
             {"id": "no", "kind": "action", "name": "NoPath"},
         ],
@@ -64,8 +72,12 @@ async def test_branch_condition_false_prunes_true_path():
         ],
     }
     out = await run_workflow_graph(
-        tenant_slug="tB", name="branch", graph=graph, input_text="go",
-        trigger="manual", actor="a@x.io",
+        tenant_slug="tB",
+        name="branch",
+        graph=graph,
+        input_text="go",
+        trigger="manual",
+        actor="a@x.io",
     )
     assert _result(out, "branch")["decision"] == "false"
     assert _by_name(out, "NoPath")["status"] == "executed"
@@ -92,8 +104,12 @@ async def test_branch_merge_node_survives_when_reachable_via_taken_path():
         ],
     }
     out = await run_workflow_graph(
-        tenant_slug="tB", name="merge", graph=graph, input_text="go",
-        trigger="manual", actor="a@x.io",
+        tenant_slug="tB",
+        name="merge",
+        graph=graph,
+        input_text="go",
+        trigger="manual",
+        actor="a@x.io",
     )
     assert _by_name(out, "Merge")["status"] == "executed"  # not pruned
 
@@ -108,22 +124,34 @@ async def test_sub_workflow_runs_nested_saved_workflow(monkeypatch):
         "edges": [{"source": "ct", "target": "ca"}],
     }
     monkeypatch.setattr(
-        svc, "get_definition",
+        svc,
+        "get_definition",
         lambda *, tenant_slug, key="default": {
-            "key": key, "name": "child", "graph": saved, "saved": True,
+            "key": key,
+            "name": "child",
+            "graph": saved,
+            "saved": True,
         },
     )
     graph = {
         "nodes": [
             {"id": "t", "kind": "trigger", "name": "Start"},
-            {"id": "sw", "kind": "sub_workflow", "name": "Child",
-             "config": {"workflow_key": "child"}},
+            {
+                "id": "sw",
+                "kind": "sub_workflow",
+                "name": "Child",
+                "config": {"workflow_key": "child"},
+            },
         ],
         "edges": [{"source": "t", "target": "sw"}],
     }
     out = await run_workflow_graph(
-        tenant_slug="tS", name="parent", graph=graph, input_text="go",
-        trigger="manual", actor="a@x.io",
+        tenant_slug="tS",
+        name="parent",
+        graph=graph,
+        input_text="go",
+        trigger="manual",
+        actor="a@x.io",
     )
     sw = _result(out, "sub_workflow")
     assert sw["status"] == "done"
@@ -133,22 +161,34 @@ async def test_sub_workflow_runs_nested_saved_workflow(monkeypatch):
 
 async def test_sub_workflow_unknown_key_is_skipped(monkeypatch):
     monkeypatch.setattr(
-        svc, "get_definition",
+        svc,
+        "get_definition",
         lambda *, tenant_slug, key="default": {
-            "key": key, "name": key, "graph": {}, "saved": False,
+            "key": key,
+            "name": key,
+            "graph": {},
+            "saved": False,
         },
     )
     graph = {
         "nodes": [
             {"id": "t", "kind": "trigger", "name": "Start"},
-            {"id": "sw", "kind": "sub_workflow", "name": "Missing",
-             "config": {"workflow_key": "nope"}},
+            {
+                "id": "sw",
+                "kind": "sub_workflow",
+                "name": "Missing",
+                "config": {"workflow_key": "nope"},
+            },
         ],
         "edges": [{"source": "t", "target": "sw"}],
     }
     out = await run_workflow_graph(
-        tenant_slug="tS", name="parent", graph=graph, input_text="go",
-        trigger="manual", actor="a@x.io",
+        tenant_slug="tS",
+        name="parent",
+        graph=graph,
+        input_text="go",
+        trigger="manual",
+        actor="a@x.io",
     )
     sw = _result(out, "sub_workflow")
     assert sw["status"] == "skipped" and "not found" in sw["note"]
@@ -162,25 +202,40 @@ async def test_sub_workflow_depth_guard_terminates_self_reference(monkeypatch):
         "name": "loopy",
         "nodes": [
             {"id": "t", "kind": "trigger", "name": "Start"},
-            {"id": "sw", "kind": "sub_workflow", "name": "Self",
-             "config": {"workflow_key": "loopy"}},
+            {
+                "id": "sw",
+                "kind": "sub_workflow",
+                "name": "Self",
+                "config": {"workflow_key": "loopy"},
+            },
         ],
         "edges": [{"source": "t", "target": "sw"}],
     }
     monkeypatch.setattr(
-        svc, "get_definition",
+        svc,
+        "get_definition",
         lambda *, tenant_slug, key="default": {
-            "key": key, "name": "loopy", "graph": self_graph, "saved": True,
+            "key": key,
+            "name": "loopy",
+            "graph": self_graph,
+            "saved": True,
         },
     )
     # must return (not hang / RecursionError)
     out = await run_workflow_graph(
-        tenant_slug="tS", name="loopy", graph=self_graph, input_text="go",
-        trigger="manual", actor="a@x.io",
+        tenant_slug="tS",
+        name="loopy",
+        graph=self_graph,
+        input_text="go",
+        trigger="manual",
+        actor="a@x.io",
     )
     assert out["status"] in ("partial", "done")
     # at the deepest level the sub_workflow is skipped on the depth guard
-    assert any(
-        r.get("kind") == "sub_workflow" and r.get("status") == "skipped"
-        for r in out["results"]
-    ) or out["status"] == "partial"
+    assert (
+        any(
+            r.get("kind") == "sub_workflow" and r.get("status") == "skipped"
+            for r in out["results"]
+        )
+        or out["status"] == "partial"
+    )

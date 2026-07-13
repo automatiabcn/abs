@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Dict
 
 import pytest
 
@@ -84,9 +84,7 @@ async def test_query_hybrid_uses_both_signals(monkeypatch):
 
     monkeypatch.setattr(hybrid_mod, "_collection", lambda: FakeCollection())
 
-    res = await hybrid_mod.query_hybrid(
-        "circuit breaker", top_k=3, alpha_semantic=0.6
-    )
+    res = await hybrid_mod.query_hybrid("circuit breaker", top_k=3, alpha_semantic=0.6)
     assert isinstance(res, list)
     assert len(res) == 3
     # circuit breaker keyword içeren ilk sırada
@@ -124,9 +122,7 @@ async def test_alpha_zero_pure_bm25(monkeypatch):
 
     monkeypatch.setattr(hybrid_mod, "_collection", lambda: FakeCollection())
 
-    res = await hybrid_mod.query_hybrid(
-        "special_token", top_k=2, alpha_semantic=0.0
-    )
+    res = await hybrid_mod.query_hybrid("special_token", top_k=2, alpha_semantic=0.0)
     # alpha=0 → keyword match (y.py) ilk sırada
     assert res[0]["file"] == "y.py"
     assert res[1]["file"] == "x.py"

@@ -27,7 +27,7 @@ import json
 import logging
 import os
 import re
-from typing import Optional, Sequence
+from typing import Sequence
 
 import httpx
 
@@ -97,9 +97,7 @@ def _parse_score_dict(raw: str) -> dict[str, float]:
     return {}
 
 
-async def _judge_one(
-    client: httpx.AsyncClient, sample: EvalSample
-) -> dict[str, float]:
+async def _judge_one(client: httpx.AsyncClient, sample: EvalSample) -> dict[str, float]:
     prompt = _build_prompt(sample)
     payload = {
         "model": GROQ_MODEL,
@@ -158,9 +156,7 @@ class GroqJudgeBackend:
     def evaluate(self, samples: Sequence[EvalSample]) -> EvalScores:
         return asyncio.run(self._evaluate_async(samples))
 
-    async def _evaluate_async(
-        self, samples: Sequence[EvalSample]
-    ) -> EvalScores:
+    async def _evaluate_async(self, samples: Sequence[EvalSample]) -> EvalScores:
         if not samples:
             return EvalScores(0.0, 0.0, 0.0, 0.0, 0)
         if not settings.groq_api_key or len(settings.groq_api_key) < 8:

@@ -6,6 +6,7 @@ These run the hook dispatcher and are reachable through Caddy (@backend path
 /v1/hooks/{quota-check,audit-log,session-start} endpoints were token-gated.
 Bring them to parity (same bearer+scope dependency).
 """
+
 from __future__ import annotations
 
 import pytest

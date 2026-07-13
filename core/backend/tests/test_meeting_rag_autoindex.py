@@ -19,7 +19,9 @@ def test_autoindex_uses_default_collection_and_resolved_tenant(
 ) -> None:
     from app.config import settings
 
-    monkeypatch.setattr(settings, "qdrant_default_collection", "abs_documents", raising=False)
+    monkeypatch.setattr(
+        settings, "qdrant_default_collection", "abs_documents", raising=False
+    )
     monkeypatch.setattr("app.api.chat._resolve_tenant", lambda email: "acme")
 
     class _Emb:

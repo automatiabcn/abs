@@ -6,10 +6,7 @@ import json
 from pathlib import Path
 
 CATALOG = (
-    Path(__file__).resolve().parents[1]
-    / "app"
-    / "cascade"
-    / "provider_catalog.json"
+    Path(__file__).resolve().parents[1] / "app" / "cascade" / "provider_catalog.json"
 )
 
 

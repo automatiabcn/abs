@@ -4,12 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-TEMPLATES_DIR = (
-    Path(__file__).resolve().parents[1]
-    / "app"
-    / "email"
-    / "templates"
-)
+TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "app" / "email" / "templates"
 STAGES = (
     "beta_welcome",
     "beta_walkthrough",
@@ -38,9 +33,7 @@ def test_each_template_has_jinja_placeholders_and_subject_comment():
             assert body.lstrip().lower().startswith("<!doctype html>"), (
                 f"{path.name}: missing DOCTYPE"
             )
-            assert f'lang="{lang}"' in body, (
-                f"{path.name}: missing lang=\"{lang}\""
-            )
+            assert f'lang="{lang}"' in body, f'{path.name}: missing lang="{lang}"'
             assert "{{ customer_email }}" in body, (
                 f"{path.name}: missing customer_email placeholder"
             )

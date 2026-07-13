@@ -12,6 +12,7 @@
    when this was an internal tool, and it reaches the customer in the chat
    bubble — so it is banned rather than pinned.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -59,17 +60,13 @@ FORBIDDEN_SETUP_ASCII = [
 def test_setup_js_has_correct_turkish_bytes() -> None:
     raw = SETUP_JS.read_bytes()
     missing = [w for w in REQUIRED_SETUP_TR if w.encode("utf-8") not in raw]
-    assert not missing, (
-        f"setup.js eksik Türkçe byte sequences: {missing}"
-    )
+    assert not missing, f"setup.js eksik Türkçe byte sequences: {missing}"
 
 
 def test_setup_js_no_ascii_fallen_turkish() -> None:
     raw = SETUP_JS.read_bytes()
     leaks = [w for w in FORBIDDEN_SETUP_ASCII if w.encode("utf-8") in raw]
-    assert not leaks, (
-        f"setup.js hâlâ ASCII düşmüş Türkçe içeriyor: {leaks}"
-    )
+    assert not leaks, f"setup.js hâlâ ASCII düşmüş Türkçe içeriyor: {leaks}"
 
 
 # The strings chat streams into the bubble when no provider could answer. They

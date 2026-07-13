@@ -10,8 +10,12 @@ import pytest
 from app.providers.schemas import ProviderError, ProviderResponse
 
 
-def _make_resp(text: str, model: str = "m", provider: str = "p", elapsed: int = 50) -> ProviderResponse:
-    return ProviderResponse(text=text, model=model, provider=provider, elapsed_ms=elapsed)
+def _make_resp(
+    text: str, model: str = "m", provider: str = "p", elapsed: int = 50
+) -> ProviderResponse:
+    return ProviderResponse(
+        text=text, model=model, provider=provider, elapsed_ms=elapsed
+    )
 
 
 @pytest.fixture
@@ -43,7 +47,9 @@ def fake_providers(monkeypatch):
                 raise ProviderError("fake", provider=name, transient=True)
             if responses and model in responses:
                 return responses[model]
-            return _make_resp(f"{name}:{(model or 'default')}", model=model or "?", provider=name)
+            return _make_resp(
+                f"{name}:{(model or 'default')}", model=model or "?", provider=name
+            )
 
         mock.call = _call
         providers[name] = mock
@@ -158,10 +164,14 @@ async def test_qual_human_chains_workflow(
     from app.workflow import get_workflow, list_workflows
 
     monkeypatch.setattr(settings, "workflow_durable", True)
-    fake_providers("groq", {"qwen/qwen3-32b": _make_resp("Türkçe taslak yeterince uzun")})
+    fake_providers(
+        "groq", {"qwen/qwen3-32b": _make_resp("Türkçe taslak yeterince uzun")}
+    )
     fake_providers("gemini", {"gemini-2.5-flash": _make_resp("Alternatif")})
     fake_providers("ollama", {"aya:8b": _make_resp("TAMAM")})
-    fake_providers("cloudflare", {"@cf/moonshotai/kimi-k2.5": _make_resp("İnsanlaştırılmış")})
+    fake_providers(
+        "cloudflare", {"@cf/moonshotai/kimi-k2.5": _make_resp("İnsanlaştırılmış")}
+    )
 
     result = await QualHumanPipeline().run("Bir paragraf yaz")
 

@@ -22,8 +22,19 @@ from app.db.session import get_engine
 
 logger = logging.getLogger(__name__)
 
-NODE_KINDS = ["trigger", "agent", "custom_ai", "retrieval", "connector",
-              "policy", "consent", "approval", "action", "branch", "sub_workflow"]
+NODE_KINDS = [
+    "trigger",
+    "agent",
+    "custom_ai",
+    "retrieval",
+    "connector",
+    "policy",
+    "consent",
+    "approval",
+    "action",
+    "branch",
+    "sub_workflow",
+]
 
 
 def palette() -> Dict[str, Any]:
@@ -45,14 +56,78 @@ def _default_graph() -> Dict[str, Any]:
     return {
         "name": "Inbound → Reply Draft",
         "nodes": [
-            {"id": "trigger", "kind": "trigger", "name": "Inbound request", "desc": "form · email · WhatsApp", "x": 20, "y": 160, "agent_id": None},
-            {"id": "triage", "kind": "agent", "name": "Triage", "desc": "intent classification", "x": 250, "y": 160, "agent_id": "inbound_triage"},
-            {"id": "retrieval", "kind": "retrieval", "name": "RAG + Graph", "desc": "hybrid · cite", "x": 480, "y": 60, "agent_id": None},
-            {"id": "policy", "kind": "policy", "name": "Policy Engine", "desc": "Cerbos · risk", "x": 480, "y": 280, "agent_id": None},
-            {"id": "knowledge", "kind": "agent", "name": "Knowledge", "desc": "cited draft", "x": 710, "y": 60, "agent_id": "knowledge_base"},
-            {"id": "consent", "kind": "policy", "name": "Consent Ledger", "desc": "channel consent", "x": 710, "y": 280, "agent_id": None},
-            {"id": "approval", "kind": "approval", "name": "Approval Gate", "desc": "medium risk → approval", "x": 940, "y": 60, "agent_id": None},
-            {"id": "action", "kind": "action", "name": "CRM Note + Route", "desc": "route", "x": 940, "y": 280, "agent_id": None},
+            {
+                "id": "trigger",
+                "kind": "trigger",
+                "name": "Inbound request",
+                "desc": "form · email · WhatsApp",
+                "x": 20,
+                "y": 160,
+                "agent_id": None,
+            },
+            {
+                "id": "triage",
+                "kind": "agent",
+                "name": "Triage",
+                "desc": "intent classification",
+                "x": 250,
+                "y": 160,
+                "agent_id": "inbound_triage",
+            },
+            {
+                "id": "retrieval",
+                "kind": "retrieval",
+                "name": "RAG + Graph",
+                "desc": "hybrid · cite",
+                "x": 480,
+                "y": 60,
+                "agent_id": None,
+            },
+            {
+                "id": "policy",
+                "kind": "policy",
+                "name": "Policy Engine",
+                "desc": "Cerbos · risk",
+                "x": 480,
+                "y": 280,
+                "agent_id": None,
+            },
+            {
+                "id": "knowledge",
+                "kind": "agent",
+                "name": "Knowledge",
+                "desc": "cited draft",
+                "x": 710,
+                "y": 60,
+                "agent_id": "knowledge_base",
+            },
+            {
+                "id": "consent",
+                "kind": "policy",
+                "name": "Consent Ledger",
+                "desc": "channel consent",
+                "x": 710,
+                "y": 280,
+                "agent_id": None,
+            },
+            {
+                "id": "approval",
+                "kind": "approval",
+                "name": "Approval Gate",
+                "desc": "medium risk → approval",
+                "x": 940,
+                "y": 60,
+                "agent_id": None,
+            },
+            {
+                "id": "action",
+                "kind": "action",
+                "name": "CRM Note + Route",
+                "desc": "route",
+                "x": 940,
+                "y": 280,
+                "agent_id": None,
+            },
         ],
         "edges": [
             {"source": "trigger", "target": "triage"},
@@ -78,15 +153,25 @@ def get_definition(*, tenant_slug: str, key: str = "default") -> Dict[str, Any]:
         ).first()
     if row is None:
         g = _default_graph()
-        return {"key": key, "name": g["name"], "graph": g, "saved": False,
-                "ordered_steps": ordered_agent_steps(g)}
+        return {
+            "key": key,
+            "name": g["name"],
+            "graph": g,
+            "saved": False,
+            "ordered_steps": ordered_agent_steps(g),
+        }
     try:
         graph = json.loads(row.graph_json or "{}")
     except Exception:
         graph = _default_graph()
-    return {"key": row.key, "name": row.name, "graph": graph, "saved": True,
-            "updated_at": row.updated_at.isoformat() if row.updated_at else None,
-            "ordered_steps": ordered_agent_steps(graph)}
+    return {
+        "key": row.key,
+        "name": row.name,
+        "graph": graph,
+        "saved": True,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+        "ordered_steps": ordered_agent_steps(graph),
+    }
 
 
 def save_definition(
@@ -112,9 +197,14 @@ def save_definition(
         db.add(row)
         db.commit()
         db.refresh(row)
-    return {"key": key, "name": row.name, "saved": True,
-            "node_count": len(nodes), "edge_count": len(edges),
-            "ordered_steps": ordered_agent_steps(clean)}
+    return {
+        "key": key,
+        "name": row.name,
+        "saved": True,
+        "node_count": len(nodes),
+        "edge_count": len(edges),
+        "ordered_steps": ordered_agent_steps(clean),
+    }
 
 
 def _topo_order(graph: Dict[str, Any]):
@@ -129,7 +219,7 @@ def _topo_order(graph: Dict[str, Any]):
     by_id = {n.get("id"): n for n in nodes if n.get("id")}
     indeg = {nid: 0 for nid in by_id}
     adj: Dict[str, List[str]] = {nid: [] for nid in by_id}
-    wired: set[str] = set()                 # nodes that touch ≥1 edge
+    wired: set[str] = set()  # nodes that touch ≥1 edge
     for e in edges:
         s, t = e.get("source"), e.get("target")
         if s in by_id and t in by_id:
@@ -147,7 +237,7 @@ def _topo_order(graph: Dict[str, Any]):
             indeg[nxt] -= 1
             if indeg[nxt] == 0:
                 queue.append(nxt)
-    if len(order) != len(by_id):           # cycle → fall back to insertion order
+    if len(order) != len(by_id):  # cycle → fall back to insertion order
         order = list(by_id.keys())
     return order, by_id, wired
 
@@ -174,8 +264,14 @@ _MAX_SUBWORKFLOW_DEPTH = 3
 
 
 async def run_workflow_graph(
-    *, tenant_slug: str, name: str, graph: Dict[str, Any], input_text: str,
-    trigger: str = "manual", actor: str = "", dry_run: bool = False,
+    *,
+    tenant_slug: str,
+    name: str,
+    graph: Dict[str, Any],
+    input_text: str,
+    trigger: str = "manual",
+    actor: str = "",
+    dry_run: bool = False,
     _depth: int = 0,
 ) -> Dict[str, Any]:
     """Execute the FULL designer graph — every wired node runs in topological
@@ -210,8 +306,8 @@ async def run_workflow_graph(
         if s in by_id and t in by_id:
             out_edges.setdefault(s, []).append(e)
             in_sources.setdefault(t, []).append(s)
-    pruned: set[str] = set()              # nodes a branch routed away from
-    dead_edges: set[tuple] = set()        # (source,target) edges that won't fire
+    pruned: set[str] = set()  # nodes a branch routed away from
+    dead_edges: set[tuple] = set()  # (source,target) edges that won't fire
     node_outputs: Dict[str, dict] = {}
 
     def _is_reachable(t: str) -> bool:
@@ -223,9 +319,7 @@ async def run_workflow_graph(
         srcs = in_sources.get(t, [])
         if not srcs:
             return True
-        return any(
-            s not in pruned and (s, t) not in dead_edges for s in srcs
-        )
+        return any(s not in pruned and (s, t) not in dead_edges for s in srcs)
 
     results: List[dict] = []
     approvals_opened = 0
@@ -238,13 +332,18 @@ async def run_workflow_graph(
 
     for nid in order:
         if multi and nid not in wired:
-            continue                         # unconnected node is not part of the flow
+            continue  # unconnected node is not part of the flow
         if not _is_reachable(nid):
             # no incoming edge fires → an upstream branch routed away from here
             pruned.add(nid)
-            results.append({"kind": by_id[nid].get("kind"),
-                            "name": by_id[nid].get("name") or nid,
-                            "status": "skipped", "note": "branch not taken"})
+            results.append(
+                {
+                    "kind": by_id[nid].get("kind"),
+                    "name": by_id[nid].get("name") or nid,
+                    "status": "skipped",
+                    "note": "branch not taken",
+                }
+            )
             continue
         n = by_id[nid]
         kind = n.get("kind")
@@ -261,8 +360,10 @@ async def run_workflow_graph(
                 results.append({"kind": kind, "name": nm, "skipped": "unknown_agent"})
                 status = "partial"
                 continue
-            task = input_text if not prev_summary else (
-                f"{input_text}\n\nOutput of the previous step: {prev_summary}"
+            task = (
+                input_text
+                if not prev_summary
+                else (f"{input_text}\n\nOutput of the previous step: {prev_summary}")
             )
             if context_snippets:
                 task += "\n\nRelevant context:\n- " + "\n- ".join(context_snippets[:5])
@@ -272,8 +373,14 @@ async def run_workflow_graph(
                 )
             except Exception as exc:  # noqa: BLE001 — one bad step → partial, continue
                 logger.info("workflow agent %s failed: %s", agent_id, exc)
-                results.append({"kind": kind, "name": nm, "agent_id": agent_id,
-                                "error": str(exc)[:200]})
+                results.append(
+                    {
+                        "kind": kind,
+                        "name": nm,
+                        "agent_id": agent_id,
+                        "error": str(exc)[:200],
+                    }
+                )
                 status = "partial"
                 continue
             prev_summary = res.summary
@@ -281,8 +388,12 @@ async def run_workflow_graph(
             if _RISK_RANK.get(res.risk, 0) > _RISK_RANK.get(risk_seen, 0):
                 risk_seen = res.risk
             step = {
-                "kind": kind, "name": nm, "agent_id": agent_id, "summary": res.summary,
-                "confidence": res.confidence, "risk": res.risk,
+                "kind": kind,
+                "name": nm,
+                "agent_id": agent_id,
+                "summary": res.summary,
+                "confidence": res.confidence,
+                "risk": res.risk,
                 "requires_approval": res.requires_approval,
             }
             executed += 1
@@ -294,11 +405,17 @@ async def run_workflow_graph(
                 continue
             try:
                 from app.approvals import create_approval_from_result, log_agent_run
-                run_id = log_agent_run(res, tenant_slug=tenant_slug, actor=actor, task=task)
+
+                run_id = log_agent_run(
+                    res, tenant_slug=tenant_slug, actor=actor, task=task
+                )
                 step["run_id"] = run_id
                 if res.requires_approval:
                     ap = create_approval_from_result(
-                        res, tenant_slug=tenant_slug, requester=actor, agent_run_id=run_id
+                        res,
+                        tenant_slug=tenant_slug,
+                        requester=actor,
+                        agent_run_id=run_id,
                     )
                     step["approval_id"] = ap["id"]
                     approvals_opened += 1
@@ -313,17 +430,25 @@ async def run_workflow_graph(
             # summary + retrieved context threaded in. No code sandbox — safer and
             # native to an AI-orchestration product.
             instruction = (cfg.get("instruction") or n.get("desc") or nm).strip()
-            ctx = f"\n\nOutput of the previous step: {prev_summary}" if prev_summary else ""
+            ctx = (
+                f"\n\nOutput of the previous step: {prev_summary}"
+                if prev_summary
+                else ""
+            )
             if context_snippets:
                 ctx += "\n\nRelevant context:\n- " + "\n- ".join(context_snippets[:5])
             prompt = f"{instruction}{ctx}"
             try:
                 from app.cascade.orchestrator import call_with_cascade
                 from app.providers.cascade import PROVIDER_ORDER_DEFAULT
+
                 order_p = list(PROVIDER_ORDER_DEFAULT)
                 resp = await call_with_cascade(
-                    prompt[:8000], primary=order_p[0], fallbacks=tuple(order_p[1:]),
-                    tenant_id=tenant_slug, user_subject=actor,
+                    prompt[:8000],
+                    primary=order_p[0],
+                    fallbacks=tuple(order_p[1:]),
+                    tenant_id=tenant_slug,
+                    user_subject=actor,
                 )
                 out_text = (getattr(resp, "text", "") or "").strip()
             except Exception as exc:  # noqa: BLE001 — provider failure → partial, continue
@@ -333,12 +458,16 @@ async def run_workflow_graph(
                 continue
             prev_summary = out_text or prev_summary
             node_outputs[nid] = {"text": out_text}
-            results.append({
-                "kind": kind, "name": nm, "status": "done",
-                "summary": out_text[:600],
-                "provider": getattr(resp, "provider", ""),
-                "model": getattr(resp, "model", ""),
-            })
+            results.append(
+                {
+                    "kind": kind,
+                    "name": nm,
+                    "status": "done",
+                    "summary": out_text[:600],
+                    "provider": getattr(resp, "provider", ""),
+                    "model": getattr(resp, "model", ""),
+                }
+            )
             executed += 1
             continue
 
@@ -347,44 +476,73 @@ async def run_workflow_graph(
             query_text = (cfg.get("query") or "").strip() or prev_summary or input_text
             try:
                 from app.rag.hybrid import query_hybrid
+
                 hits = await query_hybrid(query_text, top_k=max(1, min(top_k, 20)))
             except Exception as exc:  # noqa: BLE001 — retrieval failure → skip, continue
-                results.append({"kind": kind, "name": nm, "status": "skipped",
-                                "error": str(exc)[:160]})
+                results.append(
+                    {
+                        "kind": kind,
+                        "name": nm,
+                        "status": "skipped",
+                        "error": str(exc)[:160],
+                    }
+                )
                 executed += 1
                 continue
             snippets = [
                 (h.get("text") or h.get("document") or "")
-                for h in hits if isinstance(h, dict) and not h.get("error")
+                for h in hits
+                if isinstance(h, dict) and not h.get("error")
             ]
             snippets = [s for s in snippets if s]
             context_snippets.extend(snippets[:5])
-            results.append({"kind": kind, "name": nm, "status": "done",
-                            "retrieved": len(snippets)})
+            results.append(
+                {"kind": kind, "name": nm, "status": "done", "retrieved": len(snippets)}
+            )
             executed += 1
             continue
 
         if kind == "policy":
             threshold = (cfg.get("risk_threshold") or "high").strip()
             block = _RISK_RANK.get(risk_seen, 0) >= _RISK_RANK.get(threshold, 2)
-            results.append({"kind": kind, "name": nm, "status": "done",
-                            "decision": "review" if block else "allow",
-                            "risk_seen": risk_seen, "threshold": threshold})
+            results.append(
+                {
+                    "kind": kind,
+                    "name": nm,
+                    "status": "done",
+                    "decision": "review" if block else "allow",
+                    "risk_seen": risk_seen,
+                    "threshold": threshold,
+                }
+            )
             executed += 1
             continue
 
         if kind == "consent":
             channel = (cfg.get("channel") or "").strip()
-            results.append({"kind": kind, "name": nm, "status": "done",
-                            "channel": channel or "any",
-                            "note": "channel-consent checkpoint"})
+            results.append(
+                {
+                    "kind": kind,
+                    "name": nm,
+                    "status": "done",
+                    "channel": channel or "any",
+                    "note": "channel-consent checkpoint",
+                }
+            )
             executed += 1
             continue
 
         if kind == "approval":
             role = (cfg.get("role") or "").strip()
-            results.append({"kind": kind, "name": nm, "status": "gate",
-                            "role": role or "admin", "note": "human-approval gate"})
+            results.append(
+                {
+                    "kind": kind,
+                    "name": nm,
+                    "status": "gate",
+                    "role": role or "admin",
+                    "note": "human-approval gate",
+                }
+            )
             executed += 1
             continue
 
@@ -392,36 +550,63 @@ async def run_workflow_graph(
             # Real execution: run the configured connector's adapter sync into
             # the growth tables (companies/contacts/leads). dry-run previews
             # without firing the side-effecting sync.
-            connector_id = (cfg.get("connector_id") or cfg.get("connector") or "").strip()
+            connector_id = (
+                cfg.get("connector_id") or cfg.get("connector") or ""
+            ).strip()
             if not connector_id:
-                results.append({"kind": kind, "name": nm, "status": "skipped",
-                                "note": "no connector_id configured"})
+                results.append(
+                    {
+                        "kind": kind,
+                        "name": nm,
+                        "status": "skipped",
+                        "note": "no connector_id configured",
+                    }
+                )
                 status = "partial"
                 executed += 1
                 continue
             if dry_run:
-                results.append({"kind": kind, "name": nm, "status": "preview",
-                                "connector_id": connector_id,
-                                "note": "sync skipped in dry-run"})
+                results.append(
+                    {
+                        "kind": kind,
+                        "name": nm,
+                        "status": "preview",
+                        "connector_id": connector_id,
+                        "note": "sync skipped in dry-run",
+                    }
+                )
                 executed += 1
                 continue
             try:
                 from app.connectors.service import sync as connector_sync
+
                 sres = await connector_sync(
                     tenant_slug=tenant_slug, connector_id=connector_id
                 )
             except Exception as exc:  # noqa: BLE001 — one bad step → partial
-                results.append({"kind": kind, "name": nm, "status": "skipped",
-                                "connector_id": connector_id, "error": str(exc)[:160]})
+                results.append(
+                    {
+                        "kind": kind,
+                        "name": nm,
+                        "status": "skipped",
+                        "connector_id": connector_id,
+                        "error": str(exc)[:160],
+                    }
+                )
                 status = "partial"
                 executed += 1
                 continue
             ok = bool(sres.get("ok"))
-            results.append({"kind": kind, "name": nm,
-                            "status": "done" if ok else "partial",
-                            "connector_id": connector_id,
-                            "synced": sres.get("total"),
-                            "error": sres.get("error")})
+            results.append(
+                {
+                    "kind": kind,
+                    "name": nm,
+                    "status": "done" if ok else "partial",
+                    "connector_id": connector_id,
+                    "synced": sres.get("total"),
+                    "error": sres.get("error"),
+                }
+            )
             if not ok:
                 status = "partial"
             executed += 1
@@ -430,9 +615,16 @@ async def run_workflow_graph(
         if kind == "action":
             action_type = (cfg.get("action_type") or "").strip()
             target = (cfg.get("target") or "").strip()
-            results.append({"kind": kind, "name": nm, "status": "executed",
-                            "action_type": action_type or "note", "target": target,
-                            "note": "outbound action"})
+            results.append(
+                {
+                    "kind": kind,
+                    "name": nm,
+                    "status": "executed",
+                    "action_type": action_type or "note",
+                    "target": target,
+                    "note": "outbound action",
+                }
+            )
             executed += 1
             continue
 
@@ -444,10 +636,17 @@ async def run_workflow_graph(
             expr = (cfg.get("condition_expr") or cfg.get("condition") or "").strip()
             try:
                 from app.workflow_v10.condition_eval import ConditionError, evaluate
+
                 decision = evaluate(expr, node_outputs) if expr else True
             except ConditionError as exc:
-                results.append({"kind": kind, "name": nm, "status": "error",
-                                "error": f"bad condition: {exc}"[:160]})
+                results.append(
+                    {
+                        "kind": kind,
+                        "name": nm,
+                        "status": "error",
+                        "error": f"bad condition: {exc}"[:160],
+                    }
+                )
                 status = "partial"
                 executed += 1
                 continue
@@ -457,8 +656,15 @@ async def run_workflow_graph(
                 if when in ("true", "false") and when != want:
                     dead_edges.add((nid, e.get("target")))
             node_outputs[nid] = {"text": want}
-            results.append({"kind": kind, "name": nm, "status": "done",
-                            "decision": want, "condition": expr or "(empty→true)"})
+            results.append(
+                {
+                    "kind": kind,
+                    "name": nm,
+                    "status": "done",
+                    "decision": want,
+                    "condition": expr or "(empty→true)",
+                }
+            )
             executed += 1
             continue
 
@@ -467,74 +673,130 @@ async def run_workflow_graph(
             # self/cyclic reference terminates).
             key = (cfg.get("workflow_key") or cfg.get("key") or "").strip()
             if not key:
-                results.append({"kind": kind, "name": nm, "status": "skipped",
-                                "note": "no workflow_key configured"})
+                results.append(
+                    {
+                        "kind": kind,
+                        "name": nm,
+                        "status": "skipped",
+                        "note": "no workflow_key configured",
+                    }
+                )
                 status = "partial"
                 executed += 1
                 continue
             if _depth >= _MAX_SUBWORKFLOW_DEPTH:
-                results.append({"kind": kind, "name": nm, "status": "skipped",
-                                "key": key,
-                                "note": f"max sub-workflow depth {_MAX_SUBWORKFLOW_DEPTH}"})
+                results.append(
+                    {
+                        "kind": kind,
+                        "name": nm,
+                        "status": "skipped",
+                        "key": key,
+                        "note": f"max sub-workflow depth {_MAX_SUBWORKFLOW_DEPTH}",
+                    }
+                )
                 status = "partial"
                 executed += 1
                 continue
             sub_def = get_definition(tenant_slug=tenant_slug, key=key)
             if not sub_def.get("saved"):
-                results.append({"kind": kind, "name": nm, "status": "skipped",
-                                "key": key, "note": "workflow_key not found"})
+                results.append(
+                    {
+                        "kind": kind,
+                        "name": nm,
+                        "status": "skipped",
+                        "key": key,
+                        "note": "workflow_key not found",
+                    }
+                )
                 status = "partial"
                 executed += 1
                 continue
             try:
                 sub = await run_workflow_graph(
-                    tenant_slug=tenant_slug, name=sub_def.get("name") or key,
+                    tenant_slug=tenant_slug,
+                    name=sub_def.get("name") or key,
                     graph=sub_def.get("graph") or {},
                     input_text=prev_summary or input_text,
-                    trigger="sub_workflow", actor=actor, dry_run=dry_run,
+                    trigger="sub_workflow",
+                    actor=actor,
+                    dry_run=dry_run,
                     _depth=_depth + 1,
                 )
             except Exception as exc:  # noqa: BLE001 — one bad sub-run → partial
-                results.append({"kind": kind, "name": nm, "status": "skipped",
-                                "key": key, "error": str(exc)[:160]})
+                results.append(
+                    {
+                        "kind": kind,
+                        "name": nm,
+                        "status": "skipped",
+                        "key": key,
+                        "error": str(exc)[:160],
+                    }
+                )
                 status = "partial"
                 executed += 1
                 continue
             if sub.get("status") != "done":
                 status = "partial"
-            sub_sums = [r.get("summary") for r in sub.get("results", []) if r.get("summary")]
+            sub_sums = [
+                r.get("summary") for r in sub.get("results", []) if r.get("summary")
+            ]
             if sub_sums:
                 prev_summary = sub_sums[-1]
                 node_outputs[nid] = {"text": sub_sums[-1]}
-            results.append({"kind": kind, "name": nm,
-                            "status": sub.get("status") or "done", "key": key,
-                            "sub_steps": sub.get("step_count", 0)})
+            results.append(
+                {
+                    "kind": kind,
+                    "name": nm,
+                    "status": sub.get("status") or "done",
+                    "key": key,
+                    "sub_steps": sub.get("step_count", 0),
+                }
+            )
             executed += 1
             continue
 
         # unknown kind → honest skip (was a silent false green).
-        results.append({"kind": kind, "name": nm, "status": "skipped",
-                        "note": f"'{kind}' is not executed by the agentic engine yet"})
+        results.append(
+            {
+                "kind": kind,
+                "name": nm,
+                "status": "skipped",
+                "note": f"'{kind}' is not executed by the agentic engine yet",
+            }
+        )
         status = "partial"
         executed += 1
 
     elapsed = int((time.perf_counter() - t0) * 1000)
-    steps_run = len([r for r in results
-                     if "summary" in r or r.get("retrieved") is not None])
+    steps_run = len(
+        [r for r in results if "summary" in r or r.get("retrieved") is not None]
+    )
     if dry_run:
         return {
-            "id": None, "name": name, "status": status, "trigger": "dry-run",
-            "dry_run": True, "step_count": executed, "steps_run": steps_run,
-            "approvals_opened": 0, "would_open_approvals": would_open,
-            "elapsed_ms": elapsed, "results": results,
+            "id": None,
+            "name": name,
+            "status": status,
+            "trigger": "dry-run",
+            "dry_run": True,
+            "step_count": executed,
+            "steps_run": steps_run,
+            "approvals_opened": 0,
+            "would_open_approvals": would_open,
+            "elapsed_ms": elapsed,
+            "results": results,
         }
     run_ids = [nid for nid in order if not (multi and nid not in wired)]
     row = WorkflowRun(
-        tenant_slug=tenant_slug, name=name[:200], trigger=trigger[:32],
+        tenant_slug=tenant_slug,
+        name=name[:200],
+        trigger=trigger[:32],
         steps_json=json.dumps(run_ids)[:65000],
         result_json=json.dumps(results)[:65000],
-        status=status, step_count=executed, approvals_opened=approvals_opened,
-        elapsed_ms=elapsed, actor=actor,
+        status=status,
+        step_count=executed,
+        approvals_opened=approvals_opened,
+        elapsed_ms=elapsed,
+        actor=actor,
     )
     with Session(get_engine()) as db:
         db.add(row)
@@ -542,15 +804,27 @@ async def run_workflow_graph(
         db.refresh(row)
         rid = int(row.id)
     return {
-        "id": rid, "name": name, "status": status, "trigger": trigger,
-        "step_count": executed, "steps_run": steps_run,
-        "approvals_opened": approvals_opened, "elapsed_ms": elapsed, "results": results,
+        "id": rid,
+        "name": name,
+        "status": status,
+        "trigger": trigger,
+        "step_count": executed,
+        "steps_run": steps_run,
+        "approvals_opened": approvals_opened,
+        "elapsed_ms": elapsed,
+        "results": results,
     }
 
 
 async def run_workflow(
-    *, tenant_slug: str, name: str, steps: List[str], input_text: str,
-    trigger: str = "manual", actor: str = "", dry_run: bool = False,
+    *,
+    tenant_slug: str,
+    name: str,
+    steps: List[str],
+    input_text: str,
+    trigger: str = "manual",
+    actor: str = "",
+    dry_run: bool = False,
 ) -> Dict[str, Any]:
     """Run an ordered chain of agent steps; risky steps open approvals.
 
@@ -574,9 +848,13 @@ async def run_workflow(
             results.append({"agent_id": agent_id, "skipped": "unknown_agent"})
             status = "partial"
             continue
-        task = input_text if not prev_summary else (
-            f"{input_text}\n\nOutput of the previous step "
-            f"({results[-1].get('agent_id','')}): {prev_summary}"
+        task = (
+            input_text
+            if not prev_summary
+            else (
+                f"{input_text}\n\nOutput of the previous step "
+                f"({results[-1].get('agent_id', '')}): {prev_summary}"
+            )
         )
         try:
             res = await run_agent(
@@ -589,8 +867,10 @@ async def run_workflow(
             continue
         prev_summary = res.summary
         step = {
-            "agent_id": agent_id, "summary": res.summary,
-            "confidence": res.confidence, "risk": res.risk,
+            "agent_id": agent_id,
+            "summary": res.summary,
+            "confidence": res.confidence,
+            "risk": res.risk,
             "requires_approval": res.requires_approval,
         }
         if dry_run:
@@ -620,18 +900,29 @@ async def run_workflow(
     if dry_run:
         # side-effect-free preview — nothing persisted
         return {
-            "id": None, "name": name, "status": status, "trigger": "dry-run",
-            "dry_run": True, "step_count": len(steps),
+            "id": None,
+            "name": name,
+            "status": status,
+            "trigger": "dry-run",
+            "dry_run": True,
+            "step_count": len(steps),
             "steps_run": len([r for r in results if "summary" in r]),
-            "approvals_opened": 0, "would_open_approvals": would_open,
-            "elapsed_ms": elapsed, "results": results,
+            "approvals_opened": 0,
+            "would_open_approvals": would_open,
+            "elapsed_ms": elapsed,
+            "results": results,
         }
     row = WorkflowRun(
-        tenant_slug=tenant_slug, name=name[:200], trigger=trigger[:32],
+        tenant_slug=tenant_slug,
+        name=name[:200],
+        trigger=trigger[:32],
         steps_json=json.dumps(steps)[:65000],
         result_json=json.dumps(results)[:65000],
-        status=status, step_count=len(steps), approvals_opened=approvals_opened,
-        elapsed_ms=elapsed, actor=actor,
+        status=status,
+        step_count=len(steps),
+        approvals_opened=approvals_opened,
+        elapsed_ms=elapsed,
+        actor=actor,
     )
     with Session(get_engine()) as db:
         db.add(row)
@@ -639,9 +930,14 @@ async def run_workflow(
         db.refresh(row)
         rid = int(row.id)
     return {
-        "id": rid, "name": name, "status": status, "trigger": trigger,
-        "step_count": len(steps), "steps_run": len([r for r in results if "summary" in r]),
-        "approvals_opened": approvals_opened, "elapsed_ms": elapsed,
+        "id": rid,
+        "name": name,
+        "status": status,
+        "trigger": trigger,
+        "step_count": len(steps),
+        "steps_run": len([r for r in results if "summary" in r]),
+        "approvals_opened": approvals_opened,
+        "elapsed_ms": elapsed,
         "results": results,
     }
 
@@ -650,15 +946,23 @@ def list_runs(*, tenant_slug: str, limit: int = 30) -> Dict[str, Any]:
     tenant_slug = (tenant_slug or "default").strip()
     with Session(get_engine()) as db:
         rows = list(
-            db.exec(select(WorkflowRun).where(WorkflowRun.tenant_slug == tenant_slug)
-                    .order_by(WorkflowRun.created_at.desc()).limit(limit))
+            db.exec(
+                select(WorkflowRun)
+                .where(WorkflowRun.tenant_slug == tenant_slug)
+                .order_by(WorkflowRun.created_at.desc())
+                .limit(limit)
+            )
         )
     return {
         "runs": [
             {
-                "id": r.id, "name": r.name, "trigger": r.trigger,
-                "status": r.status, "step_count": r.step_count,
-                "approvals_opened": r.approvals_opened, "elapsed_ms": r.elapsed_ms,
+                "id": r.id,
+                "name": r.name,
+                "trigger": r.trigger,
+                "status": r.status,
+                "step_count": r.step_count,
+                "approvals_opened": r.approvals_opened,
+                "elapsed_ms": r.elapsed_ms,
                 "created_at": r.created_at.isoformat() if r.created_at else None,
             }
             for r in rows

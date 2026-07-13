@@ -71,7 +71,9 @@ def beta_sequence_progress(*, license_jti: str) -> dict:
     out = {
         "scheduled": 0,
         "sent": 0,
-        "stages": {kind: {"scheduled_at": None, "sent_at": None} for kind, _ in BETA_STAGES},
+        "stages": {
+            kind: {"scheduled_at": None, "sent_at": None} for kind, _ in BETA_STAGES
+        },
     }
     kinds = {kind for kind, _ in BETA_STAGES}
     with Session(get_engine()) as db:
@@ -83,7 +85,9 @@ def beta_sequence_progress(*, license_jti: str) -> dict:
                 continue
             out["scheduled"] += 1
             stage = out["stages"][r.kind]
-            stage["scheduled_at"] = r.scheduled_at.isoformat() if r.scheduled_at else None
+            stage["scheduled_at"] = (
+                r.scheduled_at.isoformat() if r.scheduled_at else None
+            )
             if r.sent_at is not None:
                 out["sent"] += 1
                 stage["sent_at"] = r.sent_at.isoformat()

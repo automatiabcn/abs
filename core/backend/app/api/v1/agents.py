@@ -104,7 +104,9 @@ async def run_agent_endpoint(
         out["run_id"] = run_id
         if result.requires_approval:
             out["approval"] = create_approval_from_result(
-                result, tenant_slug=_tenant(auth), requester=auth.subject,
+                result,
+                tenant_slug=_tenant(auth),
+                requester=auth.subject,
                 agent_run_id=run_id,
             )
     except Exception:  # noqa: BLE001 — persistence is best-effort

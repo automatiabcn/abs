@@ -201,6 +201,7 @@ class TestQ12L22Sweep2AuditEmission:
         """RotationError-text used to leak into the response detail
         ('Rotation failed: <exc>'). Post-fix it is a generic
         'rotation_failed' and the exc class name is in audit only."""
+
         def _bad_keygen() -> str:
             raise rotation.RotationError("age-keygen failed: stderr juice")
 
@@ -231,9 +232,7 @@ class TestQ12L22Sweep2AuditEmission:
         caplog: pytest.LogCaptureFixture,
         monkeypatch,
     ) -> None:
-        monkeypatch.setattr(
-            rotation, "_default_keygen", lambda: _FAKE_NEW_KEY_A
-        )
+        monkeypatch.setattr(rotation, "_default_keygen", lambda: _FAKE_NEW_KEY_A)
         with caplog.at_level(logging.INFO, logger=LOGGER_NAME):
             r = client.post(
                 "/v1/admin/vault/rotate-key",

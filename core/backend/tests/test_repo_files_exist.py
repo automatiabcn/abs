@@ -44,6 +44,7 @@ def test_license_is_bsl_1_1():
 
 # Modul G — README contents
 
+
 def test_readme_min_word_count_and_sections():
     text = (_repo() / "README.md").read_text(encoding="utf-8")
     word_count = len(text.split())

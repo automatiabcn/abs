@@ -120,11 +120,15 @@ class GitHubReleasesSource:
 
     async def fetch_manifest(self, plugin_id: str, version: str) -> bytes:
         tag = f"v{version}"
-        url = f"https://api.github.com/repos/{self._org}/{plugin_id}/releases/tags/{tag}"
+        url = (
+            f"https://api.github.com/repos/{self._org}/{plugin_id}/releases/tags/{tag}"
+        )
         resp = await self._http.get(url)
         resp.raise_for_status()
         release = resp.json()
-        asset = next((a for a in release.get("assets", []) if a["name"] == "manifest.json"), None)
+        asset = next(
+            (a for a in release.get("assets", []) if a["name"] == "manifest.json"), None
+        )
         if asset is None:
             raise RegistryError("manifest.json asset not found in release")
         dl = await self._http.get(asset["browser_download_url"])
@@ -132,7 +136,9 @@ class GitHubReleasesSource:
         return dl.content
 
     def to_ref(self, plugin_id: str, version: str) -> PluginRef:
-        base = f"https://github.com/{self._org}/{plugin_id}/releases/download/v{version}"
+        base = (
+            f"https://github.com/{self._org}/{plugin_id}/releases/download/v{version}"
+        )
         download_url = f"{base}/manifest.json"
         return PluginRef(
             id=plugin_id,
@@ -158,7 +164,9 @@ class VerdaccioSource:
         return list((resp.json() or {}).get("versions", {}).keys())
 
     async def fetch_manifest(self, plugin_id: str, version: str) -> bytes:
-        resp = await self._http.get(f"{self._base}/_manifest/{plugin_id}/{version}.json")
+        resp = await self._http.get(
+            f"{self._base}/_manifest/{plugin_id}/{version}.json"
+        )
         resp.raise_for_status()
         return resp.content
 
@@ -215,7 +223,10 @@ class PluginRegistry:
         refs = await self.discover(plugin_id)
         if prefer_source is not None:
             refs.sort(
-                key=lambda r: (1 if r.source == prefer_source else 0, _semver_tuple(r.version)),
+                key=lambda r: (
+                    1 if r.source == prefer_source else 0,
+                    _semver_tuple(r.version),
+                ),
                 reverse=True,
             )
         for ref in refs:

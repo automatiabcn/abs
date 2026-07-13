@@ -108,8 +108,7 @@ async def query_hybrid(
     cos_n = _normalize(cosine_scores)
 
     fused = [
-        (alpha_semantic * c + (1 - alpha_semantic) * bm)
-        for c, bm in zip(cos_n, bm25_n)
+        (alpha_semantic * c + (1 - alpha_semantic) * bm) for c, bm in zip(cos_n, bm25_n)
     ]
     indexed = sorted(enumerate(fused), key=lambda x: -x[1])[:top_k]
     out: List[Dict[str, Any]] = []

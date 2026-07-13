@@ -43,8 +43,10 @@ def test_escrow_dry_run_prints_target_options(tmp_path):
         [
             "bash",
             str(_script()),
-            "--target", "onepassword",
-            "--key", str(fake_key),
+            "--target",
+            "onepassword",
+            "--key",
+            str(fake_key),
             "--dry-run",
         ],
         capture_output=True,

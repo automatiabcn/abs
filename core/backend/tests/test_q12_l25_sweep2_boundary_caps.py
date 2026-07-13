@@ -60,8 +60,7 @@ class TestQ12L25Sweep2WorkflowNodes:
         self, auth_client: TestClient
     ) -> None:
         nodes = [
-            {"id": f"n{i}", "type": "trigger" if i == 0 else "noop"}
-            for i in range(10)
+            {"id": f"n{i}", "type": "trigger" if i == 0 else "noop"} for i in range(10)
         ]
         r = auth_client.post(
             "/v1/workflows/execute",
@@ -75,13 +74,9 @@ class TestQ12L25Sweep2WorkflowNodes:
         # acceptable; if it IS 422 the message must NOT mention the cap.
         assert r.status_code != 422 or "nodes count exceeds cap" not in r.text
 
-    def test_nodes_count_above_cap_rejected_422(
-        self, auth_client: TestClient
-    ) -> None:
+    def test_nodes_count_above_cap_rejected_422(self, auth_client: TestClient) -> None:
         oversize = wf_mod.WORKFLOW_NODES_MAX + 1
-        nodes = [
-            {"id": f"n{i}", "type": "noop"} for i in range(oversize)
-        ]
+        nodes = [{"id": f"n{i}", "type": "noop"} for i in range(oversize)]
         r = auth_client.post(
             "/v1/workflows/execute",
             json={
@@ -92,13 +87,9 @@ class TestQ12L25Sweep2WorkflowNodes:
         assert r.status_code == 422, r.text
         assert "nodes count exceeds cap" in r.text
 
-    def test_edges_count_above_cap_rejected_422(
-        self, auth_client: TestClient
-    ) -> None:
+    def test_edges_count_above_cap_rejected_422(self, auth_client: TestClient) -> None:
         oversize = wf_mod.WORKFLOW_EDGES_MAX + 1
-        edges = [
-            {"from": "a", "to": "b", "id": str(i)} for i in range(oversize)
-        ]
+        edges = [{"from": "a", "to": "b", "id": str(i)} for i in range(oversize)]
         r = auth_client.post(
             "/v1/workflows/execute",
             json={
@@ -153,10 +144,7 @@ class TestQ12L25Sweep2WorkflowProof:
 
 class TestQ12L25Sweep2ChatMessages:
     def test_messages_within_cap_passes_validation(self) -> None:
-        messages = [
-            {"role": "user", "content": f"hello {i}"}
-            for i in range(10)
-        ]
+        messages = [{"role": "user", "content": f"hello {i}"} for i in range(10)]
         # Direct Pydantic validation; happy path doesn't require a
         # client request because the downstream cascade is not the
         # subject under test.
@@ -167,9 +155,7 @@ class TestQ12L25Sweep2ChatMessages:
         # Pydantic V2 raises ValidationError when max_length is exceeded.
         from pydantic import ValidationError
 
-        messages = [
-            {"role": "user", "content": "x"} for _ in range(201)
-        ]
+        messages = [{"role": "user", "content": "x"} for _ in range(201)]
         with pytest.raises(ValidationError) as exc_info:
             chat_mod.ChatCompletionsRequest(messages=messages)
         msg = str(exc_info.value)
@@ -189,9 +175,7 @@ class TestQ12L25Sweep2ChatMessages:
         """End-to-end at the HTTP layer — Pydantic error must surface as
         FastAPI 422, NOT 500. auth_client uses panel session cookie
         (current_admin dependency) — bearer-only would 401 first."""
-        oversize = [
-            {"role": "user", "content": "x"} for _ in range(201)
-        ]
+        oversize = [{"role": "user", "content": "x"} for _ in range(201)]
         r = auth_client.post(
             "/v1/chat/completions",
             json={"messages": oversize, "stream": False},

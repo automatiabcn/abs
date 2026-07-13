@@ -59,7 +59,10 @@ async def save_definition_endpoint(
     auth: AuthContext = Depends(get_admin_or_bearer_auth_context),
 ) -> dict:
     return save_definition(
-        tenant_slug=_tenant(auth), key=body.key, name=body.name, graph=body.graph,
+        tenant_slug=_tenant(auth),
+        key=body.key,
+        name=body.name,
+        graph=body.graph,
     )
 
 
@@ -91,12 +94,20 @@ async def run_endpoint(
     # the agent-only step chain (backward compatible).
     if isinstance(body.graph, dict) and body.graph.get("nodes"):
         return await run_workflow_graph(
-            tenant_slug=_tenant(auth), name=body.name, graph=body.graph,
-            input_text=body.input, trigger=body.trigger, actor=auth.subject,
+            tenant_slug=_tenant(auth),
+            name=body.name,
+            graph=body.graph,
+            input_text=body.input,
+            trigger=body.trigger,
+            actor=auth.subject,
             dry_run=body.dry_run,
         )
     return await run_workflow(
-        tenant_slug=_tenant(auth), name=body.name, steps=body.steps,
-        input_text=body.input, trigger=body.trigger, actor=auth.subject,
+        tenant_slug=_tenant(auth),
+        name=body.name,
+        steps=body.steps,
+        input_text=body.input,
+        trigger=body.trigger,
+        actor=auth.subject,
         dry_run=body.dry_run,
     )

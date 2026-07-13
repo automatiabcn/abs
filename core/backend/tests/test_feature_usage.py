@@ -18,7 +18,9 @@ def ledger(tmp_path, monkeypatch):
 
 
 def test_record_appends_row(ledger):
-    fu.record("abs.qual_code", kind="tool", tenant_id="acme", duration_ms=120, ledger=ledger)
+    fu.record(
+        "abs.qual_code", kind="tool", tenant_id="acme", duration_ms=120, ledger=ledger
+    )
     rows = [json.loads(line) for line in ledger.read_text().splitlines() if line]
     assert len(rows) == 1
     assert rows[0]["feature"] == "abs.qual_code"
@@ -48,8 +50,12 @@ def test_report_counts_within_window(ledger):
 
 def test_report_excludes_rows_outside_window(ledger):
     # Inject a stale row with timestamp 90 days ago.
-    stale_ts = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=90)).isoformat(timespec="seconds")
-    ledger.write_text(json.dumps({"ts": stale_ts, "feature": "abs.qual_code", "kind": "tool"}) + "\n")
+    stale_ts = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=90)).isoformat(
+        timespec="seconds"
+    )
+    ledger.write_text(
+        json.dumps({"ts": stale_ts, "feature": "abs.qual_code", "kind": "tool"}) + "\n"
+    )
     fu.record("abs.qual_code", ledger=ledger)
     rep = fu.report(window_days=30, ledger=ledger)
     by_feature = {s.feature: s for s in rep.stats}

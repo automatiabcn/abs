@@ -120,7 +120,9 @@ def _message_for(level: str, count: int, limit: int, percent: int) -> str:
     return f"Cohere usage at {percent}% ({count}/{limit}). Line up a fallback provider."
 
 
-def track_usage(count: Optional[int] = None, limit: int = 1000, delta: int = 1) -> Optional[str]:
+def track_usage(
+    count: Optional[int] = None, limit: int = 1000, delta: int = 1
+) -> Optional[str]:
     """Record Cohere usage; return the alert level if a threshold just fired.
 
     Without `count` the internal counter is incremented by `delta`; with `count`

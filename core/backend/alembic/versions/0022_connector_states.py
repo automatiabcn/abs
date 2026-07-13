@@ -28,15 +28,21 @@ def upgrade() -> None:
     op.create_table(
         "connector_states",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("tenant_slug", sa.String(64), nullable=False, server_default="default"),
+        sa.Column(
+            "tenant_slug", sa.String(64), nullable=False, server_default="default"
+        ),
         sa.Column("connector_id", sa.String(48), nullable=False),
         sa.Column("status", sa.String(16), nullable=False, server_default="connected"),
         sa.Column("health", sa.Integer, nullable=False, server_default="100"),
         sa.Column("connected_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("last_sync_at", sa.DateTime(timezone=True), nullable=True),
     )
-    op.create_index("ix_connector_states_tenant_slug", "connector_states", ["tenant_slug"])
-    op.create_index("ix_connector_states_connector_id", "connector_states", ["connector_id"])
+    op.create_index(
+        "ix_connector_states_tenant_slug", "connector_states", ["tenant_slug"]
+    )
+    op.create_index(
+        "ix_connector_states_connector_id", "connector_states", ["connector_id"]
+    )
 
     if op.get_bind().dialect.name == "postgresql":
         op.execute("ALTER TABLE connector_states ENABLE ROW LEVEL SECURITY;")
@@ -49,7 +55,9 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     if op.get_bind().dialect.name == "postgresql":
-        op.execute("DROP POLICY IF EXISTS connector_states_tenant_isolation ON connector_states;")
+        op.execute(
+            "DROP POLICY IF EXISTS connector_states_tenant_isolation ON connector_states;"
+        )
         op.execute("ALTER TABLE connector_states NO FORCE ROW LEVEL SECURITY;")
         op.execute("ALTER TABLE connector_states DISABLE ROW LEVEL SECURITY;")
     op.drop_table("connector_states")

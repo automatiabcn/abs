@@ -11,6 +11,7 @@ and the customer's answer to it is a chat that spins forever and never says
 why. The loop caught ProviderError — the all-permanent case — and not the 503,
 which is the case that actually happens when you are simply asking too fast.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -36,7 +37,10 @@ async def test_rate_limited_providers_end_the_turn_with_an_error_event(monkeypat
     async def _rate_limited(*_a, **_kw):
         raise HTTPException(
             status_code=503,
-            detail={"error": "providers_unavailable", "last_error": "Gemini rate limit"},
+            detail={
+                "error": "providers_unavailable",
+                "last_error": "Gemini rate limit",
+            },
         )
 
     monkeypatch.setattr(loop_mod, "_ask", _rate_limited)

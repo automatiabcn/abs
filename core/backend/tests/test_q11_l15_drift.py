@@ -57,9 +57,7 @@ class TestQ11L15ResponseStanzaPresence:
                     continue
                 if not spec.get("responses"):
                     empty.append(f"{method.upper()} {path}")
-        assert not empty, (
-            f"endpoints without any documented response: {empty}"
-        )
+        assert not empty, f"endpoints without any documented response: {empty}"
 
 
 class TestQ11L15AuthGate401Conformance:
@@ -96,9 +94,7 @@ class TestQ11L15RfcShape:
         r = client.get("/v1/mcp/tokens/verify")
         assert r.status_code == 401
         body = r.json()
-        assert "detail" in body, (
-            f"401 response shape drifted: {body}"
-        )
+        assert "detail" in body, f"401 response shape drifted: {body}"
 
     def test_unauthed_hooks_post_with_invalid_body_still_401(self, client):
         """Q11-L15-001 regression guard: an unauthed POST that ALSO has

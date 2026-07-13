@@ -22,19 +22,51 @@ _RATE_FILE = "delegate_nudge_rate.json"
 _WINDOW_SEC = 900
 
 _ANALYSIS_KW = (
-    "analyze", "analiz", "calculate", "hesapla", "summari", "ozetle",
-    "compare", "karsilastir", "sort", "siralama", "rank", "classify",
-    "group by", "filter", "reduce", "aggregate", "statistic",
-    "count distinct", "mean(", "median(", "stdev",
+    "analyze",
+    "analiz",
+    "calculate",
+    "hesapla",
+    "summari",
+    "ozetle",
+    "compare",
+    "karsilastir",
+    "sort",
+    "siralama",
+    "rank",
+    "classify",
+    "group by",
+    "filter",
+    "reduce",
+    "aggregate",
+    "statistic",
+    "count distinct",
+    "mean(",
+    "median(",
+    "stdev",
 )
 _EXCLUSION_KW = (
-    "open(", "read()", "json.load", "yaml.safe_load", "import ast",
-    "compile(", "py_compile", "sys.stdin", "__import__",
-    "subprocess.", "os.path.exists", "print(json.",
+    "open(",
+    "read()",
+    "json.load",
+    "yaml.safe_load",
+    "import ast",
+    "compile(",
+    "py_compile",
+    "sys.stdin",
+    "__import__",
+    "subprocess.",
+    "os.path.exists",
+    "print(json.",
 )
 _DOCS_PATTERNS = (
-    "README", "SETUP", "GUIDE", "TROUBLESHOOTING", "CHANGELOG",
-    "CONTRIBUTING", "ARCHITECTURE", "INSTALL",
+    "README",
+    "SETUP",
+    "GUIDE",
+    "TROUBLESHOOTING",
+    "CHANGELOG",
+    "CONTRIBUTING",
+    "ARCHITECTURE",
+    "INSTALL",
 )
 
 
@@ -96,7 +128,8 @@ def maybe_delegate_nudge(tool: str, tool_input: dict) -> str:
         tr_chars = sum(
             1
             for c in content
-            if c in "\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc"
+            if c
+            in "\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc"
         )
         tr_ratio = tr_chars / max(len(content), 1)
         is_tr_heavy = tr_ratio > 0.005

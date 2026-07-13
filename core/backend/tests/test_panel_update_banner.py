@@ -20,7 +20,9 @@ def test_panel_js_handles_update_event():
     # listener now sits in sse.js; the handler in widgets.js; the
     # /v1/update/apply fetch + window-attached handler in ui.js.
     sse = (PANEL_DIR / "assets" / "panel" / "sse.js").read_text(encoding="utf-8")
-    widgets = (PANEL_DIR / "assets" / "panel" / "widgets.js").read_text(encoding="utf-8")
+    widgets = (PANEL_DIR / "assets" / "panel" / "widgets.js").read_text(
+        encoding="utf-8"
+    )
     ui = (PANEL_DIR / "assets" / "panel" / "ui.js").read_text(encoding="utf-8")
     assert '"update-available"' in sse
     assert "onUpdateAvailable" in widgets

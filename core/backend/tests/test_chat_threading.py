@@ -29,9 +29,7 @@ def _chat_mock_env(monkeypatch):
     monkeypatch.setenv("ABS_ANTHROPIC_MOCK_MODE", "ok")
     from app.config import settings
 
-    monkeypatch.setattr(
-        settings, "anthropic_mock_mode", "ok", raising=False
-    )
+    monkeypatch.setattr(settings, "anthropic_mock_mode", "ok", raising=False)
     yield
 
 
@@ -39,14 +37,10 @@ def _chat_mock_env(monkeypatch):
 def _wipe_default_tenant_chat_state():
     with Session(get_engine()) as db:
         for sess in db.exec(
-            select(ChatSession).where(
-                ChatSession.tenant_slug == "default"
-            )
+            select(ChatSession).where(ChatSession.tenant_slug == "default")
         ).all():
             for msg in db.exec(
-                select(ChatMessage).where(
-                    ChatMessage.session_id == sess.id
-                )
+                select(ChatMessage).where(ChatMessage.session_id == sess.id)
             ).all():
                 db.delete(msg)
             db.delete(sess)
@@ -113,9 +107,7 @@ def test_list_excludes_archived_by_default(auth_client):
     assert keep_id in ids
     assert arch_id not in ids
 
-    with_arch = auth_client.get(
-        "/v1/chat/sessions?include_archived=true"
-    ).json()
+    with_arch = auth_client.get("/v1/chat/sessions?include_archived=true").json()
     assert {s["id"] for s in with_arch} >= {keep_id, arch_id}
 
 

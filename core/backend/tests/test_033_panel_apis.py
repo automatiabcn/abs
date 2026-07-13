@@ -130,10 +130,14 @@ def test_panel_endpoints_do_not_leak_license_jti(client):
         assert "tool" in f and "ts" in f
     # pipeline endpoint shares the same audit source + leak surface.
     with Session(get_engine()) as db:
-        db.add(CustomerAuditEntry(
-            license_jti="secret_jti_must_not_leak",
-            action="tool_call", resource="qual_code",
-            ts=datetime.now(timezone.utc)))
+        db.add(
+            CustomerAuditEntry(
+                license_jti="secret_jti_must_not_leak",
+                action="tool_call",
+                resource="qual_code",
+                ts=datetime.now(timezone.utc),
+            )
+        )
         db.commit()
     pipe = client.get("/v1/panel/pipeline/recent").json()
     assert pipe.get("pipeline_runs"), "expected seeded pipeline runs"

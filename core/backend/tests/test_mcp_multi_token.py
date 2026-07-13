@@ -41,8 +41,12 @@ def test_cannot_revoke_another_tenants_token(admin_client):
     from app.api.mcp_tokens import _sign
 
     foreign = _sign(
-        {"tenant": "other-corp", "scope": "all", "label": "victim",
-         "exp": int(time.time()) + 3600}
+        {
+            "tenant": "other-corp",
+            "scope": "all",
+            "label": "victim",
+            "exp": int(time.time()) + 3600,
+        }
     )
     rv = admin_client.post("/v1/mcp/tokens/revoke", json={"token": foreign})
     assert rv.status_code == 403, rv.text
@@ -52,12 +56,9 @@ def test_own_tenant_token_revoke_by_raw_token_still_works(admin_client):
     """Happy path must survive the cross-tenant guard: an admin revoking their
     OWN freshly-minted token (raw string) still succeeds (204)."""
     minted = _mint(admin_client, "self-revoke")
-    rv = admin_client.post(
-        "/v1/mcp/tokens/revoke", json={"token": minted["token"]}
-    )
+    rv = admin_client.post("/v1/mcp/tokens/revoke", json={"token": minted["token"]})
     assert rv.status_code == 204, rv.text
-    after = {t["label"]: t["status"]
-             for t in admin_client.get("/v1/mcp/tokens").json()}
+    after = {t["label"]: t["status"] for t in admin_client.get("/v1/mcp/tokens").json()}
     assert after["self-revoke"] == "revoked"
 
 
@@ -79,16 +80,13 @@ def test_multiple_tokens_listed_and_revoked_by_digest(admin_client):
     )
     assert rv.status_code == 204, rv.text
 
-    after = {t["label"]: t["status"]
-             for t in admin_client.get("/v1/mcp/tokens").json()}
+    after = {t["label"]: t["status"] for t in admin_client.get("/v1/mcp/tokens").json()}
     assert after["dev-laptop"] == "revoked"
-    assert after["ci-bot"] == "active"      # the other token is untouched
+    assert after["ci-bot"] == "active"  # the other token is untouched
 
 
 def test_revoke_unknown_digest_is_404(admin_client):
-    r = admin_client.post(
-        "/v1/mcp/tokens/revoke", json={"token_digest": "0" * 64}
-    )
+    r = admin_client.post("/v1/mcp/tokens/revoke", json={"token_digest": "0" * 64})
     assert r.status_code == 404
 
 

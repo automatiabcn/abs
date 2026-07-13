@@ -65,7 +65,9 @@ def test_meeting_round_trip_for_acme(acme: dict) -> None:
     expected = set(acme["expected"]["action_item_assignees_subset"])
     assert expected & assignees, f"missing expected assignees {expected - assignees}"
 
-    existing = [ExistingTicket(ticket_id="LIN-ACME-1", title="Sözleşmeyi bu hafta gönder")]
+    existing = [
+        ExistingTicket(ticket_id="LIN-ACME-1", title="Sözleşmeyi bu hafta gönder")
+    ]
     decisions = link_action_items(items, existing)
     assert decisions, "ticket linking must yield at least one decision"
     assert {d.action for d in decisions} <= {"create", "update", "skip"}

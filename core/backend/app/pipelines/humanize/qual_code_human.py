@@ -33,7 +33,10 @@ class QualCodeHumanPipeline(BasePipeline):
         wf.step(
             "qual-code",
             "ok" if not code_result.error else "fail",
-            {"nested_trace_id": code_result.workflow_trace_id, "step_count": len(code_result.steps)},
+            {
+                "nested_trace_id": code_result.workflow_trace_id,
+                "step_count": len(code_result.steps),
+            },
         )
 
         text = code_result.final_response

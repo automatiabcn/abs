@@ -27,7 +27,9 @@ class _StubEmbedder:
         return [0.1] * self.dim
 
 
-def test_rag_query_uses_chroma_when_tenant_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_rag_query_uses_chroma_when_tenant_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(settings, "mcp_rag_tenant", "", raising=False)
     called = {}
 
@@ -42,9 +44,13 @@ def test_rag_query_uses_chroma_when_tenant_unset(monkeypatch: pytest.MonkeyPatch
     assert called["chroma"] == ("hello", 3)
 
 
-def test_rag_query_searches_qdrant_when_tenant_set(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_rag_query_searches_qdrant_when_tenant_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(settings, "mcp_rag_tenant", "acme", raising=False)
-    monkeypatch.setattr(settings, "qdrant_default_collection", "abs_documents", raising=False)
+    monkeypatch.setattr(
+        settings, "qdrant_default_collection", "abs_documents", raising=False
+    )
     monkeypatch.setattr(embedding_bge, "get_embedder", lambda: _StubEmbedder())
     monkeypatch.setattr(qc, "ensure_collection", lambda *a, **k: None)
 

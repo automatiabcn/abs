@@ -27,7 +27,6 @@ Retry-After.
 
 from __future__ import annotations
 
-import pytest
 
 from app.providers.schemas import CascadeUnavailable, ProviderError
 

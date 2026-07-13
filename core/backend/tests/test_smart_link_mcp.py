@@ -28,6 +28,7 @@ def test_provider_validate_via_mcp(monkeypatch):
 
     class _FakeRsp:
         status_code = 200
+
         def json(self):
             return {"data": []}
 

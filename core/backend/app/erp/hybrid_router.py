@@ -31,14 +31,40 @@ __all__ = [
 # Non-ASCII letters are escaped so the source stays ASCII; the values are what
 # users actually type and must not be reworded.
 _SQL_HINTS = (
-    "ne kadar", "ka\u00e7", "toplam", "ortalama", "en \u00e7ok", "ge\u00e7en ay",
-    "kim", "hangi m\u00fc\u015fteri", "fatura", "sipari\u015f", "ciro", "metric",
-    "how many", "average", "total", "sum", "top ", "last month",
-    "revenue", "kpi",
+    "ne kadar",
+    "ka\u00e7",
+    "toplam",
+    "ortalama",
+    "en \u00e7ok",
+    "ge\u00e7en ay",
+    "kim",
+    "hangi m\u00fc\u015fteri",
+    "fatura",
+    "sipari\u015f",
+    "ciro",
+    "metric",
+    "how many",
+    "average",
+    "total",
+    "sum",
+    "top ",
+    "last month",
+    "revenue",
+    "kpi",
 )
 _RAG_HINTS = (
-    "neden", "nas\u0131l", "a\u00e7\u0131kla", "\u00f6zetle", "bul", "\u00f6\u011fren",
-    "why", "how does", "explain", "summarize", "find", "search",
+    "neden",
+    "nas\u0131l",
+    "a\u00e7\u0131kla",
+    "\u00f6zetle",
+    "bul",
+    "\u00f6\u011fren",
+    "why",
+    "how does",
+    "explain",
+    "summarize",
+    "find",
+    "search",
 )
 
 
@@ -68,7 +94,10 @@ def classify_route(question: str) -> RouteDecision:
     if sql_hits and rag_hits:
         return RouteDecision(
             route="hybrid",
-            reasons=[f"sql_hint:{','.join(sql_hits)}", f"rag_hint:{','.join(rag_hits)}"],
+            reasons=[
+                f"sql_hint:{','.join(sql_hits)}",
+                f"rag_hint:{','.join(rag_hits)}",
+            ],
         )
     if sql_hits:
         return RouteDecision(route="sql", reasons=[f"sql_hint:{','.join(sql_hits)}"])

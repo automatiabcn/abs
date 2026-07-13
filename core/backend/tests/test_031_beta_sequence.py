@@ -51,15 +51,12 @@ def test_schedule_offsets_match_spec():
     jti = "jti_seq_02"
     _wipe_queue(jti)
     base = datetime(2026, 1, 1, tzinfo=timezone.utc)
-    schedule_beta_sequence(
-        license_jti=jti, customer_email="x@x.com", now=base
-    )
+    schedule_beta_sequence(license_jti=jti, customer_email="x@x.com", now=base)
     with Session(get_engine()) as db:
         rows = list(
-            db.scalars(
-                select(EmailQueue).where(EmailQueue.license_jti == jti)
-            ).all()
+            db.scalars(select(EmailQueue).where(EmailQueue.license_jti == jti)).all()
         )
+
     def _norm(dt: datetime) -> datetime:
         return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
 
@@ -68,7 +65,9 @@ def test_schedule_offsets_match_spec():
     assert _norm(by_kind["beta_walkthrough"].scheduled_at) == base + timedelta(hours=24)
     assert _norm(by_kind["beta_first_success"].scheduled_at) == base + timedelta(days=3)
     assert _norm(by_kind["beta_check_in"].scheduled_at) == base + timedelta(days=7)
-    assert _norm(by_kind["beta_renewal_offer"].scheduled_at) == base + timedelta(days=14)
+    assert _norm(by_kind["beta_renewal_offer"].scheduled_at) == base + timedelta(
+        days=14
+    )
 
 
 def test_schedule_is_idempotent():

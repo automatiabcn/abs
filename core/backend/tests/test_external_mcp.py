@@ -104,8 +104,12 @@ def test_slug_disambiguation(monkeypatch: pytest.MonkeyPatch) -> None:
     # allow_private skips the SSRF DNS probe (reserved .example never resolves);
     # these tests exercise CRUD logic, not connectivity.
     monkeypatch.setattr(settings, "external_mcp_allow_private", True, raising=False)
-    a = service.add_server(tenant_slug="t-slug", name="Dup", url="https://a.example/mcp")
-    b = service.add_server(tenant_slug="t-slug", name="Dup", url="https://b.example/mcp")
+    a = service.add_server(
+        tenant_slug="t-slug", name="Dup", url="https://a.example/mcp"
+    )
+    b = service.add_server(
+        tenant_slug="t-slug", name="Dup", url="https://b.example/mcp"
+    )
     assert a["slug"] != b["slug"]
 
 
@@ -121,9 +125,13 @@ def test_tenant_isolation_list(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_update_and_remove(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "external_mcp_allow_private", True, raising=False)
-    pub = service.add_server(tenant_slug="t-upd", name="Edit", url="https://e.example/mcp")
+    pub = service.add_server(
+        tenant_slug="t-upd", name="Edit", url="https://e.example/mcp"
+    )
     slug = pub["slug"]
-    upd = service.update_server(tenant_slug="t-upd", slug=slug, enabled=False, name="Edited")
+    upd = service.update_server(
+        tenant_slug="t-upd", slug=slug, enabled=False, name="Edited"
+    )
     assert upd is not None and upd["enabled"] is False and upd["name"] == "Edited"
     assert service.remove_server("t-upd", slug) is True
     assert service.get_server("t-upd", slug) is None
@@ -133,13 +141,20 @@ def test_update_and_remove(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_add_validates_auth_shape() -> None:
     with pytest.raises(ValueError):
         service.add_server(
-            tenant_slug="t-val", name="NoTok", url="https://x.example/mcp",
-            auth_type="bearer", secret="",
+            tenant_slug="t-val",
+            name="NoTok",
+            url="https://x.example/mcp",
+            auth_type="bearer",
+            secret="",
         )
     with pytest.raises(ValueError):
         service.add_server(
-            tenant_slug="t-val", name="NoHdr", url="https://x.example/mcp",
-            auth_type="header", secret="v", header_name="",
+            tenant_slug="t-val",
+            name="NoHdr",
+            url="https://x.example/mcp",
+            auth_type="header",
+            secret="v",
+            header_name="",
         )
 
 
@@ -148,7 +163,9 @@ async def test_test_connection_error_path(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(settings, "external_mcp_allow_private", True, raising=False)
     monkeypatch.setattr(settings, "external_mcp_timeout_seconds", 2.0, raising=False)
     pub = service.add_server(
-        tenant_slug="t-err", name="Dead", url="http://127.0.0.1:59999/mcp",
+        tenant_slug="t-err",
+        name="Dead",
+        url="http://127.0.0.1:59999/mcp",
     )
     res = await service.test_connection("t-err", pub["slug"])
     assert res["ok"] is False and "error" in res
@@ -235,7 +252,10 @@ def test_sanitize_description_strips_control_chars_and_caps() -> None:
 def test_federated_name_sanitizes() -> None:
     from app.mcp.external import federation as fed
 
-    assert fed.federated_name("local-abs", "system_status") == "ext_local_abs__system_status"
+    assert (
+        fed.federated_name("local-abs", "system_status")
+        == "ext_local_abs__system_status"
+    )
     assert fed.federated_name("a b!c", "do/it") == "ext_a_b_c__do_it"
 
 
@@ -244,7 +264,9 @@ def test_federation_off_returns_zero(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(settings, "external_mcp_federate_to_mcp", False, raising=False)
     monkeypatch.setattr(settings, "external_mcp_allow_private", True, raising=False)
-    pub = service.add_server(tenant_slug="t-fed-off", name="Off", url="https://x.example/mcp")
+    pub = service.add_server(
+        tenant_slug="t-fed-off", name="Off", url="https://x.example/mcp"
+    )
     import asyncio
 
     n = asyncio.run(fed.federate_server("t-fed-off", pub["slug"]))
@@ -268,7 +290,9 @@ def test_federate_registers_and_unregisters(monkeypatch: pytest.MonkeyPatch) -> 
         return fake
 
     monkeypatch.setattr(cl, "discover_tools", _fake_discover)
-    pub = service.add_server(tenant_slug="t-fed", name="Fed", url="https://x.example/mcp")
+    pub = service.add_server(
+        tenant_slug="t-fed", name="Fed", url="https://x.example/mcp"
+    )
     slug = pub["slug"]
 
     import asyncio

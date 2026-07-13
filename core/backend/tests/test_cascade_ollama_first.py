@@ -47,7 +47,9 @@ async def test_ollama_first_uses_ollama_when_healthy(
         assert kwargs["primary"] == "ollama"
         return _ok("ollama", "yerel cevap")
 
-    with patch.object(of, "call_with_cascade", new=AsyncMock(side_effect=fake_call)) as mock:
+    with patch.object(
+        of, "call_with_cascade", new=AsyncMock(side_effect=fake_call)
+    ) as mock:
         resp = await of.call_ollama_first("merhaba")
     assert resp.provider == "ollama"
     assert resp.text == "yerel cevap"
@@ -66,7 +68,9 @@ async def test_ollama_first_falls_back_to_groq_on_connect_error(
         calls.append(primary)
         if primary == "ollama":
             raise ProviderError(
-                "Ollama connection error: ConnectError", provider="ollama", transient=True
+                "Ollama connection error: ConnectError",
+                provider="ollama",
+                transient=True,
             )
         return _ok(primary, "groq cevabı")
 
@@ -105,9 +109,7 @@ async def test_ollama_first_falls_through_to_anthropic_when_groq_down(
         name = kwargs["primary"]
         calls.append(name)
         if name in {"ollama", "groq"}:
-            raise ProviderError(
-                f"{name} down", provider=name, transient=True
-            )
+            raise ProviderError(f"{name} down", provider=name, transient=True)
         return _ok("anthropic", "anthropic cevap")
 
     with patch.object(of, "call_with_cascade", new=AsyncMock(side_effect=fake_call)):
@@ -125,9 +127,7 @@ async def test_ollama_first_disabled_raises() -> None:
 @pytest.mark.asyncio
 async def test_non_transient_error_propagates(enable_ollama_first: None) -> None:
     async def fake_call(prompt: str, **kwargs: Any) -> ProviderResponse:
-        raise ProviderError(
-            "config bozuk", provider=kwargs["primary"], transient=False
-        )
+        raise ProviderError("config bozuk", provider=kwargs["primary"], transient=False)
 
     with patch.object(of, "call_with_cascade", new=AsyncMock(side_effect=fake_call)):
         with pytest.raises(ProviderError) as excinfo:

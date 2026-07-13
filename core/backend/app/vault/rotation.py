@@ -75,9 +75,7 @@ def _rotate_lock(blocking: bool = False):
             fcntl.flock(fh.fileno(), op)
         except OSError as exc:
             if exc.errno in (errno.EWOULDBLOCK, errno.EAGAIN):
-                raise RotationBusyError(
-                    "another rotation is in progress"
-                ) from exc
+                raise RotationBusyError("another rotation is in progress") from exc
             raise
         try:
             yield
@@ -209,9 +207,7 @@ def _rotate_age_key_locked(
     except Exception as exc:
         logger.warning("rotation audit append failed: %s", exc)
 
-    elapsed_ms = round(
-        (datetime.now(timezone.utc) - started).total_seconds() * 1000, 2
-    )
+    elapsed_ms = round((datetime.now(timezone.utc) - started).total_seconds() * 1000, 2)
     return {
         "ok": True,
         "old_fingerprint": old_fp,

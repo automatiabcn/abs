@@ -90,7 +90,9 @@ async def race_first_success(
     tasks = {asyncio.create_task(c): name for name, c in coros.items()}
     try:
         while tasks:
-            done, _ = await asyncio.wait(tasks.keys(), return_when=asyncio.FIRST_COMPLETED)
+            done, _ = await asyncio.wait(
+                tasks.keys(), return_when=asyncio.FIRST_COMPLETED
+            )
             for t in done:
                 name = tasks.pop(t)
                 try:

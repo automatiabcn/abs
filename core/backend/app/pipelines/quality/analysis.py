@@ -66,7 +66,11 @@ class QualAnalysisPipeline(BasePipeline):
             meta={"succeeded": ok_names},
         )
         steps.append(parallel_step)
-        wf.step("3-perspectives", "ok" if parallel_step.ok else "fail", _step_payload(parallel_step))
+        wf.step(
+            "3-perspectives",
+            "ok" if parallel_step.ok else "fail",
+            _step_payload(parallel_step),
+        )
 
         if not ok_names:
             wf.finish("fail")
@@ -94,7 +98,9 @@ class QualAnalysisPipeline(BasePipeline):
             model_hint="openai/gpt-oss-120b",
         )
         steps.append(synth_step)
-        wf.step("synthesis", "ok" if synth_step.ok else "fail", _step_payload(synth_step))
+        wf.step(
+            "synthesis", "ok" if synth_step.ok else "fail", _step_payload(synth_step)
+        )
 
         final_text = synth.text if synth and synth.text else combined
         wf.finish("ok")

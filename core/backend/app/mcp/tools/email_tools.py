@@ -5,9 +5,9 @@
 
 """Email queue MCP tool — one call an operator can read the whole queue from.
 
-  - by_status: sent / pending / failed  (failed == 3 attempts exhausted)
-  - by_kind:   welcome / walkthrough / first_success / expiry_warning / recovery
-  - recent:    last N rows (kind, scheduled_at, sent_at, attempts, error)
+- by_status: sent / pending / failed  (failed == 3 attempts exhausted)
+- by_kind:   welcome / walkthrough / first_success / expiry_warning / recovery
+- recent:    last N rows (kind, scheduled_at, sent_at, attempts, error)
 """
 
 from __future__ import annotations

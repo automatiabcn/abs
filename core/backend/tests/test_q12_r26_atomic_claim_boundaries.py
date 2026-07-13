@@ -272,9 +272,7 @@ def test_q12_r31_revoke_family_revokes_exactly_chain_length(
 
     # Unrelated token must NOT be revoked.
     unrelated_row = db_session.scalars(
-        select(OAuthRefreshToken).where(
-            OAuthRefreshToken.token_hash == h_unrelated
-        )
+        select(OAuthRefreshToken).where(OAuthRefreshToken.token_hash == h_unrelated)
     ).first()
     assert unrelated_row is not None
     assert unrelated_row.revoked_at is None, (

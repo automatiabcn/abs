@@ -24,11 +24,15 @@ from app.mcp.tools.compliance_tools import _data_export_counts
 def test_naive_expired_export_job_is_counted_not_swallowed(client):
     # tz-NAIVE past expiry — exactly what SQLite returns for a stored datetime.
     with Session(get_engine()) as db:
-        db.add(DataExportJob(
-            job_id="exp-tz-naive-1", license_jti="jti-x",
-            customer_email="a@x.io", status="done",
-            expires_at=datetime(2020, 1, 1, 0, 0, 0),  # naive, in the past
-        ))
+        db.add(
+            DataExportJob(
+                job_id="exp-tz-naive-1",
+                license_jti="jti-x",
+                customer_email="a@x.io",
+                status="done",
+                expires_at=datetime(2020, 1, 1, 0, 0, 0),  # naive, in the past
+            )
+        )
         db.commit()
 
     counts = _data_export_counts()

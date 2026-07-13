@@ -27,9 +27,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
-PIPER_BASE_URL: Final[str] = os.environ.get(
-    "ABS_PIPER_URL", "http://piper:5002"
-)
+PIPER_BASE_URL: Final[str] = os.environ.get("ABS_PIPER_URL", "http://piper:5002")
 PIPER_TIMEOUT_SECONDS: Final[float] = float(
     os.environ.get("ABS_PIPER_TIMEOUT_SECONDS", "30")
 )
@@ -72,9 +70,7 @@ async def synthesize(
         raise PiperUnavailableError(str(exc)) from exc
     body = resp.content
     if len(body) < 44 or body[:4] != b"RIFF" or body[8:12] != b"WAVE":
-        raise PiperUnavailableError(
-            f"piper returned non-WAV body ({len(body)} bytes)"
-        )
+        raise PiperUnavailableError(f"piper returned non-WAV body ({len(body)} bytes)")
     return body
 
 

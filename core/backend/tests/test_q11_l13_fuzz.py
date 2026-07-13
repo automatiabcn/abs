@@ -33,9 +33,7 @@ class TestQ11L13ChatCompletionsFuzz:
         monkeypatch.setenv("ABS_ANTHROPIC_MOCK_MODE", "ok")
         from app.config import settings
 
-        monkeypatch.setattr(
-            settings, "anthropic_mock_mode", "ok", raising=False
-        )
+        monkeypatch.setattr(settings, "anthropic_mock_mode", "ok", raising=False)
 
     @pytest.fixture(autouse=True)
     def _cleanup_chat_sessions(self):
@@ -74,10 +72,7 @@ class TestQ11L13ChatCompletionsFuzz:
             json={"messages": [{"role": "user", "content": content}]},
         )
         assert r.status_code == 422
-        assert any(
-            "content" in str(err.get("loc", []))
-            for err in r.json()["detail"]
-        )
+        assert any("content" in str(err.get("loc", [])) for err in r.json()["detail"])
         # Old upper bound should also still 422, not 500.
         r2 = admin_client.post(
             "/v1/chat/completions",
@@ -93,21 +88,14 @@ class TestQ11L13ChatCompletionsFuzz:
             json={"messages": [{"role": "user", "content": ""}]},
         )
         assert r.status_code == 422
-        assert any(
-            "content" in str(err.get("loc", []))
-            for err in r.json()["detail"]
-        )
+        assert any("content" in str(err.get("loc", [])) for err in r.json()["detail"])
 
     # ─── 2. Dangerous payloads (no code-exec, no crash) ─────────────────
 
     def test_null_byte_in_content_handled(self, admin_client):
         r = admin_client.post(
             "/v1/chat/completions",
-            json={
-                "messages": [
-                    {"role": "user", "content": "before\x00after"}
-                ]
-            },
+            json={"messages": [{"role": "user", "content": "before\x00after"}]},
         )
         # Null bytes commonly break SQLite TEXT bindings → 500. The
         # contract is pydantic clean OR explicit 4xx, never 500.
@@ -135,17 +123,10 @@ class TestQ11L13ChatCompletionsFuzz:
     def test_invalid_role_rejected_422(self, admin_client):
         r = admin_client.post(
             "/v1/chat/completions",
-            json={
-                "messages": [
-                    {"role": "evil_admin", "content": "hi"}
-                ]
-            },
+            json={"messages": [{"role": "evil_admin", "content": "hi"}]},
         )
         assert r.status_code == 422
-        assert any(
-            "role" in str(err.get("loc", []))
-            for err in r.json()["detail"]
-        )
+        assert any("role" in str(err.get("loc", [])) for err in r.json()["detail"])
 
     def test_messages_array_extra_keys_ignored(self, admin_client):
         """Pydantic should drop unknown keys without 500."""
@@ -192,9 +173,7 @@ class TestQ11L13ChatCompletionsFuzz:
             for i in range(99)
         ]
         msgs.append({"role": "user", "content": "final"})
-        r = admin_client.post(
-            "/v1/chat/completions", json={"messages": msgs}
-        )
+        r = admin_client.post("/v1/chat/completions", json={"messages": msgs})
         assert r.status_code == 200, r.text
 
     # ─── Q11 Round 15 — additional boundary fuzz ────────────────────────
@@ -214,9 +193,7 @@ class TestQ11L13ChatCompletionsFuzz:
     def test_role_as_array_rejected_422(self, admin_client):
         r = admin_client.post(
             "/v1/chat/completions",
-            json={
-                "messages": [{"role": ["user", "system"], "content": "hi"}]
-            },
+            json={"messages": [{"role": ["user", "system"], "content": "hi"}]},
         )
         assert r.status_code == 422
 
@@ -242,10 +219,6 @@ class TestQ11L13ChatCompletionsFuzz:
         """Pre-encoded unicode escape stays as-is (no JSON re-parse risk)."""
         r = admin_client.post(
             "/v1/chat/completions",
-            json={
-                "messages": [
-                    {"role": "user", "content": "\\u0041\\u0042\\u0043"}
-                ]
-            },
+            json={"messages": [{"role": "user", "content": "\\u0041\\u0042\\u0043"}]},
         )
         assert r.status_code == 200, r.text

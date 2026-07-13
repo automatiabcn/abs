@@ -16,6 +16,7 @@ These tests guard:
 5. Qdrant unreachable → 503 with `qdrant_unavailable` detail, never 500.
 6. Frontend `page.tsx` no longer contains the `[MOCK]` string.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -94,9 +95,7 @@ def _stub_qdrant_with_hit(monkeypatch: pytest.MonkeyPatch, text: str) -> None:
 def test_cookie_query_returns_real_hit_no_mock_string(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _stub_qdrant_with_hit(
-        monkeypatch, "Güvenlik politikamız: SOC2 Type II uyumlu."
-    )
+    _stub_qdrant_with_hit(monkeypatch, "Güvenlik politikamız: SOC2 Type II uyumlu.")
     with TestClient(app) as c:
         _login(c)
         r = c.post(
@@ -200,15 +199,7 @@ def test_qdrant_unreachable_returns_503(monkeypatch: pytest.MonkeyPatch) -> None
 def test_frontend_page_no_longer_contains_mock_fallback() -> None:
     """Static guard — `[MOCK]` literal must be gone from the panel page so
     operators see real failures."""
-    page = (
-        _REPO_ROOT
-        / "core"
-        / "landing"
-        / "app"
-        / "admin"
-        / "rag"
-        / "page.tsx"
-    )
+    page = _REPO_ROOT / "core" / "landing" / "app" / "admin" / "rag" / "page.tsx"
     text = page.read_text(encoding="utf-8")
     assert "[MOCK]" not in text, (
         "BUG-27 regression: page.tsx still contains [MOCK] fallback"

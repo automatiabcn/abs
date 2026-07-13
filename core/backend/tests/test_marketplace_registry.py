@@ -4,7 +4,11 @@ import json
 
 import pytest
 
-from app.marketplace.manifest_schema import PluginManifest, PluginPermissions, PluginType
+from app.marketplace.manifest_schema import (
+    PluginManifest,
+    PluginPermissions,
+    PluginType,
+)
 from app.marketplace.registry import (
     PluginRef,
     PluginRegistry,
@@ -177,7 +181,10 @@ async def test_resolve_exact():
     src = FakeSource(
         PluginSourceKind.GITHUB_RELEASES,
         ["1.0.0", "2.0.0"],
-        {"1.0.0": _build_manifest_bytes("1.0.0"), "2.0.0": _build_manifest_bytes("2.0.0")},
+        {
+            "1.0.0": _build_manifest_bytes("1.0.0"),
+            "2.0.0": _build_manifest_bytes("2.0.0"),
+        },
     )
     ref = await PluginRegistry([src]).resolve("test-plugin", constraint="1.0.0")
     assert ref.version == "1.0.0"

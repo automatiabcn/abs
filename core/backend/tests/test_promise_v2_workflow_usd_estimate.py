@@ -11,6 +11,7 @@ Pinning two contracts:
   2. A workflow with at least one anthropic-tagged node returns
      `estimated_cost_usd > 0`.
 """
+
 from __future__ import annotations
 
 import pytest

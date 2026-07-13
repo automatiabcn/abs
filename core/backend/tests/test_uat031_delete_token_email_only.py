@@ -47,9 +47,7 @@ def test_delete_request_dispatches_email(client, monkeypatch):
     def _spy(**kwargs):
         captured.update(kwargs)
 
-    monkeypatch.setattr(
-        "app.api.me_account.send_account_delete_email", _spy
-    )
+    monkeypatch.setattr("app.api.me_account.send_account_delete_email", _spy)
 
     token, jti = _seed_license()
     r = client.post(

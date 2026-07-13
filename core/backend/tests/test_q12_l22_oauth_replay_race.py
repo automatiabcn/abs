@@ -179,9 +179,7 @@ def test_q12_l22_005_threaded_race_only_one_succeeds(db_session: Session) -> Non
     assert errors[0][1] == "invalid_grant"
 
 
-def test_q12_l22_005_post_use_replay_emits_warning(
-    db_session: Session, caplog
-) -> None:
+def test_q12_l22_005_post_use_replay_emits_warning(db_session: Session, caplog) -> None:
     """Sequential replay (post-commit) hits the fast-path guard and emits
     `oauth_code_replay_attempt` for ops visibility.
     """
@@ -386,9 +384,9 @@ def test_q12_l22_006_replay_emits_warning(db_session: Session, caplog) -> None:
                 client_id="race-006-d",
                 refresh_token=refresh,
             )
-    assert any(
-        "oauth_refresh_replay_blocked" in r.message for r in caplog.records
-    ), "expected replay-blocked warning for ops audit"
+    assert any("oauth_refresh_replay_blocked" in r.message for r in caplog.records), (
+        "expected replay-blocked warning for ops audit"
+    )
 
 
 def test_q12_l22_006_normal_rotation_unaffected(db_session: Session) -> None:

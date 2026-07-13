@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 
 def _fake_snapshot(payload: dict) -> dict:
     """tracker.snapshot() formatı: {tool: {count_total, count_24h, last_called_at}}."""
@@ -64,9 +62,7 @@ def test_breakdown_sorted_by_cost(monkeypatch):
     monkeypatch.setattr(
         tracker,
         "snapshot",
-        lambda: _fake_snapshot(
-            {"ask_claude-opus": 50, "ask_gemini-flash-lite": 50}
-        ),
+        lambda: _fake_snapshot({"ask_claude-opus": 50, "ask_gemini-flash-lite": 50}),
     )
     out = cost_estimator.estimate_daily_cost()
     assert len(out["breakdown"]) >= 2

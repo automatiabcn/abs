@@ -55,9 +55,7 @@ def test_gemini_adapter_uses_header_not_query_param(monkeypatch) -> None:
         return_value=httpx.Response(
             200,
             json={
-                "candidates": [
-                    {"content": {"parts": [{"text": "hello"}]}}
-                ],
+                "candidates": [{"content": {"parts": [{"text": "hello"}]}}],
                 "usageMetadata": {
                     "promptTokenCount": 3,
                     "candidatesTokenCount": 1,
@@ -134,9 +132,9 @@ def test_gemini_extras_video_status_uses_header(monkeypatch) -> None:
 def test_validate_gemini_uses_header() -> None:
     from app.smart_link.provider_validators import validate_gemini
 
-    route = respx.get(
-        "https://generativelanguage.googleapis.com/v1beta/models"
-    ).mock(return_value=httpx.Response(200, json={"models": []}))
+    route = respx.get("https://generativelanguage.googleapis.com/v1beta/models").mock(
+        return_value=httpx.Response(200, json={"models": []})
+    )
 
     out = validate_gemini("AIzaSyVALIDATE_KEY")
 

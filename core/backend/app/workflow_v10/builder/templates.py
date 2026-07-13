@@ -39,11 +39,26 @@ _NODE_KIND_MAP: dict[str, NodeKind] = {
 def _trigger(template_id: str, kind: str, arg: str | None) -> Trigger:
     tid = f"trg-{template_id}"
     if kind == "webhook":
-        return Trigger(kind=TriggerKind.WEBHOOK, id=tid, webhook_path=arg or "/hook", description="Webhook")
+        return Trigger(
+            kind=TriggerKind.WEBHOOK,
+            id=tid,
+            webhook_path=arg or "/hook",
+            description="Webhook",
+        )
     if kind == "cron":
-        return Trigger(kind=TriggerKind.CRON, id=tid, cron_expr=arg or "0 9 * * 1", description="Cron")
+        return Trigger(
+            kind=TriggerKind.CRON,
+            id=tid,
+            cron_expr=arg or "0 9 * * 1",
+            description="Cron",
+        )
     if kind == "event":
-        return Trigger(kind=TriggerKind.EVENT, id=tid, event_topic=arg or "abs.event", description="Event")
+        return Trigger(
+            kind=TriggerKind.EVENT,
+            id=tid,
+            event_topic=arg or "abs.event",
+            description="Event",
+        )
     return Trigger(kind=TriggerKind.MANUAL, id=tid, description="Manual")
 
 
@@ -78,8 +93,22 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "event",
         "trigger_arg": "abs.gmail.message_received",
         "nodes": [
-            ("abs_tool", "Classify intent", {"tool_name": "abs.gmail_classify", "tool_args": {"label_set": ["sales", "support", "billing", "spam"]}}),
-            ("abs_tool", "Draft reply", {"tool_name": "abs.gmail_draft", "prompt": "Reply professionally based on classification."}),
+            (
+                "abs_tool",
+                "Classify intent",
+                {
+                    "tool_name": "abs.gmail_classify",
+                    "tool_args": {"label_set": ["sales", "support", "billing", "spam"]},
+                },
+            ),
+            (
+                "abs_tool",
+                "Draft reply",
+                {
+                    "tool_name": "abs.gmail_draft",
+                    "prompt": "Reply professionally based on classification.",
+                },
+            ),
             ("hitl", "Manager approval", {"approval_role": "tenant_owner"}),
             ("abs_tool", "Send email", {"tool_name": "abs.gmail_send"}),
         ],
@@ -95,7 +124,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "nodes": [
             ("abs_tool", "Transcribe", {"tool_name": "abs.meeting_transcribe"}),
             ("abs_tool", "Extract action items", {"tool_name": "abs.action_extract"}),
-            ("abs_tool", "Create Linear tickets", {"tool_name": "abs.linear_create_ticket"}),
+            (
+                "abs_tool",
+                "Create Linear tickets",
+                {"tool_name": "abs.linear_create_ticket"},
+            ),
             ("abs_tool", "Log to Notion", {"tool_name": "abs.notion_log"}),
         ],
         "tags": ["meeting", "linear", "notion"],
@@ -108,7 +141,14 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 16 * * 5",
         "nodes": [
-            ("abs_tool", "Pull Linear updates", {"tool_name": "abs.linear_create_ticket", "tool_args": {"mode": "list_recent"}}),
+            (
+                "abs_tool",
+                "Pull Linear updates",
+                {
+                    "tool_name": "abs.linear_create_ticket",
+                    "tool_args": {"mode": "list_recent"},
+                },
+            ),
             ("abs_tool", "Summarise progress", {"tool_name": "abs.qual_analysis"}),
             ("abs_tool", "Send report email", {"tool_name": "abs.gmail_send"}),
         ],
@@ -124,7 +164,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "nodes": [
             ("abs_tool", "Tenant policy check", {"tool_name": "abs.cerbos_check"}),
             ("abs_tool", "RAG query", {"tool_name": "abs.rag_query"}),
-            ("abs_tool", "Compose answer", {"tool_name": "abs.qual_code", "prompt": "Answer with citations."}),
+            (
+                "abs_tool",
+                "Compose answer",
+                {"tool_name": "abs.qual_code", "prompt": "Answer with citations."},
+            ),
             ("output", "Return JSON", {"output_template": "{{result}}"}),
         ],
         "tags": ["rag", "chat", "tenant"],
@@ -137,7 +181,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 7 * * *",
         "nodes": [
-            ("api_request", "Fetch RSS", {"method": "GET", "url": "https://news.example/feed.xml"}),
+            (
+                "api_request",
+                "Fetch RSS",
+                {"method": "GET", "url": "https://news.example/feed.xml"},
+            ),
             ("abs_tool", "Summarise", {"tool_name": "abs.qual_analysis"}),
             ("abs_tool", "Send digest", {"tool_name": "abs.gmail_send"}),
         ],
@@ -167,7 +215,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_arg": "/hook/lead",
         "nodes": [
             ("abs_tool", "Enrich lead", {"tool_name": "abs.rag_query"}),
-            ("llm_call", "Score 0–100", {"model": "groq", "prompt": "Score 0-100 with JSON {score, reason}."}),
+            (
+                "llm_call",
+                "Score 0–100",
+                {"model": "groq", "prompt": "Score 0-100 with JSON {score, reason}."},
+            ),
             ("conditional", "High value?", {"condition_expr": "{{score}} >= 70"}),
             ("abs_tool", "Notify sales", {"tool_name": "abs.gmail_send"}),
         ],
@@ -181,7 +233,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 9 * * *",
         "nodes": [
-            ("api_request", "Fetch overdue", {"method": "GET", "url": "https://billing.internal/api/overdue"}),
+            (
+                "api_request",
+                "Fetch overdue",
+                {"method": "GET", "url": "https://billing.internal/api/overdue"},
+            ),
             ("abs_tool", "Draft reminder", {"tool_name": "abs.qual_tr"}),
             ("hitl", "Finance approval", {"approval_role": "tenant_owner"}),
             ("abs_tool", "Send reminder", {"tool_name": "abs.gmail_send"}),
@@ -212,7 +268,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_arg": "/hook/resume",
         "nodes": [
             ("abs_tool", "Parse resume", {"tool_name": "abs.qual_analysis"}),
-            ("llm_call", "Score fit", {"model": "groq", "prompt": "Return JSON {fit, rationale}."}),
+            (
+                "llm_call",
+                "Score fit",
+                {"model": "groq", "prompt": "Return JSON {fit, rationale}."},
+            ),
             ("hitl", "Recruiter review", {"approval_role": "tenant_owner"}),
             ("abs_tool", "Notify candidate", {"tool_name": "abs.gmail_send"}),
         ],
@@ -229,7 +289,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
             ("abs_tool", "OCR receipt", {"tool_name": "abs.qual_analysis"}),
             ("abs_tool", "Categorise", {"tool_name": "abs.qual_code"}),
             ("hitl", "Manager approval", {"approval_role": "tenant_owner"}),
-            ("api_request", "Post to ERP", {"method": "POST", "url": "https://erp.internal/api/expense"}),
+            (
+                "api_request",
+                "Post to ERP",
+                {"method": "POST", "url": "https://erp.internal/api/expense"},
+            ),
         ],
         "tags": ["finance", "approval"],
     },
@@ -255,10 +319,18 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 2 * * 0",
         "nodes": [
-            ("api_request", "Fetch contacts", {"method": "GET", "url": "https://crm.internal/api/contacts"}),
+            (
+                "api_request",
+                "Fetch contacts",
+                {"method": "GET", "url": "https://crm.internal/api/contacts"},
+            ),
             ("abs_tool", "Detect duplicates", {"tool_name": "abs.qual_analysis"}),
             ("hitl", "Confirm merges", {"approval_role": "tenant_owner"}),
-            ("api_request", "Apply merges", {"method": "POST", "url": "https://crm.internal/api/merge"}),
+            (
+                "api_request",
+                "Apply merges",
+                {"method": "POST", "url": "https://crm.internal/api/merge"},
+            ),
         ],
         "tags": ["crm", "hygiene", "approval"],
     },
@@ -270,7 +342,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "*/30 * * * *",
         "nodes": [
-            ("api_request", "Check stock", {"method": "GET", "url": "https://erp.internal/api/inventory"}),
+            (
+                "api_request",
+                "Check stock",
+                {"method": "GET", "url": "https://erp.internal/api/inventory"},
+            ),
             ("conditional", "Below threshold?", {"condition_expr": "{{stock}} < 10"}),
             ("abs_tool", "Notify ops", {"tool_name": "abs.gmail_send"}),
         ],
@@ -298,7 +374,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "manual",
         "trigger_arg": None,
         "nodes": [
-            ("llm_call", "Generate variants", {"model": "groq", "prompt": "Three short variants under 240 chars."}),
+            (
+                "llm_call",
+                "Generate variants",
+                {"model": "groq", "prompt": "Three short variants under 240 chars."},
+            ),
             ("hitl", "Marketing approval", {"approval_role": "tenant_owner"}),
             ("output", "Return chosen", {"output_template": "{{chosen}}"}),
         ],
@@ -326,7 +406,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 6 * * *",
         "nodes": [
-            ("api_request", "Fetch competitor pages", {"method": "GET", "url": "https://compete.example/api/list"}),
+            (
+                "api_request",
+                "Fetch competitor pages",
+                {"method": "GET", "url": "https://compete.example/api/list"},
+            ),
             ("abs_tool", "Detect changes", {"tool_name": "abs.qual_analysis"}),
             ("conditional", "Significant?", {"condition_expr": "{{delta_pct}} > 5"}),
             ("abs_tool", "Notify pricing team", {"tool_name": "abs.gmail_send"}),
@@ -424,8 +508,16 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 3 * * *",
         "nodes": [
-            ("api_request", "Pull usage", {"method": "GET", "url": "https://analytics.internal/api/usage"}),
-            ("llm_call", "Score churn", {"model": "groq", "prompt": "Return JSON {risk}."}),
+            (
+                "api_request",
+                "Pull usage",
+                {"method": "GET", "url": "https://analytics.internal/api/usage"},
+            ),
+            (
+                "llm_call",
+                "Score churn",
+                {"model": "groq", "prompt": "Return JSON {risk}."},
+            ),
             ("conditional", "High risk?", {"condition_expr": "{{risk}} > 0.7"}),
             ("abs_tool", "Notify CSM", {"tool_name": "abs.gmail_send"}),
         ],
@@ -453,7 +545,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 9 * * *",
         "nodes": [
-            ("api_request", "Fetch upcoming renewals", {"method": "GET", "url": "https://billing.internal/api/renewals"}),
+            (
+                "api_request",
+                "Fetch upcoming renewals",
+                {"method": "GET", "url": "https://billing.internal/api/renewals"},
+            ),
             ("abs_tool", "Compose reminder", {"tool_name": "abs.qual_tr"}),
             ("abs_tool", "Send email", {"tool_name": "abs.gmail_send"}),
         ],
@@ -467,8 +563,16 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "*/15 * * * *",
         "nodes": [
-            ("api_request", "Fetch open tickets", {"method": "GET", "url": "https://support.internal/api/tickets/open"}),
-            ("conditional", "SLA breached?", {"condition_expr": "{{age_hours}} > {{sla_hours}}"}),
+            (
+                "api_request",
+                "Fetch open tickets",
+                {"method": "GET", "url": "https://support.internal/api/tickets/open"},
+            ),
+            (
+                "conditional",
+                "SLA breached?",
+                {"condition_expr": "{{age_hours}} > {{sla_hours}}"},
+            ),
             ("abs_tool", "Page manager", {"tool_name": "abs.gmail_send"}),
         ],
         "tags": ["support", "sla"],
@@ -510,7 +614,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 8 * * *",
         "nodes": [
-            ("api_request", "Fetch mentions", {"method": "GET", "url": "https://news.example/api/mentions"}),
+            (
+                "api_request",
+                "Fetch mentions",
+                {"method": "GET", "url": "https://news.example/api/mentions"},
+            ),
             ("abs_tool", "Summarise", {"tool_name": "abs.qual_analysis"}),
             ("abs_tool", "Email PR", {"tool_name": "abs.gmail_send"}),
         ],
@@ -524,10 +632,18 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 9 25 * *",
         "nodes": [
-            ("api_request", "Pull hours", {"method": "GET", "url": "https://hr.internal/api/hours"}),
+            (
+                "api_request",
+                "Pull hours",
+                {"method": "GET", "url": "https://hr.internal/api/hours"},
+            ),
             ("abs_tool", "Validate", {"tool_name": "abs.qual_code"}),
             ("hitl", "Finance approval", {"approval_role": "tenant_owner"}),
-            ("api_request", "Submit payroll", {"method": "POST", "url": "https://hr.internal/api/payroll"}),
+            (
+                "api_request",
+                "Submit payroll",
+                {"method": "POST", "url": "https://hr.internal/api/payroll"},
+            ),
         ],
         "tags": ["finance", "hr"],
     },
@@ -580,7 +696,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "manual",
         "trigger_arg": None,
         "nodes": [
-            ("api_request", "Upload CSV", {"method": "POST", "url": "https://crm.internal/api/import"}),
+            (
+                "api_request",
+                "Upload CSV",
+                {"method": "POST", "url": "https://crm.internal/api/import"},
+            ),
             ("abs_tool", "Enrich", {"tool_name": "abs.rag_query"}),
             ("abs_tool", "Notify sales", {"tool_name": "abs.gmail_send"}),
         ],
@@ -608,7 +728,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 18 * * *",
         "nodes": [
-            ("api_request", "Pull orders", {"method": "GET", "url": "https://shop.internal/api/orders"}),
+            (
+                "api_request",
+                "Pull orders",
+                {"method": "GET", "url": "https://shop.internal/api/orders"},
+            ),
             ("abs_tool", "Summarise", {"tool_name": "abs.qual_analysis"}),
             ("abs_tool", "Send digest", {"tool_name": "abs.gmail_send"}),
         ],
@@ -636,7 +760,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_arg": "abs.crm.deal_updated",
         "nodes": [
             ("abs_tool", "Format message", {"tool_name": "abs.qual_tr"}),
-            ("api_request", "Post to Slack", {"method": "POST", "url": "https://slack.com/api/chat.postMessage"}),
+            (
+                "api_request",
+                "Post to Slack",
+                {"method": "POST", "url": "https://slack.com/api/chat.postMessage"},
+            ),
         ],
         "tags": ["crm", "slack"],
     },
@@ -649,7 +777,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_arg": "/hook/gdpr-export",
         "nodes": [
             ("abs_tool", "Tenant policy check", {"tool_name": "abs.cerbos_check"}),
-            ("api_request", "Bundle data", {"method": "POST", "url": "https://gdpr.internal/api/export"}),
+            (
+                "api_request",
+                "Bundle data",
+                {"method": "POST", "url": "https://gdpr.internal/api/export"},
+            ),
             ("abs_tool", "Email user", {"tool_name": "abs.gmail_send"}),
         ],
         "tags": ["gdpr", "compliance"],
@@ -662,7 +794,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 8 1 * *",
         "nodes": [
-            ("api_request", "Reconcile", {"method": "POST", "url": "https://accounting.internal/api/close"}),
+            (
+                "api_request",
+                "Reconcile",
+                {"method": "POST", "url": "https://accounting.internal/api/close"},
+            ),
             ("abs_tool", "Summarise variances", {"tool_name": "abs.qual_analysis"}),
             ("hitl", "CFO sign-off", {"approval_role": "tenant_owner"}),
         ],
@@ -676,7 +812,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 7 * * *",
         "nodes": [
-            ("api_request", "Pull backup logs", {"method": "GET", "url": "https://infra.internal/api/backups"}),
+            (
+                "api_request",
+                "Pull backup logs",
+                {"method": "GET", "url": "https://infra.internal/api/backups"},
+            ),
             ("abs_tool", "Summarise", {"tool_name": "abs.qual_analysis"}),
             ("abs_tool", "Email ops", {"tool_name": "abs.gmail_send"}),
         ],
@@ -690,8 +830,16 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "manual",
         "trigger_arg": None,
         "nodes": [
-            ("abs_tool", "Translate EN→TR", {"tool_name": "abs.qual_translate", "tool_args": {"target": "tr"}}),
-            ("abs_tool", "Translate EN→ES", {"tool_name": "abs.qual_translate", "tool_args": {"target": "es"}}),
+            (
+                "abs_tool",
+                "Translate EN→TR",
+                {"tool_name": "abs.qual_translate", "tool_args": {"target": "tr"}},
+            ),
+            (
+                "abs_tool",
+                "Translate EN→ES",
+                {"tool_name": "abs.qual_translate", "tool_args": {"target": "es"}},
+            ),
             ("output", "Return bundle", {"output_template": "{{translations}}"}),
         ],
         "tags": ["i18n"],
@@ -704,7 +852,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 7 * * 1",
         "nodes": [
-            ("api_request", "Fetch competitor news", {"method": "GET", "url": "https://news.example/api/competitors"}),
+            (
+                "api_request",
+                "Fetch competitor news",
+                {"method": "GET", "url": "https://news.example/api/competitors"},
+            ),
             ("abs_tool", "Summarise", {"tool_name": "abs.qual_analysis"}),
             ("abs_tool", "Notion log", {"tool_name": "abs.notion_log"}),
         ],
@@ -760,7 +912,11 @@ _TEMPLATE_DEFS: list[dict[str, Any]] = [
         "trigger_kind": "cron",
         "trigger_arg": "0 10 * * 1",
         "nodes": [
-            ("api_request", "Pull pipeline", {"method": "GET", "url": "https://crm.internal/api/pipeline"}),
+            (
+                "api_request",
+                "Pull pipeline",
+                {"method": "GET", "url": "https://crm.internal/api/pipeline"},
+            ),
             ("abs_tool", "Forecast", {"tool_name": "abs.qual_analysis"}),
             ("abs_tool", "Email leadership", {"tool_name": "abs.gmail_send"}),
         ],

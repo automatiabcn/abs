@@ -64,7 +64,9 @@ class CloudflareProvider(BaseProvider):
             ) from exc
         except httpx.HTTPError as exc:
             raise ProviderError(
-                f"CloudFlare connection error: {exc}", provider=self.name, transient=True
+                f"CloudFlare connection error: {exc}",
+                provider=self.name,
+                transient=True,
             ) from exc
 
         elapsed_ms = int((time.monotonic() - start) * 1000)

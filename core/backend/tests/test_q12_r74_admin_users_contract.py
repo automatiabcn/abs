@@ -20,6 +20,7 @@ R74 fills that gap with 9 contract tests:
 - unauthenticated -> 401 (never silent 200, never 5xx)
 - bcrypt password_hash is NEVER in the response (info-leak guard)
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -159,7 +160,9 @@ def test_q12_r74_per_row_keys_present(client, monkeypatch, _seed_three_users):
 
 
 def test_q12_r74_descending_sort_by_created_at(
-    client, monkeypatch, _seed_three_users,
+    client,
+    monkeypatch,
+    _seed_three_users,
 ):
     suffix = _seed_three_users
     token = _login(client, monkeypatch)
@@ -173,7 +176,9 @@ def test_q12_r74_descending_sort_by_created_at(
 
 
 def test_q12_r74_iso_timestamps_carry_timezone_offset(
-    client, monkeypatch, _seed_three_users,
+    client,
+    monkeypatch,
+    _seed_three_users,
 ):
     """Production callers (admin/users page split-shell) call
     `new Date(u.created_at)` which reads naive ISO strings as local
@@ -191,13 +196,15 @@ def test_q12_r74_iso_timestamps_carry_timezone_offset(
             f"created_at missing tz offset: {u['created_at']}"
         )
         if u["last_login"] is not None:
-            assert u["last_login"].endswith("+00:00") or u["last_login"].endswith("Z"), (
-                f"last_login missing tz offset: {u['last_login']}"
-            )
+            assert u["last_login"].endswith("+00:00") or u["last_login"].endswith(
+                "Z"
+            ), f"last_login missing tz offset: {u['last_login']}"
 
 
 def test_q12_r74_last_login_is_null_for_pending(
-    client, monkeypatch, _seed_three_users,
+    client,
+    monkeypatch,
+    _seed_three_users,
 ):
     suffix = _seed_three_users
     token = _login(client, monkeypatch)
@@ -236,7 +243,9 @@ def test_q12_r74_unauthenticated_returns_401(client):
 
 
 def test_q12_r74_password_hash_never_leaks(
-    client, monkeypatch, _seed_three_users,
+    client,
+    monkeypatch,
+    _seed_three_users,
 ):
     """The User model stores `password_hash`. R65 SSR pipeline
     forwards the cookie and ships the response straight to the

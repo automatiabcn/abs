@@ -36,9 +36,7 @@ def _require_graphrag_enabled() -> None:
     """GraphRAG is opt-in. When off, the surface returns 404 so a customer who
     doesn't use it sees no half-wired endpoints."""
     if not settings.graphrag_enabled:
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND, detail="graphrag_disabled"
-        )
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="graphrag_disabled")
 
 
 class BuildRequest(BaseModel):
@@ -66,7 +64,9 @@ class GraphRagQueryRequest(BaseModel):
         default=True, description="run LLM synthesis over chunks + subgraph"
     )
     depth: int = Field(
-        default=1, ge=1, le=3,
+        default=1,
+        ge=1,
+        le=3,
         description="graph traversal depth (1=immediate edges, up to 3 hops)",
     )
 

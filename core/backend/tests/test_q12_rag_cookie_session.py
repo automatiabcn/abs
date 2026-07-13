@@ -51,9 +51,7 @@ def fake_qdrant(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     """Stub the Qdrant search to keep the test hermetic — we are testing
     the auth surface, not vector retrieval."""
     monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
-    monkeypatch.setattr(
-        rag_routes.qc, "search", lambda **k: []
-    )
+    monkeypatch.setattr(rag_routes.qc, "search", lambda **k: [])
     monkeypatch.setattr(rag_routes.qc, "upsert_points", lambda **k: 1)
 
     embedder = MagicMock()

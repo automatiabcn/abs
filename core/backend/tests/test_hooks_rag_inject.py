@@ -21,9 +21,16 @@ def _hits(monkeypatch, hits: List[Dict[str, Any]]) -> None:
 
 
 def test_analysis_gets_context_from_the_index(monkeypatch):
-    _hits(monkeypatch, [
-        {"file": "reports/q3.md", "snippet": "Revenue grew 14% on the retainer accounts.", "score": 0.82},
-    ])
+    _hits(
+        monkeypatch,
+        [
+            {
+                "file": "reports/q3.md",
+                "snippet": "Revenue grew 14% on the retainer accounts.",
+                "score": 0.82,
+            },
+        ],
+    )
     msg = rag_inject.maybe_rag_inject(
         "Bash", {"command": "python3 analyze data for trends"}
     )
@@ -32,9 +39,12 @@ def test_analysis_gets_context_from_the_index(monkeypatch):
 
 
 def test_writing_code_gets_context_from_the_index(monkeypatch):
-    _hits(monkeypatch, [
-        {"file": "app/billing.py", "snippet": "def charge(...)", "score": 0.7},
-    ])
+    _hits(
+        monkeypatch,
+        [
+            {"file": "app/billing.py", "snippet": "def charge(...)", "score": 0.7},
+        ],
+    )
     msg = rag_inject.maybe_rag_inject(
         "Write", {"file_path": "/x/y.py", "content": "print(1)"}
     )
@@ -55,9 +65,16 @@ def test_an_empty_index_says_nothing(monkeypatch):
 def test_a_weak_match_says_nothing(monkeypatch):
     # A 0.1 similarity is the index shrugging. Injected, it would look exactly
     # as authoritative as a real hit.
-    _hits(monkeypatch, [
-        {"file": "unrelated.md", "snippet": "Office plants need watering.", "score": 0.1},
-    ])
+    _hits(
+        monkeypatch,
+        [
+            {
+                "file": "unrelated.md",
+                "snippet": "Office plants need watering.",
+                "score": 0.1,
+            },
+        ],
+    )
     msg = rag_inject.maybe_rag_inject(
         "Write", {"file_path": "/x/y.py", "content": "print(1)"}
     )
@@ -81,9 +98,12 @@ def test_other_tools_no_context():
 
 
 def test_rate_limit_same_category(monkeypatch):
-    _hits(monkeypatch, [
-        {"file": "app/billing.py", "snippet": "def charge(...)", "score": 0.7},
-    ])
+    _hits(
+        monkeypatch,
+        [
+            {"file": "app/billing.py", "snippet": "def charge(...)", "score": 0.7},
+        ],
+    )
     a = rag_inject.maybe_rag_inject("Write", {"file_path": "/a.py", "content": "x"})
     b = rag_inject.maybe_rag_inject("Write", {"file_path": "/b.py", "content": "y"})
     assert a != ""

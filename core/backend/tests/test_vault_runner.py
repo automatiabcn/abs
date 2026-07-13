@@ -85,7 +85,9 @@ def test_encrypt_decrypt_roundtrip(vault_paths):
         text=True,
     )
 
-    runner_mod.encrypt_all({"groq_api_key": "gsk_test", "anthropic_api_key": "sk-ant-test"})
+    runner_mod.encrypt_all(
+        {"groq_api_key": "gsk_test", "anthropic_api_key": "sk-ant-test"}
+    )
     decrypted = runner_mod.decrypt_all()
     assert decrypted == {"groq_api_key": "gsk_test", "anthropic_api_key": "sk-ant-test"}
 

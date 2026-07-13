@@ -4,10 +4,11 @@
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
 """Q7 Phase A — Neo4j async client (Bolt protocol)."""
+
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 from neo4j import AsyncGraphDatabase
 
@@ -41,7 +42,9 @@ class Neo4jClient:
             result = await s.run(cypher, params or {})
             return [r.data() async for r in result]
 
-    async def upsert_entity(self, label: str, props: dict, key: str = "id") -> list[dict]:
+    async def upsert_entity(
+        self, label: str, props: dict, key: str = "id"
+    ) -> list[dict]:
         if not props.get(key):
             raise ValueError(f"missing key {key} in props")
         cypher = f"MERGE (n:{label} {{{key}: ${key}_val}}) SET n += $props RETURN n"

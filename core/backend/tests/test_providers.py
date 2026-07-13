@@ -22,9 +22,7 @@ async def test_groq_parses_openai_response(monkeypatch):
         return_value=httpx.Response(
             200,
             json={
-                "choices": [
-                    {"message": {"role": "assistant", "content": "Yanıt: 4"}}
-                ],
+                "choices": [{"message": {"role": "assistant", "content": "Yanıt: 4"}}],
                 "usage": {"prompt_tokens": 10, "completion_tokens": 3},
             },
         )
@@ -51,11 +49,7 @@ async def test_cerebras_parses_openai_response(monkeypatch):
     respx.post("https://api.cerebras.ai/v1/chat/completions").mock(
         return_value=httpx.Response(
             200,
-            json={
-                "choices": [
-                    {"message": {"role": "assistant", "content": "tamam"}}
-                ]
-            },
+            json={"choices": [{"message": {"role": "assistant", "content": "tamam"}}]},
         )
     )
     r = await CerebrasProvider().call("ping")
@@ -94,9 +88,7 @@ async def test_gemini_parses_candidates_response(monkeypatch):
         return_value=httpx.Response(
             200,
             json={
-                "candidates": [
-                    {"content": {"parts": [{"text": "Merhaba dünya"}]}}
-                ],
+                "candidates": [{"content": {"parts": [{"text": "Merhaba dünya"}]}}],
                 "usageMetadata": {"promptTokenCount": 2, "candidatesTokenCount": 3},
             },
         )

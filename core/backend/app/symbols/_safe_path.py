@@ -50,7 +50,9 @@ def _is_within(child: Path, parent: Path) -> bool:
         return False
 
 
-def safe_resolve(user_path: str | os.PathLike[str], *, roots: Iterable[Path] | None = None) -> Path:
+def safe_resolve(
+    user_path: str | os.PathLike[str], *, roots: Iterable[Path] | None = None
+) -> Path:
     """Canonicalize and assert the path lives inside an allowed root.
 
     Raises PermissionError if the resolved path escapes ALLOWED_ROOTS or is a
@@ -69,7 +71,12 @@ def safe_resolve(user_path: str | os.PathLike[str], *, roots: Iterable[Path] | N
     return resolved
 
 
-def safe_read_text(user_path: str | os.PathLike[str], *, encoding: str = "utf-8", errors: str = "strict") -> str:
+def safe_read_text(
+    user_path: str | os.PathLike[str],
+    *,
+    encoding: str = "utf-8",
+    errors: str = "strict",
+) -> str:
     """Read text with ALLOWED_ROOTS enforcement. Raises FileNotFoundError if missing."""
     p = safe_resolve(user_path)
     if not p.is_file():

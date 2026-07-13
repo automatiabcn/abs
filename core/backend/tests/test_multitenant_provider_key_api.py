@@ -72,8 +72,16 @@ def _stub_ping(monkeypatch, *, text: str):
     capturing the api_key the endpoint forwarded."""
     captured: dict = {}
 
-    async def _fake(prompt, *, primary, fallbacks=(), use_cache=True,
-                    tenant_id="_global", api_key=None, **kw):
+    async def _fake(
+        prompt,
+        *,
+        primary,
+        fallbacks=(),
+        use_cache=True,
+        tenant_id="_global",
+        api_key=None,
+        **kw,
+    ):
         captured["api_key"] = api_key
         from app.providers.schemas import ProviderResponse
 
@@ -86,12 +94,18 @@ def _stub_ping(monkeypatch, *, text: str):
 def test_test_stored_key_ok_and_persists_validation(client, monkeypatch):
     tok = _admin_token(client, monkeypatch)
     h = {"Authorization": f"Bearer {tok}"}
-    client.post("/v1/admin/provider-keys", headers=h,
-                json={"provider": "groq", "value": "gsk_stored", "owner_type": "org"})
+    client.post(
+        "/v1/admin/provider-keys",
+        headers=h,
+        json={"provider": "groq", "value": "gsk_stored", "owner_type": "org"},
+    )
     cap = _stub_ping(monkeypatch, text="pong")
 
-    r = client.post("/v1/admin/provider-keys/test", headers=h,
-                    json={"provider": "groq", "owner_type": "org"})
+    r = client.post(
+        "/v1/admin/provider-keys/test",
+        headers=h,
+        json={"provider": "groq", "owner_type": "org"},
+    )
     assert r.status_code == 200, r.text
     assert r.json()["ok"] is True
     assert cap["api_key"] == "gsk_stored"  # the stored key was used
@@ -104,8 +118,12 @@ def test_test_stored_key_ok_and_persists_validation(client, monkeypatch):
     # CLEAN UP — the provider_keys table is shared across the full suite; a
     # leftover groq key makes later cascade/degradation tests see groq as
     # "configured" and fail. Delete what this test stored.
-    client.request("DELETE", "/v1/admin/provider-keys", headers=h,
-                   json={"provider": "groq", "owner_type": "org"})
+    client.request(
+        "DELETE",
+        "/v1/admin/provider-keys",
+        headers=h,
+        json={"provider": "groq", "owner_type": "org"},
+    )
 
 
 def test_test_raw_value_before_save_does_not_persist(client, monkeypatch):
@@ -114,8 +132,11 @@ def test_test_raw_value_before_save_does_not_persist(client, monkeypatch):
     cap = _stub_ping(monkeypatch, text="pong")
     # use a provider no other test stores, so a pre-save probe leaving nothing
     # behind is verifiable regardless of test order
-    r = client.post("/v1/admin/provider-keys/test", headers=h,
-                    json={"provider": "gemini", "owner_type": "org", "value": "probe_key"})
+    r = client.post(
+        "/v1/admin/provider-keys/test",
+        headers=h,
+        json={"provider": "gemini", "owner_type": "org", "value": "probe_key"},
+    )
     assert r.status_code == 200 and r.json()["ok"] is True
     assert cap["api_key"] == "probe_key"
     # nothing stored → the probed provider must not appear in the list
@@ -127,8 +148,11 @@ def test_test_bad_key_returns_ok_false(client, monkeypatch):
     tok = _admin_token(client, monkeypatch)
     h = {"Authorization": f"Bearer {tok}"}
     cap = _stub_ping(monkeypatch, text="")  # empty response → not ok
-    r = client.post("/v1/admin/provider-keys/test", headers=h,
-                    json={"provider": "groq", "owner_type": "org", "value": "gsk_bad"})
+    r = client.post(
+        "/v1/admin/provider-keys/test",
+        headers=h,
+        json={"provider": "groq", "owner_type": "org", "value": "gsk_bad"},
+    )
     assert r.status_code == 200
     assert r.json()["ok"] is False
     assert cap["api_key"] == "gsk_bad"
@@ -137,13 +161,19 @@ def test_test_bad_key_returns_ok_false(client, monkeypatch):
 def test_test_no_stored_key_is_404(client, monkeypatch):
     tok = _admin_token(client, monkeypatch)
     h = {"Authorization": f"Bearer {tok}"}
-    r = client.post("/v1/admin/provider-keys/test", headers=h,
-                    json={"provider": "cohere", "owner_type": "org"})
+    r = client.post(
+        "/v1/admin/provider-keys/test",
+        headers=h,
+        json={"provider": "cohere", "owner_type": "org"},
+    )
     assert r.status_code == 404
 
 
 def test_test_requires_admin(client):
-    assert client.post("/v1/admin/provider-keys/test", json={}).status_code in (401, 403)
+    assert client.post("/v1/admin/provider-keys/test", json={}).status_code in (
+        401,
+        403,
+    )
 
 
 def test_set_unknown_provider_rejected(client, monkeypatch):
@@ -178,8 +208,11 @@ async def test_cascade_injects_owner_key(monkeypatch):
     from app.providers.schemas import ProviderResponse
 
     pk.set_provider_key(
-        tenant_slug="acme", owner_type="user", owner_id="dev@acme.com",
-        provider="groq", value="USER_GROQ_KEY",
+        tenant_slug="acme",
+        owner_type="user",
+        owner_id="dev@acme.com",
+        provider="groq",
+        value="USER_GROQ_KEY",
     )
 
     seen = {}
@@ -195,14 +228,19 @@ async def test_cascade_injects_owner_key(monkeypatch):
 
     # with user context → owner key injected
     await orch.call_with_cascade(
-        "hi", primary="groq", tenant_id="acme", user_subject="dev@acme.com",
+        "hi",
+        primary="groq",
+        tenant_id="acme",
+        user_subject="dev@acme.com",
         use_cache=False,
     )
     assert seen["api_key"] == "USER_GROQ_KEY"
 
     # without context → no api_key (adapter falls back to global settings)
     seen.clear()
-    await orch.call_with_cascade("hi", primary="groq", tenant_id="acme", use_cache=False)
+    await orch.call_with_cascade(
+        "hi", primary="groq", tenant_id="acme", use_cache=False
+    )
     assert seen.get("api_key") is None
 
 
@@ -223,7 +261,10 @@ async def test_cascade_no_db_key_no_injection(monkeypatch):
 
     monkeypatch.setattr(orch, "get_provider", lambda name: _FakeProvider())
     await orch.call_with_cascade(
-        "hi", primary="groq", tenant_id="nokeys", user_subject="ghost@x.com",
+        "hi",
+        primary="groq",
+        tenant_id="nokeys",
+        user_subject="ghost@x.com",
         use_cache=False,
     )
     assert seen.get("api_key") is None
@@ -244,6 +285,7 @@ def test_groq_adapter_honors_api_key_kwarg():
         return ProviderResponse(text="x", provider="groq")
 
     import app.providers.groq.adapter as mod
+
     orig = mod.openai_compatible_chat
     mod.openai_compatible_chat = _fake_chat
     try:

@@ -10,7 +10,6 @@ the whole run.
 import asyncio
 
 
-
 import app.cascade.orchestrator as orch
 import app.workflow_v10.runner as runner
 
@@ -42,8 +41,19 @@ def test_llm_call_chain_executes_and_templates(monkeypatch):
 
     wf = {
         "nodes": [
-            {"id": "n1", "kind": "llm_call", "config": {"prompt_template": "say hello", "provider": "groq"}},
-            {"id": "n2", "kind": "llm_call", "config": {"prompt_template": "translate: {{n1}}", "provider": "gemini"}},
+            {
+                "id": "n1",
+                "kind": "llm_call",
+                "config": {"prompt_template": "say hello", "provider": "groq"},
+            },
+            {
+                "id": "n2",
+                "kind": "llm_call",
+                "config": {
+                    "prompt_template": "translate: {{n1}}",
+                    "provider": "gemini",
+                },
+            },
         ],
         "edges": [{"source": "n1", "target": "n2"}],
     }
@@ -63,7 +73,13 @@ def test_node_failure_is_isolated_not_fatal(monkeypatch):
     monkeypatch.setattr(orch, "call_with_cascade", boom)
 
     wf = {
-        "nodes": [{"id": "n1", "kind": "llm_call", "config": {"prompt_template": "x", "provider": "groq"}}],
+        "nodes": [
+            {
+                "id": "n1",
+                "kind": "llm_call",
+                "config": {"prompt_template": "x", "provider": "groq"},
+            }
+        ],
         "edges": [],
     }
     st = asyncio.run(_run(wf))

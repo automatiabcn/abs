@@ -5,9 +5,9 @@
 
 """Upper-tier + auto-upgrade alias MCP tools.
 
-  ask_cerebras_qwen     — Cerebras gpt-oss-120b
-  ask_gemini_latest     — gemini-flash-latest (auto-upgrade alias)
-  ask_gemini_pro_latest — gemini-pro-latest (auto-upgrade alias)
+ask_cerebras_qwen     — Cerebras gpt-oss-120b
+ask_gemini_latest     — gemini-flash-latest (auto-upgrade alias)
+ask_gemini_pro_latest — gemini-pro-latest (auto-upgrade alias)
 """
 
 from __future__ import annotations

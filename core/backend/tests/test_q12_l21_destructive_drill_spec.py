@@ -124,7 +124,7 @@ def test_q12_l21_drill_documents_iters_default() -> None:
 
     src = SCRIPT.read_text(encoding="utf-8")
     assert "ABS_DRILL_ITERS" in src
-    assert "default: 1" in src or 'ABS_DRILL_ITERS:-1' in src
+    assert "default: 1" in src or "ABS_DRILL_ITERS:-1" in src
     # Validates that R27 BodySizeLimit middleware is live in the
     # rebuilt deployment — proves the drill exercises the audit
     # surface, not just the boot path.

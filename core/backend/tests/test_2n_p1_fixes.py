@@ -9,6 +9,7 @@ full stack:
   - #2M-023 ABS_VERSION=1.0.1 default + CHANGELOG entry
   - #2M-024 customer compose explicit ABS_RATE_LIMIT_ENABLED=true
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -58,7 +59,7 @@ def test_daily_cost_tool_handles_index_error() -> None:
     do not depend on FastMCP internals (which changed across releases).
     """
     raw = BILLING_TOOLS_PY.read_text()
-    block = raw.split('async def daily_cost(', 1)[1]
+    block = raw.split("async def daily_cost(", 1)[1]
     body = block.split("async def ", 1)[0]
     # Required code paths the source must contain to count as the fix.
     assert "try:" in body and "except (IndexError, KeyError)" in body
@@ -77,7 +78,7 @@ def test_chat_completions_preflights_cascade_503() -> None:
     # Retry-After header in the HTTPException response.
     assert "Retry-After" in raw
     # Pre-flight probe lives before the stream() definition.
-    head, _, tail = raw.partition('async def stream()')
+    head, _, tail = raw.partition("async def stream()")
     assert "get_active_providers" in head, (
         "provider probe must run pre-stream so HTTP status reflects "
         "the all-down case (Sprint 2M repro: 200 SSE instead of 503)"

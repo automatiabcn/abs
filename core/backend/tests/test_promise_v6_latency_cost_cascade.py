@@ -13,6 +13,7 @@ latency, cost, redundancy. These tests lock the contracts of:
 No live API calls. This is a pure-function + structural contract
 suite so the doc + scripts can't drift apart silently.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -43,6 +44,7 @@ def _load_module(path: pathlib.Path, name: str):
 # ---------------------------------------------------------------------------
 # 1. latency_benchmark.py contract
 # ---------------------------------------------------------------------------
+
 
 def test_promise_v6_latency_aggregate_handles_empty_anthropic():
     """When ANTHROPIC_API_KEY is absent, every Anthropic sample is an
@@ -79,7 +81,8 @@ def test_promise_v6_latency_percentile_math():
     # Build a fake 5-sample run; P50 of [10,20,30,40,50] = 30.
     samples = [
         {
-            "id": f"id-{i}", "category": "code",
+            "id": f"id-{i}",
+            "category": "code",
             "groq": {"latency_ms": v, "input_tokens": 0, "output_tokens": 0},
             "anthropic": {"latency_ms": v * 5, "input_tokens": 0, "output_tokens": 0},
         }
@@ -95,6 +98,7 @@ def test_promise_v6_latency_percentile_math():
 # ---------------------------------------------------------------------------
 # 2. cost_calculator.py contract
 # ---------------------------------------------------------------------------
+
 
 def test_promise_v6_cost_pricing_table_and_math():
     """Cost arithmetic must match published rates exactly (Sonnet 4.5
@@ -125,13 +129,16 @@ def test_promise_v6_cost_ledger_flags_anthropic_floor_estimate():
     assert ledger["anthropic_estimated_from_groq"] is True
     # 150 in + 500 out per prompt × 1000 prompts × Sonnet pricing
     # = 150_000 * 3/1e6 + 500_000 * 15/1e6 = 0.45 + 7.5 = 7.95
-    assert ledger["monthly_projection_usd"]["1000"]["anthropic_usd"] == pytest.approx(7.95, abs=0.01)
+    assert ledger["monthly_projection_usd"]["1000"]["anthropic_usd"] == pytest.approx(
+        7.95, abs=0.01
+    )
     assert ledger["monthly_projection_usd"]["1000"]["groq_usd"] == 0.0
 
 
 # ---------------------------------------------------------------------------
 # 3. cascade_smoke.py contract — runs end-to-end on stubs
 # ---------------------------------------------------------------------------
+
 
 def test_promise_v6_cascade_smoke_runs_green():
     """Run the cascade smoke as a subprocess; require 7/7 rounds.
@@ -159,13 +166,14 @@ def test_promise_v6_cascade_smoke_runs_green():
 # 4. PROMISE.md v1.3 structural contract
 # ---------------------------------------------------------------------------
 
+
 def test_promise_v6_doc_v13_structure():
     """The PROMISE.md must:
-      - declare itself v1.3
-      - contain the three new section headers
-      - retain the 'What we do NOT claim' retraction paragraph
-      - not contain the deleted 'Quality bar' header or
-        '≥50 % win-rate' claim phrasing
+    - declare itself v1.3
+    - contain the three new section headers
+    - retain the 'What we do NOT claim' retraction paragraph
+    - not contain the deleted 'Quality bar' header or
+      '≥50 % win-rate' claim phrasing
     """
     text = PROMISE_DOC.read_text(encoding="utf-8")
     # Header
@@ -179,7 +187,8 @@ def test_promise_v6_doc_v13_structure():
     # Deleted section / retracted claim
     assert "## Quality bar" not in text, "old 'Quality bar' header must be removed"
     assert "≥50 % win-rate" not in text and "≥50% win-rate" not in text, (
-        "retracted win-rate claim must not reappear")
+        "retracted win-rate claim must not reappear"
+    )
     # Pointers to the three new evidence files
     assert "latency_benchmark.md" in text
     assert "cost_ledger.md" in text

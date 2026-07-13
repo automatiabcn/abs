@@ -11,7 +11,9 @@ from app.meeting.ticket_link import (
 
 
 def test_create_when_no_existing_tickets() -> None:
-    item = ActionItem(text="Send Q3 report", assignee="Ahmet", due_date=None, source_segment=0)
+    item = ActionItem(
+        text="Send Q3 report", assignee="Ahmet", due_date=None, source_segment=0
+    )
     d = decide_ticket_action(item, [])
     assert d.action == "create"
     assert d.target_id is None
@@ -19,7 +21,9 @@ def test_create_when_no_existing_tickets() -> None:
 
 
 def test_update_when_existing_above_threshold() -> None:
-    item = ActionItem(text="Send Q3 report", assignee="Ahmet", due_date=None, source_segment=0)
+    item = ActionItem(
+        text="Send Q3 report", assignee="Ahmet", due_date=None, source_segment=0
+    )
     existing = [
         ExistingTicket(ticket_id="LIN-1", title="Send Q3 report"),
         ExistingTicket(ticket_id="LIN-2", title="Unrelated documentation"),
@@ -31,7 +35,9 @@ def test_update_when_existing_above_threshold() -> None:
 
 
 def test_create_when_existing_below_threshold() -> None:
-    item = ActionItem(text="ABS RAG documentation", assignee="A", due_date=None, source_segment=0)
+    item = ActionItem(
+        text="ABS RAG documentation", assignee="A", due_date=None, source_segment=0
+    )
     existing = [
         ExistingTicket(ticket_id="LIN-9", title="completely unrelated billing change"),
     ]
@@ -41,8 +47,12 @@ def test_create_when_existing_below_threshold() -> None:
 
 def test_link_action_items_summary_counts() -> None:
     items = [
-        ActionItem(text="Send Q3 report", assignee="A", due_date=None, source_segment=0),
-        ActionItem(text="ABS RAG documentation", assignee="B", due_date=None, source_segment=1),
+        ActionItem(
+            text="Send Q3 report", assignee="A", due_date=None, source_segment=0
+        ),
+        ActionItem(
+            text="ABS RAG documentation", assignee="B", due_date=None, source_segment=1
+        ),
     ]
     existing = [ExistingTicket(ticket_id="LIN-1", title="Send Q3 report")]
     decisions = link_action_items(items, existing)

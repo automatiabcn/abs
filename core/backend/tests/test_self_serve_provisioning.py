@@ -6,6 +6,7 @@ session carried a ``tenant_slug`` that pointed at nothing. Now the claim
 idempotently bootstraps Tenant + default Project + owner membership so the new
 signer-upper lands on a working tenant.
 """
+
 from __future__ import annotations
 
 from sqlmodel import Session, select
@@ -48,7 +49,8 @@ def test_ensure_tenant_provisioned_is_idempotent():
 
     # Owner is a project member with the owner role.
     role = pm.get_role(
-        tenant_slug=slug, project_slug="default",
+        tenant_slug=slug,
+        project_slug="default",
         user_subject="owner@prov-unit-co.io",
     )
     assert role == pm.ROLE_OWNER

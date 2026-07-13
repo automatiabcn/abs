@@ -205,7 +205,6 @@ def test_save_cloudflare_persists_account_id(client, monkeypatch):
     """Cloudflare Workers AI needs an account id beside the token. The save
     endpoint must accept `account_id`, apply it to settings, and report the
     provider configured (token + account id)."""
-    from app.api.admin import providers_save
     from app.config import settings
 
     token = _admin_token(client, monkeypatch)

@@ -25,7 +25,9 @@ def _post(client, headers=None):
     )
 
 
-def _checkout_event(event_id: str, email: str = "buyer1@x.co", customer: str = "cus_idem_1"):
+def _checkout_event(
+    event_id: str, email: str = "buyer1@x.co", customer: str = "cus_idem_1"
+):
     return {
         "id": event_id,
         "type": "checkout.session.completed",
@@ -86,7 +88,9 @@ def test_duplicate_refund_does_not_overwrite_revoked_at(client, monkeypatch):
 
     with Session(get_engine()) as s:
         revoked_at_first = (
-            s.scalars(select(License).where(License.jti == "jti_idem_refund")).one().revoked_at
+            s.scalars(select(License).where(License.jti == "jti_idem_refund"))
+            .one()
+            .revoked_at
         )
 
     r2 = _post(client)
@@ -97,7 +101,9 @@ def test_duplicate_refund_does_not_overwrite_revoked_at(client, monkeypatch):
 
     with Session(get_engine()) as s:
         revoked_at_second = (
-            s.scalars(select(License).where(License.jti == "jti_idem_refund")).one().revoked_at
+            s.scalars(select(License).where(License.jti == "jti_idem_refund"))
+            .one()
+            .revoked_at
         )
     assert revoked_at_first == revoked_at_second
 
@@ -132,10 +138,14 @@ def test_webhook_events_table_has_event_type_index():
 def test_claim_event_race_condition_safe():
     """İki claim_event aynı event_id → ikincisi DuplicateEventError raise."""
     with Session(get_engine()) as s:
-        row = claim_event(s, event_id="evt_race_001", event_type="checkout.session.completed")
+        row = claim_event(
+            s, event_id="evt_race_001", event_type="checkout.session.completed"
+        )
         assert isinstance(row, WebhookEvent)
 
     with Session(get_engine()) as s:
         with pytest.raises(DuplicateEventError) as exc_info:
-            claim_event(s, event_id="evt_race_001", event_type="checkout.session.completed")
+            claim_event(
+                s, event_id="evt_race_001", event_type="checkout.session.completed"
+            )
         assert exc_info.value.event_id == "evt_race_001"

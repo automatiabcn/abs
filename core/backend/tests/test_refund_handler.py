@@ -12,7 +12,9 @@ from app.db.models import License
 from app.db.session import get_engine
 
 
-def _seed_license(jti: str, customer_id_stripe: str, customer_email: str = "buyer@x.co") -> License:
+def _seed_license(
+    jti: str, customer_id_stripe: str, customer_email: str = "buyer@x.co"
+) -> License:
     now = datetime.now(timezone.utc)
     row = License(
         jti=jti,

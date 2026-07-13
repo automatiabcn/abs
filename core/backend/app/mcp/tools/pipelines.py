@@ -36,7 +36,9 @@ def _format_meta(result) -> str:
     dropped a step should be visible to whoever reads the output.
     """
     body = result.final_response or ""
-    meta_lines = [f"[pipeline: {result.pipeline_type} · total: {result.total_elapsed_ms}ms]"]
+    meta_lines = [
+        f"[pipeline: {result.pipeline_type} · total: {result.total_elapsed_ms}ms]"
+    ]
     for s in result.steps:
         state = "✓" if s.ok else "✗"
         meta_lines.append(f"  {state} {s.name} · {s.model} · {s.elapsed_ms}ms")
@@ -59,6 +61,7 @@ def _sum_tokens(result) -> tuple[int, int]:
 
 
 # ─── Quality (4) ───────────────────────────────────────────────
+
 
 @mcp_server.tool()
 async def qual_code(prompt: str) -> str:
@@ -98,6 +101,7 @@ async def qual_translate(prompt: str) -> str:
 
 # ─── Race (4) ──────────────────────────────────────────────────
 
+
 @mcp_server.tool()
 async def race(prompt: str) -> str:
     """RACE — gpt-oss-120b vs kimi vs kimi2 in parallel; first success wins."""
@@ -127,6 +131,7 @@ async def race_local(prompt: str) -> str:
 
 
 # ─── Humanize (3) ──────────────────────────────────────────────
+
 
 @mcp_server.tool()
 async def qual_human(prompt: str) -> str:
@@ -160,6 +165,7 @@ async def humanize_score(text: str) -> str:
 
 
 # ─── Auto-Verify (2) ───────────────────────────────────────────
+
 
 @mcp_server.tool()
 async def auto_verify_code(code: str) -> str:

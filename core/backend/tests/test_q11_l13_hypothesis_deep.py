@@ -47,9 +47,7 @@ def _mock_mode(monkeypatch):
     monkeypatch.setenv("ABS_ANTHROPIC_MOCK_MODE", "ok")
     from app.config import settings as app_settings
 
-    monkeypatch.setattr(
-        app_settings, "anthropic_mock_mode", "ok", raising=False
-    )
+    monkeypatch.setattr(app_settings, "anthropic_mock_mode", "ok", raising=False)
 
 
 @pytest.fixture(autouse=True)
@@ -159,9 +157,7 @@ class TestQ11L13ChatCompletionsHypothesis:
             st.text(max_size=10),
         ),
     )
-    def test_no_5xx_on_arbitrary_input(
-        self, admin_client, messages, session_id
-    ):
+    def test_no_5xx_on_arbitrary_input(self, admin_client, messages, session_id):
         body = {"messages": messages}
         if session_id is not None:
             body["session_id"] = session_id
@@ -215,9 +211,7 @@ class TestQ11L13RagQueryHypothesis:
         if rerank is not None:
             body["rerank"] = rerank
         r = admin_client.post("/v1/rag/query", json=body)
-        assert r.status_code != 500, (
-            f"500 on body={body!r}, resp={r.text[:200]}"
-        )
+        assert r.status_code != 500, f"500 on body={body!r}, resp={r.text[:200]}"
         # RAG can also surface 503 when the vector store is mocked off,
         # which is acceptable degraded operation, not a crash.
         assert r.status_code in ACCEPTABLE_STATUS | {503}, (
@@ -257,9 +251,7 @@ class TestQ11L13WorkflowsHypothesis:
         if nl_request is not None:
             body["nl_request"] = nl_request
         r = admin_client.post("/v1/workflows/synthesize", json=body)
-        assert r.status_code != 500, (
-            f"500 on body={body!r}, resp={r.text[:200]}"
-        )
+        assert r.status_code != 500, f"500 on body={body!r}, resp={r.text[:200]}"
         # Workflow synthesizer can return 503 when the LLM backend is
         # offline (CI default), which is acceptable.
         assert r.status_code in ACCEPTABLE_STATUS | {503}, (

@@ -13,7 +13,10 @@ from __future__ import annotations
 from typing import Sequence, Union
 
 revision: str = "0025_merge_agentic_mcp"
-down_revision: Union[str, Sequence[str], None] = ("0024_consent_records", "0020_external_mcp")
+down_revision: Union[str, Sequence[str], None] = (
+    "0024_consent_records",
+    "0020_external_mcp",
+)
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

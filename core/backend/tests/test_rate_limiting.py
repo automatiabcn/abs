@@ -45,8 +45,10 @@ def test_install_rate_limit_idempotent_when_disabled(monkeypatch):
     class _StubApp:
         state = type("S", (), {})()
         added: list = []
+
         def add_exception_handler(self, *a, **kw):
             self.added.append(("handler", a, kw))
+
         def add_middleware(self, *a, **kw):
             self.added.append(("middleware", a, kw))
 

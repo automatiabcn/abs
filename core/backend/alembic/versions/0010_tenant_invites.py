@@ -53,9 +53,7 @@ def upgrade() -> None:
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("accepted_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column(
-            "status", sa.String(20), nullable=False, server_default="pending"
-        ),
+        sa.Column("status", sa.String(20), nullable=False, server_default="pending"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.CheckConstraint(
             "role IN ('admin', 'member', 'operator', 'viewer')",
@@ -72,9 +70,7 @@ def upgrade() -> None:
         ["invite_id"],
         unique=True,
     )
-    op.create_index(
-        "ix_tenant_invites_email", "tenant_invites", ["email"]
-    )
+    op.create_index("ix_tenant_invites_email", "tenant_invites", ["email"])
     op.create_index(
         "ix_tenant_invites_tenant_status",
         "tenant_invites",
@@ -89,12 +85,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_tenant_invites_magic_token_hash", table_name="tenant_invites"
-    )
-    op.drop_index(
-        "ix_tenant_invites_tenant_status", table_name="tenant_invites"
-    )
+    op.drop_index("ix_tenant_invites_magic_token_hash", table_name="tenant_invites")
+    op.drop_index("ix_tenant_invites_tenant_status", table_name="tenant_invites")
     op.drop_index("ix_tenant_invites_email", table_name="tenant_invites")
     op.drop_index("ix_tenant_invites_invite_id", table_name="tenant_invites")
     op.drop_table("tenant_invites")

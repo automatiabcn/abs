@@ -78,8 +78,9 @@ async def test_over_budget_the_user_still_gets_an_answer_and_claude_is_never_cal
 
         async def call(self, prompt, model=None, **kwargs):  # noqa: ANN001
             network["groq_calls"] += 1
-            return ProviderResponse(text="a perfectly good free answer",
-                                    provider="groq", model="llama-free")
+            return ProviderResponse(
+                text="a perfectly good free answer", provider="groq", model="llama-free"
+            )
 
     def _get(name: str):
         return {"anthropic": AnthropicProvider(), "groq": _Groq()}[name]

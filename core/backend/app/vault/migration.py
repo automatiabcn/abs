@@ -97,7 +97,9 @@ def migrate_plaintext_env_to_vault(env_path: Optional[str] = None) -> int:
             new_lines.append(line)
 
     if migrated_count > 0:
-        env_file.write_text("\n".join(new_lines) + ("\n" if new_lines else ""), encoding="utf-8")
+        env_file.write_text(
+            "\n".join(new_lines) + ("\n" if new_lines else ""), encoding="utf-8"
+        )
         log_event(
             "migration_complete",
             "_aggregate",

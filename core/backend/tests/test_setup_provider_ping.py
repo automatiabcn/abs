@@ -15,21 +15,27 @@ from app.api import setup as setup_mod
 @pytest.fixture()
 def _state_with_providers(monkeypatch):
     monkeypatch.setattr(
-        setup_mod, "read_state",
-        lambda: {"data": {
-            "providers_configured": ["groq_api_key", "cf_account_id"],
-            "anthropic_configured": True,
-        }},
+        setup_mod,
+        "read_state",
+        lambda: {
+            "data": {
+                "providers_configured": ["groq_api_key", "cf_account_id"],
+                "anthropic_configured": True,
+            }
+        },
     )
     # default test env sets ABS_TEST_MODE=1 → real pings are skipped; clear it so
     # the live-ping path runs (with a mocked cascade so no real network).
     monkeypatch.delenv("ABS_TEST_MODE", raising=False)
 
 
-async def test_real_ping_marks_ok_and_skips_non_pingable(_state_with_providers, monkeypatch):
+async def test_real_ping_marks_ok_and_skips_non_pingable(
+    _state_with_providers, monkeypatch
+):
     async def _ok_cascade(prompt, **kw):
         class _R:
             text = "pong"
+
         return _R()
 
     monkeypatch.setattr("app.cascade.orchestrator.call_with_cascade", _ok_cascade)
@@ -54,8 +60,14 @@ async def test_failed_ping_is_fail_not_blocking(_state_with_providers, monkeypat
 
 async def test_test_mode_skips_live_ping(monkeypatch):
     monkeypatch.setattr(
-        setup_mod, "read_state",
-        lambda: {"data": {"providers_configured": ["groq_api_key"], "anthropic_configured": False}},
+        setup_mod,
+        "read_state",
+        lambda: {
+            "data": {
+                "providers_configured": ["groq_api_key"],
+                "anthropic_configured": False,
+            }
+        },
     )
     monkeypatch.setenv("ABS_TEST_MODE", "1")
     out = await setup_mod._run_provider_tests()

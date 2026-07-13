@@ -32,7 +32,9 @@ _DESTRUCTIVE_TOOLS: frozenset[str] = frozenset(
         "abs.notion_log",
     }
 )
-_DESTRUCTIVE_HTTP_METHODS: frozenset[str] = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+_DESTRUCTIVE_HTTP_METHODS: frozenset[str] = frozenset(
+    {"POST", "PUT", "PATCH", "DELETE"}
+)
 
 
 @dataclass
@@ -80,7 +82,8 @@ def semantic_check(wf: Workflow) -> tuple[list[str], list[str]]:
     # 2. Tenant boundary on cerbos_check usage.
     if wf.tenant_scoped:
         cerbos_present = any(
-            n.kind == NodeKind.ABS_TOOL and (n.config.tool_name or "").endswith("cerbos_check")
+            n.kind == NodeKind.ABS_TOOL
+            and (n.config.tool_name or "").endswith("cerbos_check")
             for n in wf.nodes
         )
         rag_or_send = any(
@@ -103,9 +106,15 @@ def semantic_check(wf: Workflow) -> tuple[list[str], list[str]]:
 
     for node in wf.nodes:
         is_destructive = False
-        if node.kind == NodeKind.ABS_TOOL and (node.config.tool_name or "") in _DESTRUCTIVE_TOOLS:
+        if (
+            node.kind == NodeKind.ABS_TOOL
+            and (node.config.tool_name or "") in _DESTRUCTIVE_TOOLS
+        ):
             is_destructive = True
-        if node.kind == NodeKind.API_REQUEST and (node.config.method or "GET").upper() in _DESTRUCTIVE_HTTP_METHODS:
+        if (
+            node.kind == NodeKind.API_REQUEST
+            and (node.config.method or "GET").upper() in _DESTRUCTIVE_HTTP_METHODS
+        ):
             is_destructive = True
         if not is_destructive:
             continue

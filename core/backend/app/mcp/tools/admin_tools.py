@@ -28,7 +28,9 @@ async def admin_overview() -> str:
     await tracker.bump("admin_overview")
     from app.api.admin.dashboard import _build_dashboard
 
-    return json.dumps(await _build_dashboard(), indent=2, ensure_ascii=False, default=str)
+    return json.dumps(
+        await _build_dashboard(), indent=2, ensure_ascii=False, default=str
+    )
 
 
 REGISTERED_TOOLS.extend(["admin_overview"])

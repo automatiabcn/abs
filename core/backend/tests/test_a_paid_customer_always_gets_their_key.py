@@ -33,13 +33,17 @@ from app.main import app
 @pytest.fixture
 def signed_in():
     """An admin at the keyboard. The anonymous case is asserted separately."""
-    app.dependency_overrides[admin_required] = lambda: {"sub": "admin@local",
-                                                        "email": "admin@local"}
+    app.dependency_overrides[admin_required] = lambda: {
+        "sub": "admin@local",
+        "email": "admin@local",
+    }
     yield
     app.dependency_overrides.pop(admin_required, None)
 
 
-def test_a_production_server_with_no_mail_server_refuses_rather_than_pretends(monkeypatch):
+def test_a_production_server_with_no_mail_server_refuses_rather_than_pretends(
+    monkeypatch,
+):
     """The console fallback is a development convenience. In production it is the
     product going missing."""
     monkeypatch.setattr(settings, "smtp_host", "", raising=False)
@@ -106,11 +110,17 @@ def test_the_key_can_be_sent_again(client, monkeypatch, signed_in):
 
     now = datetime.now(timezone.utc)
     with Session(get_engine()) as db:
-        db.add(License(
-            jti="jti-resend-1", customer_email="buyer@example.com",
-            customer_id_stripe="cus_1", tier="self-host", seat_count=1,
-            issued_at=now, expires_at=now + timedelta(days=365),
-        ))
+        db.add(
+            License(
+                jti="jti-resend-1",
+                customer_email="buyer@example.com",
+                customer_id_stripe="cus_1",
+                tier="self-host",
+                seat_count=1,
+                issued_at=now,
+                expires_at=now + timedelta(days=365),
+            )
+        )
         db.commit()
 
     r = client.post("/v1/admin/licenses/jti-resend-1/resend")
@@ -137,11 +147,17 @@ def test_a_resend_that_fails_says_so(client, monkeypatch, signed_in):
 
     now = datetime.now(timezone.utc)
     with Session(get_engine()) as db:
-        db.add(License(
-            jti="jti-resend-2", customer_email="b@example.com",
-            customer_id_stripe="cus_2", tier="self-host", seat_count=1,
-            issued_at=now, expires_at=now + timedelta(days=365),
-        ))
+        db.add(
+            License(
+                jti="jti-resend-2",
+                customer_email="b@example.com",
+                customer_id_stripe="cus_2",
+                tier="self-host",
+                seat_count=1,
+                issued_at=now,
+                expires_at=now + timedelta(days=365),
+            )
+        )
         db.commit()
 
     r = client.post("/v1/admin/licenses/jti-resend-2/resend")
@@ -152,9 +168,6 @@ def test_a_resend_that_fails_says_so(client, monkeypatch, signed_in):
 def test_resending_a_licence_that_does_not_exist_is_a_404(client, signed_in):
     r = client.post("/v1/admin/licenses/nope/resend")
     assert r.status_code == 404
-
-
-
 
 
 def test_a_stranger_cannot_have_someone_elses_licence_key_mailed_to_them(client):

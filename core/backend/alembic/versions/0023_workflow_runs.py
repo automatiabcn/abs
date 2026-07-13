@@ -28,7 +28,9 @@ def upgrade() -> None:
     op.create_table(
         "workflow_runs",
         sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("tenant_slug", sa.String(64), nullable=False, server_default="default"),
+        sa.Column(
+            "tenant_slug", sa.String(64), nullable=False, server_default="default"
+        ),
         sa.Column("name", sa.String(200), nullable=False, server_default=""),
         sa.Column("trigger", sa.String(32), nullable=False, server_default="manual"),
         sa.Column("steps_json", sa.Text, nullable=False, server_default="[]"),
@@ -55,7 +57,9 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     if op.get_bind().dialect.name == "postgresql":
-        op.execute("DROP POLICY IF EXISTS workflow_runs_tenant_isolation ON workflow_runs;")
+        op.execute(
+            "DROP POLICY IF EXISTS workflow_runs_tenant_isolation ON workflow_runs;"
+        )
         op.execute("ALTER TABLE workflow_runs NO FORCE ROW LEVEL SECURITY;")
         op.execute("ALTER TABLE workflow_runs DISABLE ROW LEVEL SECURITY;")
     op.drop_table("workflow_runs")

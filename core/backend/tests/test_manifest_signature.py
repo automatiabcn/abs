@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import base64
-import json
 import subprocess
 from pathlib import Path
 
@@ -44,7 +43,7 @@ def _sign_bytes(private_pem: Path, data: bytes) -> str:
     """openssl ile imza al, base64 dondur."""
     sig_path = private_pem.parent / "sig.bin"
     sig_path.write_bytes(b"")
-    p = subprocess.run(
+    subprocess.run(
         [
             "openssl",
             "dgst",
@@ -95,7 +94,9 @@ async def test_fetch_manifest_rejects_unsigned_when_required(monkeypatch, tmp_pa
     from app.update.manifest import fetch_manifest, update_state
 
     monkeypatch.setattr(settings, "data_dir", str(tmp_path))
-    monkeypatch.setattr(settings, "update_manifest_url", "https://abs.local/manifest.json")
+    monkeypatch.setattr(
+        settings, "update_manifest_url", "https://abs.local/manifest.json"
+    )
     monkeypatch.setattr(settings, "update_signature_required", True)
     respx.get("https://abs.local/manifest.json").mock(
         return_value=httpx.Response(200, json={"current_version": "0.2.0"})
@@ -119,7 +120,9 @@ async def test_fetch_manifest_skips_verify_when_disabled(monkeypatch, tmp_path):
     from app.update.manifest import fetch_manifest
 
     monkeypatch.setattr(settings, "data_dir", str(tmp_path))
-    monkeypatch.setattr(settings, "update_manifest_url", "https://abs.local/manifest.json")
+    monkeypatch.setattr(
+        settings, "update_manifest_url", "https://abs.local/manifest.json"
+    )
     monkeypatch.setattr(settings, "update_signature_required", False)
     respx.get("https://abs.local/manifest.json").mock(
         return_value=httpx.Response(200, json={"current_version": "0.2.0"})

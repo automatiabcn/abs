@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 
 def _write_yaml(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")

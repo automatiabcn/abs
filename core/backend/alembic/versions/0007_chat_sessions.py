@@ -43,15 +43,9 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime, nullable=False),
         sa.Column("updated_at", sa.DateTime, nullable=False),
     )
-    op.create_index(
-        "ix_chat_sessions_tenant_slug", "chat_sessions", ["tenant_slug"]
-    )
-    op.create_index(
-        "ix_chat_sessions_user_email", "chat_sessions", ["user_email"]
-    )
-    op.create_index(
-        "ix_chat_sessions_created_at", "chat_sessions", ["created_at"]
-    )
+    op.create_index("ix_chat_sessions_tenant_slug", "chat_sessions", ["tenant_slug"])
+    op.create_index("ix_chat_sessions_user_email", "chat_sessions", ["user_email"])
+    op.create_index("ix_chat_sessions_created_at", "chat_sessions", ["created_at"])
 
     op.create_table(
         "chat_messages",
@@ -65,12 +59,8 @@ def upgrade() -> None:
         sa.Column("latency_ms", sa.Integer, nullable=True),
         sa.Column("created_at", sa.DateTime, nullable=False),
     )
-    op.create_index(
-        "ix_chat_messages_session_id", "chat_messages", ["session_id"]
-    )
-    op.create_index(
-        "ix_chat_messages_created_at", "chat_messages", ["created_at"]
-    )
+    op.create_index("ix_chat_messages_session_id", "chat_messages", ["session_id"])
+    op.create_index("ix_chat_messages_created_at", "chat_messages", ["created_at"])
 
 
 def downgrade() -> None:

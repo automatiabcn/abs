@@ -53,9 +53,7 @@ class RetentionPlan:
 
 
 def _hmac(secret: str, message: bytes) -> str:
-    return hmac.new(
-        secret.encode("utf-8"), message, hashlib.sha256
-    ).hexdigest()
+    return hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
 
 
 class AuditChain:

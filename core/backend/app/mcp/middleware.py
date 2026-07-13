@@ -40,7 +40,9 @@ def _extract_input_for_hooks(tool_name: str, args: tuple, kwargs: dict) -> dict:
     if args:
         prompt_val = args[0]
     else:
-        prompt_val = kwargs.get("prompt") or kwargs.get("text") or kwargs.get("code") or ""
+        prompt_val = (
+            kwargs.get("prompt") or kwargs.get("text") or kwargs.get("code") or ""
+        )
     return {"prompt": prompt_val if isinstance(prompt_val, str) else ""}
 
 

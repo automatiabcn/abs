@@ -158,7 +158,8 @@ def _client_ctx(url: str, transport: str, headers: dict):
 
         return sse_client(url, headers=headers, timeout=timeout)
     # default: streamable-http
-    from mcp.client.streamable_http import streamablehttp_client  # noqa: deprecation
+    # (`deprecation` is not a lint code — this was never a suppression, just a note.)
+    from mcp.client.streamable_http import streamablehttp_client
 
     return streamablehttp_client(url, headers=headers, timeout=timeout)
 
@@ -254,7 +255,7 @@ async def call_external_tool(
     async def _call(session) -> dict:
         res = await session.call_tool(tool_name, arguments or {})
         text = ""
-        for block in (res.content or []):
+        for block in res.content or []:
             text += getattr(block, "text", "") or ""
             if len(text) >= _MAX_RESULT_CHARS:
                 text = text[:_MAX_RESULT_CHARS] + "\n…[truncated]"

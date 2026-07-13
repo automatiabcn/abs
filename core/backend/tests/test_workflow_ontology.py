@@ -143,7 +143,10 @@ def test_build_simple_chain_links_nodes():
     ]
     tmpl = build_simple_chain("demo", "Demo EN", "Demo TR", "Demo ES", trig, nodes)
     edges = tmpl.workflow.edges
-    assert [(e.source, e.target) for e in edges] == [("step-a", "step-b"), ("step-b", "step-c")]
+    assert [(e.source, e.target) for e in edges] == [
+        ("step-a", "step-b"),
+        ("step-b", "step-c"),
+    ]
     assert all(e.kind == EdgeKind.SUCCESS for e in edges)
 
 

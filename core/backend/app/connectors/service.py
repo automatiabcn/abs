@@ -34,8 +34,9 @@ def _now() -> datetime:
 def _states(tenant_slug: str) -> Dict[str, ConnectorState]:
     with Session(get_engine()) as db:
         rows = list(
-            db.exec(select(ConnectorState).where(
-                ConnectorState.tenant_slug == tenant_slug))
+            db.exec(
+                select(ConnectorState).where(ConnectorState.tenant_slug == tenant_slug)
+            )
         )
     return {r.connector_id: r for r in rows}
 
@@ -49,8 +50,13 @@ def _adapter_meta(connector_id: str) -> dict:
         "has_adapter": True,
         "auth_kind": adp.auth_kind,
         "credential_fields": [
-            {"key": f.key, "label": f.label, "type": f.type,
-             "placeholder": f.placeholder, "required": f.required}
+            {
+                "key": f.key,
+                "label": f.label,
+                "type": f.type,
+                "placeholder": f.placeholder,
+                "required": f.required,
+            }
             for f in adp.credential_fields
         ],
     }
@@ -69,7 +75,9 @@ def list_connectors(*, tenant_slug: str) -> Dict[str, Any]:
             d = c.to_dict()
             d["status"] = st.status if st else "available"
             d["health"] = st.health if st else None
-            d["last_sync_at"] = st.last_sync_at.isoformat() if st and st.last_sync_at else None
+            d["last_sync_at"] = (
+                st.last_sync_at.isoformat() if st and st.last_sync_at else None
+            )
             d["last_sync_count"] = st.last_sync_count if st else 0
             d["last_error"] = st.last_error if st else None
             d.update(_adapter_meta(c.id))
@@ -77,8 +85,11 @@ def list_connectors(*, tenant_slug: str) -> Dict[str, Any]:
                 connected += 1
             items.append(d)
         groups.append({"key": g, "label": label, "connectors": items})
-    return {"groups": groups, "connected_total": connected,
-            "catalog_total": sum(len(c) for _, _, c in grouped())}
+    return {
+        "groups": groups,
+        "connected_total": connected,
+        "catalog_total": sum(len(c) for _, _, c in grouped()),
+    }
 
 
 def connector_fields(connector_id: str) -> Optional[dict]:
@@ -88,7 +99,9 @@ def connector_fields(connector_id: str) -> Optional[dict]:
     return {"connector_id": connector_id, **_adapter_meta(connector_id)}
 
 
-def _get_row(db: Session, tenant_slug: str, connector_id: str) -> Optional[ConnectorState]:
+def _get_row(
+    db: Session, tenant_slug: str, connector_id: str
+) -> Optional[ConnectorState]:
     return db.exec(
         select(ConnectorState).where(
             ConnectorState.tenant_slug == tenant_slug,
@@ -111,32 +124,47 @@ async def connect(
     if adp is not None:
         ok, msg = await adp.test_connection(credentials)
         if not ok:
-            return {"connector_id": connector_id, "status": "error", "ok": False, "error": msg}
+            return {
+                "connector_id": connector_id,
+                "status": "error",
+                "ok": False,
+                "error": msg,
+            }
         with Session(get_engine()) as db:
             row = _get_row(db, tenant_slug, connector_id) or ConnectorState(
-                tenant_slug=tenant_slug, connector_id=connector_id)
+                tenant_slug=tenant_slug, connector_id=connector_id
+            )
             row.status = "connected"
             row.health = 100
             row.connected_at = _now()
             row.auth_kind = adp.auth_kind
             # file-uploaded data is imported, not stored as a standing credential
             row.encrypted_credentials = (
-                "" if adp.auth_kind == "file" else encrypt_secret_value(json.dumps(credentials))
+                ""
+                if adp.auth_kind == "file"
+                else encrypt_secret_value(json.dumps(credentials))
             )
             row.last_error = None
             db.add(row)
             db.commit()
         sync_res = await sync(
-            tenant_slug=tenant_slug, connector_id=connector_id,
+            tenant_slug=tenant_slug,
+            connector_id=connector_id,
             credentials_override=credentials,
         )
-        return {"connector_id": connector_id, "status": "connected", "ok": True,
-                "test_message": msg, "sync": sync_res}
+        return {
+            "connector_id": connector_id,
+            "status": "connected",
+            "ok": True,
+            "test_message": msg,
+            "sync": sync_res,
+        }
 
     # legacy flag-only
     with Session(get_engine()) as db:
         row = _get_row(db, tenant_slug, connector_id) or ConnectorState(
-            tenant_slug=tenant_slug, connector_id=connector_id)
+            tenant_slug=tenant_slug, connector_id=connector_id
+        )
         row.status = "connected"
         row.health = 100
         row.connected_at = _now()
@@ -199,4 +227,11 @@ def disconnect(*, tenant_slug: str, connector_id: str) -> Optional[dict]:
 
 
 # keep has_adapter importable from the service namespace
-__all__ = ["list_connectors", "connect", "disconnect", "sync", "connector_fields", "has_adapter"]
+__all__ = [
+    "list_connectors",
+    "connect",
+    "disconnect",
+    "sync",
+    "connector_fields",
+    "has_adapter",
+]

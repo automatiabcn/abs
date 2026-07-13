@@ -30,14 +30,22 @@ async def test_connector_node_runs_real_sync(monkeypatch):
     graph = {
         "nodes": [
             {"id": "trg", "kind": "trigger", "name": "Start"},
-            {"id": "cx", "kind": "connector", "name": "HubSpot",
-             "config": {"connector_id": "hubspot"}},
+            {
+                "id": "cx",
+                "kind": "connector",
+                "name": "HubSpot",
+                "config": {"connector_id": "hubspot"},
+            },
         ],
         "edges": [{"source": "trg", "target": "cx"}],
     }
     out = await run_workflow_graph(
-        tenant_slug="tC", name="Connector run", graph=graph,
-        input_text="", trigger="manual", actor="a@x.io",
+        tenant_slug="tC",
+        name="Connector run",
+        graph=graph,
+        input_text="",
+        trigger="manual",
+        actor="a@x.io",
     )
     assert calls == {"tenant": "tC", "connector_id": "hubspot"}
     cx = next(r for r in out["results"] if r.get("kind") == "connector")
@@ -54,14 +62,23 @@ async def test_connector_node_dry_run_does_not_sync(monkeypatch):
     graph = {
         "nodes": [
             {"id": "trg", "kind": "trigger", "name": "Start"},
-            {"id": "cx", "kind": "connector", "name": "HubSpot",
-             "config": {"connector_id": "hubspot"}},
+            {
+                "id": "cx",
+                "kind": "connector",
+                "name": "HubSpot",
+                "config": {"connector_id": "hubspot"},
+            },
         ],
         "edges": [{"source": "trg", "target": "cx"}],
     }
     out = await run_workflow_graph(
-        tenant_slug="tC", name="Preview", graph=graph, input_text="",
-        trigger="manual", actor="a@x.io", dry_run=True,
+        tenant_slug="tC",
+        name="Preview",
+        graph=graph,
+        input_text="",
+        trigger="manual",
+        actor="a@x.io",
+        dry_run=True,
     )
     cx = next(r for r in out["results"] if r.get("kind") == "connector")
     assert cx["status"] == "preview"
@@ -76,8 +93,12 @@ async def test_connector_without_id_is_skipped_and_partial():
         "edges": [{"source": "trg", "target": "cx"}],
     }
     out = await run_workflow_graph(
-        tenant_slug="tC", name="No id", graph=graph, input_text="",
-        trigger="manual", actor="a@x.io",
+        tenant_slug="tC",
+        name="No id",
+        graph=graph,
+        input_text="",
+        trigger="manual",
+        actor="a@x.io",
     )
     cx = next(r for r in out["results"] if r.get("kind") == "connector")
     assert cx["status"] == "skipped"
@@ -96,8 +117,12 @@ async def test_unimplemented_kind_is_honest_not_false_green(kind):
         "edges": [{"source": "trg", "target": "x"}],
     }
     out = await run_workflow_graph(
-        tenant_slug="tX", name="Honest", graph=graph, input_text="",
-        trigger="manual", actor="a@x.io",
+        tenant_slug="tX",
+        name="Honest",
+        graph=graph,
+        input_text="",
+        trigger="manual",
+        actor="a@x.io",
     )
     node = next(r for r in out["results"] if r.get("kind") == kind)
     assert node["status"] == "skipped"

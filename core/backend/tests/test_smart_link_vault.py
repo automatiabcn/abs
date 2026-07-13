@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 
 from sqlmodel import Session, select
 
@@ -59,7 +58,9 @@ def test_rotate_replaces_value_and_audit_log():
 
 def test_list_secrets_does_not_expose_plaintext():
     _purge()
-    encrypt_secret(key_name="anth_test", provider="anthropic", value="sk-ant-secret-xyz-123")
+    encrypt_secret(
+        key_name="anth_test", provider="anthropic", value="sk-ant-secret-xyz-123"
+    )
     rows = list_secrets()
     assert len(rows) == 1
     keys = set(rows[0].keys())

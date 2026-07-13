@@ -125,9 +125,7 @@ def _apply_provider_keys(monkeypatch, overrides: dict[str, str]) -> None:
         monkeypatch.setattr(settings, attr, value, raising=False)
 
 
-@pytest.mark.parametrize(
-    "scenario, expected_active, expected_configured", SCENARIOS
-)
+@pytest.mark.parametrize("scenario, expected_active, expected_configured", SCENARIOS)
 def test_provider_degradation_matrix(
     admin_client, monkeypatch, scenario, expected_active, expected_configured
 ):
@@ -167,9 +165,7 @@ def test_provider_degradation_matrix(
             tokens_out=3,
         )
 
-    monkeypatch.setattr(
-        "app.api.cascade.call_with_cascade", _fake_call
-    )
+    monkeypatch.setattr("app.api.cascade.call_with_cascade", _fake_call)
 
     run = admin_client.post(
         "/v1/cascade/run",

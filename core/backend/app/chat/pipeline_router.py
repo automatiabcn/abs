@@ -41,7 +41,9 @@ PIPELINE_OPTIONS: Final[tuple[PipelineId, ...]] = (
     "race_code",
 )
 
-_TR_DIACRITIC_RX = re.compile(r"[\u0131\u011f\u00fc\u015f\u00f6\u00e7\u011e\u00dc\u015e\u00d6\u00c7\u0130]")
+_TR_DIACRITIC_RX = re.compile(
+    r"[\u0131\u011f\u00fc\u015f\u00f6\u00e7\u011e\u00dc\u015e\u00d6\u00c7\u0130]"
+)
 _CODE_RX = re.compile(
     r"\b(kod|code|fonksiyon|function|class|api|endpoint|debug|hata|stack\s*trace|"
     r"bug|exception|tipe?|typescript|python|rust|golang|java|c\+\+)\b",
@@ -49,7 +51,7 @@ _CODE_RX = re.compile(
 )
 _TRANSLATE_RX = re.compile(
     r"\b("
-    r"\u00e7evir|cevir|"           # TR + ASCII-folded
+    r"\u00e7evir|cevir|"  # TR + ASCII-folded
     r"terc\u00fcme|tercume|"
     r"translate|translation"
     r")\b",

@@ -36,15 +36,11 @@ def _wipe_default_tenant_chat_state():
 
     with Session(get_engine()) as db:
         leftover = db.exec(
-            select(ChatSession).where(
-                ChatSession.tenant_slug == "default"
-            )
+            select(ChatSession).where(ChatSession.tenant_slug == "default")
         ).all()
         for sess in leftover:
             for msg in db.exec(
-                select(ChatMessage).where(
-                    ChatMessage.session_id == sess.id
-                )
+                select(ChatMessage).where(ChatMessage.session_id == sess.id)
             ).all():
                 db.delete(msg)
             db.delete(sess)
@@ -88,12 +84,8 @@ def test_chat_create_session_default_title(auth_client):
 
 
 def test_chat_rename_session(auth_client):
-    sid = auth_client.post(
-        "/v1/chat/sessions", json={"title": "Old"}
-    ).json()["id"]
-    r = auth_client.patch(
-        f"/v1/chat/sessions/{sid}", json={"title": "New title"}
-    )
+    sid = auth_client.post("/v1/chat/sessions", json={"title": "Old"}).json()["id"]
+    r = auth_client.patch(f"/v1/chat/sessions/{sid}", json={"title": "New title"})
     assert r.status_code == 200
     assert r.json()["title"] == "New title"
 
@@ -136,7 +128,7 @@ def _parse_sse(body: bytes) -> list[dict]:
     for line in body.decode("utf-8").splitlines():
         if not line.startswith("data: "):
             continue
-        payload = line[len("data: "):]
+        payload = line[len("data: ") :]
         if payload == "[DONE]":
             events.append({"type": "_done"})
             continue
@@ -187,9 +179,7 @@ def test_chat_completion_slash_rag_emits_tool_events(auth_client):
 
 
 def test_chat_completion_continues_existing_session(auth_client):
-    sid = auth_client.post(
-        "/v1/chat/sessions", json={"title": "Devam"}
-    ).json()["id"]
+    sid = auth_client.post("/v1/chat/sessions", json={"title": "Devam"}).json()["id"]
     r = auth_client.post(
         "/v1/chat/completions",
         json={

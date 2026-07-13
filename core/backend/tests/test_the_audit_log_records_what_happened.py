@@ -70,8 +70,13 @@ def test_an_event_that_is_emitted_can_afterwards_be_read_back():
 
 
 def test_the_recorded_event_is_signed_and_the_chain_still_verifies():
-    emit_event(None, action="provider_key.set", outcome="success",
-               user_id="alice@example.com", provider="groq")
+    emit_event(
+        None,
+        action="provider_key.set",
+        outcome="success",
+        user_id="alice@example.com",
+        provider="groq",
+    )
 
     entry = _rows()[-1]
     assert entry.hmac, "the entry was stored unsigned — it proves nothing"
@@ -97,8 +102,12 @@ def test_a_verifier_that_checked_nothing_does_not_get_to_say_intact():
 
 def test_tampering_with_a_stored_row_is_caught():
     """If this fails, the chain is decoration."""
-    append_entry(action="vault.secret.read", actor="alice@example.com",
-                 target_key="VAULT/groq_api_key", detail="before")
+    append_entry(
+        action="vault.secret.read",
+        actor="alice@example.com",
+        target_key="VAULT/groq_api_key",
+        detail="before",
+    )
     target = _rows()[-1]
 
     original = target.detail
@@ -144,8 +153,13 @@ def test_two_events_at_once_do_not_frame_the_log_for_tampering():
 
     def emit(i: int) -> None:
         try:
-            emit_event(None, action="approval.decide", outcome="success",
-                       user_id=f"admin{i}@example.com", resource_id=str(i))
+            emit_event(
+                None,
+                action="approval.decide",
+                outcome="success",
+                user_id=f"admin{i}@example.com",
+                resource_id=str(i),
+            )
         except Exception as exc:  # noqa: BLE001
             errors.append(exc)
 
@@ -186,19 +200,19 @@ def test_a_broken_audit_write_never_takes_the_request_down(monkeypatch, caplog):
     def explode(**_kwargs):
         raise RuntimeError("database is on fire")
 
-    monkeypatch.setattr(
-        "app.vault.audit_chain.append_entry", explode, raising=True
-    )
+    monkeypatch.setattr("app.vault.audit_chain.append_entry", explode, raising=True)
 
     with caplog.at_level("WARNING", logger=audit_module.LOGGER_NAME):
         emit_event(None, action="auth.login", outcome="success", user_id="a@b.co")
 
-    assert any(
-        "could not be recorded" in r.message for r in caplog.records
-    ), "the audit write failed and said nothing — which is the original sin here"
+    assert any("could not be recorded" in r.message for r in caplog.records), (
+        "the audit write failed and said nothing — which is the original sin here"
+    )
 
 
-def test_a_broken_recorder_complains_every_time_but_only_floods_once(monkeypatch, caplog):
+def test_a_broken_recorder_complains_every_time_but_only_floods_once(
+    monkeypatch, caplog
+):
     """Loud on every event, but the traceback only once.
 
     If the database goes away, this fires on every request. A full traceback per
@@ -217,8 +231,12 @@ def test_a_broken_recorder_complains_every_time_but_only_floods_once(monkeypatch
 
     with caplog.at_level("WARNING", logger=audit_module.LOGGER_NAME):
         for i in range(4):
-            emit_event(None, action="auth.login", outcome="success",
-                       user_id=f"u{i}@example.com")
+            emit_event(
+                None,
+                action="auth.login",
+                outcome="success",
+                user_id=f"u{i}@example.com",
+            )
 
     complaints = [r for r in caplog.records if "could not be recorded" in r.message]
     assert len(complaints) == 4, "a failed audit write went unreported"
@@ -260,8 +278,9 @@ def test_the_consequential_actions_are_the_ones_being_recorded(action, extra):
     server. Deleting one is taking it off. None of them wrote a line.
     """
     before = len(_rows())
-    emit_event(None, action=action, outcome="success",
-               user_id="alice@example.com", **extra)
+    emit_event(
+        None, action=action, outcome="success", user_id="alice@example.com", **extra
+    )
     rows = _rows()
     assert len(rows) == before + 1
     assert rows[-1].action == action

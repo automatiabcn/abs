@@ -146,9 +146,7 @@ async def subscribe(
             if manual_ack:
                 await msg.ack()
         except Exception as exc:  # noqa: BLE001 — bus boundary
-            logger.error(
-                "Handler failed for %s: %s", subject, exc, exc_info=True
-            )
+            logger.error("Handler failed for %s: %s", subject, exc, exc_info=True)
             if manual_ack:
                 try:
                     await msg.nak()

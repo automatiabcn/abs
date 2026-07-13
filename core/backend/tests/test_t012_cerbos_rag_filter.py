@@ -20,9 +20,11 @@ from app.main import app
 
 
 def _challenge(verifier: str) -> str:
-    return base64.urlsafe_b64encode(
-        hashlib.sha256(verifier.encode("ascii")).digest()
-    ).rstrip(b"=").decode("ascii")
+    return (
+        base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode("ascii")
+    )
 
 
 def _seed_client(client_id: str) -> None:
@@ -89,9 +91,7 @@ class _ScriptedCerbos:
     def check_resources(self, *, principal, resources):  # noqa: ANN001
         self.calls.append((principal, resources))
         entry = SimpleNamespace(is_allowed=lambda action: self.allow)
-        return SimpleNamespace(
-            results=[entry], failed=lambda: False, status_code=200
-        )
+        return SimpleNamespace(results=[entry], failed=lambda: False, status_code=200)
 
     def close(self) -> None:
         return None

@@ -133,9 +133,7 @@ class _RagasBackend:
                 Faithfulness,
             )
         except ImportError as exc:
-            raise ImportError(
-                "ragas backend requires `pip install ragas`"
-            ) from exc
+            raise ImportError("ragas backend requires `pip install ragas`") from exc
         from ragas import evaluate as _ev
         from ragas.metrics import (
             AnswerRelevancy,
@@ -245,7 +243,12 @@ def regression_check(
     failures: list[str] = []
     # 1e-9 tolerance absorbs FP rounding (0.9 - 0.85 == 0.05000000000000004).
     epsilon = 1e-9
-    for name in ("faithfulness", "answer_relevance", "context_precision", "context_recall"):
+    for name in (
+        "faithfulness",
+        "answer_relevance",
+        "context_precision",
+        "context_recall",
+    ):
         cur = float(getattr(current, name))
         base = float(getattr(baseline, name))
         if base - cur > max_drop + epsilon:

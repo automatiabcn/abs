@@ -171,4 +171,6 @@ def test_0014_downgrade_drops_column(fresh_db: tuple[Path, str]) -> None:
 
     for table in TABLES:
         cols = _columns(db_path, table)
-        assert "tenant_id" not in cols, f"{table} kept tenant_id after downgrade ({cols})"
+        assert "tenant_id" not in cols, (
+            f"{table} kept tenant_id after downgrade ({cols})"
+        )

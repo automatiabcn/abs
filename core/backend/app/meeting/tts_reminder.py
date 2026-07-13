@@ -94,7 +94,9 @@ class _CoquiBackend:
 
     name = "coqui"
 
-    def __init__(self, *, model_path: str, voice_id: str, speaker_wav: str | None) -> None:
+    def __init__(
+        self, *, model_path: str, voice_id: str, speaker_wav: str | None
+    ) -> None:
         try:
             from TTS.api import TTS  # type: ignore[import-not-found]
         except Exception as exc:  # pragma: no cover — env-dependent
@@ -113,7 +115,9 @@ class _CoquiBackend:
             self._tts = self._TTS(self.model_path)
         return self._tts
 
-    def synthesize(self, text: str, *, target_dir: Path) -> ReminderResult:  # pragma: no cover
+    def synthesize(
+        self, text: str, *, target_dir: Path
+    ) -> ReminderResult:  # pragma: no cover
         target_dir.mkdir(parents=True, exist_ok=True)
         path = target_dir / f"reminder_{uuid.uuid4().hex[:8]}.wav"
         kwargs: dict = {"text": text, "file_path": str(path), "language": "tr"}
@@ -155,7 +159,9 @@ class _PiperBackend:
             self._voice = self._PiperVoice.load(self.voice_path)
         return self._voice
 
-    def synthesize(self, text: str, *, target_dir: Path) -> ReminderResult:  # pragma: no cover
+    def synthesize(
+        self, text: str, *, target_dir: Path
+    ) -> ReminderResult:  # pragma: no cover
         import wave
 
         target_dir.mkdir(parents=True, exist_ok=True)

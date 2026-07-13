@@ -36,11 +36,13 @@ class Company(SQLModel, table=True):
     sector: str = Field(default="", max_length=96)
     location: str = Field(default="", max_length=128)
     size: str = Field(default="", max_length=32)
-    source: str = Field(default="", max_length=64)            # erp|crm|web|manual
-    lifecycle: str = Field(default="lead", max_length=24)     # lead|opportunity|customer|partner
+    source: str = Field(default="", max_length=64)  # erp|crm|web|manual
+    lifecycle: str = Field(
+        default="lead", max_length=24
+    )  # lead|opportunity|customer|partner
     score: float = Field(default=0.0)
     canonical: bool = Field(default=True)
-    merged_count: int = Field(default=1)                      # source records merged
+    merged_count: int = Field(default=1)  # source records merged
     match_confidence: float = Field(default=1.0)
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
@@ -57,8 +59,8 @@ class Contact(SQLModel, table=True):
     name: str = Field(max_length=160)
     email: Optional[str] = Field(default=None, max_length=254, index=True)
     phone: Optional[str] = Field(default=None, max_length=48)
-    role: str = Field(default="", max_length=96)             # decision_maker|influencer|...
-    consent_status: str = Field(default="", max_length=32)   # opt-in|opt-out|unknown
+    role: str = Field(default="", max_length=96)  # decision_maker|influencer|...
+    consent_status: str = Field(default="", max_length=32)  # opt-in|opt-out|unknown
     created_at: datetime = Field(default_factory=_now)
 
 
@@ -71,11 +73,13 @@ class Lead(SQLModel, table=True):
     tenant_slug: str = Field(max_length=64, index=True, default="default")
     company_id: Optional[int] = Field(default=None, index=True)
     source: str = Field(default="", max_length=64)
-    intent: str = Field(default="watching", max_length=24)   # high|medium|watching
+    intent: str = Field(default="watching", max_length=24)  # high|medium|watching
     score: float = Field(default=0.0, index=True)
-    score_json: str = Field(default="{}")                    # 15-criterion breakdown
-    evidence_json: str = Field(default="[]")                 # top-3 evidence
-    status: str = Field(default="new", max_length=24, index=True)  # new|enriching|scored|engaged|won|lost
+    score_json: str = Field(default="{}")  # 15-criterion breakdown
+    evidence_json: str = Field(default="[]")  # top-3 evidence
+    status: str = Field(
+        default="new", max_length=24, index=True
+    )  # new|enriching|scored|engaged|won|lost
     owner: str = Field(default="", max_length=254)
     consent_status: str = Field(default="", max_length=32)
     created_at: datetime = Field(default_factory=_now)
@@ -100,10 +104,10 @@ class ConsentRecord(SQLModel, table=True):
     sms_consent: bool = Field(default=False)
     whatsapp_consent: bool = Field(default=False)
     do_not_call: bool = Field(default=False)
-    opt_in_source: str = Field(default="", max_length=64)   # web_form|IYS|import|...
+    opt_in_source: str = Field(default="", max_length=64)  # web_form|IYS|import|...
     opt_in_at: Optional[datetime] = Field(default=None)
     opt_out_at: Optional[datetime] = Field(default=None)
-    legal_basis: str = Field(default="", max_length=48)     # consent|legitimate_interest
+    legal_basis: str = Field(default="", max_length=48)  # consent|legitimate_interest
     consent_evidence: str = Field(default="", max_length=512)
     updated_at: datetime = Field(default_factory=_now)
 
@@ -121,8 +125,8 @@ class WorkflowRun(SQLModel, table=True):
     tenant_slug: str = Field(max_length=64, index=True, default="default")
     name: str = Field(default="", max_length=200)
     trigger: str = Field(default="manual", max_length=32)
-    steps_json: str = Field(default="[]")          # ordered agent_ids
-    result_json: str = Field(default="[]")         # per-step results
+    steps_json: str = Field(default="[]")  # ordered agent_ids
+    result_json: str = Field(default="[]")  # per-step results
     status: str = Field(default="done", max_length=16, index=True)  # done|partial|error
     step_count: int = Field(default=0)
     approvals_opened: int = Field(default=0)
@@ -139,13 +143,13 @@ class ConnectorState(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     tenant_slug: str = Field(max_length=64, index=True, default="default")
     connector_id: str = Field(max_length=48, index=True)
-    status: str = Field(default="connected", max_length=16)   # connected|available|error
-    health: int = Field(default=100)                          # 0..100
+    status: str = Field(default="connected", max_length=16)  # connected|available|error
+    health: int = Field(default=100)  # 0..100
     connected_at: datetime = Field(default_factory=_now)
     last_sync_at: Optional[datetime] = Field(default=None)
     # Stage A — real integration: how the tenant authenticated + the encrypted
     # credential blob (Fernet, app.multitenant.crypto), the last sync outcome.
-    auth_kind: str = Field(default="none", max_length=16)     # none|api_key|oauth|file
+    auth_kind: str = Field(default="none", max_length=16)  # none|api_key|oauth|file
     encrypted_credentials: str = Field(default="", max_length=8192)
     last_sync_count: int = Field(default=0)
     last_error: Optional[str] = Field(default=None, max_length=512)
@@ -175,7 +179,9 @@ class ActionExecution(SQLModel, table=True):
     target_company: str = Field(default="", max_length=256)
     target_contact: str = Field(default="", max_length=254)
     message: str = Field(default="", max_length=2048)
-    status: str = Field(default="executed", max_length=16, index=True)  # executed|sent|blocked|failed
+    status: str = Field(
+        default="executed", max_length=16, index=True
+    )  # executed|sent|blocked|failed
     reason: str = Field(default="", max_length=256)
     created_at: datetime = Field(default_factory=_now, index=True)
 
@@ -194,7 +200,7 @@ class AgenticWorkflowDef(SQLModel, table=True):
     tenant_slug: str = Field(max_length=64, index=True, default="default")
     key: str = Field(max_length=64, default="default", index=True)
     name: str = Field(default="", max_length=200)
-    graph_json: str = Field(default="{}")           # {nodes:[...], edges:[...]}
+    graph_json: str = Field(default="{}")  # {nodes:[...], edges:[...]}
     updated_at: datetime = Field(default_factory=_now)
 
 
@@ -210,5 +216,5 @@ class Opportunity(SQLModel, table=True):
     stage: str = Field(default="lead", max_length=32, index=True)
     amount: float = Field(default=0.0)
     currency: str = Field(default="TRY", max_length=8)
-    campaign: str = Field(default="", max_length=128)        # attribution link
+    campaign: str = Field(default="", max_length=128)  # attribution link
     created_at: datetime = Field(default_factory=_now)

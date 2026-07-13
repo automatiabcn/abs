@@ -8,6 +8,7 @@ parçalarının yerinde olduğunu CI'da doğrulamak.
 
 Sprint 2M bug log: #2M-026
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -41,9 +42,9 @@ def test_customer_compose_has_postgres_service() -> None:
     assert "healthcheck" in pg
     assert "pg_isready" in str(pg["healthcheck"])
     # Named volume for persistence.
-    assert any(
-        "abs-postgres-data" in str(v) for v in pg.get("volumes", [])
-    ), "postgres data must persist in abs-postgres-data volume"
+    assert any("abs-postgres-data" in str(v) for v in pg.get("volumes", [])), (
+        "postgres data must persist in abs-postgres-data volume"
+    )
 
 
 def test_customer_compose_backend_depends_on_postgres_healthy() -> None:

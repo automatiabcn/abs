@@ -62,9 +62,7 @@ def _describe(name: str, args: Dict[str, Any]) -> str:
         return f"Run a command on the server: {args.get('command', '')}"[:1024]
     if name == "fs_write":
         content = str(args.get("content") or "")
-        return (
-            f"Write {len(content)} characters to {args.get('path', '')}"
-        )[:1024]
+        return (f"Write {len(content)} characters to {args.get('path', '')}")[:1024]
     return f"Run the tool '{name}'"[:1024]
 
 
@@ -85,11 +83,15 @@ def request_tool_approval(
         # Who was talking to the assistant when it asked. The queue is read by a
         # person deciding whether this was a reasonable thing to want.
         target_person=(requester or "")[:256],
-        rationale=(rationale or "The assistant asked to do this while answering a question.")[:4096],
+        rationale=(
+            rationale or "The assistant asked to do this while answering a question."
+        )[:4096],
         # The call itself, stored verbatim. The executor runs *this*, not the
         # human-readable summary above — a description drifting from the payload
         # is how someone ends up approving one thing and running another.
-        proposed_message=json.dumps({"name": name, "args": args}, ensure_ascii=False)[:8192],
+        proposed_message=json.dumps({"name": name, "args": args}, ensure_ascii=False)[
+            :8192
+        ],
         risk=_RISK_BY_TOOL.get(name, "medium"),
         policy_result="requires_approval",
         status="pending",
@@ -100,6 +102,9 @@ def request_tool_approval(
         db.commit()
         db.refresh(row)
         logger.info(
-            "agent tool approval opened id=%s tool=%s tenant=%s", row.id, name, tenant_slug
+            "agent tool approval opened id=%s tool=%s tenant=%s",
+            row.id,
+            name,
+            tenant_slug,
         )
         return {"id": row.id, "action": row.action, "risk": row.risk}

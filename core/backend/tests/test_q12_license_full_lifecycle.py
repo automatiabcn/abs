@@ -155,7 +155,6 @@ def test_license_100y_expiry_warning_logged(caplog):
 
     # The warning hit the logger.
     assert any(
-        "license_excessive_valid_days" in rec.message
-        and "cust_100y" in rec.message
+        "license_excessive_valid_days" in rec.message and "cust_100y" in rec.message
         for rec in caplog.records
     ), [rec.message for rec in caplog.records]

@@ -50,7 +50,9 @@ def _encode_cursor(ts: datetime, source: str, row_id: str | int) -> str:
     return base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
 
 
-def _decode_cursor(token: Optional[str]) -> Optional[tuple[datetime, Optional[str], Optional[str]]]:
+def _decode_cursor(
+    token: Optional[str],
+) -> Optional[tuple[datetime, Optional[str], Optional[str]]]:
     """Return (ts, source, row_id) or None. Back-compatible with the old
     ``ts|id`` (2-field) cursors, which decode to source=None and fall back to
     the plain ts boundary for that one in-flight page."""

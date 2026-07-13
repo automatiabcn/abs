@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Optional
 
 from sqlmodel import select
 
@@ -16,9 +15,7 @@ from app.db.models import WizardEvent
 from app.db.session import get_session_sync
 
 
-def record_step(
-    session_id: str, step_num: int, completed: bool = False
-) -> WizardEvent:
+def record_step(session_id: str, step_num: int, completed: bool = False) -> WizardEvent:
     """Record a step start or completion.
 
     One row per (session_id, step_num): re-entering a step does not restart it,
@@ -62,9 +59,7 @@ def funnel_summary(steps: int = 6) -> dict:
             started = len(rows)
             completed = sum(1 for r in rows if r.completed_at is not None)
             drop_off_pct = (
-                round(((started - completed) / started) * 100, 1)
-                if started
-                else 0.0
+                round(((started - completed) / started) * 100, 1) if started else 0.0
             )
             out.append(
                 {
@@ -89,8 +84,6 @@ def funnel_summary(steps: int = 6) -> dict:
         "total_sessions": len(sessions),
         "final_completed": final_completed,
         "completion_rate_pct": (
-            round((final_completed / len(sessions)) * 100, 1)
-            if sessions
-            else 0.0
+            round((final_completed / len(sessions)) * 100, 1) if sessions else 0.0
         ),
     }

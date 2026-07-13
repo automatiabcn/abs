@@ -57,7 +57,9 @@ def verify_citations(
         raise ValueError("threshold must be in [0, 1]")
     claims = _sentences(answer)
     if not claims:
-        return CitationReport(matches=[], orphan_claims=[], unused_contexts=[], score=1.0)
+        return CitationReport(
+            matches=[], orphan_claims=[], unused_contexts=[], score=1.0
+        )
 
     ctx_tokens = [_tokens(c) for c in contexts]
     matches: list[ClaimMatch] = []

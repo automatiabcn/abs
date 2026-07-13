@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import time
 from pathlib import Path
 from typing import Any, Dict
@@ -65,7 +64,9 @@ def load_rate(filename: str) -> Dict[str, float]:
         return {}
 
 
-def persist_rate(filename: str, rate: Dict[str, float], prune_older_than: float = 86400) -> None:
+def persist_rate(
+    filename: str, rate: Dict[str, float], prune_older_than: float = 86400
+) -> None:
     """Persist the rate state, dropping keys older than the prune window so the
     file cannot grow without bound."""
     p = cache_path(filename)

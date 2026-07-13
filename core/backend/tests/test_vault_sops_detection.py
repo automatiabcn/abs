@@ -32,10 +32,7 @@ def test_check_production_vault_dev_mode_warns_only(monkeypatch, caplog):
     monkeypatch.setattr(runner, "sops_available", lambda: False)
     # Should not raise
     runner.check_production_vault()
-    assert any(
-        "dev fallback" in (r.getMessage() or "")
-        for r in caplog.records
-    )
+    assert any("dev fallback" in (r.getMessage() or "") for r in caplog.records)
 
 
 def test_check_production_vault_prod_mode_fails_when_missing(monkeypatch):

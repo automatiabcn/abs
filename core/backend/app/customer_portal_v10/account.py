@@ -84,9 +84,7 @@ class AccountStore:
             invited_by=invited_by_role,
         )
         self._invites[invite.invite_id] = invite
-        logger.info(
-            "invite_created tenant=%s email=%s role=%s", tenant_id, email, role
-        )
+        logger.info("invite_created tenant=%s email=%s role=%s", tenant_id, email, role)
         return invite
 
     def revoke(self, invite_id: str) -> bool:
@@ -125,7 +123,9 @@ class PortalProjects:
         project.archived = True
         return True
 
-    def for_tenant(self, tenant_id: str, *, include_archived: bool = False) -> list[Project]:
+    def for_tenant(
+        self, tenant_id: str, *, include_archived: bool = False
+    ) -> list[Project]:
         return [
             p
             for p in self._projects.values()

@@ -209,7 +209,12 @@ def check_permissions_scope(
     """Return list of permission fields where perms exceed allowlist."""
     exceeded: List[str] = []
 
-    for field_name in ("network_egress", "filesystem_read", "filesystem_write", "secrets"):
+    for field_name in (
+        "network_egress",
+        "filesystem_read",
+        "filesystem_write",
+        "secrets",
+    ):
         perm_vals = set(getattr(perms, field_name))
         allow_vals = set(getattr(allowlist, field_name))
         if perm_vals - allow_vals:

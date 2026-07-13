@@ -42,7 +42,9 @@ def _get_products_cached() -> list[dict]:
     from app.config import settings
 
     now = time.time()
-    if _PRODUCT_CACHE["data"] is not None and (now - _PRODUCT_CACHE["ts"] < _PRODUCT_CACHE_TTL):
+    if _PRODUCT_CACHE["data"] is not None and (
+        now - _PRODUCT_CACHE["ts"] < _PRODUCT_CACHE_TTL
+    ):
         return _PRODUCT_CACHE["data"]
     if not settings.stripe_secret_key:
         return []

@@ -74,9 +74,7 @@ def _require_tenant(tenant_id: str | None) -> str:
 
 
 def _tenant_filter(tenant_id: str, *, extra: Filter | None = None) -> Filter:
-    must: list = [
-        FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id))
-    ]
+    must: list = [FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id))]
     if extra is not None and extra.must:
         must.extend(extra.must)
     should = list(extra.should) if extra is not None and extra.should else None
@@ -369,11 +367,7 @@ def list_documents(
     client = get_qdrant()
     extra = (
         Filter(
-            must=[
-                FieldCondition(
-                    key="project_id", match=MatchValue(value=project_id)
-                )
-            ]
+            must=[FieldCondition(key="project_id", match=MatchValue(value=project_id))]
         )
         if project_id
         else None
@@ -398,9 +392,7 @@ def list_documents(
             if entry is None:
                 entry = {
                     "doc_id": doc_id,
-                    "filename": payload.get("filename")
-                    or payload.get("source")
-                    or "",
+                    "filename": payload.get("filename") or payload.get("source") or "",
                     "chunks": 0,
                     "bytes": 0,
                     "created_at": payload.get("created_at"),
@@ -425,9 +417,7 @@ def list_documents(
         scanned += len(batch)
         if not scroll_offset or scanned >= max_points:
             break
-    return sorted(
-        docs.values(), key=lambda d: d.get("created_at") or 0, reverse=True
-    )
+    return sorted(docs.values(), key=lambda d: d.get("created_at") or 0, reverse=True)
 
 
 def iter_chunks(

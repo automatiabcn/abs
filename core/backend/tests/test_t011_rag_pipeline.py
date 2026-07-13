@@ -41,9 +41,11 @@ def _install_fake_cerbos_for_rag():
 
 
 def _challenge(verifier: str) -> str:
-    return base64.urlsafe_b64encode(
-        hashlib.sha256(verifier.encode("ascii")).digest()
-    ).rstrip(b"=").decode("ascii")
+    return (
+        base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode("ascii")
+    )
 
 
 def _seed_client(client_id: str) -> None:
@@ -118,7 +120,9 @@ def test_parse_document_unknown_mime_falls_back_to_text(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     with caplog.at_level("WARNING"):
-        doc = pipe.parse_document(b"hi", mime_type="application/x-zip", filename="z.bin")
+        doc = pipe.parse_document(
+            b"hi", mime_type="application/x-zip", filename="z.bin"
+        )
     assert doc.mime_type == "application/x-zip"
     assert doc.text == "hi"
     assert any("unknown_mime" in r.getMessage() for r in caplog.records)
@@ -128,7 +132,9 @@ def test_parse_document_pdf_corrupt_raises_clean_runtimeerror() -> None:
     # A non-PDF / truncated payload must surface a clean RuntimeError (which the
     # /ingest-file route maps to 422), never a raw pypdf exception (→ 500).
     with pytest.raises(RuntimeError) as exc:
-        pipe.parse_document(b"%PDF-1.4 not really a pdf", mime_type="application/pdf", filename="x.pdf")
+        pipe.parse_document(
+            b"%PDF-1.4 not really a pdf", mime_type="application/pdf", filename="x.pdf"
+        )
     msg = str(exc.value).lower()
     assert "pdf_parse_failed" in msg or "pdf_no_extractable_text" in msg
 
@@ -162,7 +168,9 @@ def test_parse_document_pdf_no_text_layer_raises() -> None:
     buf = io.BytesIO()
     writer.write(buf)
     with pytest.raises(RuntimeError) as exc:
-        pipe.parse_document(buf.getvalue(), mime_type="application/pdf", filename="scan.pdf")
+        pipe.parse_document(
+            buf.getvalue(), mime_type="application/pdf", filename="scan.pdf"
+        )
     assert "pdf_no_extractable_text" in str(exc.value)
 
 
@@ -220,9 +228,9 @@ def test_late_chunks_last_chunk_reaches_end() -> None:
 
 
 def test_estimate_token_count_monotonic() -> None:
-    s = pipe.estimate_token_count("a" * 100)
-    l = pipe.estimate_token_count("a" * 1000)
-    assert l > s > 0
+    short = pipe.estimate_token_count("a" * 100)
+    long = pipe.estimate_token_count("a" * 1000)
+    assert long > short > 0
 
 
 # ----- /v1/rag routes --------------------------------------------------
@@ -292,7 +300,11 @@ def test_ingest_file_docx_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with TestClient(app) as c:
         token = _issue_token(
-            c, client_id=cid, user_subject="alice", tenant_id="tenant-1", roles=["member"]
+            c,
+            client_id=cid,
+            user_subject="alice",
+            tenant_id="tenant-1",
+            roles=["member"],
         )
         # Browsers send octet-stream for .docx — the endpoint resolves the MIME
         # from the .docx extension, so this must still route to the DOCX parser.
@@ -314,7 +326,11 @@ def test_ingest_file_empty_returns_400() -> None:
     _seed_client(cid)
     with TestClient(app) as c:
         token = _issue_token(
-            c, client_id=cid, user_subject="alice", tenant_id="tenant-1", roles=["member"]
+            c,
+            client_id=cid,
+            user_subject="alice",
+            tenant_id="tenant-1",
+            roles=["member"],
         )
         r = c.post(
             "/v1/rag/ingest-file",
@@ -337,7 +353,11 @@ def test_ingest_file_scanned_pdf_returns_422() -> None:
     writer.write(buf)
     with TestClient(app) as c:
         token = _issue_token(
-            c, client_id=cid, user_subject="alice", tenant_id="tenant-1", roles=["member"]
+            c,
+            client_id=cid,
+            user_subject="alice",
+            tenant_id="tenant-1",
+            roles=["member"],
         )
         r = c.post(
             "/v1/rag/ingest-file",
@@ -447,12 +467,12 @@ def test_ingest_empty_text_rejected_by_validation(
     assert any(err.get("loc")[-1] == "text" for err in errors)
 
 
-_DOCX_MIME = (
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-)
+_DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
-def test_ingest_text_binary_mime_returns_422_not_500(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ingest_text_binary_mime_returns_422_not_500(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """A stale frontend POSTing a .docx via the JSON /ingest path (file.text()
     corrupts the bytes) must get a clean 422, never an uncaught 500."""
     cid = f"rag-{secrets.token_hex(3)}"
@@ -476,7 +496,9 @@ def test_ingest_text_binary_mime_returns_422_not_500(monkeypatch: pytest.MonkeyP
     assert "ingest-file" in r.text
 
 
-def test_ingest_embed_failure_returns_503_not_500(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ingest_embed_failure_returns_503_not_500(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """A Cohere embedding error (rate-limit/auth) during ingest must surface as
     a clean 503, never an uncaught 500."""
     cid = f"rag-{secrets.token_hex(3)}"
@@ -509,7 +531,9 @@ def test_ingest_embed_failure_returns_503_not_500(monkeypatch: pytest.MonkeyPatc
     assert "embedding_failed" in r.text
 
 
-def test_ingest_file_runs_with_asyncio_embedder(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ingest_file_runs_with_asyncio_embedder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """REGRESSION: the Cohere embedder calls asyncio.run() internally, which only
     works off the event loop. /ingest-file must be a SYNC route (threadpool) —
     when it was `async def`, real DOCX uploads 500'd with 'asyncio.run() cannot
@@ -535,7 +559,9 @@ def test_ingest_file_runs_with_asyncio_embedder(monkeypatch: pytest.MonkeyPatch)
 
     monkeypatch.setattr(rag_routes, "get_embedder", lambda: _AsyncioEmbedder())
     monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
-    monkeypatch.setattr(rag_routes.qc, "upsert_points", lambda **k: k["points"] and len(k["points"]))
+    monkeypatch.setattr(
+        rag_routes.qc, "upsert_points", lambda **k: k["points"] and len(k["points"])
+    )
 
     buf = io.BytesIO()
     d = docx.Document()
@@ -556,9 +582,7 @@ def test_ingest_file_runs_with_asyncio_embedder(monkeypatch: pytest.MonkeyPatch)
     assert r.json()["chunks"] >= 1
 
 
-_XLSX_MIME = (
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
+_XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 def test_parse_document_xlsx_roundtrip() -> None:
@@ -575,7 +599,9 @@ def test_parse_document_xlsx_roundtrip() -> None:
     ws.append(["Şubat", "1000 euro"])
     buf = io.BytesIO()
     wb.save(buf)
-    doc = pipe.parse_document(buf.getvalue(), mime_type=_XLSX_MIME, filename="kira.xlsx")
+    doc = pipe.parse_document(
+        buf.getvalue(), mime_type=_XLSX_MIME, filename="kira.xlsx"
+    )
     assert "Kira" in doc.text  # sheet name
     assert "1000 euro" in doc.text  # cell value
     assert "Tutar" in doc.text

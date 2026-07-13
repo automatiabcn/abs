@@ -29,18 +29,16 @@ def _bootstrap_admin_cookie(client, monkeypatch):
         json.dumps(
             {
                 "email": "admin@local",
-                "password_hash": bcrypt.hashpw(
-                    b"s3cret", bcrypt.gensalt()
-                ).decode("utf-8"),
+                "password_hash": bcrypt.hashpw(b"s3cret", bcrypt.gensalt()).decode(
+                    "utf-8"
+                ),
                 "tenant_slug": "tnt-marketplace-test",
             }
         ),
         encoding="utf-8",
     )
 
-    r = client.post(
-        "/auth/login", json={"email": "admin@local", "password": "s3cret"}
-    )
+    r = client.post("/auth/login", json={"email": "admin@local", "password": "s3cret"})
     assert r.status_code == 200, r.text
 
 
@@ -68,13 +66,17 @@ def test_install_persists_in_tenant_installed_plugins(client, monkeypatch):
     from app.db.session import get_engine
 
     with Session(get_engine()) as db:
-        row = db.execute(
-            select(TenantInstalledPlugin).where(
-                TenantInstalledPlugin.tenant_id == "tnt-marketplace-test",
-                TenantInstalledPlugin.plugin_id == "slack-receiver",
-                TenantInstalledPlugin.uninstalled_at.is_(None),
+        row = (
+            db.execute(
+                select(TenantInstalledPlugin).where(
+                    TenantInstalledPlugin.tenant_id == "tnt-marketplace-test",
+                    TenantInstalledPlugin.plugin_id == "slack-receiver",
+                    TenantInstalledPlugin.uninstalled_at.is_(None),
+                )
             )
-        ).scalars().first()
+            .scalars()
+            .first()
+        )
         assert row is not None
         assert row.version == "1.0.0"
 
@@ -86,9 +88,7 @@ def test_installed_endpoint_reads_from_sql(client, monkeypatch):
         json={"plugin_id": "gmail-archiver", "tenant": "tnt-marketplace-test"},
     )
 
-    r = client.get(
-        "/v1/marketplace/installed?tenant=tnt-marketplace-test"
-    )
+    r = client.get("/v1/marketplace/installed?tenant=tnt-marketplace-test")
     assert r.status_code == 200, r.text
     body = r.json()
     plugin_ids = [row["plugin_id"] for row in body["installed"]]
@@ -107,8 +107,6 @@ def test_uninstall_marks_row_inactive(client, monkeypatch):
     )
     assert r.status_code == 200, r.text
 
-    r2 = client.get(
-        "/v1/marketplace/installed?tenant=tnt-marketplace-test"
-    )
+    r2 = client.get("/v1/marketplace/installed?tenant=tnt-marketplace-test")
     plugin_ids = [row["plugin_id"] for row in r2.json()["installed"]]
     assert "linear-bridge" not in plugin_ids
