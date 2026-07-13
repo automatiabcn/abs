@@ -38,6 +38,9 @@ export default function DemoBanner() {
 
   if (!status?.enabled || dismissed) return null;
 
+  // A notice, not a celebration. The old blue gradient was the loudest element
+  // on every screen and belonged to a palette the product no longer uses.
+  // Warning tone, because "this data is not real" is a caveat.
   return (
     <div
       data-testid="demo-banner"
@@ -47,17 +50,17 @@ export default function DemoBanner() {
         position: "sticky",
         top: 0,
         zIndex: 50,
-        background: "linear-gradient(90deg,#1e57ac,#3b82f6)",
-        color: "#fff",
-        padding: "8px 16px",
+        background: "var(--abs-warning-soft)",
+        color: "var(--abs-warning)",
+        borderBottom: "1px solid var(--abs-warning)",
+        padding: "7px 16px",
         fontSize: 13,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: 12,
+        gap: 10,
       }}
     >
-      <span aria-hidden="true">🎬</span>
       <span>
         <strong>Demo Mode</strong> — sample data, not live customers (seed{" "}
         {status.seed_version}
@@ -72,11 +75,11 @@ export default function DemoBanner() {
         }}
         style={{
           marginLeft: 8,
-          background: "rgba(255,255,255,0.2)",
-          border: 0,
-          color: "#fff",
-          borderRadius: 6,
-          padding: "2px 8px",
+          background: "transparent",
+          border: "1px solid var(--abs-warning)",
+          color: "var(--abs-warning)",
+          borderRadius: "var(--abs-radius-sm)",
+          padding: "1px 8px",
           cursor: "pointer",
           fontSize: 12,
         }}

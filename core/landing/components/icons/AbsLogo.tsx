@@ -5,27 +5,40 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R03 — ABS-branded logo mark. Two concentric arcs + central spark.
-// Inherits `currentColor`; sized via `width`/`height` props.
+// The vault: a closed box with the core held inside it.
+//
+// This replaces a generic "AI swirl" that could have belonged to any model
+// wrapper on the market and said nothing about what the product is. The mark
+// carries the one promise the product actually makes — your data sits in a
+// box you own — and keeps continuity with the Automatia BCN isometric cube
+// instead of discarding the parent brand.
+//
+// The shell inherits `currentColor` so it reads on any surface; the core is
+// the brand token, the single point of colour in the mark. It survives down
+// to 16px, where the old swirl collapsed into a smudge of light.
 import type { SVGProps } from "react";
 
-export default function AbsLogo({ size = 32, ...rest }: SVGProps<SVGSVGElement> & { size?: number }) {
+export default function AbsLogo({
+  size = 32,
+  ...rest
+}: SVGProps<SVGSVGElement> & { size?: number }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 32 32"
+      viewBox="0 0 48 48"
       fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
       role="img"
-      aria-label="ABS Server"
+      aria-label="Automatia ABS"
       {...rest}
     >
-      <circle cx="16" cy="16" r="13" opacity="0.35" />
-      <path d="M16 3 a13 13 0 0 1 13 13" />
-      <circle cx="16" cy="16" r="3" fill="currentColor" stroke="none" />
+      <path
+        d="M24 5 L41 14 L41 34 L24 43 L7 34 L7 14 Z"
+        stroke="currentColor"
+        strokeWidth="3.4"
+        strokeLinejoin="round"
+      />
+      <circle cx="24" cy="24" r="6" fill="var(--abs-brand)" />
     </svg>
   );
 }

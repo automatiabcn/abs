@@ -9,6 +9,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 // T-R03 fix #5 — Phosphor subpath SSR imports keep the icon footprint out
 // of the shared first-load chunk (target: shared < 100 KB gzip).
@@ -105,8 +106,20 @@ function ThemeToggle() {
   );
 }
 
+// Routes where the product lives. The marketing header used to render over
+// these too, so an operator working in the panel saw two headers stacked —
+// a "Pricing / Beta" nav bar sitting on top of their own console. The panel
+// carries its own chrome; the site header stays on the site.
+const APP_ROUTE_PREFIXES = ["/panel", "/admin"] as const;
+
 export default function Header() {
+  const pathname = usePathname();
   const scrolled = useScrolled();
+
+  const isAppRoute = APP_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname?.startsWith(`${prefix}/`),
+  );
+  if (isAppRoute) return null;
 
   return (
     <header
