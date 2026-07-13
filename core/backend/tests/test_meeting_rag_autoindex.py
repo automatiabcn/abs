@@ -28,6 +28,11 @@ def test_autoindex_uses_default_collection_and_resolved_tenant(
         def embed(self, texts):
             return [[0.05] * self.dim for _ in texts]
 
+        def model_id(self):
+            # Stamped onto every chunk: vectors are only comparable to others
+            # from the same model, so the chunk has to say which one made it.
+            return "ollama:bge-m3"
+
     monkeypatch.setattr("app.rag.embedding_bge.get_embedder", lambda: _Emb())
 
     captured: dict = {}
