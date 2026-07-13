@@ -29,6 +29,7 @@ from app.api.auth import current_admin
 from app.config import settings
 from app.db.models import Meeting, MeetingSegment
 from app.db.session import get_engine
+from app.meeting.quality import audio_fingerprint, speech_verdict
 from app.services import feature_usage as feature_usage_service
 from app.services.transcribe import (
     WhisperXUnavailableError,
@@ -163,6 +164,10 @@ def _serialize(meeting: Meeting, segments: List[MeetingSegment]) -> Dict[str, An
         "status": meeting.status,
         "summary": meeting.summary,
         "error_message": meeting.error_message,
+        # Non-empty when the recording transcribed but holds no usable speech.
+        # The panel shows this sentence instead of a silent green tick.
+        "quality_note": meeting.quality_note,
+        "indexed": meeting.status == "done" and not meeting.quality_note,
         "speakers": speakers,
         "segments": seg_payload,
         "created_at": meeting.created_at.isoformat(),
@@ -191,6 +196,8 @@ async def list_meetings(admin: dict = Depends(current_admin)) -> Dict[str, Any]:
                     "speaker_count": meeting.speaker_count,
                     "status": meeting.status,
                     "summary": meeting.summary,
+                    "quality_note": meeting.quality_note,
+                    "indexed": meeting.status == "done" and not meeting.quality_note,
                     "created_at": meeting.created_at.isoformat(),
                     "completed_at": meeting.completed_at.isoformat() if meeting.completed_at else None,
                 }
@@ -211,11 +218,46 @@ async def upload_meeting(
 
     uploader_email = admin.get("sub", "admin@local")
     filename = audio.filename or f"meeting-{uuid.uuid4().hex}.bin"
+    tenant_slug = _admin_tenant(admin)
+    fingerprint = audio_fingerprint(raw)
+
+    # Have we already transcribed exactly these bytes? Answer before spending a
+    # GPU minute on them — and before putting a second copy of every passage in
+    # the vector store, where duplicates read as sources agreeing.
+    with Session(get_engine()) as db:
+        seen = db.exec(
+            select(Meeting)
+            .where(Meeting.tenant_slug == tenant_slug)
+            .where(Meeting.audio_sha256 == fingerprint)
+            .where(Meeting.status == "done")
+            .order_by(Meeting.created_at)
+        ).first()
+        if seen is not None:
+            segments = list(
+                db.exec(
+                    select(MeetingSegment)
+                    .where(MeetingSegment.meeting_id == seen.id)
+                    .order_by(MeetingSegment.start_sec)
+                )
+            )
+            logger.info(
+                "meeting_upload_duplicate tenant=%s meeting=%s sha=%s",
+                tenant_slug,
+                seen.id,
+                fingerprint[:12],
+            )
+            payload = _serialize(seen, segments)
+            # The upload succeeded and the meeting exists; it simply already
+            # existed. Saying so is more useful than a 409 the panel would have
+            # to translate back into "here is your meeting".
+            payload["duplicate_of"] = seen.id
+            return payload
 
     meeting = Meeting(
-        tenant_slug=_admin_tenant(admin),
+        tenant_slug=tenant_slug,
         uploader_email=uploader_email,
         filename=filename,
+        audio_sha256=fingerprint,
         status="pending",
     )
 
@@ -250,6 +292,22 @@ async def upload_meeting(
         except OSError:
             pass
 
+    # Two hours of audio that yielded four sentences was not a quiet meeting —
+    # it was a dead microphone, and what came back is the model hallucinating
+    # over room tone. It transcribed without erroring, so nothing else in this
+    # pipeline would have caught it.
+    verdict = speech_verdict(
+        float(result.get("duration_sec", 0.0)), result.get("segments", [])
+    )
+    if not verdict.has_speech:
+        logger.warning(
+            "meeting_no_speech meeting=%s duration=%.0fs chars=%d cpm=%.1f",
+            meeting_id,
+            verdict.duration_sec,
+            verdict.chars,
+            verdict.chars_per_minute,
+        )
+
     # Persist segments + finalize meeting.
     with Session(get_engine()) as db:
         row = db.get(Meeting, meeting_id)
@@ -259,6 +317,7 @@ async def upload_meeting(
         row.speaker_count = len(result.get("speakers", []))
         row.summary = result.get("summary", "")[:4096]
         row.status = "done"
+        row.quality_note = verdict.reason[:512]
         row.completed_at = datetime.now(timezone.utc)
         db.add(row)
         for seg in result.get("segments", []):
@@ -292,7 +351,10 @@ async def upload_meeting(
     except Exception:
         pass
 
-    if settings.meeting_rag_autoindex:
+    # A recording with no speech in it is kept — the operator can see for
+    # themselves what came back — but it is not indexed. Hallucinated text in
+    # the vector store is worse than a missing meeting: it answers questions.
+    if settings.meeting_rag_autoindex and verdict.has_speech:
         try:
             n = _autoindex_meeting_rag(
                 meeting_id=meeting_id,
