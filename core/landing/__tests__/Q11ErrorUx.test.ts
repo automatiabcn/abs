@@ -24,7 +24,8 @@ describe("Q11/L16 — error tile UX parity", () => {
     expect(src).toContain('role="alert"');
     expect(src).toContain('data-test="chat-error-tile"');
     expect(src).toContain('data-test="configure-cta"');
-    expect(src).toContain("Sağlayıcı yapılandır");
+    // The tile has to offer a way out, not just name the failure.
+    expect(src).toContain("Configure a provider");
   });
 
   it("pipeline error tile (Q11-L16-001) ships Configure + Retry CTAs", () => {

@@ -51,7 +51,7 @@ function fmtDuration(sec: number): string {
 
 function fmtDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleString("tr-TR", {
+    return new Date(iso).toLocaleString(undefined, {
       hour12: false,
       timeStyle: "short",
       dateStyle: "short",
@@ -136,7 +136,7 @@ export default function MeetingsPanel() {
       const data = await res.json();
       setMeetings(data.meetings ?? []);
     } catch (exc) {
-      setError(`Toplantılar yüklenemedi: ${(exc as Error).message}`);
+      setError(`Could not load your meetings: ${(exc as Error).message}`);
     } finally {
       setLoading(false);
     }
@@ -168,7 +168,7 @@ export default function MeetingsPanel() {
       }
       await fetchMeetings();
     } catch (exc) {
-      setError(`Yükleme başarısız: ${(exc as Error).message}`);
+      setError(`Upload failed: ${(exc as Error).message}`);
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -181,10 +181,11 @@ export default function MeetingsPanel() {
       className="mx-auto w-full max-w-6xl px-6 py-10 text-foreground"
     >
       <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Toplantılar</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Meetings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Ses kaydını yükle — WhisperX large-v3 transkript ve speaker
-          diarization üretir, kayıt SQLite&apos;a yazılır.
+          Upload a recording. It is transcribed, the speakers are separated,
+          and it joins your knowledge base — so you can ask about what was said
+          in chat, with the meeting cited as the source.
         </p>
       </header>
 
@@ -192,10 +193,10 @@ export default function MeetingsPanel() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mic className="h-4 w-4 text-primary" />
-            Yeni toplantı
+            New meeting
           </CardTitle>
           <CardDescription>
-            WAV / MP3 / M4A / OGG / FLAC / WEBM destekli.
+            WAV, MP3, M4A, OGG, FLAC and WEBM.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -206,8 +207,8 @@ export default function MeetingsPanel() {
           >
             <Upload className="h-5 w-5" />
             {uploading
-              ? "Transkript ediliyor…"
-              : "Ses dosyası seç veya buraya bırak"}
+              ? "Transcribing…"
+              : "Choose an audio file, or drop one here"}
             <input
               id="audio-upload"
               ref={fileRef}
@@ -224,9 +225,9 @@ export default function MeetingsPanel() {
       <Card className="bg-card/60 backdrop-blur">
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <div className="space-y-1">
-            <CardTitle>Geçmiş</CardTitle>
+            <CardTitle>History</CardTitle>
             <CardDescription>
-              Toplam {meetings.length} kayıt
+              {meetings.length} recordings
               {filtersActive && (
                 <>
                   {" · "}
@@ -235,7 +236,7 @@ export default function MeetingsPanel() {
                 </>
               )}
               {" · "}
-              son güncelleme şimdi.
+              updated just now.
             </CardDescription>
           </div>
           <Button
@@ -259,7 +260,7 @@ export default function MeetingsPanel() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Dosya adında ara…"
+              placeholder="Search by file name…"
               data-test="meetings-filter-search"
               className="pl-7 text-xs"
             />
@@ -268,13 +269,13 @@ export default function MeetingsPanel() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
             data-test="meetings-filter-status"
-            aria-label="Durum filtresi"
+            aria-label="Filter by status"
             className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
           >
-            <option value="all">Tüm durumlar</option>
-            <option value="pending">Beklemede</option>
-            <option value="done">Tamamlandı</option>
-            <option value="error">Hata</option>
+            <option value="all">Any status</option>
+            <option value="pending">In progress</option>
+            <option value="done">Done</option>
+            <option value="error">Failed</option>
           </select>
           <Input
             type="number"
@@ -283,7 +284,7 @@ export default function MeetingsPanel() {
             onChange={(e) =>
               setMinSpeakers(e.target.value ? Number(e.target.value) : "")
             }
-            placeholder="Min. konuşmacı"
+            placeholder="Min. speakers"
             data-test="meetings-filter-speakers"
             className="text-xs"
           />
@@ -292,7 +293,7 @@ export default function MeetingsPanel() {
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
             data-test="meetings-filter-from"
-            aria-label="Başlangıç tarihi"
+            aria-label="From date"
             className="text-xs"
           />
           <Input
@@ -300,7 +301,7 @@ export default function MeetingsPanel() {
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
             data-test="meetings-filter-to"
-            aria-label="Bitiş tarihi"
+            aria-label="To date"
             className="text-xs"
           />
           {filtersActive && (
@@ -330,11 +331,11 @@ export default function MeetingsPanel() {
             <table className="w-full border-collapse text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
-                  <th className="border-b border-border py-3 pr-3">Tarih</th>
-                  <th className="border-b border-border py-3 pr-3">Dosya</th>
-                  <th className="border-b border-border py-3 pr-3">Süre</th>
-                  <th className="border-b border-border py-3 pr-3">Konuşmacı</th>
-                  <th className="border-b border-border py-3 pr-3">Durum</th>
+                  <th className="border-b border-border py-3 pr-3">When</th>
+                  <th className="border-b border-border py-3 pr-3">File</th>
+                  <th className="border-b border-border py-3 pr-3">Length</th>
+                  <th className="border-b border-border py-3 pr-3">Speakers</th>
+                  <th className="border-b border-border py-3 pr-3">Status</th>
                   <th
                     className="border-b border-border py-3"
                     aria-hidden="true"
@@ -360,8 +361,8 @@ export default function MeetingsPanel() {
                       className="py-6 text-center text-sm text-muted-foreground"
                     >
                       {meetings.length === 0
-                        ? "Henüz toplantı yok. Yukarıdan ilk kaydı yükleyin."
-                        : "Filtre ile eşleşen kayıt yok."}
+                        ? "No meetings yet. Upload your first recording above."
+                        : "No recordings match these filters."}
                     </td>
                   </tr>
                 )}
@@ -408,7 +409,7 @@ export default function MeetingsPanel() {
                           className="text-xs text-primary hover:underline"
                           href={`/panel/meetings/${m.id}`}
                         >
-                          Detay
+                          Open
                         </a>
                       </td>
                     </tr>

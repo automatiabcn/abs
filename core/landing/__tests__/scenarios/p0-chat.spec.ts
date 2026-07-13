@@ -82,7 +82,14 @@ test("C10 — agent mode uses a tool and answers from what it returned", async (
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
 
   const input = page.locator('[data-test="message-input"] textarea');
-  await input.fill("Which providers are up right now, according to the system itself?");
+  // Named plainly rather than hinted at. "What's the system status?" leaves the
+  // model free to answer from the prompt, and a scenario that depends on the
+  // model *choosing* to reach for a tool is testing the model's mood, not the
+  // product. What is under test here is that when it does reach, the call runs
+  // and the panel shows it.
+  await input.fill(
+    "Check this server's status with the system_status tool, then tell me which providers are up.",
+  );
   await input.press("Enter");
 
   // The tool call is shown, not inferred. An agent that silently calls things
