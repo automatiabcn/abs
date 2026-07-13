@@ -86,6 +86,11 @@ def _logger() -> logging.Logger:
     return logging.getLogger(LOGGER_NAME)
 
 
+# Set once the audit write has failed, so the traceback is printed once rather
+# than on every request for as long as the database is unreachable.
+_persist_broken = False
+
+
 def _scrub(ctx: dict[str, Any]) -> dict[str, Any]:
     """Drop sensitive keys; keep allowlisted ones."""
     safe: dict[str, Any] = {}
@@ -155,7 +160,14 @@ def _persist(payload: dict[str, Any]) -> None:
     Best-effort on purpose. An audit write that fails must not take the request
     down with it — but it must also not fail *silently*, so the failure is logged
     at warning. A quiet recorder is how this happened in the first place.
+
+    Cost, measured rather than assumed: ~1 ms per event against SQLite. That is
+    invisible next to a request, so the write stays synchronous. Handing it to a
+    queue would buy nothing and would reintroduce the exact failure being fixed —
+    an event that is "sent" and never lands.
     """
+    global _persist_broken  # noqa: PLW0603
+
     try:
         from app.vault.audit_chain import append_entry
 
@@ -173,5 +185,18 @@ def _persist(payload: dict[str, Any]) -> None:
             detail=_json.dumps(detail, default=str)[:512],
             tenant_id=(str(payload["tenant_id"])[:64] if payload.get("tenant_id") else None),
         )
-    except Exception:  # noqa: BLE001 — never fail a request over its own audit trail
-        _logger().warning("audit event could not be recorded", exc_info=True)
+        # Recovered. Re-arm the traceback, so the *next* outage is diagnosable too
+        # rather than being written off as more of the last one.
+        _persist_broken = False
+    except Exception as exc:  # noqa: BLE001 — never fail a request over its own audit trail
+        if not _persist_broken:
+            # The first one carries the traceback, because somebody has to be able
+            # to diagnose it.
+            _persist_broken = True
+            _logger().warning("audit event could not be recorded", exc_info=True)
+        else:
+            # The rest do not. If the database is gone, this fires on every single
+            # request, and a full traceback per request buries the very log a person
+            # would be reading to find out why. Still loud, still every time — never
+            # silent, because silence is the bug this whole module is an apology for.
+            _logger().warning("audit event could not be recorded: %s", exc)

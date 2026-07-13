@@ -41,11 +41,26 @@ def verify_signature(
     Production sets ABS_COSIGN_SKIP=false and provides ABS_COSIGN_PUBLIC_KEY_PATH.
     """
     if settings.cosign_skip:
+        # An explicit decision, made by whoever set the flag. That is the only way
+        # to not check a signature.
         logger.debug("cosign_skip=true; bypassing verification for %s", image)
         return True
     if not shutil.which("cosign"):
-        logger.warning("cosign binary missing; skipping (dev fallback) for %s", image)
-        return True
+        # It used to return True here — "graceful fallback". Which meant the
+        # signature check on third-party plugin images was defeated not by breaking
+        # the cryptography but by the binary being absent from the image, and an
+        # unsigned or tampered plugin installed itself while the log murmured a
+        # warning nobody reads. Deleting a package is easier than forging a
+        # signature, so that is the door an attacker would use.
+        #
+        # Someone who genuinely wants no verification has ABS_COSIGN_SKIP for it.
+        # A server that has been *asked* to verify and cannot must refuse.
+        logger.error(
+            "cosign binary missing and ABS_COSIGN_SKIP is false — refusing to "
+            "install %s unverified",
+            image,
+        )
+        return False
     key = public_key_path or settings.cosign_public_key_path
     try:
         result = subprocess.run(
