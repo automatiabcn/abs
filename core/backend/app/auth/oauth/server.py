@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-003 — OAuth 2.1 server core.
+"""OAuth 2.1 server core.
 
 Issues authorization codes, exchanges them for JWT access tokens, rotates
 opaque refresh tokens. PKCE S256 is mandatory; refresh tokens are
@@ -340,7 +340,7 @@ def refresh_access_token(
     if rt.client_id != client_id:
         raise OAuthError("invalid_grant", "client mismatch")
     if rt.revoked_at is not None or rt.rotated_to_hash is not None:
-        # Q12-L22-006 — OAuth 2.1 §6.1: replayed refresh token MUST trigger
+        # OAuth 2.1 §6.1: replayed refresh token MUST trigger
         # family revocation. Walk forward chain + bulk-revoke.
         _revoke_refresh_family(db, presented_hash)
         logger.warning(
@@ -353,7 +353,7 @@ def refresh_access_token(
     new_raw = secrets.token_urlsafe(48)
     new_hash = _hash_token(new_raw)
 
-    # Q12-L22-006 — atomic rotation claim. Two concurrent refreshes with the
+    # Atomic rotation claim. Two concurrent refreshes with the
     # same token race on read-then-write of rotated_to_hash; only one wins.
     db.expire(rt, ["rotated_to_hash", "revoked_at"])
     rotate_stmt = (

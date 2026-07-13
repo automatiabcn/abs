@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Sprint 2B BUG-36 — magic-link token helper.
+"""magic-link token helper.
 
 Used by the admin invite flow (`POST /v1/admin/users/invite`) and the
 matching consume-side endpoint (`/auth/magic`). The token plaintext is

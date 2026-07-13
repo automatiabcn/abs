@@ -31,7 +31,7 @@ def get_registry() -> Dict[str, BaseProvider]:
         _registry["cloudflare"] = CloudflareProvider()
         _registry["cohere"] = CohereProvider()
         _registry["ollama"] = OllamaProvider()
-        _registry["mlx"] = MLXProvider()  # 010 — Apple Silicon Neural Engine
+        _registry["mlx"] = MLXProvider()  # Apple Silicon Neural Engine
     return _registry
 
 

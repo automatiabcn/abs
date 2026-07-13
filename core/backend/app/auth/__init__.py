@@ -3,4 +3,4 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-003 — Authentication / authorization layer (OAuth 2.1 + JWT)."""
+"""Authentication / authorization layer (OAuth 2.1 + JWT)."""

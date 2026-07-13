@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 from app.auth.bearer import extract_bearer, token_matches
 from app.config import settings
-from app.observability.audit import emit_event  # Q12-L22 sweep 2
+from app.observability.audit import emit_event
 from app.vault.audit_chain import stats as audit_stats
 from app.vault.rotation import RotationBusyError, RotationError, rotate_age_key
 
@@ -68,7 +68,7 @@ async def rotate_key(
     try:
         result = rotate_age_key(reason=body.reason, actor="admin-api")
     except RotationBusyError as exc:
-        # Q12-L22-002 — concurrent rotate guard. Distinct status (409)
+        # Concurrent rotate guard. Distinct status (409)
         # so ops can alert separately from genuine rotation failures.
         emit_event(
             request,

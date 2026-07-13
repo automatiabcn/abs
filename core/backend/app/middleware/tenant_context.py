@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Sprint 2L — global tenant-context middleware (activates Postgres RLS).
+"""global tenant-context middleware (activates Postgres RLS).
 
 Sprint 2K built the RLS plumbing — a ContextVar (``app.db.session.current_tenant``)
 that a SQLAlchemy listener turns into ``SET LOCAL abs.tenant_id`` before every

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""BUG-29 — Neo4j tenant init seed.
+"""Neo4j tenant init seed.
 
 `/admin/graph` is empty on a fresh customer install, which historically caused
 `MATCH (p:Person) ...` to return no rows (looked like the whole stack was

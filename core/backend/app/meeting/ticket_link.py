@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-028 — Action item ↔ Linear/Jira ticket linker.
+"""Action item ↔ Linear/Jira ticket linker.
 
 Decides between *update existing ticket* vs *create new* via cosine similarity
 of embeddings (≥ 0.85 → update). Default backends are mock; real Linear/Jira

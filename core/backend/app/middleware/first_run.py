@@ -3,9 +3,9 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""012 — First-run redirect middleware.
+"""First-run redirect middleware.
 
-Setup tamamlanmadiysa whitelist disindaki tum istekler /setup'a yonlendirilir.
+Until setup is complete, every request outside the allowlist is redirected to /setup.
 Whitelist:
   /healthz
   /v1/setup/*       (setup wizard API)

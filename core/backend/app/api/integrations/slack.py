@@ -30,12 +30,12 @@ from app.api.smart_link import (
 )
 from app.config import settings
 from app.integrations.slack_signing import verify_slack_signature
-from app.observability.audit import emit_event  # Q12-L24 sweep 2
+from app.observability.audit import emit_event
 from app.smart_link.vault_secrets import decrypt_secret, encrypt_secret
 
 router = APIRouter(prefix="/v1/smart-link/slack", tags=["smart-link-slack"])
 
-# 028 — Slack events_api endpoint (signed webhook)
+# Slack events_api endpoint (signed webhook)
 events_router = APIRouter(prefix="/v1/integrations/slack", tags=["slack-events"])
 
 
@@ -44,7 +44,7 @@ from fastapi import Request as _Request  # noqa: E402
 
 @events_router.post("/webhook")
 async def slack_events_webhook(request: _Request) -> dict:
-    """028 — Slack events_api callback. Verifies HMAC signature + replay window."""
+    """Slack events_api callback. Verifies HMAC signature + replay window."""
     body = await request.body()
     timestamp = request.headers.get("X-Slack-Request-Timestamp", "")
     signature = request.headers.get("X-Slack-Signature", "")
@@ -56,7 +56,7 @@ async def slack_events_webhook(request: _Request) -> dict:
         signature=signature,
     )
     if not ok:
-        # Q12-L24-003 — pre-fix the response body included `reason`
+        # Pre-fix the response body included `reason`
         # (signing_secret_empty | header_missing | timestamp_invalid |
         # timestamp_expired | signature_mismatch). That lets a caller
         # iterate and learn (a) whether the secret is provisioned at all

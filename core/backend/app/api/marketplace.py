@@ -9,7 +9,7 @@ Sandbox + cosign verification + Cerbos pre-filter karmasik akislari Sprint 19'da
 modul katmaninda yer alir; bu router musteri-temas eden 4 endpoint'i acar:
 
   GET  /v1/marketplace/plugins          → 5 reference plugin
-  GET  /v1/marketplace/plugins/{id}     → tek plugin detayi (404 yoksa)
+  GET  /v1/marketplace/plugins/{id}     -> one plugin (404 when unknown)
   POST /v1/marketplace/install          → tenant-scoped install (admin auth)
   GET  /v1/marketplace/installed        → plugins installed for this organisation
 
@@ -30,7 +30,7 @@ from pydantic import BaseModel, Field
 
 from app.api.auth import current_admin
 from app.config import settings
-from app.observability.audit import emit_event  # Q12-L23 sweep 5
+from app.observability.audit import emit_event
 from app.db.session import get_engine
 from app.db.models import TenantInstalledPlugin, User
 from sqlmodel import Session, select
@@ -246,7 +246,7 @@ def _list_installed_rows(tenant: str) -> List[Dict[str, Any]]:
 
 
 class InstallBody(BaseModel):
-    # Q12-L25-001 — boundary hardening: pre-fix accepted unbounded
+    # Boundary hardening: pre-fix accepted unbounded
     # plugin_id and tenant strings, allowing 1MB+ payloads (DoS) and
     # filesystem traversal (`tenant="../../etc"` → install path
     # escape) since `tenant` lands in a directory path. Pattern caps
@@ -482,7 +482,7 @@ async def install(
 
     bucket.append(install_record)
     _write_installs(state)
-    # Sprint 2B BUG-34 — durable SQL persistence so the marketplace UI
+    # Durable SQL persistence so the marketplace UI
     # can reliably distinguish installed plugins after a backend restart.
     _persist_install_row(
         tenant=body.tenant,
@@ -542,7 +542,7 @@ async def uninstall(
 
     state[tenant] = [i for i in bucket if i.get("plugin_id") != plugin_id]
     _write_installs(state)
-    # Sprint 2B BUG-34 — soft-delete the SQL row so the marketplace UI
+    # Soft-delete the SQL row so the marketplace UI
     # stops showing the plugin as installed after refresh.
     _mark_uninstalled_row(tenant=tenant, plugin_id=plugin_id)
 
@@ -590,7 +590,7 @@ async def installed(
     resolved = tenant if tenant else _resolve_admin_tenant(_admin)
     _enforce_tenant_match(_admin, resolved)
 
-    # Sprint 2B BUG-34 — SQL is now authoritative; legacy JSON store is
+    # SQL is now authoritative; legacy JSON store is
     # consulted only as a fallback inside `_list_installed_rows` if the
     # tenant_installed_plugins table is unreachable (boot-before-migrate).
     rows = _list_installed_rows(resolved)

@@ -7,7 +7,7 @@
  */
 
 
-// Q12-L18 (S6 R36) — register /sw.js for the /panel/* surface.
+// Q12-L18 — register /sw.js for the /panel/* surface.
 // The SW caches panel routes per strategy (chat = cache-first,
 // dashboard = network-first w/ 3s timeout, rag = stale-while-
 // revalidate). /v1/*, /_next/*, /auth/* always pass through. See

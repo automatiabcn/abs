@@ -3,9 +3,9 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""013 — Plaintext .env → encrypted vault migration.
+"""Plaintext .env → encrypted vault migration.
 
-Idempotent: sadece sops/master key varsa, .env'de plaintext key gorurse migrate.
+Idempotent: migrates only when a sops master key exists and .env still holds a plaintext key.
 .env'den silinir, sops'a yazilir, audit log atilir.
 """
 

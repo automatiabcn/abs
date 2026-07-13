@@ -3,4 +3,4 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-049/T-050 — ABS News Watcher (GitHub + ArXiv + HN + Reddit)."""
+"""ABS News Watcher (GitHub + ArXiv + HN + Reddit)."""

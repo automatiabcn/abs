@@ -89,7 +89,7 @@ class CircuitBreaker:
         self._persist()
 
     def restore_state(self) -> int:
-        """014 — Disk'ten breaker state yukle. Eski/expired open'lar atlanir."""
+        """Disk'ten breaker state yukle. Eski/expired open'lar atlanir."""
         from app.cascade.persist import load
 
         saved = load()
@@ -111,7 +111,7 @@ class CircuitBreaker:
         return restored
 
     def _persist(self) -> None:
-        """Acik/half-open state'leri persist (closed'lar yazilmaz)."""
+        """Persist open/half-open states. Closed ones are not written."""
         try:
             from app.cascade.persist import save
 

@@ -31,7 +31,7 @@ from app.db.models import License
 from app.db.session import get_engine
 from app.email.sender import send_account_delete_email
 from app.licensing import verify_license
-from app.observability.audit import emit_event  # Q12-L23 sweep 2
+from app.observability.audit import emit_event
 
 router = APIRouter(prefix="/v1/me/account", tags=["me"])
 logger = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ def _verify_bearer_license(
             reason="license_verify_exception",
             error_class=type(exc).__name__,
         )
-        # Q12-L24 — never leak the full exc string.
+        # Never leak the full exc string.
         raise HTTPException(401, "license_verify_failed") from exc
     jti = payload.get("jti")
     if not jti:
@@ -154,7 +154,7 @@ async def delete_request(
 ) -> dict:
     """Step 1: issue a 24h confirm token + email it to the customer.
 
-    Sprint 2I UAT-031 — the token never appears in the HTTP response.
+    The token never appears in the HTTP response.
     In production the SMTP path is mandatory; the response body only
     confirms that an email was dispatched. Dev/test environments fall
     back to the console logger (sender.py ``_send_html``).
@@ -208,7 +208,7 @@ async def delete_request(
         "expires_at": expires_at.isoformat(),
         "expires_in_hours": DELETE_TOKEN_TTL_HOURS,
     }
-    # Sprint 2I UAT-031 — production NEVER returns the token in the
+    # Production NEVER returns the token in the
     # response body (it leaks through access logs / APM trace storage).
     # Dev / test (``env != "prod"``) keep the token in the body so
     # operators and the unit-test harness can exercise the flow without
@@ -223,7 +223,7 @@ async def deletion_status(
     request: Request,
     authorization: Optional[str] = Header(default=None),
 ) -> dict:
-    """Sprint 2I UAT-038 — surface the 30-day grace window to the UI.
+    """surface the 30-day grace window to the UI.
 
     Returned shape (always 200):
       - status: "none" | "scheduled" | "purged"

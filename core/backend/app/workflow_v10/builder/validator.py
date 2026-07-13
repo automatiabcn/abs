@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""2-stage workflow validator (Sprint 19 T-S03.3).
+"""2-stage workflow validator.
 
 Stage 1: schema_check — rely on Pydantic by attempting `Workflow.model_validate`.
 Stage 2: semantic_check — extra checks Pydantic can't enforce:

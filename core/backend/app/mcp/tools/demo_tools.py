@@ -47,7 +47,7 @@ def _list_screenshots() -> list[str]:
 @mcp_server.tool()
 @with_hooks("demo_readiness_status")
 async def demo_readiness_status() -> str:
-    """033 — Demo readiness snapshot (demo mode flag, seed version, assets)."""
+    """Demo readiness snapshot (demo mode flag, seed version, assets)."""
     await tracker.bump("demo_readiness_status")
     payload = {
         "demo_mode": bool(settings.demo_mode),

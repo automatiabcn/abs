@@ -3,4 +3,4 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-019/T-020 — ERP integration package (text2SQL + hybrid retrieval)."""
+"""ERP integration package (text2SQL + hybrid retrieval)."""

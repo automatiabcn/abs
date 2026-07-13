@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""014 — Provider health monitoring paketi.
+"""Provider health monitoring paketi.
 
 NOT: Singleton `monitor` instance'ini dogrudan submodule'den import edin:
     from app.health.monitor import monitor

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-F01 — Manual audio upload pipeline.
+"""Manual audio upload pipeline.
 
 Accept .mp3/.mp4/.wav from a tenant, persist to the local recordings dir,
 hand off to the existing `Transcriber` (whisperx local or mock in tests),

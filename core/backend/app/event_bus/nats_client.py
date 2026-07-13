@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-001 — NATS JetStream client wrapper.
+"""NATS JetStream client wrapper.
 
 Used by Inngest worker, auth events, RAG ingest, meeting pipeline.
 Singleton connection + JetStream context with idempotent stream

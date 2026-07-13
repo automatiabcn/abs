@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q12-L23 — RequestIDMiddleware: per-request correlation ID.
+"""RequestIDMiddleware: per-request correlation ID.
 
 Reads the `X-Request-ID` request header (or generates a UUID4 hex token
 when absent) and stores it on `request.state.request_id`. Echoes the

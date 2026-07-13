@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-008 — Auth lifecycle events (NATS publish).
+"""Auth lifecycle events (NATS publish).
 
 Publishes user.registered / user.login.success / user.login.failed envelopes
 to JetStream subjects consumed by the Inngest bridge in

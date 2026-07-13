@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-002 — NATS → Inngest bridge.
+"""NATS → Inngest bridge.
 
 Subscribes to durable NATS subjects and forwards each message as an
 Inngest event. Decouples internal services (which only know NATS) from

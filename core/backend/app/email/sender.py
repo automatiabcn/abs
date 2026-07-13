@@ -217,7 +217,7 @@ def send_account_delete_email(
     expires_at: str,
     lang: str = "en",
 ) -> None:
-    """Sprint 2I UAT-031 — KVKK/GDPR account deletion confirmation email.
+    """KVKK/GDPR account deletion confirmation email.
 
     The confirmation token leaves the backend only via this email path.
     It must not appear in any HTTP response body so it cannot be

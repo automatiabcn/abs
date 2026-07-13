@@ -98,7 +98,7 @@ def _sign(payload: Dict) -> str:
 
 
 def _token_digest(token: str) -> str:
-    """Q10-L6-002 — stable digest for blacklist storage (not the raw token)."""
+    """stable digest for blacklist storage (not the raw token)."""
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
@@ -233,7 +233,7 @@ class RevokedTokenInfo(BaseModel):
 def revoke_token(
     body: RevokeTokenRequest, admin: dict = Depends(current_admin)
 ) -> None:
-    """Q10-L6-002 — admin marks a previously-minted token as revoked.
+    """admin marks a previously-minted token as revoked.
 
     Idempotent: revoking an already-blacklisted token is a no-op.
     Decoding is best-effort; an unrecognised payload still gets recorded
@@ -314,7 +314,7 @@ def revoke_token(
 def list_revoked_tokens(
     admin: dict = Depends(current_admin),
 ) -> list[RevokedTokenInfo]:
-    """Q10-L6-002 — list of revoked tokens for the admin's tenant."""
+    """list of revoked tokens for the admin's tenant."""
     tenant = _resolve_tenant(admin["sub"])
     with get_session_sync() as db:
         rows = db.exec(

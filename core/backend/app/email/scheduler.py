@@ -179,7 +179,7 @@ def _render_for(row: EmailQueue, db: Session) -> Tuple[str, str]:
     elif row.kind == "first_success":
         ctx["first_tool_name"] = "system_status"
 
-    # 023 — preferred_lang from License row (default 'en')
+    # Preferred_lang from License row (default 'en')
     lic = db.scalars(select(License).where(License.jti == row.license_jti)).first()
     lang = lic.preferred_lang if (lic and lic.preferred_lang) else "en"
     return _render(f"{row.kind}.html", lang=lang, **ctx)

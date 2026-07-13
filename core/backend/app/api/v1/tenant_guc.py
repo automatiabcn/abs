@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Sprint 2K — FastAPI dependency that pins the request tenant.
+"""FastAPI dependency that pins the request tenant.
 
 The auth pipeline already decodes the JWT and exposes the principal via
 ``AuthContext`` (``app.api.v1.deps``). This dep is a thin adapter on top:

@@ -24,7 +24,7 @@ from app.mcp.tracking import tracker  # noqa: E402
 @mcp_server.tool()
 @with_hooks("admin_overview")
 async def admin_overview() -> str:
-    """032 — Aggregated admin snapshot (billing/security/compliance/beta/vault)."""
+    """Aggregated admin snapshot (billing/security/compliance/beta/vault)."""
     await tracker.bump("admin_overview")
     from app.api.admin.dashboard import _build_dashboard
 

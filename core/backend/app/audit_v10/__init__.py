@@ -3,4 +3,4 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-046 — SOC2 audit log retention (HMAC chain + S3 cold-tier hand-off)."""
+"""SOC2 audit log retention (HMAC chain + S3 cold-tier hand-off)."""

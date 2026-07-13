@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-053 — Code verifier: AST parse + ruff dry-run + sandbox exec budget.
+"""Code verifier: AST parse + ruff dry-run + sandbox exec budget.
 
 The sandbox is a process-isolated `python -c` with timeout. Code that touches
 the network, filesystem outside `/tmp`, or imports shell-spawning APIs is

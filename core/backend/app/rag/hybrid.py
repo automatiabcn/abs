@@ -3,12 +3,12 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""016 — RAG hybrid retrieval (BM25 keyword + cosine semantic, weighted fusion).
+"""RAG hybrid retrieval (BM25 keyword + cosine semantic, weighted fusion).
 
 Cosine ile genis havuz cek (top_k * 6 veya min 30), BM25 ile yeniden sirala,
 fusion `alpha_semantic * cos_n + (1 - alpha_semantic) * bm25_n` ile top_k.
 
-`alpha_semantic` 0.0 → sadece BM25, 1.0 → sadece cosine, default 0.6.
+`alpha_semantic` 0.0 -> BM25 only, 1.0 -> cosine only; the default is 0.6.
 Min-max normalize iki skoru ortak skala'ya getirir.
 """
 
@@ -73,7 +73,7 @@ async def query_hybrid(
     top_k: int = 5,
     alpha_semantic: float = 0.6,
 ) -> List[Dict[str, Any]]:
-    """BM25 + cosine fusion. Bos query → []. Embed/Chroma fail → [{error: ...}]."""
+    """BM25 + cosine fusion. Empty query -> []. Embed/Chroma failure -> [{error: ...}]."""
     if not question or not question.strip():
         return []
     try:

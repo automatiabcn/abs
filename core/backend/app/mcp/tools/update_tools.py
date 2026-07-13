@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""014 — Update / health / breaker MCP tool'lari (3 tool)."""
+"""Update / health / breaker MCP tool'lari (3 tool)."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ async def update_check() -> str:
 @mcp_server.tool()
 @with_hooks("health_status")
 async def health_status() -> str:
-    """Tum provider'larin real-time ping durumu."""
+    """Live ping status for every provider."""
     await tracker.bump("health_status")
     from app.health.monitor import monitor
 

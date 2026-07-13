@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""014 — Remote release manifest fetch + cache + version compare."""
+"""Remote release manifest fetch + cache + version compare."""
 
 from __future__ import annotations
 
@@ -83,7 +83,7 @@ async def fetch_manifest(force: bool = False) -> Dict[str, Any]:
         logger.exception("manifest_fetch_failed request_id=%s", request_id)
         return {"error": "manifest_fetch_failed", "request_id": request_id}
 
-    # 015 — fail-closed signature verify (settings.update_signature_required)
+    # Fail-closed signature verify (settings.update_signature_required)
     if settings.update_signature_required:
         from app.update.signature import fetch_signature, verify_manifest
 

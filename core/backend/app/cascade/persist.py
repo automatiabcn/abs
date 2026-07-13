@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""014 — Circuit breaker state persist (restart sonrasi open state korunur)."""
+"""Circuit breaker state persist (restart sonrasi open state korunur)."""
 
 from __future__ import annotations
 

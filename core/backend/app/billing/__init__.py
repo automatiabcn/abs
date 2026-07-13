@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""015 — Billing / cost estimation paketi."""
+"""Billing / cost estimation paketi."""
 
 from .cost_estimator import estimate_daily_cost
 

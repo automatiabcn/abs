@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-009 — Tenant / project / tenant_projects ORM models.
+"""Tenant / project / tenant_projects ORM models.
 
 Mirrors the alembic 0003_tenant_projects migration so SQLModel.metadata
 recognises the tables for `init_db()` (used in tests).

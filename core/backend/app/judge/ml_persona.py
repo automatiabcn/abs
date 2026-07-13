@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""016 — ML-based persona training (logistic regression saf Python).
+"""ML-based persona training (logistic regression saf Python).
 
 Outcome (accept=1, reject=0) → 3-feature logistic regression:
   - ast_score (0-10)

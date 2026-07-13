@@ -3,4 +3,4 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""032 — Admin dashboard subpackage."""
+"""Admin dashboard subpackage."""

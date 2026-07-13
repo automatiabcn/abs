@@ -3,11 +3,11 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-055 — Sliding-window p95 latency guard.
+"""Sliding-window p95 latency guard.
 
 Tracks the most recent N samples per route and emits a structured `Alert`
 record when p95 breaches the configured budget. Used to wire LangFuse
-alerts (T-018) + the Slack/Telegram notification hook in T-058.
+alerts + the Slack/Telegram notification hook in T-058.
 """
 
 from __future__ import annotations

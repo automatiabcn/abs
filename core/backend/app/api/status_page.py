@@ -174,7 +174,7 @@ def _check_stripe() -> dict:
 
 @router.get("/v1/status")
 async def status_json() -> dict:
-    """025 — Public status JSON. No auth (used by uptime monitors)."""
+    """Public status JSON. No auth (used by uptime monitors)."""
     services = [
         _check_db(),
         _check_vault(),
@@ -367,7 +367,7 @@ async def admin_status_full(
     request: Request,
     authorization: Optional[str] = Header(default=None),
 ) -> dict:
-    """031 — Admin-only enriched status: revenue, signups, recent activity."""
+    """Admin-only enriched status: revenue, signups, recent activity."""
     _require_admin(authorization, request)
     base = await status_json()
     base["licenses_active"] = _licenses_active_count()

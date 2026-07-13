@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""013 — sops + age subprocess wrapper.
+"""sops + age subprocess wrapper.
 
 Shell commands:
   sops -d <path>            → stdout: plaintext yaml
@@ -11,7 +11,7 @@ Shell commands:
   age-keygen -o <key_path>  → yeni master key (manuel: init_vault.sh)
 
 Master key dosya yolu: settings.vault_key_path (default /app/vault-key/age.key)
-Secrets dosyasi:       settings.vault_secrets_path (default /app/data/secrets.yaml)
+Secrets file:       settings.vault_secrets_path (default /app/data/secrets.yaml)
 
 Cleartext disk'te kalmasin: sops -d stdout'a, dosyaya yazmiyor.
 """
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 class VaultError(Exception):
-    """Vault islem hatasi — non-transient veya transient."""
+    """A vault operation failed — transient or not."""
 
     def __init__(self, msg: str, *, transient: bool = False):
         super().__init__(msg)
@@ -78,7 +78,7 @@ def _version_at_least(actual: str, required: str) -> bool:
 
 
 def check_production_vault() -> None:
-    """027 — Boot-time check: if `vault_require_sops` set, fail-fast on missing/old sops.
+    """Boot-time check: if `vault_require_sops` set, fail-fast on missing/old sops.
 
     Dev mode (`vault_require_sops=False`): warn log only, no exception.
     """
@@ -117,7 +117,7 @@ def _sops_env() -> Dict[str, str]:
 
 
 def decrypt_all() -> Dict[str, Any]:
-    """secrets.yaml'i decrypt et, dict dondur. Yoksa bos dict."""
+    """Decrypt secrets.yaml into a dict. Missing file yields an empty dict."""
     if not sops_available():
         raise VaultError("sops/age is not installed", transient=False)
     if not master_key_exists():
@@ -127,7 +127,7 @@ def decrypt_all() -> Dict[str, Any]:
         )
     secrets_path = Path(settings.vault_secrets_path)
     if not secrets_path.is_file():
-        return {}  # vault bos — fresh install
+        return {}  # empty vault — fresh install
     try:
         result = subprocess.run(
             [
@@ -178,7 +178,7 @@ def _read_age_recipient() -> str:
 
 
 def encrypt_all(data: Dict[str, Any]) -> None:
-    """Tum dict'i encrypt et, secrets.yaml'a in-place yaz (atomic)."""
+    """Encrypt the whole dict and write secrets.yaml in place, atomically."""
     if not sops_available():
         raise VaultError("sops/age is not installed", transient=False)
     if not master_key_exists():
@@ -246,7 +246,7 @@ def write_secret(key: str, value: str) -> None:
 
 
 def read_secret(key: str) -> Optional[str]:
-    """Tek secret oku (boot sonrasi cache.py kullanin)."""
+    """Read a single secret. After boot, prefer cache.py."""
     return decrypt_all().get(key)
 
 

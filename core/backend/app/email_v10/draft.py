@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-037 — Email RAG draft (classified email + tenant RAG context → reply)."""
+"""Email RAG draft (classified email + tenant RAG context → reply)."""
 
 from __future__ import annotations
 

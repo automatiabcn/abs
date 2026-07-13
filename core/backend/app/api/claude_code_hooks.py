@@ -15,7 +15,7 @@ point at so their Claude Code session is gated by ABS:
 All three accept the integration token issued by `/v1/mcp/tokens`
 (scope=hooks or all). Token is HMAC-signed; no DB lookup needed.
 
-Q10-L6-001 — quota-check now enforces a soft per-tenant rolling-hour
+Quota-check now enforces a soft per-tenant rolling-hour
 counter on risky tools (Bash/Write/Edit/NotebookEdit) instead of
 unconditionally returning "allow". Production deployments should swap
 the in-process counter for Redis (cluster-safe).
@@ -39,7 +39,7 @@ from app.api.mcp_tokens import verify_token
 def _auth_dependency(
     authorization: Optional[str] = Header(None),
 ) -> Dict:
-    """Q11-L15-001: enforce auth at the dependency layer so the 401
+    """enforce auth at the dependency layer so the 401
     fires BEFORE pydantic body validation. Previously the routes took
     `authorization: Header(None)` as a regular parameter; FastAPI
     parses the body first, returning 422 to unauthed callers and
@@ -134,7 +134,7 @@ def quota_check(
 
     used = _record_and_count(tenant)
     if used > RISKY_HOURLY_LIMIT:
-        # Q10-L6-001 — hard gate so a runaway Claude Code session can't
+        # Hard gate so a runaway Claude Code session can't
         # burn unbounded risky operations against a single tenant.
         return {
             "hookSpecificOutput": {
