@@ -49,7 +49,7 @@ const PIPELINES: PipelineDef[] = [
     id: "qual_code",
     label: "qual_code",
     family: "quality",
-    description: "Üret → doğrula → düzelt (kod üretimi)",
+    description: "Write code → verify → fix",
     chain: ["kimi+gpt20b", "codellama", "gptoss"],
     icon: Sparkles,
     tone: "emerald",
@@ -58,7 +58,7 @@ const PIPELINES: PipelineDef[] = [
     id: "qual_tr",
     label: "qual_tr",
     family: "quality",
-    description: "Türkçe metin üret → kontrol → polish",
+    description: "Write Turkish prose → check → polish",
     chain: ["qwen32b+gemini", "llama", "kimi2"],
     icon: Sparkles,
     tone: "amber",
@@ -67,7 +67,7 @@ const PIPELINES: PipelineDef[] = [
     id: "qual_analysis",
     label: "qual_analysis",
     family: "quality",
-    description: "3 perspektif → sentez (derin analiz)",
+    description: "Three viewpoints → one synthesis (deep analysis)",
     chain: ["gptoss+kimi2+gemini-pro", "synthesise"],
     icon: Sparkles,
     tone: "violet",
@@ -76,7 +76,7 @@ const PIPELINES: PipelineDef[] = [
     id: "qual_translate",
     label: "qual_translate",
     family: "quality",
-    description: "Çevir → geri çevir → doğrula → düzelt",
+    description: "Translate → translate back → verify → fix",
     chain: ["qwen32b", "kimi", "gptoss"],
     icon: Sparkles,
     tone: "blue",
@@ -94,7 +94,7 @@ const PIPELINES: PipelineDef[] = [
     id: "qual_human",
     label: "qual_human",
     family: "quality",
-    description: "Genel humanize katmanı (yaklaşık-yarı senin stilinde)",
+    description: "General humanize layer — output reads closer to your own style",
     chain: ["qwen32b", "humanize"],
     icon: Sparkles,
     tone: "rose",
@@ -103,7 +103,7 @@ const PIPELINES: PipelineDef[] = [
     id: "race",
     label: "race",
     family: "race",
-    description: "3 model paralel — en hızlısı kazanır",
+    description: "Three models in parallel — the fastest answer wins",
     chain: ["gptoss", "kimi", "kimi2"],
     icon: Trophy,
     tone: "indigo",
@@ -112,7 +112,7 @@ const PIPELINES: PipelineDef[] = [
     id: "race_code",
     label: "race_code",
     family: "race",
-    description: "Kod yarış: kimi vs gptoss20 vs cf-coder",
+    description: "Code race: kimi vs gptoss20 vs cf-coder",
     chain: ["kimi", "gptoss20", "cf-coder"],
     icon: Trophy,
     tone: "emerald",
@@ -121,7 +121,7 @@ const PIPELINES: PipelineDef[] = [
     id: "race_tr",
     label: "race_tr",
     family: "race",
-    description: "Türkçe yarış: qwen32b vs gemini vs kimi",
+    description: "Turkish prose race: qwen32b vs gemini vs kimi",
     chain: ["qwen32b", "gemini", "kimi"],
     icon: Trophy,
     tone: "amber",
@@ -234,8 +234,8 @@ export default function PipelinesPage() {
           Quality Pipelines
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Tek model değil, zincir. ABS&apos;in kalite imzası — üret → doğrula
-          → düzelt veya yarış (en hızlı kazanır).
+          A chain of models, not one. Either write → verify → fix, or race
+          several models and take the fastest answer.
         </p>
       </motion.header>
 
@@ -302,7 +302,7 @@ export default function PipelinesPage() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <PlayCircle className="h-4 w-4 text-primary" />
-            {active.label} çalıştır
+            Run {active.label}
           </CardTitle>
           <CardDescription>{active.description}</CardDescription>
         </CardHeader>
@@ -313,8 +313,8 @@ export default function PipelinesPage() {
             onChange={(e) => setPrompt(e.target.value)}
             placeholder={
               active.family === "quality"
-                ? "Pipeline'a verilecek girdi…"
-                : "Hangi prompt'u yarıştıralım?"
+                ? "What should the pipeline work on?"
+                : "Which prompt should the models race on?"
             }
             className="w-full rounded-md border border-border bg-background p-3 text-sm outline-none focus:border-primary/50"
             data-test="pipeline-input"
@@ -325,7 +325,7 @@ export default function PipelinesPage() {
             disabled={run.isPending || !prompt.trim()}
             data-test="pipeline-run-button"
           >
-            {run.isPending ? "Çalıştırılıyor…" : "Çalıştır"}
+            {run.isPending ? "Running…" : "Run"}
           </Button>
           {error && (
             <div
@@ -333,7 +333,7 @@ export default function PipelinesPage() {
               data-test="pipeline-error-tile"
               className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200"
             >
-              <span>Hata: {error}</span>
+              <span>The run failed: {error}</span>
               {/* Q11-L16-001 — match the chat panel error UX: pair the
                   raw error string with a configure path + retry CTA so
                   the user knows where to go and how to recover. */}
@@ -343,7 +343,7 @@ export default function PipelinesPage() {
                   data-test="pipeline-configure-cta"
                   className="rounded border border-rose-500/40 px-2 py-0.5 hover:bg-rose-500/20"
                 >
-                  Sağlayıcı yapılandır
+                  Configure a provider
                 </a>
                 <button
                   type="button"
@@ -352,7 +352,7 @@ export default function PipelinesPage() {
                   disabled={run.isPending || !prompt.trim()}
                   className="rounded border border-rose-500/40 px-2 py-0.5 hover:bg-rose-500/20 disabled:opacity-40"
                 >
-                  Tekrar dene
+                  Try again
                 </button>
               </div>
             </div>
@@ -375,10 +375,10 @@ export default function PipelinesPage() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Layers className="h-4 w-4 text-primary" />
-            Son çalıştırmalar
+            Recent runs
           </CardTitle>
           <CardDescription>
-            qual_* + race_* enstrümanlarının son 20 çağrısı (10sn auto-refresh).
+            The last 20 qual_* and race_* calls, refreshed every 10 seconds.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -390,7 +390,7 @@ export default function PipelinesPage() {
             </div>
           ) : (recent.data?.pipeline_runs ?? []).length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Henüz pipeline çağrısı yok.
+              No pipeline runs yet.
             </p>
           ) : (
             <ul className="space-y-2">
@@ -404,7 +404,7 @@ export default function PipelinesPage() {
                     {r.tool}
                   </Badge>
                   <span className="text-muted-foreground">
-                    {new Date(r.ts).toLocaleString("tr-TR")}
+                    {new Date(r.ts).toLocaleString()}
                   </span>
                   <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
                     {r.steps.map((s, j) => (

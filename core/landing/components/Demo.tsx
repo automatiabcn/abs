@@ -25,10 +25,10 @@ const Demo: FC = () => {
           id="demo-title"
           className="text-3xl font-bold tracking-tight sm:text-4xl"
         >
-          3 dakikada ABS turu
+          A 3-minute tour of ABS
         </h2>
         <p className="mt-4 text-muted-foreground">
-          Setup wizard, MCP tool çağrısı ve panel akışı tek videoda.
+          The setup wizard, an MCP tool call and the panel flow in one video.
         </p>
       </div>
 
@@ -49,10 +49,10 @@ const Demo: FC = () => {
           ) : (
             <div
               role="img"
-              aria-label="Demo videosu yakında yüklenecek"
+              aria-label="Demo video coming soon"
               className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground"
             >
-              Demo videosu yakında.
+              Demo video coming soon.
             </div>
           )}
         </div>

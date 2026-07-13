@@ -5,10 +5,10 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 2B BUG-33 — Provider Yapılandır modal.
+// The provider settings dialog.
 //
 // Shows the operator's stored API key (masked, never the full value), a
-// "Şimdi test et" button (`POST /v1/admin/providers/{id}/test`), AND an
+// "Test it now" button (`POST /v1/admin/providers/{id}/test`), AND an
 // in-place key edit form that POSTs the new key to
 // `POST /v1/admin/providers/{id}` (the Sprint 2C save endpoint). Previously
 // the only edit path was a link to /setup/step/providers, which 404s /
@@ -121,7 +121,7 @@ export default function ProviderConfigModal({
       const data = (await res.json()) as TestResult;
       setResult(data);
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "bilinmeyen hata");
+      setError(exc instanceof Error ? exc.message : "unknown error");
     } finally {
       setTesting(false);
     }
@@ -159,7 +159,7 @@ export default function ProviderConfigModal({
       setEditing(false);
       onSaved?.();
     } catch (exc) {
-      setSaveErr(exc instanceof Error ? exc.message : "bilinmeyen hata");
+      setSaveErr(exc instanceof Error ? exc.message : "unknown error");
     } finally {
       setSaving(false);
     }
@@ -179,41 +179,41 @@ export default function ProviderConfigModal({
           className="flex items-center gap-2 text-lg font-semibold tracking-tight"
         >
           <KeyRound className="h-4 w-4 text-primary" />
-          {provider.label} sağlayıcı ayarları
+          {provider.label}
         </h2>
 
         <dl className="mt-4 space-y-3 text-sm">
           <div className="flex items-center justify-between">
-            <dt className="text-muted-foreground">Durum</dt>
+            <dt className="text-muted-foreground">Status</dt>
             <dd>
               {provider.configured ? (
                 <Badge
                   variant="outline"
                   className="border-emerald-500/40 text-emerald-300"
                 >
-                  Yapılandırıldı
+                  Configured
                 </Badge>
               ) : (
                 <Badge
                   variant="outline"
                   className="border-rose-500/40 text-rose-300"
                 >
-                  Eksik
+                  Missing
                 </Badge>
               )}
             </dd>
           </div>
 
           <div className="flex items-center justify-between">
-            <dt className="text-muted-foreground">API anahtarı</dt>
+            <dt className="text-muted-foreground">API key</dt>
             <dd className="font-mono text-xs">
               {maskedHint(provider.configured)}
             </dd>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Anahtar tarayıcıya hiçbir zaman gönderilmez; yalnızca kaydetmek
-            için backend&apos;e iletilir, orada şifreli vault&apos;a yazılır.
+            The key is stored encrypted on the server. It is never sent back to
+            this page, so once saved you cannot read it again — only replace it.
           </p>
         </dl>
 
@@ -223,8 +223,8 @@ export default function ProviderConfigModal({
               htmlFor="provider-new-key"
               className="block text-xs text-muted-foreground"
             >
-              Yeni API anahtarı
-              {isCloudflare ? " — Cloudflare API Token" : ""}
+              New API key
+              {isCloudflare ? " — Cloudflare API token" : ""}
             </label>
             <input
               id="provider-new-key"
@@ -233,7 +233,7 @@ export default function ProviderConfigModal({
               spellCheck={false}
               value={newKey}
               onChange={(e) => setNewKey(e.target.value)}
-              placeholder="sk-… / gsk_… / yeni anahtar"
+              placeholder="sk-… / gsk_… / paste the key"
               className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm"
               data-testid="provider-key-input"
             />
@@ -243,7 +243,7 @@ export default function ProviderConfigModal({
                   htmlFor="provider-account-id"
                   className="block text-xs text-muted-foreground"
                 >
-                  Cloudflare Account ID
+                  Cloudflare account ID
                 </label>
                 <input
                   id="provider-account-id"
@@ -252,7 +252,7 @@ export default function ProviderConfigModal({
                   spellCheck={false}
                   value={accountId}
                   onChange={(e) => setAccountId(e.target.value)}
-                  placeholder="örn. 1a2b3c4d… (Workers AI hesap kimliği)"
+                  placeholder="e.g. 1a2b3c4d… (the Workers AI account)"
                   className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm"
                   data-testid="provider-account-id-input"
                 />
@@ -263,7 +263,7 @@ export default function ProviderConfigModal({
                 className="rounded-md border border-rose-500/30 bg-rose-500/10 p-2 text-xs text-rose-200"
                 data-testid="provider-key-save-error"
               >
-                Kaydedilemedi: {saveErr}
+                Not saved: {saveErr}
               </div>
             )}
           </div>
@@ -274,7 +274,7 @@ export default function ProviderConfigModal({
             className="mt-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 text-sm text-emerald-200"
             data-testid="provider-key-saved"
           >
-            ✓ Anahtar kaydedildi, test edildi ve vault&apos;a yazıldı.
+            ✓ Key saved, tested, and stored encrypted.
           </div>
         )}
 
@@ -292,7 +292,7 @@ export default function ProviderConfigModal({
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" />
                 <span>
-                  Başarılı — {result.latency_ms} ms
+                  It answered in {result.latency_ms} ms
                   {result.model ? ` · ${result.model}` : ""}
                 </span>
               </div>
@@ -300,7 +300,8 @@ export default function ProviderConfigModal({
               <div className="flex items-center gap-2">
                 <XCircle className="h-4 w-4" />
                 <span>
-                  Hata: {result.error ?? "bilinmeyen"} ({result.latency_ms} ms)
+                  It refused: {result.error ?? "no reason given"} (
+                  {result.latency_ms} ms)
                 </span>
               </div>
             )}
@@ -312,7 +313,7 @@ export default function ProviderConfigModal({
             data-testid="provider-test-transport-error"
             className="mt-4 rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200"
           >
-            Transport hatası: {error}
+            Could not reach the server: {error}
           </div>
         )}
 
@@ -323,7 +324,7 @@ export default function ProviderConfigModal({
             onClick={onClose}
             data-testid="provider-config-cancel"
           >
-            Kapat
+            Close
           </Button>
 
           {editing ? (
@@ -338,7 +339,7 @@ export default function ProviderConfigModal({
                 }}
                 data-testid="provider-key-cancel"
               >
-                Vazgeç
+                Cancel
               </Button>
               <Button
                 type="button"
@@ -349,10 +350,10 @@ export default function ProviderConfigModal({
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                    Kaydediliyor…
+                    Saving…
                   </>
                 ) : (
-                  "Kaydet"
+                  "Save"
                 )}
               </Button>
             </>
@@ -367,7 +368,7 @@ export default function ProviderConfigModal({
               }}
               data-testid="provider-config-edit-link"
             >
-              API anahtarını değiştir
+              Replace the key
             </Button>
           )}
 
@@ -380,10 +381,10 @@ export default function ProviderConfigModal({
             {testing ? (
               <>
                 <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                Test ediliyor…
+                Testing…
               </>
             ) : (
-              "Şimdi test et"
+              "Test it now"
             )}
           </Button>
         </div>

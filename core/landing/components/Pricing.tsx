@@ -5,8 +5,8 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Pricing component deprecated — pilot/PoC için Contact.tsx kullanılır.
-// Bu dosya backwards-compat için boş export tutuyor.
+// Pricing component deprecated — Contact.tsx is used for pilot/PoC.
+// This file keeps an empty export for backwards compatibility.
 import type { FC } from "react";
 
 const Pricing: FC = () => null;

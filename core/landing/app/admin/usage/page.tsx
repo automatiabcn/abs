@@ -21,9 +21,9 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "Kullanım — ABS Admin",
+  title: "Usage — ABS Admin",
   description:
-    "Free path / Claude bütçe kullanımı, son 24 saat sağlayıcı dağılımı ve 7-günlük token trend.",
+    "Free vs. paid calls, Claude budget spend, calls by provider over the last 24 hours, and the 7-day token trend.",
   robots: { index: false, follow: false },
 };
 

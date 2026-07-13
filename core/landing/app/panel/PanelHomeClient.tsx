@@ -5,12 +5,12 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// R70 (S8) — client island for the /panel "Genel Bakış" home.
-// Original logic from `page.tsx` lifted here verbatim; the only delta
-// is that the three server-side payloads (`initialTools`,
-// `initialQuota`, `initialCascade`) seed React Query as `initialData`
-// so the StatCards + alert banner have data on first paint instead of
-// shipping skeletons that would later swap in.
+// The /panel home screen.
+//
+// The three server-side payloads (`initialTools`, `initialQuota`,
+// `initialCascade`) seed React Query as `initialData`, so the cards and the
+// alert banner have real numbers on first paint instead of skeletons that
+// swap in a moment later.
 "use client";
 
 import dynamic from "next/dynamic";
@@ -139,10 +139,10 @@ export default function PanelHomeClient({
         transition={{ duration: 0.3 }}
         className="mb-8"
       >
-        <h1 className="text-2xl font-semibold tracking-tight">Genel Bakış</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          ABS Server kontrol merkezi — MCP araçları, cascade trafiği ve kota
-          durumu.
+          What your server has been doing: the questions it answered, who
+          answered them, and how much of your quota is left.
         </p>
       </motion.header>
 
@@ -151,29 +151,29 @@ export default function PanelHomeClient({
         className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
       >
         <StatCard
-          title="MCP Tools"
+          title="Tools"
           value={tools.isLoading ? "…" : toolsTotal}
           hint={
             tools.data?.category_counts
-              ? `${Object.keys(tools.data.category_counts).length} kategori`
-              : "yükleniyor"
+              ? `across ${Object.keys(tools.data.category_counts).length} categories`
+              : "loading"
           }
           icon={Package}
           delay={0.0}
         />
         <StatCard
-          title="Cascade (24h)"
-          value={cascade.isLoading ? "…" : cascadeCount.toLocaleString("tr-TR")}
-          hint={`${providersActive} aktif sağlayıcı`}
+          title="Answers today"
+          value={cascade.isLoading ? "…" : cascadeCount.toLocaleString()}
+          hint={`${providersActive} providers answering`}
           icon={Activity}
           delay={0.05}
         />
         <StatCard
-          title="Claude Kotası"
+          title="Quota used"
           value={`${claudePct}%`}
           delta={
             claudeLimit > 0
-              ? `${claudeUsed.toLocaleString("tr-TR")} / ${claudeLimit.toLocaleString("tr-TR")}`
+              ? `${claudeUsed.toLocaleString()} / ${claudeLimit.toLocaleString()}`
               : undefined
           }
           deltaType={
@@ -187,9 +187,9 @@ export default function PanelHomeClient({
           delay={0.1}
         />
         <StatCard
-          title="Sağlayıcılar"
+          title="Providers"
           value={providersActive}
-          hint="cascade routing"
+          hint="ready to answer"
           icon={Layers}
           delay={0.15}
         />
@@ -206,10 +206,10 @@ export default function PanelHomeClient({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary" />
-                Cascade trafiği
+                Answers over the last day
               </CardTitle>
               <CardDescription>
-                Son 24 saatlik MCP cascade çağrı sayısı.
+                Every question the server answered, by the hour.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -217,7 +217,7 @@ export default function PanelHomeClient({
                 <Skeleton className="h-64 w-full" />
               ) : cascadeSeries.length === 0 ? (
                 <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-                  Veri yok
+                  Nothing yet
                 </div>
               ) : (
                 <CascadeAreaChart data={cascadeSeries} />
@@ -235,10 +235,10 @@ export default function PanelHomeClient({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-primary" />
-                Tool kategorileri
+                What the tools do
               </CardTitle>
               <CardDescription>
-                MCP araç dağılımı (top 8 kategori).
+                The eight biggest groups of tools this server can reach.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -250,7 +250,7 @@ export default function PanelHomeClient({
                 </div>
               ) : categoryBars.length === 0 ? (
                 <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-                  Veri yok
+                  Nothing yet
                 </div>
               ) : (
                 <CategoryBarList data={categoryBars} />
@@ -265,11 +265,11 @@ export default function PanelHomeClient({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-primary" />
-              Sistem haritası
+              How it all connects
             </CardTitle>
             <CardDescription>
-              Sağlayıcılar, MCP tool kümeleri, workflow'lar ve RAG dokümanları
-              — force-directed canlı graph (Phase L).
+              Providers, tools, workflows and the documents they draw on — live,
+              and moving as the server works.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -283,7 +283,8 @@ export default function PanelHomeClient({
           role="alert"
           className="mt-6 rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200"
         >
-          Bazı veriler yüklenemedi. Backend bağlantısını kontrol edin.
+          Some of this could not be loaded. The server may be down — check that
+          it is running, then reload.
         </p>
       )}
     </main>

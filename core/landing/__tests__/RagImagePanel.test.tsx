@@ -64,7 +64,7 @@ describe("RAG panel — unified image/text UX", () => {
     expect(screen.getByTestId("rag-kind-images")).toBeTruthy();
   });
 
-  it("badges an image hit and 'Görsel' filter sends kinds=['image']", async () => {
+  it("badges an image hit and 'Images' filter sends kinds=['image']", async () => {
     render(<RagPage />);
     fireEvent.change(await screen.findByPlaceholderText(/CTO/i), {
       target: { value: "logo" },
@@ -73,7 +73,7 @@ describe("RAG panel — unified image/text UX", () => {
     fireEvent.click(screen.getByTestId("rag-run-query"));
 
     await waitFor(() => expect(screen.getByTestId("rag-hit-kind")).toBeTruthy());
-    expect(screen.getByTestId("rag-hit-kind").textContent).toContain("Görsel");
+    expect(screen.getByTestId("rag-hit-kind").textContent).toContain("Image");
     expect(screen.getByTestId("rag-hit-kind").textContent).toContain("invoice.png");
     expect(captured.body.kinds).toEqual(["image"]);
   });
@@ -94,10 +94,10 @@ describe("RAG panel — unified image/text UX", () => {
     );
     expect(captured.imageQueryUrl).toContain("/v1/rag/query-by-image");
     // the image hit is rendered
-    expect(screen.getByTestId("rag-hit-kind").textContent).toContain("Görsel");
+    expect(screen.getByTestId("rag-hit-kind").textContent).toContain("Image");
   });
 
-  it("'Tümü' filter sends no kinds (docs + images)", async () => {
+  it("'All' filter sends no kinds (docs + images)", async () => {
     render(<RagPage />);
     fireEvent.change(await screen.findByPlaceholderText(/CTO/i), {
       target: { value: "logo" },

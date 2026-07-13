@@ -1,12 +1,7 @@
-// Polish round R7 — guard the rewritten Providers tab. Lowercase
-// placeholder, missing status badge, plain-text input → all regressions
-// the polish round explicitly removed.
-//
-// De-dup round — provider key *editing* was moved out of this tab into the
-// canonical /admin/providers page (ProviderConfigModal), so the Settings tab
-// is now a read-only status mirror that delegates via a "Yönet" link. The two
-// guards below assert that single-source-of-truth design instead of the
-// retired embedded-edit form (no duplicate placeholder map, no key input here).
+// Guard the Providers tab in Settings: it is a read-only status mirror, and
+// key *editing* lives in exactly one place — /admin/providers. The guards
+// below assert that single source of truth, so the retired embedded edit form
+// (its own placeholder map, its own key input) cannot quietly grow back.
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -30,8 +25,8 @@ describe("ProvidersTab — polish round R7 guards", () => {
 
   it("renders a status badge per provider", () => {
     expect(SETTINGS_PAGE).toContain('data-test={`provider-status-${p.id}`}');
-    expect(SETTINGS_PAGE).toContain("Yapılandırıldı");
-    expect(SETTINGS_PAGE).toContain('"Eksik"');
+    expect(SETTINGS_PAGE).toContain('"Configured"');
+    expect(SETTINGS_PAGE).toContain('"Missing"');
   });
 
   it("does not embed a duplicate API key input (editing lives elsewhere)", () => {

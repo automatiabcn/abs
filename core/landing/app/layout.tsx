@@ -37,11 +37,11 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Automatia ABS — Self-hosted AI ağı",
+    default: "Automatia ABS — Self-hosted AI network",
     template: "%s · Automatia ABS",
   },
   description:
-    "Kaosu otomasyona dönüştür — kendi sunucunda. 100+ MCP tool + 6 sağlayıcı cascade + kalite pipeline'ları. Anthropic Claude key'inle çalışır, veri tamamen sende kalır.",
+    "Turn chaos into automation — on your own server. 100+ MCP tools, a 6-provider cascade and quality pipelines. It runs on your own Anthropic Claude key, and your data stays with you.",
   keywords: [
     "ABS",
     "Automatia",
@@ -51,24 +51,24 @@ export const metadata: Metadata = {
     "Anthropic",
     "Groq",
     "RAG",
-    "Türkçe AI",
+    "multilingual AI",
   ],
   authors: [{ name: "Automatia BCN" }],
   openGraph: {
     type: "website",
     url: SITE_URL,
     siteName: "Automatia ABS",
-    title: "Automatia ABS — Self-hosted AI ağı",
+    title: "Automatia ABS — Self-hosted AI network",
     description:
-      "100+ MCP tool + 6 sağlayıcı cascade. Docker Compose ile dakikalar içinde kendi sunucunda.",
+      "100+ MCP tools and a 6-provider cascade. On your own server in minutes with Docker Compose.",
     images: ["/og.png"],
-    locale: "tr_TR",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
     title: "Automatia ABS",
     description:
-      "Self-hosted AI ağı: 100+ MCP tool + 6 sağlayıcı cascade. Pilot/PoC için iletişim.",
+      "Self-hosted AI network: 100+ MCP tools and a 6-provider cascade. Contact us for a pilot or PoC.",
     images: ["/og.png"],
   },
   robots: {

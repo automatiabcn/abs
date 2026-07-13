@@ -46,13 +46,13 @@ type Tab =
   | "security";
 
 const TABS: { id: Tab; label: string; icon: typeof SettingsIcon }[] = [
-  { id: "general", label: "Genel", icon: Building2 },
-  { id: "license", label: "Lisans", icon: ScrollText },
-  { id: "providers", label: "Sağlayıcılar", icon: Layers },
-  { id: "webhooks", label: "Webhook'lar", icon: Boxes },
-  { id: "alerts", label: "Uyarılar", icon: Bell },
-  { id: "branding", label: "Marka", icon: ImageIcon },
-  { id: "security", label: "Güvenlik", icon: Lock },
+  { id: "general", label: "General", icon: Building2 },
+  { id: "license", label: "Licence", icon: ScrollText },
+  { id: "providers", label: "Providers", icon: Layers },
+  { id: "webhooks", label: "Webhooks", icon: Boxes },
+  { id: "alerts", label: "Alerts", icon: Bell },
+  { id: "branding", label: "Branding", icon: ImageIcon },
+  { id: "security", label: "Security", icon: Lock },
 ];
 
 function FormRow({
@@ -138,16 +138,16 @@ function GeneralTab() {
 
   return (
     <div className="space-y-4">
-      <FormRow label="Tenant adı" hint="Müşteri görünür ad">
+      <FormRow label="Organisation name" hint="The name your people see">
         <Input
           value={tenantName}
           onChange={(e) => setTenantName(e.target.value)}
-          placeholder="Henüz yapılandırılmadı"
+          placeholder="Not set yet"
           data-test="settings-tenant-name"
-          aria-label="Tenant adı"
+          aria-label="Organisation name"
         />
       </FormRow>
-      <FormRow label="Slug" hint="URL ön eki — değiştirilemez">
+      <FormRow label="Slug" hint="Used in URLs — cannot be changed">
         <Input
           value="default"
           disabled
@@ -155,18 +155,20 @@ function GeneralTab() {
           aria-label="Slug"
         />
       </FormRow>
-      <FormRow label="Domain" hint="Caddy reverse proxy hedefi">
+      <FormRow label="Domain" hint="Where this server answers">
         <Input
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
-          placeholder="Henüz yapılandırılmadı"
+          placeholder="Not set yet"
           data-test="settings-domain"
           aria-label="Domain"
         />
       </FormRow>
-      <FormRow label="SSL durumu">
+      <FormRow label="HTTPS">
         <Badge variant="outline" className="border-emerald-500/40 text-emerald-300">
-          {sslMode === "acme" ? "Otomatik (Let's Encrypt)" : "Internal (self-signed)"}
+          {sslMode === "acme"
+            ? "Certificate issued automatically (Let's Encrypt)"
+            : "Self-signed certificate"}
         </Badge>
       </FormRow>
       <div className="flex items-center gap-3">
@@ -175,7 +177,7 @@ function GeneralTab() {
           onClick={saveGeneral}
           disabled={status === "saving"}
         >
-          {status === "saving" ? "Kaydediliyor…" : status === "saved" ? "Kaydedildi ✓" : "Kaydet"}
+          {status === "saving" ? "Saving…" : status === "saved" ? "Saved ✓" : "Save"}
         </Button>
         {saveErr && <span className="text-xs text-rose-400">{saveErr}</span>}
       </div>
@@ -240,21 +242,25 @@ function LicenseTab() {
         throw new Error(text || `HTTP ${res.status}`);
       }
       setActivateState("ok");
-      setActivateMessage("Lisans aktive edildi.");
+      setActivateMessage("Licence activated.");
       setPendingKey("");
       await reload();
     } catch (err) {
       setActivateState("error");
-      setActivateMessage(err instanceof Error ? err.message : "Aktivasyon başarısız.");
+      setActivateMessage(
+        err instanceof Error ? err.message : "Activation did not go through.",
+      );
     }
   }
 
   if (loadError) {
     return (
       <div data-test="license-tab" className="space-y-3 text-sm">
-        <p className="text-destructive">Lisans bilgisi yüklenemedi: {loadError}</p>
+        <p className="text-destructive">
+          Could not read the licence: {loadError}
+        </p>
         <Button onClick={() => void reload()} variant="outline">
-          Tekrar dene
+          Try again
         </Button>
       </div>
     );
@@ -263,7 +269,7 @@ function LicenseTab() {
   if (!info) {
     return (
       <div data-test="license-tab" className="text-sm text-muted-foreground">
-        Yükleniyor…
+        Loading…
       </div>
     );
   }
@@ -272,14 +278,14 @@ function LicenseTab() {
   const tierLabel = info.tier ?? "—";
   const seatLabel = info.seat_count !== null ? String(info.seat_count) : "—";
   const expiresLabel = info.expires_at
-    ? new Date(info.expires_at).toLocaleDateString("tr-TR")
+    ? new Date(info.expires_at).toLocaleDateString()
     : "—";
   const jtiLabel = info.jti ? maskJti(info.jti) : "—";
 
   return (
     <div data-test="license-tab" className="space-y-4 text-sm">
       <div className="space-y-3">
-        <FormRow label="Durum">
+        <FormRow label="Status">
           <Badge
             data-test="license-status"
             variant={info.status === "licensed" ? "default" : "outline"}
@@ -287,12 +293,12 @@ function LicenseTab() {
             {info.status}
           </Badge>
         </FormRow>
-        <FormRow label="Tier">
+        <FormRow label="Plan">
           <Badge data-test="license-tier" variant="outline">
             {tierLabel}
           </Badge>
         </FormRow>
-        <FormRow label="JTI">
+        <FormRow label="Licence ID">
           <code
             data-test="license-jti"
             className="rounded bg-muted px-2 py-1 font-mono text-xs"
@@ -300,14 +306,14 @@ function LicenseTab() {
             {jtiLabel}
           </code>
         </FormRow>
-        <FormRow label="Seat limiti">
+        <FormRow label="Seats">
           <span data-test="license-seats">{seatLabel}</span>
         </FormRow>
-        <FormRow label="Bitiş">
+        <FormRow label="Valid until">
           <span data-test="license-expires">{expiresLabel}</span>
         </FormRow>
         {info.customer_id && (
-          <FormRow label="Müşteri ID">
+          <FormRow label="Customer">
             <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
               {info.customer_id}
             </code>
@@ -320,8 +326,8 @@ function LicenseTab() {
           data-test="license-demo-banner"
           className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-amber-200"
         >
-          Demo modda çalışıyorsunuz. Lisans aktivasyonu için aşağıdaki forma
-          token&apos;ınızı yapıştırın.
+          You are running the demo. Paste your licence below to activate this
+          server.
         </div>
       )}
 
@@ -331,11 +337,11 @@ function LicenseTab() {
         className="space-y-2"
       >
         <label className="block text-xs font-medium text-muted-foreground">
-          Lisans token&apos;ı yapıştır
+          Paste your licence
         </label>
         <textarea
           data-test="license-activation-input"
-          aria-label="Lisans token"
+          aria-label="Licence"
           value={pendingKey}
           onChange={(event) => setPendingKey(event.target.value)}
           rows={3}
@@ -348,7 +354,7 @@ function LicenseTab() {
             data-test="license-activate-button"
             disabled={activateState === "submitting" || pendingKey.trim() === ""}
           >
-            {activateState === "submitting" ? "Aktive ediliyor…" : "Aktive et"}
+            {activateState === "submitting" ? "Activating…" : "Activate"}
           </Button>
           {activateState === "ok" && (
             <span className="text-xs text-emerald-400" data-test="license-activate-ok">
@@ -366,10 +372,9 @@ function LicenseTab() {
   );
 }
 
-// Polish round R7 — capitalised labels, password inputs, real status
-// badge from /v1/admin/providers/status. Test button stays inert until a
-// /v1/providers/{id}/test endpoint lands; for now it surfaces a friendly
-// "henüz uygulanmadı" toast instead of a broken silent click.
+// A read-only mirror of /v1/admin/providers/status. Keys, live tests and
+// cascade order live on /admin/providers — this tab links there rather than
+// growing a second, half-wired copy of the same form.
 type ProviderStatus = {
   id: string;
   label: string;
@@ -404,7 +409,7 @@ function ProvidersTab() {
   if (error) {
     return (
       <p className="text-sm text-destructive" data-test="providers-error">
-        Sağlayıcı durumu yüklenemedi: {error}
+        Could not read provider status: {error}
       </p>
     );
   }
@@ -412,7 +417,7 @@ function ProvidersTab() {
   if (!providers) {
     return (
       <p className="text-sm text-muted-foreground" data-test="providers-loading">
-        Yükleniyor…
+        Loading…
       </p>
     );
   }
@@ -425,15 +430,15 @@ function ProvidersTab() {
     <div className="space-y-3">
       <div className="flex flex-col items-start justify-between gap-2 rounded-md border border-border bg-card/40 p-3 text-xs text-muted-foreground sm:flex-row sm:items-center">
         <span>
-          Anahtar girişi, canlı test ve cascade sırası için Sağlayıcılar
-          sayfasını kullanın.
+          This is a read-only view. Keys, live tests and the order they are
+          tried in all live on the Providers page.
         </span>
         <a
           href="/admin/providers"
           data-test="providers-manage-link"
           className="inline-flex shrink-0 items-center rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-accent"
         >
-          Sağlayıcıları Yönet →
+          Manage providers →
         </a>
       </div>
       <ul className="space-y-2">
@@ -455,7 +460,7 @@ function ProvidersTab() {
                   : "border-amber-500/40 text-amber-200",
               )}
             >
-              {p.configured ? "Yapılandırıldı" : "Eksik"}
+              {p.configured ? "Configured" : "Missing"}
             </Badge>
           </li>
         ))}
@@ -518,7 +523,7 @@ function SaveBar({ status, error, onSave }: { status: SaveState; error: string |
   return (
     <div className="flex items-center gap-3">
       <Button data-test="settings-save" onClick={onSave} disabled={status === "saving"}>
-        {status === "saving" ? "Kaydediliyor…" : status === "saved" ? "Kaydedildi ✓" : "Kaydet"}
+        {status === "saving" ? "Saving…" : status === "saved" ? "Saved ✓" : "Save"}
       </Button>
       {error && <span className="text-xs text-rose-400">{error}</span>}
     </div>
@@ -533,15 +538,15 @@ function WebhooksTab() {
   });
   return (
     <div className="space-y-3 text-sm">
-      <FormRow label="Slack incoming" hint="Cascade event'leri">
+      <FormRow label="Slack" hint="Where events are posted">
         <Input value={data.slack} onChange={(e) => setField("slack", e.target.value)}
                placeholder="https://hooks.slack.com/…" />
       </FormRow>
-      <FormRow label="Email alerts">
+      <FormRow label="Email" hint="Who hears about problems">
         <Input type="email" value={data.email} onChange={(e) => setField("email", e.target.value)}
                placeholder="ops@acme.com" />
       </FormRow>
-      <FormRow label="Discord webhook">
+      <FormRow label="Discord">
         <Input value={data.discord} onChange={(e) => setField("discord", e.target.value)}
                placeholder="https://discord.com/api/webhooks/…" />
       </FormRow>
@@ -559,15 +564,15 @@ function AlertsTab() {
   const num = (v: string) => Number(v) || 0;
   return (
     <div className="space-y-3 text-sm">
-      <FormRow label="Quota uyarı eşiği" hint="Yüzde — bu seviyede uyarı tetiklenir">
+      <FormRow label="Warn at" hint="Percent of the quota used">
         <Input type="number" min={0} max={100} value={data.quota_warn}
                onChange={(e) => setField("quota_warn", num(e.target.value))} />
       </FormRow>
-      <FormRow label="Quota kritik eşiği">
+      <FormRow label="Raise the alarm at" hint="Percent of the quota used">
         <Input type="number" min={0} max={100} value={data.quota_crit}
                onChange={(e) => setField("quota_crit", num(e.target.value))} />
       </FormRow>
-      <FormRow label="Latency p95 SLO">
+      <FormRow label="Slow-answer threshold" hint="Milliseconds — 95th percentile">
         <Input type="number" value={data.latency_p95_ms}
                onChange={(e) => setField("latency_p95_ms", num(e.target.value))} />
       </FormRow>
@@ -630,17 +635,17 @@ function BrandingTab() {
 
   return (
     <div className="space-y-3 text-sm">
-      <FormRow label="Logo URL" hint="Barındırılan logo bağlantısı">
+      <FormRow label="Logo" hint="A link to your logo image">
         <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)}
                placeholder="https://…/logo.png" />
       </FormRow>
-      <FormRow label="Brand renk">
+      <FormRow label="Brand colour">
         <Input type="color" value={color} onChange={(e) => setColor(e.target.value)}
                className="h-10 w-24" />
       </FormRow>
-      <FormRow label="Login sayfası mesajı">
+      <FormRow label="Sign-in message" hint="Shown on the login page">
         <Input value={message} onChange={(e) => setMessage(e.target.value)}
-               placeholder="ABS Panel — özel mesajınızı buraya girin" />
+               placeholder="A line of welcome for your team" />
       </FormRow>
       <SaveBar status={status} error={error} onSave={save} />
     </div>
@@ -655,20 +660,20 @@ function SecurityTab() {
   const num = (v: string) => Number(v) || 0;
   return (
     <div className="space-y-3 text-sm">
-      <FormRow label="Magic-link ömrü" hint="Dakika">
+      <FormRow label="Sign-in link expires after" hint="Minutes">
         <Input type="number" value={data.magic_link_ttl_min}
                onChange={(e) => setField("magic_link_ttl_min", num(e.target.value))} />
       </FormRow>
-      <FormRow label="Oturum süresi" hint="Saat">
+      <FormRow label="Stay signed in for" hint="Hours">
         <Input type="number" value={data.session_ttl_hours}
                onChange={(e) => setField("session_ttl_hours", num(e.target.value))} />
       </FormRow>
-      <FormRow label="2FA" hint="TOTP — Phase Q rollout">
-        <Badge variant="outline">yakında</Badge>
+      <FormRow label="Two-factor sign-in" hint="Authenticator app">
+        <Badge variant="outline">not yet</Badge>
       </FormRow>
-      <FormRow label="Audience kontrolü" hint="X-ABS-Audience header zorla">
+      <FormRow label="Token audience check" hint="A token issued for another server is refused">
         <Badge variant="outline" className="border-emerald-500/40 text-emerald-300">
-          aktif
+          on
         </Badge>
       </FormRow>
       <SaveBar status={status} error={error} onSave={save} />
@@ -703,10 +708,11 @@ export default function SettingsPage() {
       >
         <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
           <SettingsIcon className="h-5 w-5 text-primary" />
-          Ayarlar
+          Settings
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Tenant config, lisans, sağlayıcı API key'leri, webhook ve marka.
+          Your organisation, your licence, the providers you answer with, and
+          how the server reaches you.
         </p>
       </motion.header>
 
@@ -741,7 +747,8 @@ export default function SettingsPage() {
               {TABS.find((t) => t.id === active)?.label}
             </CardTitle>
             <CardDescription>
-              Değişiklikler tenant başına izole edilir, audit'e düşer.
+              Changes apply to this organisation only, and every one of them is
+              written to the audit log.
             </CardDescription>
           </CardHeader>
           <CardContent>

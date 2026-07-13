@@ -149,11 +149,11 @@ async function revokeInvite(inviteId: string): Promise<void> {
 const ROLE_LABELS: Record<string, { label: string; tone: string }> = {
   admin: { label: "Admin", tone: "bg-rose-500/15 text-rose-300 border-rose-500/30" },
   operator: {
-    label: "Operatör",
+    label: "Operator",
     tone: "bg-amber-500/15 text-amber-300 border-amber-500/30",
   },
   viewer: {
-    label: "Okur",
+    label: "Viewer",
     tone: "bg-zinc-500/15 text-zinc-300 border-zinc-500/30",
   },
 };
@@ -165,9 +165,9 @@ const STATUS_TONE: Record<UserRow["status"], string> = {
 };
 
 const STATUS_LABEL: Record<UserRow["status"], string> = {
-  active: "aktif",
-  pending: "beklemede",
-  revoked: "iptal edildi",
+  active: "active",
+  pending: "pending",
+  revoked: "revoked",
 };
 
 interface UsersClientProps {
@@ -206,7 +206,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
       await updateUser(userId, body);
       await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     } catch (exc) {
-      setRowError(exc instanceof Error ? exc.message : "güncelleme başarısız");
+      setRowError(exc instanceof Error ? exc.message : "Update failed.");
     } finally {
       setBusyUserId(null);
     }
@@ -243,7 +243,9 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
     },
     onError: (exc) => {
       setLastInvite(null);
-      setInviteError(exc instanceof Error ? exc.message : "bilinmeyen hata");
+      setInviteError(
+        exc instanceof Error ? exc.message : "Could not send the invite.",
+      );
     },
   });
 
@@ -271,26 +273,28 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
             <UsersIcon className="h-5 w-5 text-primary" />
-            Kullanıcılar
+            Users
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Davet (kopyalanabilir aktivasyon linki), rol atama, oturum iptali.
-            Bir kullanıcıyı <strong>Admin</strong> yapmak ona panel yönetim
-            yetkisi verir; demote anında geri alır. Son aktif admin korunur.
+            Who can get in, and what they can do. Inviting someone sends them an
+            activation link. Making someone an <strong>Admin</strong> gives them
+            full control of this console; changing the role back removes it
+            immediately. The last active admin can&apos;t be removed.
           </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button data-test="users-invite-open">
               <UserPlus className="mr-2 h-4 w-4" />
-              Davet et
+              Invite user
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Yeni kullanıcı davet et</DialogTitle>
+              <DialogTitle>Invite a user</DialogTitle>
               <DialogDescription>
-                Magic-link oluşturulur, e-postaya gönderilir veya kopyalanır.
+                We create an activation link and email it. If email isn&apos;t
+                set up, copy the link and send it yourself.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
@@ -298,7 +302,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="kullanici@firma.com"
+                placeholder="name@company.com"
                 data-test="users-invite-email"
               />
               <select
@@ -308,28 +312,28 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                 className="w-full rounded-md border border-border bg-background p-2 text-sm"
               >
                 <option value="admin">Admin</option>
-                <option value="operator">Operatör</option>
+                <option value="operator">Operator</option>
                 <option value="member">Member</option>
-                <option value="viewer">Okur</option>
+                <option value="viewer">Viewer</option>
               </select>
               {lastInvite && (
                 <div
                   data-test="users-invite-success"
                   className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-200"
                 >
-                  Davet oluşturuldu:{" "}
+                  Invite created:{" "}
                   <strong className="text-emerald-100">{lastInvite.email}</strong>
                   {" — "}
                   <span className="font-mono">{lastInvite.invite_id}</span>
                   {lastInvite.email_sent ? (
                     <div className="mt-1 text-emerald-200/80">
-                      Aktivasyon bağlantısı e-posta ile gönderildi (24 saat ömür).
+                      We emailed the activation link. It expires in 24 hours.
                     </div>
                   ) : (
                     <div className="mt-2 space-y-2">
                       <div className="text-amber-200/90">
                         {lastInvite.activation_note ||
-                          "SMTP yapılandırılmadığı için e-posta gönderilmedi. Bu bağlantıyı kullanıcıya elle iletin (24 saat geçerli)."}
+                          "Email isn't set up, so we couldn't send this. Copy the link below and send it to the user yourself — it expires in 24 hours."}
                       </div>
                       {lastInvite.magic_url && (
                         <div className="flex items-center gap-2">
@@ -348,7 +352,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                             data-test="users-invite-copy"
                             onClick={() => void copyLink(lastInvite.magic_url!)}
                           >
-                            {copied ? "Kopyalandı" : "Kopyala"}
+                            {copied ? "Copied" : "Copy"}
                           </Button>
                         </div>
                       )}
@@ -372,7 +376,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                 data-test="users-invite-submit"
               >
                 <Mail className="mr-2 h-4 w-4" />
-                {invite.isPending ? "Davet gönderiliyor…" : "Davet gönder"}
+                {invite.isPending ? "Sending invite…" : "Send invite"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -383,11 +387,12 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
         <Card data-test="users-invite-list" className="mb-6 bg-card/70">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">
-              Bekleyen davetler ({pendingInvites.length})
+              Pending invites ({pendingInvites.length})
             </CardTitle>
             <CardDescription>
-              7 gün geçerli. Magic-link plaintext'i sadece e-postaya gönderilir;
-              backend HMAC digest'i tutar.
+              Invites expire after 7 days. The activation link is only ever
+              sent to the invited address — we store a hash of it, never the
+              link itself.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -406,7 +411,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                     <span className="text-muted-foreground" suppressHydrationWarning>
                       {inv.role} · {inv.status}
                       {inv.expires_at
-                        ? ` · ${new Date(inv.expires_at).toLocaleDateString("tr-TR")}`
+                        ? ` · ${new Date(inv.expires_at).toLocaleDateString()}`
                         : ""}
                     </span>
                   </div>
@@ -419,7 +424,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                       onClick={() => void handleRevoke(inv.invite_id)}
                     >
                       <XCircle className="mr-1 h-3 w-3" />
-                      İptal
+                      Revoke
                     </Button>
                   )}
                 </li>
@@ -432,11 +437,11 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
       <Card className="bg-card/70">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">
-            Kayıtlı kullanıcılar ({users.data?.length ?? 0})
+            Users ({users.data?.length ?? 0})
           </CardTitle>
           <CardDescription>
-            Pending davetlerin magic-link'i 7 gün geçerli; magic-link sadece
-            e-postaya gönderilir.
+            Everyone with an account on this server. Revoking a user ends their
+            access right away.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -458,11 +463,11 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
             <table className="w-full text-sm">
               <thead className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="px-3 py-2 text-left">E-posta</th>
-                  <th className="px-3 py-2 text-left">Rol</th>
-                  <th className="px-3 py-2 text-left">Durum</th>
-                  <th className="px-3 py-2 text-left">Son giriş</th>
-                  <th className="px-3 py-2 text-left">Aksiyon</th>
+                  <th className="px-3 py-2 text-left">Email</th>
+                  <th className="px-3 py-2 text-left">Role</th>
+                  <th className="px-3 py-2 text-left">Status</th>
+                  <th className="px-3 py-2 text-left">Last sign-in</th>
+                  <th className="px-3 py-2 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -494,7 +499,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                         suppressHydrationWarning
                       >
                         {u.last_login
-                          ? new Date(u.last_login).toLocaleString("tr-TR")
+                          ? new Date(u.last_login).toLocaleString()
                           : "—"}
                       </td>
                       <td className="px-3 py-2">
@@ -504,16 +509,16 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                             value={u.role}
                             disabled={busyUserId === u.id}
                             data-test="user-role-select"
-                            aria-label={`${u.email} rolü`}
+                            aria-label={`Role for ${u.email}`}
                             onChange={(e) =>
                               void handleUserUpdate(u.id, { role: e.target.value })
                             }
                             className="h-7 rounded-md border border-border bg-background px-1 text-[11px] disabled:opacity-50"
                           >
                             <option value="admin">Admin</option>
-                            <option value="operator">Operatör</option>
+                            <option value="operator">Operator</option>
                             <option value="member">Member</option>
-                            <option value="viewer">Okur</option>
+                            <option value="viewer">Viewer</option>
                           </select>
                           {u.status === "revoked" ? (
                             <Button
@@ -526,7 +531,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                                 void handleUserUpdate(u.id, { status: "active" })
                               }
                             >
-                              Aktifleştir
+                              Restore access
                             </Button>
                           ) : (
                             <Button
@@ -540,7 +545,7 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
                               }
                             >
                               <XCircle className="mr-1 h-3 w-3" />
-                              İptal
+                              Revoke
                             </Button>
                           )}
                         </div>

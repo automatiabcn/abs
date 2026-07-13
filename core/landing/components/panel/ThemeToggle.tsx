@@ -32,7 +32,7 @@ export function ThemeToggle() {
       <Button
         variant="ghost"
         size="icon"
-        aria-label="Tema değiştir"
+        aria-label="Toggle theme"
         data-test="theme-toggle"
         suppressHydrationWarning
       >
@@ -49,7 +49,7 @@ export function ThemeToggle() {
       size="icon"
       onClick={() => setTheme(next)}
       aria-label={
-        next === "dark" ? "Koyu temaya geç" : "Açık temaya geç"
+        next === "dark" ? "Switch to dark theme" : "Switch to light theme"
       }
       data-test="theme-toggle"
     >

@@ -63,7 +63,7 @@ function downloadBlob(content: string, filename: string, mime: string) {
 export default function TranscriptionPanel() {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [recording, setRecording] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string>("Hazır");
+  const [statusMessage, setStatusMessage] = useState<string>("Ready");
   const [error, setError] = useState<string | null>(null);
   const [voice, setVoice] = useState<string>(DEFAULT_VOICE_ID);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -105,7 +105,7 @@ export default function TranscriptionPanel() {
     cumulativeOffset.current = 0;
     setSegments([]);
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError("Tarayıcı mikrofon erişimini desteklemiyor.");
+      setError("This browser cannot access the microphone. Try Chrome, Edge or Safari.");
       return;
     }
     try {
@@ -124,7 +124,7 @@ export default function TranscriptionPanel() {
             credentials: "include",
           });
           if (!res.ok) {
-            setStatusMessage(`Sunucu yanıtı: HTTP ${res.status}`);
+            setStatusMessage(`Server returned HTTP ${res.status}`);
             return;
           }
           const data = await res.json();
@@ -139,18 +139,18 @@ export default function TranscriptionPanel() {
             setSegments((prev) => [...prev, ...incoming]);
           }
         } catch (exc) {
-          setStatusMessage(`Yayın hatası: ${(exc as Error).message}`);
+          setStatusMessage(`Upload failed: ${(exc as Error).message}`);
         }
       };
       recorder.onerror = (event) => {
-        setError(`Kayıt hatası: ${(event as Event).type}`);
+        setError(`Recording stopped unexpectedly: ${(event as Event).type}`);
       };
       recorderRef.current = recorder;
       recorder.start(CHUNK_INTERVAL_MS);
       setRecording(true);
-      setStatusMessage("Kayıt ediliyor (5 saniyelik dilimler)…");
+      setStatusMessage("Recording — sending audio every 5 seconds…");
     } catch (exc) {
-      setError(`Mikrofon açılamadı: ${(exc as Error).message}`);
+      setError(`Could not open the microphone: ${(exc as Error).message}`);
     }
   };
 
@@ -161,7 +161,7 @@ export default function TranscriptionPanel() {
     streamRef.current = null;
     setActiveStream(null);
     setRecording(false);
-    setStatusMessage("Hazır");
+    setStatusMessage("Ready");
   };
 
   useEffect(() => () => stop(), []);
@@ -175,7 +175,7 @@ export default function TranscriptionPanel() {
         body: JSON.stringify({ text, voice }),
       });
       if (!res.ok) {
-        setError(`TTS başarısız: HTTP ${res.status}`);
+        setError(`Could not play this line back: HTTP ${res.status}`);
         return;
       }
       const buf = await res.arrayBuffer();
@@ -184,7 +184,7 @@ export default function TranscriptionPanel() {
       audio.onended = () => URL.revokeObjectURL(url);
       await audio.play();
     } catch (exc) {
-      setError(`TTS hatası: ${(exc as Error).message}`);
+      setError(`Could not play this line back: ${(exc as Error).message}`);
     }
   };
 
@@ -223,10 +223,10 @@ export default function TranscriptionPanel() {
       className="mx-auto max-w-3xl px-6 py-12 text-zinc-900 dark:text-zinc-100"
     >
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold">Canlı Transkripsiyon</h1>
+        <h1 className="text-2xl font-semibold">Live Transcription</h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Mikrofonu aç, 5 saniyelik dilimler WhisperX'e yollanır. Dilersen
-          herhangi bir segmenti Piper ile yeniden seslendir.
+          Turn on your microphone and the transcript builds as you speak, with
+          each speaker labelled. Play any line back in the voice you choose.
         </p>
       </header>
 
@@ -237,7 +237,7 @@ export default function TranscriptionPanel() {
             onClick={stop}
             className="rounded bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
           >
-            Durdur
+            Stop
           </button>
         ) : (
           <button
@@ -246,7 +246,7 @@ export default function TranscriptionPanel() {
             data-test="transcription-start"
             className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
           >
-            Başlat
+            Start
           </button>
         )}
         <span
@@ -271,7 +271,7 @@ export default function TranscriptionPanel() {
           {statusMessage}
         </span>
         <label className="ml-auto flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-          Sesi:
+          Playback voice:
           <select
             value={voice}
             onChange={(e) => setVoice(e.target.value)}
@@ -301,8 +301,8 @@ export default function TranscriptionPanel() {
         <Waveform stream={activeStream} active={recording} height={80} />
         <div className="mt-1 text-center text-[11px] text-muted-foreground">
           {recording
-            ? "Mikrofon canlı — 5 saniyelik dilimler WhisperX'e akıyor"
-            : "Başlat'a basın, dalga formu burada görünür"}
+            ? "Microphone is live — audio is being transcribed as you speak"
+            : "Press Start and your audio appears here"}
         </div>
       </div>
 
@@ -314,20 +314,20 @@ export default function TranscriptionPanel() {
             className="rounded-md border border-dashed border-border bg-card/30 p-6"
           >
             <p className="mb-3 text-center text-sm font-medium">
-              3 adımda canlı transkripsiyon
+              Live transcription in three steps
             </p>
             <ol className="mx-auto grid max-w-lg grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-3">
               <li className="rounded-md border border-border bg-background/40 p-3">
                 <span className="font-mono text-primary">1.</span>{" "}
-                Mikrofon ve TTS sesini sağ üstten seç
+                Pick your playback voice, top right
               </li>
               <li className="rounded-md border border-border bg-background/40 p-3">
                 <span className="font-mono text-primary">2.</span>{" "}
-                <strong>Başlat</strong> butonuna bas, izin ekranını kabul et
+                Press <strong>Start</strong> and allow microphone access
               </li>
               <li className="rounded-md border border-border bg-background/40 p-3">
                 <span className="font-mono text-primary">3.</span>{" "}
-                Konuşmaya başla, segmentler 5 saniyede bir buraya akar
+                Start talking — your words appear here as you go
               </li>
             </ol>
           </div>
@@ -357,7 +357,7 @@ export default function TranscriptionPanel() {
                 onClick={() => reSynthesize(seg.text)}
                 className="text-xs text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
               >
-                Seslendir
+                Play
               </button>
             </article>
           ))
@@ -366,7 +366,7 @@ export default function TranscriptionPanel() {
 
       <section>
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-          Dışa aktar
+          Download transcript
         </h2>
         <div className="flex flex-wrap gap-2 text-sm">
           <button
@@ -402,27 +402,26 @@ export default function TranscriptionPanel() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Mic className="h-5 w-5 text-primary" />
-              Mikrofon erişimi
+              Microphone access
             </DialogTitle>
             <DialogDescription>
-              Devam etmeden önce ne olacağını bilmenizi istiyoruz.
+              Here&apos;s exactly what happens when you start.
             </DialogDescription>
           </DialogHeader>
           <ul className="space-y-2 text-sm">
             <li className="flex items-start gap-2">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-              Ses 5 saniyelik dilimlere bölünür ve sunucudaki WhisperX
-              large-v3'e gönderilir.
+              Your audio is sent to your own server, a few seconds at a time,
+              and turned into text there.
             </li>
             <li className="flex items-start gap-2">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-              Transkriptler tenant'ınıza ait yerel SQLite'a yazılır — dış
-              sağlayıcıya gitmez.
+              Transcripts stay in your organisation&apos;s database. They are
+              never sent to an outside provider.
             </li>
             <li className="flex items-start gap-2">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-              <strong>Durdur</strong> butonuna basana kadar mikrofon dinlemeye
-              devam eder. Kapatınca akış kesilir.
+              The microphone stays on until you press <strong>Stop</strong>.
             </li>
           </ul>
           <DialogFooter>
@@ -432,14 +431,14 @@ export default function TranscriptionPanel() {
               onClick={() => setPermissionOpen(false)}
               data-test="mic-permission-cancel"
             >
-              İptal
+              Cancel
             </Button>
             <Button
               type="button"
               onClick={acknowledgeAndStart}
               data-test="mic-permission-accept"
             >
-              Anladım, başlat
+              Start recording
             </Button>
           </DialogFooter>
         </DialogContent>

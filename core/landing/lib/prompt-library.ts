@@ -1045,9 +1045,9 @@ export const PROMPTS: PromptItem[] = [
       es: "Verificación de Cumplimiento",
     },
     description: {
-      en: "Perform a rapid compliance review for new features under KVKK, GDPR, or SOC2 frameworks.",
+      en: "Perform a rapid compliance review for new features under GDPR, SOC 2, or CCPA.",
       tr: "Yeni özellikler için KVKK, GDPR veya SOC2 çerçeveleri altında hızlı bir uyumluluk incelemesi yapın.",
-      es: "Realiza una revisión rápida de cumplimiento para nuevas funciones bajo marcos KVKK, GDPR o SOC2.",
+      es: "Realiza una revisión rápida de cumplimiento para nuevas funciones bajo RGPD, SOC 2 o CCPA.",
     },
     prompt: {
       en: "Conduct a quick compliance check for the {feature_name} update regarding {regulation_type}. Identify data handling risks, user consent requirements, and audit trail gaps that might affect {company_name}'s certification status before release.",

@@ -10,7 +10,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "Canlı Transkripsiyon — ABS Panel",
+  title: "Live Transcription — ABS Panel",
   robots: { index: false, follow: false },
 };
 

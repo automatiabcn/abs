@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// External MCP servers — ABS as an MCP *client*. A tenant registers a
+// External MCP servers — ABS as an MCP *client*. An organisation registers a
 // third-party MCP server (GitHub / Slack / their own) here; ABS connects out,
 // discovers its tools and (Slice 2) federates them into its catalog + agents.
 // Distinct from /admin/mcp-tokens (which connects a client TO ABS).
@@ -137,7 +137,7 @@ export default function McpServersPage() {
       setAuthType("none");
       await load();
     } catch (exc) {
-      setAddError(exc instanceof Error ? exc.message : "bilinmeyen hata");
+      setAddError(exc instanceof Error ? exc.message : "unknown error");
     } finally {
       setAdding(false);
     }
@@ -156,7 +156,10 @@ export default function McpServersPage() {
     } catch (exc) {
       setTestResults((prev) => ({
         ...prev,
-        [slug]: { ok: false, error: exc instanceof Error ? exc.message : "hata" },
+        [slug]: {
+          ok: false,
+          error: exc instanceof Error ? exc.message : "the test could not run",
+        },
       }));
     } finally {
       setTesting(null);
@@ -196,13 +199,13 @@ export default function McpServersPage() {
       >
         <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
           <Server className="h-5 w-5 text-primary" />
-          Harici MCP Sunucuları
+          External MCP servers
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Üçüncü-parti bir MCP sunucusu (GitHub, Slack, kendi sunucunuz) ekleyin —
-          ABS bir <strong>MCP istemcisi</strong> olarak bağlanır, araçlarını
-          keşfeder ve kendi kataloğuna + agent&apos;larına dahil eder. (Bir
-          istemciyi ABS&apos;ye bağlamak için → <code>MCP Token</code>.)
+          Add a third-party MCP server (GitHub, Slack, one of your own). ABS
+          connects to it as a <strong>client</strong>, discovers its tools and
+          adds them to its own catalogue and agents. (To connect a client to
+          ABS instead, go to <code>MCP tokens</code>.)
         </p>
       </motion.header>
 
@@ -213,9 +216,9 @@ export default function McpServersPage() {
         >
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            Bu özellik kapalı. Etkinleştirmek için sunucuda{" "}
-            <code>ABS_EXTERNAL_MCP_ENABLED=true</code> ayarlayın ve backend&apos;i
-            yeniden başlatın.
+            This feature is switched off. To turn it on, set{" "}
+            <code>ABS_EXTERNAL_MCP_ENABLED=true</code> on the server and restart
+            the backend.
           </span>
         </div>
       )}
@@ -223,10 +226,10 @@ export default function McpServersPage() {
       {/* ── Add ──────────────────────────────────────── */}
       <Card className="mb-6 bg-card/70">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Sunucu ekle</CardTitle>
+          <CardTitle className="text-base">Add a server</CardTitle>
           <CardDescription>
-            Endpoint URL&apos;i + (varsa) kimlik doğrulama. Eklemeden sonra
-            &quot;Test et&quot; ile bağlantıyı + araçları doğrulayın.
+            Its endpoint URL, plus authentication if it needs any. Once added,
+            hit &quot;Test&quot; to confirm the connection and see its tools.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -234,7 +237,7 @@ export default function McpServersPage() {
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ad (ör. GitHub MCP)"
+              placeholder="Name (e.g. GitHub MCP)"
               data-test="mcp-server-name"
             />
             <Input
@@ -259,18 +262,18 @@ export default function McpServersPage() {
               value={authType}
               onChange={(e) => setAuthType(e.target.value)}
               className={SELECT_CLS}
-              aria-label="Kimlik doğrulama"
+              aria-label="Authentication"
               data-test="mcp-server-auth"
             >
-              <option value="none">auth yok</option>
+              <option value="none">no auth</option>
               <option value="bearer">Bearer token</option>
-              <option value="header">Özel header</option>
+              <option value="header">Custom header</option>
             </select>
             {authType === "header" && (
               <Input
                 value={headerName}
                 onChange={(e) => setHeaderName(e.target.value)}
-                placeholder="Header adı (ör. X-API-Key)"
+                placeholder="Header name (e.g. X-API-Key)"
                 data-test="mcp-server-header-name"
               />
             )}
@@ -280,7 +283,7 @@ export default function McpServersPage() {
               type="password"
               value={secret}
               onChange={(e) => setSecret(e.target.value)}
-              placeholder={authType === "bearer" ? "Bearer token" : "Header değeri"}
+              placeholder={authType === "bearer" ? "Bearer token" : "Header value"}
               data-test="mcp-server-secret"
             />
           )}
@@ -290,7 +293,7 @@ export default function McpServersPage() {
             data-test="mcp-server-add"
           >
             <Plus className="mr-2 h-4 w-4" />
-            {adding ? "Ekleniyor…" : "Ekle"}
+            {adding ? "Adding…" : "Add"}
           </Button>
           {addError && (
             <div
@@ -306,11 +309,11 @@ export default function McpServersPage() {
       {/* ── List ─────────────────────────────────────── */}
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Yükleniyor…
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
         </div>
       ) : servers.length === 0 && !disabled ? (
         <p className="text-sm text-muted-foreground">
-          Henüz harici MCP sunucusu eklenmedi.
+          No external MCP servers yet.
         </p>
       ) : (
         <div className="space-y-3" data-test="mcp-server-list">
@@ -326,7 +329,7 @@ export default function McpServersPage() {
                         <StatusBadge status={s.status} />
                         {!s.enabled && (
                           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                            devre dışı
+                            disabled
                           </span>
                         )}
                       </div>
@@ -336,11 +339,11 @@ export default function McpServersPage() {
                       <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
                         <span>transport: {s.transport}</span>
                         <span>· auth: {s.auth_type}</span>
-                        <span>· {s.discovered_tool_count} araç</span>
+                        <span>· {s.discovered_tool_count} tools</span>
                         {s.last_checked_at && (
                           <span suppressHydrationWarning>
-                            · son test:{" "}
-                            {new Date(s.last_checked_at).toLocaleString("tr-TR")}
+                            · last tested:{" "}
+                            {new Date(s.last_checked_at).toLocaleString()}
                           </span>
                         )}
                       </div>
@@ -358,7 +361,7 @@ export default function McpServersPage() {
                         ) : (
                           <Plug className="mr-1 h-3 w-3" />
                         )}
-                        Test et
+                        Test
                       </Button>
                       <Button
                         size="sm"
@@ -366,7 +369,7 @@ export default function McpServersPage() {
                         onClick={() => void toggle(s)}
                         data-test={`mcp-server-toggle-${s.slug}`}
                       >
-                        {s.enabled ? "Devre dışı bırak" : "Etkinleştir"}
+                        {s.enabled ? "Disable" : "Enable"}
                       </Button>
                       <Button
                         size="sm"
@@ -398,11 +401,11 @@ export default function McpServersPage() {
                       {tr.ok ? (
                         <>
                           <div className="mb-1 flex items-center gap-1 font-medium">
-                            <CheckCircle2 className="h-3 w-3" /> Bağlantı başarılı —{" "}
-                            {tr.tool_count} araç keşfedildi
+                            <CheckCircle2 className="h-3 w-3" /> Connected —{" "}
+                            {tr.tool_count} tools found
                             {typeof tr.federated === "number" && tr.federated > 0 && (
                               <span className="ml-1 rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px]">
-                                {tr.federated} araç /mcp&apos;ye yayınlandı (ext_…)
+                                {tr.federated} published to /mcp (ext_…)
                               </span>
                             )}
                           </div>
@@ -418,7 +421,7 @@ export default function McpServersPage() {
                             ))}
                             {(tr.tools?.length ?? 0) > 24 && (
                               <span className="text-[10px]">
-                                +{(tr.tools?.length ?? 0) - 24} daha…
+                                +{(tr.tools?.length ?? 0) - 24} more…
                               </span>
                             )}
                           </div>

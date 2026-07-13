@@ -27,19 +27,20 @@ def test_disabled_hooks_returns_empty():
 
 
 def test_bash_delegate_and_feature_nudges_compose():
-    # inline python analiz + "ask" keyword'ü birlikte → iki hook da tetiklenir
-    cmd = 'ask "python function yaz" gptoss && python3 -c "data=[1,2]; analyze(data); calculate(data)"'
+    # An "ask" call plus inline analysis: both hooks have something to say, and
+    # both get to say it.
+    cmd = 'ask "write a python function" gptoss && python3 -c "data=[1,2]; analyze(data); calculate(data)"'
     out = dispatcher.dispatch_hooks("Bash", {"command": cmd})
     ctx = out["additional_context"]
-    # En az iki farklı nudge var
-    assert "FEATURE NUDGE" in ctx
-    assert "ABS delegation" in ctx
+    assert "mcp__abs__qual_code" in ctx  # the feature nudge
+    assert "ABS delegation" in ctx  # the delegation nudge
 
 
 def test_mcp_tool_mcp_nudge_path():
+    # The mcp__abs__ prefix is stripped, and ask_gptoss earns the nudge that
+    # points at the pipelines that beat a single model.
     out = dispatcher.dispatch_hooks("mcp__abs__ask_gptoss", {"prompt": "x"})
-    # mcp__abs__ prefix strip edilir, ask_gptoss için MCP idle nudge
-    assert "FEATURE NUDGE" in out["additional_context"]
+    assert "mcp__abs__race_code" in out["additional_context"]
 
 
 def test_claude_code_hook_output_shape():

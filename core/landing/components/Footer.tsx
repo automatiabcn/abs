@@ -19,29 +19,29 @@ const Footer: FC = () => (
             Automatia ABS
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            <strong>Automatia BCN</strong> · Barcelona, İspanya
+            <strong>Automatia BCN</strong> · Barcelona, Spain
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            GDPR uyumlu
+            GDPR compliant
           </p>
         </div>
 
-        <nav aria-label="Ürün">
-          <h3 className="text-sm font-semibold">Ürün</h3>
+        <nav aria-label="Product">
+          <h3 className="text-sm font-semibold">Product</h3>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
               <a href="#features" className="hover:text-foreground">
-                Özellikler
+                Features
               </a>
             </li>
             <li>
               <a href="#contact" className="hover:text-foreground">
-                İletişim
+                Contact
               </a>
             </li>
             <li>
               <a href="#faq" className="hover:text-foreground">
-                SSS
+                FAQ
               </a>
             </li>
             <li>
@@ -49,14 +49,14 @@ const Footer: FC = () => (
                 href="https://abs.automatiabcn.com/docs/install"
                 className="hover:text-foreground"
               >
-                Kurulum rehberi
+                Installation guide
               </a>
             </li>
           </ul>
         </nav>
 
-        <nav aria-label="İletişim ve yasal">
-          <h3 className="text-sm font-semibold">İletişim</h3>
+        <nav aria-label="Contact and legal">
+          <h3 className="text-sm font-semibold">Contact</h3>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
               <a
@@ -68,12 +68,12 @@ const Footer: FC = () => (
             </li>
             <li>
               <a href="/terms" className="hover:text-foreground">
-                Kullanım koşulları
+                Terms of service
               </a>
             </li>
             <li>
               <a href="/privacy" className="hover:text-foreground">
-                Gizlilik politikası
+                Privacy policy
               </a>
             </li>
           </ul>
@@ -81,7 +81,7 @@ const Footer: FC = () => (
       </div>
 
       <div className="mt-10 border-t border-border pt-6 text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Automatia BCN. Tüm hakları saklıdır.
+        © {new Date().getFullYear()} Automatia BCN. All rights reserved.
       </div>
     </div>
   </footer>

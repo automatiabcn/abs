@@ -141,7 +141,7 @@ function StatusChip({
   if (mock) {
     return (
       <Badge variant="outline" className="border-amber-500/40 text-amber-300">
-        Mock aktif
+        Mock on
       </Badge>
     );
   }
@@ -151,12 +151,12 @@ function StatusChip({
       className="border-emerald-500/40 text-emerald-300"
     >
       <CheckCircle2 className="mr-1 h-3 w-3" />
-      Yapılandırıldı
+      Ready
     </Badge>
   ) : (
     <Badge variant="outline" className="border-rose-500/40 text-rose-300">
       <XCircle className="mr-1 h-3 w-3" />
-      Eksik
+      No key
     </Badge>
   );
 }
@@ -248,11 +248,11 @@ export default function ProvidersPage() {
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
             <Layers className="h-5 w-5 text-primary" />
-            Provider Cascade
+            Providers
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            6 sağlayıcı, sırasıyla denenir. Bir sağlayıcı düşerse cascade bir
-            sonrakine geçer.
+            Your providers are tried in order. If one is down or out of quota,
+            the next one takes the call.
           </p>
         </div>
         <Button
@@ -262,17 +262,17 @@ export default function ProvidersPage() {
           data-test="cascade-test-now"
         >
           <PlayCircle className="mr-2 h-4 w-4" />
-          {test.isPending ? "Çağrı yapılıyor…" : "Şimdi Test Et"}
+          {test.isPending ? "Testing…" : "Send a test call"}
         </Button>
       </motion.header>
 
       {/* ─── Visual cascade chain ───────────────────────── */}
       <Card className="mb-6 bg-card/60">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Cascade zinciri</CardTitle>
+          <CardTitle className="text-base">Fallback order</CardTitle>
           <CardDescription>
-            Sol → sağ deneme sırası. Şimdi Test Et çağrısı sırasında seçilen
-            sağlayıcı ışıldar.
+            Tried left to right. Send a test call and the provider that answers
+            lights up.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -314,7 +314,7 @@ export default function ProvidersPage() {
                 <strong className="text-foreground">
                   {providers.data.configured_count}
                 </strong>{" "}
-                / {providers.data.total} sağlayıcı yapılandırıldı
+                of {providers.data.total} providers ready
               </span>
               <Badge
                 variant="outline"
@@ -367,13 +367,13 @@ export default function ProvidersPage() {
                   </CardHeader>
                   <CardContent className="space-y-2 text-xs">
                     <div className="flex items-center justify-between text-muted-foreground">
-                      <span>Cascade sırası</span>
+                      <span>Position</span>
                       <span className={cn("rounded px-1.5 py-0.5 text-[10px]", tone)}>
                         {CASCADE_ORDER.indexOf(c.name as (typeof CASCADE_ORDER)[number]) + 1}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-muted-foreground">
-                      <span>Mod</span>
+                      <span>Mode</span>
                       <span>{c.mock ? "deterministic" : "live"}</span>
                     </div>
                     <Button
@@ -399,7 +399,7 @@ export default function ProvidersPage() {
                       }}
                     >
                       <Settings2 className="mr-2 h-3 w-3" />
-                      Yapılandır
+                      Configure
                     </Button>
                   </CardContent>
                 </Card>
@@ -412,16 +412,16 @@ export default function ProvidersPage() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Activity className="h-4 w-4 text-primary" />
-            Son cascade çağrıları
+            Recent calls
           </CardTitle>
           <CardDescription>
-            Şimdi Test Et butonu çağrıları + ileride canlı SSE feed.
+            The last 10 test calls, and which provider answered each one.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {history.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Henüz çağrı yok. <kbd>Şimdi Test Et</kbd> ile başla.
+              No calls yet. Start with <kbd>Send a test call</kbd>.
             </p>
           ) : (
             <ul className="space-y-2">
@@ -439,7 +439,7 @@ export default function ProvidersPage() {
                   <div className="mb-1 flex items-center gap-2">
                     <Boxes className="h-3 w-3 text-muted-foreground" />
                     <span className="font-mono text-muted-foreground">
-                      {new Date(h.ts).toLocaleTimeString("tr-TR")}
+                      {new Date(h.ts).toLocaleTimeString()}
                     </span>
                     {h.ok ? (
                       <Badge
@@ -465,7 +465,7 @@ export default function ProvidersPage() {
                       </Badge>
                     )}
                     <span className="text-muted-foreground">
-                      {h.tokensUsed} token
+                      {h.tokensUsed} tokens
                     </span>
                   </div>
                   {h.fallbackChain.length > 0 && (

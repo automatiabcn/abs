@@ -68,20 +68,23 @@ def _system_prompt(agent: Agent, task: str, evidence: List[Evidence]) -> str:
     if evidence:
         lines = [f"[{i + 1}] ({e.kind}:{e.ref}) {e.excerpt}".strip()
                  for i, e in enumerate(evidence)]
-        ev_block = "\nKANITLAR:\n" + "\n".join(lines)
-    tools = ", ".join(agent.tools) or "(yok)"
+        ev_block = "\nEVIDENCE:\n" + "\n".join(lines)
+    tools = ", ".join(agent.tools) or "(none)"
     return (
-        f"Sen '{agent.name}' adlı bir büyüme-zekası agent'ısın. "
-        f"Görevin: {agent.purpose}. "
-        f"Yalnızca şu tool/veri kaynaklarını kullanabilirsin: {tools}. "
-        "Yetki alanı dışına çıkma, veri kaynağı belirsiz öneri üretme, "
-        "eksik veri varsa belirt. "
-        "ÇOK ÖNEMLİ: Yanıtın YALNIZCA tek bir geçerli JSON nesnesi olmalı. "
-        "Markdown yok, kod bloğu yok, açıklama yok; İLK karakter '{' olmalı. "
-        'Şema: {"summary": "kısa özet", "recommended_action": "önerilen aksiyon", '
-        '"confidence": 0.0-1.0 arası sayı, "payload": {...domain alanları...}, '
-        '"cited": [kanıt indeksleri]}.'
-        f"{ev_block}\n\nGÖREV: {task}"
+        f"You are '{agent.name}', an agent whose job is: {agent.purpose}. "
+        f"You may use only these tools and data sources: {tools}. "
+        "Stay inside that scope. Do not make a recommendation you cannot trace "
+        "to the evidence below, and say so plainly when the evidence is thin. "
+        "Answer in English.\n"
+        "IMPORTANT: reply with exactly one valid JSON object and nothing else. "
+        "No markdown, no code fence, no commentary — the first character must "
+        "be '{'.\n"
+        'Schema: {"summary": "one or two sentences", '
+        '"recommended_action": "what to do next", '
+        '"confidence": a number from 0.0 to 1.0, '
+        '"payload": {...fields for this kind of result...}, '
+        '"cited": [indices of the evidence you used]}.'
+        f"{ev_block}\n\nTASK: {task}"
     )
 
 
@@ -227,9 +230,9 @@ async def run_agent(
     while not parsed and text and retries < 1:
         retries += 1
         retry_prompt = (
-            prompt + "\n\nUYARI: Önceki yanıtın geçerli JSON DEĞİLDİ. SADECE tek "
-            "bir geçerli JSON nesnesi döndür; ilk karakter '{', son karakter '}'. "
-            "Markdown/açıklama/düzyazı YOK."
+            prompt + "\n\nYour last reply was not valid JSON. Return exactly one "
+            "JSON object: first character '{', last character '}'. No markdown, "
+            "no explanation, no prose."
         )
         text, provider = await _complete(
             agent, retry_prompt, tenant_id=tenant_id,
@@ -240,7 +243,8 @@ async def run_agent(
     summary = str(parsed.get("summary") or "").strip()
     if not summary:
         summary = (
-            f"{agent.name}: model yanıtı yapılandırılamadı (sağlayıcı yok/JSON dışı)."
+            f"{agent.name}: no usable answer — either no provider replied, or "
+            "the reply was not the structured result this agent needs."
             if not text else text[:240]
         )
     try:
@@ -251,8 +255,8 @@ async def run_agent(
 
     # Degraded = the model produced nothing usable (no provider configured, or
     # output that wouldn't parse). A degraded run must NOT be treated as a real
-    # proposal: callers skip approval creation so the Approval Center never
-    # fills with "yapılandırılamadı" noise.
+    # proposal: callers skip approval creation, so the Approval Center never
+    # fills up with rows that say only "no usable answer".
     degraded = not bool(text) or not bool(parsed)
     return AgentResult(
         agent_id=agent.id,

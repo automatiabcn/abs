@@ -107,7 +107,7 @@ describe("Agent Registry — structured-output stat is honest, not a fake metric
 
   it("does not render a fabricated 100% measurement", async () => {
     render(<AgentsPage />);
-    await screen.findByText(/Structured Output/i);
+    await screen.findByText(/Answer format/i);
     expect(screen.queryByText("100%")).toBeNull();
   });
 });

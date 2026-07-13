@@ -8,7 +8,7 @@
 //
 // What this spec proves:
 //   1. The route still serves /admin/users (no 5xx).
-//   2. The interactive client island still mounts (Davet et / dialog).
+//   2. The interactive client island still mounts (Invite user / dialog).
 //   3. The server initial fetch is wired — when the backend returns
 //      a non-empty payload, the rows render before any client refetch.
 //
@@ -57,7 +57,7 @@ test.describe("Q12-R65 /admin/users split-shell", () => {
     const resp = await page.goto("/admin/users", { waitUntil: "load" });
     expect(resp?.status() ?? 0).toBeLessThan(500);
 
-    await expect(page.locator('h1', { hasText: "Kullanıcılar" })).toBeVisible({
+    await expect(page.locator('h1', { hasText: "Users" })).toBeVisible({
       timeout: 10_000,
     });
     const inviteBtn = page.locator('[data-test="users-invite-open"]');

@@ -34,19 +34,19 @@ describe("Q11/L16 — error tile UX parity", () => {
     expect(src).toContain('data-test="pipeline-error-tile"');
     expect(src).toContain('data-test="pipeline-configure-cta"');
     expect(src).toContain('data-test="pipeline-retry-cta"');
-    expect(src).toContain("Sağlayıcı yapılandır");
-    expect(src).toContain("Tekrar dene");
+    expect(src).toContain("Configure a provider");
+    expect(src).toContain("Try again");
   });
 
-  it("setError sites use TR prefix (Q11-L16-002)", () => {
+  it("setError sites name what failed (Q11-L16-002)", () => {
     // meetings/[id] now prefixes errors
     const detail = read("app/panel/meetings/[id]/page.tsx");
-    expect(detail).toContain("Toplantı yüklenemedi");
+    expect(detail).toContain("Could not load this meeting");
 
-    // quota error has TR prefix instead of bare "unknown"
+    // quota error names what failed instead of a bare "unknown"
     const quota = read("app/panel/quota/page.tsx");
-    expect(quota).toContain("Kota verisi yüklenemedi");
-    expect(quota).toContain("bilinmeyen hata");
+    expect(quota).toContain("Couldn't load usage");
+    expect(quota).toContain("unknown error");
     expect(quota).not.toMatch(/setError\([^)]*"unknown"/);
   });
 });

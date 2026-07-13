@@ -249,7 +249,7 @@ export function MessageBubble({ msg }: { msg: ChatMessage }) {
             data-test="chat-citations"
           >
             <div className="mb-1 text-xs font-medium text-muted-foreground">
-              Kaynaklar
+              Sources
             </div>
             <ol className="space-y-1">
               {msg.citations.map((c, i) => (
@@ -259,9 +259,9 @@ export function MessageBubble({ msg }: { msg: ChatMessage }) {
                 >
                   <span className="font-mono text-foreground">[{i + 1}]</span>{" "}
                   <span className="font-medium text-foreground">
-                    {c.source || "kaynak"}
+                    {c.source || "source"}
                   </span>
-                  {c.page != null && <span> · s.{c.page}</span>}
+                  {c.page != null && <span> · p.{c.page}</span>}
                   {c.relevance_score != null && (
                     <span className="ml-1 rounded bg-muted px-1 py-0.5 text-[10px]">
                       {(c.relevance_score * 100).toFixed(0)}%
@@ -485,7 +485,7 @@ export function ChatSidebar({
   onNew: () => void;
   onDelete: (id: number) => void;
   isLoading: boolean;
-  // FAZ B (2026-05-08) — chat sidebar exposes a footer button that
+  // Phase B (2026-05-08) — chat sidebar exposes a footer button that
   // toggles the right-side PromptLibrary drawer in the parent. Optional
   // so non-chat consumers (e.g. workflow chat panel) keep working.
   onShowPrompts?: () => void;
@@ -510,7 +510,7 @@ export function ChatSidebar({
         data-test="chat-new"
       >
         <Plus className="h-4 w-4" />
-        Yeni sohbet
+        New chat
       </Button>
       <div className="relative mb-2">
         <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -561,7 +561,7 @@ export function ChatSidebar({
                     type="button"
                     onClick={() => onDelete(s.id)}
                     className="opacity-0 transition-opacity group-hover:opacity-100"
-                    aria-label="Sil"
+                    aria-label="Delete conversation"
                   >
                     <Trash2 className="h-3.5 w-3.5 text-rose-400 hover:text-rose-300" />
                   </button>
@@ -597,7 +597,7 @@ export function MetaSidebar({ meta }: { meta: MetaEvent | null }) {
       className="hidden w-80 shrink-0 flex-col border-l border-border bg-card/40 p-4 xl:flex"
     >
       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Detaylar
+        Details
       </h3>
       {!meta ? (
         <p className="text-sm text-muted-foreground">
@@ -618,18 +618,18 @@ export function MetaSidebar({ meta }: { meta: MetaEvent | null }) {
           <Card className="bg-background/60">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
-                Performans
+                Performance
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Gecikme</span>
+                <span className="text-muted-foreground">Response time</span>
                 <span className="font-mono">
                   {meta.latencyMs.toLocaleString()} ms
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Token</span>
+                <span className="text-muted-foreground">Tokens</span>
                 <span className="font-mono">
                   {meta.tokensUsed.toLocaleString()}
                 </span>
@@ -640,7 +640,7 @@ export function MetaSidebar({ meta }: { meta: MetaEvent | null }) {
             <Card className="bg-background/60">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Cascade zinciri
+                  Providers tried
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-1 text-xs">
@@ -666,10 +666,10 @@ export function MetaSidebar({ meta }: { meta: MetaEvent | null }) {
 
 // ───── EmptyState ───────────────────────────────────────────────────────
 
-// FAZ B (2026-05-08) — empty chat state now surfaces eight hero prompts
+// Phase B (2026-05-08) — empty chat state now surfaces eight hero prompts
 // (one per category from lib/prompt-library.ts) plus a "show all" CTA
 // that opens the right-side PromptLibrary drawer. Replaces the four
-// hardcoded TR openers from Polish R8; the older neutral openers were
+// hardcoded openers from Polish R8; the older neutral openers were
 // fine but did not scale and offered no discoverability for the 48
 // curated prompts the library now ships with.
 const EMPTY_STATE_COPY: Record<
@@ -677,18 +677,18 @@ const EMPTY_STATE_COPY: Record<
   { title: string; subtitle: string; cta: string; tip: string }
 > = {
   en: {
-    title: "Start chatting with AI",
+    title: "Ask anything",
     subtitle:
-      "Cascade router fails over across 6 providers. Slash commands invoke MCP tools.",
+      "If one provider is down, the next one answers. Type / to run a command.",
     cta: "Browse all 48 prompts",
     tip: "Tip: open the command palette with ⌘K",
   },
   tr: {
-    title: "AI ile konuşmaya başlayın",
+    title: "Ask anything",
     subtitle:
-      "Cascade router 6 sağlayıcı arasında otomatik geçiş yapar. Slash komutlarıyla MCP tool'larını çağırabilirsiniz.",
-    cta: "48 prompt'un tümünü gör",
-    tip: "İpucu: ⌘K ile komut paletini aç",
+      "If one provider is down, the next one answers. Type / to run a command.",
+    cta: "Browse all 48 prompts",
+    tip: "Tip: open the command palette with ⌘K",
   },
   es: {
     title: "Empieza a hablar con la IA",
@@ -705,10 +705,10 @@ export function EmptyState({
   onShowAll,
 }: {
   onPick: (prompt: string) => void;
-  // FAZ B — default "en" so existing callers without the prop fall back
+  // Phase B — default "en" so existing callers without the prop fall back
   // to English copy. ChatClient passes the customer's preferred lang.
   lang?: PromptLang;
-  // FAZ B — clicking the CTA opens the PromptLibrary drawer. Optional
+  // Phase B — clicking the CTA opens the PromptLibrary drawer. Optional
   // so non-chat consumers (workflow chat panel) keep their old behaviour.
   onShowAll?: () => void;
 }) {

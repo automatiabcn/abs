@@ -66,8 +66,8 @@ export default function MarketplacePanel({
   const [filter, setFilter] = useState<FilterValue>("all");
   const [selected, setSelected] = useState<PluginManifest | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
-  // Sprint 2B BUG-34 — installed plugin ids drive the "Kurulu" badge +
-  // "Kaldır" button. Refetched after every install/uninstall.
+  // Sprint 2B BUG-34 — installed plugin ids drive the "Installed" badge +
+  // "Remove" button. Refetched after every install/uninstall.
   const [installedIds, setInstalledIds] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
   const searchId = useId();
@@ -132,7 +132,7 @@ export default function MarketplacePanel({
         console.warn("install_failed", selected.id, res.status);
       }
       // Sprint 2B BUG-34 — refresh installed list so the card flips to
-      // "Kurulu" without forcing the operator to reload the page.
+      // "Installed" without forcing the operator to reload the page.
       const fresh = await fetchInstalled();
       setInstalledIds(fresh);
     } catch (exc) {
@@ -176,7 +176,7 @@ export default function MarketplacePanel({
           data-testid="admin-banner"
           className="rounded-2xl bg-yellow-100 p-3 text-sm text-yellow-900 ring-1 ring-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-200 dark:ring-yellow-800"
         >
-          Yalnızca okuma — eklenti kurulumu için admin rolü gerekir
+          Read-only — you need an admin role to install plugins
         </div>
       )}
 
@@ -184,14 +184,14 @@ export default function MarketplacePanel({
         <div className="relative max-w-md flex-1">
           <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
           <label htmlFor={searchId} className="sr-only">
-            Eklenti ara
+            Search plugins
           </label>
           <input
             id={searchId}
             data-testid="marketplace-search"
-            aria-label="Eklenti ara"
+            aria-label="Search plugins"
             type="search"
-            placeholder="Eklenti ara…"
+            placeholder="Search plugins…"
             className="w-full rounded-xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm text-zinc-900 ring-1 ring-zinc-900/5 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -202,7 +202,7 @@ export default function MarketplacePanel({
           <FilterChip
             testId="filter-chip-all"
             active={filter === "all"}
-            label="Tümü"
+            label="All"
             onClick={() => setFilter("all")}
           />
           {PLUGIN_TYPE_ORDER.map((t) => (
@@ -264,7 +264,7 @@ export default function MarketplacePanel({
                 </span>
               )}
               <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800">
-                cosign · imzalı
+                cosign · signed
               </span>
             </div>
             {installedIds.has(plugin.id) ? (
@@ -276,7 +276,7 @@ export default function MarketplacePanel({
                   data-testid={`installed-badge-${plugin.id}`}
                   className="inline-flex items-center justify-center rounded-xl bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800"
                 >
-                  Kurulu
+                  Installed
                 </span>
                 <button
                   type="button"
@@ -285,7 +285,7 @@ export default function MarketplacePanel({
                   onClick={() => handleUninstall(plugin.id)}
                   className="ml-auto inline-flex items-center justify-center rounded-xl border border-rose-300 px-3 py-2 text-xs font-medium text-rose-700 transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-rose-50 dark:border-rose-700 dark:text-rose-200 dark:hover:enabled:bg-rose-900/20"
                 >
-                  {busyId === plugin.id ? "İşleniyor…" : "Kaldır"}
+                  {busyId === plugin.id ? "Removing…" : "Remove"}
                 </button>
               </div>
             ) : (
@@ -296,7 +296,7 @@ export default function MarketplacePanel({
                 onClick={() => setSelected(plugin)}
                 className="mt-5 inline-flex items-center justify-center rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:enabled:bg-zinc-200"
               >
-                {busyId === plugin.id ? "Kuruluyor…" : "Kur"}
+                {busyId === plugin.id ? "Installing…" : "Install"}
               </button>
             )}
           </article>
@@ -362,9 +362,9 @@ export default function MarketplacePanel({
 
             {/* Q9 / MP4 — explicit warning + acknowledgement gate */}
             <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
-              Bu eklenti yukarıdaki ağ uçlarına ve secret'lara erişim
-              isteyecek. Sandbox cgroup içinde çalışır, ama yetkileri
-              onayladığınızda bu erişimler sürekli açılır.
+              This plugin will reach the network endpoints and read the
+              secrets listed above. It runs in a sandbox, but once you approve,
+              that access stays open until you remove the plugin.
             </div>
             <label className="mt-3 flex items-center gap-2 text-sm">
               <input
@@ -373,7 +373,7 @@ export default function MarketplacePanel({
                 onChange={(e) => setAcknowledged(e.target.checked)}
                 data-testid="permission-acknowledge"
               />
-              <span>İzinleri okudum, kurulumu onaylıyorum.</span>
+              <span>I have read these permissions and approve the install.</span>
             </label>
 
             <div className="mt-6 flex justify-end gap-3">
@@ -383,7 +383,7 @@ export default function MarketplacePanel({
                 onClick={() => setSelected(null)}
                 className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
-                İptal
+                Cancel
               </button>
               <button
                 type="button"
@@ -392,7 +392,7 @@ export default function MarketplacePanel({
                 disabled={!acknowledged}
                 className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
-                Onayla &amp; Kur
+                Approve &amp; install
               </button>
             </div>
           </div>

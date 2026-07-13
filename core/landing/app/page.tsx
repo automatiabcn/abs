@@ -13,11 +13,11 @@ import Hero from "@/components/Hero";
 import Quotes from "@/components/Quotes";
 import Contact from "@/components/Contact";
 
-const heroTitle = "Kendi sunucunda 100+ MCP tool ve 6 sağlayıcı cascade — tek paket, kendi altyapın.";
+const heroTitle = "100+ MCP tools and a 6-provider cascade on your own server — one package, your infrastructure.";
 
-const heroSubtitle = "Automatia ABS: kaosu otomasyona dönüştür, kendi sunucunda. 100+ MCP tool + 6 sağlayıcı cascade + kalite pipeline'ları. Anthropic Claude key'inle çalışır, veri tamamen sende kalır.";
+const heroSubtitle = "Automatia ABS: turn chaos into automation, on your own server. 100+ MCP tools, a 6-provider cascade and quality pipelines. It runs on your own Anthropic Claude key, and your data stays with you.";
 
-const primaryCta = { text: "Demo İncele", href: "#demo" };
+const primaryCta = { text: "Watch the demo", href: "#demo" };
 
 export default function HomePage() {
   return (
@@ -27,7 +27,7 @@ export default function HomePage() {
           title={heroTitle}
           subtitle={heroSubtitle}
           primaryCta={primaryCta}
-          secondaryCta={{ text: "İletişim", href: "#contact" }}
+          secondaryCta={{ text: "Contact", href: "#contact" }}
         />
         <Features />
         <Quotes />

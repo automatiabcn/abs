@@ -71,14 +71,15 @@ const INTENT_CHIP: Record<string, string> = {
   watching: "border-border text-muted-foreground",
 };
 const CONSENT_LABEL: Record<string, string> = {
-  izinli: "izinli", kısmi: "kısmi", yok: "yok", "opt-in": "izinli", "opt-out": "yok",
+  opted_in: "Opted in", pending: "Pending", opted_out: "Opted out",
+  "opt-in": "Opted in", "opt-out": "Opted out",
 };
 
 function trTime(iso: string | null): string {
   if (!iso) return "";
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  if (mins < 60) return `${mins} dk önce`;
-  return `${Math.round(mins / 60)} sa önce`;
+  if (mins < 60) return `${mins} min ago`;
+  return `${Math.round(mins / 60)} h ago`;
 }
 
 export default function GrowthDashboardPage() {
@@ -98,19 +99,19 @@ export default function GrowthDashboardPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Growth Dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Agentic büyüme zekası · canlı agent aktivitesi + öncelikler
+            What your agents did, and which accounts to work next
           </p>
         </div>
         {d && (
           <span className="rounded-full border border-emerald-500/40 px-3 py-1 text-[11px] text-emerald-300">
-            ● Tüm sistemler sağlıklı · {d.scorecards.active_agents} agent aktif
+            ● All systems healthy · {d.scorecards.active_agents} agents running
           </span>
         )}
       </div>
 
       {error && (
         <div className="rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">
-          Yüklenemedi: {error}
+          Could not load the dashboard: {error}
         </div>
       )}
       {!d && !error && <div className="h-64 w-full animate-pulse rounded-md bg-muted/40" />}
@@ -119,18 +120,18 @@ export default function GrowthDashboardPage() {
         <>
           {/* ── Scorecards ─────────────────────────── */}
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Score label="Firma Büyüme Skoru" value={`${d.scorecards.growth_score}/100`} hint="lead skor ortalaması" accent="text-emerald-300" />
-            <Score label="Sıcak Account" value={String(d.scorecards.hot_accounts)} hint="yüksek-intent lead" />
-            <Score label="Bekleyen Onay" value={String(d.scorecards.pending_approvals)} hint={`${d.scorecards.high_risk_approvals} yüksek-risk · insan onayı`} accent="text-amber-300" />
-            <Score label="Aktif Agent" value={`${d.scorecards.active_agents}/${d.scorecards.total_agents}`} hint="son aktivitede görülen" />
+            <Score label="Growth Score" value={`${d.scorecards.growth_score}/100`} hint="average lead score" accent="text-emerald-300" />
+            <Score label="Hot Accounts" value={String(d.scorecards.hot_accounts)} hint="leads showing high intent" />
+            <Score label="Waiting for Approval" value={String(d.scorecards.pending_approvals)} hint={`${d.scorecards.high_risk_approvals} high-risk · needs a person`} accent="text-amber-300" />
+            <Score label="Agents Running" value={`${d.scorecards.active_agents}/${d.scorecards.total_agents}`} hint="seen in recent activity" />
           </div>
 
           {/* ── Activity feed + Buying signals ─────── */}
           <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
             <Card className="lg:col-span-2">
-              <div className="mb-3 text-sm font-semibold">⚡ Canlı Agent Aktivitesi</div>
+              <div className="mb-3 text-sm font-semibold">⚡ Live Agent Activity</div>
               <div className="divide-y divide-border">
-                {d.activity.length === 0 && <div className="py-3 text-sm text-muted-foreground">Henüz aktivite yok.</div>}
+                {d.activity.length === 0 && <div className="py-3 text-sm text-muted-foreground">No activity yet.</div>}
                 {d.activity.slice(0, 8).map((a, i) => (
                   <div key={i} className="flex items-start gap-3 py-2.5">
                     <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded bg-muted/40 text-xs">⚙</span>
@@ -141,7 +142,7 @@ export default function GrowthDashboardPage() {
                       <div className="font-mono text-[10px] text-muted-foreground">{trTime(a.created_at)}</div>
                     </div>
                     <span className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] ${a.requires_approval ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300"}`}>
-                      {a.requires_approval ? "onay" : "tamam"}
+                      {a.requires_approval ? "needs approval" : "done"}
                     </span>
                   </div>
                 ))}
@@ -149,12 +150,12 @@ export default function GrowthDashboardPage() {
             </Card>
 
             <Card>
-              <div className="mb-1 text-sm font-semibold">◈ Buying Signal Uyarıları</div>
+              <div className="mb-1 text-sm font-semibold">◈ Buying Signals</div>
               <div className="mb-3 text-[11px] text-muted-foreground">
-                Signal Fusion Agent · {d.buying_signals.signal_types} sinyal türü izleniyor
+                Watching {d.buying_signals.signal_types} kinds of signal
               </div>
               <div className="space-y-2">
-                {d.buying_signals.items.length === 0 && <div className="text-sm text-muted-foreground">Sinyal yok.</div>}
+                {d.buying_signals.items.length === 0 && <div className="text-sm text-muted-foreground">No signals yet.</div>}
                 {d.buying_signals.items.map((s, i) => (
                   <div key={i} className="flex items-center gap-2 rounded-lg border bg-background/40 px-3 py-2">
                     <span className="text-base">{s.icon}</span>
@@ -170,22 +171,22 @@ export default function GrowthDashboardPage() {
 
           {/* ── Account Priority table ─────────────── */}
           <Card className="mb-6">
-            <div className="mb-3 text-sm font-semibold">◷ Account Priority — Lead Scoring</div>
+            <div className="mb-3 text-sm font-semibold">◷ Accounts to Work Next</div>
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-                    <th className="pb-2 pr-3 font-medium">Firma</th>
-                    <th className="pb-2 pr-3 font-medium">Sektör</th>
-                    <th className="pb-2 pr-3 font-medium">Skor</th>
+                    <th className="pb-2 pr-3 font-medium">Company</th>
+                    <th className="pb-2 pr-3 font-medium">Industry</th>
+                    <th className="pb-2 pr-3 font-medium">Score</th>
                     <th className="pb-2 pr-3 font-medium">Intent</th>
                     <th className="pb-2 pr-3 font-medium">Consent</th>
-                    <th className="pb-2 font-medium">Önerilen aksiyon</th>
+                    <th className="pb-2 font-medium">Suggested next step</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {d.account_priority.length === 0 && (
-                    <tr><td colSpan={6} className="py-3 text-muted-foreground">Henüz lead yok.</td></tr>
+                    <tr><td colSpan={6} className="py-3 text-muted-foreground">No leads yet.</td></tr>
                   )}
                   {d.account_priority.map((ln) => (
                     <tr key={ln.id}>
@@ -207,33 +208,33 @@ export default function GrowthDashboardPage() {
           {/* ── Summary widgets ────────────────────── */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
             <Score
-              label="AEO Görünürlük"
+              label="Search Visibility"
               value={d.aeo.visibility_pct != null ? `${d.aeo.visibility_pct}%` : "—"}
-              hint={`${d.aeo.down_categories} kategoride düşüş · ${d.aeo.categories_total} toplam`}
+              hint={`down in ${d.aeo.down_categories} of ${d.aeo.categories_total} categories`}
             />
             <Score
               label="Campaign → Revenue"
               value={d.campaign.attributed_revenue != null
                 ? `${d.campaign.currency}${(d.campaign.attributed_revenue / 1_000_000).toFixed(2)}M`
                 : "—"}
-              hint={d.campaign.top_channel ? `${d.campaign.top_channel} · ${d.campaign.period}` : "atıflı gelir"}
+              hint={d.campaign.top_channel ? `${d.campaign.top_channel} · ${d.campaign.period}` : "revenue attributed to campaigns"}
               accent="text-emerald-300"
             />
-            <Score label="Inbound (bugün)" value={String(d.inbound_today)} hint="triage edilen talep" />
+            <Score label="Inbound (today)" value={String(d.inbound_today)} hint="requests triaged" />
             <Score
-              label="CRM Sağlık Skoru"
+              label="CRM Data Health"
               value={d.crm_health.health_pct != null ? `${d.crm_health.health_pct}%` : "—"}
-              hint={`${d.crm_health.fix_suggestions} düzeltme önerisi`}
+              hint={`${d.crm_health.fix_suggestions} fixes suggested`}
             />
             <Score
-              label="Connector Sağlığı"
+              label="Connectors"
               value={`${d.connectors.connected}/${d.connectors.catalog}`}
-              hint={d.connectors.health ? `ort. sağlık %${d.connectors.health}` : "bağlı / katalog"}
+              hint={d.connectors.health ? `${d.connectors.health}% average health` : "connected / available"}
             />
             <Score
               label="Model Gateway"
               value={`${d.model_gateway.currency}${d.model_gateway.cost}`}
-              hint={`${d.model_gateway.mode} · ${d.model_gateway.models} model`}
+              hint={`${d.model_gateway.mode} · ${d.model_gateway.models} models`}
               accent="text-emerald-300"
             />
           </div>

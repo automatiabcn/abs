@@ -1,9 +1,9 @@
 /**
  * Sprint 2N FAZ B — UAT-009 fail-closed landing SSR (P0 #2M-025).
  *
- * /admin/* ve /panel/* SSR layout'ları backend /healthz probe fail edince
- * /login?reason=backend-unreachable'a redirect ediyor. Login sayfası bu
- * query param'ı yakalayıp Türkçe banner gösteriyor.
+ * The /admin/* and /panel/* SSR layouts redirect to
+ * /login?reason=backend-unreachable when the backend /healthz probe fails.
+ * The login page picks that query param up and shows a banner.
  */
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -19,14 +19,14 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("LoginPage — backend-unreachable banner (P0 #2M-025)", () => {
-  it("shows the Türkçe banner when reason=backend-unreachable", () => {
+  it("shows the banner when reason=backend-unreachable", () => {
     mockSearchParams.mockImplementation((key: string) =>
       key === "reason" ? "backend-unreachable" : null,
     );
     render(<LoginPage />);
     const banner = screen.getByTestId("backend-unreachable-banner");
-    expect(banner.textContent).toContain("Backend şu an erişilemez");
-    expect(banner.textContent).toContain("Lütfen birkaç dakika sonra tekrar deneyin");
+    expect(banner.textContent).toContain("The backend is unreachable right now");
+    expect(banner.textContent).toContain("Please try again in a few minutes");
   });
 
   it("hides the banner without reason param", () => {

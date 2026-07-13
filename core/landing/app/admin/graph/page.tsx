@@ -49,16 +49,16 @@ interface CypherResponse {
 
 const SAMPLE_QUERIES: { label: string; cypher: string }[] = [
   {
-    label: "Tüm Person node'ları",
+    label: "Every person",
     cypher: "MATCH (p:Person) RETURN p.name, p.email LIMIT 25",
   },
   {
-    label: "Acme şirketi kontak ağı",
+    label: "Who works at Acme",
     cypher:
       "MATCH (c:Org {name: 'Acme'})<-[:WORKS_AT]-(p:Person) RETURN p.name, p.role",
   },
   {
-    label: "Son hafta açılan ticket'lar",
+    label: "Tickets opened this week",
     cypher:
       "MATCH (t:Ticket) WHERE t.created_at > datetime() - duration('P7D') RETURN t.id, t.title, t.severity",
   },
@@ -118,7 +118,10 @@ async function nlToCypher(
     return { cypher: data.cypher ?? "" };
   } catch (exc) {
     return {
-      error: exc instanceof Error ? exc.message : "NL→Cypher çağrısı başarısız",
+      error:
+        exc instanceof Error
+          ? exc.message
+          : "The Cypher request could not be sent",
     };
   }
 }
@@ -179,8 +182,8 @@ export default function GraphPage() {
           Knowledge Graph
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Neo4j 5 bolt — kurum graph'ı: kişiler, şirketler, projeler, ticket'lar.
-          Cypher veya doğal dil ile sorgula.
+          How your people, companies, projects and tickets connect. Ask in plain
+          English, or write Cypher yourself.
         </p>
       </motion.header>
 
@@ -191,7 +194,7 @@ export default function GraphPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <Database className="h-4 w-4" />
-                Şema
+                Schema
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -202,17 +205,18 @@ export default function GraphPage() {
                   data-test="graph-schema-error"
                   className="text-xs text-muted-foreground"
                 >
-                  Şema yüklenemedi — Neo4j erişilemiyor.
+                  Could not load the schema — the graph database is
+                  unreachable. Check that Neo4j is running.
                 </p>
               ) : (
                 <div className="space-y-3 text-xs">
                   <div>
                     <div className="mb-1 font-semibold uppercase tracking-wider text-muted-foreground">
-                      Node etiketleri
+                      Node labels
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {(schema.node_labels ?? []).length === 0 ? (
-                        <span className="text-muted-foreground">Henüz node yok</span>
+                        <span className="text-muted-foreground">No nodes yet</span>
                       ) : (
                         (schema.node_labels ?? []).map((l) => (
                           <Badge key={l} variant="outline" className="font-mono">
@@ -224,11 +228,11 @@ export default function GraphPage() {
                   </div>
                   <div>
                     <div className="mb-1 font-semibold uppercase tracking-wider text-muted-foreground">
-                      İlişki tipleri
+                      Relationship types
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {(schema.relationship_types ?? []).length === 0 ? (
-                        <span className="text-muted-foreground">Henüz ilişki yok</span>
+                        <span className="text-muted-foreground">No relationships yet</span>
                       ) : (
                         (schema.relationship_types ?? []).map((r) => (
                           <Badge
@@ -249,7 +253,7 @@ export default function GraphPage() {
 
           <Card className="bg-card/60">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Hazır sorgular</CardTitle>
+              <CardTitle className="text-sm">Example queries</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
               {SAMPLE_QUERIES.map((q) => (
@@ -271,10 +275,9 @@ export default function GraphPage() {
         <section className="space-y-4">
           <Card className="bg-card/70">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Cypher editörü</CardTitle>
+              <CardTitle className="text-base">Cypher editor</CardTitle>
               <CardDescription>
-                Neo4j 5 syntax. Read-only kullanıcılar yalnız MATCH/RETURN
-                çalıştırabilir (Phase K'da role-based gate).
+                Neo4j 5 syntax. Read-only users can run MATCH/RETURN only.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -284,7 +287,7 @@ export default function GraphPage() {
                 onChange={(e) => setCypher(e.target.value)}
                 spellCheck={false}
                 data-test="graph-cypher-input"
-                aria-label="Cypher sorgusu"
+                aria-label="Cypher query"
                 className="w-full rounded-md border border-border bg-background p-3 font-mono text-xs leading-relaxed outline-none focus:border-primary/50"
               />
               <div className="mt-3 flex items-center gap-2">
@@ -295,10 +298,10 @@ export default function GraphPage() {
                   data-test="graph-run-cypher"
                 >
                   <PlayCircle className="mr-2 h-4 w-4" />
-                  {running ? "Çalıştırılıyor…" : "Çalıştır"}
+                  {running ? "Running…" : "Run"}
                 </Button>
                 <span className="text-xs text-muted-foreground">
-                  Sonuç hem tablo hem (Phase L) force-graph olarak görünür.
+                  Results appear as a table below.
                 </span>
               </div>
             </CardContent>
@@ -309,10 +312,11 @@ export default function GraphPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Sparkles className="h-4 w-4 text-primary" />
-                Doğal dil sorgu
+                Ask in plain English
               </CardTitle>
               <CardDescription>
-                Türkçe yazın, cascade Cypher'a çevirsin.
+                Describe what you are looking for and we write the Cypher for
+                you — review it before you run it.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -320,7 +324,7 @@ export default function GraphPage() {
                 type="text"
                 value={nl}
                 onChange={(e) => setNl(e.target.value)}
-                placeholder="örn. Acme şirketinde çalışan tüm kişileri bul"
+                placeholder="e.g. find everyone who works at Acme"
                 className="w-full rounded-md border border-border bg-background p-2 text-sm outline-none focus:border-primary/50"
                 data-test="graph-nl-input"
               />
@@ -332,14 +336,14 @@ export default function GraphPage() {
                 data-test="graph-nl-run"
               >
                 <Upload className="mr-2 h-3 w-3" />
-                {synthesising ? "Sentezleniyor…" : "Cypher üret"}
+                {synthesising ? "Writing…" : "Write the Cypher"}
               </Button>
               {nlError && (
                 <p
                   data-test="graph-nl-error"
                   className="text-xs text-rose-400"
                 >
-                  Cypher üretilemedi: {nlError}
+                  Could not write the Cypher: {nlError}
                 </p>
               )}
             </CardContent>
@@ -348,17 +352,17 @@ export default function GraphPage() {
           {/* Result */}
           <Card className="bg-card/60">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Sonuç</CardTitle>
+              <CardTitle className="text-base">Results</CardTitle>
               {result?.elapsed_ms != null && (
                 <CardDescription>
-                  {result.rows.length} satır · {result.elapsed_ms.toFixed(0)} ms
+                  {result.rows.length} rows · {result.elapsed_ms.toFixed(0)} ms
                 </CardDescription>
               )}
             </CardHeader>
             <CardContent>
               {!result ? (
                 <p className="text-sm text-muted-foreground">
-                  Henüz sorgu çalıştırılmadı.
+                  Nothing run yet.
                 </p>
               ) : result.error ? (
                 <div className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200">
@@ -366,7 +370,7 @@ export default function GraphPage() {
                 </div>
               ) : result.rows.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Sorgu boş döndü.
+                  The query matched nothing.
                 </p>
               ) : (
                 <div className="overflow-x-auto rounded-md border border-border">

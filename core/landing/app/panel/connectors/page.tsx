@@ -59,7 +59,7 @@ export default function ConnectorMarketplacePage() {
     try {
       const r = await fetch(`/v1/connectors/${c.id}/sync`, { method: "POST", credentials: "include" });
       const j = await r.json();
-      setResult(j.ok ? `✓ ${j.total} kayıt (firma ${j.companies} · lead ${j.leads})` : `Hata: ${j.error}`);
+      setResult(j.ok ? `✓ ${j.total} records (${j.companies} companies · ${j.leads} leads)` : `Failed: ${j.error}`);
       load();
     } finally { setBusy(false); }
   }
@@ -73,9 +73,9 @@ export default function ConnectorMarketplacePage() {
         body: JSON.stringify({ credentials: creds }),
       });
       const j = await r.json();
-      if (!j.ok) { setResult(`Hata: ${j.error ?? `HTTP ${r.status}`}`); return; }
+      if (!j.ok) { setResult(`Failed: ${j.error ?? `HTTP ${r.status}`}`); return; }
       const s = j.sync;
-      setResult(`✓ Bağlandı · ${s?.total ?? 0} kayıt import (firma ${s?.companies ?? 0} · contact ${s?.contacts ?? 0} · lead ${s?.leads ?? 0})`);
+      setResult(`✓ Connected · imported ${s?.total ?? 0} records (${s?.companies ?? 0} companies · ${s?.contacts ?? 0} contacts · ${s?.leads ?? 0} leads)`);
       load();
       setTimeout(() => setModal(null), 1400);
     } finally { setBusy(false); }
@@ -91,13 +91,13 @@ export default function ConnectorMarketplacePage() {
     <div className="mx-auto w-full max-w-6xl px-6 py-10">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Connector Marketplace</h1>
-        <p className="mt-1 text-sm text-muted-foreground">MCP-tabanlı · read-first · resmi API / onaylı kanal · yerel-ERP önceliği</p>
+        <p className="mt-1 text-sm text-muted-foreground">Bring your data in. Read-only first, official APIs only.</p>
       </div>
-      {err && <div className="rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">Yüklenemedi: {err}</div>}
+      {err && <div className="rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">Couldn&apos;t load the connectors: {err}</div>}
       {!d && !err && <div className="h-64 w-full animate-pulse rounded-md bg-muted/40" />}
       {d && (
         <>
-          <div className="mb-6 text-xs text-muted-foreground">{d.connected_total} bağlı / {d.catalog_total} katalog</div>
+          <div className="mb-6 text-xs text-muted-foreground">{d.connected_total} connected of {d.catalog_total} available</div>
           {d.groups.map((g) => (
             <section key={g.key} className="mb-8">
               <h2 className="mb-3 text-base font-semibold">{g.label}</h2>
@@ -108,12 +108,12 @@ export default function ConnectorMarketplacePage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1.5 text-sm font-semibold">
                         {c.name}
-                        {c.local_priority && <span className="rounded-full border border-sky-500/40 px-1.5 text-[9px] text-sky-400">yerel</span>}
-                        {c.has_adapter && <span className="rounded-full border border-emerald-500/40 px-1.5 text-[9px] text-emerald-300">gerçek</span>}
+                        {c.local_priority && <span className="rounded-full border border-sky-500/40 px-1.5 text-[9px] text-sky-400">local</span>}
+                        {c.has_adapter && <span className="rounded-full border border-emerald-500/40 px-1.5 text-[9px] text-emerald-300">live</span>}
                       </div>
                       <div className="font-mono text-[10px] text-muted-foreground">{c.kind} · {c.note}</div>
                       {c.status === "connected" && c.last_sync_count > 0 && (
-                        <div className="mt-1 text-[10px] text-emerald-300/80">{c.last_sync_count} kayıt senkron</div>
+                        <div className="mt-1 text-[10px] text-emerald-300/80">{c.last_sync_count} records synced</div>
                       )}
                       {c.last_error && <div className="mt-1 text-[10px] text-rose-300/80">{c.last_error}</div>}
                     </div>
@@ -123,10 +123,10 @@ export default function ConnectorMarketplacePage() {
                           {c.has_adapter && c.auth_kind !== "file" && (
                             <button onClick={() => syncNow(c)} disabled={busy} className="rounded-full border px-2.5 py-0.5 text-[10px] text-sky-300">Sync</button>
                           )}
-                          <button onClick={() => disconnect(c)} className="rounded-full border border-emerald-500/40 px-2.5 py-0.5 text-[10px] text-emerald-400">bağlı ✕</button>
+                          <button onClick={() => disconnect(c)} className="rounded-full border border-emerald-500/40 px-2.5 py-0.5 text-[10px] text-emerald-400">Disconnect</button>
                         </>
                       ) : (
-                        <button onClick={() => openConnect(c)} className="rounded-full border px-2.5 py-0.5 text-[10px] text-muted-foreground">bağla</button>
+                        <button onClick={() => openConnect(c)} className="rounded-full border px-2.5 py-0.5 text-[10px] text-muted-foreground">Connect</button>
                       )}
                     </div>
                   </div>
@@ -141,9 +141,9 @@ export default function ConnectorMarketplacePage() {
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !busy && setModal(null)}>
           <div className="w-full max-w-md rounded-xl border bg-card p-5" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-1 text-base font-semibold">{modal.name} bağla</div>
+            <div className="mb-1 text-base font-semibold">Connect {modal.name}</div>
             <div className="mb-4 text-[11px] text-muted-foreground">
-              {modal.auth_kind === "file" ? "CSV/JSON dosyası yükle (sütunlar: company/firma · sector · domain · email · score · intent)" : "Kimlik bilgilerini gir"}
+              {modal.auth_kind === "file" ? "Upload a CSV or JSON file (columns: company · sector · domain · email · score · intent)" : "Enter your credentials"}
             </div>
             <div className="space-y-3">
               {modal.credential_fields.map((f) => (
@@ -155,7 +155,7 @@ export default function ConnectorMarketplacePage() {
                         onChange={(e) => onFile(f.key, e.target.files?.[0] ?? null)}
                         className="w-full text-xs" data-test="connector-file" />
                       <textarea value={creds[f.key] ?? ""} onChange={(e) => setCreds((c) => ({ ...c, [f.key]: e.target.value }))}
-                        rows={4} placeholder="…veya içeriği yapıştır" className="mt-2 w-full rounded-md border bg-background px-2 py-1 font-mono text-[11px]" />
+                        rows={4} placeholder="…or paste the contents here" className="mt-2 w-full rounded-md border bg-background px-2 py-1 font-mono text-[11px]" />
                     </>
                   ) : f.key === "format" ? null : (
                     <input type={f.type === "password" ? "password" : "text"} value={creds[f.key] ?? ""}
@@ -167,8 +167,8 @@ export default function ConnectorMarketplacePage() {
             </div>
             {result && <div className={`mt-3 rounded-md border px-3 py-2 text-xs ${result.startsWith("✓") ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200" : "border-rose-500/30 bg-rose-500/10 text-rose-200"}`}>{result}</div>}
             <div className="mt-4 flex justify-end gap-2">
-              <button onClick={() => setModal(null)} disabled={busy} className="rounded-md border px-3 py-1.5 text-xs">Vazgeç</button>
-              <button onClick={submitConnect} disabled={busy} className="rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50" data-test="connector-connect-submit">{busy ? "Bağlanıyor…" : "Bağlan + İçe Aktar"}</button>
+              <button onClick={() => setModal(null)} disabled={busy} className="rounded-md border px-3 py-1.5 text-xs">Cancel</button>
+              <button onClick={submitConnect} disabled={busy} className="rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50" data-test="connector-connect-submit">{busy ? "Connecting…" : "Connect and import"}</button>
             </div>
           </div>
         </div>

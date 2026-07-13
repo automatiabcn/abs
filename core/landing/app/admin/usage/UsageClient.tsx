@@ -25,7 +25,7 @@ const UsageTrendChart = dynamic(
         data-test="usage-trend-skeleton"
         className="flex h-64 items-center justify-center text-sm text-muted-foreground"
       >
-        Yükleniyor…
+        Loading…
       </div>
     ),
   },
@@ -97,11 +97,11 @@ export default function UsageClient({ initial }: { initial: UsagePayload }) {
     >
       <header className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Kullanım
+          Usage
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {data.month} · son 24 saat sağlayıcı dağılımı + 7-günlük Claude token
-          trendi.
+          {data.month} · what your providers handled in the last 24 hours, and
+          how much of the Claude budget you have spent.
         </p>
       </header>
 
@@ -120,14 +120,15 @@ export default function UsageClient({ initial }: { initial: UsagePayload }) {
         data-test="usage-metric-grid"
       >
         <Card data-test="usage-tile-free-path">
-          <p className="text-sm text-muted-foreground">Free path %</p>
+          <p className="text-sm text-muted-foreground">Served free</p>
           <p className="mt-2 text-3xl font-semibold">{freePctLabel}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {data.free_path.calls_24h} / {data.total_calls_24h} çağrı (24s)
+            {data.free_path.calls_24h} of {data.total_calls_24h} calls in the
+            last 24h
           </p>
         </Card>
         <Card data-test="usage-tile-claude-budget">
-          <p className="text-sm text-muted-foreground">Claude budget %</p>
+          <p className="text-sm text-muted-foreground">Claude budget used</p>
           <p className="mt-2 text-3xl font-semibold">{claudePctLabel}</p>
           <ProgressBar
             value={Math.min(100, data.claude.used_pct * 100)}
@@ -141,24 +142,24 @@ export default function UsageClient({ initial }: { initial: UsagePayload }) {
             className="mt-3"
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            {data.claude.used_tokens.toLocaleString()} /{" "}
-            {data.claude.limit_tokens.toLocaleString()} token
+            {data.claude.used_tokens.toLocaleString()} of{" "}
+            {data.claude.limit_tokens.toLocaleString()} tokens
           </p>
         </Card>
         <Card data-test="usage-tile-paid-path">
-          <p className="text-sm text-muted-foreground">Paid path çağrı (24s)</p>
+          <p className="text-sm text-muted-foreground">Paid calls (24h)</p>
           <p className="mt-2 text-3xl font-semibold">
             {data.paid_path.calls_24h}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Anthropic / OpenAI opt-in çağrıları.
+            Calls you opted in to send to Anthropic or OpenAI.
           </p>
         </Card>
       </section>
 
       <section className="mt-8" data-test="usage-trend-section">
         <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted-foreground">
-          7-gün Claude token trendi
+          Claude tokens, last 7 days
         </h2>
         <Card data-test="usage-trend-chart">
           {trendIsEmpty ? (
@@ -167,9 +168,9 @@ export default function UsageClient({ initial }: { initial: UsagePayload }) {
               className="flex h-64 flex-col items-center justify-center gap-1 text-center text-sm text-muted-foreground"
             >
               <p className="font-medium text-foreground">
-                Henüz Claude çağrısı yok.
+                No Claude calls yet.
               </p>
-              <p>İlk çağrıdan sonra trend burada görünecek.</p>
+              <p>The trend appears here after the first one.</p>
             </div>
           ) : (
             <UsageTrendChart data={trendData} />
@@ -179,12 +180,12 @@ export default function UsageClient({ initial }: { initial: UsagePayload }) {
 
       <section className="mt-8" data-test="usage-provider-mix-section">
         <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted-foreground">
-          Sağlayıcı dağılımı (son 24s)
+          Calls by provider (last 24h)
         </h2>
         <Card>
           {providerRows.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Son 24 saat içinde henüz sağlayıcı çağrısı yok.
+              No provider calls in the last 24 hours.
             </p>
           ) : (
             <ul className="divide-y divide-border">

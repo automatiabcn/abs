@@ -213,8 +213,8 @@ def test_frontend_page_no_longer_contains_mock_fallback() -> None:
     assert "[MOCK]" not in text, (
         "BUG-27 regression: page.tsx still contains [MOCK] fallback"
     )
-    # The new error banner uses Turkish text so operators on /admin/rag
-    # see a clear failure mode instead of plausible-looking fake hits.
-    assert "Backend /v1/rag/query döndü" in text, (
-        "expected new error banner copy is missing — regression"
+    # A failed search says so, and says which call failed and how. The bug this
+    # guards against is the opposite: fake hits that look exactly like real ones.
+    assert "Search failed — /v1/rag/query returned" in text, (
+        "the honest error banner is gone — a failed search must not look like an empty one"
     )

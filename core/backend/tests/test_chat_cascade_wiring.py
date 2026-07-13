@@ -180,6 +180,7 @@ def test_chat_completions_no_provider_returns_503(
     detail = payload.get("detail", payload)
     assert detail["error"] == "all_providers_unavailable"
     assert detail["retry_after"] == 60
-    assert "/admin/settings" in detail["hint"]
+    # The hint has to name where to go, not merely that something is wrong.
+    assert "Settings" in detail["hint"] and "Providers" in detail["hint"]
     # Retry-After HTTP header set.
     assert r.headers.get("retry-after") == "60"

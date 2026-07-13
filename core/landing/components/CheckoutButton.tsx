@@ -48,17 +48,17 @@ export default function CheckoutButton({
         const errData = (await res.json().catch(() => ({}))) as {
           error?: string;
         };
-        throw new Error(errData.error ?? "Ödeme başlatılamadı");
+        throw new Error(errData.error ?? "Could not start checkout");
       }
 
       const data = (await res.json()) as { url?: string };
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error("Stripe URL alınamadı");
+        throw new Error("No Stripe URL returned");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Beklenmeyen hata");
+      setError(err instanceof Error ? err.message : "Unexpected error");
     } finally {
       setLoading(false);
     }
@@ -85,7 +85,7 @@ export default function CheckoutButton({
         title={BILLING_ENABLED ? undefined : BILLING_DISABLED_TITLE}
         className={`${baseClasses} ${variantClasses} ${className}`}
       >
-        {loading ? "İşleniyor…" : children}
+        {loading ? "Processing…" : children}
       </button>
       {error && (
         <p role="alert" aria-live="polite" className="mt-2 text-sm text-red-500">
