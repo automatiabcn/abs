@@ -1,99 +1,209 @@
-/* T-R03 — OKLCH brand color tokens.
+/* ABS design tokens — the single source of truth for colour and type.
  *
- * 12 tokens covering the ABS palette: brand blue, electric cyan, success,
- * warning, danger, neutral surfaces. Defined in OKLCH for perceptual
- * uniformity; the `color-mix()` calls let consumers tune density without
- * re-defining the palette.
+ * This file replaced three overlapping systems that had grown side by side:
+ * shadcn HSL triplets in globals.css, an earlier `--abs-*` OKLCH set used by
+ * seven files, and raw Tailwind palette utilities (rose/zinc/emerald, 500+
+ * call sites) everywhere else. Nothing consumed all three, so a colour change
+ * had to be made in three places and usually wasn't.
  *
- * Usage:
- *   background: var(--abs-brand-base);
- *   color: oklch(from var(--abs-brand-base) calc(l + 0.1) c h);
+ * Theme: "Instrument" — a light-first control surface. The product is a
+ * console an operator reads at a glance, so legibility outranks atmosphere.
+ * Dark is a first-class second theme, not an inversion of the first.
+ *
+ * Each colour is declared once, as space-separated RGB channels, and exposed
+ * two ways:
+ *
+ *   --abs-brand-rgb: 11 124 116;              <- the one definition
+ *   --abs-brand: rgb(var(--abs-brand-rgb));   <- for plain CSS: var(--abs-brand)
+ *
+ * Tailwind maps its colour keys onto the channel form with <alpha-value>, so
+ * `bg-primary` and `bg-primary/10` both work. That matters: the panel already
+ * carries ~190 opacity-modified utilities (`bg-card/60`, `border-primary/50`),
+ * and a colour handed to Tailwind as a finished `var(--x)` string has no
+ * channels left to re-compose an alpha onto — every one of them would have
+ * rendered nothing, silently, because a utility Tailwind cannot build is not
+ * an error.
  */
 
 :root {
-  /* Brand */
-  --abs-brand-base: oklch(48% 0.16 252);     /* deep ABS blue (#1e57ac equiv) */
-  --abs-brand-soft: oklch(72% 0.12 252);     /* hover / accent surface */
-  /* A11y — brand-as-text. brand-base passes WCAG AA on light surfaces but
-   * fails (~2.8:1) on the dark theme; flip to the lighter brand on dark. */
-  --abs-brand-text: var(--abs-brand-base);
-  --abs-accent-cyan: oklch(78% 0.16 220);    /* electric cyan */
-  --abs-accent-cyan-soft: oklch(92% 0.07 220);
+  /* Ground and surfaces */
+  --abs-canvas-rgb: 246 247 248;
+  --abs-surface-rgb: 255 255 255;
+  --abs-surface-raised-rgb: 242 244 246;
+  --abs-surface-sunken-rgb: 236 239 242;
 
-  /* Status */
-  --abs-success: oklch(70% 0.18 145);
-  --abs-warning: oklch(82% 0.17 88);
-  --abs-danger: oklch(62% 0.22 24);
-  --abs-info: oklch(78% 0.13 252);
+  /* Lines */
+  --abs-border-rgb: 223 227 232;
+  --abs-border-soft-rgb: 234 237 240;
+  --abs-border-strong-rgb: 198 204 212;
 
-  /* Surfaces (light + dark) */
-  --abs-surface-base: oklch(99% 0.005 252);
-  --abs-surface-raised: oklch(96% 0.01 252);
-  --abs-surface-sunken: oklch(92% 0.015 252);
-  --abs-foreground: oklch(22% 0.02 252);
+  /* Text */
+  --abs-fg-rgb: 20 24 29;
+  --abs-fg-muted-rgb: 74 83 94;
+  --abs-fg-subtle-rgb: 120 130 142;
+  --abs-fg-inverted-rgb: 255 255 255;
+
+  /* Brand — signal teal. Deliberately not the generic AI blue/violet. */
+  --abs-brand-rgb: 11 124 116;
+  --abs-brand-hover-rgb: 9 105 97;
+  --abs-brand-soft-rgb: 221 240 238;
+  --abs-brand-fg-rgb: 255 255 255;
+
+  /* Semantic state. Separate from brand: a green button is not an accent. */
+  --abs-success-rgb: 31 122 77;
+  --abs-success-soft-rgb: 224 239 231;
+  --abs-warning-rgb: 168 90 18;
+  --abs-warning-soft-rgb: 251 235 220;
+  --abs-danger-rgb: 179 38 30;
+  --abs-danger-soft-rgb: 251 228 226;
+  --abs-danger-fg-rgb: 255 255 255;
+  --abs-info-rgb: 31 95 158;
+  --abs-info-soft-rgb: 226 238 250;
+
+  --abs-ring-rgb: var(--abs-brand-rgb);
 }
 
-/* T-R03 fix #2 — dark mode is class-based so the manual ThemeToggle in
- * Header.tsx flips it instantly. We still honour the system preference for
- * first-paint when no user choice has been recorded (the `:not(.light)`
- * media-query guard lets a user explicit "light" choice override the OS). */
+/* Dark. Not an inversion: the accent lightens so it keeps carrying contrast
+ * against a dark ground, and the neutrals hold a cool bias so surfaces separate
+ * without hairlines doing all the work. */
 :root.dark {
-  --abs-surface-base: oklch(15% 0.02 252);
-  --abs-surface-raised: oklch(20% 0.025 252);
-  --abs-surface-sunken: oklch(10% 0.015 252);
-  --abs-foreground: oklch(95% 0.01 252);
-  --abs-brand-text: var(--abs-brand-soft);
+  --abs-canvas-rgb: 15 18 22;
+  --abs-surface-rgb: 23 27 33;
+  --abs-surface-raised-rgb: 31 36 43;
+  --abs-surface-sunken-rgb: 11 14 17;
+
+  --abs-border-rgb: 46 53 62;
+  --abs-border-soft-rgb: 35 41 48;
+  --abs-border-strong-rgb: 63 72 83;
+
+  --abs-fg-rgb: 237 240 243;
+  --abs-fg-muted-rgb: 167 177 188;
+  --abs-fg-subtle-rgb: 115 125 137;
+  --abs-fg-inverted-rgb: 15 18 22;
+
+  --abs-brand-rgb: 78 205 194;
+  --abs-brand-hover-rgb: 111 217 208;
+  --abs-brand-soft-rgb: 18 49 47;
+  --abs-brand-fg-rgb: 6 32 30;
+
+  --abs-success-rgb: 107 191 143;
+  --abs-success-soft-rgb: 22 41 31;
+  --abs-warning-rgb: 216 145 71;
+  --abs-warning-soft-rgb: 46 33 19;
+  --abs-danger-rgb: 224 128 121;
+  --abs-danger-soft-rgb: 47 26 24;
+  --abs-danger-fg-rgb: 42 15 13;
+  --abs-info-rgb: 122 181 232;
+  --abs-info-soft-rgb: 20 35 47;
 }
 
+/* First paint, before the theme class lands. `:not(.light)` lets an explicit
+ * light choice win over the OS preference. */
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --abs-surface-base: oklch(15% 0.02 252);
-    --abs-surface-raised: oklch(20% 0.025 252);
-    --abs-surface-sunken: oklch(10% 0.015 252);
-    --abs-foreground: oklch(95% 0.01 252);
-    --abs-brand-text: var(--abs-brand-soft);
+    --abs-canvas-rgb: 15 18 22;
+    --abs-surface-rgb: 23 27 33;
+    --abs-surface-raised-rgb: 31 36 43;
+    --abs-surface-sunken-rgb: 11 14 17;
+
+    --abs-border-rgb: 46 53 62;
+    --abs-border-soft-rgb: 35 41 48;
+    --abs-border-strong-rgb: 63 72 83;
+
+    --abs-fg-rgb: 237 240 243;
+    --abs-fg-muted-rgb: 167 177 188;
+    --abs-fg-subtle-rgb: 115 125 137;
+    --abs-fg-inverted-rgb: 15 18 22;
+
+    --abs-brand-rgb: 78 205 194;
+    --abs-brand-hover-rgb: 111 217 208;
+    --abs-brand-soft-rgb: 18 49 47;
+    --abs-brand-fg-rgb: 6 32 30;
+
+    --abs-success-rgb: 107 191 143;
+    --abs-success-soft-rgb: 22 41 31;
+    --abs-warning-rgb: 216 145 71;
+    --abs-warning-soft-rgb: 46 33 19;
+    --abs-danger-rgb: 224 128 121;
+    --abs-danger-soft-rgb: 47 26 24;
+    --abs-danger-fg-rgb: 42 15 13;
+    --abs-info-rgb: 122 181 232;
+    --abs-info-soft-rgb: 20 35 47;
   }
 }
 
-/* T-R03 revise — typography + elevation tokens. */
+/* Plain-CSS handles for everything above. Derived, never re-declared, so the
+ * two forms cannot drift apart. */
 :root {
-  /* Font stacks fed by next/font/google CSS variables in layout.tsx. */
-  --abs-font-display:
-    var(--font-display, "Geist Variable"), ui-sans-serif, system-ui, sans-serif;
-  --abs-font-mono:
-    var(--font-mono, "JetBrains Mono"), ui-monospace, "SF Mono", Menlo, monospace;
+  --abs-canvas: rgb(var(--abs-canvas-rgb));
+  --abs-surface: rgb(var(--abs-surface-rgb));
+  --abs-surface-raised: rgb(var(--abs-surface-raised-rgb));
+  --abs-surface-sunken: rgb(var(--abs-surface-sunken-rgb));
 
-  /* 3D depth shadow stack (used by MetricCard + glassmorphism cards). */
-  --abs-shadow-rest:
-    0 1px 2px oklch(from var(--abs-foreground) l c h / 0.08),
-    0 8px 24px oklch(from var(--abs-brand-base) l c h / 0.12);
-  --abs-shadow-hover:
-    0 2px 4px oklch(from var(--abs-foreground) l c h / 0.10),
-    0 14px 36px oklch(from var(--abs-brand-base) l c h / 0.20);
+  --abs-border: rgb(var(--abs-border-rgb));
+  --abs-border-soft: rgb(var(--abs-border-soft-rgb));
+  --abs-border-strong: rgb(var(--abs-border-strong-rgb));
 
-  /* Glassmorphism surface (frosted). */
-  --abs-glass-bg:
-    color-mix(in oklch, var(--abs-surface-base) 60%, transparent);
-  --abs-glass-bg-soft:
-    color-mix(in oklch, var(--abs-brand-soft) 12%, var(--abs-surface-base));
+  --abs-fg: rgb(var(--abs-fg-rgb));
+  --abs-fg-muted: rgb(var(--abs-fg-muted-rgb));
+  --abs-fg-subtle: rgb(var(--abs-fg-subtle-rgb));
+  --abs-fg-inverted: rgb(var(--abs-fg-inverted-rgb));
+
+  --abs-brand: rgb(var(--abs-brand-rgb));
+  --abs-brand-hover: rgb(var(--abs-brand-hover-rgb));
+  --abs-brand-soft: rgb(var(--abs-brand-soft-rgb));
+  --abs-brand-fg: rgb(var(--abs-brand-fg-rgb));
+
+  --abs-success: rgb(var(--abs-success-rgb));
+  --abs-warning: rgb(var(--abs-warning-rgb));
+  --abs-danger: rgb(var(--abs-danger-rgb));
+  --abs-info: rgb(var(--abs-info-rgb));
+
+  --abs-ring: rgb(var(--abs-ring-rgb));
+
+  /* Elevation. Shadows stay near-neutral; a tinted shadow on a light canvas
+   * reads as a printing error, not as depth. */
+  --abs-shadow-sm: 0 1px 2px rgb(20 24 29 / 0.06);
+  --abs-shadow-md: 0 1px 2px rgb(20 24 29 / 0.05), 0 4px 12px rgb(20 24 29 / 0.06);
+  --abs-shadow-lg: 0 2px 4px rgb(20 24 29 / 0.05), 0 12px 32px rgb(20 24 29 / 0.10);
+
+  /* Radius — restrained. Everything-rounded reads as templated. */
+  --abs-radius-sm: 3px;
+  --abs-radius: 5px;
+  --abs-radius-lg: 8px;
+
+  /* Type. Geist and JetBrains Mono are loaded in layout.tsx via next/font
+   * (self-hosted, CSP-safe). Tailwind used to name Inter here, which nothing
+   * ever loaded — body text silently fell back to system-ui while Geist only
+   * reached the headings. */
+  --abs-font-display: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  --abs-font-mono: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-/* Typography hierarchy (plain CSS — `@layer base` would need to be next to
- * `@tailwind base`; tokens.css is imported separately so we keep this flat). */
+:root.dark {
+  --abs-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --abs-shadow-md: 0 1px 2px rgb(0 0 0 / 0.30), 0 4px 12px rgb(0 0 0 / 0.35);
+  --abs-shadow-lg: 0 2px 4px rgb(0 0 0 / 0.30), 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+/* Compatibility aliases. The files still on the previous token names keep
+ * working while pages migrate; delete once the last consumer is gone. */
+:root {
+  --abs-brand-base: var(--abs-brand);
+  --abs-brand-text: var(--abs-brand);
+  --abs-accent-cyan: var(--abs-brand);
+  --abs-accent-cyan-soft: var(--abs-brand-soft);
+  --abs-surface-base: var(--abs-surface);
+  --abs-foreground: var(--abs-fg);
+  --abs-shadow-rest: var(--abs-shadow-md);
+  --abs-shadow-hover: var(--abs-shadow-lg);
+  --abs-glass-bg: rgb(var(--abs-surface-rgb) / 0.72);
+  --abs-glass-bg-soft: rgb(var(--abs-brand-soft-rgb) / 0.4);
+}
+
+/* Typography */
 html {
   font-family: var(--abs-font-display);
-}
-
-h1 {
-  font-family: var(--abs-font-display);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-h2 {
-  font-family: var(--abs-font-display);
-  font-weight: 500;
-  letter-spacing: -0.015em;
 }
 
 body {
@@ -101,10 +211,21 @@ body {
   line-height: 1.6;
 }
 
-caption,
-.caption {
-  font-size: 0.875rem;
-  color: oklch(from var(--abs-foreground) l c h / 0.6);
+h1 {
+  font-weight: 640;
+  letter-spacing: -0.021em;
+  text-wrap: balance;
+}
+
+h2 {
+  font-weight: 620;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 code,
@@ -116,6 +237,7 @@ pre,
   font-variant-numeric: tabular-nums;
 }
 
+/* Digits that line up in a column — metrics, tables, ledgers. */
 .num-mono {
   font-family: var(--abs-font-mono);
   font-variant-numeric: tabular-nums;

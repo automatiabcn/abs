@@ -73,7 +73,7 @@ describe("Dashboard — audit chain tamper warning fires on a string status", ()
   it("shows the tamper warning when integrity is 'tampered'", async () => {
     mockDashboard("tampered");
     render(<DashboardPage />);
-    expect(await screen.findByText(/Zincir bütünlüğü bozuk/i)).toBeTruthy();
+    expect(await screen.findByText(/Chain integrity broken/i)).toBeTruthy();
   });
 
   it("does NOT show the tamper warning when integrity is 'ok'", async () => {
@@ -82,7 +82,7 @@ describe("Dashboard — audit chain tamper warning fires on a string status", ()
     // Let the fetch resolve + state settle.
     await screen.findByText(/Vault audit/i);
     await new Promise((r) => setTimeout(r, 20));
-    expect(screen.queryByText(/Zincir bütünlüğü bozuk/i)).toBeNull();
+    expect(screen.queryByText(/Chain integrity broken/i)).toBeNull();
   });
 });
 

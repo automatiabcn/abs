@@ -1,4 +1,6 @@
-/* T-R03 — OKLCH brand tokens (12 tokens). Must come first per CSS @import rules. */
+/* Tokens define every colour and type decision; see app/tokens.css.
+ * The shadcn HSL triplets that used to live here were a third, redundant
+ * palette — deleted, not migrated. */
 @import "./tokens.css";
 
 @tailwind base;
@@ -6,38 +8,35 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --primary: 222 47% 11%;
-    --primary-foreground: 0 0% 98%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 47% 11%;
-  }
-
-  .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 8%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 212 27% 84%;
-  }
-
   html {
     scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-canvas text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Focus is a product surface, not a browser default: keyboard users land
+   * on controls all day in the panel. */
+  :focus-visible {
+    outline: 2px solid var(--abs-ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--abs-brand-soft);
+    color: var(--abs-fg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
