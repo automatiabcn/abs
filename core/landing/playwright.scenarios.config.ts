@@ -36,7 +36,16 @@ export default defineConfig({
     video: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    // One sign-in for the whole suite. Per-test logins hit the (correct)
+    // 5/minute brute-force cap and failed whichever scenario came sixth.
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    {
+      name: "chromium",
+      dependencies: ["setup"],
+      use: { ...devices["Desktop Chrome"], storageState: "playwright/.auth/admin.json" },
+    },
+  ],
   webServer: {
     // The landing proxies /v1/* to ABS_BACKEND_URL, so the browser talks to
     // the real API through the real front door.
