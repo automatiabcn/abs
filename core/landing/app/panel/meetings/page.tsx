@@ -31,6 +31,11 @@ interface MeetingRow {
   speaker_count: number;
   status: "pending" | "done" | "error";
   summary: string;
+  // Set when a recording transcribed without failing but holds no usable
+  // speech — a dead microphone, typically. Non-empty means it was deliberately
+  // kept out of the knowledge base, and this sentence says why.
+  quality_note?: string;
+  indexed?: boolean;
   created_at: string;
   completed_at: string | null;
 }
@@ -377,12 +382,26 @@ export default function MeetingsPanel() {
                         {m.speaker_count}
                       </td>
                       <td className="py-3 pr-3">
-                        <Badge
-                          data-status={m.status}
-                          variant={statusVariant(m.status)}
-                        >
-                          {m.status}
-                        </Badge>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge
+                            data-status={m.status}
+                            variant={statusVariant(m.status)}
+                          >
+                            {m.status}
+                          </Badge>
+                          {/* A meeting that was kept but not indexed must not
+                              look identical to one that was — that silent
+                              equivalence is the whole failure. */}
+                          {m.quality_note ? (
+                            <Badge
+                              data-test="meeting-not-indexed"
+                              variant="secondary"
+                              title={m.quality_note}
+                            >
+                              no speech · not indexed
+                            </Badge>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="py-3">
                         <a
