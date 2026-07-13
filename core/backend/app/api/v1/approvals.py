@@ -21,6 +21,7 @@ from app.actions import list_actions
 from app.api.v1.deps import AuthContext, get_admin_or_bearer_auth_context
 from app.approvals import decide_approval, get_approval, list_approvals
 from app.approvals.service import AlreadyDecided
+from app.observability.audit import emit_event
 
 router = APIRouter(prefix="/v1/approvals", tags=["approvals"])
 
@@ -86,4 +87,18 @@ async def decide_approval_item(
         raise HTTPException(400, str(exc))
     if row is None:
         raise HTTPException(404, "approval_not_found")
+
+    # A person let something out of this building, or stopped it. If one entry in
+    # the whole log has to survive, it is this one — and until now the flow that
+    # sends messages to a company's customers wrote nothing at all.
+    emit_event(
+        None,
+        action="approval.decide",
+        outcome="success",
+        resource_type="approval",
+        resource_id=str(item_id),
+        user_id=auth.subject,
+        tenant_id=_tenant(auth),
+        reason=body.decision,
+    )
     return row

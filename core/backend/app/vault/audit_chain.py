@@ -20,10 +20,12 @@ from __future__ import annotations
 import hashlib
 import hmac
 import logging
+import threading
 import time
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from sqlalchemy import text
 from sqlmodel import Session, select
 
 from app.config import settings
@@ -53,38 +55,79 @@ def _compute_hmac(entry: VaultAuditEntry, prev_hmac: str) -> str:
     return hmac.new(secret, payload, hashlib.sha256).hexdigest()
 
 
+# Every appender takes this lock, so two events arriving at once cannot both
+# read the same row as their predecessor. If they did, they would write two rows
+# claiming the same `prev_hmac`, and `verify_chain` — which walks strictly in id
+# order — would find the second one's link broken and report the log as tampered
+# with. A false accusation of tampering is worse than no check at all: it is the
+# alarm that gets switched off.
+#
+# This never mattered while only key-rotation and OAuth-refresh appended, weeks
+# apart. It matters the moment ordinary admin activity is chained, which is what
+# it is now for.
+_CHAIN_LOCK = threading.Lock()
+
+# A Postgres advisory lock keyed on the chain, so the guarantee survives more
+# than one worker process — a threading.Lock only serialises within one.
+_PG_ADVISORY_KEY = 0x0AB5_A0D1  # "abs audit" chain
+
+
 def append_entry(
     *,
     action: str,
     actor: str = "system",
     target_key: Optional[str] = None,
     detail: Optional[str] = None,
+    tenant_id: Optional[str] = None,
 ) -> VaultAuditEntry:
-    """Append a new audit entry; computes hmac chained from previous entry."""
-    with Session(get_engine()) as db:
-        last = db.scalars(
-            select(VaultAuditEntry)
-            .order_by(VaultAuditEntry.id.desc())  # type: ignore[union-attr]
-            .limit(1)
-        ).first()
-        prev_hmac = last.hmac if last else ""
-        entry = VaultAuditEntry(
-            ts=datetime.now(timezone.utc),
-            action=action,
-            actor=actor,
-            target_key=target_key,
-            detail=detail,
-            hmac="",
-            prev_hmac=prev_hmac,
-        )
-        db.add(entry)
-        db.commit()
-        db.refresh(entry)
-        # Now that we have the row id, compute final hmac.
-        entry.hmac = _compute_hmac(entry, prev_hmac)
-        db.add(entry)
-        db.commit()
-        db.refresh(entry)
+    """Append one entry, hmac-chained to the previous one.
+
+    Read-predecessor, insert and sign happen inside a single transaction. They
+    used to be two commits, which left a window where a row existed with an empty
+    hmac — a row that verifies as tampered if anything reads the chain in between,
+    and a row that stays that way forever if the process dies in the gap.
+    """
+    with _CHAIN_LOCK:
+        with Session(get_engine()) as db:
+            if db.get_bind().dialect.name == "postgresql":
+                db.exec(  # type: ignore[call-overload]
+                    text("SELECT pg_advisory_xact_lock(:k)").bindparams(
+                        k=_PG_ADVISORY_KEY
+                    )
+                )
+            last = db.scalars(
+                select(VaultAuditEntry)
+                .order_by(VaultAuditEntry.id.desc())  # type: ignore[union-attr]
+                .limit(1)
+            ).first()
+            prev_hmac = last.hmac if last else ""
+            entry = VaultAuditEntry(
+                ts=datetime.now(timezone.utc),
+                action=action,
+                actor=actor,
+                target_key=target_key,
+                detail=detail,
+                hmac="",
+                prev_hmac=prev_hmac,
+            )
+            if tenant_id:
+                entry.tenant_id = tenant_id
+            db.add(entry)
+            # flush, not commit: the id is assigned by the database and the hmac
+            # covers it, so we need the id before we can sign — but the row must
+            # not become visible unsigned.
+            db.flush()
+            # Sign what the database will hand back, not what we sent it. SQLite
+            # returns `ts` without a timezone, so an hmac computed over the
+            # tz-aware Python value we constructed will not match the one
+            # `verify_chain` computes when it reads the row — every entry would
+            # verify as tampered with, which is precisely the false alarm this
+            # chain exists to avoid raising.
+            db.refresh(entry)
+            entry.hmac = _compute_hmac(entry, prev_hmac)
+            db.add(entry)
+            db.commit()
+            db.refresh(entry)
     return entry
 
 

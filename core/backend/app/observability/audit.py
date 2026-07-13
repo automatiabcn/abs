@@ -37,6 +37,7 @@ matches a sensitive prefix (`password*`, `secret*`, `api_key*`,
 
 from __future__ import annotations
 
+import json as _json
 import logging
 from datetime import datetime, timezone
 from typing import Any, Final
@@ -133,3 +134,44 @@ def emit_event(
         payload.setdefault("path", request.url.path)
     payload.update(_scrub(ctx))
     _logger().info("audit", extra={"audit": payload})
+    _persist(payload)
+
+
+def _persist(payload: dict[str, Any]) -> None:
+    """Write the event into the signed chain the panel actually reads.
+
+    Without this, `emit_event` was a monologue. It logged to `abs.audit`, a
+    logger with no handler anywhere in the codebase, so the record propagated to
+    root, printed the literal word "audit" — no formatter reads `extra` — and the
+    payload was dropped on the floor. Meanwhile `/v1/admin/audit/recent` and the
+    chain verifier read database tables that almost nothing wrote to.
+
+    Two audit systems, back to back, never touching. The panel showed sample rows
+    when its query came back empty, which it always did, so the log looked alive
+    for as long as nobody looked twice: on a real server, every login, every
+    provider key changed, every approval decided was recorded nowhere a person
+    could ever retrieve it.
+
+    Best-effort on purpose. An audit write that fails must not take the request
+    down with it — but it must also not fail *silently*, so the failure is logged
+    at warning. A quiet recorder is how this happened in the first place.
+    """
+    try:
+        from app.vault.audit_chain import append_entry
+
+        detail = {
+            k: v
+            for k, v in payload.items()
+            if k not in ("action", "ts", "tenant_id", "user_id")
+        }
+        append_entry(
+            # The column is 32 chars. Truncating is right — a truncated action is
+            # still a row, and a row that fails to insert is the bug we just fixed.
+            action=str(payload.get("action", "unknown"))[:32],
+            actor=str(payload.get("user_id") or "system")[:64],
+            target_key=(str(payload["path"])[:128] if payload.get("path") else None),
+            detail=_json.dumps(detail, default=str)[:512],
+            tenant_id=(str(payload["tenant_id"])[:64] if payload.get("tenant_id") else None),
+        )
+    except Exception:  # noqa: BLE001 — never fail a request over its own audit trail
+        _logger().warning("audit event could not be recorded", exc_info=True)

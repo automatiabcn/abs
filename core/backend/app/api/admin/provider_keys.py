@@ -24,6 +24,7 @@ from pydantic import BaseModel, Field
 
 from app.api.admin.auth import admin_required
 from app.multitenant import provider_keys as pk
+from app.observability.audit import emit_event
 from app.providers.cascade import SETTINGS_KEY_ATTR
 
 
@@ -132,6 +133,19 @@ async def set_key(body: ProviderKeyIn, admin: dict = Depends(admin_required)) ->
         "provider_key_set tenant=%s owner=%s:%s provider=%s by=%s",
         tenant, body.owner_type, owner_id, body.provider, _admin_subject(admin),
     )
+    # Someone put a credential on this server that can spend the company's money.
+    # The line above says so to stderr; this one says it to the log a person can
+    # actually open. (The key itself never travels — provider and owner only.)
+    emit_event(
+        None,
+        action="provider_key.set",
+        outcome="success",
+        provider=body.provider,
+        resource_type=body.owner_type,
+        resource_id=owner_id,
+        user_id=_admin_subject(admin),
+        tenant_id=tenant,
+    )
     return {
         "ok": True,
         "owner_type": body.owner_type,
@@ -180,5 +194,17 @@ async def delete_key(body: ProviderKeyDel, admin: dict = Depends(admin_required)
         owner_type=body.owner_type,
         owner_id=owner_id,
         provider=body.provider,
+    )
+    # A credential was taken off this server. "Who removed our Groq key, and
+    # when?" is a question that gets asked on a bad day, and it needs an answer.
+    emit_event(
+        None,
+        action="provider_key.delete",
+        outcome="success" if removed else "failure",
+        provider=body.provider,
+        resource_type=body.owner_type,
+        resource_id=owner_id,
+        user_id=_admin_subject(admin),
+        tenant_id=tenant,
     )
     return {"ok": removed, "deleted": removed}
