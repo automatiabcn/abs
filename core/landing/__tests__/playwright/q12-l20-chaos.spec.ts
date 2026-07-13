@@ -52,7 +52,10 @@ async function startChatSession(page: Page): Promise<void> {
 
 test.describe("Q12-L20 chaos — chat resilience under network failure", () => {
   test("scenario 1: backend 503 surfaces error tile + retry CTA + Configure", async ({ page }) => {
-    if (!(await ensureAuthed(page))) test.skip(true, "abs_session cookie missing");
+    if (!(await ensureAuthed(page))) throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.route(ENDPOINT_RE, async (route) => {
       await route.fulfill({
@@ -76,7 +79,10 @@ test.describe("Q12-L20 chaos — chat resilience under network failure", () => {
   });
 
   test("scenario 2: backend kills mid-stream — partial body abort", async ({ page }) => {
-    if (!(await ensureAuthed(page))) test.skip(true, "abs_session cookie missing");
+    if (!(await ensureAuthed(page))) throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     let firstHit = true;
     await page.route(ENDPOINT_RE, async (route) => {
@@ -101,7 +107,10 @@ test.describe("Q12-L20 chaos — chat resilience under network failure", () => {
   });
 
   test("scenario 3: rate-limit 429 chain", async ({ page }) => {
-    if (!(await ensureAuthed(page))) test.skip(true, "abs_session cookie missing");
+    if (!(await ensureAuthed(page))) throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.route(ENDPOINT_RE, async (route) => {
       await route.fulfill({
@@ -124,7 +133,10 @@ test.describe("Q12-L20 chaos — chat resilience under network failure", () => {
   });
 
   test("scenario 4: timeout — request hangs > 10s without response", async ({ page }) => {
-    if (!(await ensureAuthed(page))) test.skip(true, "abs_session cookie missing");
+    if (!(await ensureAuthed(page))) throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.route(ENDPOINT_RE, async (route) => {
       // Hang for 12 seconds, then abort. Client must surface an error
@@ -159,7 +171,10 @@ test.describe("Q12-L20 chaos — chat resilience under network failure", () => {
   // instead of silently following the redirect chain until the
   // browser's hard 20-redirect ceiling.
   test("scenario 5: 307 redirect loop — does not hang the UI", async ({ page }) => {
-    if (!(await ensureAuthed(page))) test.skip(true, "abs_session cookie missing");
+    if (!(await ensureAuthed(page))) throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     let redirectCount = 0;
     await page.route(ENDPOINT_RE, async (route) => {

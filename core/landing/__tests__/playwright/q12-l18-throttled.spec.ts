@@ -149,7 +149,10 @@ for (const profile of [SLOW3G, LTE4G]) {
         const cookie = loadAuthCookie();
         if (!cookie) {
           await ctx.close();
-          test.skip(true, "abs_session cookie missing");
+          throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
           return;
         }
         await ctx.addCookies([{ ...cookie, expires: Math.floor(Date.now() / 1000) + 3600 }]);

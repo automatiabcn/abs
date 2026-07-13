@@ -97,7 +97,10 @@ test.describe("Q12-L18 R81 — offline ↔ online transition stress", () => {
     context,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.goto(CHAT_URL, { waitUntil: "load" });
     await clearDraft(page);
@@ -142,7 +145,10 @@ test.describe("Q12-L18 R81 — offline ↔ online transition stress", () => {
     context,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.goto(CHAT_URL, { waitUntil: "load" });
     await clearDraft(page);
@@ -184,7 +190,10 @@ test.describe("Q12-L18 R81 — offline ↔ online transition stress", () => {
     context,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.goto(CHAT_URL, { waitUntil: "load" });
     await clearDraft(page);

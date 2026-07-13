@@ -163,7 +163,10 @@ test.describe("Q10-L4 deep — aria-live announcement capture", () => {
     page,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.route(/\/v1\/chat\/sessions/, (route) =>
       route.fulfill({ status: 503, body: '{"detail":"down"}' }),
@@ -196,7 +199,10 @@ test.describe("Q10-L4 deep — aria-live announcement capture", () => {
     page,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.route(/\/v1\/chat\/completions/, (route) =>
       route.fulfill({
@@ -232,7 +238,10 @@ test.describe("Q10-L4 deep — aria-live announcement capture", () => {
     page,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     // Wait for full load — the transcription page is client-rendered,
     // so domcontentloaded fires before the aria-live span is mounted.
@@ -255,7 +264,10 @@ test.describe("Q10-L4 deep — aria-live announcement capture", () => {
     // Forcing all three to 503 must surface the alert. This proves
     // the SR contract on the panel home as well.
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.route(/\/v1\/system\/quota_status/, (route) =>
       route.fulfill({ status: 503, body: '{"detail":"down"}' }),
@@ -289,7 +301,10 @@ test.describe("Q10-L4 deep — aria-live announcement capture", () => {
     page,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     await page.goto("/panel/chat", { waitUntil: "load" });
     await page.waitForTimeout(500);

@@ -107,7 +107,10 @@ test.describe("Q12-L20 round 4 — multi-failure simultaneous", () => {
     "scenario 6: chat 503 + sessions list 503 + completions 503 (cascade)",
     async ({ page }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     // Three different 503s on three different endpoints, all at once.
     await page.route(/\/v1\/chat\/completions/, (route) =>
@@ -163,7 +166,10 @@ test.describe("Q12-L20 round 4 — multi-failure simultaneous", () => {
     "scenario 7: 429 + 503 + connection abort (mixed failure modes)",
     async ({ page }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     let chatHits = 0;
     await page.route(/\/v1\/chat\/completions/, (route) => {
@@ -209,7 +215,10 @@ test.describe("Q12-L20 round 4 — multi-failure simultaneous", () => {
     page,
   }) => {
     if (!(await ensureAuthed(page)))
-      test.skip(true, "abs_session cookie missing");
+      throw new Error(
+        "could not sign in (no abs_session cookie) — this used to skip itself, " +
+          "which made the suite greenest exactly when login was most broken",
+      );
 
     // Total backend outage: every /v1/* call 503s.
     await page.route(/\/v1\//, (route) =>
