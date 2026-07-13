@@ -13,13 +13,14 @@
 
 import { expect, test } from "@playwright/test";
 
-import { login, requireBackend, waitForStreamedReply } from "./helpers/stack";
+import { requireBackend, waitForStreamedReply } from "./helpers/stack";
 
 test.describe.configure({ mode: "serial" });
 
-test.beforeEach(async ({ page, request }) => {
+// The session comes from auth.setup.ts — signing in per test trips the login
+// rate limit and turns a real suite into a flaky one.
+test.beforeEach(async ({ request }) => {
   await requireBackend(request);
-  await login(page);
 });
 
 async function ask(page: import("@playwright/test").Page, question: string) {

@@ -159,7 +159,12 @@ export default function ApprovalCenterPage() {
             {detailed.map((it) => {
               const g = evGroups(it.evidence);
               return (
-                <div key={it.id} className="rounded-xl border bg-card/60 p-4">
+                <div
+                  key={it.id}
+                  data-test="approval-item"
+                  data-approval-id={it.id}
+                  className="rounded-xl border bg-card/60 p-4"
+                >
                   <div className="flex gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
