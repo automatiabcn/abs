@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""029 Modul D — Customer-facing consent API.
+"""Customer-facing consent API.
 
 GET    /v1/me/consents                 — list all consents
 POST   /v1/me/consents                 — grant {consent_type, version}

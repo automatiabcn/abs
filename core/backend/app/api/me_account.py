@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""029 Modul C — GDPR Article 17 (right to erasure) endpoints.
+"""GDPR Article 17 (right to erasure) endpoints.
 
 Two-step delete with 30-day grace:
   1. POST /v1/me/account/delete-request → email confirm JWT (24h exp, HS256)

@@ -20,20 +20,22 @@ from app.db.session import get_engine
 
 logger = logging.getLogger(__name__)
 
-# Turkish legal-form suffixes stripped before name comparison (design doc §R1).
+# Turkish legal-form suffixes stripped before name comparison, so "Kaya Insaat
+# Ltd. Sti." and "Kaya Insaat" resolve to one company. Non-ASCII is escaped to
+# keep the source ASCII; the matched text is unchanged.
 _SUFFIXES = [
     "anonim sirketi", "limited sirketi", "a.s.", "as", "ltd. sti.", "ltd sti",
     "ltd", "sti", "san. ve tic.", "san ve tic", "san. tic.", "sanayi", "ticaret",
-    "a s", "ş", "şti", "a.ş.", "a.ş", "ltd.", "şti.",
+    "a s", "\u015f", "\u015fti", "a.\u015f.", "a.\u015f", "ltd.", "\u015fti.",
 ]
 
 
-# Map Turkish letters (both cases) to ASCII BEFORE casefold — `"İ".casefold()`
-# yields "i"+U+0307 (combining dot), which a later `[^a-z0-9]` strip would turn
-# into a space and split the word ("i nsaat"). Translating first avoids that.
+# Map Turkish letters to ASCII BEFORE casefold: casefolding a dotted capital I
+# yields "i" + U+0307 (a combining dot), which a later `[^a-z0-9]` strip turns
+# into a space and splits the word in two. Translating first avoids that.
 _TR = str.maketrans({
-    "İ": "i", "I": "i", "ı": "i", "Ş": "s", "ş": "s", "Ğ": "g", "ğ": "g",
-    "Ü": "u", "ü": "u", "Ö": "o", "ö": "o", "Ç": "c", "ç": "c",
+    "\u0130": "i", "I": "i", "\u0131": "i", "\u015e": "s", "\u015f": "s", "\u011e": "g", "\u011f": "g",
+    "\u00dc": "u", "\u00fc": "u", "\u00d6": "o", "\u00f6": "o", "\u00c7": "c", "\u00e7": "c",
 })
 
 

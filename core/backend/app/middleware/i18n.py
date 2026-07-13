@@ -3,9 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""023 — i18n middleware: Accept-Language → request.state.lang.
+"""i18n middleware: Accept-Language → request.state.lang.
 
-Cookie `NEXT_LOCALE` Accept-Language'i ezer (kullanıcı seçimi öncelikli).
+An explicit `NEXT_LOCALE` cookie wins over the browser header — a language the
+user picked outranks the one their browser guesses.
 """
 
 from __future__ import annotations

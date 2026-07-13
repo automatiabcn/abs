@@ -5,8 +5,9 @@
 
 """Anthropic provider — Claude Haiku/Sonnet/Opus.
 
-Modern mcp paketi httpx'e dayanır; Anthropic SDK (`anthropic>=0.40`) async client.
-Eğer SDK kurulu değilse ImportError yerine ProviderError ile yakalanır.
+Uses the `anthropic>=0.40` async SDK. The SDK is an optional dependency: a
+missing package surfaces as a non-transient ProviderError, not an ImportError,
+so an install without it degrades instead of crashing.
 """
 
 from __future__ import annotations
@@ -30,7 +31,8 @@ class AnthropicProvider(BaseProvider):
         model: Optional[str] = None,
         **kwargs: Any,
     ) -> ProviderResponse:
-        # T-F03 — Anthropic is opt-in. Free tier never reaches this method.
+        # Anthropic is the one paid provider — opt-in, so a free-tier install
+        # can never reach the network from here.
         if not bool(getattr(settings, "anthropic_enabled", False)):
             raise ProviderError(
                 "Anthropic provider is opt-in; set ABS_ANTHROPIC_ENABLED=true to enable",
@@ -40,10 +42,11 @@ class AnthropicProvider(BaseProvider):
         _key = kwargs.get("api_key") or settings.anthropic_api_key
         if not _key:
             raise ProviderError(
-                "Anthropic API key tanımlı değil", provider=self.name, transient=False
+                "Anthropic API key is not configured", provider=self.name, transient=False
             )
 
-        # T-F03 — quota gate before the network call.
+        # Quota gate runs BEFORE the network call — the budget must be enforced
+        # by refusing to spend, not by noticing afterwards.
         from app.observability import quota_monitor as _qm
 
         try:
@@ -59,7 +62,7 @@ class AnthropicProvider(BaseProvider):
             from anthropic import AsyncAnthropic
         except ImportError as exc:
             raise ProviderError(
-                "anthropic paketi kurulu değil",
+                "anthropic package is not installed",
                 provider=self.name,
                 transient=False,
             ) from exc
@@ -99,7 +102,7 @@ class AnthropicProvider(BaseProvider):
         tokens_in = getattr(usage, "input_tokens", None) if usage else None
         tokens_out = getattr(usage, "output_tokens", None) if usage else None
 
-        # T-F03 — record token usage for the monthly Claude budget tracker.
+        # Feed the monthly budget tracker.
         from app.observability import quota_monitor as _qm
 
         try:

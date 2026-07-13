@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""027 Modul B — Age keypair rotation with atomic rollback.
+"""Age keypair rotation with atomic rollback.
 
 Workflow (`rotate_age_key`):
   1. Generate new age keypair (or use injected `_keygen` for tests).

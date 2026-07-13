@@ -62,7 +62,7 @@ class QualCodePipeline(BasePipeline):
                 final_response="",
                 total_elapsed_ms=int((time.monotonic() - total_start) * 1000),
                 prompt=prompt,
-                error="Tüm üretim adımları başarısız",
+                error="Every generation step failed",
                 workflow_trace_id=wf.trace_id,
             )
         _, draft = best

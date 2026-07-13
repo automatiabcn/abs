@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""humanize_transform: AI-izlenimli metni daha doğal hale getiren LLM çağrısı."""
+"""Humanize_transform: LLM pass that rewrites machine-sounding text to read naturally."""
 
 from __future__ import annotations
 
@@ -11,16 +11,17 @@ from app.providers.registry import get_provider
 
 
 async def humanize_transform(text: str, lang: str = "tr") -> str:
-    """Metni daha 'insan yazmış' hissi verecek şekilde yeniden ifade et."""
+    """Rephrase text so it reads as if a person wrote it."""
     instructions = (
-        "Aşağıdaki metni AI-detector'dan daha az tetiklenecek şekilde yeniden yaz. "
-        "Aynı anlamı koru; stock phrase'leri, aşırı paralel yapıları ve gereksiz "
-        "'kesinlikle/özetle' kalıplarını çıkar. Akıcı, doğal Türkçe kullan."
+        "Rewrite the text below so it trips AI detectors less. Preserve the "
+        "meaning; drop stock phrases, heavily parallel structure and filler "
+        "openers such as 'certainly' or 'in summary'. Write fluent, natural "
+        "Turkish."
         if lang == "tr"
         else "Rewrite the following to sound more natural and less AI-generated. "
         "Preserve meaning; drop stock phrases and overly parallel structures."
     )
-    prompt = f"{instructions}\n\nMETİN:\n{text[:6000]}"
+    prompt = f"{instructions}\n\nTEXT:\n{text[:6000]}"
     provider = get_provider("cloudflare")
     resp = await provider.call(prompt, model="@cf/moonshotai/kimi-k2.5")
     return resp.text or text

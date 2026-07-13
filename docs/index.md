@@ -1,56 +1,56 @@
 # Automatia ABS Documentation
 
-Self-host AI orchestration for Claude Code — kendi sunucunda 100+ MCP tool, 6 sağlayıcı cascade, RAG hybrid ve Türkçe kalite pipeline.
+Self-host AI orchestration for Claude Code — 100+ MCP tools, a 6-provider chain, hybrid RAG and a Turkish quality pipeline, all on your own server.
 
 ---
 
-## Hızlı başlangıç
+## Quick start
 
-| Hedef | Sayfa | Süre |
+| Goal | Page | Time |
 |---|---|---|
-| **Kurulum** — Docker Compose ile 15dk install | [Setup Guide](setup-guide.md) | 15 dk |
-| **Mimari** — Bileşenler, akışlar, lisans modeli | [Architecture](architecture.md) | 8 dk |
-| **MCP Tool Reference** — 100+ aracın tam listesi | [API Reference](api-reference.md) | tarafından |
-| **Operasyon** — Stripe billing, refund, dispute | [Billing Runbook](billing-runbook.md) | 12 dk |
-| **Sorun Giderme** — Yaygın hatalar | [Troubleshooting](troubleshooting.md) | tarafından |
-| **SSS** — Kısa cevaplar | [FAQ](faq.md) | 5 dk |
+| **Install** — 15-minute install with Docker Compose | [Setup Guide](setup-guide.md) | 15 min |
+| **Architecture** — components, flows, license model | [Architecture](architecture.md) | 8 min |
+| **MCP Tool Reference** — the full list of 100+ tools | [API Reference](api-reference.md) | reference |
+| **Operations** — Stripe billing, refunds, disputes | [Billing Runbook](billing-runbook.md) | 12 min |
+| **Troubleshooting** — common errors | [Troubleshooting](troubleshooting.md) | reference |
+| **FAQ** — short answers | [FAQ](faq.md) | 5 min |
 
 ---
 
-## Öne çıkan özellikler
+## Highlights
 
-- **6 sağlayıcı cascade** — Anthropic + Groq + Cerebras + Gemini + Cloudflare + Cohere otomatik failover, circuit breaker.
-- **104 MCP tool** — Code review, test üretimi, RAG hybrid, judge persona ML, fullstack mode, vb.
-- **Sops/age vault** — Stripe + Anthropic + SMTP secret'lar disk üzerinde her zaman şifreli.
-- **Idempotent webhook** — Stripe replay/retry safe (017).
-- **Customer Portal** — Müşteri self-service (017).
-- **Onboarding email serisi** — 5-aşamalı otomatik nurturing (019).
-- **Token tracking + cost dashboard** — Gerçek tokens_in/out aggregation (016).
+- **6-provider chain** — Anthropic + Groq + Cerebras + Gemini + Cloudflare + Cohere, with automatic failover and a circuit breaker.
+- **104 MCP tools** — code review, test generation, hybrid RAG, judge persona ML, fullstack mode and more.
+- **Sops/age vault** — your Stripe, Anthropic and SMTP secrets are always encrypted on disk.
+- **Idempotent webhooks** — safe against Stripe replays and retries (017).
+- **Customer Portal** — customer self-service (017).
+- **Onboarding email series** — 5-stage automatic nurturing (019).
+- **Token tracking + cost dashboard** — real tokens_in/out aggregation (016).
 
 ---
 
-## Lisans modeli
+## License model
 
-| Plan | Fiyat | Süre |
+| Plan | Price | Term |
 |---|:-:|---|
-| **Self-Host Lifetime** | $299 tek seferlik | Ömür boyu kullanım + 1 yıl güncelleme |
-| **+ Maintenance** | +$49/yıl | Sürekli güncelleme + öncelikli destek |
-| **Team Pack 5** | $1196 | 5 seat, %20 indirim |
-| **Team Pack 10** | $2093 | 10 seat, %30 indirim |
+| **Self-Host Lifetime** | $299 one-off | Lifetime use + 1 year of updates |
+| **+ Maintenance** | +$49/year | Continuous updates + priority support |
+| **Team Pack 5** | $1196 | 5 seats, 20% off |
+| **Team Pack 10** | $2093 | 10 seats, 30% off |
 
-14 gün koşulsuz iade. GDPR uyumlu. Stripe Customer Portal self-service.
+14-day no-questions-asked refund. GDPR compliant. Self-service through the Stripe Customer Portal.
 
 ---
 
-## Topluluk + destek
+## Community and support
 
-- **Email** — `support@automatiabcn.com` (48s yanıt, Maintenance: 24s)
+- **Email** — `support@automatiabcn.com` (48h response, Maintenance: 24h)
 - **GitHub** — [github.com/automatiabcn/abs](https://github.com/automatiabcn/abs) (Apache 2.0 core)
-- **Discord beta** — `discord.gg/abs-beta` (yalnızca beta tester)
+- **Discord beta** — `discord.gg/abs-beta` (beta testers only)
 - **Status** — `status.abs.automatiabcn.com` (Cloudflare uptime monitor)
 
 ---
 
-## Sürüm
+## Version
 
-Şu an: **v0.1.0** (2026-04-27). Tam değişiklik kayıtları için [CHANGELOG](CHANGELOG.md).
+Current: **v0.1.0** (2026-04-27). For the full change history see the [CHANGELOG](CHANGELOG.md).

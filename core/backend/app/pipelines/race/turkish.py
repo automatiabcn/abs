@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""race_tr: Qwen32B (Groq) vs Gemini 2.5 Flash — Türkçe için."""
+"""Race_tr: Qwen32B (Groq) vs Gemini 2.5 Flash, first usable answer wins."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ class RaceTrPipeline(BasePipeline):
                 final_response="",
                 total_elapsed_ms=elapsed,
                 prompt=prompt,
-                error="Türkçe yarışını kimse kazanmadı",
+                error="No provider produced a response",
             )
 
         name, resp = winner

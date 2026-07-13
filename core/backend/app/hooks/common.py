@@ -3,10 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Hook ortak yardımcılar — rate-limit dosya I/O, logger, freeze path kontrolü.
+"""Shared hook helpers — rate-limit file I/O, logging, freeze-path checks.
 
-SERVER guard_logic.py'den yeniden paketlenen saf fonksiyonlar. Tüm dosya
-yolları `settings.cache_dir` altına alınır; hardcoded `/tmp/abs_*` yok.
+Pure functions. Every file they touch lives under `settings.cache_dir`; nothing
+is hardcoded to a temp directory.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# `.gitignore`, `.gitattributes` gibi özel dosyalar — Write/Edit'te freeze check bypass
+# Repo housekeeping files stay writable even when a freeze path is active.
 ALWAYS_ALLOW_FILES = frozenset(
     {
         ".gitignore",
@@ -34,7 +34,7 @@ ALWAYS_ALLOW_FILES = frozenset(
     }
 )
 
-# Subagent tipleri: delege izin verilen agent isimleri
+# Subagent types that may be delegated to.
 ALLOWED_AGENT_TYPES = frozenset(
     {
         "general-purpose",
@@ -48,14 +48,14 @@ ALLOWED_AGENT_TYPES = frozenset(
 
 
 def cache_path(filename: str) -> Path:
-    """`settings.cache_dir` altına file path."""
+    """Path under `settings.cache_dir`, with parents created."""
     p = Path(settings.cache_dir) / filename
     p.parent.mkdir(parents=True, exist_ok=True)
     return p
 
 
 def load_rate(filename: str) -> Dict[str, float]:
-    """Rate-limit JSON dosyasını yükle (yoksa boş dict)."""
+    """Load the rate-limit state; a missing or corrupt file reads as empty."""
     p = cache_path(filename)
     if not p.exists():
         return {}
@@ -66,7 +66,8 @@ def load_rate(filename: str) -> Dict[str, float]:
 
 
 def persist_rate(filename: str, rate: Dict[str, float], prune_older_than: float = 86400) -> None:
-    """Rate dict'ini kaydet. 24 saatten eski key'leri temizle."""
+    """Persist the rate state, dropping keys older than the prune window so the
+    file cannot grow without bound."""
     p = cache_path(filename)
     try:
         cutoff = time.time() - prune_older_than
@@ -77,7 +78,7 @@ def persist_rate(filename: str, rate: Dict[str, float], prune_older_than: float 
 
 
 def allow_once(rate: Dict[str, float], key: str, window_sec: float) -> bool:
-    """Key için `window_sec` içinde daha önce tetiklenmediyse True döndür + kaydet."""
+    """True if `key` has not fired within `window_sec`; records the hit."""
     now = time.time()
     last = rate.get(key, 0)
     if now - last < window_sec:
@@ -87,7 +88,7 @@ def allow_once(rate: Dict[str, float], key: str, window_sec: float) -> bool:
 
 
 def deny(reason: str, *, permission_decision: str = "deny") -> Dict[str, Any]:
-    """Claude Code PreToolUse hook spec — tool call'ı engelle."""
+    """PreToolUse hook payload that blocks the tool call."""
     return {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
@@ -98,7 +99,7 @@ def deny(reason: str, *, permission_decision: str = "deny") -> Dict[str, Any]:
 
 
 def additional_context(text: str) -> Dict[str, Any]:
-    """Claude Code PreToolUse hook spec — ek context ekle (izin vermeye devam)."""
+    """PreToolUse hook payload that adds context but still allows the call."""
     return {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
@@ -108,13 +109,13 @@ def additional_context(text: str) -> Dict[str, Any]:
 
 
 def safe_hook(name: str):
-    """Decorator: hook fonksiyonu hata atsa bile sessiz log + boş string döndür."""
+    """Decorator: a raising hook logs and returns "" instead of propagating."""
 
     def _wrap(fn):
         def _call(*args, **kwargs):
             try:
                 return fn(*args, **kwargs)
-            except Exception as exc:  # hook izolasyonu — bir hook diğerini kesmez
+            except Exception as exc:  # isolation — one hook must not kill the rest
                 logger.info("hook %s failed: %s", name, exc)
                 return ""
 
@@ -125,8 +126,8 @@ def safe_hook(name: str):
 
 
 def get_active_artifact_task() -> Dict[str, Any] | None:
-    """Aktif artifact task (plan_first için). `settings.artifacts_dir` altındaki en
-    yeni klasörü baz alır; yoksa None. MVP: basit mtime-based tespit."""
+    """The active artifact task, or None. "Active" is the most recently modified
+    directory under `settings.artifacts_dir` — there is no explicit marker."""
     base = Path(settings.artifacts_dir)
     if not base.is_dir():
         return None
@@ -135,7 +136,7 @@ def get_active_artifact_task() -> Dict[str, Any] | None:
         if not subdirs:
             return None
         active = max(subdirs, key=lambda d: d.stat().st_mtime)
-        # action_count dosyasından oku; yoksa dosya sayısı
+        # Prefer the counter file; fall back to counting files in the task dir.
         count_file = active / "action_count.txt"
         if count_file.is_file():
             try:
@@ -155,7 +156,7 @@ def get_active_artifact_task() -> Dict[str, Any] | None:
 
 
 def bump_action_count(task_dir: str) -> int:
-    """Task action sayacını +1."""
+    """Increment the task action counter and return the new value."""
     p = Path(task_dir) / "action_count.txt"
     try:
         current = 0

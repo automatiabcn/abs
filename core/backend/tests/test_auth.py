@@ -19,7 +19,7 @@ def test_login_wrong_password_returns_401(client):
         json={"email": "admin@local", "password": "wrong"},
     )
     assert r.status_code == 401
-    assert r.json()["detail"] == "E-posta veya parola hatalı"
+    assert r.json()["detail"] == "Incorrect email or password"
 
 
 def test_login_wrong_email_returns_401(client):
@@ -33,7 +33,7 @@ def test_login_wrong_email_returns_401(client):
 def test_me_without_cookie_returns_401(client):
     r = client.get("/auth/me")
     assert r.status_code == 401
-    assert r.json()["detail"] == "Oturum yok"
+    assert r.json()["detail"] == "No session"
 
 
 def test_logout_clears_cookie(client):

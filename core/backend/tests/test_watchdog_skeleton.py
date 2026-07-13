@@ -41,6 +41,9 @@ async def test_alerter_no_webhook_returns_false(monkeypatch):
 def test_watchdog_readme_documents_deploy():
     readme = REPO_ROOT / "infra" / "watchdog" / "README.md"
     text = readme.read_text(encoding="utf-8")
-    assert "Hetzner" in text
+    # What the README owes a reader is how to deploy it: a VPS, the alert
+    # webhook, the cron entry. Which hosting company we happen to use is our
+    # business, not the reader's.
+    assert "VPS" in text
     assert "WATCHDOG_DISCORD_WEBHOOK" in text
     assert "watchdog.cron" in text

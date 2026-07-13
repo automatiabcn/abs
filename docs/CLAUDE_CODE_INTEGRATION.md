@@ -1,39 +1,39 @@
 # Claude Code / Codex ↔ ABS Server Integration
 
-ABS Server iki ayrı kanaldan Claude Code, Codex (veya başka MCP istemcisi) ile
-konuşur:
+ABS Server talks to Claude Code, Codex (or any other MCP client) over two
+separate channels:
 
-1. **MCP HTTP transport** — `/mcp` endpoint, JSON-RPC 2.0. İstemci bağlanınca
-   ABS'in 122+ MCP tool'unu listeler. Bağlantı sırasında sunucu, MCP
-   `initialize` yanıtında "ABS'ye delege et" yönergesini de gönderir — yani
-   **hangi istemci bağlanırsa bağlansın** temel delegasyon ekstra config
-   olmadan aktif olur.
+1. **MCP HTTP transport** — the `/mcp` endpoint, JSON-RPC 2.0. Once a client
+   connects, it lists ABS's 122+ MCP tools. On connect the server also sends the
+   "delegate to ABS" instruction in the MCP `initialize` response — so basic
+   delegation is active **whichever client connects**, with no extra config.
    - Claude Code: `claude mcp add --transport http abs <url> --header "Authorization: Bearer <token>"`
    - Codex: `codex mcp add abs --url <url> --bearer-token-env-var ABS_MCP_TOKEN`
-2. **Lifecycle hooks** — `/v1/hooks/*` endpoint'leri (Claude Code
-   `~/.claude/settings.json`). `PreToolUse → /v1/hooks/quota-check` hem kota
-   gate'i uygular **hem de** delege edilebilir alt görevlerde (`additionalContext`
-   ile) aktif delegasyon nudge'ı döndürür.
+2. **Lifecycle hooks** — the `/v1/hooks/*` endpoints (Claude Code
+   `~/.claude/settings.json`). `PreToolUse → /v1/hooks/quota-check` applies the
+   quota gate **and** returns an active delegation nudge (via
+   `additionalContext`) for sub-tasks that can be delegated.
 
-**Yerel yönerge (delegasyonu güçlendirir, opsiyonel ama önerilir):** panelin
-`/admin/mcp-tokens` sayfasındaki delegasyon bloğunu yapıştır — Claude Code için
-`~/.claude/CLAUDE.md`, Codex için `~/.codex/AGENTS.md` (veya proje kökünde
-`AGENTS.md`). İçerik aynı; yalnız dosya adı istemciye göre değişir.
+**Local instruction file (strengthens delegation, optional but recommended):**
+paste the delegation block from the panel's `/admin/mcp-tokens` page into
+`~/.claude/CLAUDE.md` for Claude Code, or `~/.codex/AGENTS.md` for Codex (or
+`AGENTS.md` in the project root). The content is the same; only the file name
+changes per client.
 
-İkisi de aynı bearer token ile çalışır: `/v1/mcp/tokens` POST endpoint'i
-tarafından üretilen HMAC imzalı `abs_mcp_<base64>.<base64>` formatında.
+Both channels use the same bearer token: the HMAC-signed
+`abs_mcp_<base64>.<base64>` format issued by the `POST /v1/mcp/tokens` endpoint.
 
 ---
 
-## 1. Token üret
+## 1. Generate a token
 
-Panel'den:
+From the panel:
 
 ```
-/admin/settings → MCP Tokens → "Yeni token üret"
+/admin/settings → MCP Tokens → "Generate new token"
 ```
 
-Veya CLI:
+Or via CLI:
 
 ```bash
 curl -X POST https://abs.example.com/v1/mcp/tokens \
@@ -42,7 +42,7 @@ curl -X POST https://abs.example.com/v1/mcp/tokens \
   -d '{"label": "claude-code-laptop", "scope": "all", "ttl_days": 90}'
 ```
 
-Yanıt:
+Response:
 
 ```json
 {
@@ -54,24 +54,24 @@ Yanıt:
 }
 ```
 
-`scope` üç değerden biri:
+`scope` is one of three values:
 
-| scope | Hangisini açar |
-|-------|----------------|
-| `mcp`   | Sadece `/mcp` JSON-RPC bridge |
-| `hooks` | Sadece `/v1/hooks/*` lifecycle callback'leri |
-| `all`   | İkisi de (önerilen) |
+| scope | What it unlocks |
+|-------|-----------------|
+| `mcp`   | Only the `/mcp` JSON-RPC bridge |
+| `hooks` | Only the `/v1/hooks/*` lifecycle callbacks |
+| `all`   | Both (recommended) |
 
 ---
 
-## 2. MCP bridge — Claude Code'a ekle
+## 2. MCP bridge — add it to Claude Code
 
 ```bash
 claude mcp add --transport http abs https://abs.example.com/mcp \
   --header "Authorization: Bearer abs_mcp_xxxxx"
 ```
 
-Veya proje-bazlı `.mcp.json`:
+Or per project, in `.mcp.json`:
 
 ```json
 {
@@ -87,23 +87,23 @@ Veya proje-bazlı `.mcp.json`:
 }
 ```
 
-Sonra Claude Code'da:
+Then, in Claude Code:
 
 ```
-> Slack thread'lerini özetle, ABS RAG'den veri çek
-[Claude → MCP tools/list → 122 tool görür → tools/call mcp__abs__rag_query → result]
+> Summarize the Slack threads, pull the data from ABS RAG
+[Claude → MCP tools/list → sees 122 tools → tools/call mcp__abs__rag_query → result]
 ```
 
-Slash komutları:
+Slash commands:
 
 ```
-> /mcp__abs__rag müşteri sorularını çıkar
-> /mcp__abs__workflow lead-triage akışını başlat
+> /mcp__abs__rag extract the customer questions
+> /mcp__abs__workflow start the lead-triage flow
 ```
 
 ---
 
-## 3. Lifecycle hook'ları — opsiyonel ama önerilen
+## 3. Lifecycle hooks — optional but recommended
 
 `~/.claude/settings.json`:
 
@@ -152,55 +152,55 @@ Slash komutları:
 }
 ```
 
-Açıklama:
+What each hook does:
 
-- **PreToolUse → quota-check**: Claude Code her risky tool'dan önce
-  ABS'e sorar. ABS quota tükenmişse `permissionDecision: "deny"`
-  döner ve tool çağrısı engellenir.
-- **PostToolUse → audit-log**: Çalışan her tool ABS'in
-  `customer_audit_entries` tablosuna `claude_code.<tool>` action ile
-  düşer. `/admin/audit` sayfasından görüntülenir.
-- **SessionStart → session-start**: Yeni session açıldığında ABS
-  tenant context'ini Claude'a inject eder ("You are connected to tenant
-  X. ABS exposes 122 tools at /mcp...").
+- **PreToolUse → quota-check**: Claude Code asks ABS before every risky tool
+  call. If the quota is exhausted, ABS returns
+  `permissionDecision: "deny"` and the tool call is blocked.
+- **PostToolUse → audit-log**: every tool that runs lands in ABS's
+  `customer_audit_entries` table with a `claude_code.<tool>` action. View it on
+  the `/admin/audit` page.
+- **SessionStart → session-start**: when a new session opens, ABS injects the
+  tenant context into Claude ("You are connected to tenant X. ABS exposes 122
+  tools at /mcp...").
 
 ---
 
-## 4. Token doğrula
+## 4. Verify a token
 
 ```bash
 curl https://abs.example.com/v1/mcp/tokens/verify \
   -H "Authorization: Bearer abs_mcp_xxxxx"
 ```
 
-`200 {"ok": true, "tenant": "...", "scope": "...", "expires_at": "..."}`
-geri dönerse token sağlam.
+If it returns `200 {"ok": true, "tenant": "...", "scope": "...", "expires_at": "..."}`,
+the token is valid.
 
 ---
 
-## 5. Yetki ve güvenlik
+## 5. Permissions and security
 
-- Token HMAC-SHA256 imzalı; signing key panel `session_secret`. Server
-  açılmadan token doğrulanmaz, başka bir tenant token'ı üretemez.
-- TTL maks 365 gün. Önerilen: 90 gün, 30 günde bir rotate.
-- Scope ayrımı sayesinde hook'lar için ayrı token üretebilirsin
-  (CTO laptop'ı için `mcp` scope, CI runner için `hooks` scope).
-- Token kaybolursa: panel'den ilgili token'ı revoke et (Phase Q.2'de
-  blacklist tablosu eklenecek; v1 için: `session_secret`'ı rotate et,
-  tüm token'lar invalid olur).
-
----
-
-## Sorun giderme
-
-| Belirti | Olası neden |
-|---------|-------------|
-| `401 invalid_token_prefix` | Header'da `Bearer abs_mcp_...` ile başlamayan değer |
-| `401 bad_signature` | session_secret değişmiş veya token başka instance'tan |
-| `401 token_expired` | TTL dolmuş — yeni token üret |
-| `403 insufficient_scope` | Hook endpoint'ine `scope=mcp` token verildi |
-| `connection refused` | Caddy tarafında `/v1/hooks/*` rewrite eksik |
+- The token is HMAC-SHA256 signed; the signing key is the panel
+  `session_secret`. A token cannot be verified without the server, and no one
+  can mint a token for another tenant.
+- TTL is 365 days max. Recommended: 90 days, rotated every 30 days.
+- Thanks to the scope split you can issue separate tokens for hooks (a `mcp`
+  scope token for a laptop, a `hooks` scope token for a CI runner).
+- If a token is lost: revoke it from the panel (a blacklist table is planned; for
+  v1: rotate `session_secret`, which invalidates every token).
 
 ---
 
-**Son güncelleme:** 2026-05-01 · Q8 Phase N + P
+## Troubleshooting
+
+| Symptom | Likely cause |
+|---------|--------------|
+| `401 invalid_token_prefix` | The header value does not start with `Bearer abs_mcp_...` |
+| `401 bad_signature` | session_secret changed, or the token came from another instance |
+| `401 token_expired` | TTL expired — generate a new token |
+| `403 insufficient_scope` | A `scope=mcp` token was passed to a hook endpoint |
+| `connection refused` | The `/v1/hooks/*` rewrite is missing on the Caddy side |
+
+---
+
+**Last updated:** 2026-05-01

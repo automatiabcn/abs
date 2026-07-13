@@ -28,5 +28,5 @@ def test_judge_feed_uses_real_aggregate_keys(monkeypatch):
 
     out = stream_mod._build_judge_placeholder()
     assert out["score"] == 8.5                     # was None (wrong key)
-    assert "Son 4 patch" in out["summary"]
-    assert "%75" in out["summary"]                 # 3/4 accepted — was %0
+    assert "4 patches" in out["summary"]
+    assert "75%" in out["summary"]                 # 3/4 accepted — was 0%

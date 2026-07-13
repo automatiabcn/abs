@@ -3,9 +3,12 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Panel SSE endpoint — 5 event tipi yayar (metrics/orchestrator/cohere/mcp/budget).
+"""Panel SSE endpoint. Emits one event type per tick, rotating through
+metrics / orchestrator / cohere-usage / mcp-tools / budget-today /
+license-status / update-available.
 
-MVP: placeholder payload. Gerçek metrikler 005-orchestrator task'ında bağlanacak.
+Orchestrator, mcp-tools and budget carry real data; metrics and cohere-usage
+are still synthetic.
 """
 
 from __future__ import annotations
@@ -32,8 +35,8 @@ _EVENT_ORDER = [
     "cohere-usage",
     "mcp-tools",
     "budget-today",
-    "license-status",  # 011 — demo countdown + license/refund banner
-    "update-available",  # 014 — release manifest banner
+    "license-status",  # demo countdown + license/refund banner
+    "update-available",  # release manifest banner
 ]
 
 _PROVIDERS = [
@@ -64,10 +67,11 @@ def _build_metrics() -> dict:
 
 
 def _build_orchestrator() -> dict:
-    """014 — gerçek health monitor snapshot'ı (random kalktı).
+    """Health monitor snapshot.
 
-    Monitor henüz veri toplamadıysa (test mode veya soğuk başlangıç) provider
-    listesi 'unknown' state ile dönülür. Judge alanı 015'te gerçek judge feed'iyle dolar.
+    Before the monitor has collected anything (test mode or a cold start) the
+    provider list is returned with every entry in the 'unknown' state rather
+    than empty, so the panel always has a row per provider to render.
     """
     from app.health.monitor import monitor as _monitor
 
@@ -91,14 +95,15 @@ def _build_orchestrator() -> dict:
 
 
 _JUDGE_CACHE: dict = {"data": None, "ts": 0.0}
-_JUDGE_CACHE_TTL = 60  # 022 — 60s cache
+_JUDGE_CACHE_TTL = 60  # seconds
 
 
 def _build_judge_placeholder() -> dict:
-    """022 — Judge feed: judge_log aggregate (60s cache).
+    """Judge feed: aggregate of judge_log, cached for 60s.
 
-    Daha önce placeholder'dı (015 deferred). Şimdi `app.judge.stats.summary()`
-    çağırır ve panel SSE'ye verir. Hata olursa placeholder'a geri düşer.
+    The aggregate is recomputed at most once per TTL because the SSE loop asks
+    for it on every rotation. Any failure degrades to an empty feed with
+    real=False rather than breaking the stream.
     """
     import time
 
@@ -109,11 +114,10 @@ def _build_judge_placeholder() -> dict:
         from app.judge.stats import aggregate as judge_aggregate
 
         s = judge_aggregate()
-        # Read the keys aggregate() actually returns: avg_combined / count /
-        # outcome_counts ("accept"|"reject"). The old code read avg_score/avg
-        # and accept_rate/accepted_pct — none of which aggregate() emits — so
-        # the panel judge feed showed score=None and 0% accept-rate on every
-        # render even with real judgments.
+        # These are the keys aggregate() actually returns: avg_combined /
+        # Count / outcome_counts ("accept"|"reject"). Reading anything else
+        # (avg_score, accept_rate, ...) silently yields score=None and a 0%
+        # Accept-rate even when real judgments exist.
         avg = s.get("avg_combined")
         total = s.get("count", 0)
         outcomes = s.get("outcome_counts") or {}
@@ -122,9 +126,9 @@ def _build_judge_placeholder() -> dict:
         out = {
             "score": round(avg, 1) if isinstance(avg, (int, float)) else None,
             "summary": (
-                f"Son {total} patch — kabul oranı %{int(accept_rate * 100)}"
+                f"Last {total} patches — {int(accept_rate * 100)}% accepted"
                 if total
-                else "Judge: henüz veri yok — judge_diff sonrası dolacak."
+                else "Judge: no data yet — populated after the first judged diff."
             ),
             "body": "",
             "real": True,
@@ -132,7 +136,7 @@ def _build_judge_placeholder() -> dict:
     except Exception:
         out = {
             "score": None,
-            "summary": "Judge: henüz veri yok — judge_diff sonrası dolacak.",
+            "summary": "Judge: no data yet — populated after the first judged diff.",
             "body": "",
             "real": False,
         }
@@ -149,15 +153,15 @@ def _build_cohere() -> dict:
         "limit": limit,
         "warning": count > 800,
         "detail": (
-            "Cohere günlük quota %80'i geçti."
+            "Cohere daily quota is over 80% used."
             if count > 800
-            else "Kullanım normal aralıkta."
+            else "Usage is within the normal range."
         ),
     }
 
 
 def _build_mcp_tools() -> dict:
-    """010 — gerçek tracker.snapshot() top-N tool count (random tablo kalktı)."""
+    """Top-8 MCP tools by 24h call count, from the live tracker snapshot."""
     snap = tracker.snapshot()
     counts: list[tuple[str, int]] = sorted(
         ((k, int(v["count_24h"])) for k, v in snap.items()),
@@ -171,7 +175,7 @@ def _build_mcp_tools() -> dict:
 
 
 def _build_budget() -> dict:
-    """015 — gerçek today_usd (cost_estimator) + learnings_count (recent_count). workflow gerçek."""
+    """Today's spend (cost_estimator), learnings count and workflow stats."""
     from app.billing.cost_estimator import estimate_daily_cost
     from app.learnings.store import recent_count
 
@@ -239,10 +243,12 @@ _BUILDERS = {
 
 
 async def _event_generator(request: Request) -> AsyncIterator[str]:
-    """SSE akışı — client kapanana kadar 2sn aralıkla rotating event yayar.
+    """Emits one event every 2s, rotating through _EVENT_ORDER, until the
+    client disconnects.
 
-    014 — _BUILDERS hem sync hem async fn destekler (`update-available`
-    `fetch_manifest` çağrısı için async).
+    _BUILDERS may hold either sync or async callables (`update-available` is
+    async because it awaits `fetch_manifest`), so each one is awaited only if
+    it returns a coroutine.
     """
     import inspect
 

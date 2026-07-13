@@ -3,10 +3,11 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""015 — Tracker × provider_configs pricing → günlük tahmini maliyet.
+"""Estimated daily spend — call tracker × provider_configs pricing.
 
-Token sayisi tracker'da tutulmuyor (sadece count_24h). Ortalama 1500 tok/call,
-30/70 input/output split varsayimi. Gercek token tracking 016+'da.
+The tracker records call counts, not token counts, so the estimate assumes an
+average of 1500 tokens per call with a 30/70 input/output split. It is an
+order-of-magnitude figure, not an invoice.
 """
 
 from __future__ import annotations
@@ -27,9 +28,10 @@ _OUTPUT_RATIO = 0.7
 
 
 def _build_alias_index() -> Dict[str, tuple]:
-    """`ask_<alias>` veya `ask_<id-normalized>` → (provider, alias, model_dict).
+    """Index `ask_<alias>` and `ask_<id-normalized>` → (provider, alias, model).
 
-    Provider configs YAML'larından dynamic build.
+    Built from the provider config YAMLs, so a newly added model is priced
+    without touching this module.
     """
     cfg = load_all()
     index: Dict[str, tuple] = {}
@@ -67,7 +69,7 @@ def estimate_daily_cost() -> Dict[str, Any]:
         calls = int(usage.get("count_24h", 0))
         if not calls:
             continue
-        # 016 — gercek token sayisi varsa kullan, yoksa eski avg fallback
+        # Real token counts when the tracker has them, the average otherwise.
         tok_in_real = int(usage.get("tokens_in_24h", 0) or 0)
         tok_out_real = int(usage.get("tokens_out_24h", 0) or 0)
         exact = tok_in_real > 0 or tok_out_real > 0
@@ -97,9 +99,9 @@ def estimate_daily_cost() -> Dict[str, Any]:
         )
 
     note = (
-        "Gercek token tracking aktif (016)."
+        "Real token tracking is active."
         if has_real_tokens
-        else "Token sayisi tahmini (1500 avg, 30/70 split). Gercek tracking icin pipeline tool'lari token forward etmeli."
+        else "Token counts are estimated (1500 avg, 30/70 split). For exact figures the pipeline tools must forward token usage."
     )
     return {
         "today_usd": round(total_usd, 2),

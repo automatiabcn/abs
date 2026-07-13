@@ -72,7 +72,7 @@ const INTENT_CHIP: Record<string, string> = {
 };
 const CONSENT_LABEL: Record<string, string> = {
   opted_in: "Opted in", pending: "Pending", opted_out: "Opted out",
-  "opt-in": "Opted in", "opt-out": "Opted out",
+  "opt-in": "Opted in", "opt-out": "Opted out", partial: "Partial",
 };
 
 function trTime(iso: string | null): string {

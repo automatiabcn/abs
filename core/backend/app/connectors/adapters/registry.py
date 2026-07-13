@@ -6,7 +6,7 @@
 """Adapter registry — connector_id → real adapter.
 
 Connectors with no adapter yet fall back to flag-only connect (legacy). As real
-adapters land (HubSpot OAuth, Paraşüt API, …) they register here and the same
+adapters land (HubSpot OAuth, ERP APIs, …) they register here and the same
 connect/sync plumbing makes them pull real data.
 """
 

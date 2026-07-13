@@ -5,8 +5,9 @@
 
 """Pipeline base abstractions.
 
-Her pipeline BasePipeline'dan türer: async `run(prompt)` → PipelineResult.
-Step'ler timing + error birlikte loglanır → panel SSE widget (007+) bu datayı yayar.
+Every pipeline derives from BasePipeline: async `run(prompt)` → PipelineResult.
+Each step records its timing alongside its error, so a failed step is still
+reported with how long it took; the panel SSE widget renders that.
 """
 
 from __future__ import annotations
@@ -34,7 +35,7 @@ class PipelineResult:
     total_elapsed_ms: int
     prompt: str
     error: Optional[str] = None
-    workflow_trace_id: Optional[str] = None  # 010 — durable workflow bağlantısı
+    workflow_trace_id: Optional[str] = None  # link to the durable workflow run
 
     def to_dict(self) -> Dict[str, Any]:
         out: Dict[str, Any] = {
@@ -60,7 +61,7 @@ class PipelineResult:
 
 
 class BasePipeline(ABC):
-    """Tüm pipeline'ların soyut tabanı."""
+    """Abstract base for every pipeline."""
 
     pipeline_type: str = "base"
 

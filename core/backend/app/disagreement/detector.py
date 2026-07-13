@@ -3,10 +3,12 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Disagreement detector — N provider paralel + cosine similarity.
+"""Disagreement detector — ask N providers in parallel, measure how far apart
+their answers are.
 
-Embedding için: Cohere varsa `CohereProvider.embed`, yoksa character-level Jaccard
-fallback (dumb ama bağımsız). Consensus eşikleri SERVER ile paralel.
+Similarity comes from Cohere embeddings when Cohere is configured, and from a
+character-level Jaccard overlap when it is not: crude, but it needs no provider
+of its own, so the detector never goes blind just because embeddings are down.
 """
 
 from __future__ import annotations
@@ -20,7 +22,7 @@ from app.providers.registry import get_provider
 
 logger = logging.getLogger(__name__)
 
-# Varsayılan 3 model — farklı aileler (çeşitlilik)
+# Three models from different families — agreement between siblings proves little.
 DEFAULT_MODELS: List[Tuple[str, str, str]] = [
     ("groq-gptoss", "groq", "openai/gpt-oss-120b"),
     ("cf-kimi", "cloudflare", "@cf/moonshotai/kimi-k2.5"),
@@ -48,7 +50,7 @@ def _cosine(a: List[float], b: List[float]) -> float:
 
 
 async def ask_disagree(prompt: str, analyzer_model: str | None = None) -> Dict:
-    """3 provider'a paralel sor, cevapları similarity matrix'ine dök, consensus skoru hesapla."""
+    """Ask the providers in parallel, build a similarity matrix, score the consensus."""
     coros = {
         name: get_provider(prov).call(prompt, model=mdl)
         for name, prov, mdl in DEFAULT_MODELS
@@ -64,7 +66,7 @@ async def ask_disagree(prompt: str, analyzer_model: str | None = None) -> Dict:
 
     ok_names = [n for n, t in responses.items() if t]
 
-    # Cosine (Cohere embed) veya Jaccard fallback
+    # Cosine over Cohere embeddings, else the Jaccard fallback
     sim_matrix: List[List[float]] = []
     try:
         cohere = get_provider("cohere")
@@ -89,7 +91,7 @@ async def ask_disagree(prompt: str, analyzer_model: str | None = None) -> Dict:
             row = [_jaccard(responses[a], responses[b]) for b in ok_names]
             sim_matrix.append(row)
 
-    # Consensus: off-diagonal ortalaması
+    # Consensus: the mean of the off-diagonal pairs
     consensus = None
     if sim_matrix and len(sim_matrix) > 1:
         off = [

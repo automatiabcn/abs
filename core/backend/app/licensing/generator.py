@@ -18,8 +18,8 @@ from .schemas import LicensePayload
 
 logger = logging.getLogger(__name__)
 
-# Q12-R86 — anything above ~25 years is almost certainly a typo or an attack
-# trying to mint a perpetual license. Warn loudly so audit catches it.
+# Anything above ~25 years is almost certainly a typo or an attempt to mint a
+# perpetual license. Warn loudly so an audit catches it.
 _EXCESSIVE_VALID_DAYS = 25 * 365
 
 
@@ -30,22 +30,22 @@ def generate_license(
     valid_days: int = 365,
     machine_fp: str | None = None,
 ) -> str:
-    """Belirtilen müşteri için RS256 imzalı JWT lisans üretir.
+    """Mint an RS256-signed license JWT for a customer.
 
     Args:
-        customer_id: Müşteri kimliği (Stripe customer id veya iç id).
-        tier: Lisans seviyesi (self-host | team | enterprise).
-        seat_count: Seat sayısı (>=1).
-        valid_days: Lisans geçerlilik süresi (gün).
-        machine_fp: Q12 IP-Hardening R1 — opsiyonel hardware fingerprint
-            (SHA-256 hex). Mevcutsa lisans yalnızca aynı FP'ye sahip
-            host'ta doğrulanır. ``None`` (legacy) → makineye bağlı değil.
+        customer_id: Customer identity (billing customer id or internal id).
+        tier: License tier (self-host | team | enterprise).
+        seat_count: Number of seats (>=1).
+        valid_days: Validity in days.
+        machine_fp: Optional hardware fingerprint (SHA-256 hex). When set, the
+            license only verifies on a host with the same fingerprint; ``None``
+            leaves it unbound.
 
     Returns:
-        İmzalanmış JWT token (str).
+        The signed JWT.
     """
-    # BUG-12 — refuse to mint with a private key that does not pair with
-    # the image-baked vendor pubkey. No-op in dev/test (no baked pubkey).
+    # A private key that does not pair with the image-baked public key would
+    # mint licenses this build cannot verify. No-op where no key is baked in.
     assert_mint_keypair_pairs()
 
     if valid_days > _EXCESSIVE_VALID_DAYS:

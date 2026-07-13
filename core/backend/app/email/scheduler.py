@@ -3,13 +3,14 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""019 — Onboarding email scheduler + tick.
+"""Onboarding email scheduler.
 
-5 email serisi: welcome (1h), walkthrough (24h), expiry_warning (10d), recovery (21d).
-first_success ayrı trigger ile (immediate, ilk MCP tool çağrısı).
+Five-mail series: welcome (1h), walkthrough (24h), expiry_warning (10d),
+recovery (21d), plus first_success, which is not on a clock — it fires the
+moment the customer's first MCP tool call lands.
 
-`tick()` her 5dk cron çağrılır:
-  scheduled_at <= now AND sent_at IS NULL AND unsubscribed=False
+`tick()` is meant to run on a short cron and only picks up rows that are due,
+unsent and not unsubscribed, so a missed run delays mail but never loses it.
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ from app.db.session import get_engine, get_session_sync
 logger = logging.getLogger(__name__)
 
 
-# Schedule offsetleri (saat bazında)
+# When each mail is due, relative to license activation.
 _OFFSETS = {
     "welcome": timedelta(hours=1),
     "walkthrough": timedelta(hours=24),
@@ -37,7 +38,7 @@ _OFFSETS = {
 
 
 def _make_unsubscribe_token(license_jti: str) -> str:
-    """JWT HS256, 1 yıl exp."""
+    """Unsubscribe token — HS256, valid for a year."""
     import jwt
 
     payload = {
@@ -60,10 +61,10 @@ def _unsubscribe_url(token: str) -> str:
 
 
 def schedule_onboarding(*, license_jti: str, email: str, db: Optional[Session] = None) -> int:
-    """Yeni lisans alımında 4 email kuyruğa ekle (welcome, walkthrough, expiry_warning, recovery).
+    """Queue the four timed onboarding mails for a new license.
 
-    first_success ayrı (`schedule_first_success`).
-    Returns: kaç row eklendi.
+    first_success is queued separately (`schedule_first_success`). Returns the
+    number of rows added.
     """
     now = datetime.now(timezone.utc)
     rows = []
@@ -94,13 +95,13 @@ def schedule_onboarding(*, license_jti: str, email: str, db: Optional[Session] =
 def schedule_first_success(
     *, license_jti: str, email: str, db: Optional[Session] = None
 ) -> bool:
-    """İlk MCP tool çağrısında trigger — immediate (now)."""
+    """Queue the first_success mail, due immediately. Idempotent per license."""
     own_session = db is None
     if own_session:
         ctx = get_session_sync()
         db = ctx.__enter__()
     try:
-        # Idempotent: ayni license_jti için first_success zaten varsa skip
+        # One first_success per license — a second tool call must not re-send it.
         existing = db.scalars(
             select(EmailQueue)
             .where(EmailQueue.license_jti == license_jti)
@@ -124,7 +125,7 @@ def schedule_first_success(
 
 
 def _render_for(row: EmailQueue, db: Session) -> Tuple[str, str]:
-    """Template render — row.kind'a göre context oluştur."""
+    """Render the template for this row, in the license holder's language."""
     from app.email.sender import _render
 
     token = _make_unsubscribe_token(row.license_jti)
@@ -193,10 +194,7 @@ def _render_for(row: EmailQueue, db: Session) -> Tuple[str, str]:
 
 
 def tick(now: Optional[datetime] = None) -> Tuple[int, int]:
-    """Vakti gelen email'leri gönder.
-
-    Returns: (sent, failed) sayilari.
-    """
+    """Send every mail that is now due. Returns (sent, failed)."""
     from app.email.sender import _send_html
 
     if now is None:

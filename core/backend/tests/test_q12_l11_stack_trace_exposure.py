@@ -70,7 +70,7 @@ def test_safe_error_label_passes_allowlisted_codes():
     from app.api.update import _safe_error_label
 
     assert _safe_error_label("manifest_fetch_failed") == "manifest_fetch_failed"
-    assert _safe_error_label("update_manifest_url tanimli degil") == "update_manifest_url tanimli degil"
+    assert _safe_error_label("update_manifest_url is not configured") == "update_manifest_url is not configured"
 
 
 def test_safe_error_label_collapses_unknown():

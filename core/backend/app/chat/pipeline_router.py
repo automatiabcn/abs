@@ -3,16 +3,19 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q12 / Brief 3 R2 — pipeline auto-routing for chat.
+"""Pipeline auto-routing for chat.
 
-Picks one of the qual-* pipelines (or `auto_direct` cascade) based on
-keyword + character-class signals in the user's last message. The router
-is deterministic + side-effect free; the chat handler only consults it
-when `pipeline="auto"` is requested.
+Picks one of the qual-* pipelines (or the `auto_direct` cascade) from keyword
+and character-class signals in the user's last message. The router is
+deterministic and side-effect free; the chat handler only consults it when
+`pipeline="auto"` is requested.
 
-Decision order matters — code/translate beat plain TR/analysis when both
-patterns match. `race_code` is opt-in only (never auto-selected) because
-parallel multi-model calls multiply cost.
+Decision order matters — code and translation requests beat the plain
+language/analysis routes when both patterns match. `race_code` is opt-in only
+(never auto-selected) because parallel multi-model calls multiply cost.
+
+Keyword patterns cover the supported product languages; non-ASCII characters are
+written as escapes so the source stays ASCII while matching the same words.
 """
 
 from __future__ import annotations
@@ -38,7 +41,7 @@ PIPELINE_OPTIONS: Final[tuple[PipelineId, ...]] = (
     "race_code",
 )
 
-_TR_DIACRITIC_RX = re.compile(r"[ığüşöçĞÜŞÖÇİ]")
+_TR_DIACRITIC_RX = re.compile(r"[\u0131\u011f\u00fc\u015f\u00f6\u00e7\u011e\u00dc\u015e\u00d6\u00c7\u0130]")
 _CODE_RX = re.compile(
     r"\b(kod|code|fonksiyon|function|class|api|endpoint|debug|hata|stack\s*trace|"
     r"bug|exception|tipe?|typescript|python|rust|golang|java|c\+\+)\b",
@@ -46,14 +49,14 @@ _CODE_RX = re.compile(
 )
 _TRANSLATE_RX = re.compile(
     r"\b("
-    r"çevir|cevir|"           # TR + ASCII-folded
-    r"tercüme|tercume|"
+    r"\u00e7evir|cevir|"           # TR + ASCII-folded
+    r"terc\u00fcme|tercume|"
     r"translate|translation"
     r")\b",
     re.IGNORECASE,
 )
 _ANALYSIS_RX = re.compile(
-    r"\b(analiz|karşılaştır|compare|tradeoff|why|neden|rationale|"
+    r"\b(analiz|kar\u015f\u0131la\u015ft\u0131r|compare|tradeoff|why|neden|rationale|"
     r"avantaj|disadvantage)\b",
     re.IGNORECASE,
 )

@@ -3,19 +3,12 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Hook dispatcher — 5 modülü sıralı çağırır, Claude Code PreToolUse spec'i üretir.
+"""Hook dispatcher — runs the PreToolUse hooks in order and merges their output.
 
-Sıra (SERVER guard_logic.py'den):
-  1. freeze       — (MVP: placeholder — 008'de sertleşir)
-  2. investigate  — (MVP: placeholder)
-  3. content-enrich (enrichment.maybe_enrichment_notice)
-  4. rag-inject    (rag_inject.maybe_rag_inject — STUB)
-  5. plan-first    (plan_first.maybe_plan_first_nudge)
-  6. feature-nudge (feature_nudge.maybe_feature_nudge_bash + _mcp)
-  7. delegate-nudge(delegate_nudge.maybe_delegate_nudge)
+Order: content enrichment, RAG injection, plan-first, feature nudge, delegation
+nudge. Every hook is isolated, so one that raises cannot suppress the others.
 
-Her hook `safe_hook` decorator'ı ile — bir tanesi çökse diğerleri devam eder.
-Çıktı: `{"additional_context": str, "deny_reason": str | None}` dict.
+Returns `{"additional_context": str, "deny_reason": str | None}`.
 """
 
 from __future__ import annotations
@@ -49,7 +42,7 @@ def _strip_prefix(tool_name: str) -> str:
 
 
 def dispatch_hooks(tool_name: str, tool_input: Dict[str, Any] | None) -> Dict[str, Any]:
-    """Tüm hook'ları çalıştır, ek context / deny reason döndür."""
+    """Run every hook and return the merged context plus any deny reason."""
     if not settings.hooks_enabled:
         return {"additional_context": "", "deny_reason": None}
 
@@ -58,29 +51,25 @@ def dispatch_hooks(tool_name: str, tool_input: Dict[str, Any] | None) -> Dict[st
     deny: str | None = None
 
     def _safe(name: str, fn, *args):
-        """Tek hook çağrısı için son savunma — stub'lar safe_hook'suz olabilir."""
+        """Last line of defence: not every hook carries the safe_hook decorator."""
         try:
             return fn(*args) or ""
         except Exception as exc:
             logger.info("hook %s raised: %s", name, exc)
             return ""
 
-    # 3. enrichment (Write gate)
     msg = _safe("enrichment", enrichment.maybe_enrichment_notice, tool_name, tool_input)
     if msg:
         ctx_parts.append(msg)
 
-    # 4. rag_inject (Bash/Write/Edit — STUB)
     msg = _safe("rag_inject", rag_inject.maybe_rag_inject, tool_name, tool_input)
     if msg:
         ctx_parts.append(msg)
 
-    # 5. plan-first
     msg = _safe("plan_first", plan_first.maybe_plan_first_nudge, tool_name, tool_input)
     if msg:
         ctx_parts.append(msg)
 
-    # 6. feature-nudge
     if tool_name == "Bash":
         cmd = tool_input.get("command", "") or ""
         msg = _safe("feature_nudge_bash", feature_nudge.maybe_feature_nudge_bash, cmd)
@@ -92,7 +81,6 @@ def dispatch_hooks(tool_name: str, tool_input: Dict[str, Any] | None) -> Dict[st
         if msg:
             ctx_parts.append(msg)
 
-    # 7. delegate-nudge
     msg = _safe("delegate_nudge", delegate_nudge.maybe_delegate_nudge, tool_name, tool_input)
     if msg:
         ctx_parts.append(msg)
@@ -104,7 +92,7 @@ def dispatch_hooks(tool_name: str, tool_input: Dict[str, Any] | None) -> Dict[st
 
 
 def to_claude_code_hook_output(result: Dict[str, Any]) -> Dict[str, Any]:
-    """Claude Code PreToolUse hook JSON spec'ine dönüştür."""
+    """Render the dispatch result as a PreToolUse hook JSON payload."""
     if result.get("deny_reason"):
         return {
             "hookSpecificOutput": {

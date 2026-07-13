@@ -1,5 +1,6 @@
 {
   "errors.stripe_not_configured": "Stripe no configurado",
+  "errors.price_id_not_configured": "Price ID no configurado: {sku}",
   "errors.signature_missing": "Falta el header Stripe-Signature",
   "errors.signature_invalid": "Verificación de firma fallida",
   "errors.payload_invalid": "Payload inválido",

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""028 Modul C — OAuth refresh token rotation.
+"""OAuth refresh token rotation.
 
 `refresh_github_token(key_name)`:
   - Reads current refresh_token from DB (decrypted via vault).

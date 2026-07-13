@@ -3,9 +3,9 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Model anlaşmazlık (disagreement) latest endpoint'i (stub).
+"""Latest model-disagreement endpoint (stub).
 
-Gerçek ask_disagree çıktıları 008-ask-disagree task'ında bağlanacak.
+Shape is final; it stays empty until ask_disagree results are fed in.
 """
 
 from __future__ import annotations
@@ -25,5 +25,5 @@ async def get_latest_disagreement(_admin: dict = Depends(current_admin)) -> dict
         "models": [],
         "matrix": [],
         "consensus_score": None,
-        "note": "Gerçek ask_disagree çıktıları 008-ask-disagree task'ında bağlanacak",
+        "note": "Live ask_disagree results are not wired up yet",
     }

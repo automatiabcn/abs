@@ -5,9 +5,8 @@
 
 """Ollama nomic-embed-text wrapper.
 
-Test ortamında `monkeypatch` ile fake embed döndürebilmek için tek noktadan
-çağrılır. Ollama erişilemezse `RuntimeError` yükselir; üst katman 'ok'/'fail'
-sayısı raporlar.
+Single entry point for embedding so tests can monkeypatch it. Raises
+``RuntimeError`` when Ollama is unreachable; callers count ok/fail.
 """
 
 from __future__ import annotations
@@ -33,15 +32,12 @@ def _model() -> str:
 
 
 async def embed(text: str, *, timeout: float = 15.0) -> List[float]:
-    """Tek metin için embedding. Backend ``ABS_EMBEDDING_BACKEND`` ile seçilir.
+    """Embed a single text. The backend is chosen by ``ABS_EMBEDDING_BACKEND``.
 
-    Müşteri compose default'u ``mock`` (sha256-türevli, $0, Ollama gerektirmez)
-    — "zero-dep first boot" sözünün gereği. Pre-fix bu fonksiyon her zaman
-    Ollama nomic'e gidiyordu, dolayısıyla mock/bge backend'lerde RAG index+query
-    "Ollama embed bağlantı: All connection attempts failed" ile patlıyordu.
-    Artık yalnızca ``backend == "ollama"`` Ollama'ya gider; mock /
-    sentence_transformers / onnx, backend-aware BGE embedder'a delege edilir
-    (sync + CPU-bound olduğu için thread'de).
+    Only ``backend == "ollama"`` talks to Ollama. The default (``mock``) and the
+    ``sentence_transformers`` / ``onnx`` backends go to the BGE embedder so a
+    first boot needs no external service. That embedder is sync and CPU-bound,
+    hence the thread offload.
     """
     backend = (getattr(settings, "embedding_backend", "mock") or "mock").lower()
     if backend != "ollama":
@@ -57,11 +53,11 @@ async def embed(text: str, *, timeout: float = 15.0) -> List[float]:
         async with httpx.AsyncClient(timeout=timeout) as client:
             r = await client.post(url, json=body)
     except httpx.HTTPError as exc:
-        raise RuntimeError(f"Ollama embed bağlantı: {exc}") from exc
+        raise RuntimeError(f"Ollama embed connection failed: {exc}") from exc
     if r.status_code >= 400:
         raise RuntimeError(f"Ollama embed {r.status_code}: {r.text[:200]}")
     data = r.json()
     vec = data.get("embedding") or []
     if not vec:
-        raise RuntimeError("Ollama embed: boş vektör")
+        raise RuntimeError("Ollama embed: empty vector")
     return list(vec)

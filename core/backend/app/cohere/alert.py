@@ -3,14 +3,15 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Cohere quota threshold pipeline — month-aware idempotent alarm.
+"""Cohere quota threshold pipeline — month-aware, idempotent alarms.
 
-SERVER orchestrator/cohere_alert.py portu. Cohere ücretsiz plan aylık 1000 call;
-%75/90/100 eşiklerinde tek seferlik uyarı atılır.
+The free Cohere plan allows 1000 calls a month. Each of the 75/90/100% thresholds
+fires at most once per calendar month, so a busy month cannot bury the operator
+in repeats; the counter resets when the month rolls over.
 
-Veri kaynakları (data_dir altında):
+State (under data_dir):
   cohere_usage.json          — {"month": "YYYY-MM", "count": N}
-  cohere_alerts.jsonl        — append-only alert kayıtları
+  cohere_alerts.jsonl        — append-only alert records
   cohere_alerts_seen.json    — {"YYYY-MM": ["warn","danger"]}
 """
 
@@ -74,7 +75,7 @@ def _read_usage() -> Dict[str, Any]:
 
 
 def _bump_usage(delta: int = 1) -> Dict[str, Any]:
-    """Sayaç +delta. Yeni ay → reset."""
+    """Increment the counter; a new calendar month starts from zero."""
     cur = _read_usage()
     month = _current_month()
     if cur.get("month") != month:
@@ -113,16 +114,17 @@ def _append_alert(level: str, count: int, limit: int, percent: int) -> str:
 
 def _message_for(level: str, count: int, limit: int, percent: int) -> str:
     if level == "limit_hit":
-        return f"Cohere aylık limit doldu ({count}/{limit}). Yeni çağrılar reddedilebilir."
+        return f"Cohere monthly limit reached ({count}/{limit}). New calls may be rejected."
     if level == "danger":
-        return f"Cohere kullanım %{percent} ({count}/{limit}). Sonraki saatler reddedilebilir."
-    return f"Cohere kullanım %{percent} ({count}/{limit}). Yedek provider hazırla."
+        return f"Cohere usage at {percent}% ({count}/{limit}). Calls may be rejected shortly."
+    return f"Cohere usage at {percent}% ({count}/{limit}). Line up a fallback provider."
 
 
 def track_usage(count: Optional[int] = None, limit: int = 1000, delta: int = 1) -> Optional[str]:
-    """Yeni Cohere çağrısı kaydet, eşik tetiklenirse alert ID döner.
+    """Record Cohere usage; return the alert level if a threshold just fired.
 
-    `count` verilmezse iç sayaç +delta artırılır. `count` verilirse o değer baz alınır.
+    Without `count` the internal counter is incremented by `delta`; with `count`
+    the caller's absolute figure wins (an authoritative reading from the API).
     """
     if count is not None:
         usage = {"month": _current_month(), "count": int(count)}
@@ -140,7 +142,7 @@ def track_usage(count: Optional[int] = None, limit: int = 1000, delta: int = 1) 
     seen_for_month = list(seen.get(month, []))
 
     triggered: Optional[str] = None
-    # Yüksek eşik öncelikli
+    # Highest unseen threshold wins — 100% must not be reported as a mere warning.
     for thr, level in THRESHOLDS:
         if percent >= thr and level not in seen_for_month:
             triggered = level
@@ -168,7 +170,7 @@ def read_recent(limit: int = 20) -> List[Dict[str, Any]]:
                 continue
     except Exception:
         pass
-    return list(reversed(out))  # en yeni önce
+    return list(reversed(out))  # newest first
 
 
 def mark_acknowledged(alert_id: str) -> bool:

@@ -3,7 +3,11 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Anthropic provider MCP tool'ları — Haiku / Sonnet / Opus."""
+"""Anthropic MCP tools — Haiku / Sonnet / Opus.
+
+No fallbacks: a caller who asks for a specific Claude model must not silently
+get an answer from a different vendor's model.
+"""
 
 from __future__ import annotations
 
@@ -29,24 +33,24 @@ async def _anthropic_call(tool_name: str, prompt: str, model: str) -> str:
         )
         return resp.text or ""
     except ProviderError as exc:
-        return f"[HATA] {tool_name}: {exc.message}"
+        return f"[ERROR] {tool_name}: {exc.message}"
 
 
 @mcp_server.tool()
 async def ask_haiku(prompt: str) -> str:
-    """Claude Haiku 4.5 — Anthropic'in hızlı modeli. Kısa görev, sınıflandırma."""
+    """Claude Haiku 4.5 — fast Anthropic model. Short tasks, classification."""
     return await _anthropic_call("ask_haiku", prompt, "claude-haiku-4-5-20251001")
 
 
 @mcp_server.tool()
 async def ask_sonnet(prompt: str) -> str:
-    """Claude Sonnet 4.6 — dengeli kalite/hız. Kod + analiz için default."""
+    """Claude Sonnet 4.6 — balanced quality/speed. Default for code and analysis."""
     return await _anthropic_call("ask_sonnet", prompt, "claude-sonnet-4-6")
 
 
 @mcp_server.tool()
 async def ask_opus(prompt: str) -> str:
-    """Claude Opus 4.7 — Anthropic'in en güçlü modeli. Derin analiz, kritik görev."""
+    """Claude Opus 4.7 — strongest Anthropic model. Deep analysis, critical work."""
     return await _anthropic_call("ask_opus", prompt, "claude-opus-4-7")
 
 

@@ -14,24 +14,24 @@ from . import runner as _runner
 from ._json import extract_json
 
 _GEN_SYSTEM = (
-    "Akıcı, doğal bir Türkçe yazı yaz. Diline gereksiz İngilizce karıştırma, "
-    "kullanıcının sorusuna doğrudan cevap ver."
+    "Write fluent, natural Turkish. Do not mix in English words unnecessarily. "
+    "Answer the user's question directly."
 )
 _REVIEW_SYSTEM = (
-    "Aşağıdaki Türkçe metinde gramer, anlatım bozukluğu, yabancı dil "
-    "karışması veya tutarsızlık varsa bul. SADECE JSON listesi olarak "
-    "[{\"issue\": str, \"suggestion\": str}] döndür; sorun yoksa []."
+    "Find any grammar errors, awkward phrasing, stray foreign-language words or "
+    "inconsistencies in the Turkish text below. Return ONLY a JSON list of "
+    "[{\"issue\": str, \"suggestion\": str}]; return [] if there is nothing wrong."
 )
 _POLISH_SYSTEM = (
-    "Aşağıdaki Türkçe metni listelenen sorunlara göre yeniden yaz. "
-    "Sadece düzeltilmiş metni döndür; meta yorum ekleme."
+    "Rewrite the Turkish text below to fix the listed issues. Return only the "
+    "corrected Turkish text, with no commentary."
 )
 
 
 async def execute(prompt: str, call_provider: _runner.CallProvider) -> _runner.QualResult:
     result = _runner.QualResult(pipeline_id="qual_tr", completion="", verified=False)
 
-    gen_prompt = f"{_GEN_SYSTEM}\n\nİstek:\n{prompt}"
+    gen_prompt = f"{_GEN_SYSTEM}\n\nREQUEST:\n{prompt}"
     primary, secondary = await asyncio.gather(
         _runner.run_stage(
             "qual_tr", "generate-primary", "groq", gen_prompt, call_provider=call_provider
@@ -55,7 +55,7 @@ async def execute(prompt: str, call_provider: _runner.CallProvider) -> _runner.Q
     candidates.sort(key=lambda c: len(c[1]), reverse=True)
     _, draft = candidates[0]
 
-    review_prompt = f"{_REVIEW_SYSTEM}\n\nMetin:\n{draft[:5000]}"
+    review_prompt = f"{_REVIEW_SYSTEM}\n\nTEXT:\n{draft[:5000]}"
     review_stage, review_raw = await _runner.run_stage(
         "qual_tr", "review", "groq", review_prompt, call_provider=call_provider
     )
@@ -74,8 +74,8 @@ async def execute(prompt: str, call_provider: _runner.CallProvider) -> _runner.Q
 
     polish_prompt = (
         f"{_POLISH_SYSTEM}\n\n"
-        f"SORUNLAR:\n{json.dumps(issues, ensure_ascii=False)[:1500]}\n\n"
-        f"METİN:\n{draft[:5000]}"
+        f"ISSUES:\n{json.dumps(issues, ensure_ascii=False)[:1500]}\n\n"
+        f"TEXT:\n{draft[:5000]}"
     )
     polish_stage, polished = await _runner.run_stage(
         "qual_tr", "polish", "cerebras", polish_prompt, call_provider=call_provider

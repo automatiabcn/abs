@@ -3,18 +3,18 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""010 — Judge persona live training (deterministik drift-tabanlı adapt).
+"""Judge persona live training — deterministic, drift-based adaptation.
 
-Algoritma:
-  1. judge_log.jsonl son N entry oku (default 200).
-  2. accept/reject outcome'lu entry'lerin persona_drift ortalaması.
-  3. reject_avg > accept_avg + 0.10 → threshold gevşet (loosen).
-  4. accept_avg < reject_avg - 0.10 → threshold sertleş (tighten).
-  5. Aralık: docstring [0.30, 0.85], type_hints [0.40, 0.95].
-  6. cache_dir/persona.json atomic temp+rename.
-  7. cache_dir/persona_history.jsonl audit append.
+Reads the last N judgments (default 200) and compares the mean persona_drift of
+the accepted ones against the rejected ones. Rejections drifting further than
+acceptances loosens the thresholds; the reverse tightens them. Thresholds are
+clamped: docstring [0.30, 0.85], type_hints [0.40, 0.95].
 
-Idempotent: aynı log girdileriyle 2. çağrı 'stable' döner.
+The persona is written with a temp+rename so a crash cannot leave a half-written
+file, and every change is appended to a history log for audit.
+
+Idempotent: run twice over the same log entries and the second call reports
+'stable'.
 """
 
 from __future__ import annotations
@@ -96,7 +96,7 @@ def _append_history(record: Dict[str, Any]) -> None:
 
 
 def train_persona(min_samples: int = 10, history_limit: int = 200) -> Dict[str, Any]:
-    """Live training — outcome'lara göre persona threshold'larını adapt et."""
+    """Adapt the persona thresholds from accept/reject outcomes."""
     entries = _read_log_entries(history_limit)
     samples_with_outcome = [e for e in entries if e.get("outcome") in ("accept", "reject")]
     sample_size = len(samples_with_outcome)
@@ -155,7 +155,7 @@ def train_persona(min_samples: int = 10, history_limit: int = 200) -> Dict[str, 
 
 
 def persona_status() -> Dict[str, Any]:
-    """Mevcut persona + son training tarihi + history özeti."""
+    """Current persona plus the last training run and history size."""
     persona = load_persona()
     history_size = 0
     last_action: Optional[Dict[str, Any]] = None
@@ -177,7 +177,7 @@ def persona_status() -> Dict[str, Any]:
 
 
 def reset_persona() -> Dict[str, Any]:
-    """persona.json sil → DEFAULT_PERSONA'ya dön. history korunur."""
+    """Drop the learned persona and fall back to the default. History is kept."""
     path = _persona_path()
     removed = False
     if path.is_file():

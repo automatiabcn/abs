@@ -3,7 +3,8 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""CloudFlare Workers AI — kendi formatında chat."""
+"""CloudFlare Workers AI — not OpenAI-compatible; it has its own request and
+response shape, which is why this provider does not use the shared helper."""
 
 from __future__ import annotations
 
@@ -32,7 +33,7 @@ class CloudflareProvider(BaseProvider):
         _token = kwargs.get("api_key") or settings.cf_api_token
         if not settings.cf_account_id or not _token:
             raise ProviderError(
-                "CloudFlare account_id veya api_token tanımlı değil",
+                "CloudFlare account_id or api_token is not configured",
                 provider=self.name,
                 transient=False,
             )
@@ -101,9 +102,9 @@ class CloudflareProvider(BaseProvider):
         result = data.get("result") or {}
         text = result.get("response") or ""
         usage = result.get("usage") or {}
-        # Sprint 2N.4 — Cloudflare Workers AI sometimes returns a dict
-        # (e.g. structured JSON output for workflow synth). ProviderResponse
-        # expects str → coerce non-string to JSON to avoid ValidationError.
+        # Workers AI sometimes answers with a dict rather than a string (e.g.
+        # structured JSON output). ProviderResponse.text is a str, so coerce
+        # instead of failing validation.
         if not isinstance(text, str):
             text = json.dumps(text, ensure_ascii=False)
         return ProviderResponse(

@@ -14,7 +14,7 @@ Tasarim:
   - Fail-closed: imza yok / dogrulanamiyorsa state="unknown" + error="signature"
 
 settings.update_signature_required default True (production guvenligi).
-Test/dev'de False set edilebilir (manifest signing flow olmayan dev ortamlari icin).
+Set to False in development, where there is no manifest signing flow.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ def verify_manifest(manifest_bytes: bytes, signature_b64: str) -> bool:
     try:
         pubkey = serialization.load_pem_public_key(pubkey_path.read_bytes())
         if not isinstance(pubkey, rsa.RSAPublicKey):
-            logger.warning("pubkey RSA degil")
+            logger.warning("public key is not RSA")
             return False
         signature = base64.b64decode(signature_b64)
         pubkey.verify(

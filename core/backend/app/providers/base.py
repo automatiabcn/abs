@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Provider base class + OpenAI-uyumlu chat completions yardımcısı."""
+"""Provider base class + the shared OpenAI-compatible chat completions call."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from .schemas import ProviderError, ProviderResponse
 
 
 class BaseProvider(ABC):
-    """Tüm provider client'larının türediği abstract base."""
+    """Abstract base every provider client derives from."""
 
     name: str = "base"
     default_model: str = ""
@@ -30,7 +30,11 @@ class BaseProvider(ABC):
         model: Optional[str] = None,
         **kwargs: Any,
     ) -> ProviderResponse:
-        """Prompt'u modele gönder, normalized ProviderResponse döndür."""
+        """Send the prompt to the model, return a normalized ProviderResponse.
+
+        Failures must be raised as ProviderError with `transient` set correctly:
+        the cascade uses that flag to decide whether failing over can help.
+        """
         raise NotImplementedError
 
 
@@ -47,13 +51,14 @@ async def openai_compatible_chat(
     extra_headers: Optional[Dict[str, str]] = None,
     response_format: Optional[dict] = None,
 ) -> ProviderResponse:
-    """OpenAI uyumlu /chat/completions endpoint'i için ortak çağrı.
+    """Shared call for any OpenAI-compatible /chat/completions endpoint.
 
-    Groq, Cerebras, OpenRouter, CloudFlare hepsi aynı şemayı konuşur.
+    Groq, Cerebras, OpenRouter and vLLM all speak the same schema, so they get
+    one implementation and one place where transient-vs-permanent is decided.
     """
     if not api_key:
         raise ProviderError(
-            f"{provider_name} API key tanımlı değil", provider=provider_name, transient=False
+            f"{provider_name} API key is not configured", provider=provider_name, transient=False
         )
 
     headers = {
@@ -115,7 +120,7 @@ async def openai_compatible_chat(
         text = data["choices"][0]["message"]["content"] or ""
     except (KeyError, IndexError, TypeError) as exc:
         raise ProviderError(
-            f"{provider_name} beklenmeyen yanıt: {str(data)[:200]}",
+            f"{provider_name} unexpected response: {str(data)[:200]}",
             provider=provider_name,
             transient=False,
         ) from exc

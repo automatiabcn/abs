@@ -3,12 +3,13 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""020 — MCP tool listesi otomatik üret → docs/api-reference.md.
+"""Generate docs/api-reference.md from the MCP tools the server actually registers.
 
-Her release'de bu script çalışır:
+Run it on every release:
   python scripts/gen_api_reference.py
 
-Kategorilere göre grup, isim alfabetik, açıklama tool docstring'inden.
+Tools are grouped by category and sorted by name; each description is the tool's
+own docstring, so the reference cannot drift from the code.
 """
 
 from __future__ import annotations
@@ -19,9 +20,9 @@ from pathlib import Path
 from typing import Dict, List
 
 
-# Tool kategorileri — prefix bazlı
+# Tool categories, matched by name.
 _CATEGORIES = [
-    ("Sistem & Sağlık", ["system_status", "health_status", "model_health", "breaker_status",
+    ("System & Health", ["system_status", "health_status", "model_health", "breaker_status",
                          "setup_status", "license_status", "demo_status", "vault_status",
                          "update_check", "billing_status", "email_queue_status", "cache_stats",
                          "code_fingerprint", "freeze", "investigate", "preview_patch",
@@ -48,10 +49,10 @@ _CATEGORIES = [
     ("Provider — Cohere", ["ask_cohere_command_r", "ask_cohere_embed",
                             "cohere_alert_status", "cohere_alerts_recent",
                             "cohere_alert_ack"]),
-    ("Provider — Lokal", ["ask_phi4", "ask_gemma2", "ask_codellama", "ask_llava",
+    ("Provider — Local", ["ask_phi4", "ask_gemma2", "ask_codellama", "ask_llava",
                            "ask_mlx", "ask_mlx_fast", "ask_starcoder", "ask_vllm",
                            "ask_or_qwen_coder", "ask_or_minimax", "ask_longcontext"]),
-    ("Pipeline — Kalite", ["qual_code", "qual_tr", "qual_analysis", "qual_translate",
+    ("Pipeline — Quality", ["qual_code", "qual_tr", "qual_analysis", "qual_translate",
                             "qual_human", "qual_code_human", "race", "race_code",
                             "race_tr", "ask_disagree"]),
     ("RAG", ["rag_index", "rag_query", "rag_status", "rag_clear", "rag_hybrid",
@@ -64,7 +65,7 @@ def _category_for(name: str) -> str:
     for cat, names in _CATEGORIES:
         if name in names:
             return cat
-    return "Diğer"
+    return "Other"
 
 
 async def _collect_tools() -> List[dict]:
@@ -92,32 +93,33 @@ def _render_md(tools: List[dict]) -> str:
     lines: List[str] = []
     lines.append("# API Reference — MCP Tools\n")
     lines.append(
-        "Bu sayfa otomatik üretilir (`python scripts/gen_api_reference.py`). Manuel düzenleme yapma.\n"
+        "This page is generated (`python scripts/gen_api_reference.py`). "
+        "Edit the tools, not this file.\n"
     )
     lines.append(
-        f"Toplam **{len(tools)} tool** — kategorilere göre alfabetik sıralı.\n"
+        f"**{len(tools)} tools**, grouped by category and sorted by name.\n"
     )
     lines.append(
-        "Her MCP tool, Claude Code'da `claude mcp add abs <url>` sonrası `mcp__abs__<tool>` "
-        "olarak veya orchestrator alias'larla (`ask \"...\" gptoss` vb.) çağrılabilir.\n\n"
+        "Connect the server with `claude mcp add abs <url>`, and every tool below "
+        "is callable as `mcp__abs__<tool>`.\n\n"
     )
 
-    cat_order = [c for c, _ in _CATEGORIES] + ["Diğer"]
+    cat_order = [c for c, _ in _CATEGORIES] + ["Other"]
     for cat in cat_order:
         if cat not in by_cat:
             continue
         lines.append(f"## {cat}\n\n")
         lines.append(f"_{len(by_cat[cat])} tool_\n\n")
         for t in by_cat[cat]:
-            desc = t["description"] or "(açıklama yok)"
+            desc = t["description"] or "_No description._"
             lines.append(f"### `{t['name']}`\n")
             lines.append(f"{desc}\n\n")
             schema = t["input_schema"] or {}
             props = schema.get("properties") or {}
             required = set(schema.get("required") or [])
             if props:
-                lines.append("**Parametreler:**\n\n")
-                lines.append("| İsim | Tip | Zorunlu | Açıklama |\n")
+                lines.append("**Parameters**\n\n")
+                lines.append("| Name | Type | Required | Description |\n")
                 lines.append("|---|---|:-:|---|\n")
                 for pname, pdef in props.items():
                     ptype = pdef.get("type", "?")
@@ -140,7 +142,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    # Çalıştırmadan önce app modulünü import edebilmek için PYTHONPATH ayarla
+    # The app package has to be importable before the tools can be listed.
     repo = Path(__file__).resolve().parent.parent
     sys.path.insert(0, str(repo / "core" / "backend"))
     sys.exit(main())

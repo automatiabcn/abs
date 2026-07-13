@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""026 Modul B — Slack OAuth + minimal channel post.
+"""Slack OAuth + minimal channel post.
 
 Endpoints:
   GET  /v1/smart-link/slack/authorize   — OAuth start (DB state, 10min TTL)

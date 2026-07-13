@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""028 Modul B — GitHub App migration foundation.
+"""GitHub App migration foundation.
 
 Skeleton for GitHub App auth (alternative to OAuth App). The App-based flow:
 

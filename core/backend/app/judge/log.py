@@ -3,10 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Judge JSONL log + outcome update + log rotation.
+"""Judge JSONL log — append, outcome update, rotation.
 
-SERVER orchestrator/judge_log.py portu. Her `judge_diff` çağrısı bir kayıt yazar,
-müşteri/Claude sonradan accept|reject ile outcome işaretleyebilir.
+Every `judge_diff` call writes one record. The outcome (accept|reject) is
+recorded later, once the patch is acted on.
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ def log_judgment(
     file_path: Optional[str] = None,
     source: str = "judge_patch_tool",
 ) -> str:
-    """Judgment kaydını JSONL'e ekle, ID döndür."""
+    """Append a judgment record and return its id."""
     _rotate_if_large()
     judgment_id = uuid.uuid4().hex[:12]
     persona_drift = None
@@ -81,7 +81,7 @@ def log_judgment(
 
 
 def update_outcome(judgment_id: str, outcome: str) -> bool:
-    """Bir judgment kaydının outcome alanını in-place güncelle (accept/reject)."""
+    """Set the outcome (accept/reject) of an existing judgment record."""
     if outcome not in ("accept", "reject"):
         return False
     p = _log_path()

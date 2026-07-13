@@ -1,178 +1,168 @@
-# Karara Varılmış Tasarım Kararları
+# Settled Design Decisions
 
-_Son güncelleme: 2026-04-23 (ikinci oturum — 12 madde kilit)_
+_Last updated: 2026-04-23_
 
-## STRATEJİK KARARLAR (2026-04-23)
+## STRATEGIC DECISIONS (2026-04-23)
 
-### 1. Hedef Müşteri: **Individual Self-Host** (10-50 kişilik firma)
+### 1. Target Customer: **Individual Self-Host** (companies of 10-50 people)
 
-**Revizyon:** ~~Merkezi multi-tenant sunucu~~ → **Her kullanıcı kendi kurulumunu yapar.** Firma = 10 ayrı lisans (toplu indirim opsiyonel).
+**Revision:** ~~a central multi-organisation server~~ → **each user runs their own installation.** A company buys 10 separate licences (a volume discount is possible).
 
-**Neden:** Teknik sadeleşme (multi-tenant DB, auth, RBAC gerekmez), MVP süresi 6 hafta → 2-3 hafta.
+**Why:** it removes a lot of engineering (no multi-organisation database, auth or RBAC), cutting the MVP from 6 weeks to 2-3 weeks.
 
-### 2. Marka: **Automatia ABS**
+### 2. Brand: **Automatia ABS**
 
-- Domain: `abs.automatiabcn.com` (subdomain, pazarlama + teknik bağımsızlık)
-- Ana site: `automatiabcn.com` → "Ürünlerimiz" → ABS linki
-- Logo: mevcut Automatia logosu
+- Domain: `abs.automatiabcn.com` (subdomain — marketing and technical independence)
+- Main site: `automatiabcn.com` → "Our Products" → link to ABS
+- Logo: the existing Automatia logo
 
-### 3. Operasyon: **Solo + ABS Sistemi = İşlevsel Ekip**
+### 3. Operations: **Solo Operator + the ABS System = a Working Team**
 
-Pazarlama: "Biz + sistemle bir ekip gibiyiz. Dogfooding prensibi — bu ürünü kullanan ilk örnek biziz."
+Marketing line: "We and the system work as one team. Dogfooding — we are the first users of this product."
 
-### 4. API Key Modeli: **Müşteri Kendi Keyleri**
+### 4. API Key Model: **The Customer's Own Keys**
 
-Anthropic + 5 free provider (Groq, Cerebras, CloudFlare, Gemini, Cohere). Web setup wizard, `age`/`sops` ile encrypted at rest, panel'de rotation.
+Anthropic + 5 free providers (Groq, Cerebras, CloudFlare, Gemini, Cohere). Keys are entered in the web setup wizard, encrypted at rest with `age`/`sops`, and rotated from the panel.
 
-**Onboarding sıralaması:**
-- Zorunlu: Anthropic API key
-- Önerilen: Groq + Gemini (free)
-- Opsiyonel: Cerebras + CloudFlare + Cohere
+**Onboarding order:**
+- Required: Anthropic API key
+- Recommended: Groq + Gemini (free)
+- Optional: Cerebras + CloudFlare + Cohere
 
-### 5. Feature Parity: **Tam Set + Fazlası**
+### 5. Feature Parity: **The Full Set, and More**
 
-SERVER'daki HER şey (75 MCP tool + 5 hook + 13 pipeline + RAG + judge + workflow + panel) + yeni eklentiler (multi-user auth opsiyonel, audit log).
+Everything the orchestration system already has (75 MCP tools + 5 hooks + 13 pipelines + RAG + judge + workflow + panel), plus new additions (optional multi-user auth, audit log).
 
-### 6. MVP: **Aksiyon-Odaklı, Bana Sorarak İlerle**
+### 6. Revenue: **One-time $299 + Optional Maintenance**
 
-Ön plan yok. Her konu başlığı için: (1) seçenekler sun (2) tradeoff (3) kullanıcı karar (4) tam yapı (5) rapor.
+- **$299 one-time** = a lifetime licence + 1 year of updates
+- **$49/year** optional maintenance (updates and support continue)
+- If it lapses: the version you have keeps working forever, but you get no new features
+- **No subscription** (a deliberate choice)
 
-### 7. İki Paralel Track
+### 7. Distribution Model: **Phased Dual Distribution**
 
-- **SERVER** (Automatia BCN üretim) — dokunulmuyor
-- **abs-server-product** (ürün) — temiz-oda
-- Oturum başlarken hangi track belirtilir
+- **Phase 1 (months 1-3):** self-host lifetime sales come first
+- **Phase 2 (months 3-6):** Managed Cloud beta at $79/month (3-5 customers)
+- **Phase 3 (month 6+):** Managed Cloud general availability
 
-### 8. Revenue: **One-time $299 + Opsiyonel Maintenance**
+### 8. Team Pack
 
-- **$299 one-time** = lifetime lisans + 1 yıl update
-- **$49/yıl** opsiyonel maintenance (update + destek devam)
-- Kesilince: eski sürüm sonsuza çalışır, yeni feature yok
-- **Subscription YOK** (kullanıcı tercihi)
+- 5 seats: $299 × 5 × 0.8 = **$1196** (20% off)
+- 10 seats: $299 × 10 × 0.7 = **$2093** (30% off)
+- 25+ seats: custom quote
 
-### 9. Dağıtım Modeli: **Aşamalı Dual Distribution**
+### 9. Free Tier: **None**
 
-- **Faz 1 (Ay 1-3):** Self-Host lifetime satış öncelik
-- **Faz 2 (Ay 3-6):** Managed Cloud beta $79/ay (3-5 müşteri)
-- **Faz 3 (Ay 6+):** Managed Cloud tam açılış
+- 14-day demo mode (full feature set)
+- When the demo ends, the system stops
+- Overseas companies: a private beta (free)
 
-### 10. Team Pack
+### 10. Payment: **Stripe Checkout (on the automatiabcn.com account)**
 
-- 5 seat: $299 × 5 × 0.8 = **$1196** (%20 indirim)
-- 10 seat: $299 × 10 × 0.7 = **$2093** (%30 indirim)
-- 25+ seat: custom quote
-
-### 11. Free Tier: **Yok**
-
-- 14 gün demo mode (full feature)
-- Demo biterse sistem durur
-- Yabancı firma: özel beta (ücretsiz)
-
-### 12. Ödeme: **Stripe Checkout (automatiabcn.com hesabına bağlı)**
-
-- Lemon Squeezy yerine direkt Stripe (MoR gerekmez, Automatia entity var)
-- Webhook → lisans key generator (JWT-imzalı, self-implement MVP)
+- Stripe directly rather than Lemon Squeezy (no merchant of record needed; the Automatia entity exists)
+- Webhook → licence key generator (JWT-signed, self-implemented for the MVP)
 
 ---
 
-## ARAŞTIRMALARA GÖRE TEKNİK KARARLAR (2026-04-23)
+## TECHNICAL DECISIONS FROM RESEARCH (2026-04-23)
 
-### 13. Minimum Sistem Gereksinimleri
+### 11. Minimum System Requirements
 
-- **2 vCPU / 4GB RAM / 20GB SSD disk**
-- GPU opsiyonel (yerel Ollama fallback için)
-- Ubuntu 22.04+ / Debian 12+ / Docker uyumlu herhangi Linux
+- **2 vCPU / 4 GB RAM / 20 GB SSD**
+- GPU optional (for the local Ollama fallback)
+- Ubuntu 22.04+ / Debian 12+ / any Docker-compatible Linux
 
-### 14. SSL + Domain (seçilebilir, zorunlu değil)
+### 12. SSL + Domain (a choice, not a requirement)
 
-**Setup wizard müşteriye iki seçenek sunar:**
-- **A) IP + port** — LAN içi, domain yok, HTTP (hızlı başlangıç)
-- **B) Kendi domain + HTTPS** — profesyonel, Caddy otomatik Let's Encrypt
-  - Müşteri DNS'de A kaydı ekler (örn. `abs.mycompany.com` → sunucu IP)
-  - Kurulumda `DOMAIN=abs.mycompany.com` verir
-  - Caddy 60 saniyede SSL hazırlar
+**The setup wizard offers two options:**
+- **A) IP + port** — LAN only, no domain, HTTP (fastest to start)
+- **B) Your own domain + HTTPS** — professional; Caddy handles Let's Encrypt automatically
+  - The customer adds an A record in DNS (e.g. `abs.mycompany.com` → server IP)
+  - They pass `DOMAIN=abs.mycompany.com` at install time
+  - Caddy has SSL ready in 60 seconds
 
-### 15. Demo Mode
+### 13. Demo Mode
 
-- 14 gün full feature
-- Panel'de geri sayım banner
-- Süre bitince: "Lisans süresi doldu, satın al" ekran — sistem çalışmaz
+- 14 days, full feature set
+- A countdown banner in the panel
+- When it expires: a "Your licence has expired, please buy" screen — the system stops working
 
-### 16. Maintenance Bitince Davranış
+### 14. What Happens When Maintenance Lapses
 
-- Son indirilen sürüm sonsuza çalışır
-- Yeni güncelleme kilitli ("Maintenance expired, renew for $49/year")
-- Yeni provider ekleme (örn. Groq v2) çalışmaz çünkü config güncellemesi gelmez
+- The last version you downloaded keeps working forever
+- New updates are locked ("Maintenance expired, renew for $49/year")
+- Adding a new provider (e.g. Groq v2) will not work, because the config updates no longer arrive
 
-### 17. Provider Down UI
+### 15. Provider Down UI
 
-- Panel'de **banner** (yeşil = OK, sarı = degraded, kırmızı = down)
-- Cascade otomatik fallback (sessiz)
-- Admin bildirimi: "Groq 15 dakikadır hata veriyor, fallback Cerebras"
+- A **banner** in the panel (green = OK, amber = degraded, red = down)
+- Automatic fallback down the provider chain (silent)
+- Admin notification: "Groq has been failing for 15 minutes, falling back to Cerebras"
 
-### 18. RAG Indexing UX
+### 16. RAG Indexing UX
 
-- Panel'de **"Projects"** sayfası
-- "Add Project" → path gir → otomatik index başlar
-- Progress bar + log (sembol count, file count)
-- Git hook opsiyonel (auto-reindex on commit)
+- A **"Projects"** page in the panel
+- "Add Project" → enter a path → indexing starts automatically
+- Progress bar + log (symbol count, file count)
+- Optional git hook (auto-reindex on commit)
 
-### 19. Update Mekanizması
+### 17. Update Mechanism
 
 - `docker-compose pull && docker-compose up -d`
-- Panel'de "Update available v1.x.y" notification
-- Tek tık otomatik update button (opsiyonel)
-- Breaking changes için manuel migration script
+- An "Update available v1.x.y" notification in the panel
+- An optional one-click automatic update button
+- A manual migration script for breaking changes
 
-### 20. Refund Policy
+### 18. Refund Policy
 
-- **14 gün no-questions-asked** iade
-- Stripe tek tık refund
-- Sonrasında: case-by-case (rare)
+- **14 days, no questions asked**
+- One-click refund in Stripe
+- After that: case by case (rare)
 
-### 21. Privacy Policy (Müşteriye Transparent)
+### 19. Privacy Policy (Transparent to the Customer)
 
-Kritik ifade:
-> "ABS, müşteri promptlarını ve kod parçalarını doğrudan Anthropic'e ve seçilen diğer LLM provider'lara iletir. Bu, Claude API kullanımının doğal bir parçasıdır. ABS sunucumuza kod veya prompt verisi GELMEZ — sadece lisans doğrulama sinyali alır. Müşteri, kendi Anthropic / Groq / Gemini vb. hesaplarının Terms of Service'ine tabidir."
-
----
-
-## OPERASYON KARARLARI (2026-04-23)
-
-### 22. ABS Central Watchdog — Bizim Sunucumuzda
-
-- `abs.automatiabcn.com/watchdog/` altında Python cron servis
-- Günlük 06:00 scan: provider pricing + changelog + status JSON + community
-- Değişiklik → Discord/email alert → bizim release hazırlığı
-- Hetzner $5-10/ay VPS yeterli
-
-### 23. Provider Config Update Channel
-
-- Bizim repo: `infra/provider-configs/` klasörü
-- Her release'de `*.yaml` dosyaları güncellenebilir
-- Müşteri update alınca yeni config geçerli
-- Kritik değişiklik (provider deprecated) → hotfix release + müşteri email
-
-### 24. 7-Katmanlı Koruma Mimarisi
-
-1. **Abstraction layer** (model aliases, `fast-reasoning` gibi isimler)
-2. **Circuit breaker** (5 hata → open, 60s sonra half-open)
-3. **Cascade fallback** (Groq → Cerebras → CF → Gemini → Anthropic)
-4. **Semantic cache** (5dk TTL, provider yavaş/down'da cache'ten dön)
-5. **Health monitor** (müşteri sunucusunda, 60s provider ping)
-6. **Central Watchdog** (bizim tarafta, günlük changelog scan)
-7. **Update channel** (release-based config güncelleme)
-
-Detay: `docs/operations.md`
+The key statement:
+> "ABS forwards customer prompts and code fragments directly to Anthropic and to the other LLM providers you select. This is inherent to using the Claude API. Code and prompt data never reach our server — it only receives a licence verification signal. The customer is bound by the terms of service of their own Anthropic / Groq / Gemini and other accounts."
 
 ---
 
-## ATLANAN / ERTELENMIŞ (şu an değil)
+## OPERATIONS DECISIONS (2026-04-23)
 
-- **Anthropic TOS derinlemesine legal review** — önemli ama şu an blocker değil (API key commercial terms = legal OK)
-- **Encryption AES-256 profile paketi** — E13.5 roadmap'te
-- **SOC 2 / ISO 27001** — 100+ müşteri sonrası
-- **Multi-language** (sadece TR/EN yeterli)
-- **Affiliate/referral program** — MVP sonrası
-- **DPA template** — Enterprise talep edince
-- **Public Kubernetes helm chart** — ileride
+### 20. ABS Central Watchdog — Runs on Our Server
+
+- A Python cron service under `abs.automatiabcn.com/watchdog/`
+- Daily 06:00 scan: provider pricing + changelog + status JSON + community
+- A change → Discord/email alert → we start preparing a release
+- A Hetzner VPS at $5-10/month is enough
+
+### 21. Provider Config Update Channel
+
+- Our repository: the `infra/provider-configs/` directory
+- The `*.yaml` files can be updated with every release
+- The new config takes effect when the customer takes an update
+- A critical change (a deprecated provider) → hotfix release + customer email
+
+### 22. The 7-Layer Protection Architecture
+
+1. **Abstraction layer** (model aliases such as `fast-reasoning`)
+2. **Circuit breaker** (5 errors → open, half-open after 60s)
+3. **Provider chain fallback** (Groq → Cerebras → CF → Gemini → Anthropic)
+4. **Semantic cache** (5 min TTL; answer from cache when a provider is slow or down)
+5. **Health monitor** (on the customer's server, a 60s provider ping)
+6. **Central Watchdog** (our side, a daily changelog scan)
+7. **Update channel** (release-based config updates)
+
+Detail: `docs/operations.md`
+
+---
+
+## SKIPPED / DEFERRED (not now)
+
+- **A deep legal review of the Anthropic TOS** — important, but not a blocker right now (commercial terms for API keys are legally fine)
+- **The AES-256 encryption profile package** — on the roadmap
+- **SOC 2 / ISO 27001** — after 100+ customers
+- **Multi-language** (TR/EN is enough for now)
+- **An affiliate/referral programme** — after the MVP
+- **A DPA template** — when an enterprise customer asks for it
+- **A public Kubernetes Helm chart** — later

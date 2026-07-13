@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Judge log + stats MCP tool'ları (009)."""
+"""Judge log and stats MCP tools."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ REGISTERED_TOOLS: List[str] = []
 @mcp_server.tool()
 @with_hooks("judge_stats")
 async def judge_stats(window_days: int = 7) -> str:
-    """Son N günün judgment ortalamaları + drift_signal + outcome_counts + top_files."""
+    """Judgment averages over the last N days: drift_signal, outcome_counts, top_files."""
     await tracker.bump("judge_stats")
     return json.dumps(aggregate(window_days=window_days), ensure_ascii=False, indent=2)
 
@@ -30,7 +30,7 @@ async def judge_stats(window_days: int = 7) -> str:
 @mcp_server.tool()
 @with_hooks("judge_recent")
 async def judge_recent(limit: int = 20) -> str:
-    """Son N judgment kaydı (id, ts, file, ast/llm/combined, outcome)."""
+    """The most recent N judgments (id, ts, file, ast/llm/combined, outcome)."""
     await tracker.bump("judge_recent")
     return json.dumps(read_recent(limit=limit), ensure_ascii=False, indent=2)
 
@@ -38,7 +38,7 @@ async def judge_recent(limit: int = 20) -> str:
 @mcp_server.tool()
 @with_hooks("judge_outcome")
 async def judge_outcome(judgment_id: str, outcome: str = "accept") -> str:
-    """Bir judgment'a outcome işaretle (accept|reject)."""
+    """Record the outcome of a judgment (accept|reject) — this is the training signal."""
     await tracker.bump("judge_outcome")
     ok = update_outcome(judgment_id, outcome)
     return json.dumps({"ok": ok, "judgment_id": judgment_id, "outcome": outcome})

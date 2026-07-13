@@ -3,10 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Batch B — 15 provider extras tool (ask_smart, ask_rerank, ask_aya, Granite, StarCoder,
-DeepSeek, CodeLlama, Gemma2, Llava, longcontext, OpenRouter x2, vLLM, reasoner).
+"""The specialist provider tools — one per model that is good at one thing.
 
-Hepsi cascade orchestrator kullanır; provider key yoksa `[HATA]` ile döner.
+All of them go through the cascade. A missing provider key is returned as an
+error string, never raised: an MCP tool must not throw at its client.
 """
 
 from __future__ import annotations
@@ -36,13 +36,13 @@ async def _call(
         )
         return resp.text or ""
     except ProviderError as exc:
-        return f"[HATA] {tool_name}: {exc.message}"
+        return f"[ERROR] {tool_name}: {exc.message}"
 
 
 @mcp_server.tool()
 @with_hooks("ask_smart")
 async def ask_smart(prompt: str) -> str:
-    """Akıllı router — gptoss-120b primary + CF + Cerebras fallback."""
+    """General-purpose route — gpt-oss-120b, falling back to CF then Cerebras."""
     return await _call(
         "ask_smart",
         prompt,
@@ -64,14 +64,14 @@ async def ask_rerank(prompt: str) -> str:
 @mcp_server.tool()
 @with_hooks("ask_aya")
 async def ask_aya(prompt: str) -> str:
-    """Aya 8B (Cohere) — Türkçe gramer + stil. Yerel Ollama üzerinden."""
+    """Aya 8B via local Ollama — grammar and style, strongest on Turkish."""
     return await _call("ask_aya", prompt, primary="ollama", model="aya:8b")
 
 
 @mcp_server.tool()
 @with_hooks("ask_granite")
 async def ask_granite(prompt: str) -> str:
-    """IBM Granite 3.1 8B — düşük hallucination fact-check."""
+    """IBM Granite 3.1 8B — fact-checking; low hallucination rate."""
     return await _call(
         "ask_granite", prompt, primary="ollama", model="granite3.1-dense:8b"
     )
@@ -80,7 +80,7 @@ async def ask_granite(prompt: str) -> str:
 @mcp_server.tool()
 @with_hooks("ask_granite_fast")
 async def ask_granite_fast(prompt: str) -> str:
-    """Granite 2B — mikro doğrulayıcı (<2s)."""
+    """Granite 2B — micro-verifier (<2s)."""
     return await _call(
         "ask_granite_fast", prompt, primary="ollama", model="granite3.1-dense:2b"
     )
@@ -89,7 +89,7 @@ async def ask_granite_fast(prompt: str) -> str:
 @mcp_server.tool()
 @with_hooks("ask_starcoder")
 async def ask_starcoder(prompt: str) -> str:
-    """StarCoder2 3B — FIM kod tamamlama + hızlı lint."""
+    """StarCoder2 3B — fill-in-the-middle completion and fast lint."""
     return await _call(
         "ask_starcoder", prompt, primary="ollama", model="starcoder2:3b"
     )
@@ -98,7 +98,7 @@ async def ask_starcoder(prompt: str) -> str:
 @mcp_server.tool()
 @with_hooks("ask_deepseek")
 async def ask_deepseek(prompt: str) -> str:
-    """DeepSeek Coder v2 16B — bug finder, satır bazlı review."""
+    """DeepSeek Coder v2 16B — bug finder; line-by-line review."""
     return await _call(
         "ask_deepseek", prompt, primary="ollama", model="deepseek-coder-v2:16b"
     )
@@ -107,7 +107,7 @@ async def ask_deepseek(prompt: str) -> str:
 @mcp_server.tool()
 @with_hooks("ask_codellama")
 async def ask_codellama(prompt: str) -> str:
-    """CodeLlama 7B — hafif kod + unit test üretici."""
+    """CodeLlama 7B — lightweight code and unit-test generation."""
     return await _call(
         "ask_codellama", prompt, primary="ollama", model="codellama:7b"
     )
@@ -116,14 +116,14 @@ async def ask_codellama(prompt: str) -> str:
 @mcp_server.tool()
 @with_hooks("ask_gemma2")
 async def ask_gemma2(prompt: str) -> str:
-    """Gemma 2 9B — factual, düşük hallucination."""
+    """Gemma 2 9B — factual answers; low hallucination rate."""
     return await _call("ask_gemma2", prompt, primary="ollama", model="gemma2:9b")
 
 
 @mcp_server.tool()
 @with_hooks("ask_llava")
 async def ask_llava(prompt: str) -> str:
-    """Llava 7B — yerel görsel anlama (multimodal)."""
+    """Llava 7B — local image understanding (multimodal)."""
     return await _call("ask_llava", prompt, primary="ollama", model="llava:7b")
 
 
@@ -166,7 +166,7 @@ async def ask_or_minimax(prompt: str) -> str:
 @mcp_server.tool()
 @with_hooks("ask_vllm")
 async def ask_vllm(prompt: str) -> str:
-    """vLLM cluster — self-host (ABS_VLLM_URL gerekli)."""
+    """vLLM cluster — self-hosted. Requires ABS_VLLM_URL."""
     return await _call("ask_vllm", prompt, primary="vllm", model="default")
 
 
@@ -182,20 +182,20 @@ async def ask_reasoner(prompt: str) -> str:
     )
 
 
-# 010 — MLX provider (Apple Silicon Neural Engine)
+# MLX — Apple Silicon Neural Engine
 
 
 @mcp_server.tool()
 @with_hooks("ask_mlx")
 async def ask_mlx(prompt: str) -> str:
-    """MLX Neural Engine — Apple Silicon (M4) llama3-8b ~0.3-1s."""
+    """MLX Neural Engine — llama3-8b on Apple Silicon, ~0.3-1s."""
     return await _call("ask_mlx", prompt, primary="mlx", model="llama3-8b")
 
 
 @mcp_server.tool()
 @with_hooks("ask_mlx_fast")
 async def ask_mlx_fast(prompt: str) -> str:
-    """MLX Fast — phi3-mini ultra hızlı sınıflandırma <0.5s."""
+    """MLX Fast — phi3-mini; classification in under 0.5s."""
     return await _call("ask_mlx_fast", prompt, primary="mlx", model="phi3-mini")
 
 

@@ -11,7 +11,7 @@ modul katmaninda yer alir; bu router musteri-temas eden 4 endpoint'i acar:
   GET  /v1/marketplace/plugins          → 5 reference plugin
   GET  /v1/marketplace/plugins/{id}     → tek plugin detayi (404 yoksa)
   POST /v1/marketplace/install          → tenant-scoped install (admin auth)
-  GET  /v1/marketplace/installed        → admin tenant icin yuklu plugin'ler
+  GET  /v1/marketplace/installed        → plugins installed for this organisation
 
 Veri kaynagi static katalog (5 plugin); install kayitlari /app/data/marketplace_installs.json.
 """
@@ -46,7 +46,7 @@ PLUGIN_CATALOG: List[Dict[str, Any]] = [
         "id": "slack-receiver",
         "name": "Slack Receiver",
         "version": "1.0.0",
-        "summary": "Slack mesajlarini ABS event-bus'a aktarir.",
+        "summary": "Brings your Slack messages into ABS.",
         "publisher": "automatiabcn",
         "cosign_signature": "MEUCIQDqv4Slack1.0.0demosigSHA256-aa11bb22cc33dd44",
         "sandbox": {
@@ -61,7 +61,7 @@ PLUGIN_CATALOG: List[Dict[str, Any]] = [
         "id": "gmail-archiver",
         "name": "Gmail Archiver",
         "version": "1.0.0",
-        "summary": "Gmail thread'lerini RAG indeksine ve sogan-store'a aktarir.",
+        "summary": "Indexes your Gmail threads so you can ask about them.",
         "publisher": "automatiabcn",
         "cosign_signature": "MEUCIQDgmail1.0.0demosigSHA256-bb22cc33dd44ee55",
         "sandbox": {
@@ -76,7 +76,7 @@ PLUGIN_CATALOG: List[Dict[str, Any]] = [
         "id": "linear-bridge",
         "name": "Linear Bridge",
         "version": "1.0.0",
-        "summary": "Linear issue'lari ABS task graph'ina baglar.",
+        "summary": "Connects your Linear issues to the work ABS tracks.",
         "publisher": "automatiabcn",
         "cosign_signature": "MEUCIQDlinear1.0.0demosigSHA256-cc33dd44ee55ff66",
         "sandbox": {
@@ -91,7 +91,7 @@ PLUGIN_CATALOG: List[Dict[str, Any]] = [
         "id": "notion-sync",
         "name": "Notion Sync",
         "version": "1.0.0",
-        "summary": "Notion sayfalarini RAG indeksine senkronize eder.",
+        "summary": "Keeps your Notion pages searchable from chat.",
         "publisher": "automatiabcn",
         "cosign_signature": "MEUCIQDnotion1.0.0demosigSHA256-dd44ee55ff6677aa",
         "sandbox": {
@@ -106,7 +106,7 @@ PLUGIN_CATALOG: List[Dict[str, Any]] = [
         "id": "postgres-mirror",
         "name": "Postgres Mirror",
         "version": "1.0.0",
-        "summary": "Postgres tablolarini ABS read-replica olarak yansitir.",
+        "summary": "Mirrors your Postgres tables, read-only.",
         "publisher": "automatiabcn",
         "cosign_signature": "MEUCIQDpgmirror1.0.0demosigSHA256-ee55ff6677aabb88",
         "sandbox": {

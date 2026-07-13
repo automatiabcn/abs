@@ -3,12 +3,12 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-021 — Two-step text2SQL: NL → structured plan → SQL gen.
+"""Two-step text2SQL: natural language → structured plan → SQL.
 
-Plan-first reduces hallucination by forcing the LLM to commit to an
-intent/entities/output shape BEFORE it writes SQL. Mock implementation
-synthesises a plan from `classify_route`-style hints; real backend will
-delegate to an LLM via the same `Text2SQL` dispatcher.
+Planning first cuts hallucination: the model must commit to an intent, the
+entities and the output shape before any SQL exists. The mock backend derives
+the plan from keyword hints; a real backend delegates it to an LLM through the
+same `Text2SQL` dispatcher.
 """
 
 from __future__ import annotations
@@ -24,12 +24,15 @@ logger = logging.getLogger(__name__)
 __all__ = ["QueryPlan", "TwoStepSQL", "build_plan"]
 
 
+# Intent hints matched against the user's own words, in English and Turkish.
+# Non-ASCII letters are escaped so the source stays ASCII; the values are what
+# users actually type and must not be reworded.
 _INTENT_HINTS = {
-    "count": ("kaç", "how many", "count", "adet"),
+    "count": ("ka\u00e7", "how many", "count", "adet"),
     "sum": ("toplam", "total", "sum", "ciro"),
     "average": ("ortalama", "average", "mean"),
-    "list": ("listele", "göster", "list", "show"),
-    "trend": ("trend", "geçen ay", "last month", "yıllık"),
+    "list": ("listele", "g\u00f6ster", "list", "show"),
+    "trend": ("trend", "ge\u00e7en ay", "last month", "y\u0131ll\u0131k"),
 }
 
 
@@ -64,10 +67,10 @@ def _detect_entities(question: str) -> list[str]:
     lowered = question.lower()
     entities: list[str] = []
     table_hints = {
-        "customers": ("müşteri", "customer"),
+        "customers": ("m\u00fc\u015fteri", "customer"),
         "invoices": ("fatura", "invoice"),
-        "products": ("ürün", "product"),
-        "orders": ("sipariş", "order"),
+        "products": ("\u00fcr\u00fcn", "product"),
+        "orders": ("sipari\u015f", "order"),
     }
     for table, hints in table_hints.items():
         if any(h in lowered for h in hints):
@@ -88,7 +91,7 @@ def build_plan(question: str) -> QueryPlan:
     else:
         output_columns = ["id", "*"]
     filters: list[str] = []
-    if "geçen ay" in question.lower() or "last month" in question.lower():
+    if "ge\u00e7en ay" in question.lower() or "last month" in question.lower():
         filters.append(
             "created_at >= date('now', 'start of month', '-1 month')"
             " AND created_at < date('now', 'start of month')"

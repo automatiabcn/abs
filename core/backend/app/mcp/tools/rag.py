@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""RAG MCP tool'ları (009): index, query, status, clear."""
+"""RAG MCP tools — index, query, status, clear."""
 
 from __future__ import annotations
 
@@ -77,7 +77,7 @@ async def rag_index(
     project: str = "default",
     chunk_strategy: str = "semantic",
 ) -> str:
-    """Bir dosya/dizini RAG index'ine ekle. chunk_strategy: 'semantic' | 'char'."""
+    """Add a file or directory to the RAG index. chunk_strategy: 'semantic' | 'char'."""
     await tracker.bump("rag_index")
     res = await _index_path(path, project=project, chunk_strategy=chunk_strategy)
     return json.dumps(res, ensure_ascii=False, indent=2)
@@ -90,10 +90,11 @@ async def rag_query(
     project_filter: Optional[str] = None,
     top_k: int = 5,
 ) -> str:
-    """Index'lenmiş chunk'larda anlam bazlı arama; en yakın top_k snippet döner.
+    """Semantic search over the indexed chunks; returns the top_k nearest snippets.
 
-    ABS_MCP_RAG_TENANT ayarlıysa panel'den yüklenen dökümanların (Qdrant) içinde,
-    değilse operatör Chroma bilgi tabanında arar.
+    Two stores, one tool: with ABS_MCP_RAG_TENANT set it searches the documents
+    uploaded through the panel (Qdrant); without it, the operator's local
+    knowledge base (Chroma).
     """
     await tracker.bump("rag_query")
     if settings.mcp_rag_tenant:
@@ -106,7 +107,7 @@ async def rag_query(
 @mcp_server.tool()
 @with_hooks("rag_status")
 async def rag_status() -> str:
-    """RAG koleksiyon ve disk kullanım özeti."""
+    """RAG collection summary and disk usage."""
     await tracker.bump("rag_status")
     return json.dumps(_status(), ensure_ascii=False, indent=2)
 
@@ -114,7 +115,7 @@ async def rag_status() -> str:
 @mcp_server.tool()
 @with_hooks("rag_clear")
 async def rag_clear(project: Optional[str] = None) -> str:
-    """Tüm koleksiyonu veya yalnızca bir project'in chunk'larını sil."""
+    """Delete the whole collection, or only the chunks of one project."""
     await tracker.bump("rag_clear")
     return json.dumps(_clear(project=project), ensure_ascii=False)
 

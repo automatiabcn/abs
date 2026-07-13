@@ -3,11 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-020 — ERP hybrid retrieval router (vector | sql | hybrid classify + merge).
+"""ERP hybrid retrieval router — classify a question as vector, sql, or both.
 
-Classifies an inbound question, routes to RAG (T-011), text2SQL (T-019), or both.
-Returns a unified `HybridAnswer` with provenance per source so downstream LLM
-synthesis can cite each.
+Routes to RAG, to text2SQL, or to both, and returns one `HybridAnswer` carrying
+per-source provenance so the synthesis step can cite what it used.
 """
 
 from __future__ import annotations
@@ -28,14 +27,17 @@ __all__ = [
 ]
 
 
+# Routing hints matched against the user's own words, in English and Turkish.
+# Non-ASCII letters are escaped so the source stays ASCII; the values are what
+# users actually type and must not be reworded.
 _SQL_HINTS = (
-    "ne kadar", "kaç", "toplam", "ortalama", "en çok", "geçen ay",
-    "kim", "hangi müşteri", "fatura", "sipariş", "ciro", "metric",
+    "ne kadar", "ka\u00e7", "toplam", "ortalama", "en \u00e7ok", "ge\u00e7en ay",
+    "kim", "hangi m\u00fc\u015fteri", "fatura", "sipari\u015f", "ciro", "metric",
     "how many", "average", "total", "sum", "top ", "last month",
     "revenue", "kpi",
 )
 _RAG_HINTS = (
-    "neden", "nasıl", "açıkla", "özetle", "bul", "öğren",
+    "neden", "nas\u0131l", "a\u00e7\u0131kla", "\u00f6zetle", "bul", "\u00f6\u011fren",
     "why", "how does", "explain", "summarize", "find", "search",
 )
 

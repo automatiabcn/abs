@@ -109,9 +109,9 @@ def compute_buying_signals(db: Session, tenant: str, limit: int = 6) -> dict:
     for ln in sorted(leads, key=lambda x: x.score, reverse=True):
         name = companies.get(ln.company_id, "—")
         if ln.intent == "high":
-            signals.append({"icon": "🔥", "label": "Yüksek niyet sinyali", "company": name})
+            signals.append({"icon": "🔥", "label": "High-intent signal", "company": name})
         elif ln.status == "engaged":
-            signals.append({"icon": "📈", "label": "Aktif etkileşim", "company": name})
+            signals.append({"icon": "📈", "label": "Active engagement", "company": name})
 
     for o in opps:
         created = o.created_at
@@ -120,12 +120,12 @@ def compute_buying_signals(db: Session, tenant: str, limit: int = 6) -> dict:
         if created >= cutoff:
             cur = _CURRENCY.get(o.currency, o.currency)
             amt = f" · {round(o.amount):,}{cur}".replace(",", ".") if o.amount else ""
-            signals.append({"icon": "🎯", "label": f"Yeni fırsat{amt}", "company": companies.get(o.company_id, "—")})
+            signals.append({"icon": "🎯", "label": f"New opportunity{amt}", "company": companies.get(o.company_id, "—")})
 
     for cid, cname in companies.items():
         company = db.get(Company, cid)
         if company and company.merged_count > 1:
-            signals.append({"icon": "↻", "label": f"Kayıt füzyonu ×{company.merged_count}", "company": cname})
+            signals.append({"icon": "↻", "label": f"Record fusion ×{company.merged_count}", "company": cname})
 
     signal_types = len({s["icon"] for s in signals})
     return {"signals": signals[:limit], "signal_types": signal_types}

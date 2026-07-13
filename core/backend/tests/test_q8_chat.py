@@ -84,7 +84,7 @@ def test_chat_create_session(auth_client):
 def test_chat_create_session_default_title(auth_client):
     r = auth_client.post("/v1/chat/sessions", json={})
     assert r.status_code == 201
-    assert r.json()["title"] == "Yeni sohbet"
+    assert r.json()["title"] == "New chat"
 
 
 def test_chat_rename_session(auth_client):

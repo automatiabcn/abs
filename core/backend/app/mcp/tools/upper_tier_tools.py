@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""030 Modul E — Upper-tier + auto-upgrade alias MCP tools.
+"""Upper-tier + auto-upgrade alias MCP tools.
 
   ask_cerebras_qwen     — Cerebras gpt-oss-120b
   ask_gemini_latest     — gemini-flash-latest (auto-upgrade alias)
@@ -36,7 +36,7 @@ async def _call(
         )
         return resp.text or ""
     except ProviderError as exc:
-        return f"[HATA] {tool_name}: {exc.message}"
+        return f"[ERROR] {tool_name}: {exc.message}"
 
 
 @mcp_server.tool()

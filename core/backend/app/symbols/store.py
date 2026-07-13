@@ -103,7 +103,7 @@ def search(
 
 
 def neighbors(name: str, depth: int = 1) -> Dict[str, Any]:
-    """BFS depth-N neighbors. Edge yon onemli degil (in+out birlestirilir)."""
+    """Neighbours within N hops. Direction is ignored — inbound and outbound edges are merged."""
     with _connect() as conn:
         sym = conn.execute(
             "SELECT * FROM symbols WHERE name = ? LIMIT 1", (name,)

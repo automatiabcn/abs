@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""024 Modul H — Detailed health endpoint.
+"""Detailed health endpoint.
 
 GET /v1/health/full — every dependency check (no live external API).
 Output:

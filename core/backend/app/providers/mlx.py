@@ -3,11 +3,11 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""MLX provider — Apple Silicon Neural Engine HTTP bridge (010).
+"""MLX provider — HTTP bridge to a local Apple Silicon Neural Engine server.
 
-SERVER quick.py::ask_mlx pattern. Bridge daemon ABS dışında çalışır
-(M4'te `mlx_lm.server` veya custom MLX server, default port 11436).
-ABS_MLX_URL boş ise non-transient ProviderError.
+The bridge daemon (e.g. `mlx_lm.server`, default port 11436) runs outside this
+process. With ABS_MLX_URL unset the provider fails non-transiently, so the
+cascade moves on instead of retrying a bridge that does not exist.
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ class MLXProvider(BaseProvider):
     ) -> ProviderResponse:
         if not settings.mlx_url:
             raise ProviderError(
-                "MLX_URL tanımlı değil — Apple Silicon Neural Engine bridge yok",
+                "MLX_URL is not configured — no Apple Silicon Neural Engine bridge",
                 provider=self.name,
                 transient=False,
             )
@@ -58,7 +58,7 @@ class MLXProvider(BaseProvider):
             ) from exc
         except httpx.HTTPError as exc:
             raise ProviderError(
-                f"MLX bağlantı: {exc}", provider=self.name, transient=True
+                f"MLX connection error: {exc}", provider=self.name, transient=True
             ) from exc
 
         elapsed_ms = int((time.monotonic() - start) * 1000)

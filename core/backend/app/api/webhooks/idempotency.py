@@ -3,12 +3,16 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""017 — Webhook idempotency guard: event_id bazlı tek-sefer-işleme.
+"""Webhook idempotency guard: process each `event.id` exactly once.
 
-Stripe ağ hatasında veya replay'de aynı `event.id`'yi tekrar gönderebilir.
-Handler önce `claim_event` çağırır:
-- INSERT başarılı → işle, sonunda `mark_processed`.
-- IntegrityError → DuplicateEventError raise; handler 200 + duplicate=True döner.
+Stripe re-sends the same `event.id` after a network failure or a replay, so a
+handler must claim the event before doing any work:
+- claim_event INSERTs the row → do the work, then mark_processed.
+- A unique-constraint violation means someone already claimed it, so
+  DuplicateEventError is raised and the handler answers 200 + duplicate=True.
+
+The claim is the DB unique index, not an in-process check, so it also holds
+across concurrent workers.
 """
 
 from __future__ import annotations
@@ -23,7 +27,7 @@ from app.db.models import WebhookEvent
 
 
 class DuplicateEventError(Exception):
-    """Aynı event_id daha önce işlendi — handler 200 + duplicate döner."""
+    """This event_id was already claimed. Handlers answer 200 + duplicate."""
 
     def __init__(self, event_id: str, license_jti: Optional[str] = None):
         self.event_id = event_id
@@ -32,11 +36,11 @@ class DuplicateEventError(Exception):
 
 
 def claim_event(db: Session, event_id: str, event_type: str) -> WebhookEvent:
-    """Event'i 'işleniyor' olarak claim et.
+    """Claim an event as "in progress".
 
-    INSERT dener; duplicate ise IntegrityError yakalar ve DuplicateEventError raise eder.
-    Returns: yeni WebhookEvent row (caller `processed_at` ve `license_jti`'yi
-    sonra set eder).
+    Raises DuplicateEventError if the row already exists. Returns the new
+    WebhookEvent row; the caller sets `processed_at` and `license_jti` once the
+    work is done.
     """
     row = WebhookEvent(event_id=event_id, event_type=event_type)
     try:
@@ -61,7 +65,7 @@ def mark_processed(
     license_jti: Optional[str] = None,
     error: Optional[str] = None,
 ) -> None:
-    """Claim edilmiş event'i tamamlandı olarak işaretle."""
+    """Mark a claimed event as finished. `error` is truncated to 512 chars."""
     row.processed_at = datetime.now(timezone.utc)
     row.license_jti = license_jti
     row.error = error[:512] if error else None

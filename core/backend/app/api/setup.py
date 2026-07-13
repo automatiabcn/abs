@@ -37,15 +37,13 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, model_validato
 
 from app.config import settings
 from app.licensing import verify_license
-from app.observability.audit import emit_event  # Q12-L23 sweep 4
-
-
+from app.observability.audit import emit_event
 def _persist_customer_audit(
     license_jti: str | None,
     action: str,
     detail: str | None = None,
 ) -> None:
-    """BUG-24 — best-effort persistence to CustomerAuditEntry.
+    """Best-effort persistence to CustomerAuditEntry.
 
     `emit_event` ships structured logs but never writes to the DB, which
     is why the /v1/admin/audit/recent UI was perpetually empty after the
@@ -88,7 +86,8 @@ def setup_state_path() -> Path:
     try:
         p.parent.mkdir(parents=True, exist_ok=True)
     except OSError:
-        # Read-only fs (orn. host'tan dev olarak modul import edildiginde) — sessizce gec
+        # Read-only filesystem (e.g. the module imported directly from the
+        # Host in dev) — skip silently rather than fail the request.
         pass
     return p
 
@@ -134,7 +133,7 @@ def _atomic_write_state(state: Dict[str, Any]) -> None:
     tmp.replace(target)
 
 
-# Q12-L22-001 — TOCTOU guard for setup wizard step endpoints.
+# TOCTOU guard for setup wizard step endpoints.
 #
 # Pre-fix: each step handler did `read_state → mutate → _atomic_write_state`
 # without serialization. Two concurrent admins (multi-worker uvicorn or
@@ -178,10 +177,11 @@ def _state_lock():
 
 
 def _persist_encrypted_secret(vault_key: str, value: str) -> bool:
-    """013 — Önce sops vault'a yaz; vault yoksa fallback olarak .env (dev/test).
+    """Writes to the sops vault, falling back to .env when no vault exists
+    (dev/test).
 
-    `vault_key` snake_case (örn. `anthropic_api_key`); .env fallback'ında
-    otomatik `ABS_<UPPER>` formatına çevrilir.
+    `vault_key` is snake_case (e.g. `anthropic_api_key`); the .env fallback
+    converts it to `ABS_<UPPER>`.
     """
     try:
         from app.vault.audit import log_event
@@ -207,7 +207,8 @@ def _persist_encrypted_secret(vault_key: str, value: str) -> bool:
 
 
 def _persist_env_var(key: str, value: str, env_path: Optional[str] = None) -> bool:
-    """Generic .env patcher. Dosya yoksa False (test/dev'de persist zorunlu degil)."""
+    """Generic .env patcher. Returns False when the file is absent; persistence
+    is not required in test/dev."""
     raw_path = env_path or settings.model_config.get("env_file") or ".env"
     env_file = Path(str(raw_path))
     if not env_file.is_file():
@@ -237,7 +238,7 @@ def _ensure_step(
     request: Optional[Request] = None,
     step_key: Optional[str] = None,
 ) -> None:
-    """Q12-L23 sweep 4 — emit audit event before raising 409.
+    """Emit audit event before raising 409.
 
     Operators need to know which wizard step a stalled install hung on
     *before* they look at logs. Pre-fix, both branches raised silently
@@ -297,7 +298,7 @@ def _emit_funnel_step(state: Dict[str, Any], step_key: str) -> None:
 
 
 def _advance(state: Dict[str, Any], step_key: str) -> None:
-    """Adimi tamamlanmis olarak isaretle ve current_step + 1 yap."""
+    """Mark the step complete and advance current_step by one."""
     if step_key not in state["completed_steps"]:
         state["completed_steps"].append(step_key)
     if state["current_step"] < 6:
@@ -308,7 +309,8 @@ def _advance(state: Dict[str, Any], step_key: str) -> None:
 # ---------- step bodies ----------------------------------------------------
 
 
-# CJ-005 — RFC 6761 special-use TLDs allowlist (intranet self-host icin).
+# RFC 6761 special-use TLDs, allowed so intranet self-host installs can use
+# an admin address that no public MX would accept.
 _RFC6761_LOCAL_TLDS = ("local", "test", "example", "invalid", "localhost")
 _LOCAL_EMAIL_RE = re.compile(
     r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.(" + "|".join(_RFC6761_LOCAL_TLDS) + r")$"
@@ -322,12 +324,12 @@ class AdminBody(BaseModel):
     @field_validator("email")
     @classmethod
     def _validate_email(cls, value: str) -> str:
-        # CJ-005 — .local / .test / .example / .invalid / .localhost RFC 6761
-        # special-use TLDs setup'ta gecerli; .local intranet deployment icin
-        # yaygin (örn. admin@demo-acme.local).
+        # RFC 6761 special-use TLDs (.local / .test / .example / .invalid /
+        # .localhost) are accepted during setup; .local is common on intranet
+        # Deployments.
         if _LOCAL_EMAIL_RE.match(value):
             return value
-        # diger her sey icin standart EmailStr dogrulamasi
+        # Everything else goes through standard EmailStr validation.
         from pydantic import TypeAdapter
 
         return TypeAdapter(EmailStr).validate_python(value)
@@ -347,9 +349,9 @@ _DOMAIN_RE = re.compile(r"^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
 
 class AnthropicBody(BaseModel):
-    """CJ-004 — Anthropic key opsiyonel: free-tier (skip_paid_providers=True)
+    """Anthropic key opsiyonel: free-tier (skip_paid_providers=True)
     musterilerin Anthropic API key'i olmadan setup'i tamamlamasina izin verir.
-    Paid-tier akisinda key zorunlu kalir.
+    The key stays mandatory on the paid tier.
     """
 
     anthropic_api_key: Optional[str] = Field(default=None, min_length=8)
@@ -358,7 +360,7 @@ class AnthropicBody(BaseModel):
     @model_validator(mode="after")
     def _validate_payload(self) -> "AnthropicBody":
         if self.skip_paid_providers:
-            # Free-tier: Anthropic key gonderilse bile yok sayilir.
+            # Free tier: an Anthropic key is ignored even if one is sent.
             self.anthropic_api_key = None
             return self
         if not self.anthropic_api_key:
@@ -389,17 +391,17 @@ class ProvidersBody(BaseModel):
 # never falsely rejected. The step-6 live ping remains the source of truth.
 _PROVIDER_KEY_RULES: Dict[str, "tuple[re.Pattern[str], str]"] = {
     "groq_api_key": (re.compile(r"^gsk_[A-Za-z0-9]{6,}$"),
-                     "Groq anahtarları 'gsk_' ile başlar"),
+                     "Groq keys start with 'gsk_'"),
     "gemini_api_key": (re.compile(r"^AIza[0-9A-Za-z_\-]{10,}$"),
-                       "Google/Gemini anahtarları 'AIza' ile başlar"),
+                       "Google/Gemini keys start with 'AIza'"),
     "cerebras_api_key": (re.compile(r"^(csk-)?[A-Za-z0-9_\-]{16,}$"),
-                         "Cerebras anahtarı geçersiz görünüyor"),
+                         "This does not look like a Cerebras key"),
     "cohere_api_key": (re.compile(r"^[A-Za-z0-9_\-]{16,}$"),
-                       "Cohere anahtarı 16+ url-güvenli karakter olmalı"),
+                       "Cohere keys are 16+ URL-safe characters"),
     "cf_account_id": (re.compile(r"^[0-9a-fA-F]{32}$"),
-                      "Cloudflare hesap ID'si 32 hex karakterdir"),
+                      "A Cloudflare account ID is 32 hex characters"),
     "cf_api_token": (re.compile(r"^[A-Za-z0-9_\-]{20,}$"),
-                     "Cloudflare API token'ı geçersiz görünüyor"),
+                     "This does not look like a Cloudflare API token"),
 }
 
 
@@ -411,7 +413,7 @@ async def get_status() -> Dict[str, Any]:
     return read_state()
 
 
-# 023 — Setup wizard language picker (browser auto-detect override)
+# Setup wizard language picker (overrides browser auto-detect)
 class SetupLangBody(BaseModel):
     lang: str  # en|tr|es
 
@@ -427,7 +429,7 @@ async def set_setup_lang(body: SetupLangBody, request: Request) -> Dict[str, Any
             status_code=400,
         )
         raise HTTPException(status_code=400, detail="Unsupported language")
-    with _state_lock():  # Q12-L22-001
+    with _state_lock():
         state = read_state()
         state["lang"] = body.lang
         _atomic_write_state(state)
@@ -477,7 +479,7 @@ def _assert_no_existing_admin(request: Request) -> None:
 
 @router.post("/step/admin", status_code=status.HTTP_200_OK)
 async def step_admin(body: AdminBody, request: Request) -> Dict[str, Any]:
-    with _state_lock():  # Q12-L22-001
+    with _state_lock():
         state = read_state()
         _assert_no_existing_admin(request)
         _ensure_step(state, 1, request, "admin")
@@ -507,7 +509,7 @@ async def step_admin(body: AdminBody, request: Request) -> Dict[str, Any]:
 
 @router.post("/step/license", status_code=status.HTTP_200_OK)
 async def step_license(body: LicenseBody, request: Request) -> Dict[str, Any]:
-    with _state_lock():  # Q12-L22-001
+    with _state_lock():
         state = read_state()
         _ensure_step(state, 2, request, "license")
         try:
@@ -522,7 +524,7 @@ async def step_license(body: LicenseBody, request: Request) -> Dict[str, Any]:
                 error_class="HTTPException",
             )
             raise HTTPException(
-                status_code=400, detail=f"Lisans gecersiz: {exc.detail}"
+                status_code=400, detail=f"Invalid license: {exc.detail}"
             ) from exc
 
         settings.license_key = body.license_key
@@ -551,7 +553,7 @@ async def step_license(body: LicenseBody, request: Request) -> Dict[str, Any]:
 
 @router.post("/step/domain", status_code=status.HTTP_200_OK)
 async def step_domain(body: DomainBody, request: Request) -> Dict[str, Any]:
-    with _state_lock():  # Q12-L22-001
+    with _state_lock():
         state = read_state()
         _ensure_step(state, 3, request, "domain")
         if body.mode == "domain":
@@ -587,24 +589,25 @@ async def step_domain(body: DomainBody, request: Request) -> Dict[str, Any]:
 
 @router.post("/step/anthropic", status_code=status.HTTP_200_OK)
 async def step_anthropic(body: AnthropicBody, request: Request) -> Dict[str, Any]:
-    with _state_lock():  # Q12-L22-001
+    with _state_lock():
         state = read_state()
         _ensure_step(state, 4, request, "anthropic")
         if body.skip_paid_providers:
-            # CJ-004 — free-tier akis: Anthropic atla, paid_skipped flag set.
+            # Free-tier flow: skip Anthropic, set the paid_skipped flag.
             state["data"]["anthropic_configured"] = False
             state["data"]["paid_skipped"] = True
         else:
-            # model_validator zaten format/zorunluluk dogruladi; burada sadece persist.
+            # Model_validator already checked format and required fields;
+            # This only persists.
             assert body.anthropic_api_key is not None  # for type-checker
             settings.anthropic_api_key = body.anthropic_api_key
             _persist_encrypted_secret("anthropic_api_key", body.anthropic_api_key)
-            # BUG-15 — vault stores the secret but pydantic Settings only re-reads
+            # Vault stores the secret but pydantic Settings only re-reads
             # .env at boot, so an explicit env-var write is required for a clean
             # restart to surface the key. Vault path is the encrypted-at-rest
             # source of truth; .env is the boot-loader.
             _persist_env_var("ABS_ANTHROPIC_API_KEY", body.anthropic_api_key)
-            # BUG-18 — Settings.anthropic_enabled defaults to False so that an
+            # Settings.anthropic_enabled defaults to False so that an
             # operator who hasn't configured a key never silently calls the
             # paid provider. When the wizard accepts a valid key we must flip
             # the flag, otherwise the cascade router skips Anthropic forever.
@@ -635,7 +638,7 @@ async def step_anthropic(body: AnthropicBody, request: Request) -> Dict[str, Any
 
 @router.post("/step/providers", status_code=status.HTTP_200_OK)
 async def step_providers(body: ProvidersBody, request: Request) -> Dict[str, Any]:
-    with _state_lock():  # Q12-L22-001
+    with _state_lock():
         state = read_state()
         _ensure_step(state, 5, request, "providers")
         configured: list[str] = []
@@ -676,7 +679,7 @@ async def step_providers(body: ProvidersBody, request: Request) -> Dict[str, Any
             if value:
                 setattr(settings, field_name, value)
                 _persist_encrypted_secret(field_name, value)
-                # BUG-15 — same reason as the Anthropic step: pydantic Settings
+                # Same reason as the Anthropic step: pydantic Settings
                 # reads .env once at boot, so the vault write alone is not
                 # enough for the cascade router to pick up new keys after a
                 # container restart.
@@ -753,7 +756,7 @@ async def _run_provider_tests() -> Dict[str, Any]:
 
 @router.post("/step/test", status_code=status.HTTP_200_OK)
 async def step_test(request: Request) -> Dict[str, Any]:
-    with _state_lock():  # Q12-L22-001
+    with _state_lock():
         state = read_state()
         _ensure_step(state, 6, request, "test")
         test_results = await _run_provider_tests()
@@ -790,7 +793,9 @@ async def reset_setup(request: Request) -> Dict[str, Any]:
             status_code=403,
             provider=settings.env or "unknown",
         )
-        raise HTTPException(status_code=403, detail="Reset sadece dev ortaminda mumkun")
+        raise HTTPException(
+            status_code=403, detail="Reset is only permitted in a dev environment"
+        )
     p = setup_state_path()
     cred = admin_credentials_path()
     if p.is_file():

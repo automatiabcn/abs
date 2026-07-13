@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""032 Modul I — `admin_overview` MCP tool.
+"""`admin_overview` MCP tool.
 
 MCP wrapper around the dashboard endpoint. Reads local data only — no live
 external API calls. Intended for operator-side Claude Code usage.

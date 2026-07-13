@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""MCP system_status tool — lisans + provider + cache snapshot."""
+"""The system_status MCP tool — license, providers, cache, tool usage."""
 
 from __future__ import annotations
 
@@ -16,7 +16,10 @@ from app.mcp.tracking import tracker
 
 @mcp_server.tool()
 async def system_status() -> dict:
-    """ABS sistem durumu — lisans, provider breaker state, cache, tool kullanımı."""
+    """System status: license, provider circuit-breaker state, cache, tool usage.
+
+    `configured` reports whether a key is present, never the key itself.
+    """
     await tracker.bump("system_status")
 
     configured = {

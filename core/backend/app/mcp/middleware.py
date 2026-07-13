@@ -3,10 +3,11 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""MCP middleware — Mod B (hooks in-process).
+"""MCP middleware — hooks run in-process, in the same call as the tool.
 
-Her MCP tool call öncesinde dispatcher.run() çağırır. Hook nudge varsa
-tool yanıtının sonuna "\n\n[HOOK] …" olarak eklenir.
+Hooks dispatch before the tool body; any nudge they produce is appended to the
+tool's own reply as a trailing "[HOOK]" block, because MCP gives us no separate
+channel to hand the client out-of-band advice.
 """
 
 from __future__ import annotations
@@ -31,10 +32,10 @@ _GATE_ERROR_MESSAGE = (
 
 
 def _extract_input_for_hooks(tool_name: str, args: tuple, kwargs: dict) -> dict:
-    """MCP tool argümanlarını hook `tool_input` formatına dönüştür.
+    """Map MCP tool arguments onto the hook `tool_input` shape.
 
-    Pipeline/basic provider tool'ları `prompt` veya `code`/`text` parametresi alır.
-    Bash/Write/Edit olmadığı için tool_input="prompt" yeterli.
+    Every tool on this surface takes its payload as `prompt` / `text` / `code`;
+    there is no Bash/Write/Edit tool here, so hooks only ever need a prompt.
     """
     if args:
         prompt_val = args[0]
@@ -44,14 +45,15 @@ def _extract_input_for_hooks(tool_name: str, args: tuple, kwargs: dict) -> dict:
 
 
 def _maybe_trigger_first_success(tool_name: str) -> None:
-    """019 — Aktif lisans için ilk MCP tool çağrısında first_success email schedule.
+    """Schedule the onboarding "first success" email on the first tool call.
 
-    Idempotent: License.first_tool_call_at NOT NULL ise no-op.
+    Idempotent: a non-NULL License.first_tool_call_at makes this a no-op, so the
+    email is queued once per license no matter how often tools are called.
     """
     from datetime import datetime, timezone
 
     if not settings.license_key:
-        return  # demo modda lisans yok, skip
+        return  # demo install — no license row to mark
 
     try:
         from app.licensing import verify_license
@@ -93,23 +95,21 @@ def _maybe_trigger_first_success(tool_name: str) -> None:
 
 
 def with_hooks(tool_name: str) -> Callable:
-    """Decorator — MCP tool fonksiyonunu hooks ile sar.
+    """Decorator — wrap an MCP tool with the license gate and hook dispatch.
 
-    Kullanım (tools modüllerinde opsiyonel):
         @mcp_server.tool()
         @with_hooks("ask_gptoss")
         async def ask_gptoss(prompt: str) -> str:
             ...
-    Mevcut tool'ları değiştirmeden middleware runtime tarafında hooks dispatch
-    ile ek context eklemek için alternatif: HTTP middleware (MCP üstünde değil,
-    uygulama seviyesinde). FastMCP 1.2 araç-seviyesi middleware'i henüz sabit
-    değil; biz dekoratör yöntemini sunuyoruz.
+
+    FastMCP exposes no stable tool-level middleware API, so the decorator is the
+    only place these run per call. Applying it is optional per tool.
     """
 
     def decorator(fn: Callable) -> Callable:
         @wraps(fn)
         async def wrapper(*args: Any, **kwargs: Any) -> str:
-            # 011 — license/demo gate (mcp_require_license=True olduğunda devreye girer)
+            # License/demo gate — only armed when the operator opts in.
             if settings.mcp_require_license:
                 try:
                     from app.mcp.gate import _BLOCK_MESSAGE, _gate_status
@@ -139,8 +139,8 @@ def with_hooks(tool_name: str) -> Callable:
 
             result_text = await fn(*args, **kwargs)
 
-            # 019 — first_success trigger: her başarılı MCP tool çağrısında
-            # License.first_tool_call_at IS NULL ise bir kez işaretle ve email schedule.
+            # Onboarding milestone: only a call that actually returned counts as
+            # the customer's first success, so this runs after the tool body.
             try:
                 _maybe_trigger_first_success(tool_name)
             except Exception as exc:

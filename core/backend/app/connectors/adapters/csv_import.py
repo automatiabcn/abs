@@ -3,12 +3,12 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""CSV / JSON import adapter — the first REAL connector (Stage A).
+"""CSV / JSON import adapter.
 
-No external auth: the tenant uploads a CSV/JSON of their companies/leads and
-this imports them into the growth tables, so the data really flows into Lead
-Intelligence / Context Graph / Dashboard. Flexible column mapping (TR + EN
-header aliases). Dedup by company name (case-insensitive) within the tenant.
+Needs no external auth: the tenant uploads a CSV/JSON of companies and leads and
+it lands in the growth tables. Column mapping is alias-based and accepts both
+English and Turkish headers. Companies are deduplicated by name
+(case-insensitive) within the tenant, including within a single upload.
 """
 
 from __future__ import annotations
@@ -24,13 +24,14 @@ from app.connectors.adapters.base import ConnectorAdapter, CredentialField, Sync
 from app.db.growth_models import Company, Contact, Lead
 from app.db.session import get_engine
 
-# header alias → canonical field
+# Incoming header (lowercased) → canonical field. Both English and Turkish
+# headers are accepted; these are matched against real uploads, not display text.
 _ALIASES = {
-    "company": "company", "firma": "company", "name": "company", "şirket": "company", "sirket": "company",
-    "sector": "sector", "sektör": "sector", "sektor": "sector", "industry": "sector",
+    "company": "company", "firma": "company", "name": "company", "\u015firket": "company", "sirket": "company",
+    "sector": "sector", "sekt\u00f6r": "sector", "sektor": "sector", "industry": "sector",
     "vkn": "vkn", "taxid": "vkn", "tax_id": "vkn",
     "domain": "domain", "website": "domain", "web": "domain",
-    "contact": "contact_name", "contact_name": "contact_name", "yetkili": "contact_name", "kişi": "contact_name",
+    "contact": "contact_name", "contact_name": "contact_name", "yetkili": "contact_name", "ki\u015fi": "contact_name",
     "email": "contact_email", "contact_email": "contact_email", "eposta": "contact_email", "e-posta": "contact_email",
     "role": "contact_role", "contact_role": "contact_role", "rol": "contact_role", "title": "contact_role",
     "score": "score", "skor": "score",
@@ -87,11 +88,11 @@ def _to_score(v: str) -> float:
 
 def _intent(v: str, score: float) -> str:
     v = _norm(v)
-    if v in ("high", "yüksek", "yuksek"):
+    if v in ("high", "y\u00fcksek", "yuksek"):
         return "high"
     if v in ("medium", "orta"):
         return "medium"
-    if v in ("watching", "izleniyor", "low", "düşük"):
+    if v in ("watching", "izleniyor", "low", "d\u00fc\u015f\u00fck"):
         return "watching"
     return "high" if score >= 0.75 else "medium" if score >= 0.5 else "watching"
 
@@ -100,25 +101,25 @@ class CsvImportAdapter(ConnectorAdapter):
     connector_id = "csv_import"
     auth_kind = "file"
     credential_fields = [
-        CredentialField(key="data", label="CSV / JSON içeriği", type="file"),
-        CredentialField(key="format", label="Biçim (csv|json)", type="text", required=False),
+        CredentialField(key="data", label="CSV / JSON content", type="file"),
+        CredentialField(key="format", label="Format (csv|json)", type="text", required=False),
     ]
 
     async def test_connection(self, creds: dict) -> tuple[bool, str]:
         try:
             rows = _parse_rows(creds.get("data", ""), creds.get("format", ""))
         except Exception as exc:  # malformed file
-            return False, f"ayrıştırılamadı: {type(exc).__name__}: {str(exc)[:120]}"
+            return False, f"could not parse: {type(exc).__name__}: {str(exc)[:120]}"
         if not rows:
-            return False, "geçerli satır yok (en az 'company/firma' sütunu gerekli)"
-        return True, f"{len(rows)} satır geçerli"
+            return False, "no valid rows (a 'company' column is required)"
+        return True, f"{len(rows)} valid rows"
 
     async def sync(self, tenant_slug: str, creds: dict) -> SyncResult:
         res = SyncResult()
         try:
             rows = _parse_rows(creds.get("data", ""), creds.get("format", ""))
         except Exception as exc:
-            res.error = f"ayrıştırılamadı: {str(exc)[:160]}"
+            res.error = f"could not parse: {str(exc)[:160]}"
             return res
         with Session(get_engine()) as db:
             # Build the case-insensitive name→Company index ONCE (not per row) and

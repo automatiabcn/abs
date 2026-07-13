@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q8.5 finalize / Sprint 2B BUG-36 — Admin user + invite management.
+"""Admin user + invite management.
 
 GET    /v1/admin/users                    — list users for current tenant
 POST   /v1/admin/users/invite             — create invite + magic-link email
@@ -37,7 +37,7 @@ def _iso(dt: Optional[datetime]) -> Optional[str]:
 
 
 def _resolve_tenant(admin: dict) -> str:
-    """Sprint 2B BUG-36 — admin invite is tenant-scoped. Reuse the same
+    """Admin invites are tenant-scoped. Reuse the same
     resolution chain marketplace already ships so bootstrap admins
     aren't silently bound to ``"default"``.
     """
@@ -126,7 +126,7 @@ async def list_users(admin: dict = Depends(admin_required)) -> dict:
     return {"users": rows, "total": len(rows)}
 
 
-# ---------- Sprint 2B BUG-36 — invite flow ---------------------------------
+# ---------- invite flow -----------------------------------------------------
 
 
 class InviteBody(BaseModel):
@@ -276,8 +276,9 @@ async def create_invite(
         # the HMAC digest is stored), so this is the one chance to copy it.
         resp["magic_url"] = magic_url
         resp["activation_note"] = (
-            "SMTP yapılandırılmadığı için davet e-postası gönderilmedi. "
-            "Bu aktivasyon bağlantısını kullanıcıya elle iletin (24 saat geçerli)."
+            "No invite email was sent because SMTP is not configured. "
+            "Pass this activation link to the user yourself; it is valid for "
+            "24 hours."
         )
     return resp
 
@@ -384,8 +385,8 @@ async def update_user(
                 409,
                 {
                     "error": "last_admin_protected",
-                    "detail": "Son aktif admin'in yetkisi alınamaz veya iptal edilemez. "
-                    "Önce başka bir kullanıcıyı admin yapın.",
+                    "detail": "The last active admin cannot be demoted or revoked. "
+                    "Promote another user to admin first.",
                 },
             )
 

@@ -174,7 +174,7 @@ class VerdaccioSource:
 
 
 class PluginRegistry:
-    """Façade over multiple sources: discover, resolve, fetch, update-check."""
+    """Facade over multiple sources: discover, resolve, fetch, update-check."""
 
     def __init__(
         self,

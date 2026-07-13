@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""028 Modul G — Rate limiting via slowapi.
+"""Rate limiting via slowapi.
 
 Default in-memory (single-instance). Multi-instance deployments should set
 `ABS_RATE_LIMIT_STORAGE_URI` to a Redis URI (e.g. `redis://host:6379/0`).

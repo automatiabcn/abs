@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""010 — Judge persona live training MCP tools (3 tool)."""
+"""Judge persona live-training MCP tools — status, train, reset."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ REGISTERED_TOOLS: List[str] = []
 @mcp_server.tool()
 @with_hooks("judge_persona_status")
 async def judge_persona_status() -> str:
-    """Mevcut persona threshold'ları + son training meta + history boyutu."""
+    """Current persona thresholds, last training run, and history size."""
     await tracker.bump("judge_persona_status")
     return json.dumps(persona_status(), ensure_ascii=False, indent=2)
 
@@ -29,7 +29,8 @@ async def judge_persona_status() -> str:
 @mcp_server.tool()
 @with_hooks("judge_persona_train")
 async def judge_persona_train(min_samples: int = 10) -> str:
-    """judge_log outcome'larından persona dynamic adjust. min_samples altında 'insufficient_data'."""
+    """Retune the persona from recorded judge outcomes. Below min_samples it
+    refuses with 'insufficient_data' rather than fitting to noise."""
     await tracker.bump("judge_persona_train")
     return json.dumps(train_persona(min_samples=min_samples), ensure_ascii=False, indent=2)
 
@@ -37,7 +38,8 @@ async def judge_persona_train(min_samples: int = 10) -> str:
 @mcp_server.tool()
 @with_hooks("judge_persona_reset")
 async def judge_persona_reset() -> str:
-    """Persona'yı DEFAULT_PERSONA'ya geri al (history dosyası korunur)."""
+    """Reset the persona to its defaults. The outcome history is kept, so a
+    later train() can rebuild from the same evidence."""
     await tracker.bump("judge_persona_reset")
     return json.dumps(reset_persona(), ensure_ascii=False, indent=2)
 

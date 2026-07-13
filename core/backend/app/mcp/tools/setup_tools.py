@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""012 — Setup wizard durum sorgulama MCP tool."""
+"""MCP tool for reading the setup wizard's current state."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ REGISTERED_TOOLS: List[str] = []
 @mcp_server.tool()
 @with_hooks("setup_status")
 async def setup_status() -> str:
-    """Müşteri kurulum wizard'ının mevcut durumu — JSON döner."""
+    """Current state of the install wizard, as JSON."""
     await tracker.bump("setup_status")
     from app.api.setup import read_state
 

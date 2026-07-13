@@ -3,12 +3,13 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""011 — Demo mode: kurulumdan sonra 14 gün full feature.
+"""Demo mode — every feature unlocked for 14 days after install.
 
-Demo state file: {data_dir}/demo_state.json
+State lives in {data_dir}/demo_state.json:
   {"started_at": <unix ts>, "expires_at": <unix ts>, "duration_days": 14}
 
-Lisans set edilince (`settings.license_key`) demo bypass — `is_active()` False döner.
+Once a real license key is configured the demo yields: `is_active()` is False
+even inside the window.
 """
 
 from __future__ import annotations
@@ -43,7 +44,8 @@ def _read_state() -> Optional[Dict]:
 
 
 def start_demo() -> Dict:
-    """Demo zaten başlatılmadıysa başlat. Idempotent — mevcut state aynen döner."""
+    """Start the demo window. Idempotent — an existing state is returned as-is,
+    so the clock cannot be reset by calling again."""
     existing = _read_state()
     if existing:
         return existing
@@ -84,7 +86,7 @@ def status() -> Dict:
 
 
 def is_active() -> bool:
-    """Lisans yoksa demo aktif mi?"""
+    """With no licence, is the demo period still running?"""
     if settings.license_key:
         return False
     return status()["active"]

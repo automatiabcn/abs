@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-019 — Text2SQL with safety guard-rails (mock + Vanna + Cortex backends)."""
+"""Text2SQL with safety guard-rails (mock, Vanna and Cortex backends)."""
 
 from __future__ import annotations
 
@@ -75,7 +75,7 @@ class _MockBackend:
 
     def generate(self, question: str) -> tuple[str, str, float]:
         q = question.lower()
-        if "müşteri" in q or "customer" in q:
+        if "m\u00fc\u015fteri" in q or "customer" in q:
             return (
                 "SELECT id, name, email FROM customers WHERE active = 1 LIMIT 50",
                 "mock match: customer",
@@ -88,13 +88,13 @@ class _MockBackend:
                 "mock match: invoice",
                 0.6,
             )
-        if "ürün" in q or "product" in q:
+        if "\u00fcr\u00fcn" in q or "product" in q:
             return (
                 "SELECT id, name, price FROM products WHERE archived_at IS NULL LIMIT 50",
                 "mock match: product",
                 0.6,
             )
-        if "sipariş" in q or "order" in q:
+        if "sipari\u015f" in q or "order" in q:
             return (
                 "SELECT id, customer_id, total, created_at FROM orders "
                 "ORDER BY created_at DESC LIMIT 50",

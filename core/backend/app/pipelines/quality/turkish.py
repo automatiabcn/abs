@@ -64,14 +64,15 @@ class QualTrPipeline(BasePipeline):
                 final_response="",
                 total_elapsed_ms=int((time.monotonic() - total_start) * 1000),
                 prompt=prompt,
-                error="Türkçe üretim başarısız",
+                error="Turkish generation failed",
                 workflow_trace_id=wf.trace_id,
             )
         _, draft = best
 
         review_prompt = (
-            "Bu Türkçe metni kontrol et. Gramer, akıcılık, tutarlılık. "
-            "Sorunları listele veya 'TAMAM' de:\n\n" + draft.text[:4000]
+            "Check this Turkish text for grammar, fluency and consistency. "
+            "List the problems, or reply 'TAMAM' if there are none:\n\n"
+            + draft.text[:4000]
         )
         review_step, review = await timed_step(
             "review", ollama.call(review_prompt, model="aya:8b"), model_hint="aya:8b"
@@ -84,10 +85,10 @@ class QualTrPipeline(BasePipeline):
             rt = review.text.upper()
             if "TAMAM" not in rt and "OK" not in rt and len(rt) > 10:
                 polish_prompt = (
-                    "Bu Türkçe metni iyileştir. Sorunlar:\n"
+                    "Improve this Turkish text. Problems found:\n"
                     f"{review.text[:1500]}\n\n"
                     f"Orijinal metin:\n{draft.text[:6000]}\n\n"
-                    "Düzeltilmiş metni döndür."
+                    "Return the corrected Turkish text."
                 )
                 polish_step, polish = await timed_step(
                     "polish",

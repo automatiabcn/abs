@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q8 / Phase A — `/v1/chat/*` chat UI backend.
+"""`/v1/chat/*` chat UI backend.
 
 Streams SSE responses from the cascade router (mock or real providers),
 persists session + messages, and exposes session CRUD for the panel
@@ -67,7 +67,7 @@ ChatRole = Literal["user", "assistant", "system", "tool"]
 
 
 class ChatMessageIn(BaseModel):
-    # Q11-L13-001/002: cascade prompt allows 1..8000 chars. Mirror those
+    # 001/002: cascade prompt allows 1..8000 chars. Mirror those
     # bounds at the chat input so empty / oversized payloads surface as
     # 422 validation errors instead of 500ing on the cascade layer.
     role: ChatRole
@@ -75,7 +75,7 @@ class ChatMessageIn(BaseModel):
 
 
 class ChatCompletionsRequest(BaseModel):
-    # Q12-L25-003 — pre-fix `messages` was unbounded. Attacker could POST
+    # Pre-fix `messages` was unbounded. Attacker could POST
     # 10k messages × 8000 chars (= 80 MB) and OOM the JSON+Pydantic parse
     # before any handler logic ran. Cap mirrors the OpenAI/Anthropic
     # message-window practical max (claude.ai persists ≈100 turns + system
@@ -83,12 +83,12 @@ class ChatCompletionsRequest(BaseModel):
     #
     # NOTE: no `min_length` — the empty-list rejection is owned by the
     # handler (`if not body.messages: raise 400 messages_required`) so
-    # the Q10-L1 contract ("400 messages_required") stays intact rather
+    # The "400 messages_required" contract stays intact rather
     # than becoming a 422 Pydantic error.
     session_id: Optional[int] = None
     messages: List[ChatMessageIn] = Field(..., max_length=200)
     stream: bool = True
-    # Q12 / Brief 3 R2 — explicit pipeline override; "auto" → detect
+    # Explicit pipeline override; "auto" → detect
     # from the last user message; "auto_direct" skips routing entirely.
     pipeline: Literal[
         "auto",
@@ -99,7 +99,7 @@ class ChatCompletionsRequest(BaseModel):
         "qual_analysis",
         "race_code",
     ] = "auto"
-    # Q12 / Brief 3 R1 — citations are on by default; opt-out per call
+    # Citations are on by default; opt-out per call
     # for cheap factual chat where RAG would just add latency.
     rag_citations: bool = True
     rag_top_k: int = Field(default=5, ge=1, le=20)
@@ -117,7 +117,7 @@ class ChatSessionOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     message_count: int
-    # Q12 / Brief 3 R4 — threading metadata (pin / archive / sort key)
+    # Threading metadata (pin / archive / sort key)
     pinned: bool = False
     archived_at: Optional[datetime] = None
     last_activity_at: Optional[datetime] = None
@@ -310,11 +310,11 @@ async def _run_cascade(
 def _create_session(
     db: Session, tenant_slug: str, user_email: str, first_user_msg: Optional[str]
 ) -> ChatSession:
-    # Q11-L13-003: a whitespace-only message ("   ") .strip() to "",
+    # a whitespace-only message ("   ") .strip() to "",
     # whose .splitlines() returns [] — indexing [0] raised IndexError
     # and the request 500'd before the cascade ran. Coerce to the
     # default title in that case.
-    title = "Yeni sohbet"
+    title = "New chat"
     if first_user_msg:
         first_line = next(
             iter(first_user_msg.strip().splitlines()), ""
@@ -365,7 +365,7 @@ def list_sessions(
     search: Optional[str] = None,
     include_archived: bool = False,
 ):
-    """Q12 / Brief 3 R4 — thread sidebar list.
+    """Thread sidebar list.
 
     `search` filters case-insensitively against `title`; `include_archived`
     is False by default so archived threads stay out of the active rail.
@@ -410,7 +410,7 @@ def create_session(
         sess = ChatSession(
             tenant_slug=tenant,
             user_email=admin["sub"],
-            title=body.title or "Yeni sohbet",
+            title=body.title or "New chat",
         )
         db.add(sess)
         db.commit()
@@ -459,7 +459,7 @@ def delete_session(
     return None
 
 
-# ───── Q12 / Brief 3 R4 — pin / archive thread mutations ─────────────────
+# ───── pin / archive thread mutations ────────────────────────────────────
 
 
 @router.post(
@@ -555,7 +555,7 @@ _LICENSE_GATE_STALE_SECS = 30.0
 
 
 def _assert_license_ok() -> None:
-    """BUG-21 — pre-flight license cache gate with sync heartbeat refresh.
+    """Pre-flight license cache gate with sync heartbeat refresh.
 
     The cascade router already gates paid providers via quota_monitor, but
     the chat endpoint itself used to happily stream mock responses to a
@@ -637,7 +637,7 @@ async def completions(
     tenant = _resolve_tenant(admin_email)
     last_user_content = body.messages[-1].content
 
-    # BUG-40 — multi-turn chat history. Pre-fix the handler persisted
+    # Multi-turn chat history. Pre-fix the handler persisted
     # only the last user message and shipped only that string to the
     # cascade orchestrator, so the assistant lost prior context as soon
     # as the client included earlier turns in body.messages. Now any
@@ -669,7 +669,7 @@ async def completions(
                     content=m.content,
                 )
             )
-        # Q12 / Brief 3 R4 — bump the sidebar denorm columns. The
+        # Bump the sidebar denorm columns. The
         # assistant-message branch later adds another +1 on its own
         # commit, so user + assistant each contribute one.
         sess.last_activity_at = datetime.now(timezone.utc)
@@ -679,23 +679,22 @@ async def completions(
 
     cmd = _detect_slash_command(last_user_content)
 
-    # Q12 / Brief 3 R2 — pipeline routing decision (auto / explicit).
+    # Pipeline routing decision (auto / explicit).
     if body.pipeline == "auto":
         pipeline_used = detect_pipeline(last_user_content)
     else:
         pipeline_used = body.pipeline
 
-    # Sprint 2N FAZ E (P1 #2M-018) — pre-flight provider probe.
-    # Sprint 2M repro: 6 provider hepsi devre dışıyken /v1/chat/completions
-    # HTTP 200 + SSE stream başlatıyor, içinde Türkçe error text yield.
-    # JS client `response.ok = true` görüp retry semantics kaybediyor.
-    # Stream başlatmadan ÖNCE active provider sayısı 0 ise structured
-    # 503 JSON dön → fetch().ok=false, retry/Retry-After mantığı doğru.
+    # Pre-flight provider probe. With every provider disabled, opening the SSE
+    # Stream first would send HTTP 200 and then yield an error inside the body,
+    # so a fetch() client sees response.ok = true and loses its retry
+    # Semantics. Answering with a structured 503 BEFORE the stream starts keeps
+    # ok=false and the Retry-After contract intact.
     #
     # Skip when:
-    #   - qual_* pipeline (kendi orchestration'ını yapar)
-    #   - Anthropic mock provider active (test/dev path; _try_mock
-    #     stream içinde yine çalışır)
+    #   - a qual_* pipeline is selected (it orchestrates providers itself)
+    #   - the Anthropic mock provider is active (test/dev path; _try_mock
+    #     Still runs inside the stream)
     if (
         body.pipeline in ("auto", "cascade")
         and pipeline_used not in ("qual_code", "qual_tr", "qual_analysis", "qual_translate")
@@ -818,13 +817,13 @@ async def completions(
                     "type": "tool-result",
                     "name": "rag_query",
                     "result": (
-                        f"[RAG stub] '{cmd['args']['query']}' icin "
-                        "Phase F'te canli sonuc gelecek."
+                        f"[RAG stub] Live results for '{cmd['args']['query']}' "
+                        "are not wired up yet."
                     ),
                 }
                 yield f'data: {json.dumps(stub)}\n\n'
 
-        # Q12 / Brief 3 R1 — RAG-grounded citations: pull top-K chunks
+        # RAG-grounded citations: pull top-K chunks
         # before the cascade call, inject as a [1]/[2]/… block, and ship
         # the structured citation list in the closing `meta` event. Pure
         # no-op when retrieval fails or returns nothing — no hallucinated
@@ -843,7 +842,7 @@ async def completions(
             if citations:
                 yield f'data: {json.dumps({"type": "citations", "citations": serialise_citations(citations)})}\n\n'
 
-        # BUG-40 — multi-turn rendering. Build a "User: …\nAssistant: …"
+        # Multi-turn rendering. Build a "User: …\nAssistant: …"
         # transcript from body.messages and append the citation-augmented
         # last user line. Single-turn requests (one user msg) collapse
         # to the previous behaviour: just the user content + citations.
@@ -864,7 +863,7 @@ async def completions(
                 citations, user_message=last_user_content
             )
 
-        # Q11-L10-002: emit a "thinking" frame before the cascade call
+        # Emit a "thinking" frame before the cascade call
         # so the client (and any intermediate proxy / load balancer) sees
         # SSE traffic well within the 30s idle-timeout window. Live
         # provider calls can run 5-30s; without this beat a slow
@@ -872,7 +871,7 @@ async def completions(
         yield f'data: {json.dumps({"type": "thinking"})}\n\n'
 
         t0 = time.perf_counter()
-        # Sprint 2C ITEM-3 — qual_* dedicated multi-model pipelines.
+        # Qual_* dedicated multi-model pipelines.
         from app.pipelines.qual import QUAL_HANDLERS as _QUAL_HANDLERS
         from app.pipelines.qual import run_qual_pipeline as _run_qual
 
@@ -933,7 +932,7 @@ async def completions(
                 if touched is not None:
                     now = datetime.now(timezone.utc)
                     touched.updated_at = now
-                    # Q12 / Brief 3 R4 — keep the sidebar-sort denorm
+                    # Keep the sidebar-sort denorm
                     # columns in step with the actual chat traffic.
                     touched.last_activity_at = now
                     touched.message_count = (touched.message_count or 0) + 1
@@ -954,7 +953,7 @@ async def completions(
             await asyncio.sleep(0.01)
 
         latency_ms = int((time.perf_counter() - t0) * 1000)
-        # Q12 / Brief 3 R5 — provider transparency: emit cost USD +
+        # Provider transparency: emit cost USD +
         # cascade chain so the message footer can show the receipt.
         # `tokens_in` / `tokens_out` are best-effort: the cascade
         # response only exposes the combined `tokens_used`, so we split

@@ -3,16 +3,16 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""017 — Stripe Customer Portal: müşteri self-service (lisans, fatura, iade).
+"""Stripe Customer Portal: customer self-service (license, invoices, refunds).
 
 POST /v1/billing/portal
   body: {"customer_email": "x@y.com", "return_url": "..."}
   → {"portal_url": "https://billing.stripe.com/...", "expires_at": ISO8601}
 
-Akış:
-1. customer_email ile aktif lisansı (revoked_at IS NULL) bul
-2. License.customer_id_stripe ile stripe.billing_portal.Session.create
-3. Portal URL döner (Stripe varsayılan ~1 saat geçerli)
+Flow:
+1. Find the active license (revoked_at IS NULL) for customer_email.
+2. Open a stripe.billing_portal.Session with its License.customer_id_stripe.
+3. Return the portal URL. Stripe expires these after roughly an hour.
 """
 
 from __future__ import annotations
@@ -30,8 +30,7 @@ from app.db.models import License
 from app.db.session import get_session
 from app.i18n import t
 from app.middleware.rate_limit import limiter
-from app.observability.audit import emit_event  # Q12-L23 sweep 5
-
+from app.observability.audit import emit_event
 router = APIRouter(prefix="/v1/billing", tags=["billing"])
 logger = logging.getLogger(__name__)
 
@@ -91,7 +90,7 @@ async def create_portal(
             return_url=body.return_url,
         )
     except stripe.error.StripeError as exc:
-        # Q12-L24-002 — internal-only str(exc); client-facing detail is
+        # Internal-only str(exc); client-facing detail is
         # the Stripe-curated user_message or the i18n generic message.
         # Prevents leakage of account-internal IDs / API key prefixes.
         logger.exception("portal session create failed: %s", exc)
