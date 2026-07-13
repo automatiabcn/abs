@@ -80,7 +80,7 @@ def _autoindex_meeting_rag(
     from app.meeting.rag_index import MeetingRAGIndexer
     from app.meeting.transcribe import Transcript, TranscriptSegment
     from app.rag import qdrant_client as qc
-    from app.rag.embedding_bge import get_embedder
+    from app.rag.embedding_bge import get_embedder, model_id_of
 
     tenant = _resolve_tenant(uploader_email) or DEFAULT_TENANT_SLUG
     segments = [
@@ -128,6 +128,8 @@ def _autoindex_meeting_rag(
         meeting_id=f"meeting-{meeting_id}",
         title=title,
         tenant_id=tenant,
+        # Same stamp the document ingest writes: which model made these vectors.
+        extra_metadata={"embed_model": model_id_of(embedder)},
     )
 
 
@@ -136,6 +138,35 @@ def _suffix(filename: str | None) -> str:
         return ".bin"
     suffix = Path(filename).suffix
     return suffix if suffix else ".bin"
+
+
+def _indexed_chunk_count(meeting: Meeting) -> int:
+    """How many chunks of this meeting are in the vector store, right now.
+
+    `indexed` used to be `status == "done" and not quality_note` — an inference
+    about transcription, presented as a fact about indexing. The autoindex call
+    is best-effort and swallows its own failures (rightly: a Qdrant hiccup must
+    not lose a transcript that is already saved), so the two can disagree, and
+    when they did the panel showed a green tick over an empty index. Nobody
+    finds out until a question about the meeting quietly comes back unanswered.
+    Ask the store instead.
+    """
+    from app.rag import qdrant_client as qc
+    from app.rag.embedding_bge import get_embedder, model_id_of
+
+    try:
+        return qc.count_document(
+            collection=settings.qdrant_default_collection,
+            tenant_id=meeting.tenant_slug or DEFAULT_TENANT_SLUG,
+            doc_id=f"meeting-{meeting.id}",
+            # Chunks left behind by a previous embedding backend are present but
+            # unfindable — they do not count, and re-uploading the file rebuilds
+            # them.
+            embed_model=model_id_of(get_embedder()),
+        )
+    except Exception as exc:  # noqa: BLE001 — an unreachable store is not indexed
+        logger.warning("meeting_index_count_failed meeting=%s err=%s", meeting.id, exc)
+        return 0
 
 
 def _serialize(meeting: Meeting, segments: List[MeetingSegment]) -> Dict[str, Any]:
@@ -167,7 +198,7 @@ def _serialize(meeting: Meeting, segments: List[MeetingSegment]) -> Dict[str, An
         # Non-empty when the recording transcribed but holds no usable speech.
         # The panel shows this sentence instead of a silent green tick.
         "quality_note": meeting.quality_note,
-        "indexed": meeting.status == "done" and not meeting.quality_note,
+        "indexed": _indexed_chunk_count(meeting) > 0,
         "speakers": speakers,
         "segments": seg_payload,
         "created_at": meeting.created_at.isoformat(),
@@ -197,7 +228,7 @@ async def list_meetings(admin: dict = Depends(current_admin)) -> Dict[str, Any]:
                     "status": meeting.status,
                     "summary": meeting.summary,
                     "quality_note": meeting.quality_note,
-                    "indexed": meeting.status == "done" and not meeting.quality_note,
+                    "indexed": _indexed_chunk_count(meeting) > 0,
                     "created_at": meeting.created_at.isoformat(),
                     "completed_at": meeting.completed_at.isoformat() if meeting.completed_at else None,
                 }
@@ -246,6 +277,47 @@ async def upload_meeting(
                 seen.id,
                 fingerprint[:12],
             )
+            # Deduplication protects the transcript, and it used to protect the
+            # gap as well: if the chunks never made it into the vector store —
+            # the autoindex failed, or the operator has since switched embedding
+            # backend, which leaves every old vector pointing into a space
+            # nothing searches any more — then re-uploading the file was the
+            # obvious remedy and it did nothing at all, because the dedup check
+            # short-circuits before indexing. The meeting stayed unanswerable
+            # forever, showing a green tick. So: transcription is still never
+            # repeated (that is the expensive part), but a missing index is
+            # rebuilt from the segments already in SQL. Chunk ids are
+            # deterministic, so a healthy meeting re-indexes to exactly the same
+            # points — one meeting, one copy, which is what T3 asks for.
+            if not _indexed_chunk_count(seen) and seen.status == "done" \
+                    and not seen.quality_note:
+                try:
+                    n = _autoindex_meeting_rag(
+                        meeting_id=seen.id,
+                        title=seen.filename,
+                        uploader_email=uploader_email,
+                        result={
+                            "language": "auto",
+                            "duration_sec": seen.duration_sec,
+                            "segments": [
+                                {
+                                    "speaker_id": s.speaker_id,
+                                    "start": s.start_sec,
+                                    "end": s.end_sec,
+                                    "text": s.text,
+                                }
+                                for s in segments
+                            ],
+                        },
+                    )
+                    logger.info(
+                        "meeting_rag_reindex meeting=%s chunks=%d", seen.id, n
+                    )
+                except Exception as exc:  # noqa: BLE001 — never fail the upload
+                    logger.warning(
+                        "meeting_rag_reindex_failed meeting=%s err=%s", seen.id, exc
+                    )
+
             payload = _serialize(seen, segments)
             # The upload succeeded and the meeting exists; it simply already
             # existed. Saying so is more useful than a 409 the panel would have
@@ -342,7 +414,6 @@ async def upload_meeting(
         meeting_row = db.get(Meeting, meeting_id)
         if meeting_row is None:
             raise HTTPException(500, "meeting_disappeared")
-        payload = _serialize(meeting_row, segments)
 
     try:
         feature_usage_service.increment(
@@ -368,7 +439,11 @@ async def upload_meeting(
                 "meeting_rag_autoindex_failed meeting=%s err=%s", meeting_id, exc
             )
 
-    return payload
+    # Serialised last, on purpose: `indexed` is now read back from the vector
+    # store, and the indexing happens above. Building the response before the
+    # write would have reported `indexed: false` on every successful upload —
+    # the mirror image of the bug this replaced.
+    return _serialize(meeting_row, segments)
 
 
 @router.get("/{meeting_id}")

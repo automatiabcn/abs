@@ -37,7 +37,7 @@ from app.middleware.cerbos_rag_filter import RAGAuth, rag_action_dep
 from app.observability.langfuse_client import observe
 from app.observability.usage_logger import get_usage_logger, make_event
 from app.rag import qdrant_client as qc
-from app.rag.embedding_bge import get_embedder
+from app.rag.embedding_bge import get_embedder, model_id_of
 from app.rag.pipeline_v10 import (
     Chunk,
     estimate_token_count,
@@ -263,6 +263,11 @@ def _ingest_chunks(
                 "char_end": chunk.char_end,
                 "text": chunk.raw_text,
                 "created_at": now,
+                # Which model made this vector. Vectors are only comparable to
+                # others from the same model, so a corpus embedded before a
+                # backend change has to be recognisable as stale — otherwise it
+                # sits in the collection being counted and never found.
+                "embed_model": model_id_of(embedder),
                 **chunk.metadata,
                 # MT Phase 1 (B4): per-project isolation, additive — only set
                 # when an active project is selected; legacy chunks omit it.
@@ -881,12 +886,20 @@ def list_documents(
     except Exception as exc:  # noqa: BLE001
         logger.warning("rag_documents_unavailable: %s", exc)
         raw = []
+    # A document is only searchable by the model that embedded it. Change the
+    # embedding backend and every older document is still here, still listed,
+    # still counted — and unreachable by any question, with no error anywhere to
+    # say so. Marking them is what makes them fixable: re-uploading a stale
+    # document re-embeds it.
+    current_model = model_id_of(_ensure_embedder())
     documents = [
         {
             "id": d["doc_id"],
             "filename": d["filename"] or d["doc_id"],
             "chunks": int(d["chunks"]),
             "size_bytes": int(d["bytes"]),
+            "embed_model": d.get("embed_model") or "",
+            "stale": bool(d.get("embed_model") != current_model),
             "ingested_at": (
                 _dt.datetime.fromtimestamp(
                     d["created_at"], _dt.timezone.utc
@@ -899,8 +912,10 @@ def list_documents(
     ]
     return {
         "collection": collection,
+        "embed_model": current_model,
         "documents": documents,
         "doc_count": len(documents),
+        "stale_count": sum(1 for d in documents if d["stale"]),
         "chunk_count": sum(d["chunks"] for d in documents),
         "total_bytes": sum(d["size_bytes"] for d in documents),
     }

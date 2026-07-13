@@ -35,6 +35,7 @@ __all__ = [
     "TenantIsolationError",
     "close",
     "count",
+    "count_document",
     "delete_by_tenant",
     "ensure_collection",
     "get_qdrant",
@@ -312,6 +313,42 @@ def count(*, collection: str, tenant_id: str) -> int:
     )
 
 
+def count_document(
+    *,
+    collection: str,
+    tenant_id: str,
+    doc_id: str,
+    embed_model: str | None = None,
+) -> int:
+    """How many chunks of one document are actually in the store.
+
+    The point of asking is that "we indexed it" and "it is in there" are
+    different claims, and only one of them can be checked.
+
+    ``embed_model`` narrows it to chunks written by a given embedding model. A
+    vector is only meaningful next to other vectors from the same model: change
+    the backend and yesterday's chunks are still *present*, still counted, and
+    no longer findable by anything. Counting them as indexed is how a corpus
+    goes quietly missing.
+    """
+    tenant = _require_tenant(tenant_id)
+    doc_id = (doc_id or "").strip()
+    if not doc_id:
+        raise ValueError("doc_id is required")
+    client = get_qdrant()
+    must = [FieldCondition(key="doc_id", match=MatchValue(value=doc_id))]
+    if embed_model:
+        must.append(
+            FieldCondition(key="embed_model", match=MatchValue(value=embed_model))
+        )
+    doc_filter = _tenant_filter(tenant, extra=Filter(must=must))
+    return int(
+        client.count(
+            collection_name=collection, count_filter=doc_filter, exact=True
+        ).count
+    )
+
+
 def list_documents(
     *,
     collection: str,
@@ -367,6 +404,11 @@ def list_documents(
                     "chunks": 0,
                     "bytes": 0,
                     "created_at": payload.get("created_at"),
+                    # Which embedding model wrote this document's vectors. The
+                    # caller compares it against the model in use: a document
+                    # embedded by a retired backend is still listed, still
+                    # counted, and cannot be found by any search.
+                    "embed_model": str(payload.get("embed_model") or ""),
                 }
                 docs[doc_id] = entry
             entry["chunks"] += 1

@@ -41,6 +41,12 @@ interface IngestedDoc {
   size_bytes: number;
   chunks: number;
   ingested_at: string;
+  // True when this document was embedded by a model the server no longer uses.
+  // It is still stored and still listed, and no search will ever reach it —
+  // vectors are only comparable to others made by the same model. Saying so is
+  // the difference between a fixable problem and a document that quietly stopped
+  // answering.
+  stale?: boolean;
 }
 
 interface RagHit {
@@ -632,6 +638,15 @@ export default function RagPage() {
                       <code className="truncate font-mono">{d.filename}</code>
                     </div>
                     <div className="ml-2 flex shrink-0 items-center gap-2">
+                      {d.stale ? (
+                        <span
+                          data-test="rag-doc-stale"
+                          title="Embedded by a model this server no longer uses — searches cannot reach it. Upload the file again to restore it."
+                          className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400"
+                        >
+                          not searchable — re-upload
+                        </span>
+                      ) : null}
                       <span className="text-muted-foreground">
                         {d.chunks} chunks · {formatSize(d.size_bytes)}
                       </span>
