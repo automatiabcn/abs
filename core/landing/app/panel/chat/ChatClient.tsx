@@ -37,6 +37,8 @@ import {
 import { loadDraft, saveDraft } from "@/lib/chat-draft";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const AGENT_MODE_KEY = "abs.chat.agent";
+
 export default function ChatClient() {
   const router = useRouter();
   const params = useSearchParams();
@@ -55,6 +57,31 @@ export default function ChatClient() {
     retry: 1,
   });
 
+  // Agent mode is a per-session choice the user makes, and it persists across
+  // reloads: someone who works this way keeps working this way, and someone who
+  // wants a plain quick answer is not opted into three provider calls by us.
+  const [agentMode, setAgentMode] = useState(false);
+
+  useEffect(() => {
+    try {
+      setAgentMode(localStorage.getItem(AGENT_MODE_KEY) === "1");
+    } catch {
+      /* localStorage unavailable — default off */
+    }
+  }, []);
+
+  const toggleAgent = useCallback(() => {
+    setAgentMode((on) => {
+      const next = !on;
+      try {
+        localStorage.setItem(AGENT_MODE_KEY, next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, []);
+
   const {
     messages,
     setMessages,
@@ -67,8 +94,10 @@ export default function ChatClient() {
     abort,
     error,
     retry,
+    agentStep,
   } = useChat({
     initialSessionId,
+    agentMode,
     onSessionStarted: (id) => {
       queryClient.invalidateQueries({ queryKey: ["chat", "sessions"] });
       const url = new URL(window.location.href);
@@ -275,6 +304,9 @@ export default function ChatClient() {
               onAbort={abort}
               disabled={isStreaming}
               isStreaming={isStreaming}
+              agentMode={agentMode}
+              onToggleAgent={toggleAgent}
+              agentStep={agentStep}
             />
           </div>
         </footer>

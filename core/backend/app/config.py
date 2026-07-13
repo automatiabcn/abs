@@ -5,6 +5,7 @@
 
 import os
 import warnings
+from typing import List
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -353,6 +354,25 @@ class Settings(BaseSettings):
     # answerable from panel RAG search + MCP rag_query (see mcp_rag_tenant).
     # Best-effort: a RAG/embedder/Qdrant failure never fails the upload.
     meeting_rag_autoindex: bool = True
+
+    # --- Agent mode (chat with tools) -------------------------------------
+    # The panel chat can call tools on the operator's behalf. What it may reach
+    # is decided here, and every default is the safe end of the choice: reading
+    # facts is on, touching the machine is off until someone turns it on
+    # deliberately. app/agentic/policy.py holds what each level covers.
+    agent_mode_enabled: bool = True
+    # Directories the agent may read from. Empty (the default) means the file
+    # tools are not registered at all — absent, not "registered and refused".
+    agent_fs_roots: List[str] = []
+    # Writing files and running commands are separate switches on purpose: a
+    # customer who lets the assistant draft into a folder has not thereby agreed
+    # to let it run shell.
+    agent_fs_write_enabled: bool = False
+    agent_shell_enabled: bool = False
+    # How many tool calls one question may cost before the agent must answer with
+    # what it has — low enough that a confused model cannot spend a minute of
+    # provider budget looping.
+    agent_max_steps: int = 8
 
     # T-Q03 — SaaS integration env vars (Gmail / Recall / Deepgram / WhisperX / ElevenLabs)
     gmail_oauth_client_id: str = ""
