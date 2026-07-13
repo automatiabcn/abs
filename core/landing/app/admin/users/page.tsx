@@ -15,12 +15,16 @@
 // LCP target on slow 3G: ~−400 ms vs the previous client-only shape
 // (eliminates the post-hydration round-trip to /v1/admin/users).
 //
-// On any auth/transport failure the server falls back to MOCK_USERS —
-// same behaviour as the pre-R65 client `fetchUsers`.
+// When the fetch fails, this page says so. It used to fall back to sample rows,
+// which meant an admin whose session hiccuped was shown a roster of people who
+// do not exist — including an account called admin@demo-acme.com holding admin
+// on their server. Whoever saw that was right to be alarmed and wrong about why.
+// It also hid the opposite failure: a real roster that would not load looked
+// like a populated one.
 import { cookies } from "next/headers";
 
 import UsersClient from "./UsersClient";
-import { MOCK_USERS, type UserRow } from "./types";
+import type { UserRow } from "./types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -34,7 +38,12 @@ export const metadata: Metadata = {
 
 const BACKEND_URL = process.env.ABS_BACKEND_URL ?? "http://localhost:8000";
 
-async function fetchUsersServerSide(): Promise<UserRow[]> {
+interface UsersLoad {
+  users: UserRow[];
+  loadError: string | null;
+}
+
+async function fetchUsersServerSide(): Promise<UsersLoad> {
   try {
     const cookieStore = await cookies();
     const cookieHeader = cookieStore
@@ -46,19 +55,21 @@ async function fetchUsersServerSide(): Promise<UserRow[]> {
       headers: cookieHeader ? { cookie: cookieHeader } : {},
       cache: "no-store",
     });
-    if (!res.ok) return MOCK_USERS;
-    const data = await res.json();
-    if (Array.isArray(data)) return data as UserRow[];
-    if (data && Array.isArray((data as { users?: unknown }).users)) {
-      return (data as { users: UserRow[] }).users;
+    if (!res.ok) {
+      return { users: [], loadError: `The server answered ${res.status}.` };
     }
-    return MOCK_USERS;
+    const data = await res.json();
+    if (Array.isArray(data)) return { users: data as UserRow[], loadError: null };
+    if (data && Array.isArray((data as { users?: unknown }).users)) {
+      return { users: (data as { users: UserRow[] }).users, loadError: null };
+    }
+    return { users: [], loadError: "The server sent back a reply we could not read." };
   } catch {
-    return MOCK_USERS;
+    return { users: [], loadError: "The server could not be reached." };
   }
 }
 
 export default async function UsersPage() {
-  const initialUsers = await fetchUsersServerSide();
-  return <UsersClient initialUsers={initialUsers} />;
+  const { users, loadError } = await fetchUsersServerSide();
+  return <UsersClient initialUsers={users} loadError={loadError} />;
 }

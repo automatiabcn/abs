@@ -172,9 +172,14 @@ const STATUS_LABEL: Record<UserRow["status"], string> = {
 
 interface UsersClientProps {
   initialUsers: UserRow[];
+  /** Set when the server-side fetch failed. Non-null means: show that, invent nobody. */
+  loadError?: string | null;
 }
 
-export default function UsersClient({ initialUsers }: UsersClientProps) {
+export default function UsersClient({
+  initialUsers,
+  loadError = null,
+}: UsersClientProps) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("member");
@@ -219,6 +224,11 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
     initialData: initialUsers,
     initialDataUpdatedAt: 0,
   });
+
+  // The roster could not be read. Say that, and show nobody — an invented row on
+  // this page is an account the admin will go looking for.
+  const failed =
+    (loadError !== null || users.isError) && (users.data?.length ?? 0) === 0;
 
   // Sprint 2B BUG-36 — invite list refreshes alongside the user table.
   useEffect(() => {
@@ -453,7 +463,30 @@ export default function UsersClient({ initialUsers }: UsersClientProps) {
               {rowError}
             </div>
           )}
-          {users.isLoading && (users.data?.length ?? 0) === 0 ? (
+          {failed ? (
+            <div
+              data-test="users-load-error"
+              className="rounded-md border border-amber-500/40 bg-amber-500/5 p-4 text-sm"
+            >
+              <p className="font-medium text-amber-300">
+                The list of users could not be read
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                {loadError ?? "The server could not be reached."} Nobody is
+                listed, because a name shown here that did not come from the
+                server is an account you would go looking for and never find.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => users.refetch()}
+                data-test="users-retry"
+              >
+                Try again
+              </Button>
+            </div>
+          ) : users.isLoading && (users.data?.length ?? 0) === 0 ? (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-14 w-full" />
