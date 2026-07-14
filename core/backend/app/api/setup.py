@@ -855,6 +855,35 @@ async def step_test(request: Request) -> Dict[str, Any]:
     }
 
 
+@router.post("/test", status_code=status.HTTP_200_OK)
+async def dry_run_test(request: Request) -> Dict[str, Any]:
+    """Ping every configured provider WITHOUT finishing the wizard.
+
+    `/step/test` both tests and completes, in that order and irreversibly: once
+    it has run, `_ensure_step` answers 409 to every earlier step. So the only
+    way a customer could see whether their keys work was to first give up the
+    ability to go back and fix them — and a wizard that says "your Groq key is
+    wrong" on a screen you can no longer leave is worse than one that says
+    nothing.
+
+    This runs the same checks and writes nothing. Step 6 calls it on "Run the
+    test", and only calls `/step/test` when the customer has read the verdict
+    and chosen to finish.
+    """
+    state = read_state()
+    if state.get("completed"):
+        raise HTTPException(status_code=409, detail="Setup already completed")
+    results = await _run_provider_tests()
+    emit_event(
+        request,
+        action="setup.test.dry_run",
+        outcome="success",
+        resource_type="providers",
+        count=len(results),
+    )
+    return {"ok": True, "test_results": results}
+
+
 @router.post("/reset", status_code=status.HTTP_200_OK)
 async def reset_setup(request: Request) -> Dict[str, Any]:
     """Dev-only — when `settings.env == 'dev'`, drop the setup state and the admin
