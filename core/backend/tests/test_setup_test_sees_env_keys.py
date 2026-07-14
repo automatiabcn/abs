@@ -40,9 +40,7 @@ def test_a_placeholder_from_env_example_is_not_a_provider(monkeypatch):
     from app.providers import cascade
 
     monkeypatch.setattr(cascade.settings, "cf_api_token", "replace-with-cf-api-token")
-    monkeypatch.setattr(
-        cascade.settings, "cf_account_id", "replace-with-cf-account-id"
-    )
+    monkeypatch.setattr(cascade.settings, "cf_account_id", "replace-with-cf-account-id")
     monkeypatch.setattr(setup_api.settings, "cf_api_token", "replace-with-cf-api-token")
 
     assert "cf_api_token" not in _fields_under_test()

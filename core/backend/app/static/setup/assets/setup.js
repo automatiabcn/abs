@@ -55,6 +55,9 @@ const I18N = {
     v_none_tail: "Bitirebilirsiniz, ama sohbet henüz bir soruya cevap veremez. Geri dönüp bir anahtar ekleyin ya da panelde Ayarlar → Sağlayıcılar'dan ekleyin.",
     r_ok: "Cevapladı", r_fail: "Başarısız", r_skipped: "Anahtar yok",
     a_free: "Ücretsiz katman", a_licensed: "Lisanslı", a_free_providers: "Sadece ücretsiz sağlayıcılar",
+    e_email: "Bu bir e-posta adresine benzemiyor.",
+    e_password: "Şifre en az 8 karakter olmalı.",
+    e_generic: "Sunucu bu değeri kabul etmedi.",
   },
   es: {
     tagline: "Orquestación de IA autoalojada", lang_label: "Idioma",
@@ -104,6 +107,9 @@ const I18N = {
     v_none_tail: "Puede terminar, pero el chat todavía no podrá responder. Vuelva atrás y añada una clave, o añádala en el panel en Ajustes → Proveedores.",
     r_ok: "Respondió", r_fail: "Falló", r_skipped: "Sin clave",
     a_free: "Plan gratuito", a_licensed: "Con licencia", a_free_providers: "Solo proveedores gratuitos",
+    e_email: "Esto no parece una dirección de correo.",
+    e_password: "La contraseña necesita al menos 8 caracteres.",
+    e_generic: "El servidor no aceptó este valor.",
   },
 };
 
@@ -117,6 +123,9 @@ const EN_RUNTIME = {
   v_none_tail: "You can finish, but chat will not be able to answer a question yet. Go back and add a key, or add one in the panel under Settings → Providers.",
   r_ok: "Answered", r_fail: "Failed", r_skipped: "No key",
   a_free: "Free tier", a_licensed: "Licensed", a_free_providers: "Free providers only",
+  e_email: "That does not look like an email address.",
+  e_password: "The password needs at least 8 characters.",
+  e_generic: "The server would not accept this value.",
 };
 
 let currentLang = "en";
@@ -237,6 +246,21 @@ function formToJson(form) {
   return out;
 }
 
+// One of FastAPI's validation entries → one sentence, named by the field it is
+// about, in the language the wizard is being read in. The server's own message
+// ("value is not a valid email address: The part after the @-sign is not
+// valid...") is English, pydantic's, and written for whoever wrote the schema.
+function validationSentence(entry) {
+  const loc = Array.isArray(entry && entry.loc) ? entry.loc : [];
+  const field = String(loc[loc.length - 1] || "");
+  const type = String((entry && entry.type) || "");
+  const label = t(`f_${field}`);
+  let why = t("e_generic");
+  if (field === "email") why = t("e_email");
+  else if (field === "password" || type.includes("too_short")) why = t("e_password");
+  return label && label !== `f_${field}` ? `${label} — ${why}` : why;
+}
+
 async function postJson(path, body) {
   const r = await fetch(path, {
     method: "POST",
@@ -247,9 +271,15 @@ async function postJson(path, body) {
     const j = await r.json().catch(() => ({}));
     const d = j.detail;
     // Structured key-format error: detail = {error, fields:{field: reason}}.
-    if (d && typeof d === "object" && d.fields) {
+    if (d && typeof d === "object" && !Array.isArray(d) && d.fields) {
       const lines = Object.entries(d.fields).map(([f, why]) => `• ${f}: ${why}`);
       throw new Error(lines.join("\n"));
+    }
+    // FastAPI's validation error: detail is a LIST, so it matched neither branch
+    // above and fell through to the status code. A person who mistyped their
+    // email on the first screen of the product was told, in full: "HTTP 422".
+    if (Array.isArray(d) && d.length) {
+      throw new Error(d.map(validationSentence).join("\n"));
     }
     throw new Error((typeof d === "string" && d) || `HTTP ${r.status}`);
   }

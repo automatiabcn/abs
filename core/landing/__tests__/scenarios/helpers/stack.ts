@@ -13,13 +13,18 @@
 
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 
-export const ADMIN_EMAIL = process.env.ABS_ADMIN_EMAIL ?? "admin@local";
+// `admin@local` is the backend's bootstrap identity, but the wizard will not
+// take it as the admin's address (no dot after the @, which is a real address
+// rule and stays). The suite installs through the wizard, so it uses an address
+// the wizard accepts — the same one a person would.
+export const ADMIN_EMAIL = process.env.ABS_ADMIN_EMAIL ?? "admin@abs.local";
 export const ADMIN_PASSWORD = process.env.ABS_ADMIN_PASSWORD ?? "CHANGEME";
 
 const HOW_TO_START = [
   "The scenario suite needs a live backend on :8000.",
   "",
-  "  cd core/backend && ./.localrun/run_backend.sh",
+  "  export GROQ_API_KEY=...",
+  "  cd core/backend && ./scripts/run_e2e_backend.sh",
   "",
   "It is deliberate that this fails instead of skipping: a suite that skips",
   "when the system is absent reports green for a system that never ran.",
@@ -44,7 +49,12 @@ export async function login(page: Page): Promise<void> {
   await page.locator('input[type="email"]').fill(ADMIN_EMAIL);
   await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
   await page.getByTestId("login-submit").click();
-  await page.waitForURL(/\/(admin|panel)/, { timeout: 20_000 });
+  // Generous, and it has to be: against a dev server that has just started, the
+  // click is the first thing that ever asks for the panel route, and Next
+  // compiles it on demand. Twenty seconds was enough on a warm server and not on
+  // a cold one, so the suite failed at the login form depending on what had been
+  // compiled before it — which reads as the product being broken and is not.
+  await page.waitForURL(/\/(admin|panel)/, { timeout: 90_000 });
   // Login lands somewhere and then the app redirects again. Navigating before
   // that second hop lands cancels it ("interrupted by another navigation"), so
   // wait for the dust to settle rather than for the first URL that matches.
@@ -61,6 +71,13 @@ export async function login(page: Page): Promise<void> {
 export async function waitForStreamedReply(page: Page, timeoutMs = 90_000): Promise<string> {
   const assistant = page.locator('[data-test="chat-message"][data-role="assistant"]').last();
   await assistant.waitFor({ timeout: timeoutMs });
+
+  // The bubble exists before the answer does — it renders "Thinking…" while the
+  // model is still working. That placeholder is perfectly stable, so the loop
+  // below used to settle on it and hand back a nine-character "reply": the chat,
+  // knowledge and meetings scenarios were all asserting against the word
+  // "Thinking…" and failing for a reason that had nothing to do with the product.
+  await assistant.and(page.locator('[data-pending="false"]')).waitFor({ timeout: timeoutMs });
 
   let previous = "";
   const deadline = Date.now() + timeoutMs;

@@ -62,7 +62,7 @@ def _admin_tenant(admin: dict) -> str:
 
 
 def _autoindex_meeting_rag(
-    *, meeting_id: int, title: str, uploader_email: str, result: Dict[str, Any]
+    *, doc_id: str, title: str, uploader_email: str, result: Dict[str, Any]
 ) -> int:
     """Best-effort: index a finished transcript into the tenant's Qdrant
     document store so the meeting is answerable from panel RAG + MCP rag_query.
@@ -125,7 +125,7 @@ def _autoindex_meeting_rag(
     )
     return indexer.index(
         transcript,
-        meeting_id=f"meeting-{meeting_id}",
+        meeting_id=doc_id,
         title=title,
         tenant_id=tenant,
         # Same stamp the document ingest writes: which model made these vectors.
@@ -138,6 +138,31 @@ def _suffix(filename: str | None) -> str:
         return ".bin"
     suffix = Path(filename).suffix
     return suffix if suffix else ".bin"
+
+
+def _doc_id(meeting: Meeting) -> str:
+    """What this meeting is called in the vector store.
+
+    It used to be `meeting-<id>` — the database's autoincrement counter. The
+    vector store outlives the database: restore last week's backup, or reset a
+    development install, and the counter starts again over chunks that are still
+    there. Meeting 2 then inherits the chunks of whatever meeting 2 used to be —
+    the panel shows a green "indexed" tick for a recording it has never indexed,
+    and a question about it is answered out of somebody else's conversation, with
+    a citation. The name of the wrong meeting, on a confident answer.
+
+    The recording's own SHA-256 is already computed (it is how the same file
+    uploaded twice stays one meeting) and it does not restart at 1. Chunks are
+    filed under it now, so the store and the database can no longer disagree about
+    which recording they are talking about.
+    """
+    sha = (meeting.audio_sha256 or "").strip()
+    return f"meeting-{sha[:32]}" if sha else f"meeting-{meeting.id}"
+
+
+def _legacy_doc_id(meeting: Meeting) -> str:
+    """What it was called before — chunks written by an earlier version."""
+    return f"meeting-{meeting.id}"
 
 
 def _indexed_chunk_count(meeting: Meeting) -> int:
@@ -154,16 +179,33 @@ def _indexed_chunk_count(meeting: Meeting) -> int:
     from app.rag import qdrant_client as qc
     from app.rag.embedding_bge import get_embedder, model_id_of
 
-    try:
+    def _count(doc_id: str) -> int:
         return qc.count_document(
             collection=settings.qdrant_default_collection,
             tenant_id=meeting.tenant_slug or DEFAULT_TENANT_SLUG,
-            doc_id=f"meeting-{meeting.id}",
+            doc_id=doc_id,
             # Chunks left behind by a previous embedding backend are present but
             # unfindable — they do not count, and re-uploading the file rebuilds
             # them.
             embed_model=model_id_of(get_embedder()),
         )
+
+    try:
+        found = _count(_doc_id(meeting))
+        if found:
+            return found
+        # Nothing under the recording's own name. It may simply have been indexed
+        # by an earlier version, which filed it under the database's counter — so
+        # look there too, and keep the green tick a customer's existing meetings
+        # have earned.
+        #
+        # Except when the meeting was flagged: a recording with no speech in it is
+        # never indexed, by construction, so anything sitting under its old number
+        # belongs to a different recording — the exact confusion this is here to
+        # stop. Asking would only let a stale chunk answer for it.
+        if meeting.quality_note:
+            return 0
+        return _count(_legacy_doc_id(meeting))
     except Exception as exc:  # noqa: BLE001 — an unreachable store is not indexed
         logger.warning("meeting_index_count_failed meeting=%s err=%s", meeting.id, exc)
         return 0
@@ -303,7 +345,7 @@ async def upload_meeting(
             ):
                 try:
                     n = _autoindex_meeting_rag(
-                        meeting_id=seen.id,
+                        doc_id=_doc_id(seen),
                         title=seen.filename,
                         uploader_email=uploader_email,
                         result={
@@ -432,7 +474,7 @@ async def upload_meeting(
     if settings.meeting_rag_autoindex and verdict.has_speech:
         try:
             n = _autoindex_meeting_rag(
-                meeting_id=meeting_id,
+                doc_id=_doc_id(meeting_row),
                 title=filename,
                 uploader_email=uploader_email,
                 result=result,

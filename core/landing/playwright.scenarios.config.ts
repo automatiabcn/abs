@@ -8,8 +8,9 @@
 // backend up, and it must not be mixed into the fast suite where its failures
 // would read as flakes.
 //
-//   cd core/backend && ./.localrun/run_backend.sh   # :8000
-//   cd core/landing && npx playwright test -c playwright.scenarios.config.ts
+//   export GROQ_API_KEY=...                          # a real answer needs a real key
+//   cd core/backend && ./scripts/run_e2e_backend.sh  # :8000, throwaway state
+//   cd core/landing && npm run test:e2e:scenarios
 //
 // One browser (Chromium): these scenarios exercise the server, and running the
 // same server conversation three times through three engines buys nothing.

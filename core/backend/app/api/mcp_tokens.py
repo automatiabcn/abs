@@ -102,6 +102,27 @@ def _token_digest(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
+def _canonical(body: bytes, sig: bytes) -> str:
+    """The one spelling of a token that carries this body and this signature.
+
+    Base64url is not injective at the tail: 32 signature bytes need 256 bits and
+    43 characters hold 258, so the last character has two bits the decoder throws
+    away — `...A` and `...B` decode to the same digest, pass the same HMAC check,
+    and are the same key by every measure the signature can see.
+
+    They were not the same key by the measure REVOCATION used, which hashed the
+    token *string*. So a key the operator had killed came back to life if one
+    character of it was changed: the HMAC still verified, the digest no longer
+    matched the blacklist row, and the server handed over every tool on it. The
+    leaked credential an operator revokes is exactly the credential an attacker
+    holds and can retype.
+
+    So a token now has one legal spelling — the one it was minted with — and
+    anything else is refused at the door.
+    """
+    return f"abs_mcp_{_b64url(body)}.{_b64url(sig)}"
+
+
 def _is_revoked(token: str) -> bool:
     digest = _token_digest(token)
     with get_session_sync() as db:
@@ -128,6 +149,12 @@ def verify_token(token: str) -> Dict:
     expected = hmac.new(_signing_key(), body, hashlib.sha256).digest()
     if not hmac.compare_digest(provided, expected):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "bad_signature")
+
+    # A valid signature is not enough: it has to be *this* token, spelled the way
+    # it was minted. Otherwise a revoked key is one character away from working
+    # again — see _canonical.
+    if token != _canonical(body, provided):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "malformed_token")
 
     payload: Dict = json.loads(body.decode("utf-8"))
     if payload.get("exp", 0) < time.time():

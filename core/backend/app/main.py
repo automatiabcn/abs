@@ -540,6 +540,7 @@ app.include_router(me_consent_router.router)
 app.include_router(me_data_export_router.router)
 app.include_router(panel_router.router)
 
+
 class RevalidatedStaticFiles(StaticFiles):
     """StaticFiles that makes the browser check before reusing what it has.
 
