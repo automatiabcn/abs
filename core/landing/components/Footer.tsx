@@ -45,9 +45,13 @@ const Footer: FC = () => (
               </a>
             </li>
             <li>
+              {/* abs.automatiabcn.com does not resolve — this link had been
+                  dead. The install guide that exists is the one in the repo. */}
               <a
-                href="https://abs.automatiabcn.com/docs/install"
+                href="https://github.com/automatiabcn/abs#quick-install-15-minutes"
                 className="hover:text-foreground"
+                rel="noreferrer"
+                target="_blank"
               >
                 Installation guide
               </a>

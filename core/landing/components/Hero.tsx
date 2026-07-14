@@ -22,24 +22,26 @@ export interface HeroProps {
   secondaryCta: HeroCta;
 }
 
+// The visual used to be `absolute inset-0` behind the whole hero, so the scene's
+// centre — the orb — landed on the headline: 600 × 300 pixels of overlap,
+// measured in the browser, with the sub-heading reading straight through it. It
+// now lives in the grid's second column and cannot reach the type at all.
+//
+// The two background layers went with it. They were painted in `purple-500` and
+// rgba(30, 87, 172) — the retired Automatia blue — neither of which is a colour
+// this product still uses. What is left is one wash of the brand token, well
+// away from the text.
 const Hero: FC<HeroProps> = ({ title, subtitle, primaryCta, secondaryCta }) => (
   <section
     aria-labelledby="hero-title"
     className="relative overflow-hidden min-h-[640px]"
   >
-    {/* Animated gradient background — pure CSS, no JS */}
     <div
       aria-hidden="true"
-      className="absolute inset-0 -z-20 bg-gradient-to-br from-primary/10 via-background to-purple-500/10"
+      className="absolute inset-0 -z-20 bg-[radial-gradient(900px_420px_at_88%_20%,rgb(var(--abs-brand-rgb)/0.09),transparent_62%)]"
     />
-    <div
-      aria-hidden="true"
-      className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_50%_-20%,rgba(30,87,172,0.18),transparent_60%)]"
-    />
-    {/* 3D scene on desktop / static SVG on mobile + reduced-motion */}
-    <HeroVisual />
 
-    <div className="container relative mx-auto grid gap-12 px-4 py-24 sm:py-32 lg:grid-cols-2 lg:items-center">
+    <div className="container relative mx-auto grid items-center gap-12 px-4 py-24 sm:py-32 lg:grid-cols-[1.05fr_0.95fr]">
       <div className="max-w-2xl">
         <h1
           id="hero-title"
@@ -64,6 +66,29 @@ const Hero: FC<HeroProps> = ({ title, subtitle, primaryCta, secondaryCta }) => (
             {secondaryCta.text}
           </Link>
         </div>
+
+        {/* The counts the headline used to carry. Each one is a fact the product
+            can be held to, not a claim. */}
+        <dl className="mt-10 flex flex-wrap gap-x-8 gap-y-4">
+          {[
+            { value: "100+", label: "MCP tools" },
+            { value: "6", label: "providers, cascaded" },
+            { value: "0", label: "data leaves your server" },
+          ].map((fact) => (
+            <div key={fact.label} className="flex flex-col">
+              <dt className="sr-only">{fact.label}</dt>
+              <dd className="font-mono text-lg tabular-nums text-foreground">
+                {fact.value}
+              </dd>
+              <span className="text-xs text-muted-foreground">{fact.label}</span>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      {/* 3D scene on desktop / static SVG on mobile + reduced-motion */}
+      <div className="flex justify-center lg:justify-end">
+        <HeroVisual />
       </div>
     </div>
   </section>
