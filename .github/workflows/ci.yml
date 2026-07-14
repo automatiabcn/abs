@@ -54,7 +54,7 @@ jobs:
           cache-dependency-path: core/backend/pyproject.toml
       - name: Install dependencies
         run: pip install -e ".[dev]" mypy
-      - name: Run mypy on T-001..T-005 modules
+      - name: Run mypy on the strictly-typed modules
         run: |
           mypy --strict --explicit-package-bases \
             app/event_bus \
@@ -146,6 +146,69 @@ jobs:
       - name: Audit npm dependencies
         working-directory: core/landing
         run: npm audit --audit-level=moderate
+
+  # `tests/integration` ran nowhere. The Qdrant test is the one that asserts a
+  # customer cannot read another customer's vectors, and the Cerbos test is the
+  # one that asserts a cross-tenant request is DENIED — the two properties a
+  # buyer would most want proof of. Both skip themselves when their service is
+  # unreachable, which on a laptop with nothing running means they always
+  # skipped, and in CI meant they never ran at all.
+  #
+  # So: bring the services up, and *check they are up* before the suite runs.
+  # A skipped isolation test looks exactly like a passing one in the summary.
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      qdrant:
+        image: qdrant/qdrant:v1.10.0
+        ports:
+          - 6333:6333
+    env:
+      ABS_QDRANT_URL: http://127.0.0.1:6333
+      ABS_CERBOS_HOST: http://127.0.0.1:3592
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start Cerbos with this repo's policies
+        run: |
+          docker run -d --name cerbos -p 3592:3592 \
+            -v "${{ github.workspace }}/infra/cerbos:/etc/cerbos:ro" \
+            ghcr.io/cerbos/cerbos:0.40.0 \
+            server --config=/etc/cerbos/config.yaml
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - name: Install dependencies
+        working-directory: core/backend
+        run: pip install -e ".[dev]"
+      - name: Wait for the services, and fail if they never arrive
+        run: |
+          for i in $(seq 1 30); do
+            qdrant=$(curl -fsS http://127.0.0.1:6333/readyz >/dev/null 2>&1 && echo up || echo down)
+            cerbos=$(curl -fsS http://127.0.0.1:3592/_cerbos/health >/dev/null 2>&1 && echo up || echo down)
+            [ "$qdrant" = up ] && [ "$cerbos" = up ] && echo "both up" && exit 0
+            sleep 2
+          done
+          echo "::error::qdrant=$qdrant cerbos=$cerbos — the isolation tests would have skipped themselves"
+          docker logs cerbos || true
+          exit 1
+      - name: Cross-tenant isolation (Qdrant + Cerbos)
+        working-directory: core/backend
+        # A skip here is a failure, not a pass. It means the service was not
+        # reached and the isolation property went unverified — and a skipped
+        # isolation test reads exactly like a passing one in the summary line.
+        run: |
+          set -o pipefail
+          pytest -q tests/integration/test_t009_qdrant_isolation.py \
+                    tests/integration/test_t004_cerbos_live.py \
+                    -o addopts='' --no-header -rs 2>&1 | tee out.txt
+          if grep -qE '[0-9]+ skipped' out.txt; then
+            echo "::error::an isolation test skipped itself — the property was not checked"
+            exit 1
+          fi
 
   migrations:
     runs-on: ubuntu-latest
