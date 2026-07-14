@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
+    "test:e2e:scenarios": "playwright test -c playwright.scenarios.config.ts",
     "analyze": "ANALYZE=true npm run build",
     "lighthouse:local": "lhci autorun --config=lighthouserc.json"
   },

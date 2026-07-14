@@ -227,6 +227,14 @@ export function MessageBubble({ msg }: { msg: ChatMessage }) {
       transition={{ duration: 0.2 }}
       data-test="chat-message"
       data-role={msg.role}
+      // Whether the answer has arrived yet is only visible in the words
+      // "Thinking…", which is enough for a person and nothing for anything else.
+      // A screen reader gets `aria-busy`, and the scenario suite — which reads
+      // this bubble to decide what the product replied — gets a state instead of
+      // having to guess from the text. It was guessing wrong: it settled on
+      // "Thinking…" as the answer and passed a nine-character reply as a real one.
+      data-pending={msg.role === "assistant" && msg.content === "" ? "true" : "false"}
+      aria-busy={msg.role === "assistant" && msg.content === ""}
       className={cn(
         "flex w-full gap-3",
         isUser ? "justify-end" : "justify-start",

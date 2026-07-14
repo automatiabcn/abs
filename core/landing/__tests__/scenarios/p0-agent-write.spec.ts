@@ -18,13 +18,18 @@ import { requireBackend, waitForStreamedReply } from "./helpers/stack";
 
 test.describe.configure({ mode: "serial" });
 
-// The one folder the local server opened up (ABS_AGENT_FS_ROOTS). The scenario
-// runs on the same machine as the server, so "did it write the file" is a
-// question we can answer by looking.
-const SANDBOX = path.resolve(
-  __dirname,
-  "../../../backend/.localrun/agent-sandbox",
-);
+// The one folder the server opened up (ABS_AGENT_FS_ROOTS). The scenario runs on
+// the same machine as the server, so "did it write the file" is a question we can
+// answer by looking.
+//
+// It must be the folder the *running* server allows, not a path this file
+// remembers. It named the old launcher's directory, so once the suite got a
+// launcher of its own the assistant was being asked to write outside its root —
+// which the policy refuses, correctly, and no approval was ever opened. The
+// scenario then reported that the approval gate was broken. It was working.
+const SANDBOX =
+  process.env.ABS_AGENT_SANDBOX ??
+  path.resolve(__dirname, "../../../backend/.e2e-state/agent-sandbox");
 const TARGET = path.join(SANDBOX, "scenario-note.md");
 
 test.beforeEach(async ({ request }) => {

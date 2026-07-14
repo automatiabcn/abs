@@ -42,6 +42,9 @@ def test_indexed_asks_the_store_instead_of_guessing(monkeypatch):
         tenant_slug = "default"
         status = "done"
         quality_note = ""
+        # The store files a meeting under the recording's fingerprint, not the
+        # row number the database happens to have given it.
+        audio_sha256 = "7" * 64
 
     from app.rag import qdrant_client as qc
 
@@ -80,6 +83,7 @@ def test_chunks_from_a_retired_embedder_do_not_count_as_indexed(monkeypatch):
         tenant_slug = "default"
         status = "done"
         quality_note = ""
+        audio_sha256 = "2" * 64
 
     meetings_mod._indexed_chunk_count(_Meeting())
     assert seen["embed_model"], "the count did not say which model it wanted"
@@ -133,7 +137,7 @@ def test_a_re_upload_rebuilds_a_missing_index(monkeypatch, client, as_admin):
 
     calls = {"reindex": 0}
 
-    def _fake_autoindex(*, meeting_id, title, uploader_email, result):  # noqa: ANN001
+    def _fake_autoindex(*, doc_id, title, uploader_email, result):  # noqa: ANN001
         calls["reindex"] += 1
         calls["segments"] = [s["text"] for s in result["segments"]]
         return len(result["segments"])
