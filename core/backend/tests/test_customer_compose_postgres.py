@@ -1,10 +1,10 @@
 """Customer compose Postgres + RLS integration check.
 
-Compose dosyasının schema'sı (Postgres service + backend env + volume),
-entrypoint.sh'in alembic upgrade akışı ve .env.example'da ABS_DB_PASSWORD
-zorunluluğu test edilir. Postgres engine'i gerçekten ayağa kaldırmıyor;
+Compose file schema (Postgres service + backend env + volume),
+entrypoint.sh's alembic upgrade flow and ABS_DB_PASSWORD in .env.example
+its requirement is tested. Postgres engine doesn't actually start up;
 The goal: the customer package must carry everything the RLS migration
-parçalarının yerinde olduğunu CI'da doğrulamak.
+verify in CI that the parts are in place.
 
 """
 

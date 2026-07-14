@@ -167,7 +167,7 @@ async def _complete(
             user_subject=user_subject,
         )
         # ProviderResponse exposes the model text as `.text` (NOT `.completion`)
-        # — reading the wrong field made every agent degrade silently.
+        # reading the wrong field made every agent degrade silently.
         return (
             getattr(resp, "text", "") or "",
             getattr(resp, "provider", "") or primary,

@@ -1,4 +1,4 @@
-"""025 Modul F — `status_check` MCP tool."""
+"""`status_check` MCP tool."""
 
 from __future__ import annotations
 

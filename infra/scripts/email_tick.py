@@ -1,6 +1,6 @@
-"""019 — Email queue tick cron entry point.
+"""Email queue tick cron entry point.
 
-Docker compose service `abs-email-cron` her 5dk bu scripti çalıştırır:
+Docker compose service `abs-email-cron` runs this script every 5 minutes:
   while true; do python infra/scripts/email_tick.py; sleep 300; done
 
 Stdout: sent=N failed=M ; exit 0 normal, 1 hata.

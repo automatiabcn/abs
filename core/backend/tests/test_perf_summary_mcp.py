@@ -1,4 +1,4 @@
-"""021 — perf_summary MCP tool: response shape."""
+"""perf_summary MCP tool: response shape."""
 
 from __future__ import annotations
 

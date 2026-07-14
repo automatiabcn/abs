@@ -41,8 +41,8 @@ from app.api.admin import churn as admin_churn_router
 from app.api.admin import dashboard as admin_dashboard_router
 from app.api.admin import errors_recent as admin_errors_router
 from app.api.admin import usage as admin_usage_router  # /v1/admin/usage
-from app.api.admin import users as admin_users_router  # Q8.5 finalize — /v1/admin/users
-from app.api.admin import widget_pricing as admin_widget_pricing_router  # Q12-R84
+from app.api.admin import users as admin_users_router  # /v1/admin/users
+from app.api.admin import widget_pricing as admin_widget_pricing_router
 from app.api.admin import providers_status as admin_providers_status_router  # Polish R7
 from app.api.admin import tenant as admin_tenant_router
 from app.api.admin import (
@@ -202,7 +202,7 @@ async def lifespan(_app: FastAPI):
         except Exception:
             pass
 
-    # Q12 IP-Hardening R4 + Patch A (2026-05-08) — verifier tamper check.
+    # IP hardening + Patch A (2026-05-08) — verifier tamper check.
     # Production: reads /etc/abs.verifier.hash (written by Dockerfile
     # builder stage from the shipped .so) and panics on mismatch.
     # No-op when neither /etc/abs.verifier.hash nor ABS_VERIFIER_HASH
@@ -216,7 +216,7 @@ async def lifespan(_app: FastAPI):
         _lf_logger.critical("tamper_check_failed: %s", exc)
         raise
 
-    # Q12 IP-Hardening R2 — online activation phone-home.
+    # IP hardening — online activation phone-home.
     # Fail-open within 7 days (server outage MUST NOT brick paying
     # customers). Skipped under ABS_TEST_MODE=1 and when activation is
     # disabled via ABS_PHONE_HOME_DISABLED=1 (dev convenience only —
@@ -480,14 +480,10 @@ app.include_router(admin_licenses_router.router)
 app.include_router(admin_churn_router.router)
 app.include_router(admin_errors_router.router)
 app.include_router(admin_audit_router.router)
-app.include_router(admin_users_router.router)  # Q8.5 finalize — /v1/admin/users
+app.include_router(admin_users_router.router)  # /v1/admin/users
 app.include_router(admin_usage_router.router)  # /v1/admin/usage
-app.include_router(
-    admin_widget_pricing_router.router
-)  # Q12-R84 — /v1/admin/widget_pricing
-app.include_router(
-    admin_providers_status_router.router
-)  # Polish R7 — /v1/admin/providers/status
+app.include_router(admin_widget_pricing_router.router)  # /v1/admin/widget_pricing
+app.include_router(admin_providers_status_router.router)  # /v1/admin/providers/status
 app.include_router(admin_tenant_router.router)  # /v1/admin/tenant + /v1/admin/branding
 app.include_router(admin_providers_save_router.router)  # POST /v1/admin/providers/{id}
 app.include_router(

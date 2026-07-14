@@ -1,7 +1,7 @@
-# Q12 R41 — Weekend mutation testing for high-value backend modules.
+# Weekend mutation testing for high-value backend modules.
 #
 # Background: full mutmut on a single critical module can run 16-24
-# minutes (Q12 S5 R31 measured this on `app/auth/oauth/server.py`).
+# minutes (measured this on `app/auth/oauth/server.py`).
 # That kills CI throughput on every PR. The pivot is to run mutmut
 # only on the weekend off-hours window, against modules where a
 # surviving mutant maps directly to a security or correctness bug
@@ -10,7 +10,7 @@
 # Output is a per-module report uploaded as a workflow artifact.
 # A surviving mutant does not fail the build; it surfaces in the
 # weekly review as a candidate for a focused boundary test
-# (S5 R31 mutation-floor pattern).
+# (mutation-floor pattern).
 #
 # Security: matrix values come from this workflow file (not from
 # untrusted github.event inputs) but we still route them through
@@ -90,7 +90,7 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  # Q12 R55 — Hypothesis 30K property-based fuzz, weekend opt-in.
+  # Hypothesis 30K property-based fuzz, weekend opt-in.
   # The same `[fuzz]` marker that lives default-skipped in PR CI
   # runs here against the live FastAPI client. Independent of the
   # mutmut matrix above (no fail-fast linkage); runs in parallel.

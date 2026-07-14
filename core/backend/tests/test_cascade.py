@@ -84,7 +84,7 @@ class _FailProvider(BaseProvider):
 
 @pytest.mark.asyncio
 async def test_cascade_fallback_to_next_provider(monkeypatch):
-    # Cache ve breaker temiz başla
+    # Start with cache and breaker cleared
     await orch_mod.default_cache.clear()
 
     fake_reg = {"a": _FailProvider(), "b": _OkProvider()}

@@ -1,4 +1,4 @@
-"""033 Modul B — Demo seed: realistic but synthetic sample data.
+"""Demo seed: realistic but synthetic sample data.
 
 Usage:
   python infra/scripts/seed_demo_data.py [--reset]

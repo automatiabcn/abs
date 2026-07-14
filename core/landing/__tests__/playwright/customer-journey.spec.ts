@@ -1,7 +1,7 @@
-// Q8 Phase O — Customer Journey Gate.
+// Phase O — Customer Journey Gate.
 //
 // 11-step end-to-end walkthrough that exercises every major surface
-// shipped during Q8 (Phase A → Phase P). Each step asserts:
+// shipped earlier (Phase A → Phase P). Each step asserts:
 //   * Backend route returns 200 (or auth-gated route redirects to login)
 //   * Page renders > 20K HTML chars (no blank skeleton)
 //   * No harmful console errors (Stripe / favicon / DevTools tolerated)
@@ -134,7 +134,7 @@ async function loginIfNeeded(page: Page) {
     .catch(() => null);
 }
 
-test.describe("Q8 Customer Journey — 11/11 panel surfaces", () => {
+test.describe("Customer Journey — 11/11 panel surfaces", () => {
   test.beforeEach(async ({ page }) => {
     await loginIfNeeded(page);
   });

@@ -280,7 +280,7 @@ class MeetingSegment(SQLModel, table=True):
 
 
 class UsageLog(SQLModel, table=True):
-    """Phase 4 / Q2.CO1 — append-only provider usage log.
+    """Phase 4 — append-only provider usage log.
 
     One row per cascade provider call. Aggregated at query time by
     `quota_monitor._query_usage_sum` to drive 80%/95% threshold warnings.
@@ -347,7 +347,7 @@ class ChatMessage(SQLModel, table=True):
 
 
 class User(SQLModel, table=True):
-    """Phase 2 / Q3 / Q2.CO5 — multi-admin user table.
+    """Phase 2 — multi-admin user table.
 
     Replaces the single-row `admin_credentials.json` long-term. For
     backward-compat the magic-link claim flow ALSO writes

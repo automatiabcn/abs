@@ -1,6 +1,6 @@
-// Q10-L4 Round 40 — aria-live announcement capture (screen-reader sim).
+// aria-live announcement capture (screen-reader sim).
 //
-// axe-core under Q10-L4 sweep ⭐ FULL CLEAN proves *static* a11y
+// axe-core under the accessibility sweep ⭐ FULL CLEAN proves *static* a11y
 // (label/role/contrast). It does not prove that screen-readers
 // receive timely announcements during dynamic interactions like
 // chat send + receive + error.
@@ -22,8 +22,8 @@
 import { test, expect, Page } from "@playwright/test";
 import * as fs from "node:fs";
 
-// R63 (S8) — block service-worker registration for these tests.
-// /panel/chat mounts <ServiceWorkerRegister> (R36); the SW excludes
+// block service-worker registration for these tests.
+// /panel/chat mounts <ServiceWorkerRegister>; the SW excludes
 // /v1/* from its cache strategy but its fetch handler still wraps the
 // request in `event.respondWith(fetch(req))`. In Chromium and Firefox
 // this passthrough is transparent to `page.route()`. In WebKit (Safari
@@ -154,7 +154,7 @@ async function readAnnouncementLog(page: Page): Promise<CapturedLog> {
   );
 }
 
-test.describe("Q10-L4 deep — aria-live announcement capture", () => {
+test.describe("deep — aria-live announcement capture", () => {
   test.beforeEach(async ({ page }) => {
     await installAnnouncementCapture(page);
   });
@@ -253,12 +253,12 @@ test.describe("Q10-L4 deep — aria-live announcement capture", () => {
   test("scenario 4: /panel root mounts role=alert when tools/quota/cascade 5xx", async ({
     page,
   }) => {
-    // R43 (S7) — replaces the S6 build-conditional pricing test
+    // replaces the earlier build-conditional pricing test
     // (CheckoutButton is dead code on /pricing which redirects to
     // /#contact). The /panel root has its own aria-live surface:
     //
     //   {(tools.isError || quota.isError || cascade.isError) && (
-    //     <p role="alert">Bazı veriler yüklenemedi …</p>
+    //     <p role="alert">Some data could not be loaded …</p>
     //   )}
     //
     // Forcing all three to 503 must surface the alert. This proves

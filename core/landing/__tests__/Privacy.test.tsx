@@ -16,7 +16,7 @@ async function renderPrivacy() {
   return render(element);
 }
 
-describe("Privacy page — 029 GDPR exercise sections", () => {
+describe("Privacy page — GDPR exercise sections", () => {
   it("documents GDPR self-service endpoints (export, delete, consent)", async () => {
     await renderPrivacy();
     const section = screen.getByTestId("gdpr-rights-exercise");

@@ -1,4 +1,4 @@
-"""021 — Vault decrypt overhead benchmark (sops + age timing).
+"""Vault decrypt overhead benchmark (sops + age timing).
 
 Measures a real decrypt when the sops binary is installed, and simulates one otherwise.
 Output: benchmarks/results/02_vault_decrypt_timing.json

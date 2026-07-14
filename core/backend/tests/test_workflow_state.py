@@ -53,7 +53,7 @@ def test_cleanup_old_removes_old_workflows():
     tid = start_workflow("test-old", "x")
     finish_workflow(tid, "ok")
 
-    # Manuel olarak finished_at'i 60 gün geriye it
+    # Manually push finished_at back 60 days
     import sqlite3
 
     from app.workflow.state import _db_path

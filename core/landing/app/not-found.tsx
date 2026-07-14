@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Polish round R10 — global 404. The default Next.js 404 looks nothing
+// global 404. The default Next.js 404 looks nothing
 // like the rest of the admin shell, which is jarring after a sidebar
 // mistypo. Brand-neutral copy + return CTAs to both the public landing
 // and the admin console.

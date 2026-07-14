@@ -1,10 +1,10 @@
-"""Q12 Session 7 R50 / L24 sweep 5 — webhook signature secret audit.
+"""Session 7 R50 / L24 sweep 5 — webhook signature secret audit.
 
 Audit findings:
 
   Stripe webhook  (app/api/webhooks/stripe.py):
     Pre-existing emit_event coverage on signature_missing / payload_invalid /
-    signature_invalid (Q12-L24 sweep 2). No new finding.
+    signature_invalid (sweep 2). No new finding.
 
   Slack webhook   (app/api/integrations/slack.py):
     verify_slack_signature already returns (ok, reason) tuple (signing_secret_empty
@@ -12,7 +12,7 @@ Audit findings:
     Caller routes reason into emit_event taxonomy. No new finding.
 
   GitHub webhook  (app/api/integrations/github_app.py):
-    **Q12-L24-008 (LOW ops visibility)** — `verify_webhook_signature` returned
+    **008 (LOW ops visibility)** — `verify_webhook_signature` returned
     a single bool. Caller emitted generic `reason="signature_invalid"` even
     when the actual cause was `secret==""` (boot misconfig). Operations
     could not distinguish a forgotten secret from an attack.
@@ -52,7 +52,7 @@ def _read(path: Path) -> str:
 # ---------- helper-side: typed signature verification ---------------------
 
 
-class TestQ12L24008TypedSignature:
+class TestTypedSignature:
     """github_app.verify_webhook_signature_typed — taxonomy distinguishes
     boot-misconfig from attack."""
 
@@ -65,7 +65,7 @@ class TestQ12L24008TypedSignature:
         ok, reason = self.fn(secret="", body=b"x", signature_header="sha256=abc")
         assert ok is False
         assert reason == "signing_secret_empty", (
-            "Q12-L24-008 regression: empty secret must surface as "
+            "regression: empty secret must surface as "
             "'signing_secret_empty', not collapse into 'signature_invalid'"
         )
 
@@ -100,9 +100,9 @@ class TestQ12L24008TypedSignature:
         assert reason == ""
 
 
-class TestQ12L24008BackCompatShim:
+class TestBackCompatShim:
     """The single-bool `verify_webhook_signature` must keep working for
-    external callers that were written against the pre-R50 contract."""
+    external callers that were written against the earlier contract."""
 
     def test_bool_shim_present(self) -> None:
         from app.integrations.github_app import verify_webhook_signature
@@ -129,7 +129,7 @@ class TestQ12L24008BackCompatShim:
 # ---------- caller-side: audit taxonomy in github_app router ---------------
 
 
-class TestQ12L24008GithubWebhookAuditTaxonomy:
+class TestGithubWebhookAuditTaxonomy:
     src_path = APP / "api" / "integrations" / "github_app.py"
 
     @pytest.fixture(autouse=True)
@@ -140,7 +140,7 @@ class TestQ12L24008GithubWebhookAuditTaxonomy:
     def test_uses_typed_helper(self) -> None:
         src = _read(self.src_path)
         assert "verify_webhook_signature_typed" in src, (
-            "Q12-L24-008 regression: github_app webhook handler must use "
+            "regression: github_app webhook handler must use "
             "verify_webhook_signature_typed (the (ok, reason) tuple) so "
             "the audit emit can distinguish secret_empty from attack"
         )
@@ -153,7 +153,7 @@ class TestQ12L24008GithubWebhookAuditTaxonomy:
         assert (
             "reason=reason" in src or 'reason=reason or "signature_invalid"' in src
         ), (
-            "Q12-L24-008 regression: github_app webhook handler is no "
+            "regression: github_app webhook handler is no "
             "longer routing the typed reason into the emit_event call"
         )
 
@@ -161,7 +161,7 @@ class TestQ12L24008GithubWebhookAuditTaxonomy:
 # ---------- existing webhook signature audits (regression pin) -------------
 
 
-class TestQ12L24Sweep5StripeWebhookAuditPin:
+class TestSweep5StripeWebhookAuditPin:
     """Pin the pre-existing Stripe webhook audit coverage so a future
     refactor that drops the emit_event calls fails this sweep, not a
     real production incident."""
@@ -188,7 +188,7 @@ class TestQ12L24Sweep5StripeWebhookAuditPin:
         )
 
 
-class TestQ12L24Sweep5SlackWebhookAuditPin:
+class TestSweep5SlackWebhookAuditPin:
     """Same pin for the Slack webhook signature audit (sweep 2 work)."""
 
     src_path = APP / "api" / "integrations" / "slack.py"

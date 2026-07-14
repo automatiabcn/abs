@@ -1,4 +1,4 @@
-# 033 Modul C — Docker Compose override for demo / customer-meeting mode.
+# Docker Compose override for demo / customer-meeting mode.
 #
 #   docker compose -f docker-compose.yml -f infra/docker-compose.demo.yml up -d
 #

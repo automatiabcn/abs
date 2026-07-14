@@ -22,7 +22,7 @@ async function renderPrivacy(lang?: "en" | "tr" | "es") {
   return render(element);
 }
 
-describe("Privacy page — 030 EN/TR/ES i18n", () => {
+describe("Privacy page — EN/TR/ES i18n", () => {
   it("renders English by default (?lang missing)", async () => {
     const { container } = await renderPrivacy();
     const main = container.querySelector("main");

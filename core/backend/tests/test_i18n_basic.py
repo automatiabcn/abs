@@ -1,4 +1,4 @@
-"""023 Modul A — i18n basic: t(), detect_lang(), middleware request.state."""
+"""i18n basic: t(), detect_lang(), middleware request.state."""
 
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def test_detect_lang_parses_accept_language(header, expected):
 
 def test_middleware_sets_request_state_lang(client):
     """Accept-Language=tr → backend internally lang='tr'.
-    Test endpoint kontrolü: /v1/license/status responses (lang etkisi B'de).
-    Burada middleware sadece state'e yazıyor — direct endpoint testi yok."""
+    Test endpoint check: /v1/license/status responses (language effect in B).
+    Here middleware only writes to state — no direct endpoint test."""
     r = client.get("/healthz", headers={"Accept-Language": "tr-TR,tr;q=0.9"})
     assert r.status_code == 200

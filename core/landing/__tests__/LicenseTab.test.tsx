@@ -1,4 +1,4 @@
-// Polish round R6 — guard against the hardcoded mock returning. The tab
+// guard against the hardcoded mock returning. The tab
 // must read /v1/license/info and render real values, then expose a usable
 // activation form.
 import { describe, expect, it } from "vitest";

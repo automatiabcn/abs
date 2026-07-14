@@ -1,7 +1,7 @@
-"""013 — Vault sops/age subprocess wrapper testleri.
+"""Vault sops/age subprocess wrapper testleri.
 
-Real binary'ler kurulu ise roundtrip + recipient testleri çalışır.
-Yoksa pytest.skip ile bypass.
+If real binaries are installed, roundtrip + recipient tests run.
+Otherwise bypass with pytest.skip.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ def test_sops_available_false_when_binary_missing(monkeypatch):
 
 
 def test_decrypt_all_returns_empty_when_secrets_yaml_missing(vault_paths, monkeypatch):
-    """sops binary mock'lu + master key mock'lu + secrets.yaml yok → {}"""
+    """sops binary mocked + master key mocked + secrets.yaml missing → {}"""
     import app.vault.runner as runner_mod
 
     monkeypatch.setattr(runner_mod, "sops_available", lambda: True)
@@ -50,7 +50,7 @@ def test_decrypt_raises_when_master_key_missing(vault_paths, monkeypatch):
     from app.vault.runner import VaultError
 
     monkeypatch.setattr(runner_mod, "sops_available", lambda: True)
-    # key dosyasi yok
+    # key file missing
     with pytest.raises(VaultError) as exc:
         runner_mod.decrypt_all()
     assert exc.value.transient is False
@@ -74,10 +74,10 @@ def test_encrypt_subprocess_fail_raises_non_transient(vault_paths, monkeypatch):
 
 @pytest.mark.skipif(not REAL_BINARY, reason="sops/age binary not installed")
 def test_encrypt_decrypt_roundtrip(vault_paths):
-    """Real binary roundtrip — age-keygen + encrypt + decrypt eşit dönmeli."""
+    """Real binary roundtrip — age-keygen + encrypt + decrypt should be equal."""
     import app.vault.runner as runner_mod
 
-    # Master key oluştur
+    # Create master key
     subprocess.run(
         ["age-keygen", "-o", str(vault_paths["key"])],
         check=True,

@@ -1,4 +1,4 @@
-"""022 Modul B — Webhook purge cron."""
+"""Webhook purge cron."""
 
 from __future__ import annotations
 

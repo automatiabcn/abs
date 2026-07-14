@@ -1,4 +1,4 @@
-"""Q12 / Brief 3 R4 — chat session threading metadata.
+"""chat session threading metadata.
 
 Revision ID: 0009_chat_threading
 Revises: 0008_minted_token_blacklist

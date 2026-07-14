@@ -1,4 +1,4 @@
-// P0 — the approval loop, and the race that must not double-send it.
+// the approval loop, and the race that must not double-send it.
 //
 // G1  An approval-gated agent proposes an action, it waits for a person, the
 //     person approves it in the panel, and the action fires — once, with a

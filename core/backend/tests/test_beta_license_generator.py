@@ -1,4 +1,4 @@
-"""025 Modul B — Beta license generator script."""
+"""Beta license generator script."""
 
 from __future__ import annotations
 

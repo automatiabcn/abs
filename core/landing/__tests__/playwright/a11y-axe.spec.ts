@@ -1,4 +1,4 @@
-// Q10 Round 3 / L4 — a11y axe-core sweep across the 15 panel surfaces.
+// a11y axe-core sweep across the 15 panel surfaces.
 // Each surface must report 0 'critical' and 0 'serious' WCAG 2.2 AA
 // violations. 'moderate' / 'minor' are surfaced as warnings (test does
 // not fail) so the team can triage them in subsequent rounds.
@@ -39,7 +39,7 @@ async function loginIfNeeded(page: Page) {
     .catch(() => null);
 }
 
-/** Q10-L9-004 — Next dev compile lag retry (shared helper). */
+/** Next dev compile lag retry (shared helper). */
 async function gotoWithDevRetry(page: Page, path: string) {
   for (const wait of [0, 1200, 2400]) {
     if (wait) await page.waitForTimeout(wait);
@@ -49,7 +49,7 @@ async function gotoWithDevRetry(page: Page, path: string) {
   return null;
 }
 
-test.describe("Q10/L4 — axe-core WCAG 2.2 AA sweep", () => {
+test.describe("axe-core WCAG 2.2 AA sweep", () => {
   test.beforeEach(async ({ page }) => {
     await loginIfNeeded(page);
   });
@@ -68,11 +68,11 @@ test.describe("Q10/L4 — axe-core WCAG 2.2 AA sweep", () => {
         .withTags(["wcag2a", "wcag2aa", "wcag22aa"])
         .disableRules([
           // Tremor injects color-contrast tokens that vary at runtime;
-          // we audit those separately via Lighthouse contrast (Round 5
-          // L5). Disable here to avoid false positives on every page.
+          // we audit those separately in the Lighthouse job. Disabled here to
+          // avoid a false positive on every page.
           "color-contrast",
         ])
-        // Q10-L4-001 + Q10-L5-005 — Tremor + Headless UI internals
+        // Tremor + Headless UI internals
         // (BarList aria-sort, DateRangePicker clear-button, popover/
         // listbox buttons) ship with axe violations we cannot patch
         // without forking. Excluded here so the L4 sweep stays green

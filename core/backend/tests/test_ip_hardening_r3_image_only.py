@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q12 IP-Hardening R3 — image-only customer distribution tests.
+"""IP hardening — image-only customer distribution tests.
 
 Coverage (5 tests):
     1. infra/docker-compose.customer.yml uses `image:` only — no `build:`.

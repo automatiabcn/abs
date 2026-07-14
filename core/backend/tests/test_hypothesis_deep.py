@@ -1,6 +1,6 @@
-"""Q11-L13 Round 39 — Hypothesis property-based deep fuzz.
+"""Hypothesis property-based deep fuzz.
 
-S5 R34 closing left "Q11-L13 hypothesis 10K fuzz" as a deferred
+An earlier round closing left "hypothesis 10K fuzz" as a deferred
 quality target. This file ships the property-based fuzz against
 three high-yield surfaces:
 
@@ -139,7 +139,7 @@ def chat_message(draw):
 # ─────────────────────────── /v1/chat/completions ──────────────────
 
 
-class TestQ11L13ChatCompletionsHypothesis:
+class TestChatCompletionsHypothesis:
     @settings(
         max_examples=1000,
         deadline=None,  # FastAPI clients are slow under hypothesis
@@ -174,7 +174,7 @@ class TestQ11L13ChatCompletionsHypothesis:
 # ─────────────────────────── /v1/rag/query ─────────────────────────
 
 
-class TestQ11L13RagQueryHypothesis:
+class TestRagQueryHypothesis:
     @settings(
         max_examples=1000,
         deadline=None,
@@ -222,7 +222,7 @@ class TestQ11L13RagQueryHypothesis:
 # ─────────────────────────── /v1/workflows ─────────────────────────
 
 
-class TestQ11L13WorkflowsHypothesis:
+class TestWorkflowsHypothesis:
     @settings(
         max_examples=1000,
         deadline=None,

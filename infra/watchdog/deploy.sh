@@ -9,7 +9,7 @@
 # Env override:
 #   INSTALL_DIR=/opt/abs-watchdog WATCHDOG_USER=watchdog DISCORD_WEBHOOK=https://...
 #
-# Repo kodu icin: git clone veya scp ile $INSTALL_DIR/src/watchdog/ altina kopyalayin.
+# For repo code: clone or scp into $INSTALL_DIR/src/watchdog/.
 
 set -euo pipefail
 
@@ -27,7 +27,7 @@ sudo -u "$WATCHDOG_USER" python3 -m venv "$INSTALL_DIR/.venv"
 sudo -u "$WATCHDOG_USER" "$INSTALL_DIR/.venv/bin/pip" install --upgrade pip
 sudo -u "$WATCHDOG_USER" "$INSTALL_DIR/.venv/bin/pip" install httpx pyyaml
 
-# 3. Code (kullanici git clone veya scp ile yuklemeli)
+# 3. Code (user must upload via git clone or scp)
 echo ""
 echo "NEXT (kod yukleme):"
 echo "  git clone https://github.com/automatia/abs $INSTALL_DIR/src"
@@ -44,7 +44,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 EOF
 chmod 644 /etc/cron.d/abs-watchdog
 
-# 5. Logrotate (rsyslog → /var/log/syslog'a yaziyor; weekly rotate)
+# 5. Logrotate (rsyslog → writes to /var/log/syslog; weekly rotate)
 cat > /etc/logrotate.d/abs-watchdog <<'EOF'
 /var/log/abs-watchdog.log {
     weekly

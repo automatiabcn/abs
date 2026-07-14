@@ -1,4 +1,4 @@
-"""Q12 Session 5 R31 — boundary tests pinning R26 atomic-claim logic.
+"""Session 5 R31 — boundary tests pinning R26 atomic-claim logic.
 
 Mutation-testing intent without the full mutmut runtime: explicit
 boundary tests that kill the high-yield mutation classes that would

@@ -1,4 +1,4 @@
-"""Q12 / Brief 3 — chat quality regression suite.
+"""chat quality regression suite.
 
 Covers the four spec checks added in `_agent-tasks/WORKER_RAG_CHAT_QUALITY.md`
 that ship in this commit (R1 citations, R2 pipeline routing, R5 provider

@@ -1,6 +1,6 @@
-"""Q11-L13 Round 44 — Hypothesis property-based fuzz scaled to 10K examples.
+"""Hypothesis property-based fuzz scaled to 10K examples.
 
-S6 R39 shipped 1K examples per surface (3K total) as the
+An earlier round shipped 1K examples per surface (3K total) as the
 engineering tradeoff. R44 scales the tradeoff target up to 10K
 per surface (30K total) but gates the suite under
 `@pytest.mark.fuzz` so it is **default-skipped** in normal CI:
@@ -103,7 +103,7 @@ HEAVY_SETTINGS = settings(
 
 
 @pytest.mark.fuzz
-class TestQ11L13ChatCompletions10K:
+class TestChatCompletions10K:
     @HEAVY_SETTINGS
     @given(
         messages=st.lists(chat_message(), min_size=0, max_size=8),
@@ -125,7 +125,7 @@ class TestQ11L13ChatCompletions10K:
 
 
 @pytest.mark.fuzz
-class TestQ11L13RagQuery10K:
+class TestRagQuery10K:
     @HEAVY_SETTINGS
     @given(
         query=st.one_of(
@@ -162,7 +162,7 @@ class TestQ11L13RagQuery10K:
 
 
 @pytest.mark.fuzz
-class TestQ11L13WorkflowsSynth10K:
+class TestWorkflowsSynth10K:
     @HEAVY_SETTINGS
     @given(
         name=st.one_of(st.text(min_size=0, max_size=300), st.none()),

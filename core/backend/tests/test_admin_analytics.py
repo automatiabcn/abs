@@ -1,4 +1,4 @@
-"""032 Modul D + E + F + G — license analytics, churn, errors, audit viewer."""
+"""license analytics, churn, errors, audit viewer."""
 
 from __future__ import annotations
 

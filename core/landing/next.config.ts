@@ -70,7 +70,7 @@ const SECURITY_HEADERS = [
   },
 ];
 
-// Q6 PB — same-origin proxy to the FastAPI backend so panel pages can
+// PB — same-origin proxy to the FastAPI backend so panel pages can
 // `fetch("/v1/meetings")` without CORS / cookie-domain pain. Override with
 // ABS_BACKEND_URL when the backend is on a different host (Docker, prod).
 const BACKEND_URL = process.env.ABS_BACKEND_URL ?? "http://localhost:8000";

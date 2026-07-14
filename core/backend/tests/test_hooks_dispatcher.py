@@ -52,15 +52,15 @@ def test_claude_code_hook_output_shape():
 
 
 def test_hook_failure_does_not_break_dispatch(monkeypatch):
-    # plan_first hook'unu exception atan bir stub ile değiştir
+    # replace plan_first hook with a stub that raises exception
     def _boom(*a, **kw):
         raise RuntimeError("boom")
 
     monkeypatch.setattr(dispatcher.plan_first, "maybe_plan_first_nudge", _boom)
     out = dispatcher.dispatch_hooks("Bash", {"command": "ls"})
-    # safe_hook decorator'ı yutmamış çünkü biz stub attık; dispatcher
-    # exception'ı raise etmeli mi, etmemeli mi? Production tasarımında etmemeli;
-    # test: dispatch çökmediğini doğrula
+    # safe_hook decorator didn't swallow because we added a stub; dispatcher
+    # should the exception be raised or not? In production design it should not;
+    # test: verify dispatch does not crash
     try:
         assert isinstance(out, dict)
     except AssertionError:

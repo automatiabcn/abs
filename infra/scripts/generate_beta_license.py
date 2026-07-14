@@ -1,4 +1,4 @@
-"""025 — Beta license generator (manual, repeatable).
+"""Beta license generator (manual, repeatable).
 
 Usage:
   python infra/scripts/generate_beta_license.py \\

@@ -169,7 +169,7 @@ def test_google_calendar_pickup_creates_jobs(tmp_path, monkeypatch):
             "id": "evt-1",
             "tenant_id": "acme",
             "hangoutLink": "https://meet.example/abc",
-            "summary": "Q3 sync",
+            "summary": "sync",
         },
         {"id": "evt-skip", "tenant_id": "acme", "summary": "no link"},
     ]

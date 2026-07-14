@@ -1,4 +1,4 @@
-"""027 Modul B — Age key rotation (mocked age-keygen + sops)."""
+"""Age key rotation (mocked age-keygen + sops)."""
 
 from __future__ import annotations
 

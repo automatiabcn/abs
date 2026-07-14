@@ -1,4 +1,4 @@
-"""030 Modul H — `mcp_tool_smoke` script accepts the 6 new 030 tools."""
+"""`mcp_tool_smoke` script accepts the 6 new 030 tools."""
 
 from __future__ import annotations
 

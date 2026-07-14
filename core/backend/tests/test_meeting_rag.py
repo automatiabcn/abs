@@ -22,7 +22,7 @@ def _make() -> Transcript:
 
 def test_build_chunks_includes_speaker_prefix() -> None:
     chunks = build_chunks_from_transcript(
-        _make(), meeting_id="m1", title="Q3 sync", tenant_id="t1"
+        _make(), meeting_id="m1", title="sync", tenant_id="t1"
     )
     assert len(chunks) == 2
     assert chunks[0]["text"] == "[Ahmet] Hello world"

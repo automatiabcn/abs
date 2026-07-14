@@ -1,4 +1,4 @@
-"""029 Modul D — Consent helper + endpoint tests."""
+"""Consent helper + endpoint tests."""
 
 from __future__ import annotations
 

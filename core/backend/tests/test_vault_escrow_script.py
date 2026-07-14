@@ -1,4 +1,4 @@
-"""027 Modul E — Escrow setup script syntax + dry-run options."""
+"""Escrow setup script syntax + dry-run options."""
 
 from __future__ import annotations
 

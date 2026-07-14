@@ -49,7 +49,7 @@ function loadAuthCookie(): {
   return null;
 }
 
-test.describe("Q12-R64 /admin/audit split-shell", () => {
+test.describe("/admin/audit split-shell", () => {
   test("page renders heading + filter inputs (interactive island still mounts)", async ({
     page,
     context,

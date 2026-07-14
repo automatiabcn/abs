@@ -1,4 +1,4 @@
-"""010 — Judge persona live training testleri (fake JSONL)."""
+"""Judge persona live training testleri (fake JSONL)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import pytest
 
 @pytest.fixture
 def isolated_persona_dirs(monkeypatch, tmp_path: Path):
-    """data_dir + cache_dir tmp dizinlere yönlendir, judge_log + persona izole."""
+    """data_dir + cache_dir redirected to tmp directories, judge_log + persona isolated."""
     from app.config import settings
 
     data_dir = tmp_path / "data"
@@ -81,7 +81,7 @@ def test_persona_train_tightens_when_accepts_have_lower_drift(isolated_persona_d
         _entry("reject", 0.20) for _ in range(5)
     ]
     # accept_avg=0.05, reject_avg=0.20 → delta = +0.15 → loosen
-    # Tightens için tersi: accept yüksek drift, reject düşük drift
+    # opposite for Tightens: accept high drift, reject low drift
     entries = [_entry("accept", 0.30) for _ in range(5)] + [
         _entry("reject", 0.05) for _ in range(5)
     ]

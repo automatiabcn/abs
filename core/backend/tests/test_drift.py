@@ -1,4 +1,4 @@
-"""Q11 Round 21 / L15 — OpenAPI vs implementation drift scan.
+"""OpenAPI vs implementation drift scan.
 
 Three contracts under test:
 
@@ -12,7 +12,7 @@ Three contracts under test:
 
   3. Authenticated routes whose OpenAPI declares 401 actually return
      401 when called without auth (not 500 / not 403). Sample of the
-     critical Q10/Q11 surfaces.
+     critical the critical surfaces.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ def openapi(client):
     return r.json()
 
 
-class TestQ11L15PathReachability:
+class TestPathReachability:
     """For every GET path in /openapi.json with no required params,
     issue a request and confirm the server responds (any non-405)."""
 
@@ -48,7 +48,7 @@ class TestQ11L15PathReachability:
         )
 
 
-class TestQ11L15ResponseStanzaPresence:
+class TestResponseStanzaPresence:
     def test_every_operation_documents_at_least_one_response(self, openapi):
         empty: list[str] = []
         for path, methods in openapi["paths"].items():
@@ -60,7 +60,7 @@ class TestQ11L15ResponseStanzaPresence:
         assert not empty, f"endpoints without any documented response: {empty}"
 
 
-class TestQ11L15AuthGate401Conformance:
+class TestAuthGate401Conformance:
     """Sample critical authed routes — they MUST 401 (not 500/403)
     without bearer/cookie. Catches the case where a route forgets
     its auth dependency."""
@@ -85,7 +85,7 @@ class TestQ11L15AuthGate401Conformance:
         )
 
 
-class TestQ11L15RfcShape:
+class TestRfcShape:
     """FastAPI default error shape is {"detail": str|object}. Catches a
     drift to a non-standard error envelope that breaks panel error
     parsing."""
@@ -97,7 +97,7 @@ class TestQ11L15RfcShape:
         assert "detail" in body, f"401 response shape drifted: {body}"
 
     def test_unauthed_hooks_post_with_invalid_body_still_401(self, client):
-        """Q11-L15-001 regression guard: an unauthed POST that ALSO has
+        """regression guard: an unauthed POST that ALSO has
         an invalid body must 401 (auth check first), never 422 (schema
         leak)."""
         r = client.post("/v1/hooks/quota-check", json={"garbage": True})

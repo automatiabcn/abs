@@ -106,7 +106,7 @@ export default function UsageClient({
     date: b.day,
     "Claude tokens": b.claude_tokens,
   }));
-  // Polish round R5 — empty axes look broken; surface a friendly message
+  // empty axes look broken; surface a friendly message
   // until the first Claude call lands. `every(=== 0)` covers fresh installs
   // and tenants that opted out of Claude.
   const trendIsEmpty =

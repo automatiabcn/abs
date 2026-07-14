@@ -1,4 +1,4 @@
-"""024 Modul F — Landing security headers config (best-practices ≥ 100)."""
+"""Landing security headers config (best-practices ≥ 100)."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""022 Modul F — License GET /v1/license/status revoked_at raporu."""
+"""License GET /v1/license/status revoked_at raporu."""
 
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ def test_license_status_returns_revoked_for_revoked_db_row(client, monkeypatch):
 
 
 def test_license_status_returns_active_when_no_revocation(client, monkeypatch):
-    """Revoked olmayan lisans için status 'active'."""
+    """status 'active' for a non-revoked license."""
     token = generate_license(
         customer_id="cus_active_st", tier="self-host", seat_count=1
     )

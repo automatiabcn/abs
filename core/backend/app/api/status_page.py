@@ -299,7 +299,7 @@ def _last_payment_iso() -> Optional[str]:
 
 def _mrr_estimate_usd() -> int:
     """Rough MRR: tier × active-license heuristic. Per-tier monthly contribution
-    comes from settings (Q12-R84 — operator configures real prices)."""
+    comes from settings (operator configures real prices)."""
     try:
         from sqlmodel import Session, select
 

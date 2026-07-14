@@ -1,4 +1,4 @@
-"""030 Modul C — DRAFT banner present on all 4 legal docs + README."""
+"""DRAFT banner present on all 4 legal docs + README."""
 
 from __future__ import annotations
 

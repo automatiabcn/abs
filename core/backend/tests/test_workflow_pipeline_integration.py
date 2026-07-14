@@ -1,4 +1,4 @@
-"""010 — Pipeline × workflow_state durability bağı testleri."""
+"""Pipeline × workflow_state durability dependency tests."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def _make_resp(
 
 @pytest.fixture
 def isolated_workflow_db(monkeypatch, tmp_path: Path):
-    """Workflow_state.db'yi tmp dizine yönlendir + her test taze."""
+    """Redirect Workflow_state.db to tmp directory + each test fresh."""
     from app.config import settings
 
     monkeypatch.setattr(settings, "data_dir", str(tmp_path))
@@ -29,7 +29,7 @@ def isolated_workflow_db(monkeypatch, tmp_path: Path):
 
 @pytest.fixture
 def fake_providers(monkeypatch):
-    """Tüm get_provider çağrıları AsyncMock provider döndürsün."""
+    """All get_provider calls should return an AsyncMock provider."""
     providers: dict[str, object] = {}
 
     def _set(
@@ -68,7 +68,7 @@ def fake_providers(monkeypatch):
 
     for mod in (qc, qtr, qa, qt, qch):
         monkeypatch.setattr(mod, "get_provider", _get, raising=False)
-    # qual_human + transformer humanize_transform üzerinden gider; transform fn'unu mock yerine sahte string döndüren coroutine yap
+    # qual_human + transformer go through humanize_transform; make transform fn a coroutine returning a fake string instead of mock
     if hasattr(qtransform, "get_provider"):
         monkeypatch.setattr(qtransform, "get_provider", _get, raising=False)
     if hasattr(qh, "get_provider"):
@@ -81,7 +81,7 @@ def fake_providers(monkeypatch):
 async def test_pipeline_no_workflow_when_disabled(
     isolated_workflow_db, fake_providers, monkeypatch
 ):
-    """workflow_durable=False → DB'ye hiçbir kayıt yazılmaz."""
+    """workflow_durable=False → no records written to DB."""
     from app.config import settings
     from app.pipelines.quality.code import QualCodePipeline
     from app.workflow import list_workflows
@@ -104,7 +104,7 @@ async def test_pipeline_no_workflow_when_disabled(
 async def test_pipeline_writes_workflow_when_enabled(
     isolated_workflow_db, fake_providers, monkeypatch
 ):
-    """workflow_durable=True → workflow + steps DB'ye yazılır."""
+    """workflow_durable=True → workflow + steps written to DB."""
     from app.config import settings
     from app.pipelines.quality.code import QualCodePipeline
     from app.workflow import get_workflow, list_workflows
@@ -133,7 +133,7 @@ async def test_pipeline_writes_workflow_when_enabled(
 async def test_pipeline_finish_records_status_fail_on_error(
     isolated_workflow_db, fake_providers, monkeypatch
 ):
-    """Tüm provider exception → workflow status 'fail'."""
+    """All provider exception → workflow status 'fail'."""
     from app.config import settings
     from app.pipelines.quality.code import QualCodePipeline
     from app.workflow import get_workflow, list_workflows
@@ -158,7 +158,7 @@ async def test_pipeline_finish_records_status_fail_on_error(
 async def test_qual_human_chains_workflow(
     isolated_workflow_db, fake_providers, monkeypatch
 ):
-    """qual_human (parent) + qual-tr (nested) iki ayrı workflow yazar."""
+    """qual_human (parent) + qual-tr (nested) write two separate workflows."""
     from app.config import settings
     from app.pipelines.humanize.qual_human import QualHumanPipeline
     from app.workflow import get_workflow, list_workflows

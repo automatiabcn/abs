@@ -205,7 +205,7 @@ describe("the usage page, when the numbers could not be read", () => {
   it("does not confirm the product's own cost claim out of thin air", async () => {
     // The fallback used to pass `free_path.pct_24h = 1` and a 1,000,000-token
     // Claude budget nobody set, which the page renders as "100.0 % served free"
-    // — the exact claim the customer opened this page to verify.
+    // the exact claim the customer opened this page to verify.
     const { container } = renderWithQuery(
       <UsageClient initial={null} loadError="The server answered 503." />,
     );

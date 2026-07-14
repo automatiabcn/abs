@@ -1,4 +1,4 @@
-"""028 Modul E — OAuth state TTL cleanup cron.
+"""OAuth state TTL cleanup cron.
 
 Deletes any OAuthState rows older than 10 minutes (or override via --minutes).
 

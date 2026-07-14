@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Q12-L20 — Isolated docker chaos runner.
+# Isolated docker chaos runner.
 #
 # Stands up a parallel `abs-chaos` compose project on offset ports,
 # leaving the live `infra-*` and `abs-cj-*` stacks (25h customer

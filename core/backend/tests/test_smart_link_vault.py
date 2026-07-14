@@ -1,4 +1,4 @@
-"""026 Modul C — vault_secrets encrypt/decrypt/rotate roundtrip."""
+"""vault_secrets encrypt/decrypt/rotate roundtrip."""
 
 from __future__ import annotations
 

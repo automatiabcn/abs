@@ -1,4 +1,4 @@
-"""026 Modul E — POST /v1/smart-link/api-key with provider validation + vault store."""
+"""POST /v1/smart-link/api-key with provider validation + vault store."""
 
 from __future__ import annotations
 

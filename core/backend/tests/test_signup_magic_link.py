@@ -42,7 +42,7 @@ def test_signup_response_retains_magic_link_in_dev(client):
     )
     assert r.status_code in (200, 201), r.text
     body = r.json()
-    # Q12 honesty round: the dev-mode magic_link now points at the /activate
+    # honesty round: the dev-mode magic_link now points at the /activate
     # SPA page (the backend claim endpoint /auth/magic is unchanged).
     assert body.get("magic_link", "").startswith("/activate?token=")
 

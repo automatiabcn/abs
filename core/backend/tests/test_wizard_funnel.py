@@ -1,4 +1,4 @@
-"""022 Modul D — Wizard funnel metric + MCP tool."""
+"""Wizard funnel metric + MCP tool."""
 
 from __future__ import annotations
 

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q12 IP-Hardening R1 — hardware fingerprint binding tests.
+"""IP hardening — hardware fingerprint binding tests.
 
 Coverage (5 tests):
     1. fingerprint stable across calls

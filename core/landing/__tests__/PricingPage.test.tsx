@@ -18,12 +18,12 @@ vi.mock("next/link", () => ({
 
 import PricingPage from "@/components/PricingPage";
 
-// Q6 PA + brand alignment (aa010a7) collapsed the original three-tier
+// PA + brand alignment (aa010a7) collapsed the original three-tier
 // pricing cards (Self-Host Lifetime / + Maintenance / Managed Cloud)
 // into a single Pilot/PoC contact CTA. The component now ignores the
 // `lang` prop entirely so we exercise the surfaces that survived: the
 // section testid, the heading, and the mailto CTA.
-describe("PricingPage — Pilot/PoC outreach (post Q6 PA)", () => {
+describe("PricingPage — Pilot/PoC outreach", () => {
   it("renders the Pilot/PoC outreach section", () => {
     render(<PricingPage lang="en" />);
     expect(screen.getByTestId("pricing-page")).toBeInTheDocument();

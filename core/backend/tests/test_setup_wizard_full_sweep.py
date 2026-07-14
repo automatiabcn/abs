@@ -1,5 +1,5 @@
 """
-Q12-L29 R78 — first-customer 11-step end-to-end sweep.
+first-customer 11-step end-to-end sweep.
 
 Walks the journey a fresh tester takes the very first time they hit ABS,
 end-to-end through one TestClient instance with state propagated via cookies:

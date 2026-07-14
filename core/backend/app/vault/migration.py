@@ -6,7 +6,7 @@
 """Plaintext .env → encrypted vault migration.
 
 Idempotent: migrates only when a sops master key exists and .env still holds a plaintext key.
-.env'den silinir, sops'a yazilir, audit log atilir.
+The key is removed from .env, written to sops, and the move is recorded in the audit log.
 """
 
 from __future__ import annotations

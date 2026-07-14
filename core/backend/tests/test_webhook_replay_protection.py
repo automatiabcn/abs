@@ -1,4 +1,4 @@
-"""028 Modul D — Webhook event replay protection (24h+).
+"""Webhook event replay protection (24h+).
 
 We verify that the existing 017 idempotency protects against replays well
 beyond 24 hours, and that the purge cron (022) honours a 7-day retention

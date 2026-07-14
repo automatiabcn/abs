@@ -1,4 +1,4 @@
-"""POST /webhooks/stripe — imza + checkout.session.completed akışı."""
+"""POST /webhooks/stripe — signature + checkout.session.completed flow."""
 
 from __future__ import annotations
 

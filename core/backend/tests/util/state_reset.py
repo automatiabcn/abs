@@ -1,8 +1,8 @@
-"""Q5.CO1 — Repro state-isolation fixture.
+"""Repro state-isolation fixture.
 
 Sprint repro scripts share an SQLite DB and a small set of state files
 (`admin_credentials.json`, `setup_state.json`, `users` rows). Running them
-in chain after Q3/Q4 magic-link claim mutations breaks older suites.
+in chain after the magic-link claim mutations breaks older suites.
 
 This helper resets the data layer to a clean baseline so each sprint's
 repro can run from a known state. Nothing here is production code — pure

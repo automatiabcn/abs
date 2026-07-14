@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Vault rotation + status API (admin auth zorunlu).
+"""Vault rotation + status API (admin auth required).
 
 POST /v1/secrets/rotate {key, new_value} → write_secret + invalidate cache + audit
 GET  /v1/secrets/status                  → vault_enabled + per-key configured (NO CLEARTEXT)

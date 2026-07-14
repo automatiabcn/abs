@@ -18,12 +18,12 @@ def _login(client):
 
 
 def test_symbol_graph_stub_reachable(client):
-    """016 — gerçek implementation: bilinmeyen sembol → status='not_found'."""
+    """real implementation: unknown symbol → status='not_found'."""
     _login(client)
     r = client.get("/api/symbol-graph/neighbors?name=ask_groq")
     assert r.status_code == 200
     body = r.json()
-    # DB henüz indexlenmediğinde 'not_found' döner; indexlenmişse 'ok'
+    # when DB not yet indexed returns 'not_found'; when indexed returns 'ok'
     assert body["status"] in {"not_found", "ok"}
     assert (
         body.get("name") == "ask_groq" or body.get("root", {}).get("name") == "ask_groq"
@@ -66,10 +66,10 @@ def test_widget_endpoints_require_auth(client):
 
 
 def test_symbol_graph_validates_name_length(client):
-    """016 — name min_length=1, max_length=256."""
+    """name min_length=1, max_length=256."""
     _login(client)
     r = client.get("/api/symbol-graph/neighbors?name=")
     assert r.status_code == 422
-    # 256 üstü → 422
+    # above 256 → 422
     r = client.get("/api/symbol-graph/neighbors?name=" + ("x" * 300))
     assert r.status_code == 422

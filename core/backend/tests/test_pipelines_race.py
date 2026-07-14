@@ -1,4 +1,4 @@
-"""Race pipeline testleri — ilk başarılı kazanır."""
+"""Race pipeline tests — first success wins."""
 
 from __future__ import annotations
 

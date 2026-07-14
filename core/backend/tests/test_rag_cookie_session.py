@@ -1,4 +1,4 @@
-"""Q12 Founder Tester Round 2 — `/v1/rag/*` cookie-session fallback.
+"""`/v1/rag/*` cookie-session fallback.
 
 `/admin/rag` is an operator console served behind the panel admin cookie
 session (`abs_session`). Before this round it could not call `/v1/rag/ingest`

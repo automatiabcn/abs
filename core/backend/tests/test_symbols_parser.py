@@ -1,4 +1,4 @@
-"""016 — Python AST symbol parser + SQLite store testleri."""
+"""Python AST symbol parser + SQLite store testleri."""
 
 from __future__ import annotations
 

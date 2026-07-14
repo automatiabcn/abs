@@ -1,4 +1,4 @@
-"""033 Modul J — Demo screenshot generator (Playwright headless).
+"""Demo screenshot generator (Playwright headless).
 
 Usage (requires `pip install playwright && playwright install chromium`):
   python infra/scripts/generate_demo_screenshots.py [--base-url http://localhost:8000]

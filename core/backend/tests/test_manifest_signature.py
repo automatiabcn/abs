@@ -1,4 +1,4 @@
-"""015 — Manifest RS256 signature verify testleri (tmp keypair)."""
+"""Manifest RS256 signature verify testleri (tmp keypair)."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def tmp_keypair(tmp_path_factory):
 
 
 def _sign_bytes(private_pem: Path, data: bytes) -> str:
-    """openssl ile imza al, base64 dondur."""
+    """obtain signature with openssl, return base64."""
     sig_path = private_pem.parent / "sig.bin"
     sig_path.write_bytes(b"")
     subprocess.run(

@@ -83,7 +83,7 @@ def _train_logistic(
 
 
 def train_ml(min_samples: int = 20) -> Dict[str, Any]:
-    """judge_log entry'lerini logistic regression ile fit et, modeli persist et."""
+    """fit judge_log entries with logistic regression, persist the model."""
     entries = read_recent(limit=2000)
     rows: List[tuple] = []
     for e in entries:

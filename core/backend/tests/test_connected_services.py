@@ -1,4 +1,4 @@
-"""026 Modul F — Connected services dashboard endpoint + HTML."""
+"""Connected services dashboard endpoint + HTML."""
 
 from __future__ import annotations
 

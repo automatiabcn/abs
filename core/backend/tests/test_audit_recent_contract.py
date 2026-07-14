@@ -1,4 +1,4 @@
-"""Q12 R69 (S8) — /v1/admin/audit/recent contract + edge-case deep.
+"""(S8) — /v1/admin/audit/recent contract + edge-case deep.
 
 R64 migrated `/admin/audit` to a server-side split-shell that fetches
 `/v1/admin/audit/recent?limit=200` with the caller's session cookie

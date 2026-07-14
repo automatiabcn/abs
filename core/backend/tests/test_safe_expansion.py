@@ -1,11 +1,11 @@
-"""Q12 L21 sweep 2 — safe-expansion drills (non-destructive).
+"""sweep 2 — safe-expansion drills (non-destructive).
 
 Three idempotency / boundary checks the founder-gated L21 plan
 explicitly authorised:
 
 * **migration roundtrip 10×** — `alembic upgrade head → downgrade -1 →
   upgrade head` ten consecutive iterations must be idempotent
-  (extends Q11-L14 single-cycle test).
+  (extends the earlier single-cycle test).
 * **license JWT expiry boundary** — at `exp = now-1s`, `exp = now+1s`,
   `exp = now+24h` the verifier must respond consistently per the
   RFC 7519 §4.1.4 contract.
@@ -47,7 +47,7 @@ def _alembic_cfg(db_url: str, repo_root: Path) -> Config:
 
 
 # ---------------------------------------------------------------------------
-# Q12-L21-002 — alembic upgrade↔downgrade 10× idempotency
+# alembic upgrade↔downgrade 10× idempotency
 # ---------------------------------------------------------------------------
 
 
@@ -73,7 +73,7 @@ def test_alembic_roundtrip_10x() -> None:
         assert "minted_token_blacklist" in baseline
         assert "chat_sessions" in baseline
 
-        # Q12 / Brief 3 R4 — `head` advanced past 0008, so `-1` no
+        # `head` advanced past 0008, so `-1` no
         # longer lands on the revision that drops minted_token_blacklist.
         # Pin the downgrade target to 0007_chat_sessions so this 10×
         # contract keeps exercising the same up/down/up cycle.
@@ -97,7 +97,7 @@ def test_alembic_roundtrip_10x() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Q12-L21-003 — license JWT expiry boundary
+# license JWT expiry boundary
 # ---------------------------------------------------------------------------
 
 
@@ -163,7 +163,7 @@ def test_license_far_future_exp_accepted() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Q12-L21-004 — license token tampering / signature mismatch
+# license token tampering / signature mismatch
 # ---------------------------------------------------------------------------
 
 

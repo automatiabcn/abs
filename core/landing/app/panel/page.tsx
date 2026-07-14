@@ -19,7 +19,7 @@
 //
 // On any auth/transport failure each fetch falls back to MOCK
 // independently — the page never 500s on /panel because of a
-// downstream blip. Same fallback semantics as the pre-R70 client
+// downstream blip. Same fallback semantics as the earlier client
 // `useQuery` (no MOCK fallback before, but isError caused the same
 // banner to fire — preserved).
 import { cookies } from "next/headers";

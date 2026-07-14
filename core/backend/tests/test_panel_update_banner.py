@@ -1,4 +1,4 @@
-"""014 — Panel update banner UI içerik kontrolleri."""
+"""Panel update banner UI content checks."""
 
 from __future__ import annotations
 

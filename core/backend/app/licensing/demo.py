@@ -93,7 +93,7 @@ def is_active() -> bool:
 
 
 def reset() -> None:
-    """Demo state sil — ilk kurulum reset (test/dev)."""
+    """Drop the demo state — back to a first-run install (test/dev)."""
     p = _state_path()
     if p.is_file():
         try:

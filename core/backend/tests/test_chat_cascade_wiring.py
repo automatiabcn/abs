@@ -1,9 +1,9 @@
 """Regression — `chat._run_cascade` live wiring.
 
 Founder Phase B evidence (3-turn chat → 3 stub responses):
-    "Cascade canli uclari henuz aktif degil."
+    "Cascade live endpoints are not yet active."
 
-Round 2 wired `/v1/cascade/run` to `call_with_cascade` but the parallel
+This change wired `/v1/cascade/run` to `call_with_cascade` but the parallel
 helper `app.api.chat._run_cascade()` (used by the SSE chat path) stayed
 stubbed. These tests guard that the helper now delegates to the
 orchestrator and that the stub message no longer surfaces when at least
@@ -148,7 +148,7 @@ def test_chat_completions_no_provider_returns_503(auth_client, monkeypatch):
     """No provider → structured HTTP 503.
 
     Pre-fix: chat completions opened a 200 SSE stream and yielded a
-    Türkçe error event, so JS `response.ok = true` lost retry semantics.
+    Turkish error event, so JS `response.ok = true` lost retry semantics.
     Post-fix: pre-flight provider probe raises HTTPException(503) BEFORE
     StreamingResponse starts. Body is JSON with `error`, `retry_after`,
     `hint`; Retry-After header is set.

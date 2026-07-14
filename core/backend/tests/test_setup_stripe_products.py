@@ -1,4 +1,4 @@
-"""017 — setup_stripe_products.py argparse + live-mode safeguard testleri."""
+"""setup_stripe_products.py argparse + live-mode safeguard testleri."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ def _script_path() -> Path:
 
 def _run(args, env_extra=None):
     env = os.environ.copy()
-    # Test ortam stripe config'inin script'i etkilememesi icin temizle
+    # Clean up so test environment stripe config does not affect the script
     env.pop("ABS_STRIPE_SECRET_KEY", None)
     if env_extra:
         env.update(env_extra)
@@ -40,7 +40,7 @@ def test_dry_run_no_stripe_call():
     )
     assert result.returncode == 0, result.stderr
     assert "DRY RUN" in result.stdout
-    # 3 SKU icin WOULD-CREATE satiri
+    # WOULD-CREATE line for 3 SKUs
     assert result.stdout.count("WOULD-CREATE") == 3
     # Stripe live API erismez (real API hata verirdi)
     assert "self-host" in result.stdout
@@ -69,7 +69,7 @@ def test_mode_test_with_live_key_aborts():
 
 
 def test_no_key_env_returns_1():
-    """ABS_STRIPE_SECRET_KEY yok → exit 1."""
+    """ABS_STRIPE_SECRET_KEY missing → exit 1."""
     result = _run(["--mode", "test"])
     assert result.returncode == 1
     assert "ABS_STRIPE_SECRET_KEY" in result.stderr

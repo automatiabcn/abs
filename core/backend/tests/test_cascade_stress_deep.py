@@ -1,13 +1,13 @@
-"""Q11 Round 19 / L10 — stress derinleştirme.
+"""stress deepening.
 
 Two contracts under test:
 
   1. Quota gate's rolling-hour deque actually drops entries older than
-     1 hour on the next call (Q10-L6-001 documented the design;
-     Q11-L19 verifies the implementation).
+     1 hour on the next call (documented the design;
+     verifies the implementation).
 
   2. /v1/chat/completions emits a "thinking" SSE frame before the
-     cascade call (Q11-L10-002 fix). Catches a regression where a
+     cascade call (fix). Catches a regression where a
      long-running cascade silently blocks the SSE stream past a 30s
      proxy idle timeout.
 """
@@ -30,7 +30,7 @@ def _mock_mode(monkeypatch):
     monkeypatch.setattr(settings, "anthropic_mock_mode", "ok", raising=False)
 
 
-class TestQ11L10QuotaRollingWindow:
+class TestQuotaRollingWindow:
     @pytest.fixture()
     def admin_client(self, client):
         r = client.post(
@@ -115,7 +115,7 @@ class TestQ11L10QuotaRollingWindow:
         )
 
 
-class TestQ11L10SseThinkingHeartbeat:
+class TestSseThinkingHeartbeat:
     @pytest.fixture()
     def admin_client(self, client):
         r = client.post(
@@ -126,7 +126,7 @@ class TestQ11L10SseThinkingHeartbeat:
         return client
 
     def test_completions_emits_thinking_frame_before_cascade(self, admin_client):
-        """Q11-L10-002 fix: the SSE stream must yield a 'thinking'
+        """fix: the SSE stream must yield a 'thinking'
         frame between the session frame and the first text chunk so a
         slow cascade doesn't silently exhaust a proxy idle timeout."""
         with admin_client.stream(

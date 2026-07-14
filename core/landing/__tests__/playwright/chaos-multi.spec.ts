@@ -1,4 +1,4 @@
-// Q12-L20 round 4 — multi-failure simultaneous chaos.
+// round 4 — multi-failure simultaneous chaos.
 //
 // The single-failure scenarios in chaos.spec.ts cover one
 // fault at a time (503, mid-stream abort, 429, timeout, 307 loop).
@@ -90,15 +90,15 @@ async function noInfiniteSpinner(
   await expect(settledLocator.first()).toBeVisible({ timeout: timeoutMs });
 }
 
-test.describe("Q12-L20 round 4 — multi-failure simultaneous", () => {
-  // Q12-L20-003 (MED UX) — original finding from S5 R32:
+test.describe("round 4 — multi-failure simultaneous", () => {
+  // Original finding:
   // Under cascade 503s on /v1/chat/sessions + /v1/chat/completions +
-  // /v1/quota the chat page rendered only "Yükleniyor…" (Loading…)
+  // /v1/quota the chat page rendered only "Loading…" (Loading…)
   // and never surfaced an error indicator. The user had no signal
   // that anything failed; the loading paragraph stayed put
   // indefinitely.
   //
-  // FIX (S6 R35): ChatClient.tsx — sessions useQuery now uses
+  // FIX: ChatClient.tsx — sessions useQuery now uses
   // retry: 1 (instead of default 3 with backoff) AND a new
   // sessions-error-tile banner mounts above <main> whenever
   // sessionsQuery.isError, regardless of message count or empty
@@ -149,7 +149,7 @@ test.describe("Q12-L20 round 4 — multi-failure simultaneous", () => {
     // visible. Under multi-endpoint failure the chat page may surface
     // a sessions-list error tile instead of the chat-error-tile that
     // only fires on a completion attempt. Either is a graceful failure
-    // — both prove the UI did not white-screen or hang.
+    // both prove the UI did not white-screen or hang.
     const errorIndicator = page.locator(
       '[data-test="chat-error-tile"], [role="alert"], [data-test*="error"]',
     );

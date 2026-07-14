@@ -1,4 +1,4 @@
-"""016 — Real token tracking + cost_estimator gerçek/fallback testleri."""
+"""Real token tracking + cost_estimator real/fallback tests."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import pytest
 
 
 def _fake_snap(payload: dict) -> dict:
-    """tracker.snapshot() formatı."""
+    """tracker.snapshot() format."""
     out = {}
     for name, v in payload.items():
         if isinstance(v, int):
@@ -123,7 +123,7 @@ def test_cost_estimator_falls_back_to_avg(monkeypatch):
 
 
 def test_step_meta_tokens_forwarded(monkeypatch):
-    """timed_step ProviderResponse.tokens_in/out → step.meta'ya yazsın."""
+    """timed_step ProviderResponse.tokens_in/out → write to step.meta."""
     import asyncio
 
     from app.pipelines.execution import timed_step

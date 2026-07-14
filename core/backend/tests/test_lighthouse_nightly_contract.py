@@ -1,5 +1,5 @@
 """
-Q12-L32 R82 — Lighthouse nightly workflow stability contract.
+Lighthouse nightly workflow stability contract.
 
 Locks the rewrite from R82 — prior workflow targeted unreachable
 `https://abs.local/` and the nightly was silently broken for the entire

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Phase 11 / Q3 — Cascade orchestrator with provider degradation matrix.
+"""Phase 11 — Cascade orchestrator with provider degradation matrix.
 
 Customer scenario: operator boots ABS with anywhere from 0 to 6 provider
 keys configured. The cascade must:

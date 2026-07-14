@@ -82,7 +82,7 @@ services:
       ABS_BACKEND_URL: "http://backend:8000"
       NEXT_PUBLIC_SITE_URL: "${ABS_PUBLIC_URL:-https://abs.local}"
       NEXT_TELEMETRY_DISABLED: "1"
-      # Q12 follow-up — Next.js standalone server.js binds to localhost
+      # follow-up — Next.js standalone server.js binds to localhost
       # by default; override so the Docker bridge can reach it. Without
       # this Caddy → landing:3000 hits ECONNREFUSED.
       HOSTNAME: "0.0.0.0"

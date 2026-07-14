@@ -1,4 +1,4 @@
-"""014 — Circuit breaker state persist testleri."""
+"""Circuit breaker state persist testleri."""
 
 from __future__ import annotations
 
@@ -99,7 +99,7 @@ async def test_record_success_persists_closed_skip(isolated_breaker_dir):
     await b.record_failure("p1")
     state_file = isolated_breaker_dir / "breaker_state.json"
     assert state_file.is_file()
-    # success → closed → persist boşalır
+    # success → closed → persist clears
     await b.record_success("p1")
     data = json.loads(state_file.read_text(encoding="utf-8"))
     assert data["states"] == {}

@@ -1,4 +1,4 @@
-// P0 — the assistant asks to change something, and a person decides.
+// the assistant asks to change something, and a person decides.
 //
 // A1  The assistant is asked to save a note. The file does not appear. An
 //     approval does — carrying the exact call — and the assistant says so.

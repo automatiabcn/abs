@@ -1,4 +1,4 @@
-"""020 — docs/ altındaki yeni markdown dosyaları + min word count guard."""
+"""new markdown files under docs/ + min word count guard."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def test_api_reference_exists_min_500_words():
     assert p.is_file()
     text = p.read_text(encoding="utf-8")
     assert len(text.split()) >= 500
-    # Otomatik üretildi notu var
+    # Has auto-generated note
     assert "scripts/gen_api_reference.py" in text
 
 
@@ -41,7 +41,7 @@ def test_faq_min_300_words_and_15_questions():
     assert p.is_file()
     text = p.read_text(encoding="utf-8")
     assert len(text.split()) >= 300
-    # Numaralı sorular ###1.…15.
+    # Numbered questions ###1.…15.
     h3_lines = [line for line in text.splitlines() if line.startswith("### ")]
     assert len(h3_lines) >= 15
 

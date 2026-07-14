@@ -1,4 +1,4 @@
-"""032 Modul B — Aggregated dashboard endpoint + cache."""
+"""Aggregated dashboard endpoint + cache."""
 
 from __future__ import annotations
 

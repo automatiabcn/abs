@@ -1,4 +1,4 @@
-// Q12-L17 Round 8 — node:test unit tests for the break-even validator.
+// node:test unit tests for the break-even validator.
 // Covers the formula derivation + edge cases that the review
 // surfaced (zero bytes, cascade RTTs, fast-network fiber neutrality).
 const test = require("node:test");

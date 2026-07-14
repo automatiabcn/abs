@@ -1,13 +1,13 @@
 """Customer package mount completeness audit.
 
-Customer compose içindeki HER host bind mount (`./xxx:/etc/...:ro`)
+Every host bind mount in the customer compose (`./xxx:/etc/...:ro`)
 counterpart MUST exist in the customer package. The incident that taught us this:
-`./cerbos` mount edilmişti ama paket içinde yoktu → cerbos container exit
-→ backend Cerbos PDP ile konuşamadı → projenin yarısı 503.
+`./cerbos` was mounted but missing from the package → cerbos container exit
+→ backend couldn't talk to Cerbos PDP → half the project 503.
 
 This test makes that pattern systematic:
-- compose'da `./` ile başlayan her mount → customer pkg'da olmalı
-- `build_customer_pkg.sh` tek-dosya tar.gz üretici, mount listesini
+- every mount starting with `./` in compose → should be in customer pkg
+- `build_customer_pkg.sh` single-file tar.gz generator, mount list
   kontrol edip eksik varsa exit-1
 - `customer_onboard.sh` her host bind mount'u kopyalar (cerbos + scripts +
   Caddyfile + license.jwt + ghcr_pull.token + docker-compose.yml)

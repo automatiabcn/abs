@@ -1,4 +1,4 @@
-"""033 Modul J + K + L — screenshot generator + video script + demo MCP tool."""
+"""screenshot generator + video script + demo MCP tool."""
 
 from __future__ import annotations
 

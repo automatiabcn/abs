@@ -1,4 +1,4 @@
-"""Q12 Session 8 R60 — I18n middleware + set_lang_cookie deep coverage.
+"""Session 8 R60 — I18n middleware + set_lang_cookie deep coverage.
 
 Pre-R60 gap: ``app.middleware.i18n.I18nMiddleware`` and
 ``app.i18n.set_lang_cookie`` were imported by ``app.main`` and exercised
@@ -214,6 +214,6 @@ def test_supported_langs_locked() -> None:
     """Defensive lock: any future addition to SUPPORTED_LANGS should be
     a deliberate, code-reviewed change, not a silent drift. Also
     cross-checks the panel/admin TR-first scope policy in
-    ``docs/qa/i18n-scope-policy.md`` (Q12 R58)."""
+    ``docs/qa/i18n-scope-policy.md``."""
     assert tuple(SUPPORTED_LANGS) == ("en", "tr", "es")
     assert DEFAULT_LANG == "en"

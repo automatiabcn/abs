@@ -5,7 +5,7 @@
 # impossible because backend (FastAPI) and landing (Next.js) ship as
 # pre-built images on GitHub Container Registry. Founder dev workflow
 # stays on infra/docker-compose.yml (which has build: contexts).
-# Q12 IP-Hardening R3 reference: docs/RUNBOOK_HETZNER_PILOT.md.
+# IP hardening reference: docs/RUNBOOK_HETZNER_PILOT.md.
 # -----------------------------------------------------------------------------
 # Required env vars (set these in `.env` next to this file):
 #   ABS_LICENSE_KEY      — your signed license JWT, sent in a separate

@@ -1,16 +1,16 @@
-// Q12-L18 Round 9 — Cold-cache + slow-3G + CPU 4× throttle variant.
+// Cold-cache + slow-3G + CPU 4× throttle variant.
 //
-// Round 3 spec measured cold-cache LCP on the loopback network (≈0ms
-// RTT), producing 40–324ms numbers that don't reflect KOBİ pilot
+// An earlier spec measured cold-cache LCP on the loopback network (≈0ms
+// RTT), producing 40–324ms numbers that don't reflect SME pilot
 // reality. This sweep adds CDP throttling (chrome-only) so the LCP
 // budget reflects what an actual fiber/3G pilot will see.
 //
 // Profiles tracked:
 //   - slow3G:     400ms RTT, 400 KB/s down/up  (the measured baseline)
-//   - lte4g:      100ms RTT, 1.5 MB/s down       (mid-tier KOBİ network)
+//   - lte4g:      100ms RTT, 1.5 MB/s down       (mid-tier SME network)
 //
 // Per-page LCP budget reflects the measured value +
-// 20% headroom; Q12-L18-001 throttle fidelity gap is closed when
+// 20% headroom; the throttle fidelity gap is closed when
 // these numbers track the baseline within ±200ms.
 import { test, expect, Page } from "@playwright/test";
 import * as fs from "node:fs";
@@ -170,7 +170,7 @@ for (const profile of [SLOW3G, LTE4G]) {
       const budget = profile.key === "slow3G" ? target.slow3GBudgetMs : target.lte4gBudgetMs;
       // eslint-disable-next-line no-console
       console.log(
-        `Q12-L18 throttled ${profile.label} ${target.path} ` +
+        `throttled ${profile.label} ${target.path} ` +
         `LCP=${Math.round(sample.lcp)}ms FCP=${Math.round(sample.fcp)}ms ` +
         `TTFB=${Math.round(sample.ttfb)}ms budget=${budget}ms`,
       );

@@ -1,10 +1,10 @@
-"""Q10-L6-002 / Q11-L14-001 — minted_token_blacklist table.
+"""minted_token_blacklist table.
 
 Revision ID: 0008_minted_token_blacklist
 Revises: 0007_chat_sessions
 Create Date: 2026-05-01
 
-Q10 Round 14 added the MintedTokenBlacklist SQLModel + the
+added the MintedTokenBlacklist SQLModel + the
 /v1/mcp/tokens/revoke + /v1/mcp/tokens/revoked endpoints, but no
 Alembic migration. Test environments stand the table up via
 SQLModel.metadata.create_all(), but production deployments that

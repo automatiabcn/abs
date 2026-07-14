@@ -8,12 +8,12 @@
 Shell commands:
   sops -d <path>            → stdout: plaintext yaml
   sops -e -i ... <path>     → in-place encrypt
-  age-keygen -o <key_path>  → yeni master key (manuel: init_vault.sh)
+  age-keygen -o <key_path>  → a fresh master key (by hand: init_vault.sh)
 
-Master key dosya yolu: settings.vault_key_path (default /app/vault-key/age.key)
-Secrets file:       settings.vault_secrets_path (default /app/data/secrets.yaml)
+Master key path: settings.vault_key_path (default /app/vault-key/age.key)
+Secrets file:    settings.vault_secrets_path (default /app/data/secrets.yaml)
 
-Cleartext disk'te kalmasin: sops -d stdout'a, dosyaya yazmiyor.
+Cleartext never touches the disk: `sops -d` writes to stdout, not to a file.
 """
 
 from __future__ import annotations
@@ -110,7 +110,7 @@ def master_key_exists() -> bool:
 
 
 def _sops_env() -> Dict[str, str]:
-    """Subprocess'a SOPS_AGE_KEY_FILE inject et."""
+    """Inject SOPS_AGE_KEY_FILE into the subprocess environment."""
     env = os.environ.copy()
     env["SOPS_AGE_KEY_FILE"] = settings.vault_key_path
     return env
@@ -169,7 +169,7 @@ def decrypt_all() -> Dict[str, Any]:
 
 
 def _read_age_recipient() -> str:
-    """Master key dosyasindan public recipient'i cikar (age-keygen formati)."""
+    """Pull the public recipient out of the master key file (age-keygen format)."""
     p = Path(settings.vault_key_path)
     for line in p.read_text(encoding="utf-8").splitlines():
         if line.startswith("# public key:"):

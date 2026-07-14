@@ -1,4 +1,4 @@
-"""012 — First-run redirect middleware testleri."""
+"""First-run redirect middleware testleri."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import pytest
 
 @pytest.fixture
 def incomplete_setup(monkeypatch, tmp_path: Path):
-    """data_dir izole + setup_state.json YOK (autouse fixture'in yazdigini sil).
+    """data_dir isolated + setup_state.json MISSING (remove what autouse fixture wrote).
     Middleware'in 'incomplete' davranisini sinariz.
     """
     from app.config import settings
@@ -71,7 +71,7 @@ def test_no_redirect_when_completed(completed_setup, client):
 
     Brief 4 R4 panel deprecation sonrasi /panel/login 308 (Next.js
     /admin'e), ama bu test middleware davranisini olcuyor — onemli olan
-    302→/setup *olmadigi*. /healthz ile test ediyoruz cunku panel tarafi
+    302→/setup *not present*. We test with /healthz because the panel side
     artik kendi redirect'ini issue ediyor.
     """
     r = client.get("/healthz", follow_redirects=False)
@@ -85,8 +85,8 @@ def test_no_redirect_when_completed(completed_setup, client):
 
 def test_api_request_gets_503_json(incomplete_setup, client):
     """Accept: application/json istekleri
-    artık 307 HTML redirect yerine yapılandırılmış 503 JSON alır.
-    API clients/SDK'lar `error` + `setup_url` alanlarını parse eder.
+    now receives a configured 503 JSON instead of a 307 HTML redirect.
+    API clients/SDKs parse the `error` + `setup_url` fields.
     """
     r = client.get(
         "/v1/license/status",

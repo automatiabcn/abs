@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q8 / MT7 + cross-phase — reusable empty state for panel/admin pages.
+// MT7 + cross-phase — reusable empty state for panel/admin pages.
 // Drops the bare "No X yet." string in favour of an icon + title +
 // description + primary CTA pattern.
 "use client";

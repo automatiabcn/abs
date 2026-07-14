@@ -1,4 +1,4 @@
-# Q12-L32 R82 — Lighthouse nightly stability hardening.
+# Lighthouse nightly stability hardening.
 #
 # Background: prior workflow targeted `https://abs.local/` which never
 # resolved on a GitHub runner — the nightly was silently broken. This
@@ -11,7 +11,7 @@
 #     the dominant non-bug failure mode)
 #   - uploadArtifacts on failure so the next-morning review has the
 #     report (otherwise the failed run is opaque)
-#   - separate slow-3G job (per S8 R66 framing — the desktop nightly
+#   - separate slow-3G job ( — the desktop nightly
 #     is for parity, the slow-3G nightly catches actual mobile regressions)
 #
 # Security: variables come from controlled sources (github.ref for the

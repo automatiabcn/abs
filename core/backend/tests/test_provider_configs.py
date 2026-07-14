@@ -1,4 +1,4 @@
-"""014 — Provider configs YAML loader testleri."""
+"""Provider configs YAML loader testleri."""
 
 from __future__ import annotations
 

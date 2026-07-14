@@ -1,4 +1,4 @@
-"""Q12-R85 — Provider degradation matrix (7 scenarios).
+"""Provider degradation matrix (7 scenarios).
 
 Source memory: feedback_provider_degradation_test.md.
 
@@ -9,7 +9,7 @@ keys present. The cascade contract:
     so the panel can gray-out un-configured rows (configured:bool).
   * `POST /v1/cascade/run` with anthropic_mock OFF returns 503
     "no_providers_configured" when the active chain is empty, else
-    walks the live cascade via `call_with_cascade`. Round 2 of the
+    walks the live cascade via `call_with_cascade`. An earlier round of the
     Founder Tester session replaced the prior 503
     "live_cascade_pending" gate with the real orchestrator wiring —
     this test now mocks the orchestrator so we keep the *gate*
@@ -153,7 +153,7 @@ def test_provider_degradation_matrix(
     # 2) /v1/cascade/run (mock off) — gate behaviour:
     #    • zero active   → 503 "no_providers_configured"
     #    • ≥1 active     → call_with_cascade walks the chain. Founder
-    #      Tester Round 2 wired this live; we mock the
+    #      Tester This change wired this live; we mock the
     #      orchestrator here so the test stays hermetic.
     async def _fake_call(prompt, *, primary, model=None, fallbacks=(), **kw):
         return ProviderResponse(
@@ -169,7 +169,7 @@ def test_provider_degradation_matrix(
 
     run = admin_client.post(
         "/v1/cascade/run",
-        json={"prompt": "Q12-R85 degradation ping", "max_tokens": 8},
+        json={"prompt": "degradation ping", "max_tokens": 8},
     )
     if expected_active == 0:
         assert run.status_code == 503, run.text

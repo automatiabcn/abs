@@ -1,4 +1,4 @@
-# G3 — Cerbos workflow_node policy test cases.
+# Cerbos workflow_node policy test cases.
 ---
 name: workflow_node_policy_tests
 description: "Coverage for resource.workflow_node.v1."

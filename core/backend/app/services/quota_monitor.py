@@ -90,7 +90,7 @@ def _monthly_limit(provider: str) -> int:
 
 
 async def _query_usage_sum(provider: str, start: datetime, end: datetime) -> int:
-    """Phase 4 / Q2.CO1 — read aggregated tokens via UsageLog service.
+    """Phase 4 — read aggregated tokens via UsageLog service.
     Returns 0 silently if the service or table is unavailable so quota_status
     keeps responding even on cold starts."""
     try:

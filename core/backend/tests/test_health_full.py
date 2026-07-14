@@ -1,4 +1,4 @@
-"""024 Modul H — Detailed health endpoint."""
+"""Detailed health endpoint."""
 
 from __future__ import annotations
 

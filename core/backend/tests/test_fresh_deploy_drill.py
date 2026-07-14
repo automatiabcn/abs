@@ -1,4 +1,4 @@
-"""Q12 Round 12 / L21 — application-layer fresh-deploy drill.
+"""application-layer fresh-deploy drill.
 
 Replaces destructive `docker compose down -v && docker volume prune`
 with a safe in-process equivalent that exercises the same risk surface:
@@ -31,7 +31,7 @@ from sqlalchemy import create_engine, inspect
 
 REPO_BACKEND = Path(__file__).resolve().parents[1]
 EXPECTED_HEAD_TABLES = {
-    # Q11-L14 anchors
+    # anchors
     "chat_sessions",
     "chat_messages",
     "minted_token_blacklist",
@@ -51,7 +51,7 @@ def _alembic_cfg(db_url: str) -> Config:
     return cfg
 
 
-class TestQ12L21FullMigrationChain:
+class TestFullMigrationChain:
     """Verify migrations 0000 → 0008 all run cleanly in sequence."""
 
     def test_full_chain_base_to_head(self) -> None:
@@ -69,8 +69,7 @@ class TestQ12L21FullMigrationChain:
 
             missing = EXPECTED_HEAD_TABLES - tables
             assert not missing, (
-                f"Q12-L21 fresh deploy drill: head migration missing "
-                f"expected tables: {missing}"
+                f"fresh deploy drill: head migration missing expected tables: {missing}"
             )
 
     def test_head_to_base_to_head_idempotent(self) -> None:
@@ -91,7 +90,7 @@ class TestQ12L21FullMigrationChain:
             engine.dispose()
             # Only alembic_version remains after downgrade base
             assert t_after_down <= {"alembic_version"}, (
-                f"Q12-L21 downgrade base left residual tables: {t_after_down}"
+                f"downgrade base left residual tables: {t_after_down}"
             )
 
             command.upgrade(cfg, "head")
@@ -100,12 +99,12 @@ class TestQ12L21FullMigrationChain:
             engine.dispose()
 
             assert t_first == t_redo, (
-                f"Q12-L21 head → base → head produced different table set: "
+                f"head → base → head produced different table set: "
                 f"first={t_first}, redo={t_redo}"
             )
 
 
-class TestQ12L21SetupWizardE2E:
+class TestSetupWizardE2E:
     """Brand-new KOBİ pilot 6-step flow until setup_state.completed=True.
 
     Uses the autouse `_autocomplete_setup_state` fixture override pattern:
@@ -181,5 +180,5 @@ class TestQ12L21SetupWizardE2E:
         assert r.status_code == 200
         body = r.json()
         assert body.get("completed") is True, (
-            f"Q12-L21 wizard did not reach completed:true (state={body})"
+            f"wizard did not reach completed:true (state={body})"
         )

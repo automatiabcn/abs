@@ -1,6 +1,6 @@
-"""Q12 Round 15 / L22 — race condition deep: setup wizard TOCTOU.
+"""race condition deep: setup wizard TOCTOU.
 
-Closes Q12-L22-001 (HIGH installation-phase data corruption):
+Closes (HIGH installation-phase data corruption):
 `/v1/setup/step/admin` (and the other step endpoints) follow the
 classic TOCTOU pattern:
 
@@ -18,7 +18,7 @@ Result pre-fix: BOTH return HTTP 200, with `admin_credentials.json`
 silently containing whichever email was written last. The losing
 admin has NO indication their credentials were overwritten.
 
-Real-world scenario: KOBİ pilot install where co-founders open the
+Real-world scenario: SME pilot install where co-founders open the
 setup URL on two tabs, click through the wizard at the same time.
 Co-founder A's credentials are silently dropped; co-founder B can
 log in but A is locked out — no error message either side.
@@ -91,7 +91,7 @@ async def _post_admin(client: AsyncClient, email: str, password: str) -> int:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L22SetupWizardRace:
+class TestSetupWizardRace:
     @pytest.mark.asyncio
     async def test_concurrent_step_admin_one_winner(
         self, fresh_setup_state: Path
@@ -106,10 +106,10 @@ class TestQ12L22SetupWizardRace:
                 return_exceptions=False,
             )
 
-        # Q12-L22-001 fix contract: exactly one 200 + one 409. Pre-fix
+        # fix contract: exactly one 200 + one 409. Pre-fix
         # both would be 200 with silent overwrite.
         assert sorted(results) == [200, 409], (
-            f"Q12-L22-001 REGRESSION: expected one 200 + one 409, got {results}. "
+            f"REGRESSION: expected one 200 + one 409, got {results}. "
             "Setup wizard step endpoints lost TOCTOU protection."
         )
 
@@ -124,14 +124,13 @@ class TestQ12L22SetupWizardRace:
             (fresh_setup_state / "setup_state.json").read_text(encoding="utf-8")
         )
         assert state["current_step"] == 2, (
-            f"Q12-L22-001 REGRESSION: state did not advance to step 2 "
+            f"REGRESSION: state did not advance to step 2 "
             f"after one successful step/admin (got current_step={state['current_step']})"
         )
         # 'admin' must appear exactly once in completed_steps.
         admin_count = sum(1 for k in state["completed_steps"] if k == "admin")
         assert admin_count == 1, (
-            f"Q12-L22-001 REGRESSION: 'admin' completed {admin_count} times "
-            "(double-advance leak)"
+            f"REGRESSION: 'admin' completed {admin_count} times (double-advance leak)"
         )
 
     @pytest.mark.asyncio
@@ -164,7 +163,7 @@ class TestQ12L22SetupWizardRace:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L22StateLockHelper:
+class TestStateLockHelper:
     def test_state_lock_provides_exclusive_access(
         self, fresh_setup_state: Path
     ) -> None:
@@ -203,7 +202,7 @@ class TestQ12L22StateLockHelper:
         t2.join()
 
         assert max_inside[0] == 1, (
-            f"Q12-L22-001 REGRESSION: _state_lock allowed {max_inside[0]} "
+            f"REGRESSION: _state_lock allowed {max_inside[0]} "
             "concurrent threads inside critical section (expected 1). "
             "Two-admin TOCTOU is now reachable."
         )
@@ -245,7 +244,7 @@ class TestQ12L22StateLockHelper:
         t2.join()
 
         assert sorted(results) == [200, 409], (
-            f"Q12-L22-001 REGRESSION (threaded): expected one 200 + one "
+            f"REGRESSION (threaded): expected one 200 + one "
             f"409, got {results}. Two-admin race-window is open."
         )
 

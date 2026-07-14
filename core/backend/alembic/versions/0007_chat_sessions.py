@@ -1,4 +1,4 @@
-"""Q8 / Phase A — chat_sessions + chat_messages tables.
+"""Phase A — chat_sessions + chat_messages tables.
 
 Revision ID: 0007_chat_sessions
 Revises: 0006_users_magic_link

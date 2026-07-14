@@ -43,7 +43,7 @@ function loadAuthCookie(): {
   return null;
 }
 
-test.describe("Q12-R65 /admin/users split-shell", () => {
+test.describe("/admin/users split-shell", () => {
   test("page renders heading + invite trigger (interactive island still mounts)", async ({
     page,
     context,

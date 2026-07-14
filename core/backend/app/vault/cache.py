@@ -64,7 +64,7 @@ def boot_load() -> int:
 
 
 def invalidate() -> None:
-    """Rotation sonrasi cache temizle, settings'e yeniden yukle."""
+    """clear cache after rotation, reload into settings."""
     _cache.clear()
     boot_load()
 

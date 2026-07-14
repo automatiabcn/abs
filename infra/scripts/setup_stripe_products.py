@@ -1,4 +1,4 @@
-"""ABS Stripe Product/Price kurulum yardimcisi.
+"""ABS Stripe Product/Price installation helper.
 
 Kullanim:
   # Test mode (default, guvenli):
@@ -20,12 +20,12 @@ Output: Price ID'leri stdout. Cikan satirlari .env'e elle yapistir:
   ABS_PRICE_TEAM_5=price_...
   ABS_PRICE_TEAM_10=price_...
 
-Idempotent: ayni (metadata.sku, metadata.mode) ile mevcut product+matching
+Idempotent: with the same (metadata.sku, metadata.mode) as existing product+matching
 unit_amount price varsa atlar.
 
 Live mode safeguard:
-- --mode live verildi VE ABS_STRIPE_SECRET_KEY 'sk_live_' ile baslamiyorsa  -> ABORT (exit 2)
-- --mode test verildi VE ABS_STRIPE_SECRET_KEY 'sk_test_' ile baslamiyorsa  -> ABORT (exit 2)
+- --mode live is set and ABS_STRIPE_SECRET_KEY does not start with 'sk_live_' -> ABORT (exit 2)
+- --mode test is set and ABS_STRIPE_SECRET_KEY does not start with 'sk_test_' -> ABORT (exit 2)
 - --dry-run her iki modeda Stripe API cagirmaz.
 """
 
@@ -59,7 +59,7 @@ ANNUAL_PRODUCTS: List[Dict] = [
 
 
 def _validate_key_mode(api_key: str, mode: str) -> None:
-    """Live/test mode ile API key prefix uyumunu kontrol et."""
+    """Check API key prefix matches the live/test mode."""
     if mode == "live" and not api_key.startswith("sk_live_"):
         print(
             "SECURITY: --mode live but ABS_STRIPE_SECRET_KEY does not start with "

@@ -57,7 +57,7 @@ async def rag_hybrid(
 async def judge_persona_predict(
     ast_score: float, llm_score: float, persona_drift: float
 ) -> str:
-    """ML model ile bu skorlarin accept olasiligini tahmin et."""
+    """predict the acceptance probability of these scores with an ML model."""
     await tracker.bump("judge_persona_predict")
     from app.judge.ml_persona import predict_accept
 

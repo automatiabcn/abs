@@ -1,4 +1,4 @@
-"""Quality pipeline testleri — provider mock ile."""
+"""Quality pipeline tests — with provider mock."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def _make_resp(
 
 @pytest.fixture
 def fake_providers(monkeypatch):
-    """Tüm get_provider çağrıları AsyncMock provider döndürsün."""
+    """All get_provider calls should return an AsyncMock provider."""
     providers = {}
 
     def _set(
@@ -73,7 +73,7 @@ async def test_qual_code_chain_all_pass(fake_providers):
     assert isinstance(result, PipelineResult)
     assert result.pipeline_type == "qual-code"
     assert result.error is None
-    # "PASS" → fix adımı atlanır
+    # "PASS" → skip the fix step
     names = [s.name for s in result.steps]
     assert "parallel-drafts" in names
     assert "verify" in names
@@ -128,8 +128,8 @@ async def test_qual_analysis_synthesizes_3_perspectives(fake_providers):
             "openai/gpt-oss-120b": _make_resp("SENTEZ: hepsi iyi"),
         },
     )
-    # override: perspective çağrısında technical = gptoss, synthesis da gptoss
-    # mock basit kaldığı için hep "SENTEZ: hepsi iyi" dönecek; bu OK
+    # override: in perspective call technical = gptoss, in synthesis also gptoss
+    # because the mock is simple it will always return "SENTEZ: all good"; that's OK
     fake_providers(
         "cloudflare", {"@cf/moonshotai/kimi-k2.5": _make_resp("stratejik perspektif")}
     )

@@ -1,4 +1,4 @@
-"""030 Modul A — purge systemd unit files (syntax + paths)."""
+"""purge systemd unit files (syntax + paths)."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""024 Modul A — MCP tool inventory smoke."""
+"""MCP tool inventory smoke."""
 
 from __future__ import annotations
 

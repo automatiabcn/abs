@@ -71,10 +71,10 @@ export default function TranscriptionPanel() {
   const cumulativeOffset = useRef<number>(0);
   const reducedMotion = useRef<boolean>(false);
 
-  // Q9 / TR2 — pre-explanation gate before getUserMedia
+  // pre-explanation gate before getUserMedia
   const [permissionOpen, setPermissionOpen] = useState(false);
   const [permissionAcknowledged, setPermissionAcknowledged] = useState(false);
-  // Q9 / TR3 — keep a ref-mirror of the active stream so Waveform can subscribe
+  // keep a ref-mirror of the active stream so Waveform can subscribe
   const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
 
   useEffect(() => {
@@ -293,7 +293,7 @@ export default function TranscriptionPanel() {
         </p>
       )}
 
-      {/* Q9 / TR3 — real-time waveform */}
+      {/* real-time waveform */}
       <div
         data-test="transcription-waveform-wrap"
         className="mb-6 rounded-md border border-border bg-card/40 p-3"
@@ -308,7 +308,7 @@ export default function TranscriptionPanel() {
 
       <section className="mb-6 space-y-2">
         {segments.length === 0 ? (
-          // Q9 / TR6 — 3-step illustration empty state
+          // 3-step illustration empty state
           <div
             data-test="transcription-empty"
             className="rounded-md border border-dashed border-border bg-card/30 p-6"
@@ -396,7 +396,7 @@ export default function TranscriptionPanel() {
         </div>
       </section>
 
-      {/* Q9 / TR2 — mic permission pre-explanation */}
+      {/* mic permission pre-explanation */}
       <Dialog open={permissionOpen} onOpenChange={setPermissionOpen}>
         <DialogContent data-test="mic-permission-dialog">
           <DialogHeader>

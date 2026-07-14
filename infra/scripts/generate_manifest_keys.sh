@@ -8,7 +8,7 @@
 # Sonra:
 #   cp manifest-keys/public.pem core/backend/app/update/manifest_pubkey.pem
 #   git add core/backend/app/update/manifest_pubkey.pem
-#   # private.pem'i 1Password / hardware token / offline disk'e taşıyın — repo'ya KOYMAYIN
+#   # Move private.pem to 1Password / hardware token / offline disk — DO NOT put it in the repo
 
 set -euo pipefail
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Q7 dev bootstrap — sync Phase A (Neo4j) + Phase B (marketplace hardening)
+# dev bootstrap — sync Phase A (Neo4j) + Phase B (marketplace hardening)
 # code into the running backend container, install Python deps, and verify
 # the network wiring so the live smoke endpoints answer 200.
 #
@@ -8,7 +8,7 @@
 # from a baked image without a source mount.
 #
 # Usage:
-#   bash scripts/dev/q7_bootstrap.sh
+#   bash scripts/dev/backend_bootstrap.sh
 
 set -uo pipefail
 cd "$(dirname "$0")/../.."
@@ -22,7 +22,7 @@ if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
     exit 1
 fi
 
-echo "▶ Q7 bootstrap"
+echo "▶ bootstrap"
 
 # ---- Phase A: Neo4j ----
 docker exec "$CONTAINER" pip install --quiet "neo4j>=5.18" 2>/dev/null \
@@ -82,4 +82,4 @@ else
     exit 2
 fi
 
-echo "▶ Q7 bootstrap done"
+echo "▶ bootstrap done"

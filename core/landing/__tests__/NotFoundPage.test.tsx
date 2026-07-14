@@ -1,4 +1,4 @@
-// Polish round R10 — guarantee the global 404 ships in English with
+// guarantee the global 404 ships in English with
 // both return CTAs.
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";

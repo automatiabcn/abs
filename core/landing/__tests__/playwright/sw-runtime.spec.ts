@@ -1,4 +1,4 @@
-// Q12-L18 (S6 R42) — runtime Service Worker cache hit verification.
+// runtime Service Worker cache hit verification.
 //
 // R36 (sw-cache.spec.ts) verified the SW *source* statically:
 // the file ships, the version marker is right, the dispatch fns
@@ -80,7 +80,7 @@ async function waitForServiceWorkerActive(page: Page): Promise<boolean> {
   return false;
 }
 
-test.describe("Q12-L18 SW runtime — cache hit verification", () => {
+test.describe("SW runtime — cache hit verification", () => {
   test("SW activates + abs-panel-cache-v1 cache exists after navigation", async ({
     page,
     browserName,

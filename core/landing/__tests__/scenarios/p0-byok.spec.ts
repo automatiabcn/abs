@@ -1,4 +1,4 @@
-// P0 — C7: bringing your own key changes who answers you.
+// bringing your own key changes who answers you.
 //
 // The free tier is the default and is meant to be good enough that most people
 // never look past it. But someone who pastes in their own paid key has said

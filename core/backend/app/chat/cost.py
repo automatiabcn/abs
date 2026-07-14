@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q12 / Brief 3 R5 — per-message USD estimate for chat transparency.
+"""per-message USD estimate for chat transparency.
 
 Resolves the provider's pricing table from `app.providers.configs` and
 returns a dict the SSE `meta` frame ships back to the client. The

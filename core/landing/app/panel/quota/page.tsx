@@ -7,7 +7,7 @@
 
 // S20.7 — `/panel/quota` monthly usage bars + 80%/95% markers + 5 min
 // auto-refresh.
-// Q8 / QT1+QT2+QT5+QT6 — Tremor visualisation, Configure CTA per
+// Tremor visualisation, Configure CTA per
 // provider, summary tiles, terminology unified to "usage".
 "use client";
 
@@ -187,7 +187,7 @@ export default function QuotaPage() {
   const [data, setData] = useState<QuotaPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Q9 / QT3 — date range filter (presets via Tremor)
+  // date range filter (presets via Tremor)
   const [range, setRange] = useState<DateRangePickerValue>(defaultRange());
 
   useEffect(() => {

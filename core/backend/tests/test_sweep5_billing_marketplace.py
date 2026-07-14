@@ -1,4 +1,4 @@
-"""Q12 Session 7 R49 / L23 sweep 5 — billing_portal.py + marketplace.py.
+"""Session 7 R49 / L23 sweep 5 — billing_portal.py + marketplace.py.
 
 Pre-R49: both routers had HTTPException raises with **zero**
 emit_event coverage. The sweeps 1-4 progression covered me_account,
@@ -38,7 +38,7 @@ def _read(path: Path) -> str:
 # ---------- billing_portal.py ----------------------------------------------
 
 
-class TestQ12L23Sweep5BillingPortal:
+class TestSweep5BillingPortal:
     src_path = APP / "api" / "billing_portal.py"
 
     @pytest.fixture(autouse=True)
@@ -85,7 +85,7 @@ class TestQ12L23Sweep5BillingPortal:
 # ---------- marketplace.py -------------------------------------------------
 
 
-class TestQ12L23Sweep5Marketplace:
+class TestSweep5Marketplace:
     src_path = APP / "api" / "marketplace.py"
 
     @pytest.fixture(autouse=True)

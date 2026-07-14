@@ -1,20 +1,20 @@
-"""Q12 Round 18 / L23 sweep 2 — me_account.py audit coverage.
+"""sweep 2 — me_account.py audit coverage.
 
-Pre-Round 18: me_account.py had 11/11 silent raise sites — top
-offender in the post-Round 13 audit. Failure paths on the GDPR
+Before this change: me_account.py had 11/11 silent raise sites — top
+offender in the the audit. Failure paths on the GDPR
 account-deletion endpoints (missing bearer, expired confirm token,
 JTI mismatch, license not found, already purged) emitted no
 structured audit. log_customer_action covered the SUCCESS audit
 already, but failure paths — the ones ops actually need traced for
 a credential-stuffing or replay incident — were invisible.
 
-Round 18 wires `emit_event(request, action="me.account.*", outcome=
+This change wires `emit_event(request, action="me.account.*", outcome=
 "denied|error", reason=...)` to every failure path while keeping the
 existing log_customer_action success channel intact. Helpers
 `_verify_bearer_license` and `_verify_delete_token` were threaded
 through with an optional `request` parameter so they can emit too.
 
-Side fix (Q12-L24 follow-up): `f"License verify failed: {exc}"`
+Side fix (follow-up): `f"License verify failed: {exc}"`
 detail was leaking the full exception string to the client. Replaced
 with generic `"license_verify_failed"` and the actual exception
 class is in the audit.
@@ -77,7 +77,7 @@ def _audits_for(records, action_prefix: str) -> list[dict]:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep2MeAccountAuth:
+class TestSweep2MeAccountAuth:
     def test_missing_bearer_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -85,7 +85,7 @@ class TestQ12L23Sweep2MeAccountAuth:
             r = client.post("/v1/me/account/delete-request")
         assert r.status_code == 401
         events = _audits_for(caplog.records, "me.account.auth")
-        assert events, "Q12-L23 sweep2: missing bearer must emit me.account.auth audit"
+        assert events, "sweep2: missing bearer must emit me.account.auth audit"
         assert events[-1]["reason"] == "missing_bearer"
         assert events[-1]["outcome"] == "denied"
 
@@ -103,7 +103,7 @@ class TestQ12L23Sweep2MeAccountAuth:
         events = _audits_for(caplog.records, "me.account.auth")
         assert events
         assert events[-1]["outcome"] in ("denied", "error")
-        # Q12-L24 follow-up: response detail must NOT include the raw
+        # follow-up: response detail must NOT include the raw
         # exception string. Pre-fix `f"License verify failed: {exc}"`
         # would have included PyJWT internals (Signature/Exception/etc.).
         assert "Signature" not in r.text and "Exception" not in r.text
@@ -114,7 +114,7 @@ class TestQ12L23Sweep2MeAccountAuth:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep2DeleteToken:
+class TestSweep2DeleteToken:
     def test_expired_delete_token_emits_denied_expired(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -168,7 +168,7 @@ class TestQ12L23Sweep2DeleteToken:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep2LicenseLookup:
+class TestSweep2LicenseLookup:
     def test_license_not_found_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:

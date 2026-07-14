@@ -1,4 +1,4 @@
-"""Q10 Round 6 / L2 — integration roundtrip tests.
+"""integration roundtrip tests.
 
 Three contracts that previously had only happy-path unit coverage:
 
@@ -50,7 +50,7 @@ class TestCascadeChatRoundtrip:
         resp = admin_client.post(
             "/v1/chat/completions",
             json={
-                "messages": [{"role": "user", "content": "Q10 L2 integration ping"}],
+                "messages": [{"role": "user", "content": "integration ping"}],
                 "stream": True,
             },
         )
@@ -91,7 +91,7 @@ class TestCascadeChatRoundtrip:
     def test_cascade_run_direct_returns_mock_provider(self, admin_client):
         r = admin_client.post(
             "/v1/cascade/run",
-            json={"prompt": "Q10 L2 cascade ping", "max_tokens": 32},
+            json={"prompt": "cascade ping", "max_tokens": 32},
         )
         assert r.status_code == 200
         body = r.json()
@@ -172,7 +172,7 @@ class TestChatSessionLifecycle:
         assert again.status_code == 404
 
 
-# ───── 5. Q10 Round 18 — RAG ingest+query roundtrip + cross-tenant ─────
+# ───── 5. an earlier release — RAG ingest+query roundtrip + cross-tenant ─────
 
 
 class _StubQdrant:
@@ -210,7 +210,7 @@ class _StubQdrant:
 
 
 class TestRagRoundtripAndIsolation:
-    """Q10 Round 18 — RAG layer integration enrichment.
+    """RAG layer integration enrichment.
 
     The existing unit tests cover the ingest happy path and the query mock
     independently. These contracts wire them together: the same
@@ -324,7 +324,7 @@ class TestRagRoundtripAndIsolation:
         # Ingest
         ingest = client.post(
             "/v1/rag/ingest",
-            json={"text": "Q10 round 18 marker " * 60, "filename": "q10.txt"},
+            json={"text": "round 18 marker " * 60, "filename": "q10.txt"},
             headers=headers,
         )
         assert ingest.status_code == 200, ingest.text
@@ -335,7 +335,7 @@ class TestRagRoundtripAndIsolation:
         # Query — same tenant, should retrieve the chunk we just ingested.
         query = client.post(
             "/v1/rag/query",
-            json={"query": "Q10 round 18 marker", "limit": 3},
+            json={"query": "round 18 marker", "limit": 3},
             headers=headers,
         )
         assert query.status_code == 200, query.text
@@ -343,7 +343,7 @@ class TestRagRoundtripAndIsolation:
         assert len(hits) >= 1
         # The first hit must descend from the doc we just ingested.
         assert hits[0]["doc_id"] == original_doc_id
-        assert "Q10 round 18 marker" in hits[0]["text"]
+        assert "round 18 marker" in hits[0]["text"]
 
     def test_rag_cross_tenant_query_returns_zero_hits(self, client, monkeypatch):
         import secrets
@@ -404,11 +404,11 @@ class TestRagRoundtripAndIsolation:
         )
 
 
-# ───── 6. Q10 Round 18 — marketplace install→sandbox→uninstall lifecycle ─
+# ───── 6. an earlier release — marketplace install→sandbox→uninstall lifecycle ─
 
 
 class TestMarketplaceLifecycleRoundtrip:
-    """Q10 Round 18 — full marketplace lifecycle in one test.
+    """full marketplace lifecycle in one test.
 
     Existing test_marketplace_hardening covers each step in isolation
     (install, idempotent, uninstall, cross-tenant). This test ties them

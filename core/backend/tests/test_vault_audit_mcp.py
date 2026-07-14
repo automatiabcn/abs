@@ -1,4 +1,4 @@
-"""027 Modul F — `vault_audit_status` MCP tool."""
+"""`vault_audit_status` MCP tool."""
 
 from __future__ import annotations
 

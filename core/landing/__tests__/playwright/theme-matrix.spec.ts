@@ -1,4 +1,4 @@
-// Q10 Round 7 / L3 — themed walkthrough across 15 panel surfaces.
+// themed walkthrough across 15 panel surfaces.
 // For each page we toggle next-themes between dark and light via the
 // localStorage 'theme' key, reload, and assert: no console errors, the
 // `data-page` selector renders, and `documentElement` carries the
@@ -51,7 +51,7 @@ async function loginIfNeeded(page: Page) {
     .catch(() => null);
 }
 
-test.describe("Q10/L3 — theme matrix walkthrough", () => {
+test.describe("theme matrix walkthrough", () => {
   test.beforeEach(async ({ page }) => {
     await loginIfNeeded(page);
   });

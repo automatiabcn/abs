@@ -1,4 +1,4 @@
-"""027 Modul C — Vault audit chain (HMAC tamper detection)."""
+"""Vault audit chain (HMAC tamper detection)."""
 
 from __future__ import annotations
 

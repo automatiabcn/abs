@@ -1,4 +1,4 @@
-"""030 Modul E — Upper-tier + auto-upgrade alias tool tests."""
+"""Upper-tier + auto-upgrade alias tool tests."""
 
 from __future__ import annotations
 

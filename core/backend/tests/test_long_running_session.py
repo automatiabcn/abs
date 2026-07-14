@@ -1,4 +1,4 @@
-"""Q12 Round 16 / L26 — long-running session JWT lifecycle.
+"""long-running session JWT lifecycle.
 
 The original L26 brief asked for a 24h-idle browser-tab Playwright
 test with token refresh + memory-leak heap snapshots. Frontend dev
@@ -10,10 +10,10 @@ ARE testable here:
      ago, 7d ago) gets a clean 401 — never a 500 / stack trace /
      missing audit event.
   2. The audit event reason discriminates `expired` vs `invalid`
-     without relying on the (i18n-mutable) `detail` string. Q12-L26
+     without relying on the (i18n-mutable) `detail` string. The
      refactor introduces typed `_SessionExpired` / `_SessionInvalid`
      exceptions so emit_event reads the *exception class*, not a
-     string match. Pre-Q12-L26 used `"süresi" in detail` — locale
+     string match. The earlier code used `"expiry" in detail` — locale
      drift would silently misroute every expired-session audit.
   3. A tampered JWT (mutated payload, valid base64) gets the
      `invalid` audit reason, NOT `expired`.
@@ -59,7 +59,7 @@ def _make_cookie(seconds_ago: int) -> str:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L26ExpiredSessionAuditReason:
+class TestExpiredSessionAuditReason:
     @pytest.mark.parametrize(
         "expired_seconds_ago",
         [1, 3600, 86400, 7 * 86400, 30 * 86400],
@@ -75,7 +75,7 @@ class TestQ12L26ExpiredSessionAuditReason:
         with caplog.at_level(logging.INFO, logger=LOGGER_NAME):
             r = client.get("/auth/me", cookies={"abs_session": cookie})
         assert r.status_code == 401, (
-            f"Q12-L26: expired cookie ({expired_seconds_ago}s ago) "
+            f"expired cookie ({expired_seconds_ago}s ago) "
             f"must return 401 cleanly, got {r.status_code}"
         )
         decoded_audits = [
@@ -84,18 +84,16 @@ class TestQ12L26ExpiredSessionAuditReason:
             if rec.name == LOGGER_NAME
             and getattr(rec, "audit", {}).get("action") == "auth.session.decode"
         ]
-        assert decoded_audits, (
-            "Q12-L26: expired cookie must emit auth.session.decode audit"
-        )
+        assert decoded_audits, "expired cookie must emit auth.session.decode audit"
         last = decoded_audits[-1]
         assert last["reason"] == "expired", (
-            f"Q12-L26 REGRESSION: expired cookie audit reason should be "
+            f"REGRESSION: expired cookie audit reason should be "
             f"'expired', got {last['reason']!r}. Locale-string drift "
             "would silently misroute the reason — fixed via typed "
             "_SessionExpired exception."
         )
         assert last["outcome"] == "denied"
-        assert "request_id" in last  # Round 13 contract preserved
+        assert "request_id" in last  # the established contract
 
 
 # ----------------------------------------------------------------------
@@ -103,7 +101,7 @@ class TestQ12L26ExpiredSessionAuditReason:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L26TamperedSessionAuditReason:
+class TestTamperedSessionAuditReason:
     def test_tampered_cookie_returns_401_with_invalid_reason(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -137,7 +135,7 @@ class TestQ12L26TamperedSessionAuditReason:
             and getattr(rec, "audit", {}).get("action") == "auth.session.decode"
         ][-1]
         assert last["reason"] == "invalid", (
-            f"Q12-L26: tampered JWT must surface as reason='invalid' "
+            f"tampered JWT must surface as reason='invalid' "
             f"(distinct from 'expired'), got {last['reason']!r}"
         )
 
@@ -161,7 +159,7 @@ class TestQ12L26TamperedSessionAuditReason:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L26AuditEmissionHygiene:
+class TestAuditEmissionHygiene:
     def test_missing_cookie_emits_check_not_decode(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -187,12 +185,8 @@ class TestQ12L26AuditEmissionHygiene:
             and getattr(rec, "audit", {}).get("action")
             in ("auth.me.check", "auth.session.check")
         ]
-        assert not decode_events, (
-            "Q12-L26: missing cookie must NOT trigger auth.session.decode"
-        )
-        assert check_events, (
-            "Q12-L26: missing cookie should emit auth.me.check (Round 13)"
-        )
+        assert not decode_events, "missing cookie must NOT trigger auth.session.decode"
+        assert check_events, "missing cookie should emit auth.me.check"
 
 
 # ----------------------------------------------------------------------
@@ -200,7 +194,7 @@ class TestQ12L26AuditEmissionHygiene:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L26OAuthRefreshSingleUse:
+class TestOAuthRefreshSingleUse:
     """Function-level rotation has a test (test_oauth_server.py).
     L26 pins the contract at the *function* layer too — the long-
     running session brief specifies this invariant must hold across

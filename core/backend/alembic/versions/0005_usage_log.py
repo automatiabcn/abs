@@ -1,4 +1,4 @@
-"""Phase 4 / Q2.CO1 — usage_log table for provider quota aggregation.
+"""Phase 4 — usage_log table for provider quota aggregation.
 
 Revision ID: 0005_usage_log
 Revises: 0004_sprint20_meetings
