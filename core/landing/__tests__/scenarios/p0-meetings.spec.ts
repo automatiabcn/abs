@@ -115,6 +115,40 @@ test("T2 — a silent recording is kept, shown as such, and never indexed", asyn
   await expect(badge).toBeVisible({ timeout: 30_000 });
 });
 
+test("T4 — a deleted recording stops answering questions", async ({ page }) => {
+  // The thing that could not be done at all: a recording of a private
+  // conversation went in, was indexed, and answered questions from then on. The
+  // panel let you read it and nothing else. So this checks the claim the Delete
+  // button makes — not that the row disappeared, but that the assistant has
+  // forgotten what was said in the room.
+  const meeting = await upload(page, "confidential-call.wav", readFileSync(SPOKEN));
+  expect(meeting.indexed).toBe(true);
+
+  const gone = await page.request.delete(`/v1/meetings/${meeting.id}`);
+  expect(gone.ok(), await gone.text()).toBe(true);
+
+  // Not hidden. Gone.
+  const fetched = await page.request.get(`/v1/meetings/${meeting.id}`, {
+    failOnStatusCode: false,
+  });
+  expect(fetched.status()).toBe(404);
+
+  // And the knowledge base has let go of it. This decision was spoken aloud and
+  // written down nowhere else, so an answer that still names Friday is an answer
+  // coming out of a recording the operator deleted.
+  await page.goto("/admin/chat");
+  const input = page.locator('[data-test="message-input"] textarea');
+  await input.waitFor({ timeout: 20_000 });
+  await input.fill("When do we ship the new onboarding flow, according to our meeting?");
+  await input.press("Enter");
+
+  const reply = await waitForStreamedReply(page);
+  expect(
+    reply.toLowerCase(),
+    "a deleted recording was still answering questions in chat",
+  ).not.toContain("friday");
+});
+
 test("T3 — the same recording uploaded twice is one meeting", async ({ page }) => {
   const audio = readFileSync(SPOKEN);
   const first = await upload(page, "standup.wav", audio);
