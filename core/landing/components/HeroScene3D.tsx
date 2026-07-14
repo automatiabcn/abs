@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-Q05 — React Three Fiber hero scene.
+// React Three Fiber hero scene.
 // Network nodes + particle flow + central ABS orb. Brand #1e57ac + electric cyan.
 // Lazy-mounted only on desktop AND when prefers-reduced-motion is "no-preference".
 "use client";

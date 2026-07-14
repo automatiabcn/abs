@@ -46,7 +46,7 @@ async def on_user_registered(
 
     Steps are individually retried/cached by Inngest:
       1. `validate-payload` — guard required fields, unrecoverable error fails fast.
-      2. `record-onboarding` — idempotent side-effect placeholder (Sprint 2 wires
+      2. `record-onboarding` — idempotent side-effect placeholder (a later round wires
          email queue + audit log + RAG profile bootstrap).
     """
 
@@ -63,7 +63,7 @@ async def on_user_registered(
     user = await ctx.step.run("validate-payload", _validate)
 
     async def _record() -> dict[str, Any]:
-        # Sprint 1 placeholder. Real onboarding wired in T-019/T-027.
+        # Placeholder. Real onboarding is wired up elsewhere.
         ctx.logger.info(
             "user_registered_received user_id=%s email=%s",
             user["user_id"],

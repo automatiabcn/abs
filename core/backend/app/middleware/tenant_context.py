@@ -5,7 +5,7 @@
 
 """global tenant-context middleware (activates Postgres RLS).
 
-Sprint 2K built the RLS plumbing — a ContextVar (``app.db.session.current_tenant``)
+The RLS plumbing is a ContextVar (``app.db.session.current_tenant``)
 that a SQLAlchemy listener turns into ``SET LOCAL abs.tenant_id`` before every
 Postgres cursor execute — but the dependency meant to populate it
 (``app.api.v1.tenant_guc.set_request_tenant``) was never attached to a router.

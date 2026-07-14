@@ -7,7 +7,7 @@
 
 Tracks the most recent N samples per route and emits a structured `Alert`
 record when p95 breaches the configured budget. Used to wire LangFuse
-alerts + the Slack/Telegram notification hook in T-058.
+alerts + the Slack/Telegram notification hook.
 """
 
 from __future__ import annotations

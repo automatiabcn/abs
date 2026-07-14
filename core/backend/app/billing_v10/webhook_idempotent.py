@@ -11,7 +11,7 @@
    ``app.api.webhooks.idempotency.claim_event`` (``WebhookEvent``
    SQLModel with ``event_id`` PRIMARY KEY) is the single source of
    truth for Stripe webhook deduplication across worker restarts.
-   This in-memory module survived from the T-044 prototype because a
+   This in-memory module survived from the prototype because a
    handful of unit tests imported it directly. New callers must use
    ``app.api.webhooks.idempotency``; ``WebhookProcessor`` will be
    removed in a follow-up sprint once the legacy imports migrate.

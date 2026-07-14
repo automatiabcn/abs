@@ -80,7 +80,7 @@ def _instance_url() -> str:
 def _persist_activation_state(data: dict[str, Any]) -> None:
     """Persist activation state with a monotonic anchor for grace.
 
-    Patch B (2026-05-08, VULN-R3-02) — pilot Round 3 found the previous
+    A pilot found the previous
     wall-clock-only check could be bypassed by rolling the system clock
     backward (or restoring a VM snapshot). We now persist
     ``monotonic_anchor_ns`` alongside ``last_check`` and reset
@@ -220,7 +220,7 @@ def _check_offline_grace(exc: Exception) -> dict[str, Any]:
     * **Wall clock** — ``now() - last_check``. Truth across container
       restarts. Negative age means the host clock was rolled backward
       (or last_check was written by a future clock); reject outright
-      with reason ``offline_grace_clock_drift`` (VULN-R3-02 fix).
+      with reason ``offline_grace_clock_drift``.
     * **Monotonic** — ``activation_age_secs + (now_mono - anchor)``.
       Immune to wall-clock manipulation within the current boot.
       Pre-patch state files lack the anchor; treated as 0 so the

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""ABS NL → workflow builder package (Sprint 19 T-S03)."""
+"""ABS NL → workflow builder package."""
 
 from .ontology import (
     Edge,

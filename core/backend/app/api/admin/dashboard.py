@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 CACHE_PATH = Path("/tmp/abs_admin_dashboard_cache.json")
 CACHE_TTL_SECONDS = 5 * 60
 
-# Sprint 2D ITEM-2.2 — CodeQL py/clear-text-storage-sensitive-data (#32).
+# CodeQL py/clear-text-storage-sensitive-data (#32).
 # The aggregated dashboard payload may transitively contain provider keys,
 # webhook secrets, or audit-chain HMACs. Mask any field whose key (or value
 # prefix) suggests a secret before persisting to the on-disk cache.
@@ -98,7 +98,7 @@ def _write_cache(payload: dict) -> None:
             dict(sanitized) if isinstance(sanitized, dict) else {"payload": sanitized}
         )
         body["_ts"] = time.time()
-        # Sprint 2D ITEM-2.2 — write with 0600 perms (owner read/write only).
+        # Write with 0600 perms (owner read/write only).
         # Defense-in-depth on top of the sanitizer.
         serialized = json.dumps(body, default=str)
         fd = os.open(str(CACHE_PATH), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)

@@ -5,7 +5,7 @@
 
 """Phase 1 / S19-close — Workflow execution runner (stub).
 
-Real Inngest integration is the Sprint 21 follow-up; this stub gives the
+Real Inngest integration is the follow-up; this stub gives the
 HTTP surface enough behaviour for end-to-end customer-journey smoke:
 
 - `plan(workflow)`            → ordered step list + per-node estimate
@@ -14,7 +14,7 @@ HTTP surface enough behaviour for end-to-end customer-journey smoke:
                                 a real queue ships
 - `status(job_id)`            → `{state: queued|running|done, ...}`
 
-The shape matches the Sprint 19 brief so the API layer doesn't change when
+The shape matches the design brief so the API layer doesn't change when
 the real runner lands.
 """
 

@@ -15,7 +15,7 @@ Modes:
   can exercise rate-limit / timeout / 500 fallback paths without a key.
 * No mock + provider keys configured — *would* call the real provider
   cascade. Live cascade (Groq + Cerebras + Gemini real calls) is gated on
-  Q4 Phase 7-live (operator vault key); for now the route returns a clear
+  the operator vault key; for now the route returns a clear
   503 if no mock is set and the operator hasn't supplied a primary key.
 
 Response shape mirrors the brief: `{completion, provider, fallback_chain,

@@ -1,4 +1,4 @@
-// Q7 Phase C — TanStack Query provider for /panel + /admin pages.
+// TanStack Query provider for /panel + /admin pages.
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

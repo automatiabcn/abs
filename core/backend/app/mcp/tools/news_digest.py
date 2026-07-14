@@ -61,7 +61,7 @@ def _write_cache(markdown: str) -> None:
 
 
 def _api_key_clue(message: str) -> str | None:
-    """Sprint 2N FAZ F (P3 #2M-016) — surface the underlying cause when
+    """Surface the underlying cause when
     the failure boils down to a missing or empty API key. Returns a
     customer-readable hint or None when the error is unrelated."""
     lower = message.lower()

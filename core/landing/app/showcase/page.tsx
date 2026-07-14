@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R03 — Visual gallery. Renders the OKLCH token palette, ABS-branded icons,
+// Visual gallery. Renders the OKLCH token palette, ABS-branded icons,
 // and the MetricCard / PricingTierCard components for design review.
 import type { Metadata } from "next";
 
@@ -56,7 +56,7 @@ export default function ShowcasePage() {
         <header className="mb-12">
           <h1 className="text-4xl font-bold tracking-tight">ABS visual system</h1>
           <p className="mt-2 text-sm opacity-65">
-            T-R03 gallery — OKLCH tokens, brand icons, dashboard + pricing components.
+            Gallery — OKLCH tokens, brand icons, dashboard + pricing components.
           </p>
         </header>
 

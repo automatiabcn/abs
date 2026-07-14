@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// R64 (S8) — shared between server page.tsx and AuditClient island so
+// Shared between server page.tsx and AuditClient island so
 // the two halves of the split-shell agree on the entry shape.
 
 export interface AuditEntry {

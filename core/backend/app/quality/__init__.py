@@ -3,4 +3,4 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-051..T-055 — Quality gates: ensemble, hallucination guard, verifiers."""
+"""Quality gates: ensemble, hallucination guard, verifiers."""

@@ -3,4 +3,4 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""T-042..T-044 — Billing v10 (Stripe TEST + tier seats + webhook idempotency)."""
+"""Billing v10 (Stripe TEST + tier seats + webhook idempotency)."""

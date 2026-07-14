@@ -6,7 +6,7 @@
 """Structured per-request usage logging (LangFuse-compatible).
 
 Writes newline-delimited JSON to a JSONL file with optional sampling. Future
-T-018 will replace the file writer with the LangFuse SDK without changing the
+The LangFuse SDK will replace the file writer without changing the
 call sites.
 """
 

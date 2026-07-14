@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q7 Phase B — cosign signature verification with dev-only skip mode.
+"""Cosign signature verification with dev-only skip mode.
 
 Production deployment must set ABS_COSIGN_SKIP=false and provide
 ABS_COSIGN_PUBLIC_KEY_PATH. In dev / CI the binary is typically absent and

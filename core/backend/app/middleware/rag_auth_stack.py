@@ -5,7 +5,7 @@
 
 """RAG gateway auth/authz stack (organisational re-export).
 
-The actual middleware/dependency wiring lives in T-005 and T-012:
+The actual middleware/dependency wiring lives in:
     `get_auth_context` (JWT verify + tenant claim parse, X-ABS-Audience honored)
     `get_cerbos_client` (app-state singleton PDP client)
     `rag_action_dep("ingest"|"query"|"delete")` (Cerbos resource pre-check)

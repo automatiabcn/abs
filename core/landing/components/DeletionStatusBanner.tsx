@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 2I UAT-038 — surface the 30-day KVKK / GDPR grace window so
+// Surface the 30-day KVKK / GDPR grace window so
 // the customer can see the deletion countdown and cancel before the
 // purge cron runs.
 "use client";
@@ -30,7 +30,7 @@ function _fmtDate(iso: string, lang: Lang): string {
     const d = new Date(iso);
     // Pass the short ISO language code; the runtime resolves the
     // regional subtag (tr→tr-TR, es→es-ES, en→en-US). Keeps the
-    // landing surface free of hardcoded BCP-47 tags per Q12-L8 R58.
+    // landing surface free of hardcoded BCP-47 tags.
     return d.toLocaleDateString(lang, {
       year: "numeric",
       month: "short",

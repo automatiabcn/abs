@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q8 Phase J — `/admin/graph` Neo4j console. Schema browser + Cypher
+// `/admin/graph` Neo4j console. Schema browser + Cypher
 // query editor (monospace textarea, Monaco can ship in v2) + NL→Cypher
 // helper + result table. Force-graph viz lands in Phase L when
 // react-force-graph-3d is wired (cosmos replacement uses the same dep).

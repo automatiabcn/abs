@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R04 — onboarding analytics receiver. Forwards events to LangFuse via the
+// Onboarding analytics receiver. Forwards events to LangFuse via the
 // backend `/v1/internal/onboarding-event` proxy. Failure mode: 202 Accepted
 // even on downstream timeout so the client never waits longer than 200 ms.
 import { NextResponse, type NextRequest } from "next/server";

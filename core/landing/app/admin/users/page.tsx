@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// R65 (S8) — Sprint 22 RSC Phase B leg 2: split-shell for /admin/users.
+// Split-shell for /admin/users.
 //
 // Server-side fetches the current users list with the caller's session
 // cookie forwarded, hands the array to <UsersClient> as `initialUsers`,

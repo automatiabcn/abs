@@ -67,7 +67,7 @@ const ManageModal: React.FC<ManageModalProps> = ({ linkLabel = "Manage" }) => {
     }
   };
 
-  // T-R03 fix #1 — billing kill-switch hides the entry point entirely.
+  // Billing kill-switch hides the entry point entirely.
   if (!BILLING_ENABLED) {
     return null;
   }

@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q7 Phase C — shadcn/ui Card (new-york). MIT licence.
+// shadcn/ui Card (new-york). MIT licence.
 import * as React from "react";
 
 import { cn } from "@/lib/utils";

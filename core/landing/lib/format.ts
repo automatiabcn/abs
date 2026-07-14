@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// R71 (S8) — locale-aware Intl wrappers for the landing surface.
+// Locale-aware Intl wrappers for the landing surface.
 //
 // R58's `i18n-scope.test.ts` enforces "no hardcoded BCP-47 locale
 // tags" on the landing surface. The follow-up risk is that someone

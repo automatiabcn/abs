@@ -6,7 +6,7 @@
 """Meeting transcript → RAG indexing helper.
 
 Converts a transcript into RAG chunks (per-segment) and dispatches them to the
-T-009 Qdrant wrapper under the caller's tenant. Retention budget exposed via
+Qdrant wrapper under the caller's tenant. Retention budget exposed via
 `settings.meeting_retention_days` so a periodic cleaner (out-of-scope here)
 can purge older meetings.
 """

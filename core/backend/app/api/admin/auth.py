@@ -162,7 +162,7 @@ def _is_active_admin_user(email: str) -> bool:
 
 
 def _try_panel_session(request: Request) -> Optional[dict]:
-    """CJ-010 — fallback: panel session JWT (abs_session) grants admin scope to
+    """Fallback: panel session JWT (abs_session) grants admin scope to
     the bootstrap admin (admin_credentials.json) OR to any active users-table
     row with role=="admin" (multi-admin, added so the panel role dropdown is
     authoritative). Self-host single- and multi-admin both reach /v1/admin/*
@@ -211,7 +211,7 @@ def admin_required(
       1. Authorization: Bearer <admin-jwt>
       2. HttpOnly cookie 'abs_admin' (admin SPA)
       3. Panel session cookie 'abs_session' if email matches admin_credentials
-         (CJ-010 — bootstrap/single-admin self-host)
+         (bootstrap / single-admin self-host)
 
     Enforces optional IP whitelist.
     """
@@ -248,7 +248,7 @@ def admin_required(
             )
             raise
 
-    # CJ-010 — panel session fallback (single-admin self-host)
+    # Panel session fallback (single-admin self-host)
     panel = _try_panel_session(request)
     if panel:
         emit_event(

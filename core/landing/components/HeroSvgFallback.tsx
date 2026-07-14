@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-Q05 — 2D SVG fallback for mobile / tablet / reduced-motion users.
+// 2D SVG fallback for mobile / tablet / reduced-motion users.
 // Lifted from the original Hero illustration; isometric cube stack in brand colors.
 import type { FC } from "react";
 

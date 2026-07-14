@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q8 Phase K — `/admin/settings` self-service tenant config. Tabs:
+// `/admin/settings` self-service tenant config. Tabs:
 // General · License · Providers · Webhooks · Branding · Security.
 // Each tab ships a form skeleton; live wiring against /v1/admin/secrets/*
 // and /v1/license/* finishes alongside the customer journey gate (O).
@@ -83,7 +83,7 @@ type SetupStatus = {
 };
 
 function GeneralTab() {
-  // BUG-22 — pre-fix the form rendered "Acme Corp" / "acme" / "abs.acme.com"
+  // Pre-fix the form rendered "Acme Corp" / "acme" / "abs.acme.com"
   // as hard-coded demo data, which made customers think their setup wizard
   // input was lost. The wizard persists `domain` + admin email under
   // /v1/setup/status, so the form now hydrates from there. Tenant name +

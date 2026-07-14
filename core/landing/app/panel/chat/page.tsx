@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 21 / Faz C — thin route wrapper. The chat client (which
+// Thin route wrapper. The chat client (which
 // pulls in lib/chat-stream + Vercel AI SDK + react-markdown +
 // components/chat) is dynamically imported so the panel chrome route
 // no longer carries the chat surface in its initial bundle.

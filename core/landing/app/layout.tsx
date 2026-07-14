@@ -17,7 +17,7 @@ import "./globals.css";
 
 const SITE_URL = "https://abs.automatiabcn.com";
 
-// T-R03 revise — modern font stack: Geist Variable display + JetBrains Mono
+// Modern font stack: Geist Variable display + JetBrains Mono
 // for tabular metric numbers + code. Both loaded via next/font/google so
 // they self-host in production (CSP-safe, no runtime fetch).
 const geist = Geist({
@@ -82,7 +82,7 @@ export default async function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  // T-R03 fix #2 — read the persisted theme cookie so first-paint matches
+  // Read the persisted theme cookie so first-paint matches
   // the toggle state and we avoid FOUC.
   const cookieStore = await cookies();
   const theme = cookieStore.get("abs-theme")?.value;

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Sprint 2C ITEM-2 - Provider config SAVE endpoint."""
+"""Provider config SAVE endpoint."""
 
 from __future__ import annotations
 
@@ -125,7 +125,7 @@ def _persist_secret(
         raise _PersistError(f"env_write_failed:{type(exc).__name__}") from exc
 
     if not vault_ok and not env_ok:
-        # UAT-012 hardening: neither vault nor .env accepted the write (vault
+        # Neither vault nor .env accepted the write (vault
         # uninitialised — init_vault.sh not run — AND no writable .env). The
         # previous code returned silently here, so save_provider replied 200
         # "configured" while the key was actually persisted NOWHERE and lost on
@@ -204,7 +204,7 @@ async def _live_test_provider(provider_id: str) -> Dict[str, Any]:
     except ProviderError as exc:
         # The cascade re-raises a ProviderError ONLY when it is non-transient
         # (bad key / 4xx / unknown model) — a definitive auth/config failure.
-        # Sprint 2D ITEM-2.3 — CodeQL py/stack-trace-exposure (#46). ProviderError
+        # CodeQL py/stack-trace-exposure (#46). ProviderError
         # carries a curated `.message` (no Python frame), so we can surface it
         # as a short code. Defense-in-depth: cap length, strip newlines.
         latency_ms = int((time.perf_counter() - started) * 1000)
@@ -232,7 +232,7 @@ async def _live_test_provider(provider_id: str) -> Dict[str, Any]:
         raise
     except Exception:  # pragma: no cover
         latency_ms = int((time.perf_counter() - started) * 1000)
-        # Sprint 2D ITEM-2.3 — opaque request_id pattern: log full trace
+        # Opaque request_id pattern: log full trace
         # server-side, return only a correlation id to the caller.
         request_id = uuid.uuid4().hex[:12]
         logger.exception(

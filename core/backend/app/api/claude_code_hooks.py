@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q8 Phase P — Claude Code lifecycle hook receivers.
+"""Claude Code lifecycle hook receivers.
 
 Three webhook endpoints the customer's `~/.claude/settings.json` can
 point at so their Claude Code session is gated by ABS:

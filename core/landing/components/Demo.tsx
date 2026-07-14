@@ -8,7 +8,7 @@
 import type { FC } from "react";
 
 const Demo: FC = () => {
-  // Q11-L11-001: only render the iframe when NEXT_PUBLIC_DEMO_LOOM_URL
+  // Only render the iframe when NEXT_PUBLIC_DEMO_LOOM_URL
   // is configured. Previously fell back to a literal "PLACEHOLDER" URL
   // that Loom rejects with X-Frame-Options:deny — Chromium dropped the
   // error silently but Firefox + WebKit logged it to the console,

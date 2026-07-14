@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q7 Phase C — shadcn/ui sonner toaster stub. MIT licence.
+// shadcn/ui sonner toaster stub. MIT licence.
 "use client";
 
 import { Toaster as Sonner } from "sonner";

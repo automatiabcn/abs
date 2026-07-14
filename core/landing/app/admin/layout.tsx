@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-// Sprint 21 / Faz D — cmdk palette deferred via the same client shim
+// Cmdk palette deferred via the same client shim
 // used by /panel/layout.tsx.
 import CommandPalette from "@/components/panel/CommandPaletteLazy";
 import { PanelThemeProvider } from "@/components/panel/PanelThemeProvider";
@@ -26,9 +26,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// Sprint 2N FAZ B — UAT-009 fail-closed restore (P0 #2M-025).
+// Fail-closed restore.
 // Middleware (middleware.ts) already gates /admin/* on cookie + /auth/me,
-// but Sprint 2M repro showed `docker compose stop backend` left /admin/*
+// but a repro showed `docker compose stop backend` left /admin/*
 // returning 200 + cached HTML. Defense-in-depth: SSR layout itself
 // probes /healthz before rendering chrome. Backend down → /login banner.
 const BACKEND_URL = process.env.ABS_BACKEND_URL ?? "http://localhost:8000";

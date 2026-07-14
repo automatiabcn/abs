@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 21 / Faz C — chat client extracted into its own file so the
+// Chat client extracted into its own file so the
 // /panel/chat route can next/dynamic-import it. Vercel AI SDK +
 // react-markdown + the chat panel components only ship when the user
 // actually navigates to /panel/chat — they no longer sit in the panel
@@ -46,7 +46,7 @@ export default function ChatClient() {
   const sessionParam = params?.get("session");
   const initialSessionId = sessionParam ? Number(sessionParam) : undefined;
 
-  // Q12-L20-003 (S5 R32 chaos finding) — under cascade 503 the default
+  // A chaos drill found this: under cascade 503 the default
   // retry: 3 with backoff keeps isLoading=true for ~15s and the user
   // sees only a spinner. Cap retries so the error path is reached
   // quickly and surfaced via the sessions-error-tile banner below.
@@ -122,7 +122,7 @@ export default function ChatClient() {
     };
   }, [initialSessionId, setMessages]);
 
-  // Q12-L18 R48 — IndexedDB-backed draft persistence. Restores
+  // IndexedDB-backed draft persistence. Restores
   // user input across reloads / offline blips. Only restores on
   // cold mount when input is empty (don't clobber a fast typer).
   const draftHydratedRef = useRef(false);
@@ -271,7 +271,7 @@ export default function ChatClient() {
                 >
                   <span>Hata: {error}</span>
                   <div className="flex items-center gap-2">
-                    {/* Q10-L9-001 — cascade 503 routinely lands when the vault
+                    {/* Cascade 503 routinely lands when the vault
                         has no provider key. Always offer the Configure path
                         next to the retry CTA so the user knows where to go. */}
                     <a

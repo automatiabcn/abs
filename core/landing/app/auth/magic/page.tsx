@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q3 P2 — magic-link claim landing page.
+// Magic-link claim landing page.
 "use client";
 
 import { Suspense, useEffect, useState } from "react";

@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 2I UAT-001 — pilot launch 4-tier pricing surface.
+// Pilot launch 4-tier pricing surface.
 // Self-Host Lifetime $299 / Maintenance +$49/yr / Team-5 / Team-10.
 "use client";
 

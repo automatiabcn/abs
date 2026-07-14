@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 2B BUG-19/20/25/26 — `/admin/mcp-tools` canonical MCP tool
+// `/admin/mcp-tools` canonical MCP tool
 // browser. Pre-rc7 the sidebar /admin/mcp-tools entry redirected to
 // /panel/tools (308); now it lands on a real page that re-exports the
 // existing /panel/tools client component so the same TanStack Table +

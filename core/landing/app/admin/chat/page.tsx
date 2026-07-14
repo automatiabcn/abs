@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 2B BUG-19/20/25/26 — `/admin/chat` is now the canonical chat
+// `/admin/chat` is now the canonical chat
 // route the sidebar advertises (was a 308 redirect to /panel/chat
 // pre-rc7). This wrapper imports the same dynamic ChatClient the
 // /panel/chat page uses so the surface stays bundle-equivalent — just

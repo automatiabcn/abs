@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 2B BUG-19/20/25/26 — `/admin/quota` canonical kota route. The
+// `/admin/quota` canonical kota route. The
 // PanelSidebar Operasyon group's "Kota" link now points here (was
 // /panel/quota pre-rc7). Re-export the existing /panel/quota client
 // component so the same /v1/system/quota_status contract + Tremor

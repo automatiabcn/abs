@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q7 Phase C — premium dark/light toggle (next-themes powered).
+// Premium dark/light toggle (next-themes powered).
 // Q8 / MT3 fix — defer the aria-label + icon swap until after mount so
 // SSR (theme=undefined) doesn't disagree with CSR (theme=resolvedTheme).
 "use client";

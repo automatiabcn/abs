@@ -63,7 +63,7 @@ def _verify_bearer_license(
             reason="license_verify_exception",
             error_class=type(exc).__name__,
         )
-        # Q12-L24 follow-up: never leak the full exc string.
+        # Never leak the full exc string.
         raise HTTPException(401, "license_verify_failed") from exc
     jti = payload.get("jti")
     if not jti:

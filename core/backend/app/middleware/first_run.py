@@ -65,7 +65,7 @@ class FirstRunMiddleware(BaseHTTPMiddleware):
         if any(path.startswith(prefix) for prefix in _WHITELIST_PREFIXES):
             return await call_next(request)
         accept = request.headers.get("accept", "")
-        # Sprint 2N FAZ F (P2 #2M-001) — API clients asking for JSON get
+        # API clients asking for JSON get
         # a structured 503 so they can parse `error` + `setup_url`,
         # instead of the HTML wizard redirect that confuses SDK parsers.
         if "application/json" in accept and "text/html" not in accept:

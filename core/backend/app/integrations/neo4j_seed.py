@@ -12,7 +12,7 @@ broken). This module ships a tiny demo graph (Person/Org/Project/Ticket nodes
 
 * the operator UI shows real schema labels + sample rows immediately,
 * every node carries a `tenant_id` property so cross-tenant queries return
-  zero rows when the new graph router post-filter runs (T-015 parity).
+  zero rows when the new graph router post-filter runs.
 
 The seed is idempotent: re-running it is a MERGE that doesn't create
 duplicates. Lifespan calls `ensure_tenant_seed("default")` so the panel is

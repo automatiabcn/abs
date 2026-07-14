@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R03 — represents the 6-provider AI cascade as a radial fan.
+// Represents the 6-provider AI cascade as a radial fan.
 import type { SVGProps } from "react";
 
 export default function AbsCascade({ size = 32, ...rest }: SVGProps<SVGSVGElement> & { size?: number }) {

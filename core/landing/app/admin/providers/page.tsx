@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q8 Phase D — `/admin/providers` cascade chain visualisation. Polls
+// `/admin/providers` cascade chain visualisation. Polls
 // /v1/cascade/providers every 5s, shows 6 provider cards with status
 // chips, mock-mode toggle, last 10 cascade calls, and a `Test now`
 // button that fires a `/v1/cascade/run` for live trace.
@@ -167,7 +167,7 @@ export default function ProvidersPage() {
   const [animatingProvider, setAnimatingProvider] = useState<string | null>(
     null,
   );
-  // Sprint 2B BUG-33 — selected provider drives the config modal.
+  // Selected provider drives the config modal.
   const [activeConfig, setActiveConfig] = useState<ProviderConfigEntry | null>(
     null,
   );
@@ -178,7 +178,7 @@ export default function ProvidersPage() {
     refetchInterval: 5000,
   });
 
-  // Sprint 2B BUG-33 — pull the configured-or-not flag for each provider
+  // Pull the configured-or-not flag for each provider
   // so the modal can render the masked-key state without exposing the
   // raw value. Cached for 30s; the test button itself does NOT poll.
   const status = useQuery<ProvidersStatusResponse>({
@@ -382,7 +382,7 @@ export default function ProvidersPage() {
                       className="mt-2 w-full"
                       data-test="provider-configure"
                       onClick={() => {
-                        // Sprint 2B BUG-33 — anthropic-mock has no real
+                        // Anthropic-mock has no real
                         // key to test against; clicking it just opens the
                         // settings link path inside the modal.
                         const fromStatus =

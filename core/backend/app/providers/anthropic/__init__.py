@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Anthropic provider package — hexagonal layout (T-S02.1)."""
+"""Anthropic provider package — hexagonal layout."""
 
 from .adapter import AnthropicProvider
 

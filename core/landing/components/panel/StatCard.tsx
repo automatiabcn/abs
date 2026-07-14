@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q7 Phase C — premium animated metric card.
+// Premium animated metric card.
 "use client";
 
 import { motion } from "framer-motion";
