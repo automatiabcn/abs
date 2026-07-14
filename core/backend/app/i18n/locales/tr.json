@@ -5,7 +5,7 @@
   "errors.signature_invalid": "İmza doğrulanamadı",
   "errors.payload_invalid": "Payload geçersiz",
   "errors.license_expired": "Lisansın süresi dolmuş",
-  "errors.license_required": "[LİSANS GEREKLİ] ABS şu anda lisans gerektiriyor. Demo süresi doldu veya lisans tanımlı değil. Satın al: https://abs.automatiabcn.com/",
+  "errors.license_required": "[ABONELİK GEREKLİ] Bu ABS sunucusu aktif bir aboneliğe sahip değil — deneme süresi sona erdi veya lisans süresi doldu. Sohbet ve araçlar duraklatıldı. Sunucudaki her şey hâlâ size ait: belgeler, transkriptler ve anahtarlar panelden okunabilir, dışa aktarılabilir ve silinebilir. Ayarlar → Lisans altında abone olun.",
   "errors.license_not_found": "Aktif lisans bulunamadı veya Stripe customer ID eksik",
   "errors.provider_connection": "Sağlayıcı bağlantı hatası: {provider} — {detail}",
   "errors.provider_json_parse": "Sağlayıcı yanıtı JSON parse hatası: {provider}",

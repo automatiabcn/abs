@@ -173,7 +173,13 @@ class Settings(BaseSettings):
     ollama_first_health_timeout_s: float = 1.5
 
     # MCP
-    mcp_require_license: bool = False
+    # Default ON. It was off, which meant the tools — which are the product —
+    # were served to any caller with an access key, on a server with no
+    # subscription and an expired trial. A customer's editor would have kept
+    # working forever while the panel told them their trial had ended. Turn it
+    # off only for an install whose licensing is handled another way (a site
+    # agreement, an air-gapped deployment).
+    mcp_require_license: bool = True
     # Enforce the minted abs_mcp_ bearer token on every /mcp transport request.
     # Default ON: without it the streamable-http endpoint serves all tools to
     # any caller that passes the host allowlist (no per-user auth). Set

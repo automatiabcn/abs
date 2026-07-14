@@ -3,100 +3,100 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Demo mode — every feature unlocked for 14 days after install.
+"""The free window, under its old name.
 
-State lives in {data_dir}/demo_state.json:
-  {"started_at": <unix ts>, "expires_at": <unix ts>, "duration_days": 14}
+This module used to own a fourteen-day "demo": its own file, its own clock, its
+own idea of when the free period ended. Then the product became a monthly
+subscription with a seven-day trial, and for a while there were two free windows
+running side by side off the same empty licence key — one of them twice as long
+as the other, neither aware of the other. That is the same shape of bug as the
+gate and the panel disagreeing: one rule, two implementations, and the customer
+standing between them.
 
-Once a real license key is configured the demo yields: `is_active()` is False
-even inside the window.
+So the timer is gone. `licensing.trial` is the only clock, and everything here
+reads it. What stays is the vocabulary: the settings page, the SSE banner, the
+MCP `demo_status` tool and the setup wizard all ask this module questions, and
+they keep getting answers — the answers are now simply true.
+
+Nothing here is authoritative. To know whether this server may be used, ask
+`licensing.gate`.
 """
 
 from __future__ import annotations
 
-import json
-import time
 from pathlib import Path
 from typing import Dict, Optional
 
 from app.config import settings
+from app.licensing import trial
 
-DEMO_DURATION_DAYS = 14
+# Still imported by name elsewhere. The number comes from the trial, because
+# there is only one number.
+DEMO_DURATION_DAYS = trial.TRIAL_DAYS
 
 
 def _state_path() -> Path:
+    """The legacy state file.
+
+    Still named, because `demo_admin` reads this path and installs from before
+    the rename still have the file — `trial._oldest_evidence()` reads its
+    `started_at`, so a server that has been running free for ten days does not
+    get a brand new week out of a rename.
+    """
     p = Path(settings.data_dir) / "demo_state.json"
     p.parent.mkdir(parents=True, exist_ok=True)
     return p
 
 
-def _read_state() -> Optional[Dict]:
-    p = _state_path()
-    if not p.is_file():
-        return None
-    try:
-        data = json.loads(p.read_text(encoding="utf-8"))
-        if isinstance(data, dict) and "started_at" in data and "expires_at" in data:
-            return data
-    except Exception:
-        return None
-    return None
+def _expiry(started_at: float) -> float:
+    return started_at + DEMO_DURATION_DAYS * 86400
 
 
 def start_demo() -> Dict:
-    """Start the demo window. Idempotent — an existing state is returned as-is,
-    so the clock cannot be reset by calling again."""
-    existing = _read_state()
-    if existing:
-        return existing
-    now = time.time()
-    state = {
-        "started_at": now,
-        "expires_at": now + DEMO_DURATION_DAYS * 86400,
+    """Open (or re-report) the free window. Idempotent — asking again does not
+    restart the clock, because the clock is not kept here."""
+    state = trial.status()
+    return {
+        "started_at": state.started_at,
+        "expires_at": _expiry(state.started_at),
         "duration_days": DEMO_DURATION_DAYS,
     }
-    _state_path().write_text(json.dumps(state), encoding="utf-8")
-    return state
 
 
 def status() -> Dict:
-    """Demo durum snapshot — UI ve gate ortak feed."""
-    state = _read_state()
-    if not state:
-        return {
-            "started": False,
-            "active": False,
-            "expired": False,
-            "days_remaining": None,
-            "started_at": None,
-            "expires_at": None,
-        }
-    now = time.time()
-    expires_at = float(state["expires_at"])
-    expired = now >= expires_at
-    days_remaining = max(0, int((expires_at - now) / 86400))
+    """Snapshot for the panel banner and the MCP tool. Same shape as it ever was."""
+    state = trial.status()
     return {
         "started": True,
-        "active": not expired,
-        "expired": expired,
-        "days_remaining": days_remaining,
-        "started_at": state.get("started_at"),
-        "expires_at": expires_at,
+        "active": state.active,
+        "expired": not state.active,
+        "days_remaining": state.days_left,
+        "started_at": state.started_at,
+        "expires_at": _expiry(state.started_at),
     }
 
 
 def is_active() -> bool:
-    """With no licence, is the demo period still running?"""
-    if settings.license_key:
+    """With no licence, is the free window still open?"""
+    if (settings.license_key or "").strip():
         return False
-    return status()["active"]
+    return trial.status().active
 
 
 def reset() -> None:
-    """Drop the demo state — back to a first-run install (test/dev)."""
-    p = _state_path()
-    if p.is_file():
+    """Back to a first-run install — test and dev only.
+
+    It clears the trial as well: resetting only the legacy file would reset
+    nothing, since nothing reads the legacy file's clock any more.
+    """
+    for path in (_state_path(), Path(settings.data_dir) / "trial.json"):
         try:
-            p.unlink()
-        except Exception:
+            if path.is_file():
+                path.unlink()
+        except Exception:  # noqa: BLE001 — best effort, dev only
             pass
+
+
+def _read_state() -> Optional[Dict]:
+    """Legacy accessor. Kept so importers keep working; the truth is `status()`."""
+    return status()

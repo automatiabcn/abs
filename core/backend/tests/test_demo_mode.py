@@ -1,4 +1,11 @@
-"""Demo mode 14-day countdown testleri."""
+"""The free window, seen through its old name.
+
+`licensing.demo` used to own a fourteen-day clock of its own. It does not any
+more — `licensing.trial` is the only clock, the window is seven days, and this
+module is the vocabulary the panel, the wizard and the MCP tool still speak.
+These tests pin that the old callers still get answers, and that the answers are
+the trial's.
+"""
 
 from __future__ import annotations
 
@@ -26,16 +33,19 @@ def isolated_demo(monkeypatch, tmp_path: Path):
     return tmp_path
 
 
-def test_start_demo_writes_state(isolated_demo):
-    from app.licensing.demo import _state_path, start_demo
+def test_start_demo_opens_the_seven_day_trial(isolated_demo):
+    from app.licensing.demo import DEMO_DURATION_DAYS, start_demo
 
     state = start_demo()
     assert state["started_at"] > 0
     assert state["expires_at"] > state["started_at"]
-    assert state["duration_days"] == 14
-    p = _state_path()
-    assert p.is_file()
-    on_disk = json.loads(p.read_text(encoding="utf-8"))
+    assert state["duration_days"] == DEMO_DURATION_DAYS == 7, (
+        "the retired fourteen-day demo was a second free window on the same empty "
+        "key — twice as long as the trial the product is priced on"
+    )
+
+    # One clock, one file.
+    on_disk = json.loads((isolated_demo / "trial.json").read_text(encoding="utf-8"))
     assert on_disk["started_at"] == state["started_at"]
 
 
@@ -49,7 +59,7 @@ def test_start_demo_idempotent(isolated_demo):
     assert s1["expires_at"] == s2["expires_at"]
 
 
-def test_status_active_within_14_days(isolated_demo):
+def test_status_active_within_the_window(isolated_demo):
     from app.licensing.demo import start_demo, status
 
     start_demo()
@@ -57,29 +67,40 @@ def test_status_active_within_14_days(isolated_demo):
     assert s["started"] is True
     assert s["active"] is True
     assert s["expired"] is False
-    assert 0 < s["days_remaining"] <= 14
+    assert 0 < s["days_remaining"] <= 7
 
 
-def test_status_expired_after_14_days(isolated_demo):
-    from app.licensing.demo import _state_path, status
+def test_status_expired_after_the_window(isolated_demo):
+    from app.licensing.demo import status
 
-    p = _state_path()
-    past = time.time() - 1
-    p.write_text(
-        json.dumps(
-            {
-                "started_at": past - 14 * 86400,
-                "expires_at": past,
-                "duration_days": 14,
-            }
-        ),
-        encoding="utf-8",
+    started = time.time() - 30 * 86400
+    (isolated_demo / "trial.json").write_text(
+        json.dumps({"started_at": started, "seen_at": started}), encoding="utf-8"
     )
+
     s = status()
     assert s["started"] is True
     assert s["expired"] is True
     assert s["active"] is False
     assert s["days_remaining"] == 0
+
+
+def test_a_legacy_demo_state_still_dates_the_install(isolated_demo):
+    """Installs from before the rename have `demo_state.json` and no `trial.json`.
+
+    Their free window started when *they* started. If the trial dated itself from
+    the upgrade instead, shipping the subscription would have handed every one of
+    them a brand new week.
+    """
+    from app.licensing.demo import status
+
+    started = time.time() - 10 * 86400
+    (isolated_demo / "demo_state.json").write_text(
+        json.dumps({"started_at": started, "expires_at": started + 14 * 86400}),
+        encoding="utf-8",
+    )
+
+    assert status()["active"] is False
 
 
 def test_is_active_bypassed_when_license_key_set(isolated_demo, monkeypatch):
