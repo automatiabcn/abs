@@ -191,6 +191,41 @@ async def create_invite(
                 },
             )
 
+        # Only now — this invitation would genuinely add a person.
+        #
+        # The seat count on the licence used to be read nowhere at all: the
+        # pricing page sold "5 named operator seats" and the product let an admin
+        # add fifty. We were selling a limit that did not exist. It exists here,
+        # at the only place it can be drawn fairly — the *next* person in, never
+        # the people already working, who must not lose their accounts over a
+        # billing event.
+        #
+        # After the duplicate check, not before it: re-inviting someone who
+        # already holds a pending invite does not take a second seat, and a full
+        # team was being told to buy one to hear "you already invited them".
+        from app.licensing import seats as seat_gate
+
+        seats = seat_gate.status(tenant_id)
+        refusal = seat_gate.refusal(seats)
+        if refusal:
+            emit_event(
+                request,
+                action="admin.user.invited",
+                outcome="denied",
+                reason="no_seats_left",
+                tenant_id=tenant_id,
+                status_code=402,
+            )
+            raise HTTPException(
+                status_code=402,  # Payment Required — and here it actually is
+                detail={
+                    "error": "no_seats_left",
+                    "message": refusal,
+                    "seats_licensed": seats.licensed,
+                    "seats_used": seats.used,
+                },
+            )
+
         plaintext, digest, expires_at = create_magic_link_token(
             body.email, tenant_id, purpose="invite"
         )

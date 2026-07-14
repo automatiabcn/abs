@@ -206,8 +206,25 @@ async def license_info() -> Dict[str, Any]:
 
     decision = licence_gate.evaluate()
 
+    # The trial, running or over. Both branches have to be here: while the
+    # verdicts were unhandled they fell through to the licensed branch below,
+    # and a server whose trial had expired described itself to its owner as
+    # "licensed" — with every licence field null — while chat answered 403.
+    if decision.verdict is licence_gate.Verdict.TRIAL:
+        return {**empty, "status": "trial", "allowed": True, "demo": demo_status()}
+
+    if decision.verdict is licence_gate.Verdict.TRIAL_EXPIRED:
+        return {
+            **empty,
+            "status": "trial_expired",
+            "allowed": False,
+            "demo": demo_status(),
+            "detail": decision.detail,
+            "reason": decision.reason,
+        }
+
     if decision.verdict is licence_gate.Verdict.UNLICENSED:
-        return {**empty, "status": "demo", "allowed": True, "demo": demo_status()}
+        return {**empty, "status": "trial", "allowed": True, "demo": demo_status()}
 
     if decision.verdict is licence_gate.Verdict.INVALID:
         return {
