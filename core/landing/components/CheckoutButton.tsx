@@ -11,10 +11,12 @@ import * as React from "react";
 
 import { BILLING_DISABLED_TITLE, BILLING_ENABLED } from "@/lib/billing-flag";
 
-export type CheckoutTier = "self-host" | "maintenance" | "team-5" | "team-10";
+export type CheckoutTier = "solo" | "team";
 
 interface CheckoutButtonProps {
   tier: CheckoutTier;
+  /** Seats to buy. Team is priced per seat; Solo is always one. */
+  seats?: number;
   children: React.ReactNode;
   variant?: "primary" | "secondary";
   className?: string;
@@ -22,6 +24,7 @@ interface CheckoutButtonProps {
 
 export default function CheckoutButton({
   tier,
+  seats = 1,
   children,
   variant = "primary",
   className = "",
@@ -41,7 +44,7 @@ export default function CheckoutButton({
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier }),
+        body: JSON.stringify({ tier, seats }),
       });
 
       if (!res.ok) {

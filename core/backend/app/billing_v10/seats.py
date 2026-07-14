@@ -3,10 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Pricing tier + seat enforcement (Self-host / Team-5 / Team-10).
+"""Pricing tiers + seat enforcement — Solo, or a team priced per seat.
 
-list-prices are read from settings (env). Defaults are 0.0; operators
-MUST configure their own. Tier IDs are SKU keys, not prices.
+List prices are read from settings (env). Defaults are 0.0; operators MUST
+configure their own. Tier IDs are SKU keys, not prices.
 """
 
 from __future__ import annotations
@@ -22,6 +22,8 @@ __all__ = [
     "SeatLimitExceeded",
     "Tier",
     "TIERS",
+    "MIN_SEATS",
+    "MAX_SEATS",
     "SeatCounter",
     "tier_for_seats",
 ]
@@ -36,42 +38,47 @@ class Tier:
     name: str
     seat_cap: int
     monthly_price_usd: float
-    stripe_price_setting: str  # name in Settings: e.g. "abs_price_self_host"
+    stripe_price_setting: str  # name in Settings: e.g. "abs_price_solo"
 
+
+# The plans, as sold. Two of them: one person, or a team priced per seat.
+#
+# There used to be three, capped at 5 and 10 seats, and a team of six could not
+# be sold at all — `tier_for_seats(6)` returned the 10-pack and `tier_for_seats
+# (11)` raised. A per-seat subscription has no packs to fall between.
+MAX_SEATS = 500
 
 TIERS: dict[str, Tier] = {
-    "self-host": Tier(
-        name="self-host",
+    "solo": Tier(
+        name="solo",
         seat_cap=1,
-        monthly_price_usd=settings.abs_seat_price_self_host,
-        stripe_price_setting="abs_price_self_host",
+        monthly_price_usd=settings.abs_seat_price_solo,
+        stripe_price_setting="abs_price_solo",
     ),
-    "team-5": Tier(
-        name="team-5",
-        seat_cap=5,
-        monthly_price_usd=settings.abs_seat_price_team_5,
-        stripe_price_setting="abs_price_team_5",
-    ),
-    "team-10": Tier(
-        name="team-10",
-        seat_cap=10,
-        monthly_price_usd=settings.abs_seat_price_team_10,
-        stripe_price_setting="abs_price_team_10",
+    "team": Tier(
+        name="team",
+        seat_cap=MAX_SEATS,
+        monthly_price_usd=settings.abs_seat_price_team,  # per seat, per month
+        stripe_price_setting="abs_price_team",
     ),
 }
+
+
+# What a checkout opens with when nobody says otherwise. Solo is one person; the
+# team plan starts at three, which is also the smallest team it is sold to.
+MIN_SEATS: dict[str, int] = {"solo": 1, "team": 3}
 
 
 def tier_for_seats(seat_count: int) -> Tier:
     if seat_count <= 0:
         raise ValueError("seat_count must be positive")
     if seat_count <= 1:
-        return TIERS["self-host"]
-    if seat_count <= 5:
-        return TIERS["team-5"]
-    if seat_count <= 10:
-        return TIERS["team-10"]
+        return TIERS["solo"]
+    if seat_count <= MAX_SEATS:
+        return TIERS["team"]
     raise SeatLimitExceeded(
-        f"{seat_count} seats exceeds the highest published tier (10)"
+        f"{seat_count} seats is beyond what the team plan is sold for "
+        f"({MAX_SEATS}). Talk to us."
     )
 
 

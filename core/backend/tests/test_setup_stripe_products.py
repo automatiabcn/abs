@@ -41,11 +41,10 @@ def test_dry_run_no_stripe_call():
     assert result.returncode == 0, result.stderr
     assert "DRY RUN" in result.stdout
     # WOULD-CREATE line for 3 SKUs
-    assert result.stdout.count("WOULD-CREATE") == 3
+    assert result.stdout.count("WOULD-CREATE") == 2
     # Stripe live API erismez (real API hata verirdi)
-    assert "self-host" in result.stdout
-    assert "team-5" in result.stdout
-    assert "team-10" in result.stdout
+    assert "solo" in result.stdout
+    assert "team" in result.stdout
 
 
 def test_mode_live_with_test_key_aborts():

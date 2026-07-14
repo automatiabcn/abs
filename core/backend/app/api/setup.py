@@ -8,7 +8,7 @@
 State file: <data_dir>/setup_state.json
 Steps:
   1) admin     {email, password}
-  2) license   {license_key}  — optional; empty means the free tier
+  2) license   {license_key}  — optional; empty starts the seven-day trial
   3) domain    {mode, domain?, ssl_mode}
   4) anthropic {anthropic_api_key} — optional
   5) providers {groq_api_key?, gemini_api_key?, ...} — all optional
@@ -541,8 +541,10 @@ async def step_license(body: LicenseBody, request: Request) -> Dict[str, Any]:
 
         key = (body.license_key or "").strip()
         if not key:
-            # No key: the free tier. Start the demo clock and move on — this is a
-            # supported way to run the product, not a failure to configure it.
+            # No key: the seven-day trial. Start the clock and move on — this is
+            # a supported way to install the product, not a failure to configure
+            # it. Everything is switched on; in seven days chat and the agent
+            # pause, and nothing the customer has put here is touched.
             from app.licensing.demo import start_demo
 
             demo = start_demo()

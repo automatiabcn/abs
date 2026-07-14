@@ -10,13 +10,17 @@ import Stripe from "stripe";
 
 export const runtime = "nodejs";
 
-type Tier = "self-host" | "maintenance" | "team-5" | "team-10";
+type Tier = "solo" | "team";
+
+// The team plan is priced per seat and starts at three. Below that, Solo costs
+// less — selling a two-person "team" would only be selling someone the wrong
+// thing.
+const MIN_TEAM_SEATS = 3;
+const MAX_SEATS = 500;
 
 const priceIdMap: Record<Tier, string | undefined> = {
-  "self-host": process.env.STRIPE_PRICE_ID_SELF_HOST,
-  maintenance: process.env.STRIPE_PRICE_ID_MAINTENANCE,
-  "team-5": process.env.STRIPE_PRICE_ID_TEAM_5,
-  "team-10": process.env.STRIPE_PRICE_ID_TEAM_10,
+  solo: process.env.STRIPE_PRICE_ID_SOLO,
+  team: process.env.STRIPE_PRICE_ID_TEAM,
 };
 
 let stripeClient: Stripe | null = null;
@@ -35,22 +39,22 @@ function getStripe(): Stripe {
   return stripeClient;
 }
 
-const VALID_TIERS: ReadonlySet<Tier> = new Set([
-  "self-host",
-  "maintenance",
-  "team-5",
-  "team-10",
-]);
+const VALID_TIERS: ReadonlySet<Tier> = new Set<Tier>(["solo", "team"]);
 
-function seatCountForTier(tier: Tier): string {
-  if (tier === "team-5") return "5";
-  if (tier === "team-10") return "10";
-  return "1";
+/**
+ * Seats are money, so the number is settled here and not taken from the browser.
+ * Solo is one person by definition; a team is at least three.
+ */
+function seatsFor(tier: Tier, requested: unknown): number {
+  if (tier === "solo") return 1;
+  const n = Math.floor(Number(requested));
+  if (!Number.isFinite(n)) return MIN_TEAM_SEATS;
+  return Math.min(MAX_SEATS, Math.max(MIN_TEAM_SEATS, n));
 }
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as { tier?: Tier };
+    const body = (await req.json()) as { tier?: Tier; seats?: number };
     const tier = body.tier;
 
     if (!tier || !VALID_TIERS.has(tier)) {
@@ -72,18 +76,22 @@ export async function POST(req: Request) {
       );
     }
 
+    const seats = seatsFor(tier, body.seats);
     const origin = new URL(req.url).origin;
 
     const session = await getStripe().checkout.sessions.create({
-      mode: "payment",
-      line_items: [{ price: priceId, quantity: 1 }],
+      // A subscription, not a purchase. Both prices are recurring, and a
+      // recurring price sold in `payment` mode is a charge that never renews —
+      // Stripe refuses it, which is the one mercy in that mistake.
+      mode: "subscription",
+      line_items: [{ price: priceId, quantity: seats }],
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/`,
+      cancel_url: `${origin}/pricing`,
       allow_promotion_codes: true,
       billing_address_collection: "auto",
       metadata: {
         tier,
-        seat_count: seatCountForTier(tier),
+        seat_count: String(seats),
       },
     });
 

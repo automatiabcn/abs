@@ -17,6 +17,9 @@
 // in whichever test happened to be sixth — a moving, meaningless failure that
 // hides the real ones. A person signs in once and then works; so does the suite.
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { expect, test as setup } from "@playwright/test";
 
 import { ADMIN_EMAIL, ADMIN_PASSWORD, login, requireBackend } from "./helpers/stack";
@@ -67,10 +70,26 @@ setup("install the server, then sign in", async ({ page, request }) => {
     await admin.locator('input[name="password"]').fill(ADMIN_PASSWORD);
     await admin.locator('button[type="submit"]').click();
 
-    // 2 — the licence, which a person who has not bought anything does not have.
-    // The free tier is the default and the box is already ticked.
+    // 2 — the licence.
+    //
+    // These scenarios are a *customer's* server: people are invited to it, they
+    // sign in, they are given roles. The seat gate is real now — a trial covers
+    // one person — so a server with colleagues on it is a server somebody is
+    // paying for, and the harness has to install one. The launcher mints the key
+    // with this run's own throwaway signing keypair and leaves it here.
+    //
+    // (The trial, and what happens when it ends, is pinned in the backend suite:
+    // an install with no key answers for seven days and then pauses chat while
+    // leaving every document in place.)
     await expect(page.locator('section[data-step="2"]')).toBeVisible();
     await expect(page.locator("#setup-skip-license")).toBeChecked();
+
+    const licenseKey = readFileSync(
+      path.resolve(__dirname, "../../../backend/.e2e-state/license_key.txt"),
+      "utf-8",
+    ).trim();
+    await page.locator("#setup-skip-license").uncheck();
+    await page.locator('#setup-license-key').fill(licenseKey);
     await page.locator('form[data-step-key="license"] button[type="submit"]').click();
 
     // 3 — the domain. A first install is on localhost.

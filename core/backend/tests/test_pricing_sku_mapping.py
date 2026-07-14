@@ -3,18 +3,12 @@
 from __future__ import annotations
 
 
-def test_sku_self_host_seat_1():
+def test_the_two_plans_are_the_ones_on_sale():
     from app.api.checkout import _SKU_TO_PRICE
 
-    _resolver, seats = _SKU_TO_PRICE["self-host"]
-    assert seats == 1
-
-
-def test_sku_team_5_and_10_seats():
-    from app.api.checkout import _SKU_TO_PRICE
-
-    assert _SKU_TO_PRICE["team-5"][1] == 5
-    assert _SKU_TO_PRICE["team-10"][1] == 10
+    assert set(_SKU_TO_PRICE) == {"solo", "team"}, (
+        "the one-off packs were retired; the product is a monthly subscription"
+    )
 
 
 def test_setup_stripe_products_script_compiles():

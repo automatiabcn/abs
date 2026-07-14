@@ -30,14 +30,14 @@ describe("CheckoutButton", () => {
         }),
       );
 
-    render(<CheckoutButton tier="self-host">Self-Host Al</CheckoutButton>);
-    await userEvent.click(screen.getByRole("button", { name: "Self-Host Al" }));
+    render(<CheckoutButton tier="solo">Subscribe</CheckoutButton>);
+    await userEvent.click(screen.getByRole("button", { name: "Subscribe" }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/checkout",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ tier: "self-host" }),
+        body: JSON.stringify({ tier: "solo", seats: 1 }),
       }),
     );
     expect(window.location.href).toBe("https://checkout.stripe.com/x");
@@ -51,8 +51,8 @@ describe("CheckoutButton", () => {
       }),
     );
 
-    render(<CheckoutButton tier="team-5">5 seat</CheckoutButton>);
-    await userEvent.click(screen.getByRole("button", { name: "5 seat" }));
+    render(<CheckoutButton tier="team" seats={5}>5 seats</CheckoutButton>);
+    await userEvent.click(screen.getByRole("button", { name: "5 seats" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Price not configured",

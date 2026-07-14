@@ -4,10 +4,20 @@ import { describe, expect, it } from "vitest";
 import FAQ from "@/components/FAQ";
 
 describe("FAQ (018 modul C)", () => {
-  it("renders all 12 questions (8 baseline + 4 new in 018)", () => {
+  it("renders every question", () => {
     render(<FAQ />);
     const items = screen.getAllByRole("term");
-    expect(items.length).toBe(12);
+    expect(items.length).toBe(13);
+  });
+
+  it("answers the question a subscription makes people ask", () => {
+    // "What happens to my documents if I stop paying?" — the honest answer is
+    // "nothing", and a page that does not say so leaves the worst assumption
+    // standing.
+    render(<FAQ />);
+    expect(
+      screen.getByText(/What happens when the trial ends, or I cancel\?/i),
+    ).toBeInTheDocument();
   });
 
   it("includes 4 new questions: vault, refund, GDPR, open source", () => {
