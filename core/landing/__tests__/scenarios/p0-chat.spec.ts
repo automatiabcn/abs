@@ -1,4 +1,4 @@
-// P0 — the chat scenarios the product does not exist without.
+// the chat scenarios the product does not exist without.
 //
 // C1  A new operator asks a question and gets an answer, on the free tier,
 //     with no paid key configured.

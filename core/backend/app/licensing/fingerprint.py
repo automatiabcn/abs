@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Hardware fingerprint collection for license binding (Q12 IP-Hardening R1).
+"""Hardware fingerprint collection for license binding (IP hardening).
 
 A SHA-256 hash of four OS-level identifiers — stable across reboots but
 unique to a given machine. License JWTs that embed `machine_fp` are only

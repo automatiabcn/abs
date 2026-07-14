@@ -5,8 +5,8 @@
 
 """Provider config YAML loader.
 
-Boot'ta `infra/provider-configs/*.yaml` okunur, model alias map + pricing dict'e
-yuklenir. Docker container'da `ABS_PROVIDER_CONFIGS_DIR` env ile path override edilebilir.
+At boot, `infra/provider-configs/*.yaml` is read into the model alias map and the
+pricing dict. In a container, `ABS_PROVIDER_CONFIGS_DIR` overrides the path.
 """
 
 from __future__ import annotations

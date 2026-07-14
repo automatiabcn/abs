@@ -8,7 +8,7 @@ const TOOLS_HTML = readFileSync(`${STATIC_DIR}/tools.html`, "utf-8");
 const CASCADE_HTML = readFileSync(`${STATIC_DIR}/cascade.html`, "utf-8");
 const PIPELINE_HTML = readFileSync(`${STATIC_DIR}/pipeline.html`, "utf-8");
 
-describe("Tool Browser HTML — 033 Modul E", () => {
+describe("Tool Browser HTML", () => {
   it("declares the tool grid + modal testids", () => {
     expect(TOOLS_HTML).toContain('data-testid="tool-grid"');
     expect(TOOLS_HTML).toContain('data-testid="tool-modal"');
@@ -21,7 +21,7 @@ describe("Tool Browser HTML — 033 Modul E", () => {
   });
 });
 
-describe("Cascade Visualiser HTML — 033 Modul F", () => {
+describe("Cascade Visualiser HTML", () => {
   it("declares the cascade table testid", () => {
     expect(CASCADE_HTML).toContain('data-testid="cascade-table"');
   });
@@ -32,7 +32,7 @@ describe("Cascade Visualiser HTML — 033 Modul F", () => {
   });
 });
 
-describe("Quality Pipeline HTML — 033 Modul H", () => {
+describe("Quality Pipeline HTML", () => {
   it("declares the pipeline list testid", () => {
     expect(PIPELINE_HTML).toContain('data-testid="pipeline-list"');
   });

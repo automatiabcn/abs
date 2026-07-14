@@ -1,4 +1,4 @@
-"""Q12 Round 17 / L25 — boundary payload guards.
+"""boundary payload guards.
 
 Brief asked for limits at:
   - RAG ingest 25MB
@@ -8,7 +8,7 @@ Brief asked for limits at:
 
 The audit revealed the *real* declared limits in code:
 
-| Endpoint                    | Field             | Pre-Round 17 cap         |
+| Endpoint                    | Field             | Cap before the fix      |
 |-----------------------------|-------------------|--------------------------|
 | POST /v1/rag/ingest         | text              | 2,000,000 chars (~2 MB)  |
 | POST /v1/rag/ingest         | contextual_prefix | 4,000 chars              |
@@ -16,9 +16,9 @@ The audit revealed the *real* declared limits in code:
 | POST /v1/chat/sessions      | title             | 200 chars                |
 | POST /v1/chat/completions   | content (per msg) | 8,000 chars              |
 | POST /v1/workflows/synth    | intent            | 2,000 chars              |
-| POST /v1/marketplace/install| plugin_id, tenant | UNBOUNDED (Q12-L25-001!) |
+| POST /v1/marketplace/install| plugin_id, tenant | UNBOUNDED (001!) |
 
-Round 17 ships the marketplace fix + pins the rest with regression
+This change ships the marketplace fix + pins the rest with regression
 tests. Pre-fix marketplace allowed:
   - 1 MB plugin_id (memory exhaustion in registry lookup)
   - tenant="../../../etc" (path traversal — tenant lands in a directory
@@ -47,15 +47,15 @@ def _login(client: TestClient) -> None:
     ):
         if client.post("/auth/login", json=payload).status_code == 200:
             return
-    pytest.skip("Q12-L25: no bootstrap admin available in this env")
+    pytest.skip("no bootstrap admin available in this env")
 
 
 # ----------------------------------------------------------------------
-# 1) Q12-L25-001 — marketplace InstallBody hardening
+# 1) marketplace InstallBody hardening
 # ----------------------------------------------------------------------
 
 
-class TestQ12L25MarketplaceInstallBoundary:
+class TestMarketplaceInstallBoundary:
     def test_oversized_plugin_id_rejected(self, client: TestClient) -> None:
         _login(client)
         oversized = "a" * 200  # > 128 cap
@@ -64,7 +64,7 @@ class TestQ12L25MarketplaceInstallBoundary:
             json={"plugin_id": oversized, "tenant": "default"},
         )
         assert r.status_code == 422, (
-            f"Q12-L25-001 REGRESSION: marketplace accepted {len(oversized)}-"
+            f"REGRESSION: marketplace accepted {len(oversized)}-"
             f"char plugin_id (status={r.status_code})"
         )
 
@@ -75,7 +75,7 @@ class TestQ12L25MarketplaceInstallBoundary:
             json={"plugin_id": "valid-id", "tenant": "../../../etc"},
         )
         assert r.status_code == 422, (
-            "Q12-L25-001 REGRESSION: marketplace accepted path-traversal "
+            "REGRESSION: marketplace accepted path-traversal "
             f"tenant (status={r.status_code})"
         )
 
@@ -87,7 +87,7 @@ class TestQ12L25MarketplaceInstallBoundary:
                 json={"plugin_id": evil, "tenant": "default"},
             )
             assert r.status_code == 422, (
-                f"Q12-L25-001 REGRESSION: marketplace accepted shell "
+                f"REGRESSION: marketplace accepted shell "
                 f"metachars in plugin_id={evil!r} (status={r.status_code})"
             )
 
@@ -99,7 +99,7 @@ class TestQ12L25MarketplaceInstallBoundary:
         )
         # 404 (plugin missing) or 200 — both are post-validation.
         assert r.status_code != 422, (
-            f"Q12-L25-001 REGRESSION: validator rejected SAFE plugin_id "
+            f"REGRESSION: validator rejected SAFE plugin_id "
             f"(status={r.status_code}, body={r.text[:200]})"
         )
 
@@ -109,7 +109,7 @@ class TestQ12L25MarketplaceInstallBoundary:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L25RagIngestBoundary:
+class TestRagIngestBoundary:
     """RAG endpoints use cerbos JWT-bearer auth (not panel cookie). To
     test the cap without minting a real OAuth bearer we exercise the
     Pydantic model directly — the cap travels with the schema and the
@@ -162,7 +162,7 @@ class TestQ12L25RagIngestBoundary:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L25WorkflowSynthesizeBoundary:
+class TestWorkflowSynthesizeBoundary:
     def test_intent_at_cap(self, client: TestClient) -> None:
         _login(client)
         body = {"intent": "i" * 2_000, "locale": "tr"}
@@ -187,14 +187,14 @@ class TestQ12L25WorkflowSynthesizeBoundary:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L25WorkflowExecuteNodesGraceful:
+class TestWorkflowExecuteNodesGraceful:
     def test_node_workflow_no_500(self, client: TestClient) -> None:
         _login(client)
         nodes = [{"id": f"n{i}", "type": "noop", "params": {}} for i in range(100)]
         body = {"workflow": {"nodes": nodes, "edges": []}, "dry_run": True}
         r = client.post("/v1/workflows/execute", json=body)
         assert r.status_code != 500, (
-            f"Q12-L25 100-node workflow crashed server (status={r.status_code}, "
+            f"100-node workflow crashed server (status={r.status_code}, "
             f"body excerpt: {r.text[:200]})"
         )
 

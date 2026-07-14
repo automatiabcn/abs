@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Q7 production deploy verification — worker finalize sonrası çalıştır
+# production deploy verification — run after worker finalize
 set -uo pipefail
 
 PASS=0
@@ -28,17 +28,17 @@ done
 
 echo
 echo "=== 4. host scripts kalıcı ==="
-if [ -x scripts/q7_bootstrap.sh ]; then ok "q7_bootstrap.sh executable"; else fail "q7_bootstrap.sh missing"; fi
+if [ -x scripts/dev_backend_bootstrap.sh ]; then ok "dev_backend_bootstrap.sh executable"; else fail "dev_backend_bootstrap.sh missing"; fi
 if [ -x scripts/credential_reset.sh ]; then ok "credential_reset.sh executable"; else fail "credential_reset.sh missing"; fi
 
 echo
 echo "=== 5. Neo4j live ingest + cypher ==="
-# Q7 finalize note: credentials match `scripts/credential_reset.sh` seed
+# finalize note: credentials match `scripts/credential_reset.sh` seed
 # (admin@demo-acme.local / LocalPass2026!). Earlier draft used a placeholder.
 bash scripts/credential_reset.sh >/dev/null 2>&1 || true
 # Backend Python image is `python:3.11-slim` — no curl baked in. Drive the
 # auth + graph + marketplace probes from the host (port 8000 is dev-mapped).
-COOKIE_FILE=/tmp/q7_finalize_cookie.txt
+COOKIE_FILE=/tmp/abs_deploy_verify_cookie.txt
 LOGIN=$(curl -sk -c "$COOKIE_FILE" -X POST http://localhost:8000/auth/login \
     -H "Content-Type: application/json" \
     -d '{"email":"admin@demo-acme.local","password":"LocalPass2026!"}' \
@@ -79,9 +79,9 @@ echo
 echo "─────────────────────────────────────────"
 echo "PASS=$PASS  FAIL=$FAIL"
 if [ $FAIL -eq 0 ]; then
-  echo "✅ Q7 production deploy verified"
+  echo "✅ production deploy verified"
   exit 0
 else
-  echo "❌ Q7 production deploy incomplete — $FAIL gap remaining"
+  echo "❌ production deploy incomplete — $FAIL gap remaining"
   exit 1
 fi

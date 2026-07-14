@@ -1,10 +1,10 @@
-"""015 — Daily cost estimator testleri (tracker × provider_configs)."""
+"""Daily cost estimator testleri (tracker × provider_configs)."""
 
 from __future__ import annotations
 
 
 def _fake_snapshot(payload: dict) -> dict:
-    """tracker.snapshot() formatı: {tool: {count_total, count_24h, last_called_at}}."""
+    """tracker.snapshot() format: {tool: {count_total, count_24h, last_called_at}}."""
     return {
         name: {"count_total": v, "count_24h": v, "last_called_at": 0.0}
         for name, v in payload.items()
@@ -27,7 +27,7 @@ def test_estimate_with_one_tool_call(monkeypatch):
     from app.billing import cost_estimator
     from app.mcp.tracking import tracker
 
-    # claude-haiku alias var → ask_claude-haiku tool name
+    # claude-haiku alias exists → ask_claude-haiku tool name
     monkeypatch.setattr(
         tracker, "snapshot", lambda: _fake_snapshot({"ask_claude-haiku": 100})
     )
@@ -66,7 +66,7 @@ def test_breakdown_sorted_by_cost(monkeypatch):
     )
     out = cost_estimator.estimate_daily_cost()
     assert len(out["breakdown"]) >= 2
-    # claude-opus daha pahalı → ilk sıra
+    # claude-opus is more expensive → first priority
     assert out["breakdown"][0]["tool"] == "ask_claude-opus"
     assert out["breakdown"][0]["estimated_usd"] > out["breakdown"][1]["estimated_usd"]
 

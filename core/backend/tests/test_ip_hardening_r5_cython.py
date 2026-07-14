@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q12 IP-Hardening R5 — Cython compile setup smoke test.
+"""IP hardening — Cython compile setup smoke test.
 
 Coverage (1 test):
     1. setup.py target list includes verifier + fingerprint + quota_monitor.

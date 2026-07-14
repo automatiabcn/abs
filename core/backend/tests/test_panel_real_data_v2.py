@@ -1,4 +1,4 @@
-"""015 — Panel SSE _build_budget gerçek today_usd + learnings_count testleri."""
+"""Panel SSE _build_budget real today_usd + learnings_count tests."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ def isolated_data_dir(monkeypatch, tmp_path: Path):
 
 
 def test_build_budget_uses_real_cost(monkeypatch, isolated_data_dir):
-    """estimate_daily_cost mock'u → _build_budget bu değerleri kullanmalı."""
+    """estimate_daily_cost mock → _build_budget should use these values."""
     from app.api import stream as stream_mod
     import app.billing.cost_estimator as cost_mod
 
@@ -29,7 +29,7 @@ def test_build_budget_uses_real_cost(monkeypatch, isolated_data_dir):
         "note": "test",
     }
     monkeypatch.setattr(cost_mod, "estimate_daily_cost", lambda: fake_cost)
-    # billing/__init__ re-export'u da patch edelim ki app.api.stream içe import'u doğru gelsin
+    # let's patch the billing/__init__ re-export so that app.api.stream imports correctly
     import app.billing as billing_pkg
 
     monkeypatch.setattr(
@@ -42,7 +42,7 @@ def test_build_budget_uses_real_cost(monkeypatch, isolated_data_dir):
 
 
 def test_build_budget_uses_real_learnings(monkeypatch, isolated_data_dir):
-    """recent_count mock → learnings_count o değer."""
+    """recent_count mock → learnings_count that value."""
     from app.api import stream as stream_mod
     import app.learnings.store as learnings_mod
 
@@ -52,7 +52,7 @@ def test_build_budget_uses_real_learnings(monkeypatch, isolated_data_dir):
 
 
 def test_cache_stats_returns_real_counter(monkeypatch):
-    """default_cache hit/miss counter MCP cache_stats'e gerçek değer döndürür."""
+    """default_cache hit/miss counter returns real values to MCP cache_stats."""
     from app.cascade import cache as cache_mod
     from app.cascade.cache import SemanticCache, prompt_hash
     from app.providers.schemas import ProviderResponse

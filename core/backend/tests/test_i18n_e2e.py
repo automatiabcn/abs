@@ -1,4 +1,4 @@
-"""024 Modul B — i18n end-to-end: 3 langs × 3 endpoints = 9 live HTTP checks.
+"""i18n end-to-end: 3 langs × 3 endpoints = 9 live HTTP checks.
 
 Endpoints exercised:
   POST /webhooks/stripe         (no signature → 400 with localized "missing")

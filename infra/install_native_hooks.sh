@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Automatia ABS — Claude Code native hook kurulum scripti (Mod A opsiyonel).
+# Automatia ABS — Claude Code native hook installation script (Mod A optional).
 #
-# Kullanıcının ~/.claude/hooks/ altına ABS pre-tool-guard.sh'i symlink'ler ve
+# Symlinks ABS pre-tool-guard.sh into the user's ~/.claude/hooks/
 # settings.json PreToolUse hook entry'sini ekler (zaten varsa override etmez).
 #
-# Çalıştırma: bash infra/install_native_hooks.sh
+# Run: bash infra/install_native_hooks.sh
 
 set -euo pipefail
 

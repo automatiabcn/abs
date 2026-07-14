@@ -1,6 +1,6 @@
-"""Q12 Round 22 / L24 sweep 2 — webhook signature audit + secret-leak hardening.
+"""sweep 2 — webhook signature audit + secret-leak hardening.
 
-Pre-Round 22 inventory (3 webhook receivers):
+An earlier audit (3 webhook receivers):
 
     POST /webhooks/stripe                 — Stripe SDK construct_event
     POST /v1/integrations/slack/webhook   — Slack HMAC-SHA256
@@ -8,7 +8,7 @@ Pre-Round 22 inventory (3 webhook receivers):
 
 Findings:
 
-  Q12-L24-003 (MED) — Slack webhook leaks signing-check internals.
+  Slack webhook leaks signing-check internals.
     Pre-fix, response body was
       f"Slack signature verify failed: {reason}"
     where `reason` enumerated:
@@ -16,18 +16,18 @@ Findings:
       timestamp_expired | signature_mismatch
     A caller can iterate and learn (a) whether the signing secret is
     provisioned (boot misconfig signal) and (b) which check failed
-    (replay-tuning signal). Same Q12-L24 family as the R14 Stripe
+    (replay-tuning signal). the earlier family as the R14 Stripe
     str(exc) leak (cus_*/sub_*/acct_* IDs into the response detail).
     Fix: emit reason via audit channel, return generic
     "slack_signature_invalid".
 
-  Q12-L24-004 (LOW) — All three webhook signature failure paths were
+  All three webhook signature failure paths were
     completely silent in audit (no emit_event, only logger.warning at
     INFO). Stripe SDK ValueError additionally surfaces "Could not
     deserialize key data..." in the swallowed exception, kept out of
     response by the i18n string but never logged structurally.
 
-Round 22 wires emit_event onto every signature/payload denial path:
+This change wires emit_event onto every signature/payload denial path:
 
     webhooks.stripe.signature        denied {signature_missing | signature_invalid}
     webhooks.stripe.payload          denied invalid_payload (ValueError)
@@ -37,7 +37,7 @@ Round 22 wires emit_event onto every signature/payload denial path:
     integrations.github.webhook.payload    denied invalid_json
 
 Plus contract test: Slack response body must NOT contain the reason
-taxonomy (regression guard against the Q12-L24-003 leak).
+taxonomy (regression guard against the 003 leak).
 """
 
 from __future__ import annotations
@@ -66,7 +66,7 @@ def _audits_for(records, action_prefix: str) -> list[dict]:
 
 
 # ----------------------------------------------------------------------
-# Slack — Q12-L24-003 leak fix + audit emission
+# Slack — leak fix + audit emission
 # ----------------------------------------------------------------------
 
 
@@ -75,14 +75,14 @@ def _slack_sign(secret: str, ts: str, body: bytes) -> str:
     return "v0=" + hmac.new(secret.encode(), base, hashlib.sha256).hexdigest()
 
 
-class TestQ12L24Sweep2Slack:
+class TestSweep2Slack:
     def test_slack_response_body_does_not_leak_reason_taxonomy(
         self,
         client: TestClient,
         caplog: pytest.LogCaptureFixture,
         monkeypatch,
     ) -> None:
-        """Q12-L24-003 regression guard. Pre-fix the response body included
+        """regression guard. Pre-fix the response body included
         e.g. 'Slack signature verify failed: signature_mismatch'. Post-fix
         it is a generic constant; the taxonomy goes to audit only."""
         monkeypatch.setattr(settings, "slack_signing_secret", "sec-l24s2")
@@ -166,7 +166,7 @@ class TestQ12L24Sweep2Slack:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L24Sweep2GitHub:
+class TestSweep2GitHub:
     def test_github_signature_failure_emits_denied(
         self,
         client: TestClient,
@@ -188,8 +188,8 @@ class TestQ12L24Sweep2GitHub:
         # Response body should not leak the secret material.
         assert "ghw-l24s2" not in r.text
         events = _audits_for(caplog.records, "integrations.github.webhook.signature")
-        # Q12-L24-008 (S7 R50) — sweep 2 originally over-collapsed every
-        # github failure mode into reason="signature_invalid". The R50 fix
+        # sweep 2 originally over-collapsed every
+        # github failure mode into reason="signature_invalid". The fix
         # surfaces granular taxonomy: signing_secret_empty / header_missing
         # / signature_mismatch. For a well-formed sha256= header with
         # wrong HMAC the reason is now "signature_mismatch". The legacy
@@ -205,7 +205,7 @@ class TestQ12L24Sweep2GitHub:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L24Sweep2Stripe:
+class TestSweep2Stripe:
     def test_stripe_signature_missing_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:

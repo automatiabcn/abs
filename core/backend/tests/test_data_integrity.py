@@ -1,10 +1,10 @@
-"""Q11 Round 5 / L14 — data integrity regression coverage.
+"""data integrity regression coverage.
 
 Two contracts under test:
 
   1. The Alembic migration chain reaches `0008_minted_token_blacklist`
      and the table physically exists on disk after `alembic upgrade
-     head`. Q11-L14-001 exists because Q10 Round 14 shipped the model
+     head`. 001 exists because an earlier release shipped the model
      without the matching migration; this test would have caught it
      at the time.
 
@@ -25,7 +25,7 @@ from app.db.models import MintedTokenBlacklist
 from app.db.session import get_engine
 
 
-class TestQ11L14AlembicChain:
+class TestAlembicChain:
     def test_minted_token_blacklist_migration_in_chain(self):
         from alembic.config import Config
         from alembic.script import ScriptDirectory
@@ -34,8 +34,8 @@ class TestQ11L14AlembicChain:
         scripts = ScriptDirectory.from_config(cfg)
         revs = {sc.revision: sc for sc in scripts.walk_revisions()}
         assert "0008_minted_token_blacklist" in revs, (
-            "Q11-L14-001: migration 0008_minted_token_blacklist missing "
-            "from Alembic chain — Q10 Round 14 shipped the SQLModel but "
+            "migration 0008_minted_token_blacklist missing "
+            "from Alembic chain — an earlier release shipped the SQLModel but "
             "skipped this revision."
         )
         sc = revs["0008_minted_token_blacklist"]
@@ -63,7 +63,7 @@ class TestQ11L14AlembicChain:
         assert not missing, f"missing columns: {missing}"
 
 
-class TestQ11L14RevokePersistence:
+class TestRevokePersistence:
     @pytest.fixture()
     def admin_client(self, client):
         r = client.post(
@@ -95,8 +95,7 @@ class TestQ11L14RevokePersistence:
                 )
             ).first()
         assert row is not None, (
-            "revoked token digest not persisted — Q10-L6-002 INSERT "
-            "may have rolled back."
+            "revoked token digest not persisted — the INSERT may have rolled back."
         )
         assert row.label == "probe"
         assert row.reason == "q11 integrity"

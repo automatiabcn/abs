@@ -1,4 +1,4 @@
-"""010 — MLX provider testleri (respx mock, gerçek bridge gerekmez)."""
+"""MLX provider tests (respx mock, real bridge not required)."""
 
 from __future__ import annotations
 

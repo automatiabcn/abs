@@ -1,6 +1,6 @@
-"""Q12 Round 13 / L23 — observability gap regression.
+"""observability gap regression.
 
-Closes Q12-L23-001 (HIGH) — pre-fix audit found 138/147 raise sites in
+Closes pre-fix audit found 138/147 raise sites in
 `core/backend/app/api/` had NO paired structured log within 3 lines
 before the raise (93.9% silent). No request_id correlation middleware
 existed. Ops could not trace a credential-stuffing incident across
@@ -41,22 +41,22 @@ from app.observability.audit import (
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23RequestIDMiddleware:
+class TestRequestIDMiddleware:
     def test_request_id_generated_when_absent(self, client: TestClient) -> None:
         r = client.get("/auth/me")
         # 401 expected (no cookie) — but the header MUST still be set
         assert "X-Request-ID" in r.headers, (
-            "Q12-L23: RequestIDMiddleware did not echo X-Request-ID"
+            "RequestIDMiddleware did not echo X-Request-ID"
         )
         assert len(r.headers["X-Request-ID"]) == 32, (
-            "Q12-L23: generated request_id should be uuid4().hex (32 chars)"
+            "generated request_id should be uuid4().hex (32 chars)"
         )
 
     def test_request_id_preserved_when_safe(self, client: TestClient) -> None:
         rid = "abc-123_DEADBEEF"
         r = client.get("/auth/me", headers={"X-Request-ID": rid})
         assert r.headers.get("X-Request-ID") == rid, (
-            "Q12-L23: safe inbound X-Request-ID should be echoed verbatim"
+            "safe inbound X-Request-ID should be echoed verbatim"
         )
 
     def test_request_id_replaced_when_malformed(self, client: TestClient) -> None:
@@ -64,15 +64,15 @@ class TestQ12L23RequestIDMiddleware:
         r = client.get("/auth/me", headers={"X-Request-ID": "bad value!"})
         echoed = r.headers.get("X-Request-ID", "")
         assert echoed != "bad value!", (
-            "Q12-L23: malformed X-Request-ID must be replaced (input sanitization)"
+            "malformed X-Request-ID must be replaced (input sanitization)"
         )
-        assert len(echoed) == 32, "Q12-L23: replacement must be uuid4().hex"
+        assert len(echoed) == 32, "replacement must be uuid4().hex"
 
     def test_request_id_replaced_when_too_long(self, client: TestClient) -> None:
         r = client.get("/auth/me", headers={"X-Request-ID": "a" * 129})
         echoed = r.headers.get("X-Request-ID", "")
         assert echoed != "a" * 129, (
-            "Q12-L23: oversized X-Request-ID must be replaced (>128 chars)"
+            "oversized X-Request-ID must be replaced (>128 chars)"
         )
 
 
@@ -81,7 +81,7 @@ class TestQ12L23RequestIDMiddleware:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23EmitEventScrub:
+class TestEmitEventScrub:
     def test_unknown_keys_dropped(self) -> None:
         out = _scrub(
             {
@@ -93,7 +93,7 @@ class TestQ12L23EmitEventScrub:
             }
         )
         assert out == {"reason": "ok"}, (
-            "Q12-L23: _scrub must keep allowlisted keys + drop sensitive prefixes"
+            "_scrub must keep allowlisted keys + drop sensitive prefixes"
         )
 
     def test_safe_keys_set_is_explicit(self) -> None:
@@ -107,7 +107,7 @@ class TestQ12L23EmitEventScrub:
             "status_code",
         }
         missing = required - SAFE_KEYS
-        assert not missing, f"Q12-L23: SAFE_KEYS missing {missing}"
+        assert not missing, f"SAFE_KEYS missing {missing}"
 
     def test_outcome_normalized_to_error_when_invalid(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
@@ -130,13 +130,11 @@ class TestQ12L23EmitEventScrub:
             caplog.clear()
             emit_event(fake, action="x.y", outcome="totally-bogus")
         records = [r for r in caplog.records if r.name == LOGGER_NAME]
-        assert records, "Q12-L23: emit_event produced no abs.audit record"
+        assert records, "emit_event produced no abs.audit record"
         last = records[-1]
         audit = getattr(last, "audit", None)
-        assert audit is not None, "Q12-L23: audit dict missing on log record"
-        assert audit["outcome"] == "error", (
-            "Q12-L23: invalid outcome must normalize to 'error'"
-        )
+        assert audit is not None, "audit dict missing on log record"
+        assert audit["outcome"] == "error", "invalid outcome must normalize to 'error'"
         assert audit["request_id"] == "rid-test"
         assert r.status_code == 401  # /auth/me sanity check unrelated
 
@@ -146,7 +144,7 @@ class TestQ12L23EmitEventScrub:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23LoginAuditTrail:
+class TestLoginAuditTrail:
     def test_login_email_no_source_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -166,15 +164,13 @@ class TestQ12L23LoginAuditTrail:
             and getattr(rec, "audit", {}).get("action") == "auth.login"
             and getattr(rec, "audit", {}).get("outcome") == "denied"
         ]
-        assert denials, "Q12-L23: /auth/login bad-email must emit denied audit event"
+        assert denials, "/auth/login bad-email must emit denied audit event"
         last = denials[-1]
         # PII guard: never log full email or password
-        assert last.get("email_hint", "").endswith("***"), (
-            "Q12-L23: email_hint must be masked"
-        )
+        assert last.get("email_hint", "").endswith("***"), "email_hint must be masked"
         assert "password" not in last
         assert "request_id" in last and len(last["request_id"]) >= 16, (
-            "Q12-L23: denial event must carry request_id correlation"
+            "denial event must carry request_id correlation"
         )
 
     def test_login_no_secret_field_in_audit_record(
@@ -191,5 +187,5 @@ class TestQ12L23LoginAuditTrail:
             audit = getattr(rec, "audit", {}) or {}
             for forbidden in ("password", "api_key", "secret", "token", "cookie"):
                 assert forbidden not in audit, (
-                    f"Q12-L23: audit record leaked forbidden key '{forbidden}'"
+                    f"audit record leaked forbidden key '{forbidden}'"
                 )

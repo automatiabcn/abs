@@ -1,4 +1,4 @@
-"""022 Modul A — Net revenue (gross - refunds - Stripe fees)."""
+"""Net revenue (gross - refunds - Stripe fees)."""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ def test_net_revenue_subtracts_refund_and_fees(monkeypatch):
     assert "refunds_usd" in rev
     assert "fees_usd" in rev
     assert "net_usd" in rev
-    # En azından 1 refund eklendi (299)
+    # At least one refund added (299)
     assert rev["refunds_usd"] >= 299
     # Fees > 0 (her checkout 0.30 + %2.9)
     assert rev["fees_usd"] > 0
@@ -72,7 +72,7 @@ def test_net_revenue_zero_refund_only_fees(monkeypatch):
     rev = out["revenue"]
     # refunds_usd ≥ 0
     assert rev["refunds_usd"] >= 0
-    # fees > 0 her zaman (en az 1 lisans var)
+    # fees > 0 always (at least one license exists)
     assert rev["fees_usd"] >= 0
     # net <= total her zaman
     assert rev["net_usd"] <= rev["total_usd"]

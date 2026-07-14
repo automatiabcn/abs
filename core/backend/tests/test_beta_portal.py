@@ -1,4 +1,4 @@
-"""031 Modul A — Beta request endpoint."""
+"""Beta request endpoint."""
 
 from __future__ import annotations
 

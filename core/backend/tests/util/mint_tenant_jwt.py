@@ -1,4 +1,4 @@
-"""Phase 5 / Q2.CO2 — tenant JWT mint helper.
+"""Phase 5 — tenant JWT mint helper.
 
 Tests need to call protected RAG endpoints (`/v1/rag/{ingest,query}`) which
 require an OAuth bearer JWT signed with the same RSA private key the

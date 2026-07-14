@@ -1,6 +1,6 @@
-"""Q12 L25 sweep 3 — request body size cap (DoS mitigation).
+"""sweep 3 — request body size cap (DoS mitigation).
 
-* Q12-L25-004 (HIGH DoS) — admin endpoints accepted unbounded request
+* (HIGH DoS) — admin endpoints accepted unbounded request
   bodies. Pre-fix, `/v1/marketplace/install` would parse a 50 MB JSON
   payload entirely into memory before the Pydantic Field caps on
   `plugin_id`/`tenant` (R17) could fire, opening a trivial OOM vector
@@ -28,7 +28,7 @@ def client():
 
 
 # ---------------------------------------------------------------------------
-# Q12-L25-004 — Content-Length cap on /v1/marketplace/install
+# Content-Length cap on /v1/marketplace/install
 # ---------------------------------------------------------------------------
 
 
@@ -92,7 +92,7 @@ def test_invalid_content_length_400(client: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Q12-L25-005 — RAG ingest oversize cap
+# RAG ingest oversize cap
 # ---------------------------------------------------------------------------
 
 

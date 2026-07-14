@@ -1,4 +1,4 @@
-// Q12-L26 sweep 2 — long-running session: heap drift + endpoint resilience.
+// sweep 2 — long-running session: heap drift + endpoint resilience.
 //
 // Pre-fix gap (Session 2 closing): we had unit-level assertions on JWT
 // expiry taxonomy but no real-browser test that proved a panel tab can
@@ -31,7 +31,7 @@ const PANEL_CHAT_URL = "/panel/chat";
 // emit an internal error.
 const ACCEPTABLE_POST_IDLE = (status: number) => status < 500;
 
-// Q12 S8 R57 — cross-browser portability fix.
+// cross-browser portability fix.
 //
 // Pre-fix gap: this spec navigated bare to /panel/chat without seeding
 // the auth cookie. Chromium's dev-server compile path tolerated the
@@ -108,7 +108,7 @@ async function snapshotHeap(
   });
 }
 
-test.describe("Q12-L26 long-running session", () => {
+test.describe("long-running session", () => {
   test("90s idle: heap drift bounded + endpoint reachable [smoke]", async ({
     page,
   }) => {

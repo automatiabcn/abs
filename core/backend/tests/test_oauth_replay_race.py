@@ -1,14 +1,14 @@
-"""Q12 L22 sweep 3 — OAuth 2.1 atomic single-use enforcement.
+"""sweep 3 — OAuth 2.1 atomic single-use enforcement.
 
 Two production-grade race vectors uncovered by Session 4 deep audit:
 
-* **Q12-L22-005 (HIGH security)** — `exchange_code_for_tokens` performed a
+* **005 (HIGH security)** — `exchange_code_for_tokens` performed a
   read-then-write on `OAuthAuthCode.used_at`. Two concurrent /oauth/token
   requests with the same authorization code could both pass the
   `used_at is None` guard and both mint access+refresh token pairs.
   OAuth 2.1 §4.1.3: authorization code MUST be single-use.
 
-* **Q12-L22-006 (HIGH security)** — `refresh_access_token` performed the
+* **006 (HIGH security)** — `refresh_access_token` performed the
   same read-then-write on `OAuthRefreshToken.rotated_to_hash`. Concurrent
   /oauth/token grant_type=refresh_token requests could both rotate the
   same parent refresh and mint independent token chains. OAuth 2.1 §6.1
@@ -82,7 +82,7 @@ def _scalar_first(db: Session, stmt):
 
 
 # ---------------------------------------------------------------------------
-# Q12-L22-005 — auth code atomic single-use
+# auth code atomic single-use
 # ---------------------------------------------------------------------------
 
 
@@ -230,7 +230,7 @@ def test_normal_flow_still_works(db_session: Session) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Q12-L22-006 — refresh rotation atomic + family revocation
+# refresh rotation atomic + family revocation
 # ---------------------------------------------------------------------------
 
 

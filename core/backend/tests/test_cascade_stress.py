@@ -1,4 +1,4 @@
-"""Q11 Round 1 / L10 — quota gate stress + concurrency.
+"""quota gate stress + concurrency.
 
 Hammers /v1/hooks/quota-check with 200 concurrent requests against a
 single tenant. RISKY_HOURLY_LIMIT is 100, so the contract is:
@@ -21,7 +21,7 @@ import pytest
 from app.api import claude_code_hooks as ccx
 
 
-class TestQ11L10QuotaGateStress:
+class TestQuotaGateStress:
     @pytest.fixture()
     def admin_client(self, client):
         r = client.post(

@@ -1,4 +1,4 @@
-"""019 — email_queue_status MCP tool: response shape + breakdown."""
+"""email_queue_status MCP tool: response shape + breakdown."""
 
 from __future__ import annotations
 
@@ -64,10 +64,10 @@ def test_email_queue_status_breakdown_sums():
 
     raw = asyncio.run(email_queue_status(limit=50))
     out = json.loads(raw)
-    # by_status sayıları → en azından bizim seed'ledikleri var
+    # by_status counts → at least we have our seeded ones
     assert out["by_status"]["sent"] >= 1
     assert out["by_status"]["pending"] >= 1
     assert out["by_status"]["failed"] >= 1
-    # by_kind içinde welcome, walkthrough, recovery var
+    # by_kind includes welcome, walkthrough, recovery
     for kind in ("welcome", "walkthrough", "recovery"):
         assert out["by_kind"].get(kind, 0) >= 1

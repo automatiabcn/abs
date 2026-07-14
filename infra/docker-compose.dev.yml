@@ -93,7 +93,7 @@ services:
       retries: 5
 
   backend:
-    # Q7 Phase B finalize — dev overlay mounts the host docker socket so the
+    # Phase B finalize — dev overlay mounts the host docker socket so the
     # PluginSandbox class (`app/marketplace/sandbox.py`) can launch plugin
     # containers from inside the backend. Production runs the sandbox
     # against a remote dockerd / Kubernetes API and never includes this file.
@@ -110,7 +110,7 @@ services:
       ABS_CERBOS_HOST: "http://cerbos:3592"
       ABS_PIPER_URL: "http://piper:5002"
       ABS_WHISPERX_URL: "http://whisperx:9000"
-      # Q3 P3 / Q4 P10 — cascade mock mode override (off by default).
+      # cascade mock mode override (off by default).
       ABS_ANTHROPIC_MOCK_MODE: "${ABS_ANTHROPIC_MOCK_MODE:-off}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

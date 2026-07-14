@@ -1,4 +1,4 @@
-"""021 — Watchdog psutil sampler validation."""
+"""Watchdog psutil sampler validation."""
 
 from __future__ import annotations
 
@@ -30,6 +30,6 @@ def test_watchdog_sampler_runs_short():
         pytest.skip("watchdog sampler collected no samples in this sandbox")
     assert sample_count >= 1
     if "rss_mb_mean" in out and out["rss_mb_mean"] > 0:
-        # RSS değeri makul aralıkta — Python process en az birkaç MB
+        # RSS value in reasonable range — Python process at least a few MB
         assert out["rss_mb_mean"] >= 1
         assert out["rss_mb_mean"] < 2000

@@ -1,4 +1,4 @@
-// P0 — K1: a document goes in through the page a customer actually uses, and
+// a document goes in through the page a customer actually uses, and
 // comes back out as a cited answer in chat.
 //
 // C3 already proves retrieval, but it seeds the index through the API. That
@@ -79,7 +79,7 @@ test("K1 — a document uploaded on the Knowledge page becomes a cited answer in
   await expect(citations).toContainText("kestrel-pricing-audit");
 });
 
-// K4 — retrieval has to pick the *right* document, not merely a document.
+// retrieval has to pick the *right* document, not merely a document.
 //
 // This is the scenario the suite was missing, and its absence hid a bug that
 // broke document search completely: the embedding backend shipped as `mock`,

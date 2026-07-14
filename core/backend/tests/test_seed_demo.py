@@ -1,4 +1,4 @@
-"""033 Modul B — Demo data seed script."""
+"""Demo data seed script."""
 
 from __future__ import annotations
 

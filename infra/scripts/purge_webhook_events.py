@@ -1,10 +1,10 @@
-"""022 — WebhookEvent purge cron — 90 gün öncesini sil.
+"""WebhookEvent purge cron — delete entries older than 90 days.
 
-Cron senaryosu (haftalık):
+Cron scenario (weekly):
   python infra/scripts/purge_webhook_events.py [--dry-run] [--days N]
 
-Davranış:
-- `processed_at IS NOT NULL` (orphan'ları tut, manuel inceleme için).
+Behavior:
+- `processed_at IS NOT NULL` (keep orphans for manual review).
 - `received_at < now - N days` filtre (default 90).
 - `--dry-run` sadece sayar, silmez.
 """

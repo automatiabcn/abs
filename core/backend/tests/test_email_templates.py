@@ -1,4 +1,4 @@
-"""012 — Refund + expiration email template testleri."""
+"""Refund + expiration email template testleri."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def test_refund_email_console_fallback(monkeypatch, caplog):
         license_jti="jti_test_console",
         refund_date="2026-04-25",
     )
-    # exception fırlatmadı + log mesajı atıldı
+    # exception not raised + log message emitted
     msgs = [rec.getMessage() for rec in caplog.records]
     assert any("console-fallback" in m and "refund" in m for m in msgs), msgs
 

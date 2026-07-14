@@ -4,7 +4,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import ApprovalCenterPage from "@/app/panel/approvals/page";
 
 // A queue item has no rationale → it renders in the compact table whose single
-// action button used to be mislabelled "İncele" (Review) while actually firing
+// action button used to be mislabelled "Review" (Review) while actually firing
 // decide(approve) — an irreversible outbound send from a button that read
 // read-only. These tests lock the safety fix: honest label + confirm gate.
 const QUEUE_ITEM = {

@@ -1,4 +1,4 @@
-// P1 — M1: the usage page counts the traffic the customer actually generated.
+// the usage page counts the traffic the customer actually generated.
 //
 // This is the page somebody opens when they are nervous about a bill, or when
 // they want to know whether the free tier is really doing the work the product

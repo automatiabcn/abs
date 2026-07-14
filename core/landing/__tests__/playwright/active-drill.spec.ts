@@ -1,6 +1,6 @@
-// Q12-L26 active drill (S7 R47) — SSE drop + WebSocket reconnect.
+// active drill — SSE drop + WebSocket reconnect.
 //
-// S6 R37 ran the 30-min idle drill (heap drift -9.63 MB, 0 5xx).
+// An earlier drill ran the 30-min idle drill (heap drift -9.63 MB, 0 5xx).
 // That covers the *passive* leak surface — but it doesn't prove the
 // chat client survives an *active* failure mid-stream.
 //
@@ -9,10 +9,10 @@
 //
 //   1. SSE mid-stream abort — connection drops after the first chunk.
 //      Chat client should NOT lock the input or hang the assistant
-//      bubble in a "Yazıyor…" state forever.
+//      bubble in a "Writing…" state forever.
 //
 //   2. SSE 502 Bad Gateway on retry — Caddy/proxy restart simulation.
-//      Chat client should surface the chat-error-tile (R35 fix).
+//      Chat client should surface the chat-error-tile (the earlier fix).
 //
 //   3. /v1/chat/sessions polling drop — sessions endpoint flakes
 //      mid-session. The R35 sessions-error-tile must mount.
@@ -64,7 +64,7 @@ async function ensureAuthed(page: Page): Promise<boolean> {
   return true;
 }
 
-test.describe("Q12-L26 active drill — drop + reconnect", () => {
+test.describe("active drill — drop + reconnect", () => {
   test("scenario 1: SSE mid-stream abort — input recovers, no infinite spinner", async ({
     page,
   }) => {

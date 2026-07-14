@@ -1,4 +1,4 @@
-"""024 Modul C — Setup wizard end-to-end happy path + variations."""
+"""Setup wizard end-to-end happy path + variations."""
 
 from __future__ import annotations
 

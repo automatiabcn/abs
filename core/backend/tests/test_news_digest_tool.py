@@ -1,4 +1,4 @@
-"""030 Modul F — news_digest MCP tool (mocked gemini search)."""
+"""news_digest MCP tool (mocked gemini search)."""
 
 from __future__ import annotations
 

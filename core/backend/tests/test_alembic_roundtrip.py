@@ -1,6 +1,6 @@
-"""Q11 Round 17 / L14 — Alembic up/down round-trip.
+"""Alembic up/down round-trip.
 
-Q11 Round 5 added 0008_minted_token_blacklist with both upgrade()
+added 0008_minted_token_blacklist with both upgrade()
 and downgrade() implementations, but a downgrade that doesn't
 actually reverse the upgrade ships green at suite-time and only
 fails the first time a customer hits a rollback emergency.
@@ -38,7 +38,7 @@ def _alembic_cfg_for(db_url: str, repo_root: Path) -> Config:
     return cfg
 
 
-class TestQ11L14AlembicRoundTrip:
+class TestAlembicRoundTrip:
     def test_upgrade_downgrade_upgrade_round_trip(self):
         repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as tmp:
@@ -54,16 +54,15 @@ class TestQ11L14AlembicRoundTrip:
             assert "chat_sessions" in tables_after_up  # 0007
             engine.dispose()
 
-            # Q12 / Brief 3 R4 — `head` is no longer 0008; downgrade
+            # `head` is no longer 0008; downgrade
             # explicitly to 0007_chat_sessions so this contract still
-            # exercises the 0008 → 0007 path that Q11 L14-001 hardened,
+            # exercises the 0008 → 0007 path that 001 hardened,
             # regardless of how many migrations land after 0008.
             command.downgrade(cfg, "0007_chat_sessions")
             engine = create_engine(db_url)
             tables_after_down = set(inspect(engine).get_table_names())
             assert "minted_token_blacklist" not in tables_after_down, (
-                "downgrade did not remove the table — Q11-L14-001 "
-                "downgrade() incomplete"
+                "downgrade did not remove the table — 001 downgrade() incomplete"
             )
             # 0007's tables remain after stepping back from 0008.
             assert "chat_sessions" in tables_after_down

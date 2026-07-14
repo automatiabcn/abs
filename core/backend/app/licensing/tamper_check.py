@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Boot-time integrity check for the verifier module (Q12 IP-Hardening R4).
+"""Boot-time integrity check for the verifier module (IP hardening).
 
 A reverse engineer's first move is editing ``verifier.py`` to make
 ``verify_license`` return a constant payload. We hash the live module

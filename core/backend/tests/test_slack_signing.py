@@ -1,4 +1,4 @@
-"""028 Modul A — Slack signing verify (HMAC + replay window)."""
+"""Slack signing verify (HMAC + replay window)."""
 
 from __future__ import annotations
 

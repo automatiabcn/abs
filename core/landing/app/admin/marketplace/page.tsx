@@ -67,7 +67,7 @@ export default function MarketplacePage() {
       // The catalogue is either the server's or it is nothing.
       if (live) setPlugins(live);
       else setFailed(true);
-      // MP2 — auth'd panel users default to admin role unless explicitly set
+      // auth'd panel users default to admin role unless explicitly set
       // otherwise. The legacy `x-abs-role` header path was never populated,
       // so the install button falsely disabled itself for everyone.
       setIsAdmin(me !== null && (me.role === undefined || me.role === "admin"));

@@ -1,4 +1,4 @@
-// Q10 Round 9 / L7 — visual regression baseline + diff.
+// visual regression baseline + diff.
 //
 // First run: snapshots get written under `__tests__/playwright/visual-regression.spec.ts-snapshots/`.
 // Second run: every page is diffed against the baseline; any pixel
@@ -27,9 +27,9 @@ const SURFACES: Surface[] = [
   { slug: "quota",         path: "/panel/quota",           marker: '[data-page="panel-quota"]' },
   { slug: "settings",      path: "/admin/settings",        marker: '[data-page="admin-settings"]' },
   { slug: "users",         path: "/admin/users",           marker: '[data-page="admin-users"]' },
-  // R67 (S8) — /admin/audit was missing from the L7 baseline. R64
+  // /admin/audit was missing from the visual baseline. The split-shell change
   // migrated it to a server `page.tsx` + `<AuditClient>` island; the
-  // rendered DOM is identical to the pre-R64 client-only shape but
+  // rendered DOM is identical to the earlier client-only shape but
   // the route now warrants a permanent visual guard.
   { slug: "audit",         path: "/admin/audit",           marker: '[data-page="admin-audit"]' },
 ];
@@ -44,7 +44,7 @@ async function loginIfNeeded(page: Page) {
     .catch(() => null);
 }
 
-test.describe("Q10/L7 — visual regression baseline", () => {
+test.describe("visual regression baseline", () => {
   test.beforeEach(async ({ page }) => {
     await loginIfNeeded(page);
   });

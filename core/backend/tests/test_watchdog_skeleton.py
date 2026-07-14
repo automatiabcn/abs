@@ -1,6 +1,6 @@
-"""014 — Watchdog skeleton testleri (infra/watchdog import path).
+"""Watchdog skeleton testleri (infra/watchdog import path).
 
-Watchdog backend container'inda calismaz; test sys.path manipulasyonu ile
+Watchdog backend does not run in container; with test sys.path manipulation
 infra/ paketini import eder.
 """
 

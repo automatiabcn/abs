@@ -1,4 +1,4 @@
-"""Q12-R86 — License JWT full-lifecycle (4 boundaries + revoke + tamper +
+"""License JWT full-lifecycle (4 boundaries + revoke + tamper +
 100y guard).
 
 S5/R28 shipped the alembic baseline + a JWT boundary spec; this round
@@ -10,7 +10,7 @@ verifies the round-trip end-to-end:
   4. exp = now+24h  → 200 verified
   5. revoke + reissue → first JTI marked revoked, fresh JTI verifies clean
   6. tampered signature → 401 (or 400)
-  7. valid_days > 25y → WARNING logged (Q12-L21-003 LOW non-bug pin)
+  7. valid_days > 25y → WARNING logged (LOW non-bug pin)
 """
 
 from __future__ import annotations
@@ -143,7 +143,7 @@ def test_license_tampered_signature_rejected():
 
 
 def test_license_100y_expiry_warning_logged(caplog):
-    """Q12-L21-003 LOW non-bug pin — a 100-year license is technically valid
+    """LOW non-bug pin — a 100-year license is technically valid
     but operationally a smell. R86 added a `license_excessive_valid_days`
     WARN log; this test pins that behaviour."""
     with caplog.at_level(logging.WARNING, logger="app.licensing.generator"):

@@ -1,4 +1,4 @@
-// Q12-L20 — Application-layer chaos engineering.
+// Application-layer chaos engineering.
 //
 // Live container kill is unsafe in dev (25h customer journey state in
 // neo4j + Postgres + Qdrant volumes). Instead, we exercise the chat
@@ -50,7 +50,7 @@ async function startChatSession(page: Page): Promise<void> {
   }).catch(() => undefined);
 }
 
-test.describe("Q12-L20 chaos — chat resilience under network failure", () => {
+test.describe("chaos — chat resilience under network failure", () => {
   test("scenario 1: backend 503 surfaces error tile + retry CTA + Configure", async ({ page }) => {
     if (!(await ensureAuthed(page))) throw new Error(
         "could not sign in (no abs_session cookie) — this used to skip itself, " +
@@ -166,7 +166,7 @@ test.describe("Q12-L20 chaos — chat resilience under network failure", () => {
     expect(["error", "still-pending"]).toContain(result);
   });
 
-  // Q12-L20-001 — Round 10 fix: `redirect: "error"` on the SSE fetch
+  // Earlier fix: `redirect: "error"` on the SSE fetch
   // makes the chat client surface 307 immediately as an error tile,
   // instead of silently following the redirect chain until the
   // browser's hard 20-redirect ceiling.

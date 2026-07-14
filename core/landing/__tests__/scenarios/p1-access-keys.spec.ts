@@ -1,4 +1,4 @@
-// P1 — E3: an access key can be issued, used, and killed.
+// an access key can be issued, used, and killed.
 //
 // This is the key a customer pastes into Claude Code, an editor, a script on a
 // laptop. It is the credential most likely to end up somewhere it should not:

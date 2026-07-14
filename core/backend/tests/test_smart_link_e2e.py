@@ -1,4 +1,4 @@
-"""024 Modul E — Smart Link OAuth + API key end-to-end (post-026 superset)."""
+"""Smart Link OAuth + API key end-to-end (post-026 superset)."""
 
 from __future__ import annotations
 

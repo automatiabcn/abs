@@ -1,4 +1,4 @@
-"""022 Modul E — Annual billing SKU bootstrap."""
+"""Annual billing SKU bootstrap."""
 
 from __future__ import annotations
 

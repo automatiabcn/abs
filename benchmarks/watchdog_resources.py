@@ -1,4 +1,4 @@
-"""021 — Watchdog process resource sample (psutil RSS + CPU).
+"""Watchdog process resource sample (psutil RSS + CPU).
 
 Spec: a 10-minute sample, every 10s. Shorter in CI: 60s, every 5s.
 Output: benchmarks/results/04_watchdog_resources.json

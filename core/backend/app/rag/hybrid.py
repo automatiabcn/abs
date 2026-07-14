@@ -5,8 +5,8 @@
 
 """RAG hybrid retrieval (BM25 keyword + cosine semantic, weighted fusion).
 
-Cosine ile genis havuz cek (top_k * 6 veya min 30), BM25 ile yeniden sirala,
-fusion `alpha_semantic * cos_n + (1 - alpha_semantic) * bm25_n` ile top_k.
+Cosine pull a wide pool (top_k * 6 or min 30), re-rank with BM25,
+fusion `alpha_semantic * cos_n + (1 - alpha_semantic) * bm25_n` for top_k.
 
 `alpha_semantic` 0.0 -> BM25 only, 1.0 -> cosine only; the default is 0.6.
 Min-max normalize iki skoru ortak skala'ya getirir.

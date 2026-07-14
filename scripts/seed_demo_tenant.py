@@ -49,7 +49,7 @@ DEMO_SEED: dict[str, Any] = {
             "doc_id": "demo-handbook-001",
             "format": "md",
             "title": "Acme Q3 OKR Handbook",
-            "text": "Q3 OKR: ship multi-tenant beta by 2026-05-15. EUR-only billing. Pricing tiers: Self-host (free), Maintenance ($49/mo), Managed ($499/mo).",
+            "text": "OKR: ship multi-tenant beta by 2026-05-15. EUR-only billing. Pricing tiers: Self-host (free), Maintenance ($49/mo), Managed ($499/mo).",
         },
         {
             "doc_id": "demo-handbook-002",
@@ -79,7 +79,7 @@ DEMO_SEED: dict[str, Any] = {
     "meetings": [
         {
             "meeting_id": "mtg-001",
-            "title": "Q3 kick-off",
+            "title": "kick-off",
             "transcript": "[Esra] Ekibe Q3 OKR'yi hatırlatmalıyım.\n[Mert] Pricing sayfası canlıya çıkacak mı?\n[Esra] Evet, 15 Mayıs hedef.\n[Mert] Sözleşmeyi bu hafta gönder.\n",
         },
         {
@@ -98,7 +98,7 @@ DEMO_SEED: dict[str, Any] = {
         {"id": "TKT-102", "title": "Mobile push key rotation", "status": "todo", "owner": "mert"},
         {"id": "TKT-103", "title": "Self-host trial follow-up", "status": "todo", "owner": "csm"},
         {"id": "TKT-104", "title": "Workflow draft → publish RBAC", "status": "review", "owner": "engr"},
-        {"id": "TKT-105", "title": "Q3 OKR retro", "status": "todo", "owner": "esra"},
+        {"id": "TKT-105", "title": "OKR retro", "status": "todo", "owner": "esra"},
     ],
     "expected": {
         "rag_query_examples": [

@@ -1,4 +1,4 @@
-"""023 Modul D — Setup wizard language picker."""
+"""Setup wizard language picker."""
 
 from __future__ import annotations
 

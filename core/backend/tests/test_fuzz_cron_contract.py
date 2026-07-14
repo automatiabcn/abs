@@ -1,5 +1,5 @@
 """
-Q12-L31 R80 — weekend fuzz cron workflow contract.
+weekend fuzz cron workflow contract.
 
 The 30K Hypothesis fuzz (chat + RAG + workflows × 10K each) lives behind
 the `[fuzz]` pytest marker that PR CI default-skips and the

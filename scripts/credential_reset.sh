@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Q7 — admin credential reset (idempotent). Repro chain için known state.
+# admin credential reset (idempotent). Known state for repro chain.
 #
 # Seeds admin@demo-acme.local / LocalPass2026! and marks the setup wizard
 # as completed so individual sprint repros don't 307 into the wizard or
@@ -29,7 +29,7 @@ pw_hash = bcrypt.hashpw(b'LocalPass2026!', bcrypt.gensalt()).decode()
     'password_hash': pw_hash,
     'created_at': time.time(),
     'tenant_slug': 'default',
-    'source': 'q7_credential_reset',
+    'source': 'credential_reset',
 }, ensure_ascii=False))
 (data / 'setup_state.json').write_text(json.dumps({
     'completed': True,

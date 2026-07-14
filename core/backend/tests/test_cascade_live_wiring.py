@@ -1,4 +1,4 @@
-"""Q12 Founder Tester Round 2 — `/v1/cascade/run` live wiring.
+"""`/v1/cascade/run` live wiring.
 
 Replaces the prior 503 "live_cascade_pending" stub with a real call to
 `call_with_cascade()`. This test suite covers the route contract:

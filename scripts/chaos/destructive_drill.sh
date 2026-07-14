@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Q12-L21 sweep 3 — destructive fresh-deploy drill (founder-gated).
+# sweep 3 — destructive fresh-deploy drill (founder-gated).
 #
 # Validates that the project can be torn down and rebuilt from
 # nothing in a bounded time window, so a real outage recovery
@@ -27,7 +27,7 @@ set -euo pipefail
 if [ "${ABS_DESTRUCTIVE_DRILL:-0}" != "1" ]; then
   cat <<MSG
 ==================================================================
-Q12-L21 destructive drill is GATED.
+destructive drill is GATED.
 
   ABS_DESTRUCTIVE_DRILL is not set to 1.
 

@@ -1,4 +1,4 @@
-"""024 — MCP tool inventory smoke check.
+"""MCP tool inventory smoke check.
 
 Each registered MCP tool: minimal valid input + call + response shape check.
 Live-API-requiring tools are SKIPPED with a reason (no mock).

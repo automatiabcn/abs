@@ -1,4 +1,4 @@
-"""026 Modul D — Provider validator mocks."""
+"""Provider validator mocks."""
 
 from __future__ import annotations
 

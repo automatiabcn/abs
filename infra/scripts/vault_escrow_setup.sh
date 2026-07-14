@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 027 Modul E — Vault master-key escrow bootstrap.
+# Vault master-key escrow bootstrap.
 #
 # Usage:
 #   bash infra/scripts/vault_escrow_setup.sh --target onepassword

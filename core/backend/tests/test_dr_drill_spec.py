@@ -1,5 +1,5 @@
 """
-Q12-L28 R77 — backup-restore DR drill spec contract.
+backup-restore DR drill spec contract.
 
 Locks behaviour of `scripts/dr/backup_restore_drill.sh`:
 

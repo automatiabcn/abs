@@ -13,7 +13,7 @@ afterEach(() => {
   mockFetch.mockReset();
 });
 
-describe("BetaRequestForm — 031 Modul G", () => {
+describe("BetaRequestForm", () => {
   it("renders the email input and submit button", () => {
     render(<BetaRequestForm />);
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();

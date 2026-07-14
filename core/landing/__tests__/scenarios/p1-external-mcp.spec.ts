@@ -1,11 +1,11 @@
-// P1 — E2 / X4: connecting somebody else's MCP server, and surviving it.
+// connecting somebody else's MCP server, and surviving it.
 //
 // This is the feature that lets a company plug its own systems into ABS. It is
 // also the feature that hands a third party a foothold, so the interesting
 // questions are not "does the happy path work" but:
 //
-//   E2  — connect, discover, and see the tools show up in the catalogue.
-//   X4  — the server dies afterwards. The panel must not fall over, the failure
+//   connect, discover, and see the tools show up in the catalogue.
+//   the server dies afterwards. The panel must not fall over, the failure
 //         must be legible, and a tool that cannot run must not sit in the
 //         catalogue pretending it can.
 //   And: a URL pointing at the machine's own guts is refused before it is dialled.

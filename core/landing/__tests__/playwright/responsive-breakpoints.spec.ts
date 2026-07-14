@@ -1,6 +1,6 @@
-// Q11 Round 4 / L12 — responsive breakpoint sweep.
+// responsive breakpoint sweep.
 //
-// Q10's e2e suite ran 1280×720 only (Desktop Chrome default). Real
+// The earlier e2e suite ran 1280×720 only (Desktop Chrome default). Real
 // users open the panel on 375 (iPhone SE), 768 (iPad portrait), 1024
 // (iPad landscape / small laptop) and 1920 (desktop). This spec
 // catches two concrete regressions a desktop-only suite misses:
@@ -52,7 +52,7 @@ async function loginIfNeeded(page: Page) {
     .catch(() => null);
 }
 
-test.describe("Q11/L12 — responsive viewport sweep", () => {
+test.describe("responsive viewport sweep", () => {
   test.beforeEach(async ({ page }) => {
     await loginIfNeeded(page);
   });
@@ -88,7 +88,7 @@ test.describe("Q11/L12 — responsive viewport sweep", () => {
         // 2. Touch targets ≥24×24 px (WCAG 2.2 SC 2.5.8). Only check
         //    at mobile/tablet viewports — desktop is mouse-driven.
         if (vp.width <= 768) {
-          // Q11-L12 / Q10-L5-005: Tremor + Headless UI inject icon-only
+          // Tremor + Headless UI inject icon-only
           // clear/popover buttons whose class chains drift across
           // versions (`.tremor-*`, headlessui ids, and bare class
           // strings). Excluded from the touch-target gate so panel-code

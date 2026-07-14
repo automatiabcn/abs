@@ -675,7 +675,7 @@ export function MetaSidebar({ meta }: { meta: MetaEvent | null }) {
 // Phase B (2026-05-08) — empty chat state now surfaces eight hero prompts
 // (one per category from lib/prompt-library.ts) plus a "show all" CTA
 // that opens the right-side PromptLibrary drawer. Replaces the four
-// hardcoded openers from Polish R8; the older neutral openers were
+// hardcoded openers from an earlier polish pass; the older neutral openers were
 // fine but did not scale and offered no discoverability for the 48
 // curated prompts the library now ships with.
 const EMPTY_STATE_COPY: Record<

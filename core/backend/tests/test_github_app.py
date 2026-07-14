@@ -1,4 +1,4 @@
-"""028 Modul B — GitHub App JWT + installation token + webhook."""
+"""GitHub App JWT + installation token + webhook."""
 
 from __future__ import annotations
 

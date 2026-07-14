@@ -43,7 +43,7 @@ REQUIRED_SETUP_TR = [
     "geliştirme",
 ]
 
-# ASCII düşmüş Türkçe (mojibake / flatten) — setup.js'te kesinlikle BULUNMAMALI.
+# ASCII garbled Turkish (mojibake / flatten) — must NOT be present in setup.js.
 FORBIDDEN_SETUP_ASCII = [
     "Ileri",
     "Sifre",

@@ -1,4 +1,4 @@
-"""025 Modul C — Hetzner deploy script syntax + chmod check."""
+"""Hetzner deploy script syntax + chmod check."""
 
 from __future__ import annotations
 

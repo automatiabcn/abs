@@ -1,4 +1,4 @@
-"""Provider client'ları — respx mock ile response parsing."""
+"""Provider clients — response parsing with respx mock."""
 
 from __future__ import annotations
 

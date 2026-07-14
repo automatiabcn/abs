@@ -1,4 +1,4 @@
-"""019 — Unsubscribe endpoint: token verify + DB update."""
+"""Unsubscribe endpoint: token verify + DB update."""
 
 from __future__ import annotations
 

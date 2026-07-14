@@ -1,4 +1,4 @@
-"""016 — RAG hybrid (BM25 + cosine fusion) testleri."""
+"""RAG hybrid (BM25 + cosine fusion) testleri."""
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ async def test_query_hybrid_empty_question():
 
 @pytest.mark.asyncio
 async def test_query_hybrid_uses_both_signals(monkeypatch):
-    """Mock embedding + chroma collection — BM25 ile cosine fusion doğru sırada."""
+    """Mock embedding + chroma collection — BM25 with cosine fusion in correct order."""
     from app.rag import embedding as emb_mod
     from app.rag import hybrid as hybrid_mod
 
@@ -87,7 +87,7 @@ async def test_query_hybrid_uses_both_signals(monkeypatch):
     res = await hybrid_mod.query_hybrid("circuit breaker", top_k=3, alpha_semantic=0.6)
     assert isinstance(res, list)
     assert len(res) == 3
-    # circuit breaker keyword içeren ilk sırada
+    # circuit breaker keyword appears first in the list
     assert "circuit breaker" in res[0]["snippet"]
     # her entry expected fields
     for item in res:
@@ -98,7 +98,7 @@ async def test_query_hybrid_uses_both_signals(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_alpha_zero_pure_bm25(monkeypatch):
-    """alpha_semantic=0 → sadece BM25 — keyword match en üstte olmalı."""
+    """alpha_semantic=0 → only BM25 — keyword match should be top."""
     from app.rag import embedding as emb_mod
     from app.rag import hybrid as hybrid_mod
 
@@ -123,6 +123,6 @@ async def test_alpha_zero_pure_bm25(monkeypatch):
     monkeypatch.setattr(hybrid_mod, "_collection", lambda: FakeCollection())
 
     res = await hybrid_mod.query_hybrid("special_token", top_k=2, alpha_semantic=0.0)
-    # alpha=0 → keyword match (y.py) ilk sırada
+    # alpha=0 → keyword match (y.py) first in the list
     assert res[0]["file"] == "y.py"
     assert res[1]["file"] == "x.py"

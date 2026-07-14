@@ -1,7 +1,7 @@
-"""Q12-R87 — Magic-link multi-admin E2E (6 tests).
+"""Magic-link multi-admin E2E (6 tests).
 
 Pins the contract for the self-host signup → magic-link → admin claim
-flow that S2/R14 hardened (Q12-L24-001 plaintext-leak fix).
+flow that S2/R14 hardened (plaintext-leak fix).
 
 Six contracts:
   1. Admin A signup → /auth/magic?token=… → panel session cookie set;
@@ -14,7 +14,7 @@ Six contracts:
      limitation pinned separately, not a per-row contract).
   5. Cross-tenant block — admin token whose tenant claim does not match
      the resource's tenant gets 403 from `_enforce_tenant_match`.
-  6. Q12-L24-001 regression — signup_pending log line carries only the
+  6. 001 regression — signup_pending log line carries only the
      6-char token_hint, never the full token.
 """
 
@@ -37,7 +37,7 @@ from app.db.session import get_engine
 
 @pytest.fixture(autouse=True)
 def _isolate_data_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Q12-S12-R96 — pin per-test settings.data_dir so the magic-link
+    """pin per-test settings.data_dir so the magic-link
     claim flow's `admin_credentials.json` write (auth.py
     `_claim_user_by_token`) cannot leak into the session-scope data dir.
 
@@ -88,7 +88,7 @@ def _signup(
 
 
 def _token_from_link(link: str) -> str:
-    # Q12 honesty round changed the signup `magic_link` to point at the
+    # honesty round changed the signup `magic_link` to point at the
     # customer-facing /activate page (the backend claim endpoint /auth/magic
     # is unchanged and still serves the GET below). Accept either prefix and
     # extract the token.
@@ -270,7 +270,7 @@ def test_magic_claim_does_not_overwrite_bootstrap_admin(
 
 
 # ----------------------------------------------------------------------
-# 6. Q12-L24-001 regression — no full token in audit log
+# 6. 001 regression — no full token in audit log
 # ----------------------------------------------------------------------
 
 
@@ -284,9 +284,7 @@ def test_magic_token_email_does_not_leak_token_in_audit(
 
     for rec in caplog.records:
         msg = rec.getMessage()
-        assert token not in msg, (
-            f"Q12-L24-001 REGRESSION: log leaked full magic token: {msg!r}"
-        )
+        assert token not in msg, f"REGRESSION: log leaked full magic token: {msg!r}"
 
     # The hint must be present so ops can still correlate.
     hint = token[:6]

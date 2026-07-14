@@ -1,4 +1,4 @@
-"""021 — Vault decrypt benchmark validation."""
+"""Vault decrypt benchmark validation."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def test_vault_overhead_meets_threshold():
     out = main()
     threshold = out["expected_threshold_ms"]
     if out.get("mode") == "simulated":
-        # Simulated < 5 ms; gerçek sops daha yavaş ama threshold içinde
+        # Simulated < 5 ms; real sops slower but within threshold
         assert out["mean_ms"] < threshold
     else:
         assert out["mean_ms"] < threshold * 2  # gerçekte 2× tolerans

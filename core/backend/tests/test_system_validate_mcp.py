@@ -1,4 +1,4 @@
-"""023 Modul G — system_validate MCP tool."""
+"""system_validate MCP tool."""
 
 from __future__ import annotations
 

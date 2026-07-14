@@ -1,4 +1,4 @@
-"""027 Modul D — Recovery runbook completeness."""
+"""Recovery runbook completeness."""
 
 from __future__ import annotations
 

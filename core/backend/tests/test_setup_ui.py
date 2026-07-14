@@ -1,4 +1,4 @@
-"""012 — Setup UI static dosya servis testleri."""
+"""Setup UI static file service tests."""
 
 from __future__ import annotations
 

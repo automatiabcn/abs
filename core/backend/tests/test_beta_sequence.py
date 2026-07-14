@@ -1,4 +1,4 @@
-"""031 Modul B — Beta onboarding 5-stage email scheduler."""
+"""Beta onboarding 5-stage email scheduler."""
 
 from __future__ import annotations
 

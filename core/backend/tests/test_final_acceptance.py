@@ -1,9 +1,9 @@
-"""Q12-R91 — Final acceptance E2E (combined fresh deploy → first customer).
+"""Final acceptance E2E (combined fresh deploy → first customer).
 
 Single Playwright-style scenario consolidating R78 (setup wizard 12-step),
 R85 (provider degradation 3-free-missing), R86 (license JWT lifecycle), and
 R87 (multi-admin magic-link signup) into one chain. PASS = tester teslimat
-eşik MÜHÜRLÜ.
+threshold sealed.
 
 Six phases (one test, sequential cookie state):
 
@@ -101,7 +101,7 @@ def _walk_setup(client, *, admin_email: str, admin_password: str) -> None:
 
 
 def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
-    """Tek E2E senaryo, 6 phase. PASS = tester teslimat eşik mühürlü."""
+    """Single E2E scenario, 6 phases. PASS = tester delivery threshold sealed."""
     _tmp, state_file = _fresh_state
     assert _tmp.exists()
     admin_email = "founder@r91.local"
@@ -159,7 +159,7 @@ def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
             f"got {prov['missing']}"
         )
 
-    # /v1/cascade/run with mock off — Founder Tester Round 2 wired
+    # /v1/cascade/run with mock off — Founder Tester This change wired
     # the live cascade through `call_with_cascade`. Without real provider
     # keys the orchestrator raises ProviderError → 502 all_providers_failed.
     # If the chain happens to be entirely empty (config drift) the gate
@@ -259,7 +259,7 @@ def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
     )
     assert r_a.status_code == 201, r_a.text
     link_a = r_a.json()["magic_link"]
-    # Q12 honesty round: magic_link points at /activate (backend claim GET
+    # honesty round: magic_link points at /activate (backend claim GET
     # /auth/magic below is unchanged).
     assert link_a.startswith("/activate?token=")
     token_a = link_a.split("token=", 1)[1]

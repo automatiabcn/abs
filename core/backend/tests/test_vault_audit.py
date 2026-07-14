@@ -1,4 +1,4 @@
-"""013 — Vault audit log testleri."""
+"""Vault audit log testleri."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def test_log_event_appends_jsonl(monkeypatch, tmp_path: Path):
     assert audit[0]["key"] == "groq_api_key"
     assert audit[0]["source"] == "setup_wizard"
     assert audit[1]["event"] == "rotate"
-    # Cleartext value yok
+    # Cleartext value missing
     for entry in audit:
         for v in entry.values():
             if isinstance(v, str):
@@ -34,7 +34,7 @@ def test_read_recent_limits_and_handles_missing(monkeypatch, tmp_path: Path):
 
     monkeypatch.setattr(settings, "data_dir", str(tmp_path))
 
-    # Boş dizinde read_recent → []
+    # read_recent in empty directory → []
     assert read_recent() == []
 
     for i in range(120):

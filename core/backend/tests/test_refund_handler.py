@@ -1,4 +1,4 @@
-"""011 — Refund / subscription.deleted webhook handler testleri."""
+"""Refund / subscription.deleted webhook handler testleri."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""031 Modul D — Enhanced status + admin /v1/admin/status/full."""
+"""Enhanced status + admin /v1/admin/status/full."""
 
 from __future__ import annotations
 

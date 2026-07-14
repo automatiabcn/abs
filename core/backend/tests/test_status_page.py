@@ -1,4 +1,4 @@
-"""025 Modul D — Status page JSON + HTML."""
+"""Status page JSON + HTML."""
 
 from __future__ import annotations
 

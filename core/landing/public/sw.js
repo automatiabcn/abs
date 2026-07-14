@@ -1,5 +1,5 @@
 /**
- * Q12-L18 Service Worker — panel route cache (S6 R36)
+ * Service Worker — panel route cache
  *
  * Cache name: abs-panel-cache-v1
  *
@@ -10,7 +10,7 @@
  *
  * Excluded (always pass-through):
  *   /v1/*    — chat completions, RAG search, etc. must hit live backend
- *              so cascade chaos errors are surfaced (Q12-L20 contract).
+ *              so cascade chaos errors are surfaced (contract).
  *   /_next/* — dev/build chunks are versioned by hash, never reused.
  *   /auth/*  — credential surface, must never be cached.
  *   non-GET methods (POST/PUT/PATCH/DELETE) — write paths bypass cache.

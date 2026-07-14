@@ -1,4 +1,4 @@
-"""012 — Setup Wizard 6-step state machine testleri."""
+"""Setup Wizard 6-step state machine testleri."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from app.licensing import generate_license
 
 @pytest.fixture
 def isolated_setup(monkeypatch, tmp_path: Path):
-    """data_dir + .env (boş) + license_key reset. Setup state silinmiş başlasın."""
+    """data_dir + .env (empty) + license_key reset. Start with a cleared setup state."""
     from app.config import settings
 
     data = tmp_path / "data"
@@ -53,7 +53,7 @@ def test_admin_step_creates_credentials_file(isolated_setup, client):
 
 
 def test_license_step_validates_jwt(isolated_setup, client):
-    # Adım 1'i geç
+    # Pass step 1
     client.post(
         "/v1/setup/step/admin",
         json={"email": "x@y.co", "password": "longSecret123"},
@@ -106,7 +106,7 @@ def test_anthropic_step_validates_format(isolated_setup, client):
         "/v1/setup/step/anthropic", json={"anthropic_api_key": "invalidkey"}
     )
     # Pydantic v2 model_validator ValueError → FastAPI 422 (default).
-    # Q12-L19 Round 11: test expected 400 (pre-Pydantic-v2); current
+    # test expected 400 (pre-Pydantic-v2); current
     # endpoint correctly returns 422 with the validator detail.
     assert r_bad.status_code == 422, r_bad.text
 
@@ -121,7 +121,7 @@ def test_anthropic_step_validates_format(isolated_setup, client):
 
 
 def test_providers_step_optional(isolated_setup, client):
-    # Setup'ı 5. adıma getir
+    # Bring setup to step 5
     client.post(
         "/v1/setup/step/admin", json={"email": "x@y.co", "password": "longSecret123"}
     )
@@ -142,7 +142,7 @@ def test_providers_step_optional(isolated_setup, client):
 
 
 def test_complete_step_sets_completed_flag(isolated_setup, client):
-    # 5. adıma kadar geç
+    # Proceed up to step 5
     client.post(
         "/v1/setup/step/admin", json={"email": "x@y.co", "password": "longSecret123"}
     )

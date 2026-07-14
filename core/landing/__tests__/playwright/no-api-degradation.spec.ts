@@ -1,4 +1,4 @@
-// Q10 Round 1 / L9 — Graceful degradation when no provider API key has
+// Graceful degradation when no provider API key has
 // been configured yet. Each surface must:
 //   * not 5xx
 //   * not throw a console error
@@ -13,7 +13,7 @@ const HARMLESS = [
   "DevTools",
   "next-router-mock",
   "ResizeObserver",
-  // Q10-L9-003 — Next.js dev mode HMR can race chunk delivery and emit
+  // Next.js dev mode HMR can race chunk delivery and emit
   // bogus 404 / MIME type errors for _next/static assets that resolve
   // on retry. Production builds (output: standalone) do not emit these,
   // so tolerating them in the panel-page console gate is the right call
@@ -69,7 +69,7 @@ async function loginIfNeeded(page: Page) {
     .catch(() => null);
 }
 
-/** Q10-L9-004 — Next.js dev mode compile lag occasionally returns 404
+/** Next.js dev mode compile lag occasionally returns 404
  *  on the very first navigation to a route that hasn't been hit yet
  *  this session. Production (`output: standalone`) pre-compiles every
  *  route so this is a dev-only artifact. We retry once after a short
@@ -85,7 +85,7 @@ async function gotoWithDevRetry(page: Page, path: string) {
   return resp;
 }
 
-test.describe("Q10/L9 — graceful degradation under empty vault", () => {
+test.describe("graceful degradation under empty vault", () => {
   test.beforeEach(async ({ page }) => {
     // Force the no-api scenario: clear localStorage so any optimistic
     // client cache is gone, and rely on server-side vault being empty

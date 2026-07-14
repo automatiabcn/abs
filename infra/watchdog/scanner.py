@@ -1,9 +1,9 @@
-"""014 — ABS Central Watchdog scanner (skeleton).
+"""ABS Central Watchdog scanner (skeleton).
 
-Hedef: bizim tarafta (Hetzner $5-10/ay VPS) cron'da gunde 1 calisir,
+Goal: on our side (Hetzner $5-10/mo VPS) runs once daily via cron,
 provider pricing/changelog degisikliklerini tarar, bizi uyarir.
 
-Backend container'da DEGIL — ayri deploy. Bu task sadece iskelet (015'te
+Not in the backend container — separate deploy. This task is only a skeleton (in 015
 gercek scrape parser'lar provider basina yazilacak).
 """
 

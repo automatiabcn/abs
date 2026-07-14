@@ -1,4 +1,4 @@
-"""022 Modul H — TS/JS regex symbol parser."""
+"""TS/JS regex symbol parser."""
 
 from __future__ import annotations
 
@@ -73,7 +73,7 @@ def test_typescript_parser_extracts_classes_functions_imports(_ts_file):
 
 
 def test_parse_directory_includes_typescript():
-    """parse_directory `.ts` dosyalarını da yakalar (016 hybrid retrieval için)."""
+    """parse_directory also captures `.ts` files (for 016 hybrid retrieval)."""
     import tempfile
 
     from app.symbols.parser import parse_directory

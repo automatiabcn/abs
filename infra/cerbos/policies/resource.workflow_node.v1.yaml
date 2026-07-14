@@ -1,4 +1,4 @@
-# G3 — Cerbos policy for ABS-specific workflow node executions.
+# Cerbos policy for ABS-specific workflow node executions.
 # Each `abs.*` tool referenced by `app/workflow_v10/builder/templates.py`
 # is mapped to a discrete action. Tenant boundary + suspended-user gates
 # match the project and RAG policies. Destructive write actions (rag_ingest,

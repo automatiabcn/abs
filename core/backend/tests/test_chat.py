@@ -1,4 +1,4 @@
-"""Q8 / Phase A — `/v1/chat/*` smoke + golden path tests.
+"""Phase A — `/v1/chat/*` smoke + golden path tests.
 
 Auth: pre-login via `/auth/login` so the panel session cookie is attached
 to TestClient. Cascade: ABS_ANTHROPIC_MOCK_MODE=happy supplied via
@@ -23,7 +23,7 @@ def _chat_mock_env(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _wipe_default_tenant_chat_state():
-    """Q12-S12-R96 — earlier tests (q10/q11/q12 cascade + setup sweeps)
+    """earlier tests (q10/q11/q12 cascade + setup sweeps)
     leave ChatSession + ChatMessage rows on `tenant_slug="default"`,
     the bootstrap admin's tenant resolved by chat.py for `admin@local`.
     `test_chat_sessions_empty_list` asserts the GET returns `[]`; any

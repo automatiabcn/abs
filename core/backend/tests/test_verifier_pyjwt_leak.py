@@ -1,6 +1,6 @@
-"""Q12 L24 sweep 4 — close last PyJWT internals leak in verifier.
+"""sweep 4 — close last PyJWT internals leak in verifier.
 
-* Q12-L24-007 (LOW security info-leak) — `app.licensing.verifier`
+* (LOW security info-leak) — `app.licensing.verifier`
   caught `PyJWTError` (the catch-all parent class) and surfaced
   `f"License verification error: {exc}"` to clients. Earlier sweeps
   (R14 me_account, R18/R19 me_data_export + me_account, R22 webhook

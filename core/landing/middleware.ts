@@ -1,4 +1,4 @@
-// Q6 PB — Next.js middleware: gate /panel/* and /admin/* behind a backend
+// PB — Next.js middleware: gate /panel/* and /admin/* behind a backend
 // session. Unauthenticated visits redirect to /auth/login?next=<path> so
 // the user lands on the page they wanted after sign-in. Validation hits
 // /auth/me on the backend (proxied through the rewrite chain) so a stale

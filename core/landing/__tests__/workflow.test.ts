@@ -1,4 +1,4 @@
-// Q8 Phase B / W1+W2 regression — estimateCostCents + isValidWorkflow
+// Phase B / W1+W2 regression — estimateCostCents + isValidWorkflow
 // must never throw on missing/empty/partial workflow shapes (root cause
 // of the runtime crash captured in UX_BUGS_20260501.md W1).
 
@@ -11,7 +11,7 @@ import {
   type WorkflowDefinition,
 } from "@/lib/workflow";
 
-describe("estimateCostCents — Q8 W1 defensive", () => {
+describe("estimateCostCents — defensive", () => {
   it("returns 0 for null", () => {
     expect(estimateCostCents(null)).toBe(0);
   });
@@ -52,7 +52,7 @@ describe("estimateCostCents — Q8 W1 defensive", () => {
   });
 });
 
-describe("isValidWorkflow — Q8 W2 schema gate", () => {
+describe("isValidWorkflow — schema gate", () => {
   it("accepts SAMPLE_WORKFLOW", () => {
     expect(isValidWorkflow(SAMPLE_WORKFLOW)).toBe(true);
   });

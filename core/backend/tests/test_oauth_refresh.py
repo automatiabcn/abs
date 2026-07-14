@@ -1,4 +1,4 @@
-"""028 Modul C — OAuth refresh token rotation."""
+"""OAuth refresh token rotation."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""014 — Provider health monitor testleri (provider.call mock'lu)."""
+"""Provider health monitor testleri (provider.call mock'lu)."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ async def test_snapshot_empty_initially():
 
 @pytest.mark.asyncio
 async def test_ping_one_unknown_when_no_credentials(monkeypatch):
-    """Provider key yokken state="unknown" + last_error mesajı."""
+    """when Provider key is missing state="unknown" + last_error message."""
     import app.health.monitor as monitor_mod
     from app.health.monitor import HealthMonitor
 
@@ -92,14 +92,14 @@ async def test_snapshot_returns_sorted_dicts(monkeypatch):
 
 
 def test_stream_orchestrator_uses_real_monitor(monkeypatch):
-    """SSE _build_orchestrator artık random değil, monitor.snapshot() kullanır."""
+    """SSE _build_orchestrator is no longer random, uses monitor.snapshot()."""
     from app.api import stream as stream_mod
     from app.health.monitor import HealthMonitor
 
     fresh = HealthMonitor()
     monkeypatch.setattr(stream_mod, "_PROVIDERS", ["Groq", "Anthropic"])
 
-    # fresh monitor boş → fallback unknown listesi
+    # fresh monitor empty → fallback unknown list
     import app.health.monitor as monitor_mod
 
     monkeypatch.setattr(monitor_mod, "monitor", fresh)

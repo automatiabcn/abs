@@ -5,7 +5,7 @@
 
 """Multi-judge consensus eval — bias-controlled win rate (v2).
 
-Founder direktifi (2026-05-06): single-judge methodology bias'lı
+Founder directive (2026-05-06): single-judge methodology biased
 (Llama 80%, Sonnet 22% same dataset). v2 pipeline 4 judges × position
 swap = 8 verdicts per prompt:
 

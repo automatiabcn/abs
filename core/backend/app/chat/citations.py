@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q12 / Brief 3 R1 — RAG citation retrieval + prompt-block helpers.
+"""RAG citation retrieval + prompt-block helpers.
 
 Used by the chat backend to retrieve top-K chunks from the per-tenant
 Chroma collection, build a `[1] {chunk}\\n[2] {chunk}\\n…` block to

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q12 / Brief 3 — premium chat enhancements.
+"""premium chat enhancements.
 
 Modules:
   * `citations` — RAG-grounded chunk retrieval + citation injection helpers.

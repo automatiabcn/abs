@@ -1,4 +1,4 @@
-"""013 — Vault rotation + status API testleri (admin auth zorunlu)."""
+"""Vault rotation + status API tests (admin auth required)."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def test_rotate_unknown_key_400(client, monkeypatch):
 
 
 def test_rotate_writes_and_invalidates_cache(client, monkeypatch):
-    """write_secret + invalidate çağrıları yapılır."""
+    """write_secret + invalidate calls are made."""
     import app.vault.cache as cache_mod
     import app.vault.runner as runner_mod
 
@@ -44,7 +44,7 @@ def test_rotate_writes_and_invalidates_cache(client, monkeypatch):
 
     monkeypatch.setattr(runner_mod, "write_secret", fake_write)
     monkeypatch.setattr(cache_mod, "invalidate", fake_invalidate)
-    # secrets.py içe aktarımları yenilensin diye lookup'ı modül seviyesinden invalidate olarak yamala
+    # Patch lookup at module level to invalidate so that secrets.py imports are refreshed
     import app.api.secrets as secrets_mod  # noqa: F401
 
     _login(client)
@@ -59,7 +59,7 @@ def test_rotate_writes_and_invalidates_cache(client, monkeypatch):
 
 
 def test_status_returns_configured_keys_no_cleartext(client, monkeypatch):
-    """Status endpoint cleartext value DÖNDÜRMEZ."""
+    """Status endpoint cleartext value does not return."""
     import app.vault.runner as runner_mod
 
     monkeypatch.setattr(runner_mod, "sops_available", lambda: True)
@@ -74,7 +74,7 @@ def test_status_returns_configured_keys_no_cleartext(client, monkeypatch):
     assert len(body["keys"]) >= 5
     for entry in body["keys"]:
         assert set(entry.keys()) == {"name", "configured"}
-        # cleartext value YOK
+        # cleartext value missing
         assert "value" not in entry
 
 

@@ -5,7 +5,7 @@
 
 """Patch A — GAP-R5-01 tamper_check path + hash-source tests.
 
-Pilot Round 5 found ``tamper_check._verifier_path`` returned
+Pilot This change found ``tamper_check._verifier_path`` returned
 ``verifier.py`` even when the production image had only the Cython
 ``.so``. Combined with ``ABS_VERIFIER_HASH`` never being set, the
 gate was a silent no-op. Patch A resolves the ``.so`` first and

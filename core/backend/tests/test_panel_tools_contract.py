@@ -1,4 +1,4 @@
-"""Q12 R75 (S8) — /v1/panel/tools contract + edge-case deep.
+"""(S8) — /v1/panel/tools contract + edge-case deep.
 
 R70 migrated /panel home to a server-side split-shell that fetches
 /v1/panel/tools (along with /v1/system/quota_status and

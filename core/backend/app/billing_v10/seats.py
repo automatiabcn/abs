@@ -5,7 +5,7 @@
 
 """Pricing tier + seat enforcement (Self-host / Team-5 / Team-10).
 
-Q12-R84: list-prices are read from settings (env). Defaults are 0.0; operators
+list-prices are read from settings (env). Defaults are 0.0; operators
 MUST configure their own. Tier IDs are SKU keys, not prices.
 """
 

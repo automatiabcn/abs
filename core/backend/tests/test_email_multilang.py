@@ -1,4 +1,4 @@
-"""023 Modul C — Email template multi-lang (en/tr/es) + preferred_lang propagation."""
+"""Email template multi-lang (en/tr/es) + preferred_lang propagation."""
 
 from __future__ import annotations
 

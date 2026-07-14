@@ -1,6 +1,6 @@
-"""Q12 Round 20 / L23 sweep 4 — setup.py + admin/auth.py audit coverage.
+"""sweep 4 — setup.py + admin/auth.py audit coverage.
 
-Pre-Round 20 inventory:
+An earlier audit:
     app/api/setup.py        — 8 silent raise sites (wizard step gate +
                               lang + license + domain + reset)
     app/api/admin/auth.py   — 9 silent raise sites (admin_required IP
@@ -15,7 +15,7 @@ attempts, license key brute-force at /v1/setup/step/license). Pre-fix,
 each denial returned a status code and exited; ops had no signal but
 the access log row.
 
-Round 20 wires `emit_event` onto every gate/denial path:
+This change wires `emit_event` onto every gate/denial path:
 
     setup.step.gate          (409 setup_already_completed |
                               step_not_active)
@@ -85,7 +85,7 @@ def isolated_setup(monkeypatch, tmp_path: Path):
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep4SetupGate:
+class TestSweep4SetupGate:
     def test_step_not_active_emits_denied(
         self, isolated_setup, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -144,7 +144,7 @@ class TestQ12L23Sweep4SetupGate:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep4SetupLang:
+class TestSweep4SetupLang:
     def test_unsupported_lang_emits_denied(
         self, isolated_setup, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -169,7 +169,7 @@ class TestQ12L23Sweep4SetupLang:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep4SetupReset:
+class TestSweep4SetupReset:
     def test_reset_in_prod_emits_denied(
         self,
         isolated_setup,
@@ -218,7 +218,7 @@ def _admin_creds(monkeypatch):
     return {"password": pwd}
 
 
-class TestQ12L23Sweep4AdminLogin:
+class TestSweep4AdminLogin:
     def test_login_disabled_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture, monkeypatch
     ) -> None:
@@ -274,7 +274,7 @@ class TestQ12L23Sweep4AdminLogin:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep4AdminGate:
+class TestSweep4AdminGate:
     def test_missing_bearer_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:

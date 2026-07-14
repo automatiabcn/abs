@@ -1,10 +1,10 @@
-// Q12 Session 8 R58 — L8 i18n scope drift guard.
+// Session 8 R58 — L8 i18n scope drift guard.
 //
 // ABS i18n is intentionally bifurcated:
 //   • **Landing surface** (`/`, `/pricing`, `/privacy`, `/terms`, etc.) is
 //     fully internationalised via `lib/i18n.ts` + `locales/{en,tr,es}.json`.
-//     Default lang is EN per CLAUDE.md ("ürün globale satılır → default
-//     İngilizce"). Marketing copy must use `t(key, lang)`.
+//     Default lang is EN per CLAUDE.md ("product sold globally → default
+//     English"). Marketing copy must use `t(key, lang)`.
 //   • **Panel + admin + components/chat** is TR-first by design (the
 //     self-host operator UI). `tr-TR` Intl formatters and Turkish
 //     literals are intentional here.
@@ -62,7 +62,7 @@ function walkTsx(dir: string, accumulator: string[] = []): string[] {
 
 const HARDCODED_LOCALE_RE = /"(tr-TR|en-US|en-GB|es-ES|es-419)"/g;
 
-describe("i18n scope drift guard (Q12-L8 R58)", () => {
+describe("i18n scope drift guard (R58)", () => {
   it("landing-surface files have no hardcoded BCP-47 locale tags", () => {
     const offences: string[] = [];
     for (const root of LANDING_SCAN_DIRS) {

@@ -1,4 +1,4 @@
-"""019 — Email scheduler: schedule, tick, retry, backoff, unsubscribe."""
+"""Email scheduler: schedule, tick, retry, backoff, unsubscribe."""
 
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ def test_tick_sends_due_emails(monkeypatch):
     _purge_queue("jti_sched_due")
     _seed_license("jti_sched_due", "user-due@x.co")
     schedule_onboarding(license_jti="jti_sched_due", email="user-due@x.co")
-    # Welcome row'unu yapay olarak şimdi (vakti gelmiş) yap
+    # Create the Welcome row artificially now (time has come)
     with Session(get_engine()) as s:
         row = s.scalars(
             select(EmailQueue)
@@ -74,7 +74,7 @@ def test_tick_sends_due_emails(monkeypatch):
         row.scheduled_at = datetime.now(timezone.utc) - timedelta(seconds=5)
         s.add(row)
         s.commit()
-    # SMTP host boş — console fallback (gerçek SMTP cagirilmaz)
+    # SMTP host empty — console fallback (real SMTP not called)
     monkeypatch.setattr(settings, "smtp_host", "")
     sent, failed = tick()
     assert sent >= 1
@@ -93,7 +93,7 @@ def test_tick_idempotent_skips_already_sent(monkeypatch):
     schedule_onboarding(license_jti="jti_sched_idemp", email="user-i@x.co")
     monkeypatch.setattr(settings, "smtp_host", "")
 
-    # Birinci tick: welcome'i gönder
+    # First tick: send welcome
     with Session(get_engine()) as s:
         row = s.scalars(
             select(EmailQueue)
@@ -106,9 +106,9 @@ def test_tick_idempotent_skips_already_sent(monkeypatch):
     sent_first, _ = tick()
     assert sent_first >= 1
 
-    # İkinci tick: aynı satır skip edilmeli (sent_at NOT NULL)
+    # Second tick: same row should be skipped (sent_at NOT NULL)
     sent_second, _ = tick()
-    # Sadece bu jti'ya değil global ama bu jti'ya bakalım
+    # Not only this jti but global; let's look at this jti
     with Session(get_engine()) as s:
         sent_count = len(
             [

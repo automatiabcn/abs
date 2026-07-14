@@ -84,7 +84,7 @@ logger = logging.getLogger(__name__)
 
 
 def setup_state_path() -> Path:
-    """Setup state JSON dosyasinin yolu (mkdir best-effort)."""
+    """Path to the setup state JSON (mkdir is best-effort)."""
     p = Path(settings.data_dir) / "setup_state.json"
     try:
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -821,7 +821,8 @@ async def step_test(request: Request) -> Dict[str, Any]:
 
 @router.post("/reset", status_code=status.HTTP_200_OK)
 async def reset_setup(request: Request) -> Dict[str, Any]:
-    """Dev-only — `settings.env=='dev'` ise state sil + admin credentials sil."""
+    """Dev-only — when `settings.env == 'dev'`, drop the setup state and the admin
+    credentials so the wizard can be run again from scratch."""
     if settings.env != "dev":
         emit_event(
             request,

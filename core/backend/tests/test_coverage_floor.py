@@ -1,6 +1,6 @@
-"""Q10 Round 2 / L1 — unit test coverage gap closers.
+"""unit test coverage gap closers.
 
-Three surfaces that Q8 shipped without happy-path-only coverage:
+Three surfaces that an earlier release shipped without happy-path-only coverage:
 
   1. `app.api.mcp_tokens` HMAC sign + verify edge cases (mismatched
      secret, expired exp, malformed header, scope round-trip).
@@ -144,7 +144,7 @@ class TestClaudeCodeHookScope:
         assert "tenant" in ctx.lower() or "default" in ctx.lower()
 
     def test_quota_check_allows_under_hourly_limit(self, admin_client):
-        # Q10-L6-001 regression — risky tool first call must allow, after
+        # regression — risky tool first call must allow, after
         # 100 hits in a tenant window the gate flips to deny.
         from app.api.claude_code_hooks import _risky_window
 
@@ -273,7 +273,7 @@ class TestChatCrossTenantIsolation:
         admin_client.delete(f"/v1/chat/sessions/{sid}")
 
 
-# ───── 4. Q10-L6-002 — minted token revoke list (Round 14) ──────────────
+# ───── 4. minted token revoke list ──────────────
 
 
 class TestMcpTokenRevoke:

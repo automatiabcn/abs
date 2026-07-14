@@ -1,4 +1,4 @@
-"""028 Modul F — Webhook rotation runbook completeness."""
+"""Webhook rotation runbook completeness."""
 
 from __future__ import annotations
 

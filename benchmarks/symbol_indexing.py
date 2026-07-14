@@ -1,4 +1,4 @@
-"""021 — Symbol graph indexing benchmark (10K LOC sample).
+"""Symbol graph indexing benchmark (10K LOC sample).
 
 The `core/backend/app` tree is around 10K lines, so this measures a real index time.
 Output: benchmarks/results/03_symbol_indexing.json

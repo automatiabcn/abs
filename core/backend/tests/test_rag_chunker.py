@@ -1,4 +1,4 @@
-"""010 — RAG semantic chunker testleri (Chroma'sız)."""
+"""RAG semantic chunker tests (without Chroma)."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def test_unknown_extension_falls_back_to_chars():
 
 def test_invalid_python_falls_back_gracefully():
     bad = "def broken(:\n    pass\n"
-    # Hiç exception fırlatmamalı
+    # should not throw any exception
     chunks = _collect(chunk_python(bad))
     assert chunks, "char-fallback boş döndü"
     # Char strategy explicit
@@ -65,7 +65,7 @@ def test_chunk_chars_handles_empty():
 def test_python_no_definitions_falls_back_to_chars():
     src = "x = 1\ny = 2\n" * 200
     chunks = _collect(chunk_python(src))
-    # boundary yok → char-fallback
+    # no boundary → char fallback
     assert chunks
     assert all(len(c) <= 1500 for _, c in chunks)
 

@@ -1,12 +1,12 @@
-"""Q12 Round 25 / L24 sweep 3 — remaining str(exc) / f-string leaks
+"""sweep 3 — remaining str(exc) / f-string leaks
 across me_consent, me_audit, secrets/rotate.
 
-Pre-Round 25 audit (grep `f".*: {exc}"` and `str(exc)[:`) found:
+An earlier audit (grep `f".*: {exc}"` and `str(exc)[:`) found:
   app/api/me_consent.py:38  raise 401 "License verify failed: {exc}"
   app/api/me_audit.py:34    raise 401 "License verify failed: {exc}"
   app/api/secrets.py:45     raise 500 "Vault yazma hatasi: {exc}"
 
-These are the EXACT same Q12-L24 family that R14 (Stripe checkout/
+These are the the earlier family that R14 (Stripe checkout/
 billing), R18 (me_account), and R19 (me_data_export) already
 fixed. Coverage gap was simply that the prior sweeps grepped only
 me_account.py + me_data_export.py + auth.py — me_consent.py and
@@ -14,7 +14,7 @@ me_audit.py have IDENTICAL `_verify_bearer_license` helpers that
 duplicate the leak. Same for secrets.py (vault rotation surface
 parallel to vault_admin.py rotate-key, which R23 already cleaned).
 
-Round 25 ships:
+This change ships:
   * me_consent  — generic "license_verify_failed" + audit emit_event
                   taxonomy (auth.{denied:missing_bearer | denied:
                   license_invalid | error:license_verify_exception |
@@ -63,7 +63,7 @@ def _mint_license_bearer(jti: str = "test-jti-l24s3") -> str:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L24Sweep3MeConsent:
+class TestSweep3MeConsent:
     def test_invalid_bearer_no_pyjwt_leak(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -73,7 +73,7 @@ class TestQ12L24Sweep3MeConsent:
                 headers={"Authorization": "Bearer not.a.real.license.token"},
             )
         assert r.status_code in (400, 401)
-        # Q12-L24 family — must NOT leak PyJWT internals.
+        # family — must NOT leak PyJWT internals.
         assert "Signature" not in r.text
         assert "Exception" not in r.text
         # If we reach license_verify_failed it must be the generic string.
@@ -104,7 +104,7 @@ class TestQ12L24Sweep3MeConsent:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L24Sweep3MeAudit:
+class TestSweep3MeAudit:
     def test_invalid_bearer_no_pyjwt_leak(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -172,7 +172,7 @@ def _admin_panel_session(client: TestClient):
     return client
 
 
-class TestQ12L24Sweep3SecretsRotate:
+class TestSweep3SecretsRotate:
     def test_vault_not_configured_emits_denied(
         self,
         _admin_panel_session: TestClient,

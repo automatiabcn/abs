@@ -1,4 +1,4 @@
-// P0 — a recording becomes something you can ask about, and a broken one doesn't.
+// a recording becomes something you can ask about, and a broken one doesn't.
 //
 // T1  Upload a real meeting recording. It is transcribed, indexed, and a
 //     question in chat comes back with the decision that was spoken aloud.

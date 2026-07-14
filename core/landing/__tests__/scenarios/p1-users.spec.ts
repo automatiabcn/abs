@@ -1,4 +1,4 @@
-// P1 — S2: inviting a colleague, and what that colleague can see.
+// inviting a colleague, and what that colleague can see.
 //
 // The moment a company puts more than one person on this server, two promises
 // start mattering: an invited member gets in, and an invited member does not

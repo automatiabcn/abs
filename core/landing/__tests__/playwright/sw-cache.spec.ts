@@ -1,4 +1,4 @@
-// Q12-L18 (S6 R36) — Service Worker registration + cache strategies.
+// Service Worker registration + cache strategies.
 //
 // Asserts:
 //   1. /sw.js is reachable + has the abs-panel-cache-v1 marker
@@ -15,7 +15,7 @@ import { test, expect } from "@playwright/test";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-test.describe("Q12-L18 SW cache — 3 strategies", () => {
+test.describe("SW cache — 3 strategies", () => {
   test("sw.js shipped + version marker", async ({ page }) => {
     const r = await page.goto("/sw.js");
     expect(r?.status()).toBe(200);

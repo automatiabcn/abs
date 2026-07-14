@@ -2,7 +2,7 @@
 # 013 — ABS Vault initialization (TEK SEFER, kurulumda).
 #
 # Master age key olusturur ve `abs-vault-key` Docker volume'una yazar.
-# Volume backend container'a `:ro` (read-only) mount edilir.
+# Volume mounts as `:ro` (read-only) on the backend container.
 # Master key kayboltursa secrets.yaml decrypt EDILEMEZ → veri kaybi.
 #
 # Kullanim:
@@ -23,19 +23,19 @@ if ! command -v docker >/dev/null 2>&1; then
     exit 1
 fi
 
-# Volume zaten var mi?
+# Does the volume already exist?
 if ! docker volume inspect "$VOLUME_NAME" >/dev/null 2>&1; then
     echo "Volume olusturuluyor: $VOLUME_NAME"
     docker volume create "$VOLUME_NAME"
 fi
 
-# Image var mi?
+# Does the image exist?
 if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     echo "ERR: $IMAGE_NAME bulunamadi. Once 'docker compose build backend' calistir." >&2
     exit 1
 fi
 
-# Gecici container ile age-keygen
+# Generate age key with a temporary container
 docker run --rm \
     -v "$VOLUME_NAME:/vault-key" \
     --entrypoint sh \

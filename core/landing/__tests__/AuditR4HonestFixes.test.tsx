@@ -14,7 +14,7 @@ afterEach(() => {
 
 // ── Finding #2: graph NL→Cypher sent the wrong request key ───────────────────
 // Frontend POSTed { question } but the backend NLQueryRequest requires `intent`,
-// so every "Cypher üret" click returned HTTP 422 and the feature never worked.
+// so every "Generate Cipher" click returned HTTP 422 and the feature never worked.
 describe("Graph NL→Cypher — request key matches backend contract", () => {
   it("POSTs { intent } (not { question }) to /v1/graph/nl-query", async () => {
     const cap: { body?: string } = {};

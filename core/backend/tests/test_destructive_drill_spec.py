@@ -1,4 +1,4 @@
-"""Q12 L21 sweep 3 — destructive fresh-deploy drill spec (founder-gated).
+"""sweep 3 — destructive fresh-deploy drill spec (founder-gated).
 
 Sweep 3 of L21 was always going to be founder-gated because it
 deletes Docker volumes and rebuilds from clean. This file ships the

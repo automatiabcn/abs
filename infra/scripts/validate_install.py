@@ -1,4 +1,4 @@
-"""023 — Install validation: 7 categories, fix hint per failure.
+"""Install validation: 7 categories, fix hint per failure.
 
 Usage:
   python infra/scripts/validate_install.py            # default JSON output

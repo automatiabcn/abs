@@ -17,7 +17,7 @@ from app.meeting.transcribe import Transcriber
 
 SCRIPT = """[Ahmet] Müşteri X yarın aramayı yapacağım.
 [Ayşe] Sözleşmeyi gönder.
-[Ahmet] Bu hafta raporu hazırla.
+[Ahmet] Prepare the report this week.
 [Ayşe] Hava güzel.
 """
 
@@ -38,7 +38,7 @@ def test_full_meeting_pipeline_round_trip() -> None:
     assert "create" in actions or "update" in actions
 
     chunks = build_chunks_from_transcript(
-        transcript, meeting_id="m-001", title="Q3 sync", tenant_id="tenant-1"
+        transcript, meeting_id="m-001", title="sync", tenant_id="tenant-1"
     )
     assert chunks
     assert all(c["payload"]["tenant_id"] == "tenant-1" for c in chunks)
@@ -56,7 +56,7 @@ def test_full_meeting_pipeline_round_trip() -> None:
         embed_fn=embed, upsert_fn=upsert, ensure_fn=lambda *_: None
     )
     n = indexer.index(
-        transcript, meeting_id="m-001", title="Q3 sync", tenant_id="tenant-1"
+        transcript, meeting_id="m-001", title="sync", tenant_id="tenant-1"
     )
     assert n == len(transcript.segments)
     assert upserted == [len(transcript.segments)]

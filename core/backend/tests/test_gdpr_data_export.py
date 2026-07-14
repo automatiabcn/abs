@@ -1,4 +1,4 @@
-"""029 Modul B — Data export build + endpoint tests."""
+"""Data export build + endpoint tests."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""015 — Learnings JSONL store testleri."""
+"""Learnings JSONL store testleri."""
 
 from __future__ import annotations
 

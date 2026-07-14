@@ -1,11 +1,11 @@
-// Q12-L18 (S7 R48) — IndexedDB draft persistence + offline mode.
+// IndexedDB draft persistence + offline mode.
 //
 // R36 SW caches *responses*; R48 ships the matching *user-input*
 // persistence layer. Three guarantees:
 //
 //   1. Type a draft, reload — draft restores from IndexedDB.
 //   2. Go offline (`context.setOffline(true)`), type, reload offline
-//      — draft survives the offline window.
+//      draft survives the offline window.
 //   3. Clear the draft (saveDraft("")) — IndexedDB record is deleted
 //      so a fresh visitor doesn't inherit a previous user's text.
 
@@ -63,7 +63,7 @@ async function clearDraft(page: Page): Promise<void> {
   });
 }
 
-test.describe("Q12-L18 offline drafts (R48)", () => {
+test.describe("offline drafts (R48)", () => {
   test("draft restores after a normal reload", async ({ page }) => {
     if (!(await ensureAuthed(page)))
       throw new Error(

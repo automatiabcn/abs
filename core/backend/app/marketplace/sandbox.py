@@ -421,7 +421,7 @@ __all__ = [
 # Real Docker launcher / monitor
 # ==========================================================================
 
-import time  # noqa: E402  (kept module-local for the Q7 launcher block)
+import time  # noqa: E402  (kept module-local for the launcher block)
 from typing import Any, Dict, Optional  # noqa: E402
 
 try:  # pragma: no cover — docker SDK is optional in CI / dev
@@ -441,7 +441,7 @@ class PluginSandbox:
     The class only manages *real* container lifecycle — manifest validation,
     egress allowlists and Cerbos pre-filtering remain in
     :func:`build_sandbox_spec` / :class:`DockerSandboxLauncher` upstream.
-    Q8 will wire this into the install flow with full image-pull policies and
+    will wire this into the install flow with full image-pull policies and
     cosign verification on the launched image.
     """
 

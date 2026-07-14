@@ -1,4 +1,4 @@
-"""033 Modul C — Provider mock layer (deterministic responses)."""
+"""Provider mock layer (deterministic responses)."""
 
 from __future__ import annotations
 

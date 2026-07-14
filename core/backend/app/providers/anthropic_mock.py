@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Phase 3 / Q3 — Mock Anthropic provider for cascade fallback testing.
+"""Phase 3 — Mock Anthropic provider for cascade fallback testing.
 
 Lets the cascade chain be exercised end-to-end **without an Anthropic API
 key**. Behaviour is configurable via `settings.anthropic_mock_mode`:

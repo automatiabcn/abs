@@ -1,4 +1,4 @@
-"""Q12 R74 (S8) — /v1/admin/users contract + edge-case deep.
+"""(S8) — /v1/admin/users contract + edge-case deep.
 
 R65 migrated `/admin/users` to a server-side split-shell that fetches
 `/v1/admin/users` with the caller's session cookie forwarded. The

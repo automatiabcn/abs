@@ -1,16 +1,16 @@
-"""Q11 Round 6 / L15 — OpenAPI contract regression coverage.
+"""OpenAPI contract regression coverage.
 
 The FastAPI auto-generated /openapi.json is the source of truth for
-client codegen and the panel's typed fetch wrappers. Q10 Round 14
+client codegen and the panel's typed fetch wrappers. an earlier release
 added /v1/mcp/tokens/revoke and /revoked but didn't add an OpenAPI
 contract test, so a future refactor that drops the route from the
 APIRouter would silently break clients.
 
 This module pins the contract for:
-  * Q10 Round 14 endpoints  — /v1/mcp/tokens/revoke + /revoked
-  * Q10 Round 5 endpoint    — /v1/hooks/quota-check (needs to expose
+  * endpoints  — /v1/mcp/tokens/revoke + /revoked
+  * endpoint    — /v1/hooks/quota-check (needs to expose
                               the 200 hookSpecificOutput shape)
-  * Q11 Round 2 fix         — /v1/chat/completions input bounds
+  * fix         — /v1/chat/completions input bounds
                               (min_length=1, max_length=8000)
 """
 
@@ -26,11 +26,11 @@ def openapi(client):
     return r.json()
 
 
-class TestQ11L15McpTokenRoutes:
+class TestMcpTokenRoutes:
     def test_revoke_endpoint_documented(self, openapi):
         paths = openapi["paths"]
         assert "/v1/mcp/tokens/revoke" in paths, (
-            "Q10 Round 14 endpoint missing from OpenAPI — silent client breakage risk"
+            "endpoint missing from OpenAPI — silent client breakage risk"
         )
         post = paths["/v1/mcp/tokens/revoke"].get("post")
         assert post is not None
@@ -78,9 +78,9 @@ class TestQ11L15McpTokenRoutes:
         assert "revoked_at" in required
 
 
-class TestQ11L15ChatCompletionsContract:
+class TestChatCompletionsContract:
     def test_chat_message_in_content_bounds_documented(self, openapi):
-        """Q11-L13-001/002 fix: pydantic Field(min_length=1, max_length=8000)
+        """001/002 fix: pydantic Field(min_length=1, max_length=8000)
         must surface in OpenAPI so client codegen rejects oversized
         payloads at compile time."""
         schemas = openapi["components"]["schemas"]
@@ -88,15 +88,15 @@ class TestQ11L15ChatCompletionsContract:
         cm = schemas["ChatMessageIn"]
         content = cm["properties"]["content"]
         assert content.get("minLength") == 1, (
-            "Q11-L13-002 contract regression: content min_length lost"
+            "contract regression: content min_length lost"
         )
         assert content.get("maxLength") == 8000, (
-            "Q11-L13-001 contract regression: content max_length must "
+            "contract regression: content max_length must "
             "mirror CascadeRequest.prompt's 8000-char ceiling"
         )
 
 
-class TestQ11L15HooksRoutes:
+class TestHooksRoutes:
     def test_quota_check_endpoint_documented(self, openapi):
         paths = openapi["paths"]
         assert "/v1/hooks/quota-check" in paths
@@ -113,7 +113,7 @@ class TestQ11L15HooksRoutes:
         assert "/v1/hooks/session-start" in paths
 
 
-class TestQ11L15RagRoutes:
+class TestRagRoutes:
     """RAG endpoints power the customer demo + cross-tenant gate; their
     contract drift would silently break panel/admin/rag tooling."""
 

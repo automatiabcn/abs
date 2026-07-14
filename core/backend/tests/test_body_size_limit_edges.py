@@ -1,4 +1,4 @@
-"""Q12 Session 8 R61 — body_size_limit boundary edges + custom-cap deep.
+"""Session 8 R61 — body_size_limit boundary edges + custom-cap deep.
 
 Pre-R61 coverage of `BodySizeLimitMiddleware` covered the headline
 DoS scenarios (50 MB rejected, normal body passes, GET no-body) but

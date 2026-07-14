@@ -16,7 +16,7 @@ def _tmp_data(monkeypatch, tmp_path):
 
 def test_threshold_warn_fires_once_then_idempotent():
     assert ca.track_usage(count=800, limit=1000) == "warn"
-    # Aynı ay, 81% — 'warn' tekrar tetiklenmemeli
+    # Same month, 81% — 'warn' should not fire again
     assert ca.track_usage(count=810, limit=1000) is None
 
 
@@ -31,7 +31,7 @@ def test_read_recent_returns_newest_first():
     ca.track_usage(count=900, limit=1000)
     recent = ca.read_recent(limit=5)
     assert len(recent) >= 2
-    # En yeni önce
+    # Newest first
     assert recent[0]["level"] == "danger"
     assert recent[1]["level"] == "warn"
 
@@ -50,7 +50,7 @@ def test_new_month_resets_counter(monkeypatch):
     snap = ca.usage_snapshot()
     assert snap["used_month"] == 900
 
-    # Şimdiki ay'ı manuel değiştir → reset
+    # Manually change current month → reset
     fake_month = "1999-12"
     monkeypatch.setattr(ca, "_current_month", lambda: fake_month)
     # Yeni ayda track_usage(count=10) → reset, count=10

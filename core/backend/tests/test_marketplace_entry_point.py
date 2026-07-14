@@ -1,6 +1,6 @@
 """Marketplace install — real entry_point image resolution.
 
-Q7 hardcoded the launched image to the local ``abs-plugin-stub:<id>``, so a
+hardcoded the launched image to the local ``abs-plugin-stub:<id>``, so a
 plugin's real descriptor ``entry_point`` (e.g. ghcr.io/abs-plugins/...) was
 never used. ``_resolve_image`` now prefers the real image when it is present
 or pullable and degrades to the stub otherwise — these tests pin both arms

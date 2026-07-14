@@ -3,12 +3,12 @@ import React from "react";
 import { afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 
-// Q8 Phase B — @xyflow/react pulls zustand which mis-resolves React when
+// Phase B — @xyflow/react pulls zustand which mis-resolves React when
 // jsdom runs from the monorepo root. Stub the canvas surface so panel
 // tests don't blow up on the optional graph dependency.
 vi.mock("@xyflow/react", () => {
   // Stub renders each node as data-testid="workflow-node-{id}" so legacy
-  // canvas tests written against the pre-Q8 component keep passing.
+  // canvas tests written against the earlier component keep passing.
   const NodeStub = ({ nodes }: { nodes?: Array<{ id: string }> }) =>
     React.createElement(
       "div",

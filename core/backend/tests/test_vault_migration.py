@@ -1,4 +1,4 @@
-"""013 — Plaintext .env → vault migration testleri."""
+"""Plaintext .env → vault migration testleri."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def vault_env(monkeypatch, tmp_path: Path):
 
 
 def test_migration_skipped_when_no_vault(vault_env, monkeypatch):
-    """Master key yok → migration 0, .env değişmez."""
+    """Master key missing → migration 0, .env unchanged."""
     import app.vault.runner as runner_mod
     from app.vault.migration import migrate_plaintext_env_to_vault
 
@@ -40,7 +40,7 @@ def test_migration_skipped_when_no_vault(vault_env, monkeypatch):
 
 
 def test_migration_moves_plaintext_to_vault(vault_env, monkeypatch):
-    """sops + master key + plaintext .env → vault'a taşır, .env'den siler."""
+    """sops + master key + plaintext .env → moves to vault, deletes from .env."""
     import app.vault.runner as runner_mod
     from app.vault.migration import migrate_plaintext_env_to_vault
 
@@ -75,7 +75,7 @@ def test_migration_moves_plaintext_to_vault(vault_env, monkeypatch):
     # API olmayanlar duruyor
     assert "ABS_DATABASE_URL" in rest
     assert "ABS_DOMAIN" in rest
-    # Audit log yazıldı
+    # Audit log written
     audit_path = Path(vault_env["tmp"]) / "vault_audit.jsonl"
     assert audit_path.is_file()
     text = audit_path.read_text(encoding="utf-8")
@@ -86,7 +86,7 @@ def test_migration_moves_plaintext_to_vault(vault_env, monkeypatch):
 
 
 def test_migration_idempotent(vault_env, monkeypatch):
-    """2 kere çağır → 2. çağrıda 0 migrated (.env zaten temiz)."""
+    """Call twice → 0 migrated on 2nd call (.env already clean)."""
     import app.vault.runner as runner_mod
     from app.vault.migration import migrate_plaintext_env_to_vault
 

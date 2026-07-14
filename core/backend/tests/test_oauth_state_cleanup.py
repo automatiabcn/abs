@@ -1,4 +1,4 @@
-"""028 Modul E — OAuth state TTL cleanup cron."""
+"""OAuth state TTL cleanup cron."""
 
 from __future__ import annotations
 

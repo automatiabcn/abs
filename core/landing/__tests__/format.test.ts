@@ -1,4 +1,4 @@
-// R71 (S8) — vitest coverage for `lib/format.ts`.
+// vitest coverage for `lib/format.ts`.
 //
 // The helpers are not yet wired into the landing surface (R58 gate
 // enforces no hardcoded BCP-47 there; the only currently-rendered
@@ -16,7 +16,7 @@ import {
   formatPlural,
 } from "@/lib/format";
 
-describe("Q12-R71 — lib/format BCP-47 mapping", () => {
+describe("lib/format BCP-47 mapping", () => {
   it("maps en/tr/es to expected BCP-47 tags", () => {
     expect(__test_only_bcp47("en")).toBe("en-US");
     expect(__test_only_bcp47("tr")).toBe("tr-TR");
@@ -30,7 +30,7 @@ describe("Q12-R71 — lib/format BCP-47 mapping", () => {
   });
 });
 
-describe("Q12-R71 — formatNumber", () => {
+describe("formatNumber", () => {
   it("EN uses comma thousands + dot decimal", () => {
     expect(formatNumber(1234.56, "en")).toBe("1,234.56");
   });
@@ -67,7 +67,7 @@ describe("Q12-R71 — formatNumber", () => {
   });
 });
 
-describe("Q12-R71 — formatDate / formatDateTime", () => {
+describe("formatDate / formatDateTime", () => {
   // Use a fixed Date so the test is deterministic across runners.
   const d = new Date("2026-05-04T12:34:56Z");
 
@@ -94,7 +94,7 @@ describe("Q12-R71 — formatDate / formatDateTime", () => {
   });
 });
 
-describe("Q12-R71 — formatPlural", () => {
+describe("formatPlural", () => {
   it("English picks `one` for 1 and `other` otherwise", () => {
     const forms = { one: "{n} message", other: "{n} messages" };
     expect(formatPlural(1, forms, "en")).toBe("1 message");

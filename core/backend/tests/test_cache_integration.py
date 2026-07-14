@@ -1,6 +1,6 @@
-"""015 — Cascade orchestrator × cache integration testleri.
+"""Cascade orchestrator × cache integration testleri.
 
-cache_stats hit/miss counter'ı orchestrator hot path'ine bağlı olmalı.
+cache_stats hit/miss counter should be tied to the orchestrator hot path.
 """
 
 from __future__ import annotations
@@ -71,7 +71,7 @@ async def test_cache_ttl_expiry():
 
 @pytest.mark.asyncio
 async def test_cascade_uses_cache_on_repeat_call(monkeypatch):
-    """Aynı prompt 2x → 2. çağrı cache hit, breaker.allow çağrılmaz."""
+    """Same prompt twice → second call cache hit, breaker.allow not invoked."""
     from app.cascade import cache as cache_mod
     from app.cascade import orchestrator as orch_mod
     from app.cascade.cache import SemanticCache

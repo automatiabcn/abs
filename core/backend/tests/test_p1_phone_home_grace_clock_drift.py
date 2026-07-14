@@ -5,7 +5,7 @@
 
 """Patch B — VULN-R3-02 offline-grace clock-rollback hardening tests.
 
-Pilot Round 3 found that ``_check_offline_grace`` used wall-clock
+Pilot This change found that ``_check_offline_grace`` used wall-clock
 arithmetic only: rolling the host clock backward (or restoring a VM
 snapshot) yielded a negative age, which compared ``False`` against
 the 7-day threshold and kept the grace window valid forever. Patch B

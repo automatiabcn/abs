@@ -18,7 +18,7 @@ export default defineConfig({
   projects: [
     { name: "chromium-desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "chromium-mobile", use: { ...devices["Pixel 7"] } },
-    // Q11 Round 3 / L11 — cross-browser smoke surface. Run with
+    // cross-browser smoke surface. Run with
     // `--project=firefox-desktop` or `webkit-desktop` to exercise
     // engine-specific routing/SSR quirks.
     { name: "firefox-desktop", use: { ...devices["Desktop Firefox"] } },

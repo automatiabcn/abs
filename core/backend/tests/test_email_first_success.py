@@ -1,4 +1,4 @@
-"""019 — first_success trigger: ilk MCP tool çağrısında email scheduled, sonraki çağrılarda değil."""
+"""first_success trigger: on the first MCP tool call email scheduled, not on subsequent calls."""
 
 from __future__ import annotations
 
@@ -91,5 +91,5 @@ def test_subsequent_calls_do_not_trigger(monkeypatch):
             .where(EmailQueue.license_jti == jti)
             .where(EmailQueue.kind == "first_success")
         ).all()
-        # İlk çağrı 1 row schedule etti, sonrakiler no-op
+        # First call scheduled 1 row, later ones no-op
         assert len(rows) == 1

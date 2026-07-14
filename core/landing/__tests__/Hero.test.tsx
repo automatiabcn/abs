@@ -34,7 +34,7 @@ describe("Hero (premium 018)", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Alt metin")).toBeInTheDocument();
 
-    // Premium SVG illustration var (018 — modul A)
+    // Premium SVG illustration exists (018 — module A)
     const svg = screen.getByRole("img", {
       name: /self-host ai orchestration illustration/i,
     });

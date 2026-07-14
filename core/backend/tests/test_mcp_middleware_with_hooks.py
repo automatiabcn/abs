@@ -1,4 +1,4 @@
-"""MCP middleware — with_hooks decorator: tool yanıtına nudge ekler."""
+"""MCP middleware — with_hooks decorator: adds a nudge to tool response."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ async def test_with_hooks_unknown_tool_no_nudge():
         return "OK"
 
     out = await fake_tool("x")
-    # unknown tool MCP nudge haritasında yok → sadece base response
+    # unknown tool not in MCP nudge map → only base response
     assert out == "OK"
 
 

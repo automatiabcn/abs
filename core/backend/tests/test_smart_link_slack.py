@@ -1,4 +1,4 @@
-"""026 Modul B — Slack OAuth + channel post."""
+"""Slack OAuth + channel post."""
 
 from __future__ import annotations
 

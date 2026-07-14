@@ -1,6 +1,6 @@
-"""014 — Watchdog Discord/email alert (skeleton).
+"""Watchdog Discord/email alert (skeleton).
 
-WATCHDOG_DISCORD_WEBHOOK env'inden okur. Yoksa False doner — exception fırlatmaz.
+WATCHDOG_DISCORD_WEBHOOK reads from env. Returns False if missing — does not raise exception.
 """
 
 from __future__ import annotations

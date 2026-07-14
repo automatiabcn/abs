@@ -1,6 +1,6 @@
-"""Q12 Round 23 / L22 sweep 2 — concurrent vault rotate race + audit.
+"""sweep 2 — concurrent vault rotate race + audit.
 
-Pre-Round 23 inventory:
+An earlier audit:
   POST /v1/admin/vault/rotate-key was unguarded against concurrent
   invocations. Two admins (or admin + scheduled cron) racing produced:
 
@@ -16,7 +16,7 @@ Pre-Round 23 inventory:
   Audit-chain disagreement vs disk reality is the worst failure mode:
   ops follow the audit log to "the new key is X" but disk holds Y.
 
-Q12-L22-002 (HIGH data corruption / audit divergence). Fix: fcntl.LOCK_EX
+(HIGH data corruption / audit divergence). Fix: fcntl.LOCK_EX
 on `<vault_key_path>.rotate.lock`. Non-blocking by default at the API
 surface so a contended call returns 409 instead of queuing behind a
 slow rotation. Scheduled cron can pass `blocking_lock=True`.
@@ -98,7 +98,7 @@ def _vault_env(tmp_path, monkeypatch):
 # ----------------------------------------------------------------------
 
 
-class TestQ12L22Sweep2RotateRace:
+class TestSweep2RotateRace:
     def test_held_lock_makes_second_rotate_busy(self, _vault_env) -> None:
         """Hold the rotate lock from another fd, attempt a rotation, expect
         RotationBusyError. fcntl.LOCK_EX is per-fd, so opening a *second*
@@ -158,7 +158,7 @@ def _admin_token_env(monkeypatch):
     return "vault-admin-l22s2"
 
 
-class TestQ12L22Sweep2AuditEmission:
+class TestSweep2AuditEmission:
     def test_busy_response_emits_denied(
         self,
         _vault_env,

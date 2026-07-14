@@ -1,4 +1,4 @@
-"""plan_first — action_count >= 3 + plan.md yok → uyarı."""
+"""plan_first — action_count >= 3 + missing plan.md → warning."""
 
 from __future__ import annotations
 

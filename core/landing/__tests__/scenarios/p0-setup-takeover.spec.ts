@@ -1,4 +1,4 @@
-// P0 — S1: a configured server cannot be taken over by whoever finds /setup.
+// a configured server cannot be taken over by whoever finds /setup.
 //
 // The setup wizard creates the first admin, and it is the one endpoint that is
 // unauthenticated by necessity — before it runs, there is nobody to authenticate

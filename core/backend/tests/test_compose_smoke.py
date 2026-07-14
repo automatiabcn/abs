@@ -1,4 +1,4 @@
-"""024 Modul G — Docker compose smoke script existence + validity."""
+"""Docker compose smoke script existence + validity."""
 
 from __future__ import annotations
 

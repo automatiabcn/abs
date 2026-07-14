@@ -30,7 +30,7 @@
 		-Server
 	}
 
-	# Q12 R3 route split. Backend exposes API + setup wizard + auth + MCP
+	# route split. Backend exposes API + setup wizard + auth + MCP
 	# transport on FastAPI (port 8000). Everything else (marketing pages
 	# + Next.js admin panels under /admin/*) goes to the landing image
 	# (Next.js standalone on port 3000).

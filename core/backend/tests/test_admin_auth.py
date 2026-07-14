@@ -1,4 +1,4 @@
-"""032 Modul A — Admin auth login + IP whitelist + rate limit + JWT verify."""
+"""Admin auth login + IP whitelist + rate limit + JWT verify."""
 
 from __future__ import annotations
 
