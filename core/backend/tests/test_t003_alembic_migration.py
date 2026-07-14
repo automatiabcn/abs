@@ -1,4 +1,4 @@
-"""T-003 / T-007 — Alembic migration upgrade/downgrade smoke test."""
+"""Alembic migration upgrade/downgrade smoke test."""
 
 from __future__ import annotations
 

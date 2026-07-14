@@ -1,4 +1,4 @@
-"""T-001 — NATS JetStream live broker integration test.
+"""NATS JetStream live broker integration test.
 
 Skipped unless ABS_NATS_URL points at a reachable JetStream-enabled
 NATS server (default `nats://127.0.0.1:4222`). Run via:
@@ -6,7 +6,7 @@ NATS server (default `nats://127.0.0.1:4222`). Run via:
     docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d nats
     pytest tests/integration/test_t001_nats_latency.py -v
 
-Acceptance: round-trip publish→consume p95 < 50ms (T-001 SLO).
+Acceptance: round-trip publish→consume p95 < 50ms.
 """
 
 from __future__ import annotations
@@ -93,7 +93,7 @@ async def test_jetstream_pubsub_latency_p95_under_50ms(_require_broker) -> None:
     p95 = statistics.quantiles(samples_ms, n=20)[18]  # 95th percentile
 
     print(
-        f"\n[T-001] samples={len(samples_ms)} p50={p50:.2f}ms p95={p95:.2f}ms "
+        f"\nsamples={len(samples_ms)} p50={p50:.2f}ms p95={p95:.2f}ms "
         f"max={max(samples_ms):.2f}ms"
     )
 

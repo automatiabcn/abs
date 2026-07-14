@@ -1,4 +1,4 @@
-"""T-015 — Multi-tenancy E2E for the RAG gateway (Playwright-equivalent via httpx).
+"""Multi-tenancy E2E for the RAG gateway (Playwright-equivalent via httpx).
 
 Drives the FastAPI app with the in-process TestClient against the golden
 eval dataset. Verifies:

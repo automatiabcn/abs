@@ -52,7 +52,7 @@ def test_admin_route_removed_on_backend(client):
 
 def test_panel_assets_js_still_served(client):
     """Static assets under `/panel/assets/*` survive — they back the
-    Next.js admin's embedded panel iframe widgets (T-R02 split)."""
+    Next.js admin's embedded panel iframe widgets."""
     r = client.get("/panel/assets/panel.js")
     assert r.status_code == 200
     assert 'import "./panel/main.js"' in r.text

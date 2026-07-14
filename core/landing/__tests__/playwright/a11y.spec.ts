@@ -1,4 +1,4 @@
-// T-Q04 — axe-core a11y sweep across all public routes.
+// axe-core a11y sweep across all public routes.
 // Fails on any violation with impact: critical or serious.
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";

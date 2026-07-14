@@ -1,4 +1,4 @@
-// T-R02 — SSE wiring extracted from panel.js. Handles open/error/event listeners
+// SSE wiring extracted from panel.js. Handles open/error/event listeners
 // and the orchestrator-extension that feeds the vital-signs strip + notifications.
 import { safeParse, setFooterState } from "./dom.js";
 import { SSE_URL, RECONNECT_DELAY } from "./constants.js";

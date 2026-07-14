@@ -1,4 +1,4 @@
-"""T-002 — Inngest function registration + NATS bridge tests."""
+"""Inngest function registration + NATS bridge tests."""
 
 from __future__ import annotations
 

@@ -1,9 +1,9 @@
-"""Sprint 2J FAZ E — guardrails for mint_and_email.sh + customer_onboard.sh.
+"""Guardrails for mint_and_email.sh + customer_onboard.sh.
 
 These two shell scripts are the only path a customer's license JWT
 travels through, so a silent regression (e.g. someone removes
 `--dry-run`, or the JTI grep stops matching the JWT payload) would
-break Pilot Batch 1 broadcast before anyone notices. The FAZ A
+break the first batch of licence mails before anyone notices. The
 preflight log shows the `--dry-run` flag was used as recently as
 2026-05-09; this test ensures it stays wired even after future
 refactors.
@@ -59,7 +59,7 @@ def test_mint_and_email_advertises_dry_run_flag():
 
 
 def test_mint_and_email_targets_resend_endpoint():
-    # FAZ E — guard against silent endpoint drift. The script is the
+    # Guard against silent endpoint drift. The script is the
     # only place the prod Resend host is hard-coded; if someone moves
     # the constant or typos the path, customer emails go to /dev/null
     # without an error.
@@ -72,7 +72,7 @@ def test_mint_and_email_targets_resend_endpoint():
     reason="customer_onboard.sh not bundled in this checkout",
 )
 def test_customer_onboard_mints_jwt_with_extractable_jti():
-    # FAZ E — exercise the real script end-to-end on a throwaway slug,
+    # Exercise the real script end-to-end on a throwaway slug,
     # decode the middle JWT segment, and confirm the four claims the
     # operator playbook (FOUNDER_ITER3_LIVE_DISPATCH.md §1.4) tells
     # founders to verify before sending a license. The slug is cleaned

@@ -37,7 +37,6 @@ EXPECTED_HEAD_TABLES = {
     "minted_token_blacklist",
     # OAuth baseline (0001)
     "oauth_clients",
-    # Sprint 19+
     "tenant_projects",
     "meetings",
     "usage_log",

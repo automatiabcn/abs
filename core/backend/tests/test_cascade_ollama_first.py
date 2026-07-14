@@ -1,4 +1,4 @@
-"""T-R03 fix #4 — Ollama-first cascade tests.
+"""Ollama-first cascade tests.
 
 Validates the priority chain `ollama → groq → anthropic`:
 

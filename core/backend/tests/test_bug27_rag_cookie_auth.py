@@ -1,16 +1,16 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""BUG-27 — `/admin/rag` console returned `[MOCK]` rows because the panel
+"""`/admin/rag` console returned `[MOCK]` rows because the panel
 silently fell back to a deterministic local mock when `/v1/rag/query`
-returned a non-200. Sprint 2A swaps the mock fallback for an inline error
+returned a non-200. The fix swaps the mock fallback for an inline error
 banner and tightens the backend so misconfigured infra surfaces as a clean
 503 instead of a leaking 500.
 
 These tests guard:
 1. Cookie-session caller hits `/v1/rag/query` and gets real Qdrant rows
    (mocked search backend), with no `[MOCK]` string in the response.
-2. Cross-tenant Cerbos DENY returns 403 (preserve T-015).
+2. Cross-tenant Cerbos DENY returns 403 (preserve the tenant-isolation contract).
 3. Missing tenant claim returns 403 (defense-in-depth around cookie path).
 4. Embedder unavailable → 503 with `embedder_unavailable` detail, never 500.
 5. Qdrant unreachable → 503 with `qdrant_unavailable` detail, never 500.
@@ -112,7 +112,7 @@ def test_cookie_query_returns_real_hit_no_mock_string(
 def test_cross_tenant_cerbos_deny_returns_403(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """T-015 parity — when Cerbos says DENY (e.g. mismatched tenant), the
+    """Parity — when Cerbos says DENY (e.g. mismatched tenant), the
     cookie path must surface 403, not silently fall through to query."""
 
     class _DenyingCerbos:
@@ -154,7 +154,7 @@ def test_embedder_unavailable_returns_503(
 ) -> None:
     """If the operator flips ABS_EMBEDDING_BACKEND=sentence_transformers
     without installing the lib, get_embedder() raises ImportError.
-    BUG-27 — must surface as 503, never 500."""
+    must surface as 503, never 500."""
     monkeypatch.setattr(rag_routes.qc, "ensure_collection", lambda *a, **k: None)
     monkeypatch.setattr(rag_routes.qc, "search", lambda **k: [])
 
@@ -201,9 +201,7 @@ def test_frontend_page_no_longer_contains_mock_fallback() -> None:
     operators see real failures."""
     page = _REPO_ROOT / "core" / "landing" / "app" / "admin" / "rag" / "page.tsx"
     text = page.read_text(encoding="utf-8")
-    assert "[MOCK]" not in text, (
-        "BUG-27 regression: page.tsx still contains [MOCK] fallback"
-    )
+    assert "[MOCK]" not in text, "regression: page.tsx still contains [MOCK] fallback"
     # A failed search says so, and says which call failed and how. The bug this
     # guards against is the opposite: fake hits that look exactly like real ones.
     assert "Search failed — /v1/rag/query returned" in text, (

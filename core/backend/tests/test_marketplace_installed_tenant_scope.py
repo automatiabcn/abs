@@ -1,4 +1,4 @@
-"""Round-4 BUG-10 regression — `/v1/marketplace/installed` tenant scoping.
+"""Regression — `/v1/marketplace/installed` tenant scoping.
 
 Founder Phase D evidence: install went to `tenant=demo-acme` (POST body
 explicit) but the subsequent GET defaulted to `tenant=default` and returned
@@ -160,7 +160,7 @@ def test_installed_default_tenant_legacy_path(client):
 
 
 def test_bootstrap_admin_resolves_tenant_from_credentials_file(client, tmp_path):
-    """Round-5 BUG-10 follow-up — setup-wizard / magic-link-claim admin has
+    """Follow-up — setup-wizard / magic-link-claim admin has
     NO ``users`` row but ``admin_credentials.json`` carries ``tenant_slug``.
 
     Without the file fallback the resolver short-circuited on the empty DB

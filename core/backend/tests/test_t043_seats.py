@@ -1,4 +1,4 @@
-"""T-043 — Tier + seat enforcement tests."""
+"""Tier + seat enforcement tests."""
 
 from __future__ import annotations
 

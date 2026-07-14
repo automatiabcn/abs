@@ -1,4 +1,4 @@
-"""T-011 — RAG ingest + query pipeline tests."""
+"""RAG ingest + query pipeline tests."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from types import SimpleNamespace
 
 @pytest.fixture(autouse=True)
 def _install_fake_cerbos_for_rag():
-    """T-012 — RAG endpoints now run a Cerbos pre-check; default ALLOW for tests."""
+    """RAG endpoints now run a Cerbos pre-check; default ALLOW for tests."""
 
     class _AllowingCerbos:
         def check_resources(self, *, principal, resources):  # noqa: ANN001
@@ -182,7 +182,7 @@ def test_late_chunks_basic_count_and_ordering() -> None:
     assert [c.seq for c in chunks] == list(range(len(chunks)))
     seen_ids: set[str] = set()
     for c in chunks:
-        # Founder Tester Round 2 (BUG-6 infra fix) — chunk_id is now a
+        # chunk_id is now a
         # deterministic UUID5 (Qdrant requires UUID/uint point IDs).
         # The ID must still be stable per (doc_id, seq) and unique
         # across the chunk list.

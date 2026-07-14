@@ -1,6 +1,6 @@
 """021 — Vault decrypt overhead benchmark (sops + age timing).
 
-Sops binary kuruluysa gerçek decrypt zamanı ölçer; yoksa simulate eder.
+Measures a real decrypt when the sops binary is installed, and simulates one otherwise.
 Output: benchmarks/results/02_vault_decrypt_timing.json
 """
 
@@ -18,7 +18,7 @@ def _sops_available() -> bool:
 
 
 def _measure_decrypt_simulated(iterations: int = 50) -> dict:
-    """sops + age yokken; kriptolu okumayı simulate et (dosya hash + base64 decode)."""
+    """Stand in for an encrypted read when sops + age are absent (file hash + base64 decode)."""
     import base64
     import hashlib
 
@@ -26,7 +26,7 @@ def _measure_decrypt_simulated(iterations: int = 50) -> dict:
     times: list[float] = []
     for _ in range(iterations):
         t0 = time.perf_counter()
-        for _i in range(5):  # tekrar süre ölçümü stabilitesi
+        for _i in range(5):  # repeat for a stable timing
             digest = hashlib.sha256(payload.encode()).hexdigest()
             _ = base64.b64decode(payload)
             _ = digest[:16]

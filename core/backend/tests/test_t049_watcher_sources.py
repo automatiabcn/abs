@@ -1,4 +1,4 @@
-"""T-049 — News watcher source registry tests."""
+"""News watcher source registry tests."""
 
 from __future__ import annotations
 

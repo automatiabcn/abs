@@ -1,4 +1,4 @@
-// Sprint 2I UAT-038 — DeletionStatusBanner renders the three states
+// DeletionStatusBanner renders the three states
 // (none / scheduled / purged) and the cancel button when scheduled.
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import DeletionStatusBanner from "@/components/DeletionStatusBanner";
 
-describe("DeletionStatusBanner (UAT-038)", () => {
+describe("DeletionStatusBanner", () => {
   it("renders the 'no pending deletion' state", () => {
     render(<DeletionStatusBanner data={{ status: "none" }} lang="en" />);
     expect(

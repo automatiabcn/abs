@@ -57,7 +57,7 @@ def test_customer_compose_no_build_context():
             f"found build context: {svc.get('build')!r}"
         )
 
-    # Sprint 2N.2 FAZ B: customer compose now parameterizes the GHCR
+    # Customer compose now parameterizes the GHCR
     # namespace (ABS_GHCR_NAMESPACE) so the publishing workflow (which
     # holds `automatiabcn` org scope) and operators pinned to the
     # pre-2N.2 `enzoemir1` namespace can both pull. Accept the templated
@@ -82,7 +82,7 @@ def test_release_script_atomic_clean_tree_gate():
     )
     # Image refs may interpolate ${GHCR_USER} — accept either literal or
     # template form so long as the registry + repo are unambiguous.
-    # Sprint 2N.2 FAZ B: default GHCR_USER switched from enzoemir1 to
+    # Default GHCR_USER switched from enzoemir1 to
     # automatiabcn so the publishing workflow's GITHUB_TOKEN can push.
     backend_present = (
         "ghcr.io/automatiabcn/abs-backend" in text

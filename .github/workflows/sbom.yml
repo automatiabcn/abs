@@ -1,6 +1,6 @@
 name: SBOM Generation
 
-# Sprint 2H F-2H-01 — release: published does not cascade when the
+# release: published does not cascade when the
 # upstream release is published by github-actions[bot] (GitHub security
 # restriction prevents workflow chaining from bot-authored events). Tag
 # push is a direct, controlled trigger that fires for every signed
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      # Sprint 2H F-2H-01 — resolve tag from whichever event fired the
+      # Resolve tag from whichever event fired the
       # workflow. release event → github.event.release.tag_name; tag
       # push event → github.ref_name (the tag); workflow_dispatch → use
       # github.ref_name (the ref selected in the dispatch UI).
@@ -51,7 +51,7 @@ jobs:
 
       - name: Generate npm SBOM (core/landing)
         working-directory: core/landing
-        # Sprint 2H F-2H-01 — cyclonedx-npm calls `npm ls --json --long
+        # cyclonedx-npm calls `npm ls --json --long
         # --all` internally; without --ignore-npm-errors any drift in
         # the lockfile (extraneous, invalid peer deps, missing peerOpt)
         # bubbles up as ELSPROBLEMS and tanks the whole SBOM. The SBOM
@@ -72,7 +72,7 @@ jobs:
           pip install --quiet --upgrade pip
           pip install --quiet -e .
           pip install --quiet cyclonedx-bom
-          # Sprint 2H F-2H-01 — cyclonedx-py CLI uses --output-file
+          # cyclonedx-py CLI uses --output-file
           # (kebab-case), not --outfile. Older docs cached the abbreviated
           # form; current versions reject it with exit 2.
           cyclonedx-py environment \

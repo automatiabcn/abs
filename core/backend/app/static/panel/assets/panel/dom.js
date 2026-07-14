@@ -1,4 +1,4 @@
-// T-R02 — DOM helpers extracted from the legacy panel.js IIFE.
+// DOM helpers extracted from the legacy panel.js IIFE.
 // All public-DOM mutation in the panel goes through these so we keep the
 // "no innerHTML, ever" rule encapsulated.
 

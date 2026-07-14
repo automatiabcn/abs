@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""Sprint 2B BUG-34 — marketplace install persists via SQL + UI list reflects it."""
+"""Marketplace install persists via SQL + UI list reflects it."""
 
 from __future__ import annotations
 

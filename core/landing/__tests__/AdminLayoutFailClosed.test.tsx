@@ -1,5 +1,5 @@
 /**
- * Sprint 2N FAZ B — UAT-009 fail-closed AdminLayout SSR probe (P0 #2M-025).
+ * Fail-closed AdminLayout SSR probe.
  *
  * AdminLayout (RSC) backend /healthz probe fail edince redirect('/login?
  * reason=backend-unreachable') çağırıyor. Middleware bypass edilse bile
@@ -43,7 +43,7 @@ async function loadPanelLayout() {
   return mod.default;
 }
 
-describe("AdminLayout — SSR fail-closed probe (P0 #2M-025)", () => {
+describe("AdminLayout — SSR fail-closed probe", () => {
   beforeEach(() => {
     redirectMock.mockClear();
     vi.resetModules();
@@ -85,7 +85,7 @@ describe("AdminLayout — SSR fail-closed probe (P0 #2M-025)", () => {
   });
 });
 
-describe("PanelLayout — SSR fail-closed probe (P0 #2M-025 twin)", () => {
+describe("PanelLayout — SSR fail-closed probe", () => {
   beforeEach(() => {
     redirectMock.mockClear();
     vi.resetModules();

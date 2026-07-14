@@ -1,6 +1,6 @@
 name: provider-regression
 
-# Sprint 19 T-S02.3 — nightly drift detection across the 5 ABS providers.
+# Nightly drift detection across the 5 ABS providers.
 # Compares live sandbox calls against golden fixtures in
 # core/backend/app/providers/<provider>/contracts/. On drift, fails the job
 # and opens a GitHub issue + posts a Slack #ops alert.

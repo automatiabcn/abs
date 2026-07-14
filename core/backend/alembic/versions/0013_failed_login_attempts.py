@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-041 — failed_login_attempt table for brute-force defense.
+"""failed_login_attempt table for brute-force defense.
 
 Revision ID: 0013_failed_login_attempts
 Revises: 0012_tenant_settings_fk

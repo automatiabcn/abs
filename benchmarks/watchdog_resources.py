@@ -1,6 +1,6 @@
 """021 — Watchdog process resource sample (psutil RSS + CPU).
 
-Spec: 10dk sample, her 10s. CI'da daha kısa: 60s, her 5s.
+Spec: a 10-minute sample, every 10s. Shorter in CI: 60s, every 5s.
 Output: benchmarks/results/04_watchdog_resources.json
 """
 

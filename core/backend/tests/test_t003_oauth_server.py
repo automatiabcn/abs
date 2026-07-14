@@ -1,4 +1,4 @@
-"""T-003 — OAuth 2.1 server unit tests (DB-backed)."""
+"""OAuth 2.1 server unit tests (DB-backed)."""
 
 from __future__ import annotations
 

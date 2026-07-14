@@ -1,4 +1,4 @@
-"""T-022 — LangFuse custom price tier tests."""
+"""LangFuse custom price tier tests."""
 
 from __future__ import annotations
 

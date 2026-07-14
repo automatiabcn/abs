@@ -1,16 +1,16 @@
-"""Sprint 2F — Legal hardening artifact + CI workflow presence + content gates.
+"""Legal hardening artifact + CI workflow presence + content gates.
 
 Validates ITEMs 1-8 from `_agent-tasks/WORKER_SPRINT_2F_RC11_2026-05-11.md`:
 
-* ITEM 1: README badge + License section use BUSL-1.1 (SPDX), not "BSL".
-* ITEM 2: NOTICE.md exists with copyright + BUSL-1.1 + trademark + third-party blocks.
-* ITEM 3: core/landing/package.json and core/backend/pyproject.toml carry
+* README badge + License section use BUSL-1.1 (SPDX), not "BSL".
+* NOTICE.md exists with copyright + BUSL-1.1 + trademark + third-party blocks.
+* core/landing/package.json and core/backend/pyproject.toml carry
           machine-readable `license = "BUSL-1.1"` metadata.
-* ITEM 4: docs/legal/TRADEMARKS.md exists with FOSSmarks-style sections.
-* ITEM 5: README License section explicitly discloses source-available / NOT OSI.
-* ITEM 6: .github/workflows/sbom.yml runs cyclonedx for npm + pip with artifact upload.
-* ITEM 7: .github/workflows/license-check.yml enforces licensee >=90% confidence gate.
-* ITEM 8: docs/legal/PRIVACY_PHONE_HOME.md discloses heartbeat fields + opt-out.
+* docs/legal/TRADEMARKS.md exists with FOSSmarks-style sections.
+* README License section explicitly discloses source-available / NOT OSI.
+* .github/workflows/sbom.yml runs cyclonedx for npm + pip with artifact upload.
+* .github/workflows/license-check.yml enforces licensee >=90% confidence gate.
+* docs/legal/PRIVACY_PHONE_HOME.md discloses heartbeat fields + opt-out.
 """
 
 from __future__ import annotations

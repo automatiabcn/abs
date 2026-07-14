@@ -1,4 +1,4 @@
-// Q12 R65 (S8) — Sprint 22 RSC Phase B leg 2: /admin/users split-shell.
+// RSC split-shell: /admin/users.
 //
 // Same shape as R64 (audit). Server `page.tsx` fetches /v1/admin/users
 // with the caller's cookie forwarded; client island

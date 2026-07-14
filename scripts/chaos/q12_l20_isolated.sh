@@ -81,7 +81,7 @@ case "${phase}" in
     ;;
   redis)
     echo "==> redis OOM (scenario 5) — chaos namespace does not include redis"
-    echo "    Sprint 21 cache layer test deferred — invoke when redis service joins compose."
+    echo "    Cache-layer test deferred — invoke when the redis service joins compose."
     ;;
   down)
     echo "==> tearing down ${PROJECT}"

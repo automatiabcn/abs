@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// FAZ B (2026-05-08) — chat-sidebar prompt library: 8 categories,
+// Chat-sidebar prompt library: 8 categories,
 // 6 prompts each, 3 languages (TR/EN/ES). Replaces the 4-item
 // hardcoded SAMPLE_PROMPTS in components/chat/index.tsx with a
 // searchable, categorised drawer that customers actually use.

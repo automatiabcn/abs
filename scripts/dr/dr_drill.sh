@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# T-062 — Monthly DR drill (staging only).
+# Monthly DR drill (staging only).
 # Snapshots staging Postgres + Qdrant, drops the data, restores from snapshot,
 # runs the smoke suite, records RTO/RPO into benchmarks/results/dr-YYYY-MM.json.
 #

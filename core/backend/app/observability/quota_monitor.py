@@ -133,7 +133,7 @@ def gate(
     Raises QuotaExceeded when (used + requested) >= BLOCK_PCT * limit. The
     caller then falls back to a free provider via the cascade.
 
-    BUG-V3 — emits a `quota.block` audit row on every refusal so the
+    emits a `quota.block` audit row on every refusal so the
     SOC2 chain has the same observability the PROMISE.md vow advertises.
     """
     s = status(ledger=ledger)
@@ -146,7 +146,7 @@ def gate(
             projected,
             s.limit_tokens,
         )
-        # BUG-V3 — emit audit. Imported lazily so this module stays
+        # Emit audit. Imported lazily so this module stays
         # decoupled from the FastAPI / starlette stack at import time.
         try:
             from app.observability.audit import emit_event
@@ -201,7 +201,7 @@ def record(
         logger.info(
             "claude_quota_over_warn month=%s pct=%.1f%%", s.month, s.used_pct * 100
         )
-    # BUG-V5 — push the rolling monthly used-pct as a LangFuse score
+    # Push the rolling monthly used-pct as a LangFuse score
     # so the dashboard time-series matches the PROMISE.md vow
     # ("LangFuse dashboard `claude_tokens_used_pct_month` time-series").
     _push_langfuse_pct(s)

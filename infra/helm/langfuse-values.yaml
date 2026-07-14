@@ -1,4 +1,4 @@
-# T-017 — LangFuse self-host Helm values (production overlay).
+# LangFuse self-host Helm values (production overlay).
 #
 # Use:
 #   helm repo add langfuse https://langfuse.github.io/langfuse-k8s
@@ -10,7 +10,7 @@
 # ClickHouse (traces, ≥16Gi), Redis (cache+queue), MinIO (S3 blobs).
 #
 # ⚠ Cost guard: ClickHouse memory <16Gi → ingest backpressure. Bump
-# `clickhouse.resources.requests.memory` BEFORE production cutover (T-058).
+# `clickhouse.resources.requests.memory` BEFORE production cutover.
 
 global:
   imageRegistry: ""
@@ -127,5 +127,5 @@ networkPolicy:
     - abs-backend
     - abs-rag
 
-# T-046 caveat — when SOC2 audit policy lands, swap MinIO for S3 cold tier
+# When the SOC2 audit policy lands, swap MinIO for an S3 cold tier
 # with 7-year object-lock and a parallel pipeline.

@@ -1,4 +1,4 @@
-"""Sprint Q12 — Pin the new (judge-free) PROMISE.md evidence stack.
+"""Pin the new (judge-free) PROMISE.md evidence stack.
 
 The v1.3 rewrite of `docs/ABS_HYBRID_TIER_PROMISE.md` replaced the
 multi-judge consensus eval with three deterministic promises:

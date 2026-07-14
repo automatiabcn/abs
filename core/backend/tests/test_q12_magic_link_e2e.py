@@ -213,14 +213,14 @@ def test_admin_a_cross_tenant_block_403():
 
 
 # ----------------------------------------------------------------------
-# 6b. Round-6 BUG-12 — magic claim must NOT overwrite bootstrap admin file
+# 6b. magic claim must NOT overwrite bootstrap admin file
 # ----------------------------------------------------------------------
 
 
 def test_magic_claim_does_not_overwrite_bootstrap_admin(
     client: TestClient, tmp_path: Path
 ):
-    """Round-6 BUG-12 — Phase C founder evidence: a fresh /auth/signup +
+    """Phase C founder evidence: a fresh /auth/signup +
     /auth/magic?token=... claim was unconditionally overwriting
     `admin_credentials.json`, wiping out the setup-wizard bootstrap admin
     (lockout + privilege-escalation vector).
@@ -252,7 +252,7 @@ def test_magic_claim_does_not_overwrite_bootstrap_admin(
 
     bootstrap_bytes_after = creds_file.read_bytes()
     assert bootstrap_bytes_after == bootstrap_bytes_before, (
-        "Round-6 BUG-12 REGRESSION: magic claim overwrote bootstrap "
+        "REGRESSION: magic claim overwrote bootstrap "
         "admin_credentials.json (setup_wizard email lost)."
     )
 

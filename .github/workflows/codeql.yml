@@ -1,10 +1,10 @@
-# CodeQL Advanced — Sprint 2G ITEM 6
+# CodeQL Advanced
 #
 # Replaces GitHub's default-setup CodeQL with an advanced workflow that
 # honours .github/codeql/codeql-config.yml. Default-setup ignores the
 # in-repo config file, which is why 9 path-injection alerts (#33, #47,
 # #48, #49, #50, #51, #53, #54, #55) on _safe_path.py + its three call
-# sites + infra/piper/server.py stayed open after Sprint 2E shipped the
+# sites + infra/piper/server.py stayed open after the path-sanitisation
 # sanitizer + the config exclusion. Advanced setup picks the config up.
 #
 # Before this workflow can take over scanning, default-setup must be

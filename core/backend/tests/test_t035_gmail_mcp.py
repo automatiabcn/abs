@@ -1,4 +1,4 @@
-"""T-035 — Gmail MCP wrapper tests."""
+"""Gmail MCP wrapper tests."""
 
 from __future__ import annotations
 
@@ -81,7 +81,7 @@ def test_unsupported_backend_raises() -> None:
 
 
 def test_google_backend_imports_httpx(monkeypatch: pytest.MonkeyPatch) -> None:
-    """T-Q03: backend now uses Gmail REST via httpx. Missing httpx must
+    """Backend now uses Gmail REST via httpx. Missing httpx must
     surface a clean ImportError; valid construction must succeed."""
     import sys
 

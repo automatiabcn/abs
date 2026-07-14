@@ -1,4 +1,4 @@
-"""T-S02.3 — nightly provider drift probe.
+"""Nightly provider drift probe.
 
 Sends the golden request fixture to the live sandbox endpoint, captures the
 response, and writes a fingerprint diff to a JSON artifact. The diff step

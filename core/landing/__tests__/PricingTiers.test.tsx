@@ -1,4 +1,4 @@
-// Sprint 2I UAT-001 — PricingTiers (4-tier checkout surface) tests.
+// PricingTiers (4-tier checkout surface) tests.
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,7 +10,7 @@ vi.mock("@/lib/billing-flag", () => ({
 
 import PricingTiers from "@/components/PricingTiers";
 
-describe("PricingTiers (UAT-001)", () => {
+describe("PricingTiers", () => {
   beforeEach(() => {
     Object.defineProperty(window, "location", {
       configurable: true,

@@ -169,7 +169,7 @@ def test_prod_session_subject_overrides_spoofed_query(client, monkeypatch):
 
 def test_nonprod_demo_subject_path_preserved(client, monkeypatch):
     """env=dev (test harness): the explicit user_subject path still works so
-    the login-UI-less demo + existing T-003 tests keep passing."""
+    the login-UI-less demo + the existing OAuth tests keep passing."""
     monkeypatch.setattr(settings, "env", "dev")
     cid = f"dev-c-{secrets.token_hex(3)}"
     _seed_client(cid)

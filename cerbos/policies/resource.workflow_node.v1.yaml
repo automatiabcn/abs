@@ -1,7 +1,7 @@
 # G3 — Cerbos policy for ABS-specific workflow node executions.
 # Each `abs.*` tool referenced by `app/workflow_v10/builder/templates.py`
 # is mapped to a discrete action. Tenant boundary + suspended-user gates
-# match the T-005/T-012 pattern. Destructive write actions (rag_ingest,
+# match the project and RAG policies. Destructive write actions (rag_ingest,
 # linear_create_ticket, gmail_send) require tenant_admin / project_owner.
 ---
 apiVersion: api.cerbos.dev/v1
@@ -32,7 +32,7 @@ resourcePolicy:
       derivedRoles: ["tenant_member", "tenant_admin"]
 
     # 2) Communication / extraction tools — tenant member is enough, but
-    # the workflow validator (T-S03.3) still requires a HITL ancestor for
+    # the workflow validator still requires a HITL ancestor for
     # destructive writes (gmail_send, linear_create_ticket).
     - actions:
         - "abs.gmail_classify"

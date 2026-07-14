@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-012 — provider key vault + .env persistence is atomic.
+"""Provider key vault + .env persistence is atomic.
 
 Before: an .env IOError after a successful vault write left a half-
 persisted state — UI returned 200 but the next boot reloaded settings

@@ -1,4 +1,4 @@
-"""T-036 — Email classifier tests."""
+"""Email classifier tests."""
 
 from __future__ import annotations
 

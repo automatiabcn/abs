@@ -1,4 +1,4 @@
-# T-017 — LangFuse dev compose overlay (matches Helm topology lite).
+# LangFuse dev compose overlay (matches Helm topology lite).
 # docker compose -f infra/docker-compose.yml \
 #                -f infra/docker-compose.dev.yml \
 #                -f infra/docker-compose.langfuse.yml up -d langfuse-web langfuse-worker
@@ -69,7 +69,7 @@ services:
       LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: minioadmin
       LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://langfuse-minio:9000
       LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
-      # T-Q08 — env-var refs so a leaked .env never lands in the compose file.
+      # env-var refs so a leaked .env never lands in the compose file.
       NEXTAUTH_SECRET: "${NEXTAUTH_SECRET:?set NEXTAUTH_SECRET in .env (dev or prod)}"
       SALT: "${LANGFUSE_SALT:?set LANGFUSE_SALT in .env (dev or prod)}"
       NEXTAUTH_URL: "http://localhost:3000"

@@ -1,10 +1,10 @@
-"""T-003 — OAuth 2.1 server tables (clients, auth codes, refresh tokens).
+"""OAuth 2.1 server tables (clients, auth codes, refresh tokens).
 
 Revision ID: 0001_oauth_baseline
 Revises: 0000_init_baseline
 Create Date: 2026-04-27
 
-Depends on 0000_init_baseline (T-057) which captures the legacy
+Depends on 0000_init_baseline which captures the legacy
 pre-OAuth ABS schema. Existing deployments still on `create_all()`
 should `alembic stamp 0000_init_baseline` first, then upgrade head.
 """

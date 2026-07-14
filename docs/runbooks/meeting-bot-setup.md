@@ -1,10 +1,10 @@
-# ABS Meeting Bot — Self-host Setup (T-F01)
+# ABS Meeting Bot — Self-host Setup
 
-> Free-tier alternative to Recall.ai. Sprint 20.
+> Free-tier alternative to Recall.ai.
 
 ## Why
 
-Sprint 20 free-tier refactor: Recall.ai is now opt-in (`ABS_RECALL_ENABLED=true`). The default flow is self-hosted via meetily (or jitsi) recording + local WhisperX transcription. Cost: $0/month.
+Recall.ai is opt-in (`ABS_RECALL_ENABLED=true`). The default flow is self-hosted via meetily (or jitsi) recording + local WhisperX transcription. Cost: $0/month.
 
 ## Architecture
 
@@ -74,7 +74,7 @@ A cron worker calls `google_calendar_pickup_stub(events)` (or the real Calendar 
 - Use `whisperx` model `medium` or larger for Turkish/Spanish (`small` is acceptable for English).
 - Provide good audio: ≥ 16 kHz mono PCM.
 - Test locally with `app.meeting.upload_manual.wer(reference, hypothesis)` — Levenshtein-based WER.
-- Sprint 20 acceptance: WER < 10 % on a 5-minute Turkish reference clip.
+- Acceptance: WER < 10 % on a 5-minute Turkish reference clip.
 
 ## Operations
 
@@ -88,4 +88,4 @@ If a customer needs Recall.ai (e.g. enterprise SLA): set `ABS_RECALL_ENABLED=tru
 
 ## Sign-off
 
-> Author: ABS engineering · Date: 2026-04-29 · Sprint 20 T-F01.
+> Author: ABS engineering · Date: 2026-04-29.

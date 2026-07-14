@@ -1,4 +1,4 @@
-"""Q12 Founder Tester Round 3 (BUG-7 + BUG-8) — `skip_paid_providers` honor.
+"""Q12 Founder Tester Round 3 — `skip_paid_providers` honor.
 
 Source: founder Playwright quality v2 session (2026-05-05). 8 cascade tasks
 were issued with `skip_paid_providers:true`; all 8 routed to Anthropic
@@ -10,14 +10,14 @@ The Pydantic body schema didn't expose it either.
 
 This test guards three contracts:
 
-* BUG-7  `skip_paid=True`  → no paid provider in routing, even when
+* `skip_paid=True`  → no paid provider in routing, even when
                               `anthropic_api_key` is set.
-* BUG-7  `skip_paid=False` → anthropic stays primary (default behavior
+* `skip_paid=False` → anthropic stays primary (default behavior
                               for ops who supplied a paid key).
-* BUG-7  `skip_paid=True` + only paid keys → 503 "no_free_providers" so
+* `skip_paid=True` + only paid keys → 503 "no_free_providers" so
                               the panel can prompt the operator to
                               configure at least one free provider.
-* BUG-8  Free chain starts with `groq` (Llama 3.3 70B + GPT-OSS 120B
+* Free chain starts with `groq` (Llama 3.3 70B + GPT-OSS 120B
                               best free quality).
 
 We monkeypatch `call_with_cascade` so the route stays hermetic.
@@ -102,7 +102,7 @@ def test_paid_first_chain_unchanged_default():
 
 
 def test_free_first_chain_groq_leads_no_paid():
-    """BUG-8 — free-first chain starts with groq, contains zero paid."""
+    """free-first chain starts with groq, contains zero paid."""
     assert PROVIDER_ORDER_FREE_FIRST[0] == "groq"
     assert not (set(PROVIDER_ORDER_FREE_FIRST) & PAID_PROVIDERS), (
         "free-first chain must not contain paid providers, got "
@@ -143,7 +143,7 @@ def test_get_active_providers_default_free_first_anthropic_last(monkeypatch):
 
 
 def test_cascade_skip_paid_routes_to_free_provider(all_keys_admin, monkeypatch):
-    """BUG-7 — 8 prompts × skip_paid=true, none routed to anthropic.
+    """8 prompts × skip_paid=true, none routed to anthropic.
 
     Mirrors the founder Playwright quality v2 session (8/8 anthropic before
     fix). Post-fix the route must pick a free provider every time.
@@ -229,7 +229,7 @@ def test_cascade_default_routes_to_free_primary_anthropic_last(
 
 
 def test_cascade_skip_paid_no_free_providers_returns_503(paid_only_admin):
-    """BUG-7 — skip_paid=true + only anthropic configured → 503 graceful."""
+    """skip_paid=true + only anthropic configured → 503 graceful."""
     r = paid_only_admin.post(
         "/v1/cascade/run",
         json={"prompt": "no free keys", "skip_paid_providers": True},

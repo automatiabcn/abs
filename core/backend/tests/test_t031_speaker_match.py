@@ -1,4 +1,4 @@
-"""T-031 — Speaker registry tests."""
+"""Speaker registry tests."""
 
 from __future__ import annotations
 

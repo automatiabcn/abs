@@ -1,4 +1,4 @@
-"""T-016 — Usage logger unit + integration tests."""
+"""Usage logger unit + integration tests."""
 
 from __future__ import annotations
 

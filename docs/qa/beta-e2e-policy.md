@@ -1,7 +1,7 @@
-# Real Beta E2E Policy (T-R08)
+# Real Beta E2E Policy
 
 The "real beta E2E" suite proves the journey a beta tenant takes through ABS.
-It is an **acceptance gate** for the Sprint 18 close-out — Sprint 19 cannot
+It is an **acceptance gate** for the beta close-out — the next release cannot
 ship if either side of the suite is red.
 
 ## Scope
@@ -9,8 +9,8 @@ ship if either side of the suite is red.
 | Pillar | Tested | NOT tested |
 |---|---|---|
 | RAG ingest + tenant isolation | ✅ via `MeetingRAGIndexer` + fake store | live Qdrant cluster |
-| Gmail integration (mock backend) | ✅ vault → list → draft → send → label | real Google OAuth round-trip (covered by T-Q03 respx tests) |
-| Recall.ai integration (mock backend) | ✅ schedule + status + cost + tenant tag | real Recall.ai API (covered by T-Q03 respx tests) |
+| Gmail integration (mock backend) | ✅ vault → list → draft → send → label | real Google OAuth round-trip (covered by the respx tests) |
+| Recall.ai integration (mock backend) | ✅ schedule + status + cost + tenant tag | real Recall.ai API (covered by the respx tests) |
 | Action items + ticket linking | ✅ extracted assignees match fixture expectations | linear/jira live API |
 | UI journey through landing app | ✅ home → pricing → showcase → onboarding → beta → connect | screenshot diffing (deferred to a future visual-regression task) |
 | **Stripe / billing** | ❌ **explicitly excluded** | beta tenants opt in without billing |
@@ -27,7 +27,7 @@ ship if either side of the suite is red.
 
 - **CI determinism** — live Recall.ai charges per recording-hour; live Gmail
   needs a Google Cloud project + sandbox user. Both already have respx-mocked
-  unit suites (T-Q03) that exercise the **`_GoogleBackend`** /
+  unit suites that exercise the **`_GoogleBackend`** /
   **`_RecallBackend`** code paths. Re-running them in this E2E gives no new
   coverage; what we *do* gain here is the cross-module flow (vault ↔ MCP ↔
   rate limiter ↔ tenant isolation).
@@ -59,7 +59,7 @@ The Playwright cases run inside `.github/workflows/perf-budget.yml` →
 discovers `__tests__/playwright/*.spec.ts` so `beta-e2e.spec.ts` is picked
 up automatically.
 
-## Acceptance criteria for closing T-R08
+## Acceptance criteria
 
 1. All 5 backend cases pass under `.venv/bin/python -m pytest`.
 2. All 3 Playwright cases pass under `npx playwright test`.

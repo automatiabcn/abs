@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-020 — ABS_MCP_ALLOWED_HOSTS='*' is forbidden in prod."""
+"""ABS_MCP_ALLOWED_HOSTS='*' is forbidden in prod."""
 
 from __future__ import annotations
 

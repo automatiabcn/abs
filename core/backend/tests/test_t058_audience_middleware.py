@@ -1,4 +1,4 @@
-"""T-058 — X-ABS-Audience enforcement middleware tests."""
+"""X-ABS-Audience enforcement middleware tests."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
 // Q12-L17 Round 8 — node:test unit tests for the break-even validator.
-// Covers the formula derivation + edge cases that the Sprint 21 review
+// Covers the formula derivation + edge cases that the review
 // surfaced (zero bytes, cascade RTTs, fast-network fiber neutrality).
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -37,12 +37,12 @@ test("rttBreakEven scales linearly with savedBytes", () => {
   assert.ok(Math.abs(large.downloadMs * 0.5 - small.downloadMs) < 0.5);
 });
 
-test("Sprint 21 evaluation covers all 4 decisions × 3 profiles = 12 rows", () => {
+test("Evaluation covers all 4 decisions × 3 profiles = 12 rows", () => {
   const rows = evaluate(SPRINT_21_DECISIONS);
   assert.equal(rows.length, 12, `unexpected row count ${rows.length}`);
 });
 
-test("Sprint 21 Faz B /panel/quota fiber profile is NEUTRAL (the boundary case)", () => {
+test("/panel/quota on the fiber profile is NEUTRAL (the boundary case)", () => {
   const rows = evaluate(SPRINT_21_DECISIONS).filter(
     (r) => r.faz === "B" && r.route === "/panel/quota" && r.profileKey === "fiber",
   );
@@ -50,10 +50,10 @@ test("Sprint 21 Faz B /panel/quota fiber profile is NEUTRAL (the boundary case)"
   assert.equal(rows[0].verdict, "NEUTRAL", "fiber quota verdict drifted from NEUTRAL");
 });
 
-test("Sprint 21 Faz D non-LCP routes are NON_LCP (ssr:false defer)", () => {
+test("Non-LCP routes are NON_LCP (ssr:false defer)", () => {
   const rows = evaluate(SPRINT_21_DECISIONS).filter((r) => r.faz === "D");
   for (const r of rows) {
-    assert.equal(r.verdict, "NON_LCP", `Faz D verdict drift on ${r.profileKey}`);
+    assert.equal(r.verdict, "NON_LCP", `Verdict drift on ${r.profileKey}`);
   }
 });
 
@@ -62,7 +62,7 @@ test("Slow 3G profile carries 400ms RTT and 3200 kbps bandwidth", () => {
   assert.equal(NETWORK_PROFILES.slow3G.bandwidthKbps, 3200);
 });
 
-test("No SHIP verdict regresses to REVERT under any Sprint 21 row (regression guard)", () => {
+test("No SHIP verdict regresses to REVERT under any row (regression guard)", () => {
   const rows = evaluate(SPRINT_21_DECISIONS);
   const reverts = rows.filter((r) => r.verdict === "REVERT");
   assert.equal(

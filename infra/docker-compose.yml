@@ -2,7 +2,7 @@ services:
   # vault-init — one-shot age master-key bootstrap (see customer compose for
   # full rationale). Generates /vault-key/age.key if missing, then exits.
   # Backend mounts abs-vault-key :ro; this is the only writer. Replaces the
-  # manual infra/scripts/init_vault.sh prerequisite (UAT-012).
+  # manual infra/scripts/init_vault.sh prerequisite.
   vault-init:
     build: ../core/backend
     entrypoint: ["sh", "-c"]

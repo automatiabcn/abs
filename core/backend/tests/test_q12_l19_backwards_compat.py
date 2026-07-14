@@ -11,7 +11,7 @@ Coverage:
   4. Q11 — chat content max_length boundary returns 422, never 500
   5. Q11 — alembic 0008 blacklist migration file exists
   6. Q11 — unauthenticated hook POSTs return 401, never 422
-  7. S21 — Next.js bundle chunk totals stay within +20% buffer of Sprint 21
+  7. Next.js bundle chunk totals stay within a +20% buffer of the
            honest baseline
 """
 
@@ -342,7 +342,7 @@ class TestQ12L24VerifierLeakRegression:
 
 
 class TestSprint21BundleRegression:
-    """Sprint 21 (B+C+D) — bundle chunk totals must not regress more than
+    """Bundle chunk totals must not regress more than
     +20% above the honest baseline. Skips if Next build hasn't run."""
 
     BASELINE_BYTES: dict[str, int] = {
@@ -367,8 +367,7 @@ class TestSprint21BundleRegression:
                     f"{route}: {total / 1024:.1f} KiB > limit {limit / 1024:.1f} KiB"
                 )
         assert not regressions, (
-            "Sprint 21 regression: chunk totals exceeded +20% buffer:\n"
-            + "\n".join(regressions)
+            "Regression: chunk totals exceeded +20% buffer:\n" + "\n".join(regressions)
         )
 
 

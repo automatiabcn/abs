@@ -1,11 +1,11 @@
-"""Sprint 2K — add tenant_id column to 3 audit tables (RLS preparation).
+"""Add tenant_id column to 3 audit tables (RLS preparation).
 
 Revision ID: 0014_tenant_id_audit_tables
 Revises: 0013_failed_login_attempts
 Create Date: 2026-05-14
 
 Adds a ``tenant_id`` column (NOT NULL, default ``'_unknown'``) plus an
-index on each of the three audit tables that Sprint 2K's RLS layer
+index on each of the three audit tables that the RLS layer
 guards:
 
     - customer_audit_entries

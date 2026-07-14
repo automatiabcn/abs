@@ -1,4 +1,4 @@
-"""T-039 — Weekly status report aggregator tests."""
+"""Weekly status report aggregator tests."""
 
 from __future__ import annotations
 

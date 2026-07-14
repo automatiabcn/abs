@@ -6,12 +6,12 @@
 // budget reflects what an actual fiber/3G pilot will see.
 //
 // Profiles tracked:
-//   - slow3G:     400ms RTT, 400 KB/s down/up  (Sprint 21 honest baseline)
+//   - slow3G:     400ms RTT, 400 KB/s down/up  (the measured baseline)
 //   - lte4g:      100ms RTT, 1.5 MB/s down       (mid-tier KOBİ network)
 //
-// Per-page LCP budget reflects the Sprint 21 honest measurement +
+// Per-page LCP budget reflects the measured value +
 // 20% headroom; Q12-L18-001 throttle fidelity gap is closed when
-// these numbers track Sprint 21 within ±200ms.
+// these numbers track the baseline within ±200ms.
 import { test, expect, Page } from "@playwright/test";
 import * as fs from "node:fs";
 
@@ -53,10 +53,10 @@ const BUDGETS: PageBudget[] = [
   { path: "/",            authed: false, slow3GBudgetMs: 6000,  lte4gBudgetMs: 3500 },
   { path: "/pricing",     authed: false, slow3GBudgetMs: 6000,  lte4gBudgetMs: 3500 },
   { path: "/panel",       authed: true,  slow3GBudgetMs: 4500,  lte4gBudgetMs: 3500 },
-  { path: "/panel/chat",  authed: true,  slow3GBudgetMs: 14000, lte4gBudgetMs: 6000 }, // Sprint 21 honest 11105
-  { path: "/panel/tools", authed: true,  slow3GBudgetMs: 11000, lte4gBudgetMs: 5000 }, // Sprint 21 honest 8660
+  { path: "/panel/chat",  authed: true,  slow3GBudgetMs: 14000, lte4gBudgetMs: 6000 }, // measured 11105
+  { path: "/panel/tools", authed: true,  slow3GBudgetMs: 11000, lte4gBudgetMs: 5000 }, // measured 8660
   { path: "/panel/quota", authed: true,  slow3GBudgetMs: 4500,  lte4gBudgetMs: 3500 },
-  // Q12 R66 — Sprint 22 RSC Phase B targets. Pre-R64/R65 these
+  // RSC split-shell targets. Before the split these
   // routes were "use client" whole-page components that did a
   // post-hydration XHR for the initial slice. Post-split-shell the
   // server prefetches the slice and seeds React Query initialData,

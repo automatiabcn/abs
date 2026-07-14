@@ -1,4 +1,4 @@
-"""T-018 — LangFuse @observe wrapper + Cerbos lifespan pre-warm tests."""
+"""LangFuse @observe wrapper + Cerbos lifespan pre-warm tests."""
 
 from __future__ import annotations
 

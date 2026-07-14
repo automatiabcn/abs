@@ -26,7 +26,7 @@ abs.local {
 		reverse_proxy backend:8000
 	}
 
-	# /api/inngest is mounted on the FastAPI backend (T-002), keep it
+	# /api/inngest is mounted on the FastAPI backend, keep it
 	# server-side so the Inngest dev server can serve discovery requests.
 	@inngest path /api/inngest /api/inngest/*
 	handle @inngest {

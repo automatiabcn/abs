@@ -1,4 +1,4 @@
-# License Detection — Sprint 2G ITEM 4
+# License Detection
 #
 # Original workflow used `licensee detect LICENSE --confidence=90` and
 # expected MATCH_KEY to be `bsl-1.1` or `busl-1.1`. That can never
@@ -77,7 +77,7 @@ jobs:
             echo "::error::LICENSE drift detected ($MISS markers missing)."
             exit 1
           fi
-          # Sanity: full body should be at least 2.5 KB. Sprint 2F
+          # Sanity: the full body should be at least 2.5 KB. An earlier
           # canonical body is ~3.5 KB; anything under 2500 means the
           # body was truncated or replaced with a stub.
           SIZE=$(wc -c < LICENSE)
@@ -87,7 +87,7 @@ jobs:
           fi
           echo "LICENSE: BUSL-1.1 canonical markers present, size=${SIZE}B."
 
-      - name: Verify NOTICE.md attribution block (Sprint 2F)
+      - name: Verify NOTICE.md attribution block
         run: |
           set -euo pipefail
           if [ ! -s NOTICE.md ]; then

@@ -175,7 +175,7 @@ export default function ChatClient() {
     [setInput, send],
   );
 
-  // FAZ B (2026-05-08) — prompt-library drawer state. The drawer mounts
+  // Prompt-library drawer state. The drawer mounts
   // to the right of <main>; toggled from the chat sidebar footer + the
   // empty-state CTA. `lang` reads from localStorage on first paint and
   // defaults to "en" so the bundle is never blocked on hydration.

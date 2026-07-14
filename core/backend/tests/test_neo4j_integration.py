@@ -4,7 +4,7 @@ Live tests are skipped unless ABS_NEO4J_LIVE=1 (CI default = skip).
 The destructive-guard test runs without Neo4j — FastAPI rejects before
 the client is touched.
 
-BUG-29 — graph routes flipped from `current_admin` (cookie-only dict) to
+graph routes flipped from `current_admin` (cookie-only dict) to
 `get_admin_or_bearer_auth_context` (AuthContext with tenant_id). The
 fixture now overrides the new dep so the test fleet keeps passing without
 booting an actual Neo4j.

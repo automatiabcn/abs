@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# T-062 — Postgres logical backup for ABS DR.
+# Postgres logical backup for ABS DR.
 # Targets RPO < 15 min (this script runs every 10 min via CronJob; WAL streaming
 # handles the gap continuously).
 set -euo pipefail

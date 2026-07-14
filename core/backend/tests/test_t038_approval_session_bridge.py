@@ -1,4 +1,4 @@
-"""T-038 — HITL approval + panel session → OAuth principal bridge tests."""
+"""HITL approval + panel session → OAuth principal bridge tests."""
 
 from __future__ import annotations
 

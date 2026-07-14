@@ -1,4 +1,4 @@
-"""T-003 — PKCE + JWKS unit tests."""
+"""PKCE + JWKS unit tests."""
 
 from __future__ import annotations
 

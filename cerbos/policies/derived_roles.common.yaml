@@ -1,4 +1,4 @@
-# T-004 — Common derived roles, evaluated against principal+resource attrs.
+# Common derived roles, evaluated against principal+resource attrs.
 # A user is considered an `owner` of a project iff their principal scope
 # matches the resource's tenant_id, and they hold the `member` base role.
 ---

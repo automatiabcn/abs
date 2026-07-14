@@ -1,4 +1,4 @@
-"""T-F02 — Coqui XTTS-v2 + Piper free-tier TTS backends."""
+"""Coqui XTTS-v2 + Piper free-tier TTS backends."""
 
 from __future__ import annotations
 

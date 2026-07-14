@@ -1,4 +1,4 @@
-# T-R07 — docs.automatiabcn.com build + deploy with mike versioning + Algolia.
+# docs.automatiabcn.com build + deploy with mike versioning + Algolia.
 # Security: every interpolation routes through `env:` blocks. Sources used:
 # secrets.ALGOLIA_APP_ID, secrets.ALGOLIA_SEARCH_KEY, inputs.version (a
 # workflow_dispatch input with a default value), github.event_name. None are
@@ -48,9 +48,9 @@ jobs:
         run: pip install -e .
       - name: Install docs deps
         run: |
-          # Sprint 2G ITEM 3 — dropped `mkdocs-algolia-docsearch>=0.4`:
+          # Dropped `mkdocs-algolia-docsearch>=0.4`:
           # the PyPI package never existed, so `pip install` failed on
-          # every docs.yml run since T-R07 (Sprint 18). The matching
+          # every docs.yml run since the docs site landed. The matching
           # `algolia_docsearch:` plugin entry has been removed from
           # mkdocs.yml. MkDocs Material's built-in search covers site
           # search; Algolia DocSearch can be re-introduced later as a
@@ -65,7 +65,7 @@ jobs:
       - name: Generate static api-reference.md
         run: bash scripts/build_docs.sh
       - name: Resolve mike version label
-        # Sprint 2N.2 closeout: derive MIKE_VERSION from git ref so the
+        # Derive MIKE_VERSION from the git ref so the
         # version label never collides with the `latest` alias. Pre-fix
         # the workflow defaulted MIKE_VERSION to "latest", which made
         # `mike deploy --update-aliases latest latest` try to deploy a

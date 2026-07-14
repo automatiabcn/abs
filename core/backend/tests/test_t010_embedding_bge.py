@@ -1,4 +1,4 @@
-"""T-010 — BGE-M3 embedding service unit tests (mock backend)."""
+"""BGE-M3 embedding service unit tests (mock backend)."""
 
 from __future__ import annotations
 

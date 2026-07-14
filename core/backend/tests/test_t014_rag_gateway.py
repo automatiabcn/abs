@@ -1,4 +1,4 @@
-"""T-014 — Gateway RAG proxy / rerank integration tests.
+"""Gateway RAG proxy / rerank integration tests.
 
 Verifies the JWT → Cerbos → embed → Qdrant → rerank stack and the routing
 overhead acceptance criterion (p95 < 10ms beyond the inner work).

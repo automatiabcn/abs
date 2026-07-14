@@ -159,7 +159,7 @@ def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
             f"got {prov['missing']}"
         )
 
-    # /v1/cascade/run with mock off — Founder Tester Round 2 (BUG-4) wired
+    # /v1/cascade/run with mock off — Founder Tester Round 2 wired
     # the live cascade through `call_with_cascade`. Without real provider
     # keys the orchestrator raises ProviderError → 502 all_providers_failed.
     # If the chain happens to be entirely empty (config drift) the gate

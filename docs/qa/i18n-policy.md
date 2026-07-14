@@ -51,7 +51,7 @@ Tailwind 3.4 ships logical-property utilities via `ms-*`, `me-*`, `ps-*`, `pe-*`
 
 ### Audit cadence
 
-- Every Sprint 19+ component review checks new components for physical-property misuse.
+- Every component review checks new components for physical-property misuse.
 - A future T-R0X "RTL flip" task will run `dir="rtl"` regression visual tests against the existing surfaces.
 
 ## Copy-drift detection
@@ -59,7 +59,7 @@ Tailwind 3.4 ships logical-property utilities via `ms-*`, `me-*`, `ps-*`, `pe-*`
 Outside the parity guard, content drift (an EN string updated without TR/ES catching up) requires a soft signal. Recommend:
 
 1. CI step running `mcp__abs__qual_translate` on a sample of changed keys; raise a PR comment if the round-trip back-translation diverges by > 30% Levenshtein distance.
-2. Flag in the Sprint 19 backlog as "i18n drift sentry."
+2. Flag it as "i18n drift sentry."
 
 ## Locale switch UX
 

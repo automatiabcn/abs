@@ -1,4 +1,4 @@
-# T-059 — k6 Load Tests
+# k6 Load Tests
 
 Three scenarios in one script: smoke (1 VU / 30s), constant 100 RPS for 5 min, and a 1000-concurrent ramp.
 The script runs against staging — never production.

@@ -49,14 +49,14 @@ def test_stripe_check_fails_without_env(monkeypatch):
     assert "ABS_STRIPE_SECRET_KEY" in (res.get("error") or "")
     assert "fix_hint" in res
     assert res["fix_hint"]
-    # FAZ D — surface the kill-switch escape hatch in the hint so an
+    # Surface the kill-switch escape hatch in the hint so an
     # operator running 6/7 OK can flip the flag instead of being forced
     # into a Stripe signup.
     assert "ABS_BILLING_ENABLED" in res["fix_hint"]
 
 
 def test_stripe_check_passes_when_billing_disabled(monkeypatch):
-    # FAZ D — self-host customers who don't resell ABS flip
+    # self-host customers who don't resell ABS flip
     # ABS_BILLING_ENABLED=false to mirror NEXT_PUBLIC_BILLING_ENABLED.
     # The validator must report OK in that mode so 7/7 doesn't require a
     # Stripe secret just to boot the customer stack.
@@ -70,7 +70,7 @@ def test_stripe_check_passes_when_billing_disabled(monkeypatch):
 
 
 def test_stripe_check_passes_when_key_present(monkeypatch):
-    # FAZ D — explicit positive case: a real Stripe key still returns
+    # Explicit positive case: a real Stripe key still returns
     # OK with no hint, regardless of the kill-switch value.
     mod = _load_script()
     monkeypatch.delenv("ABS_BILLING_ENABLED", raising=False)
