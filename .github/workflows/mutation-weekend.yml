@@ -114,9 +114,9 @@ jobs:
       - name: Run Hypothesis 30K (chat + RAG + workflows × 10K each)
         run: |
           python -m pytest \
-            tests/test_q11_l13_hypothesis_10k.py -m fuzz \
+            tests/test_hypothesis_10k.py -m fuzz \
             --no-header -q || python -m pytest \
-            tests/test_q11_l13_hypothesis_10k.py -m fuzz \
+            tests/test_hypothesis_10k.py -m fuzz \
             --no-header -q
         # Single retry on transient flake (FastAPI client warm-up
         # can be slow on a cold runner). The 2nd run is the

@@ -202,8 +202,8 @@ jobs:
         # isolation test reads exactly like a passing one in the summary line.
         run: |
           set -o pipefail
-          pytest -q tests/integration/test_t009_qdrant_isolation.py \
-                    tests/integration/test_t004_cerbos_live.py \
+          pytest -q tests/integration/test_qdrant_isolation.py \
+                    tests/integration/test_cerbos_live.py \
                     -o addopts='' --no-header -rs 2>&1 | tee out.txt
           if grep -qE '[0-9]+ skipped' out.txt; then
             echo "::error::an isolation test skipped itself — the property was not checked"

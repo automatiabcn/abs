@@ -7,7 +7,7 @@
 #
 # THIS SCRIPT IS DESTRUCTIVE. It deletes Docker volumes and the
 # SQLite DB. It runs against an ISOLATED compose namespace
-# (`q12-l21-drill`) by default to keep the live `infra-*` and
+# (`abs-drill`) by default to keep the live `infra-*` and
 # `abs-cj-*` stacks (25h customer journey state) untouched.
 #
 # Default behaviour: SKIP with informative message. Set
@@ -18,7 +18,7 @@
 #   ABS_DESTRUCTIVE_DRILL=1 bash scripts/chaos/destructive_drill.sh
 #
 # Optional knobs:
-#   ABS_DRILL_PROJECT (default: q12-l21-drill)
+#   ABS_DRILL_PROJECT (default: abs-drill)
 #   ABS_DRILL_PORT    (default: 28000)
 #   ABS_DRILL_ITERS   (default: 1; brief asks for 3 — set to 3 for full)
 
@@ -39,7 +39,7 @@ Q12-L21 destructive drill is GATED.
     ABS_DESTRUCTIVE_DRILL=1 bash $0
 
   The drill stands up an ISOLATED compose namespace (default
-  '\${ABS_DRILL_PROJECT:-q12-l21-drill}') on port
+  '\${ABS_DRILL_PROJECT:-abs-drill}') on port
   '\${ABS_DRILL_PORT:-28000}' so the live infra-* and abs-cj-*
   stacks (25h customer journey state) remain untouched.
 
@@ -48,13 +48,13 @@ MSG
   exit 0
 fi
 
-PROJECT="${ABS_DRILL_PROJECT:-q12-l21-drill}"
+PROJECT="${ABS_DRILL_PROJECT:-abs-drill}"
 PORT="${ABS_DRILL_PORT:-28000}"
 ITERS="${ABS_DRILL_ITERS:-1}"
 
 if [ "${PROJECT}" = "infra" ] || [ "${PROJECT}" = "abs-cj" ]; then
   echo "ERROR: refusing to run destructive drill against live namespace '${PROJECT}'." >&2
-  echo "Set ABS_DRILL_PROJECT to a sandbox value (default q12-l21-drill)." >&2
+  echo "Set ABS_DRILL_PROJECT to a sandbox value (default abs-drill)." >&2
   exit 3
 fi
 
@@ -95,8 +95,8 @@ run_iteration() {
   echo ""
 
   echo "==> 6. /readyz must respond 200 (or graceful 503 with detail)"
-  curl -sk -o /tmp/q12_l21_readyz.json -w "%{http_code}\n" "http://localhost:${PORT}/readyz" || true
-  cat /tmp/q12_l21_readyz.json 2>/dev/null | head -c 300
+  curl -sk -o /tmp/abs_drill_readyz.json -w "%{http_code}\n" "http://localhost:${PORT}/readyz" || true
+  cat /tmp/abs_drill_readyz.json 2>/dev/null | head -c 300
   echo ""
 
   echo "==> 7. /v1/marketplace/install Content-Length 60MB → 413 (R27 BodySizeLimit live)"

@@ -164,9 +164,9 @@ onboarding incident from the first deployment.
 ### CI / regression
 
 - `tests/test_turkce_byte_exact_blanket.py` (4) — byte-exact Turkish gate.
-- `tests/test_2n_customer_compose_postgres.py` (8) — compose schema + alembic
+- `tests/test_customer_compose_postgres.py` (8) — compose schema + alembic
   boot gate.
-- `tests/test_2n_customer_pkg_mount_audit.py` (7) — mount completeness.
+- `tests/test_customer_pkg_mount_audit.py` (7) — mount completeness.
 - Backend pytest baseline preserved (2143 + the new tests).
 
 ## 1.0.0 (2026-05-11) — First production release · BUSL-1.1
