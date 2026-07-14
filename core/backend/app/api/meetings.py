@@ -30,6 +30,7 @@ from app.config import settings
 from app.db.models import Meeting, MeetingSegment
 from app.db.session import get_engine
 from app.meeting.quality import audio_fingerprint, speech_verdict
+from app.observability.audit import emit_event
 from app.services import feature_usage as feature_usage_service
 from app.services.transcribe import (
     WhisperXUnavailableError,
@@ -490,6 +491,90 @@ async def upload_meeting(
     # write would have reported `indexed: false` on every successful upload —
     # the mirror image of the bug this replaced.
     return _serialize(meeting_row, segments)
+
+
+@router.delete("/{meeting_id}")
+async def delete_meeting(
+    meeting_id: int, admin: dict = Depends(current_admin)
+) -> Dict[str, Any]:
+    """Delete a recording: the transcript, the segments, and the chunks.
+
+    There was no way to do this. A person could upload a recording of a private
+    conversation — the wrong file, the wrong meeting, a client who has since asked
+    to be forgotten — and the product would transcribe it, index it, and answer
+    questions out of it forever. An uploaded document can be deleted
+    (`/v1/rag/documents/{doc_id}`); the recording of an actual conversation could
+    not, which is the wrong way round.
+
+    Everything, or it does not count: the chunks go first, because a transcript
+    the search index has outlived is a transcript that still answers questions.
+    (The audio itself is never persisted — it is transcribed from a temp file that
+    is unlinked in a `finally`.)
+    """
+    tenant = _admin_tenant(admin)
+    with Session(get_engine()) as db:
+        meeting = db.get(Meeting, meeting_id)
+        if meeting is None or meeting.tenant_slug != tenant:
+            raise HTTPException(404, "meeting_not_found")
+        doc_ids = {_doc_id(meeting), _legacy_doc_id(meeting)}
+        filename = meeting.filename
+
+    from app.rag import qdrant_client as qc
+
+    removed = 0
+    for doc_id in doc_ids:
+        try:
+            removed += qc.delete_document(
+                collection=settings.qdrant_default_collection,
+                tenant_id=tenant,
+                doc_id=doc_id,
+            )
+        except Exception as exc:  # noqa: BLE001
+            # The one failure that must not be quiet. If the chunks survive, the
+            # meeting is still answerable, and telling the operator it is gone
+            # would be the most damaging thing this endpoint could do.
+            logger.error(
+                "meeting_delete_chunks_failed meeting=%s doc=%s err=%s",
+                meeting_id,
+                doc_id,
+                exc,
+            )
+            raise HTTPException(
+                503,
+                "the recording is still in the knowledge base and was not deleted — "
+                "the vector store did not answer. Nothing has been removed.",
+            ) from exc
+
+    with Session(get_engine()) as db:
+        for seg in db.execute(
+            select(MeetingSegment).where(MeetingSegment.meeting_id == meeting_id)
+        ).scalars():
+            db.delete(seg)
+        row = db.get(Meeting, meeting_id)
+        if row is not None:
+            db.delete(row)
+        db.commit()
+
+    # A recording of a conversation was destroyed on this server. Who, and when,
+    # is a question that gets asked on a bad day and needs an answer.
+    emit_event(
+        None,
+        action="meeting.delete",
+        outcome="success",
+        resource_type="meeting",
+        resource_id=str(meeting_id),
+        user_id=str(admin.get("sub") or ""),
+        tenant_id=tenant,
+        chunks_removed=removed,
+    )
+    logger.info(
+        "meeting_deleted meeting=%s file=%s chunks=%d by=%s",
+        meeting_id,
+        filename,
+        removed,
+        admin.get("sub"),
+    )
+    return {"deleted": True, "id": meeting_id, "chunks_removed": removed}
 
 
 @router.get("/{meeting_id}")
