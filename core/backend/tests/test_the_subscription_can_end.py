@@ -234,3 +234,38 @@ def test_a_live_subscription_gets_the_seats_it_pays_for(signing, monkeypatch) ->
     assert 30 <= (payload["exp"] - time.time()) / 86400 <= 40, (
         "a monthly subscriber was handed a key that outlives their subscription"
     )
+
+
+def test_a_failing_renewal_is_not_a_silent_one(signing, monkeypatch) -> None:
+    """The failure that would cost us a paying customer without anyone noticing.
+
+    A renewal that quietly fails looks exactly like one that quietly works — until
+    the morning the key runs out and the server stops for a reason nobody was
+    warned about. Every attempt is recorded, and the licence page reports it while
+    there are still days left to act.
+    """
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    signing.license_key = _key(days=2)
+
+    async def _boom(self, url, **kwargs):  # noqa: ANN001
+        raise httpx.ConnectError("nothing is listening")
+
+    monkeypatch.setattr(httpx.AsyncClient, "post", _boom)
+
+    import asyncio
+
+    asyncio.run(renewal.renew_if_due())
+
+    last = renewal.last_attempt()
+    assert last["ok"] is False
+    assert "could not reach" in last["error"]
+
+    with TestClient(app) as client:
+        info = client.get("/v1/license/info").json()
+
+    assert info["renewal"]["last_attempt_ok"] is False
+    assert info["renewal"]["days_left"] <= 2
+    assert info["renewal"]["last_error"]
