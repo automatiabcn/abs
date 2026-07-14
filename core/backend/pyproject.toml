@@ -75,7 +75,7 @@ include = ["app*"]
 # readable. The test computes REPO_ROOT before it can import from the app.
 "app/main.py" = ["E402"]
 "app/api/setup.py" = ["E402"]
-"tests/test_029_gdpr_account.py" = ["E402"]
+"tests/test_gdpr_account.py" = ["E402"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
