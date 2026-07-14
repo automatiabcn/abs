@@ -109,19 +109,19 @@ export default function ConnectorMarketplacePage() {
                       <div className="flex flex-wrap items-center gap-1.5 text-sm font-semibold">
                         {c.name}
                         {c.local_priority && <span className="rounded-full border border-sky-500/40 px-1.5 text-[9px] text-sky-400">local</span>}
-                        {c.has_adapter && <span className="rounded-full border border-emerald-500/40 px-1.5 text-[9px] text-emerald-300">live</span>}
+                        {c.has_adapter && <span className="rounded-full border border-emerald-500/40 px-1.5 text-[9px] text-emerald-700 dark:text-emerald-300">live</span>}
                       </div>
                       <div className="font-mono text-[10px] text-muted-foreground">{c.kind} · {c.note}</div>
                       {c.status === "connected" && c.last_sync_count > 0 && (
-                        <div className="mt-1 text-[10px] text-emerald-300/80">{c.last_sync_count} records synced</div>
+                        <div className="mt-1 text-[10px] text-emerald-700 dark:text-emerald-300/80">{c.last_sync_count} records synced</div>
                       )}
-                      {c.last_error && <div className="mt-1 text-[10px] text-rose-300/80">{c.last_error}</div>}
+                      {c.last_error && <div className="mt-1 text-[10px] text-rose-700 dark:text-rose-300/80">{c.last_error}</div>}
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1">
                       {c.status === "connected" ? (
                         <>
                           {c.has_adapter && c.auth_kind !== "file" && (
-                            <button onClick={() => syncNow(c)} disabled={busy} className="rounded-full border px-2.5 py-0.5 text-[10px] text-sky-300">Sync</button>
+                            <button onClick={() => syncNow(c)} disabled={busy} className="rounded-full border px-2.5 py-0.5 text-[10px] text-sky-700 dark:text-sky-300">Sync</button>
                           )}
                           <button onClick={() => disconnect(c)} className="rounded-full border border-emerald-500/40 px-2.5 py-0.5 text-[10px] text-emerald-400">Disconnect</button>
                         </>

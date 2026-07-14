@@ -165,7 +165,7 @@ function GeneralTab() {
         />
       </FormRow>
       <FormRow label="HTTPS">
-        <Badge variant="outline" className="border-emerald-500/40 text-emerald-300">
+        <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300">
           {sslMode === "acme"
             ? "Certificate issued automatically (Let's Encrypt)"
             : "Self-signed certificate"}
@@ -483,7 +483,7 @@ function ProvidersTab() {
               className={cn(
                 "text-[10px]",
                 p.configured
-                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                   : "border-amber-500/40 text-amber-200",
               )}
             >
@@ -699,7 +699,7 @@ function SecurityTab() {
         <Badge variant="outline">not yet</Badge>
       </FormRow>
       <FormRow label="Token audience check" hint="A token issued for another server is refused">
-        <Badge variant="outline" className="border-emerald-500/40 text-emerald-300">
+        <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300">
           on
         </Badge>
       </FormRow>

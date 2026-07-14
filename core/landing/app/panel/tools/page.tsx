@@ -64,17 +64,22 @@ interface ToolsResponse {
   tools: ToolItem[];
 }
 
+// Every one of these was written for a dark panel — a 300-weight text on a 15%
+// tint of the same hue. The product's default theme is light ("a light-first
+// control surface", tokens.css), and on it they measured 1.5:1: the category of a
+// tool was, in practice, not legible. Each tone now carries its own light value
+// and keeps the dark one.
 const CATEGORY_TONE: Record<string, string> = {
-  provider: "bg-indigo-500/15 text-indigo-300 border-indigo-500/30",
-  quality: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  judge: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  rag: "bg-violet-500/15 text-violet-300 border-violet-500/30",
-  workflow: "bg-blue-500/15 text-blue-300 border-blue-500/30",
-  fullstack: "bg-pink-500/15 text-pink-300 border-pink-500/30",
-  research: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
-  system: "bg-zinc-500/15 text-zinc-300 border-zinc-500/30",
-  admin: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  vault: "bg-orange-500/15 text-orange-300 border-orange-500/30",
+  provider: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30",
+  quality: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+  judge: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
+  rag: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30",
+  workflow: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30",
+  fullstack: "bg-pink-500/15 text-pink-700 dark:text-pink-300 border-pink-500/30",
+  research: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30",
+  system: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300 border-zinc-500/30",
+  admin: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30",
+  vault: "bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30",
 };
 
 function CategoryBadge({ category }: { category: string }) {
