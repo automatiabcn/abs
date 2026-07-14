@@ -123,6 +123,15 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/admin/cascade", destination: "/admin/providers", permanent: true },
+      // The sign-in page is /login, and every other spelling of it is a guess a
+      // customer actually makes from the address bar. Without these, /admin/login
+      // fell to the auth middleware, which sent them to /login?next=/admin/login —
+      // so signing in successfully landed them on a page that does not exist.
+      { source: "/admin/login", destination: "/login?next=/panel/chat", permanent: false },
+      { source: "/panel/login", destination: "/login?next=/panel/chat", permanent: false },
+      { source: "/signin", destination: "/login", permanent: false },
+      { source: "/sign-in", destination: "/login", permanent: false },
+      { source: "/sign-up", destination: "/signup", permanent: false },
     ];
   },
   async headers() {

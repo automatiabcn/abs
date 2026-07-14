@@ -157,6 +157,17 @@ export default function Header() {
             </Link>
           ))}
           <ThemeToggle />
+          {/* The site had no way in. "Manage" opens the Stripe billing portal —
+              it is not a sign-in — so a customer who owns this server had to
+              guess the URL, and the obvious guesses (/admin/login, /panel/login)
+              are not pages. This is the door. */}
+          <Link
+            href="/login"
+            className="inline-flex min-h-[44px] items-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+            style={{ color: "var(--abs-foreground)" }}
+          >
+            Sign in
+          </Link>
           <ManageModal />
         </nav>
       </div>

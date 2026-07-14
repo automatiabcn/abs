@@ -5,54 +5,83 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// 2D SVG fallback for mobile / tablet / reduced-motion users.
-// Lifted from the original Hero illustration; isometric cube stack in brand colors.
+// What a phone, a reduced-motion setting or a slow connection gets instead of
+// the WebGL scene: the same subject, standing still. Six providers on a ring,
+// the vault in the middle, the spokes they answer along.
+//
+// The illustration it replaces was an isometric cube stack in #1e57ac/#3b82f6 —
+// the retired Automatia blue — and it was `absolute inset-0`, so on the very
+// devices it exists to serve it rendered *behind the headline*. It now sits in
+// the hero's second column like the 3D scene it stands in for, and takes its
+// colour from the brand token instead of hardcoding a palette we no longer ship.
 import type { FC } from "react";
+
+const PROVIDERS = 6;
+const RADIUS = 128;
+const CENTER = 160;
+
+const nodes = Array.from({ length: PROVIDERS }, (_, i) => {
+  const angle = (i / PROVIDERS) * Math.PI * 2 - Math.PI / 2;
+  return {
+    x: CENTER + Math.cos(angle) * RADIUS,
+    y: CENTER + Math.sin(angle) * RADIUS * 0.9,
+  };
+});
+
+// The mark's hexagon, drawn at two scales — the shell and the core it holds.
+function hexPoints(r: number): string {
+  return Array.from({ length: 6 }, (_, i) => {
+    const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+    return `${CENTER + Math.cos(a) * r},${CENTER + Math.sin(a) * r}`;
+  }).join(" ");
+}
 
 const HeroSvgFallback: FC = () => (
   <div
     data-testid="hero-illustration"
-    className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center opacity-60"
+    className="pointer-events-none aspect-square w-full max-w-[520px]"
+    style={{ color: "var(--abs-brand)" }}
   >
     <svg
-      viewBox="0 0 400 360"
+      viewBox="0 0 320 320"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="Self-host AI orchestration illustration"
-      className="h-auto w-full max-w-md"
+      aria-label="Six providers cascading into a self-hosted vault"
+      className="h-full w-full"
+      fill="none"
     >
-      <defs>
-        <linearGradient id="brandTopFb" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#1e57ac" />
-          <stop offset="100%" stopColor="#3b82f6" />
-        </linearGradient>
-        <linearGradient id="brandLeftFb" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1e57ac" />
-          <stop offset="100%" stopColor="#0f3a78" />
-        </linearGradient>
-        <linearGradient id="brandRightFb" x1="1" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#3b82f6" />
-          <stop offset="100%" stopColor="#1e3a8a" />
-        </linearGradient>
-      </defs>
-      <g>
-        <polygon points="200,260 320,200 320,320 200,360" fill="url(#brandRightFb)" />
-        <polygon points="80,200 200,260 200,360 80,300" fill="url(#brandLeftFb)" />
-        <polygon points="80,200 200,140 320,200 200,260" fill="url(#brandTopFb)" />
-      </g>
-      <g opacity="0.92" transform="translate(0,-90)">
-        <polygon points="200,260 280,220 280,300 200,340" fill="url(#brandRightFb)" />
-        <polygon points="120,220 200,260 200,340 120,300" fill="url(#brandLeftFb)" />
-        <polygon points="120,220 200,180 280,220 200,260" fill="url(#brandTopFb)" />
-      </g>
-      <g opacity="0.85" transform="translate(0,-180)">
-        <polygon points="200,250 250,225 250,290 200,315" fill="url(#brandRightFb)" />
-        <polygon points="150,225 200,250 200,315 150,290" fill="url(#brandLeftFb)" />
-        <polygon points="150,225 200,200 250,225 200,250" fill="url(#brandTopFb)" />
-      </g>
-      <circle cx="60" cy="80" r="4" fill="#3b82f6" opacity="0.5" />
-      <circle cx="350" cy="60" r="3" fill="#3b82f6" opacity="0.4" />
-      <circle cx="380" cy="270" r="3" fill="#3b82f6" opacity="0.5" />
+      {nodes.map((n, i) => (
+        <line
+          key={`spoke-${i}`}
+          x1={n.x}
+          y1={n.y}
+          x2={CENTER}
+          y2={CENTER}
+          stroke="currentColor"
+          strokeWidth="1"
+          opacity="0.16"
+        />
+      ))}
+
+      <polygon
+        points={hexPoints(70)}
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+        opacity="0.5"
+      />
+      <polygon
+        points={hexPoints(46)}
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        opacity="0.22"
+      />
+      <circle cx={CENTER} cy={CENTER} r="14" fill="currentColor" />
+
+      {nodes.map((n, i) => (
+        <circle key={`node-${i}`} cx={n.x} cy={n.y} r="5.5" fill="currentColor" opacity="0.7" />
+      ))}
     </svg>
   </div>
 );

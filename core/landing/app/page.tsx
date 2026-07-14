@@ -10,14 +10,22 @@ import FAQ from "@/components/FAQ";
 import Features from "@/components/Features";
 import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
-import Quotes from "@/components/Quotes";
+import Install from "@/components/Install";
 import Contact from "@/components/Contact";
 
-const heroTitle = "100+ MCP tools and a 6-provider cascade on your own server — one package, your infrastructure.";
+// The headline was 15 words and set five lines deep at desktop width, which is
+// how it came to be sharing space with the 3D scene. It leads with what the
+// product is now; the counts moved to the fact row under the buttons, where a
+// number is worth more than it is in a sentence.
+const heroTitle = "Your own AI server. Chat with it, and it does the work.";
 
-const heroSubtitle = "Automatia ABS: turn chaos into automation, on your own server. 100+ MCP tools, a 6-provider cascade and quality pipelines. It runs on your own Anthropic Claude key, and your data stays with you.";
+const heroSubtitle =
+  "One package on your infrastructure: chat, 100+ tools, retrieval over your own documents, and a cascade across six providers so an outage at one of them is not an outage for you. Free to run — bring your own keys, or none at all.";
 
-const primaryCta = { text: "Watch the demo", href: "#demo" };
+// The primary button used to say "Watch the demo" and scroll to a box that says
+// "Demo video coming soon." — the site's main call to action, pointing at
+// nothing. It offers the thing that actually exists: the install.
+const primaryCta = { text: "Start free", href: "#install" };
 
 export default function HomePage() {
   return (
@@ -30,7 +38,12 @@ export default function HomePage() {
           secondaryCta={{ text: "Contact", href: "#contact" }}
         />
         <Features />
-        <Quotes />
+        <Install />
+        {/* The testimonials that stood here were invented: three named people,
+            three specific numbers, under the heading "Feedback from our first 5
+            beta testers" — on the public page of a product we sell. Deleted
+            rather than rewritten. It comes back when there is a real quote,
+            given with permission, to put in it. */}
         <Demo />
         <Contact />
         <FAQ />

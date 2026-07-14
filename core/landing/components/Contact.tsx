@@ -5,6 +5,13 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
+// The "Pilot / PoC call" block that stood here offered three engagements —
+// PoC, Pilot, Beta Partner — including "two weeks of custom integration ...
+// with on-site support" and a limited number of beta-partner slots. This is a
+// product you install yourself in fifteen minutes; the block was selling a
+// consulting motion that is not what is on offer.
+//
+// What is left is what is true: an address, and how fast someone answers it.
 import type { FC } from "react";
 
 const Contact: FC = () => (
@@ -18,48 +25,25 @@ const Contact: FC = () => (
         id="contact-title"
         className="text-3xl font-bold tracking-tight sm:text-4xl"
       >
-        Pilot / PoC call
+        Questions before you install?
       </h2>
       <p className="mt-4 text-muted-foreground">
-        Get in touch to try the system in your own environment. We will work out
-        together which option fits you best: pilot, PoC or beta partner.
+        Ask us anything about running ABS on your own infrastructure — which
+        providers to start with, what it needs from a server, how the licence
+        works.
       </p>
-    </div>
 
-    <div className="mx-auto mt-12 max-w-3xl grid gap-6 md:grid-cols-3">
-      <div className="rounded-lg border border-border bg-card p-6">
-        <h3 className="text-base font-semibold">PoC</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Helm chart, documentation and basic support. Install it on your own
-          server, try it, then decide.
+      <div className="mt-10">
+        <a
+          href="mailto:support@automatiabcn.com"
+          className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-semibold text-primary-foreground"
+        >
+          support@automatiabcn.com
+        </a>
+        <p className="mt-3 text-xs text-muted-foreground">
+          We reply within 24 hours.
         </p>
       </div>
-      <div className="rounded-lg border border-border bg-card p-6">
-        <h3 className="text-base font-semibold">Pilot</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Two weeks of custom integration, connected to your own systems, with
-          on-site support.
-        </p>
-      </div>
-      <div className="rounded-lg border border-border bg-card p-6">
-        <h3 className="text-base font-semibold">Beta Partner</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Full access for 30 days as a feedback partner. We take a limited number
-          of partners.
-        </p>
-      </div>
-    </div>
-
-    <div className="mx-auto mt-12 max-w-xl text-center">
-      <a
-        href="mailto:support@automatiabcn.com"
-        className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-semibold text-primary-foreground"
-      >
-        support@automatiabcn.com
-      </a>
-      <p className="mt-3 text-xs text-muted-foreground">
-        We reply within 24 hours.
-      </p>
     </div>
   </section>
 );

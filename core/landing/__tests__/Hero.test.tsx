@@ -34,9 +34,12 @@ describe("Hero (premium 018)", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Alt metin")).toBeInTheDocument();
 
-    // Premium SVG illustration exists (018 — module A)
+    // The static illustration a phone, a reduced-motion setting or a slow link
+    // gets in place of the WebGL scene. It used to be an isometric cube stack in
+    // the retired brand blue, mounted `absolute inset-0` — i.e. behind the
+    // headline, on exactly the devices it exists to serve.
     const svg = screen.getByRole("img", {
-      name: /self-host ai orchestration illustration/i,
+      name: /six providers cascading into a self-hosted vault/i,
     });
     expect(svg.tagName.toLowerCase()).toBe("svg");
 
