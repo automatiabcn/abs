@@ -17,7 +17,8 @@ const I18N = {
     step1_h: "Yönetici Hesabı", step1_help: "Panel girişini bu hesap kullanacak.",
     f_email: "Email", f_password: "Şifre", btn_next: "İleri", btn_back: "Geri",
     step2_h: "Lisans Anahtarı",
-    step2_help: "Email ile aldığınız JWT lisansı yapıştırın. Lisans olmadan demo modu 14 gün aktif kalır.",
+    step2_help: "ABS lisanssız da çalışır. Satın aldıysanız anahtarı yapıştırın; almadıysanız devam edin, ücretsiz katman açık kalır.",
+    free_license_label: "Lisans anahtarım yok — ücretsiz katmanla devam et",
     f_license: "Lisans",
     step3_h: "Domain", f_mode: "Mod", opt_ip: "IP (geliştirme)", opt_domain: "Domain",
     f_domain: "Domain (opsiyonel)", f_ssl: "SSL", opt_internal: "Internal CA", opt_acme: "ACME / Let's Encrypt",
@@ -42,7 +43,8 @@ const I18N = {
     step1_h: "Cuenta de administrador", step1_help: "Esta cuenta iniciará sesión en el panel.",
     f_email: "Correo electrónico", f_password: "Contraseña", btn_next: "Siguiente", btn_back: "Atrás",
     step2_h: "Clave de licencia",
-    step2_help: "Pegue la licencia JWT que recibió por correo electrónico. Sin una licencia, el modo demo permanecerá activo durante 14 días.",
+    step2_help: "ABS funciona sin licencia. Pegue una clave solo si la compró; si no, continúe y el plan gratuito seguirá activo.",
+    free_license_label: "No tengo clave de licencia — continuar con el plan gratuito",
     f_license: "Licencia",
     step3_h: "Dominio", f_mode: "Modo", opt_ip: "IP (desarrollo)", opt_domain: "Dominio",
     f_domain: "Dominio (opcional)", f_ssl: "SSL", opt_internal: "Internal CA", opt_acme: "ACME / Let's Encrypt",
@@ -185,12 +187,31 @@ function initSkipToggle() {
   sync(); // honor checked-by-default on first paint
 }
 
+// Same shape for the license step: a customer without a key is the default case,
+// so the box is checked and the field is out of the way until they ask for it.
+function initLicenseToggle() {
+  const skip = document.getElementById("setup-skip-license");
+  if (!skip) return;
+  const keyInput = document.getElementById("setup-license-key");
+  const keyRow = document.getElementById("setup-license-row");
+  function sync() {
+    const free = skip.checked;
+    if (keyInput) {
+      keyInput.required = !free;
+      if (free) keyInput.value = "";
+    }
+    if (keyRow) keyRow.style.display = free ? "none" : "";
+  }
+  skip.addEventListener("change", sync);
+  sync();
+}
+
 async function loadState() {
   try {
     const r = await fetch("/v1/setup/status");
     const data = await r.json();
     if (data.completed) {
-      window.location.href = "/panel/login";
+      window.location.href = "/admin/login";
       return;
     }
     initLangSwitcher(detectLang(data.lang));
@@ -292,7 +313,7 @@ document.querySelector(".setup-finish").addEventListener("click", async () => {
       data.test_results,
     );
     if (data.completed) {
-      setTimeout(() => (window.location.href = "/panel/login"), 1500);
+      setTimeout(() => (window.location.href = "/admin/login"), 1500);
     }
   } catch (err) {
     showError(err.message);
@@ -301,4 +322,5 @@ document.querySelector(".setup-finish").addEventListener("click", async () => {
 
 captureBase();
 initSkipToggle();
+initLicenseToggle();
 loadState();

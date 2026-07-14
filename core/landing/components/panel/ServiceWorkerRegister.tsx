@@ -22,8 +22,13 @@ export default function ServiceWorkerRegister() {
     if (process.env.NEXT_PUBLIC_DISABLE_SW === "1") return;
 
     const register = () => {
+      // The version travels with the registration so the worker can name its
+      // cache after the release it belongs to. Without it every release shared
+      // one immortal cache called "v1", and an upgraded server kept serving the
+      // panel HTML of the build before it.
+      const version = process.env.NEXT_PUBLIC_ABS_VERSION ?? "1.0.6";
       navigator.serviceWorker
-        .register("/sw.js", { scope: "/" })
+        .register(`/sw.js?v=${encodeURIComponent(version)}`, { scope: "/" })
         .catch(() => {
           // SW registration failures are non-fatal; the app must
           // still work without the cache layer.

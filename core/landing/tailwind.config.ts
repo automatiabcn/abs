@@ -18,7 +18,18 @@ const rgb = (name: string) => `rgb(var(--abs-${name}-rgb) / <alpha-value>)`;
 
 const config: Config = {
   darkMode: "class",
-  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
+  content: [
+    "./app/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    // Tremor ships its layout as Tailwind utility classes inside its own dist,
+    // and Tailwind does not scan node_modules unless told to. Without this line
+    // only the classes that happen to also appear in our source got generated:
+    // the bar column kept its `space-y-1.5` (we use it elsewhere) while the value
+    // column lost its `mb-1.5`, so the two columns stepped 38px and 32px and by
+    // the fifth row a number sat 24px away from the bar it belonged to. Every
+    // Tremor chart in the panel was quietly laid out with half its CSS missing.
+    "./node_modules/@tremor/**/*.{js,ts,jsx,tsx,mjs}",
+  ],
   theme: {
     extend: {
       fontFamily: {

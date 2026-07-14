@@ -3,19 +3,19 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Setup Wizard 6-step state machine + endpoint'leri.
+"""Setup wizard — a 6-step state machine and its endpoints.
 
 State file: <data_dir>/setup_state.json
-Adimlar:
+Steps:
   1) admin     {email, password}
-  2) license   {license_key}
+  2) license   {license_key}  — optional; empty means the free tier
   3) domain    {mode, domain?, ssl_mode}
-  4) anthropic {anthropic_api_key}
-  5) providers {groq_api_key?, gemini_api_key?, ...}
-  6) test      {} → server-side provider ping (mock'lanir)
+  4) anthropic {anthropic_api_key} — optional
+  5) providers {groq_api_key?, gemini_api_key?, ...} — all optional
+  6) test      {} → a server-side ping of every configured provider
 
-Setup tamamlandiktan sonra `setup_state.completed=True`.
-First-run middleware bu flag'i okur ve aksi takdirde /setup'a redirect eder.
+When the wizard finishes, `setup_state.completed=True`. The first-run middleware
+reads that flag and redirects to /setup until it is set.
 """
 
 from __future__ import annotations
@@ -337,7 +337,16 @@ class AdminBody(BaseModel):
 
 
 class LicenseBody(BaseModel):
-    license_key: str = Field(..., min_length=10)
+    """The key is optional, because running ABS does not require one.
+
+    It used to be `Field(..., min_length=10)`, which meant the wizard could not
+    be finished without a license — on a product whose whole pitch is that the
+    free tier is the default and good enough. The screen said "without a license,
+    demo mode stays active for 14 days" directly above a field you could not leave
+    empty. A customer with no key got as far as step 2 and stopped.
+    """
+
+    license_key: Optional[str] = Field(default=None, max_length=4096)
 
 
 class DomainBody(BaseModel):
@@ -529,8 +538,35 @@ async def step_license(body: LicenseBody, request: Request) -> Dict[str, Any]:
     with _state_lock():
         state = read_state()
         _ensure_step(state, 2, request, "license")
+
+        key = (body.license_key or "").strip()
+        if not key:
+            # No key: the free tier. Start the demo clock and move on — this is a
+            # supported way to run the product, not a failure to configure it.
+            from app.licensing.demo import start_demo
+
+            demo = start_demo()
+            state["data"]["license"] = {
+                "mode": "demo",
+                "expires_at": demo.get("expires_at"),
+            }
+            _advance(state, "license")
+            _atomic_write_state(state)
+            emit_event(
+                request,
+                action="setup.step.complete",
+                outcome="success",
+                resource_type="license",
+                detail="free_tier",
+            )
+            return {
+                "ok": True,
+                "current_step": state["current_step"],
+                "tier": "free",
+            }
+
         try:
-            payload = verify_license(body.license_key)
+            payload = verify_license(key)
         except HTTPException as exc:
             emit_event(
                 request,
@@ -544,8 +580,8 @@ async def step_license(body: LicenseBody, request: Request) -> Dict[str, Any]:
                 status_code=400, detail=f"Invalid license: {exc.detail}"
             ) from exc
 
-        settings.license_key = body.license_key
-        _persist_encrypted_secret("license_key", body.license_key)
+        settings.license_key = key
+        _persist_encrypted_secret("license_key", key)
         state["data"]["license"] = {
             "jti": payload.get("jti"),
             "tier": payload.get("tier"),
