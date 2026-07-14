@@ -6,17 +6,16 @@
 """First-run redirect middleware.
 
 Until setup is complete, every request outside the allowlist is redirected to /setup.
-Whitelist:
+Allowlist:
   /healthz
-  /v1/setup/*       (setup wizard API)
-  /setup            (UI sayfasi)
-  /setup/*          (setup assets)
-  /setup/assets/*
-  /panel/assets/*   (logo + CSS gibi static)
+  /v1/setup/*       (the setup wizard API)
+  /setup            (the wizard UI)
+  /setup/*          (its assets)
   /static/*
   /_internal/*
+  /mcp              (so Claude Code can read setup_status before the wizard is done)
 
-Setup tamamlandiktan sonra middleware no-op.
+Once setup is complete the middleware is a no-op.
 """
 
 from __future__ import annotations
@@ -34,7 +33,6 @@ _WHITELIST_PREFIXES = (
     "/healthz",
     "/v1/setup",
     "/setup",
-    "/panel/assets/",
     "/static/",
     "/_internal/",
     "/mcp",  # so Claude Code can read setup_status before the wizard is finished
