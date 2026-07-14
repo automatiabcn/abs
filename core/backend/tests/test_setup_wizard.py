@@ -274,3 +274,43 @@ def test_a_bad_license_key_is_still_refused(isolated_setup, client):
     r = client.post("/v1/setup/step/license", json={"license_key": "not.a.valid.jwt"})
     assert r.status_code == 400
     assert "Invalid license" in r.text
+
+
+def _walk_to_the_test_step(client) -> None:
+    client.post(
+        "/v1/setup/step/admin",
+        json={"email": "dry@run.co", "password": "longSecret123"},
+    )
+    client.post("/v1/setup/step/license", json={})
+    client.post("/v1/setup/step/domain", json={"mode": "ip", "ssl_mode": "internal"})
+    client.post("/v1/setup/step/anthropic", json={"skip_paid_providers": True})
+    client.post("/v1/setup/step/providers", json={})
+
+
+def test_you_can_test_your_keys_without_ending_the_wizard(isolated_setup, client):
+    """Step 6 used to test and finish in one irreversible click.
+
+    `/step/test` sets completed=True, and every earlier step then answers 409 —
+    so the moment a customer learned their Groq key was wrong was the same moment
+    they lost the ability to go back and fix it. The dry run tests and writes
+    nothing; the wizard is still open behind it.
+    """
+    _walk_to_the_test_step(client)
+
+    r = client.post("/v1/setup/test", json={})
+    assert r.status_code == 200, r.text
+    assert "test_results" in r.json()
+
+    status = client.get("/v1/setup/status").json()
+    assert status["completed"] is False
+    assert status["current_step"] == 6
+
+    # ...and going back to fix a key still works, which is the whole point.
+    assert client.post("/v1/setup/step/test", json={}).status_code == 200
+    assert client.get("/v1/setup/status").json()["completed"] is True
+
+
+def test_the_dry_run_refuses_once_setup_is_done(isolated_setup, client):
+    _walk_to_the_test_step(client)
+    client.post("/v1/setup/step/test", json={})
+    assert client.post("/v1/setup/test", json={}).status_code == 409

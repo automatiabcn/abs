@@ -540,10 +540,32 @@ app.include_router(me_consent_router.router)
 app.include_router(me_data_export_router.router)
 app.include_router(panel_router.router)
 
+class RevalidatedStaticFiles(StaticFiles):
+    """StaticFiles that makes the browser check before reusing what it has.
+
+    StaticFiles sends an ETag and a Last-Modified but no Cache-Control, and a
+    response with neither `max-age` nor `no-cache` is one the browser is free to
+    hold on to *without asking* — the heuristic is a fraction of the file's age,
+    so the longer a stylesheet has been unchanged the longer a stale copy is
+    considered fresh. On an upgraded install that means the customer's first
+    screen can render the previous release's wizard: new markup, old CSS. Caught
+    exactly that way, in a browser, after this file changed.
+
+    `no-cache` does not mean "do not store" — the copy is kept, and the ETag
+    still turns the usual request into a 304. It only means the browser may not
+    serve it without checking, which for two files of ~20KB is free.
+    """
+
+    def file_response(self, *args, **kwargs):  # type: ignore[override]
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 # Setup wizard static assets
 app.mount(
     "/setup/assets",
-    StaticFiles(directory=str(SETUP_STATIC_DIR / "assets")),
+    RevalidatedStaticFiles(directory=str(SETUP_STATIC_DIR / "assets")),
     name="setup-assets",
 )
 
@@ -559,7 +581,14 @@ app.mount(
 @app.get("/setup", include_in_schema=False)
 async def setup_index():
     """Setup wizard UI (vanilla HTML/JS)."""
-    return FileResponse(SETUP_STATIC_DIR / "index.html", media_type="text/html")
+    return FileResponse(
+        SETUP_STATIC_DIR / "index.html",
+        media_type="text/html",
+        # Same reason as RevalidatedStaticFiles: a held-back document naming the
+        # previous release's markup is how an upgraded install shows a customer
+        # a wizard we no longer ship.
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 # Brief 4 R4 — vanilla 032 admin route deleted; /admin/* is now Next.js
