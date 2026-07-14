@@ -146,22 +146,28 @@ async function revokeInvite(inviteId: string): Promise<void> {
   }
 }
 
+// Written for a dark panel, and the default theme is light: on it, a person's
+// role measured 1.5:1 against its own chip — which is to say, who is an admin was
+// the one thing this page could not tell you at a glance.
 const ROLE_LABELS: Record<string, { label: string; tone: string }> = {
-  admin: { label: "Admin", tone: "bg-rose-500/15 text-rose-300 border-rose-500/30" },
+  admin: {
+    label: "Admin",
+    tone: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30",
+  },
   operator: {
     label: "Operator",
-    tone: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+    tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
   },
   viewer: {
     label: "Viewer",
-    tone: "bg-zinc-500/15 text-zinc-300 border-zinc-500/30",
+    tone: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300 border-zinc-500/30",
   },
 };
 
 const STATUS_TONE: Record<UserRow["status"], string> = {
-  active: "border-emerald-500/40 text-emerald-300",
-  pending: "border-amber-500/40 text-amber-300",
-  revoked: "border-rose-500/40 text-rose-300",
+  active: "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+  pending: "border-amber-500/40 text-amber-700 dark:text-amber-300",
+  revoked: "border-rose-500/40 text-rose-700 dark:text-rose-300",
 };
 
 const STATUS_LABEL: Record<UserRow["status"], string> = {
@@ -430,7 +436,7 @@ export default function UsersClient({
                       data-test="invite-revoke"
                       variant="outline"
                       size="sm"
-                      className="h-7 text-[11px] text-rose-300"
+                      className="h-7 text-[11px] text-rose-700 dark:text-rose-300"
                       onClick={() => void handleRevoke(inv.invite_id)}
                     >
                       <XCircle className="mr-1 h-3 w-3" />
@@ -468,7 +474,7 @@ export default function UsersClient({
               data-test="users-load-error"
               className="rounded-md border border-amber-500/40 bg-amber-500/5 p-4 text-sm"
             >
-              <p className="font-medium text-amber-300">
+              <p className="font-medium text-amber-700 dark:text-amber-300">
                 The list of users could not be read
               </p>
               <p className="mt-1 text-muted-foreground">
@@ -557,7 +563,7 @@ export default function UsersClient({
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-7 text-[11px] text-emerald-300"
+                              className="h-7 text-[11px] text-emerald-700 dark:text-emerald-300"
                               disabled={busyUserId === u.id}
                               data-test="user-activate"
                               onClick={() =>
@@ -570,7 +576,7 @@ export default function UsersClient({
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-7 text-[11px] text-rose-300"
+                              className="h-7 text-[11px] text-rose-700 dark:text-rose-300"
                               disabled={busyUserId === u.id}
                               data-test="user-revoke"
                               onClick={() =>

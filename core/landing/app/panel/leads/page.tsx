@@ -27,8 +27,8 @@ type Detail = Lead & {
 };
 
 const INTENT: Record<string, string> = {
-  high: "border-rose-500/40 text-rose-300", medium: "border-amber-500/40 text-amber-300",
-  watching: "border-sky-500/40 text-sky-300",
+  high: "border-rose-500/40 text-rose-700 dark:text-rose-300", medium: "border-amber-500/40 text-amber-700 dark:text-amber-300",
+  watching: "border-sky-500/40 text-sky-700 dark:text-sky-300",
 };
 const EV_LABEL: Record<string, string> = { rag: "RAG", graph: "GRAPH", signal: "SIGNAL" };
 const ROLE_LABEL: Record<string, string> = {
@@ -210,7 +210,7 @@ export default function LeadIntelligencePage() {
               <div className="mb-2 text-sm font-semibold">◈ Evidence (top 3)</div>
               <div className="space-y-1.5 text-[12px]">
                 {detail.evidence.slice(0, 3).map((e, i) => (
-                  <div key={i} className="flex gap-2"><span className="font-mono text-[10px] text-teal-300">{EV_LABEL[e.kind] ?? e.kind}</span><span className="text-muted-foreground">{e.ref}</span></div>
+                  <div key={i} className="flex gap-2"><span className="font-mono text-[10px] text-teal-700 dark:text-teal-300">{EV_LABEL[e.kind] ?? e.kind}</span><span className="text-muted-foreground">{e.ref}</span></div>
                 ))}
                 {detail.evidence.length === 0 && <div className="text-muted-foreground">No evidence yet — score this lead.</div>}
               </div>

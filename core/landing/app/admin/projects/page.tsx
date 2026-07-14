@@ -282,7 +282,7 @@ export default function ProjectsPage() {
                     type="button"
                     onClick={() => void archiveProject(p.slug)}
                     aria-label={`Archive ${p.slug}`}
-                    className="rounded p-1 text-muted-foreground hover:text-rose-300"
+                    className="rounded p-1 text-muted-foreground hover:text-rose-700 dark:text-rose-300"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -332,7 +332,7 @@ export default function ProjectsPage() {
                     <button
                       type="button"
                       onClick={() => void removeMember(m.user_subject)}
-                      className="rounded p-1 text-muted-foreground hover:text-rose-300"
+                      className="rounded p-1 text-muted-foreground hover:text-rose-700 dark:text-rose-300"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
@@ -407,7 +407,7 @@ export default function ProjectsPage() {
                 <button
                   type="button"
                   onClick={() => void deleteKey(k)}
-                  className="rounded p-1 text-muted-foreground hover:text-rose-300"
+                  className="rounded p-1 text-muted-foreground hover:text-rose-700 dark:text-rose-300"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

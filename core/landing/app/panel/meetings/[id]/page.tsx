@@ -74,7 +74,7 @@ export default function MeetingDetailPage() {
 
   if (!data) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-12 text-zinc-500">
+      <main className="mx-auto max-w-3xl px-6 py-12 text-muted-foreground">
         Loading…
       </main>
     );
@@ -86,36 +86,36 @@ export default function MeetingDetailPage() {
   };
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12 text-zinc-900 dark:text-zinc-100">
+    <main className="mx-auto max-w-3xl px-6 py-12 text-foreground">
       <Link
         href="/panel/meetings"
-        className="text-xs text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+        className="text-xs text-muted-foreground hover:text-foreground"
       >
         ← Meetings
       </Link>
       <h1 className="mt-2 text-2xl font-semibold">{data.filename}</h1>
       <dl className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
         <div>
-          <dt className="text-xs uppercase text-zinc-500">Length</dt>
+          <dt className="text-xs uppercase text-muted-foreground">Length</dt>
           <dd className="font-mono">{fmtTime(data.duration_sec)}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase text-zinc-500">Speakers</dt>
+          <dt className="text-xs uppercase text-muted-foreground">Speakers</dt>
           <dd className="font-mono">{data.speaker_count}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase text-zinc-500">Status</dt>
+          <dt className="text-xs uppercase text-muted-foreground">Status</dt>
           <dd className="font-mono">{data.status}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase text-zinc-500">Uploaded</dt>
+          <dt className="text-xs uppercase text-muted-foreground">Uploaded</dt>
           <dd className="font-mono">{new Date(data.created_at).toLocaleString()}</dd>
         </div>
       </dl>
 
       {data.summary && (
-        <section className="mt-6 rounded border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        <section className="mt-6 rounded border border-border bg-muted/40 p-3 text-sm">
+          <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Summary
           </h2>
           <p>{data.summary}</p>
@@ -132,34 +132,34 @@ export default function MeetingDetailPage() {
       )}
 
       <section className="mt-6">
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Speakers
         </h2>
         <ul className="flex flex-wrap gap-2">
           {data.speakers.map((sp) => (
             <li
               key={sp.id}
-              className="flex items-center gap-2 rounded border border-zinc-200 px-2 py-1 text-xs dark:border-zinc-800"
+              className="flex items-center gap-2 rounded border border-border px-2 py-1 text-xs"
             >
               <span
                 aria-hidden="true"
                 className="inline-block h-2 w-2 rounded-full"
                 style={{ background: speakerColor(sp.id) }}
               />
-              {sp.name} <span className="font-mono text-zinc-500">({sp.id})</span>
+              {sp.name} <span className="font-mono text-muted-foreground">({sp.id})</span>
             </li>
           ))}
         </ul>
       </section>
 
       <section className="mt-6">
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Transcript
         </h2>
         <ol className="space-y-2 text-sm">
           {data.segments.map((seg, idx) => (
             <li key={idx} className="flex items-start gap-3">
-              <span className="font-mono text-xs text-zinc-500">
+              <span className="font-mono text-xs text-muted-foreground">
                 {fmtTime(seg.start)}
               </span>
               <span

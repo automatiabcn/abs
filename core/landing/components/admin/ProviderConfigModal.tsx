@@ -189,14 +189,14 @@ export default function ProviderConfigModal({
               {provider.configured ? (
                 <Badge
                   variant="outline"
-                  className="border-emerald-500/40 text-emerald-300"
+                  className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
                 >
                   Configured
                 </Badge>
               ) : (
                 <Badge
                   variant="outline"
-                  className="border-rose-500/40 text-rose-300"
+                  className="border-rose-500/40 text-rose-700 dark:text-rose-300"
                 >
                   Missing
                 </Badge>

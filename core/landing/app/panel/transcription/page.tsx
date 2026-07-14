@@ -220,11 +220,11 @@ export default function TranscriptionPanel() {
   return (
     <main
       data-page="panel-transcription"
-      className="mx-auto max-w-3xl px-6 py-12 text-zinc-900 dark:text-zinc-100"
+      className="mx-auto max-w-3xl px-6 py-12 text-foreground"
     >
       <header className="mb-6">
         <h1 className="text-2xl font-semibold">Live Transcription</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-muted-foreground">
           Turn on your microphone and the transcript builds as you speak, with
           each speaker labelled. Play any line back in the voice you choose.
         </p>
@@ -253,10 +253,10 @@ export default function TranscriptionPanel() {
           aria-live="polite"
           className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${
             recording
-              ? "border-rose-500/40 bg-rose-500/10 text-rose-300"
+              ? "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300"
               : error
-                ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
-                : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
           }`}
         >
           <span
@@ -270,12 +270,12 @@ export default function TranscriptionPanel() {
           />
           {statusMessage}
         </span>
-        <label className="ml-auto flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+        <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
           Playback voice:
           <select
             value={voice}
             onChange={(e) => setVoice(e.target.value)}
-            className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+            className="rounded border border-input bg-background px-2 py-1 text-xs"
           >
             <option value="tr_TR-fettah-medium">tr_TR (Fettah)</option>
             <option value="en_US-amy-medium">en_US (Amy)</option>
@@ -342,7 +342,7 @@ export default function TranscriptionPanel() {
                   : { animation: "fade-in 200ms ease-out" }
               }
             >
-              <span className="font-mono text-xs text-zinc-500">
+              <span className="font-mono text-xs text-muted-foreground">
                 {srtTimestamp(seg.start).slice(3, 8)}
               </span>
               <span
@@ -355,7 +355,7 @@ export default function TranscriptionPanel() {
               <button
                 type="button"
                 onClick={() => reSynthesize(seg.text)}
-                className="text-xs text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                className="text-xs text-muted-foreground underline hover:text-foreground"
               >
                 Play
               </button>
@@ -365,7 +365,7 @@ export default function TranscriptionPanel() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Download transcript
         </h2>
         <div className="flex flex-wrap gap-2 text-sm">
@@ -373,7 +373,7 @@ export default function TranscriptionPanel() {
             type="button"
             onClick={exportJson}
             disabled={segments.length === 0}
-            className="rounded border border-zinc-300 px-3 py-1 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            className="rounded border border-input px-3 py-1 hover:bg-accent disabled:opacity-50"
           >
             JSON
           </button>
@@ -381,7 +381,7 @@ export default function TranscriptionPanel() {
             type="button"
             onClick={exportSrt}
             disabled={segments.length === 0}
-            className="rounded border border-zinc-300 px-3 py-1 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            className="rounded border border-input px-3 py-1 hover:bg-accent disabled:opacity-50"
           >
             SRT
           </button>
@@ -389,7 +389,7 @@ export default function TranscriptionPanel() {
             type="button"
             onClick={exportTxt}
             disabled={segments.length === 0}
-            className="rounded border border-zinc-300 px-3 py-1 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            className="rounded border border-input px-3 py-1 hover:bg-accent disabled:opacity-50"
           >
             TXT
           </button>

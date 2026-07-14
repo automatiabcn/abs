@@ -374,7 +374,7 @@ export default function McpServersPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-rose-300"
+                        className="text-rose-700 dark:text-rose-300"
                         onClick={() => void remove(s.slug)}
                         data-test={`mcp-server-remove-${s.slug}`}
                       >
@@ -445,8 +445,8 @@ export default function McpServersPage() {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    ok: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
-    error: "border-rose-500/30 bg-rose-500/10 text-rose-300",
+    ok: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    error: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300",
     unconfigured: "border-border bg-muted text-muted-foreground",
   };
   const cls = map[status] ?? map.unconfigured;

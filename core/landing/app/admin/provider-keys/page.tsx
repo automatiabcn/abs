@@ -274,7 +274,7 @@ export default function ProviderKeysPage() {
                         </button>
                         <button type="button" onClick={() => remove(k)} disabled={busy}
                           data-test="pk-delete"
-                          className="inline-flex items-center gap-1 rounded-md border border-rose-500/40 px-2.5 py-1 text-[11px] text-rose-300">
+                          className="inline-flex items-center gap-1 rounded-md border border-rose-500/40 px-2.5 py-1 text-[11px] text-rose-700 dark:text-rose-300">
                           <Trash2 className="h-3 w-3" /> Remove
                         </button>
                       </div>

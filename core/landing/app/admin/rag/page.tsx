@@ -500,7 +500,7 @@ export default function RagPage() {
                           <td className="py-2 pr-3">
                             <Badge
                               variant="outline"
-                              className="border-emerald-500/40 text-[10px] text-emerald-300"
+                              className="border-emerald-500/40 text-[10px] text-emerald-700 dark:text-emerald-300"
                             >
                               indexed
                             </Badge>
@@ -512,8 +512,8 @@ export default function RagPage() {
                               className={cn(
                                 "text-[10px]",
                                 oversized
-                                  ? "border-amber-500/40 text-amber-300"
-                                  : "border-emerald-500/40 text-emerald-300",
+                                  ? "border-amber-500/40 text-amber-700 dark:text-amber-300"
+                                  : "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
                               )}
                             >
                               {oversized ? "re-index" : "good"}
@@ -656,7 +656,7 @@ export default function RagPage() {
                         disabled={deletingId === d.id}
                         data-test="rag-doc-delete"
                         aria-label={`Delete ${d.filename}`}
-                        className="rounded p-1 text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-300 disabled:opacity-50"
+                        className="rounded p-1 text-muted-foreground transition-colors hover:bg-rose-500/10 hover:text-rose-700 dark:text-rose-300 disabled:opacity-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -782,7 +782,7 @@ export default function RagPage() {
                 data-test="rag-image-desc"
                 className="rounded-md border border-violet-500/30 bg-violet-500/5 p-3 text-xs"
               >
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-violet-300">
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-violet-700 dark:text-violet-300">
                   What we read from your image
                 </div>
                 <p className="text-foreground/90">{imgDesc}</p>
@@ -831,7 +831,7 @@ export default function RagPage() {
                       {h.metadata?.kind === "image" ? (
                         <Badge
                           variant="outline"
-                          className="border-violet-500/40 text-[10px] text-violet-300"
+                          className="border-violet-500/40 text-[10px] text-violet-700 dark:text-violet-300"
                           data-test="rag-hit-kind"
                         >
                           🖼️ Image
@@ -842,7 +842,7 @@ export default function RagPage() {
                       ) : (
                         <Badge
                           variant="outline"
-                          className="border-sky-500/40 text-[10px] text-sky-300"
+                          className="border-sky-500/40 text-[10px] text-sky-700 dark:text-sky-300"
                           data-test="rag-hit-kind"
                         >
                           📄 Document
@@ -853,14 +853,14 @@ export default function RagPage() {
                       </Badge>
                       <Badge
                         variant="outline"
-                        className="border-emerald-500/40 text-[10px] text-emerald-300"
+                        className="border-emerald-500/40 text-[10px] text-emerald-700 dark:text-emerald-300"
                       >
                         score {h.score.toFixed(2)}
                       </Badge>
                     </div>
                     <p className="text-xs text-foreground/90">
                       {h.metadata?.kind === "image" ? (
-                        <span className="mr-1 text-[10px] uppercase tracking-wider text-violet-300/80">
+                        <span className="mr-1 text-[10px] uppercase tracking-wider text-violet-700 dark:text-violet-300/80">
                           image description:
                         </span>
                       ) : null}

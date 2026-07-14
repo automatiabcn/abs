@@ -372,8 +372,8 @@ export default function McpTokensPage() {
                       </td>
                       <td className="py-1.5 pr-3">
                         <span className={
-                          t.status === "active" ? "text-emerald-300"
-                            : t.status === "revoked" ? "text-rose-300" : "text-amber-300"
+                          t.status === "active" ? "text-emerald-700 dark:text-emerald-300"
+                            : t.status === "revoked" ? "text-rose-700 dark:text-rose-300" : "text-amber-700 dark:text-amber-300"
                         }>{t.status}</span>
                       </td>
                       <td className="py-1.5 text-right">
@@ -382,7 +382,7 @@ export default function McpTokensPage() {
                             onClick={() => revokeByDigest(t.token_digest)}
                             disabled={revokingDigest === t.token_digest}
                             data-test={`mcp-token-revoke-${t.token_digest.slice(0, 8)}`}
-                            className="rounded-md border border-rose-500/40 px-2 py-1 text-[11px] text-rose-300 hover:bg-rose-500/10 disabled:opacity-50"
+                            className="rounded-md border border-rose-500/40 px-2 py-1 text-[11px] text-rose-700 dark:text-rose-300 hover:bg-rose-500/10 disabled:opacity-50"
                           >
                             {revokingDigest === t.token_digest ? "…" : "Revoke"}
                           </button>
@@ -422,7 +422,7 @@ export default function McpTokensPage() {
             variant="outline"
             onClick={() => void revoke()}
             disabled={revoking || !revokeToken.trim()}
-            className="text-rose-300"
+            className="text-rose-700 dark:text-rose-300"
             data-test="mcp-token-revoke"
           >
             <Trash2 className="mr-2 h-4 w-4" />

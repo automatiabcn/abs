@@ -94,7 +94,7 @@ export default function BetaRequestForm() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-md border bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400"
+          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground"
         />
       </div>
       <div>
@@ -105,7 +105,7 @@ export default function BetaRequestForm() {
           id="beta-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full rounded-md border bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400"
+          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground"
         />
       </div>
       <div>
@@ -116,7 +116,7 @@ export default function BetaRequestForm() {
           id="beta-company"
           value={company}
           onChange={(e) => setCompany(e.target.value)}
-          className="mt-1 w-full rounded-md border bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400"
+          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground"
         />
       </div>
       <div>
@@ -128,7 +128,7 @@ export default function BetaRequestForm() {
           rows={3}
           value={useCase}
           onChange={(e) => setUseCase(e.target.value)}
-          className="mt-1 w-full rounded-md border bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400"
+          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground"
         />
       </div>
       <div>
@@ -139,7 +139,7 @@ export default function BetaRequestForm() {
           id="beta-lang"
           value={lang}
           onChange={(e) => setLang(e.target.value as "en" | "tr" | "es")}
-          className="mt-1 w-full rounded-md border bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400"
+          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground"
         >
           <option value="en">English</option>
           <option value="tr">Turkish</option>

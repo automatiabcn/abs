@@ -39,17 +39,17 @@ export type FlowNodeData = {
 
 // kind → { box accent border, kind-label colour } — matches the agentic palette.
 const TONE: Record<string, { border: string; label: string }> = {
-  trigger: { border: "#38bdf8", label: "text-sky-300" },
+  trigger: { border: "#38bdf8", label: "text-sky-700 dark:text-sky-300" },
   agent: { border: "#3a9dff", label: "text-primary" },
   custom_ai: { border: "#3a9dff", label: "text-primary" },
-  consent: { border: "#d29922", label: "text-amber-300" },
-  retrieval: { border: "#a78bfa", label: "text-violet-300" },
+  consent: { border: "#d29922", label: "text-amber-700 dark:text-amber-300" },
+  retrieval: { border: "#a78bfa", label: "text-violet-700 dark:text-violet-300" },
   connector: { border: "#3a4452", label: "text-muted-foreground" },
-  policy: { border: "#d29922", label: "text-amber-300" },
-  approval: { border: "#fb7185", label: "text-rose-300" },
-  action: { border: "#3fb950", label: "text-emerald-300" },
+  policy: { border: "#d29922", label: "text-amber-700 dark:text-amber-300" },
+  approval: { border: "#fb7185", label: "text-rose-700 dark:text-rose-300" },
+  action: { border: "#3fb950", label: "text-emerald-700 dark:text-emerald-300" },
   branch: { border: "#3a4452", label: "text-muted-foreground" },
-  sub_workflow: { border: "#f472b6", label: "text-pink-300" },
+  sub_workflow: { border: "#f472b6", label: "text-pink-700 dark:text-pink-300" },
 };
 
 function AgenticNode({ data, selected }: NodeProps<Node<FlowNodeData>>) {
