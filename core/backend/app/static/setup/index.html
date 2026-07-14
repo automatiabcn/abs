@@ -3,55 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>ABS — Setup</title>
   <link rel="stylesheet" href="/setup/assets/setup.css">
 </head>
 <body>
   <main class="setup-shell">
-    <!-- ===== left brand rail ===== -->
+    <!-- ===== rail: the mark, the six steps, one line of reassurance ===== -->
     <aside class="setup-rail">
-      <div class="setup-rail-glow" aria-hidden="true"></div>
       <div class="setup-rail-top">
-        <div class="logo-mark" aria-hidden="true">
-          <img src="/setup/assets/abs-logo.png" alt="ABS" width="64" height="64">
-        </div>
-        <h1>ABS</h1>
-        <p class="setup-tagline" data-i18n="tagline">Self-hosted AI Orchestration</p>
+        <!-- The vault — the same mark the panel and the site ship (AbsLogo.tsx),
+             drawn inline so it needs no file and takes the surface's colour. It
+             replaces a rounded gradient PNG that belonged to the old identity. -->
+        <span class="logo-mark" aria-hidden="true">
+          <svg width="34" height="34" viewBox="0 0 48 48" fill="none">
+            <path d="M24 5 L41 14 L41 34 L24 43 L7 34 L7 14 Z" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"></path>
+            <circle cx="24" cy="24" r="6" fill="var(--brand)"></circle>
+          </svg>
+        </span>
+        <span class="setup-wordmark">
+          <h1>ABS</h1>
+          <p class="setup-tagline" data-i18n="tagline">Self-hosted AI orchestration</p>
+        </span>
       </div>
 
       <nav class="setup-progress" aria-label="Steps">
         <ol class="setup-steps">
           <li data-step-indicator="1" class="active">
             <span class="setup-dot">1</span>
-            <span class="setup-step-text"><span class="setup-lbl" data-i18n="s1">Admin</span><span class="setup-desc" data-i18n="d1">Create the panel sign-in account</span></span>
+            <span class="setup-step-text">
+              <span class="setup-lbl" data-i18n="s1">Admin</span>
+              <span class="setup-desc" data-i18n="d1">Create the sign-in account</span>
+              <span class="setup-answer" data-answer="1" hidden></span>
+            </span>
           </li>
           <li data-step-indicator="2">
             <span class="setup-dot">2</span>
-            <span class="setup-step-text"><span class="setup-lbl" data-i18n="s2">License</span><span class="setup-desc" data-i18n="d2">Activate your license or demo</span></span>
+            <span class="setup-step-text">
+              <span class="setup-lbl" data-i18n="s2">License</span>
+              <span class="setup-desc" data-i18n="d2">Optional — free tier by default</span>
+              <span class="setup-answer" data-answer="2" hidden></span>
+            </span>
           </li>
           <li data-step-indicator="3">
             <span class="setup-dot">3</span>
-            <span class="setup-step-text"><span class="setup-lbl" data-i18n="s3">Domain</span><span class="setup-desc" data-i18n="d3">Choose IP or domain + SSL</span></span>
+            <span class="setup-step-text">
+              <span class="setup-lbl" data-i18n="s3">Address</span>
+              <span class="setup-desc" data-i18n="d3">IP or domain, and SSL</span>
+              <span class="setup-answer" data-answer="3" hidden></span>
+            </span>
           </li>
           <li data-step-indicator="4">
             <span class="setup-dot">4</span>
-            <span class="setup-step-text"><span class="setup-lbl" data-i18n="s4">Premium</span><span class="setup-desc" data-i18n="d4">Optional — add a paid AI key</span></span>
+            <span class="setup-step-text">
+              <span class="setup-lbl" data-i18n="s4">Premium AI</span>
+              <span class="setup-desc" data-i18n="d4">Optional — add a paid key</span>
+              <span class="setup-answer" data-answer="4" hidden></span>
+            </span>
           </li>
           <li data-step-indicator="5">
             <span class="setup-dot">5</span>
-            <span class="setup-step-text"><span class="setup-lbl" data-i18n="s5">Providers</span><span class="setup-desc" data-i18n="d5">Add your free provider keys</span></span>
+            <span class="setup-step-text">
+              <span class="setup-lbl" data-i18n="s5">Providers</span>
+              <span class="setup-desc" data-i18n="d5">Your free provider keys</span>
+              <span class="setup-answer" data-answer="5" hidden></span>
+            </span>
           </li>
           <li data-step-indicator="6">
             <span class="setup-dot">6</span>
-            <span class="setup-step-text"><span class="setup-lbl" data-i18n="s6">Test</span><span class="setup-desc" data-i18n="d6">Verify everything connects</span></span>
+            <span class="setup-step-text">
+              <span class="setup-lbl" data-i18n="s6">Test</span>
+              <span class="setup-desc" data-i18n="d6">Prove it can answer</span>
+            </span>
           </li>
         </ol>
       </nav>
 
-      <p class="setup-rail-foot" data-i18n="rail_foot">Free to run · paid AI optional · self-hosted</p>
+      <p class="setup-rail-foot" data-i18n="rail_foot">Free to run · paid AI optional · your data stays on your server</p>
     </aside>
 
-    <!-- ===== right content ===== -->
+    <!-- ===== main column ===== -->
     <section class="setup-main">
       <div class="setup-langbar" role="group" aria-label="Language">
         <span class="setup-lang-label" data-i18n="lang_label">Language</span>
@@ -64,13 +95,15 @@
 
       <div class="setup-body">
         <section class="setup-step" data-step="1">
-          <h2><span data-i18n="step1_h">Admin Account</span></h2>
-          <p class="setup-help" data-i18n="step1_help">This account will sign in to the panel.</p>
+          <p class="setup-eyebrow"><span data-i18n="of6_1">Step 1 of 6</span></p>
+          <h2><span data-i18n="step1_h">Create your admin account</span></h2>
+          <p class="setup-help" data-i18n="step1_help">This is the account you will sign in to the panel with. It stays on this server — ABS never sends it anywhere.</p>
           <form data-step-key="admin">
-            <label><span data-i18n="f_email">Email</span> <input name="email" type="email" required autocomplete="email"></label>
+            <label><span data-i18n="f_email">Email</span> <input name="email" type="email" required autocomplete="email" placeholder="you@company.com"></label>
             <label><span data-i18n="f_password">Password</span> <input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+            <p class="setup-mini" data-i18n="pw_hint">At least 8 characters.</p>
             <div class="setup-actions">
-              <button type="submit" class="setup-next" data-i18n="btn_next">Next</button>
+              <button type="submit" class="setup-next" data-i18n="btn_next">Continue</button>
             </div>
           </form>
         </section>
@@ -81,40 +114,53 @@
              not get past this screen — on the same screen that told them a license
              was optional. -->
         <section class="setup-step" data-step="2" hidden>
-          <h2><span data-i18n="step2_h">License Key</span></h2>
-          <p class="setup-help" data-i18n="step2_help">ABS runs without a license. Paste a key only if you bought one — otherwise carry on, and the free tier stays active.</p>
+          <p class="setup-eyebrow"><span data-i18n="of6_2">Step 2 of 6</span></p>
+          <h2><span data-i18n="step2_h">License key</span></h2>
+          <p class="setup-help" data-i18n="step2_help">ABS runs without one. Paste a key only if you bought a commercial license — otherwise carry on, and the free tier stays active for as long as you want it.</p>
           <form data-step-key="license">
             <label class="setup-skip-row">
               <input type="checkbox" id="setup-skip-license" name="skip_license_ui" checked>
-              <span data-i18n="free_license_label">I don't have a license key — continue on the free tier</span>
+              <span class="setup-skip-text">
+                <b data-i18n="free_license_label">I don't have a license key — continue on the free tier</b>
+                <span data-i18n="free_license_sub">Everything works. A license unlocks commercial use and support.</span>
+              </span>
             </label>
-            <label id="setup-license-row" style="display:none"><span data-i18n="f_license">License</span> <textarea id="setup-license-key" name="license_key" rows="4"></textarea></label>
+            <label id="setup-license-row" hidden><span data-i18n="f_license">License</span> <textarea id="setup-license-key" name="license_key" rows="4"></textarea></label>
+            <p class="setup-mini" data-i18n="license_hint">Untick to paste a key.</p>
             <div class="setup-actions">
               <button type="button" class="setup-back" data-i18n="btn_back">Back</button>
-              <button type="submit" class="setup-next" data-i18n="btn_next">Next</button>
+              <button type="submit" class="setup-next" data-i18n="btn_next">Continue</button>
             </div>
           </form>
         </section>
 
         <section class="setup-step" data-step="3" hidden>
-          <h2><span data-i18n="step3_h">Domain</span></h2>
+          <p class="setup-eyebrow"><span data-i18n="of6_3">Step 3 of 6</span></p>
+          <h2><span data-i18n="step3_h">Where will this server answer?</span></h2>
+          <p class="setup-help" data-i18n="step3_help">Pick IP if you are trying ABS out on a laptop or a private network. Pick domain when it has a name people will type — then ABS can get a certificate for it.</p>
           <form data-step-key="domain">
-            <label><span data-i18n="f_mode">Mode</span>
-              <select name="mode">
-                <option value="ip" data-i18n="opt_ip">IP (development)</option>
-                <option value="domain" data-i18n="opt_domain">Domain</option>
-              </select>
-            </label>
-            <label><span data-i18n="f_domain">Domain (optional)</span> <input name="domain" type="text" placeholder="abs.example.com"></label>
-            <label><span data-i18n="f_ssl">SSL</span>
-              <select name="ssl_mode">
-                <option value="internal" data-i18n="opt_internal">Internal CA</option>
-                <option value="acme" data-i18n="opt_acme">ACME / Let's Encrypt</option>
-              </select>
-            </label>
+            <div class="setup-row-2">
+              <label><span data-i18n="f_mode">Mode</span>
+                <select name="mode" id="setup-mode">
+                  <option value="ip" data-i18n="opt_ip">IP — development</option>
+                  <option value="domain" data-i18n="opt_domain">Domain</option>
+                </select>
+              </label>
+              <label><span data-i18n="f_ssl">SSL</span>
+                <select name="ssl_mode">
+                  <option value="internal" data-i18n="opt_internal">Internal CA</option>
+                  <option value="acme" data-i18n="opt_acme">ACME · Let's Encrypt</option>
+                </select>
+              </label>
+            </div>
+            <!-- Disabled while the mode is IP: the server ignores a domain in that
+                 mode, so an enabled field would only be inviting an entry that goes
+                 nowhere. -->
+            <label id="setup-domain-row" class="is-disabled"><span data-i18n="f_domain">Domain</span> <input name="domain" id="setup-domain" type="text" placeholder="abs.example.com" disabled></label>
+            <p class="setup-mini" data-i18n="domain_hint">Enabled once the mode is Domain.</p>
             <div class="setup-actions">
               <button type="button" class="setup-back" data-i18n="btn_back">Back</button>
-              <button type="submit" class="setup-next" data-i18n="btn_next">Next</button>
+              <button type="submit" class="setup-next" data-i18n="btn_next">Continue</button>
             </div>
           </form>
         </section>
@@ -122,46 +168,82 @@
         <!-- Step 4 (anthropic) — free-first: skip checked by default, key field
              hidden + not required. Free path is the zero-click default. -->
         <section class="setup-step" data-step="4" hidden>
-          <h2><span data-i18n="step4_h">Premium AI (optional)</span></h2>
-          <p class="setup-help" data-i18n="step4_help">ABS runs fully on free providers. Add an Anthropic (Claude) key only if you want premium quality — you can always add it later from the panel.</p>
+          <p class="setup-eyebrow"><span data-i18n="of6_4">Step 4 of 6</span></p>
+          <h2><span data-i18n="step4_h">Premium AI</span></h2>
+          <p class="setup-help" data-i18n="step4_help">ABS runs fully on free providers. Add an Anthropic key only if you want Claude answering the hard questions — and you can add it later from the panel just as easily.</p>
           <form data-step-key="anthropic">
             <label class="setup-skip-row">
               <input type="checkbox" id="setup-skip-paid" name="skip_paid_providers_ui" checked>
-              <span data-i18n="free_label">Start free — I'll use free providers only</span>
+              <span class="setup-skip-text">
+                <b data-i18n="free_label">Start free — free providers only</b>
+                <span data-i18n="free_sub">Groq, Gemini, Cerebras, Cohere and Cloudflare all have a free tier.</span>
+              </span>
             </label>
-            <label id="setup-anthropic-row" style="display:none"><span data-i18n="f_anthropic">Anthropic Key</span> <input id="setup-anthropic-key" name="anthropic_api_key" type="password" placeholder="sk-ant-..."></label>
+            <label id="setup-anthropic-row" hidden><span data-i18n="f_anthropic">Anthropic key</span> <input id="setup-anthropic-key" class="setup-key" name="anthropic_api_key" type="password" placeholder="sk-ant-..."></label>
             <input type="hidden" name="skip_paid_providers" value="true">
+            <p class="setup-mini" data-i18n="paid_hint">Untick to paste an Anthropic key.</p>
             <div class="setup-actions">
               <button type="button" class="setup-back" data-i18n="btn_back">Back</button>
-              <button type="submit" class="setup-next" data-i18n="btn_next">Next</button>
+              <button type="submit" class="setup-next" data-i18n="btn_next">Continue</button>
             </div>
           </form>
         </section>
 
+        <!-- Step 5 — the screen that decides whether the product can answer at all.
+             It used to be six bare inputs in a column; a first-time customer had no
+             way to tell what any of them was for, or that one was enough. -->
         <section class="setup-step" data-step="5" hidden>
-          <h2><span data-i18n="step5_h">Free Providers</span></h2>
-          <p class="setup-help" data-i18n="step5_help">These power ABS at no cost. Add the ones you have — all optional, and editable later from the panel.</p>
+          <p class="setup-eyebrow"><span data-i18n="of6_5">Step 5 of 6</span></p>
+          <h2><span data-i18n="step5_h">Connect a provider</span></h2>
+          <p class="setup-help" data-i18n="step5_help">ABS needs at least one to answer a question. All of these are free to sign up for, and you can change them later from the panel.</p>
           <form data-step-key="providers">
-            <label>Groq <input name="groq_api_key" type="password" autocomplete="off"></label>
-            <label>Gemini <input name="gemini_api_key" type="password" autocomplete="off"></label>
-            <label>Cerebras <input name="cerebras_api_key" type="password" autocomplete="off"></label>
-            <label>Cohere <input name="cohere_api_key" type="password" autocomplete="off"></label>
-            <label><span data-i18n="f_cf_id">CloudFlare Account ID</span> <input name="cf_account_id" type="text" autocomplete="off"></label>
-            <label><span data-i18n="f_cf_token">CloudFlare API Token</span> <input name="cf_api_token" type="password" autocomplete="off"></label>
+            <div class="setup-providers">
+              <label class="setup-prov">
+                <span class="setup-prov-name"><b>Groq</b><span data-i18n="p_groq">Fastest · recommended</span></span>
+                <input name="groq_api_key" class="setup-key" type="password" autocomplete="off" placeholder="gsk_...">
+              </label>
+              <label class="setup-prov">
+                <span class="setup-prov-name"><b>Gemini</b><span data-i18n="p_gemini">Long context, vision</span></span>
+                <input name="gemini_api_key" class="setup-key" type="password" autocomplete="off">
+              </label>
+              <label class="setup-prov">
+                <span class="setup-prov-name"><b>Cerebras</b><span data-i18n="p_cerebras">Fast inference</span></span>
+                <input name="cerebras_api_key" class="setup-key" type="password" autocomplete="off">
+              </label>
+              <label class="setup-prov">
+                <span class="setup-prov-name"><b>Cohere</b><span data-i18n="p_cohere">Reranking, embeddings</span></span>
+                <input name="cohere_api_key" class="setup-key" type="password" autocomplete="off">
+              </label>
+              <label class="setup-prov">
+                <span class="setup-prov-name"><b>Cloudflare</b><span data-i18n="f_cf_id">Account ID</span></span>
+                <input name="cf_account_id" class="setup-key" type="text" autocomplete="off">
+              </label>
+              <label class="setup-prov">
+                <span class="setup-prov-name"><b>Cloudflare</b><span data-i18n="f_cf_token">API token</span></span>
+                <input name="cf_api_token" class="setup-key" type="password" autocomplete="off">
+              </label>
+            </div>
+            <p class="setup-mini" data-i18n="prov_hint">One is enough. Add the rest whenever you like — ABS falls back across every key it has.</p>
             <div class="setup-actions">
               <button type="button" class="setup-back" data-i18n="btn_back">Back</button>
-              <button type="submit" class="setup-next" data-i18n="btn_next">Next</button>
+              <button type="submit" class="setup-next" data-i18n="btn_next">Continue</button>
             </div>
           </form>
         </section>
 
+        <!-- Step 6 — the test runs first and the verdict is read before you leave.
+             It used to run only on "Finish", print an empty box when nothing was
+             configured, and send you straight into a chat that could not answer. -->
         <section class="setup-step" data-step="6" hidden>
-          <h2><span data-i18n="step6_h">Connection Test</span></h2>
-          <p class="setup-help" data-i18n="step6_help">We send a quick ping to each configured provider so you see right here whether your keys work.</p>
+          <p class="setup-eyebrow"><span data-i18n="of6_6">Step 6 of 6</span></p>
+          <h2><span data-i18n="step6_h">Can it answer?</span></h2>
+          <p class="setup-help" data-i18n="step6_help">One real request to every key you gave us. If a key is wrong, you find out here — not the first time you ask the product a question.</p>
+          <div id="setup-verdict" hidden></div>
           <div id="setup-test-results"></div>
           <div class="setup-actions">
             <button type="button" class="setup-back" data-i18n="btn_back">Back</button>
-            <button type="button" class="setup-finish" data-step-key="test" data-i18n="btn_finish">Finish Setup</button>
+            <button type="button" class="setup-run-test" id="setup-run-test" data-i18n="btn_run_test">Run the test</button>
+            <button type="button" class="setup-finish" data-step-key="test" data-i18n="btn_finish" hidden>Finish Setup</button>
           </div>
         </section>
       </div>

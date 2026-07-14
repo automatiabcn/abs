@@ -15,6 +15,12 @@ def test_setup_index_serves_html(client):
     assert "Automatia" not in body
     assert 'data-step-key="admin"' in body
     assert 'data-step-key="test"' in body
+    # The mark is the product's own (AbsLogo), drawn inline. The rounded gradient
+    # PNG and the stock photograph behind the rail are gone from the image, so a
+    # reference left behind here would be a 404 on the customer's first screen.
+    assert "abs-logo.png" not in body
+    assert "setup-rail.jpg" not in body
+    assert "<svg" in body
 
 
 def test_setup_assets_served(client):
@@ -26,7 +32,19 @@ def test_setup_assets_served(client):
     r_css = client.get("/setup/assets/setup.css")
     assert r_css.status_code == 200
     assert "css" in r_css.headers["content-type"]
-    assert "--brand-primary" in r_css.text
+    css = r_css.text
+    # The wizard is the FIRST screen a customer sees, so it is the one deciding
+    # what the product looks like — and it was the last screen still wearing the
+    # previous identity (indigo gradient, near-black ground) while the panel and
+    # the site had moved to the teal instrument theme.
+    #
+    # The brand token is asserted against the value the panel ships in
+    # core/landing/app/tokens.css. The wizard cannot import that file (it is
+    # served by the backend, outside the Next bundle), so the values are copied —
+    # and a copy that nothing checks is a copy that drifts.
+    assert "--abs-brand-rgb: 11 124 116" in css
+    assert "prefers-color-scheme: dark" in css  # the wizard had no dark theme at all
+    assert "#4f46e5" not in css and "#818cf8" not in css  # the old indigo is gone
 
 
 def test_test_step_renders_readable_results_not_raw_json(client):

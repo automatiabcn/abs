@@ -1,32 +1,133 @@
+/* The setup wizard, on the product's own design system.
+ *
+ * This screen used to be the last one wearing the previous identity: an indigo
+ * gradient on a near-black ground, 20px corners, glowing buttons, a photograph
+ * behind the rail and a rounded PNG logo. The panel and the marketing site are
+ * a light-first teal instrument. The wizard is the FIRST screen a customer ever
+ * sees, so it was the one deciding what the product looks like — and it was
+ * showing them a product we no longer ship.
+ *
+ * The token block below is copied from core/landing/app/tokens.css, values and
+ * all. It is duplicated rather than imported because this page is served by the
+ * backend as static HTML and cannot reach the Next.js bundle; the values must
+ * be kept in step by hand. tests/test_setup_ui.py fails if the brand token
+ * drifts from the one the panel ships.
+ */
+
 :root {
-  --bg0: #07090f;
-  --bg1: #0d1117;
-  --bg2: #161b22;
-  --bg-card: #0f141c;
-  --brand-primary: #a5b4fc;
-  --brand-primary-bright: #818cf8;
-  --brand-deep: #4f46e5;
-  --brand-gradient: linear-gradient(135deg, #a5b4fc, #6366f1 55%, #4f46e5);
-  --brand-glow: rgba(129, 140, 248, 0.35);
-  --text0: #e6ebf3;
-  --text1: #8b97ab;
-  --text2: #5c6678;
-  --border: #1d2532;
-  --border-soft: #161d28;
-  --error: #f87171;
-  --ok: #34d399;
-  --radius: 20px;
+  --abs-canvas-rgb: 245 247 247;
+  --abs-surface-rgb: 255 255 255;
+  --abs-surface-raised-rgb: 240 244 244;
+  --abs-surface-sunken-rgb: 233 238 238;
+
+  --abs-border-rgb: 219 227 227;
+  --abs-border-soft-rgb: 231 237 237;
+  --abs-border-strong-rgb: 194 204 204;
+
+  --abs-fg-rgb: 18 24 25;
+  --abs-fg-muted-rgb: 70 83 85;
+  --abs-fg-subtle-rgb: 96 109 111;
+
+  --abs-brand-rgb: 11 124 116;
+  --abs-brand-soft-rgb: 233 247 245;
+  --abs-brand-fg-rgb: 255 255 255;
+
+  --abs-success-rgb: 31 122 77;
+  --abs-success-soft-rgb: 231 243 237;
+  --abs-warning-rgb: 168 90 18;
+  --abs-warning-soft-rgb: 252 240 228;
+  --abs-danger-rgb: 179 38 30;
+  --abs-danger-soft-rgb: 251 228 226;
+  --abs-info-rgb: 31 95 158;
+  --abs-info-soft-rgb: 226 238 250;
+
+  --shadow-sm: 0 1px 2px rgb(18 24 25 / 0.06);
+  --shadow-lg: 0 2px 4px rgb(18 24 25 / 0.05), 0 12px 32px rgb(18 24 25 / 0.10);
+}
+
+/* Dark is a first-class second theme, not an inversion: the accent lightens so
+ * it keeps carrying contrast, and the neutrals hold a cool bias. The wizard had
+ * no dark theme at all — a customer on a dark OS was handed a black-and-indigo
+ * screen followed by a light panel. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --abs-canvas-rgb: 13 17 18;
+    --abs-surface-rgb: 20 26 27;
+    --abs-surface-raised-rgb: 28 36 37;
+    --abs-surface-sunken-rgb: 8 12 13;
+
+    --abs-border-rgb: 44 54 55;
+    --abs-border-soft-rgb: 33 41 42;
+    --abs-border-strong-rgb: 61 74 75;
+
+    --abs-fg-rgb: 234 240 240;
+    --abs-fg-muted-rgb: 164 178 177;
+    --abs-fg-subtle-rgb: 137 150 149;
+
+    --abs-brand-rgb: 78 205 194;
+    --abs-brand-soft-rgb: 18 49 47;
+    --abs-brand-fg-rgb: 6 32 30;
+
+    --abs-success-rgb: 107 191 143;
+    --abs-success-soft-rgb: 22 41 31;
+    --abs-warning-rgb: 216 145 71;
+    --abs-warning-soft-rgb: 46 33 19;
+    --abs-danger-rgb: 224 128 121;
+    --abs-danger-soft-rgb: 47 26 24;
+    --abs-info-rgb: 122 181 232;
+    --abs-info-soft-rgb: 20 35 47;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+    --shadow-lg: 0 2px 4px rgb(0 0 0 / 0.30), 0 12px 32px rgb(0 0 0 / 0.45);
+  }
+}
+
+/* Plain-CSS handles, derived — never re-declared, so the two forms cannot drift. */
+:root {
+  --canvas: rgb(var(--abs-canvas-rgb));
+  --surface: rgb(var(--abs-surface-rgb));
+  --raised: rgb(var(--abs-surface-raised-rgb));
+  --sunken: rgb(var(--abs-surface-sunken-rgb));
+  --border: rgb(var(--abs-border-rgb));
+  --border-soft: rgb(var(--abs-border-soft-rgb));
+  --border-strong: rgb(var(--abs-border-strong-rgb));
+  --fg: rgb(var(--abs-fg-rgb));
+  --fg-muted: rgb(var(--abs-fg-muted-rgb));
+  --fg-subtle: rgb(var(--abs-fg-subtle-rgb));
+  --brand: rgb(var(--abs-brand-rgb));
+  --brand-soft: rgb(var(--abs-brand-soft-rgb));
+  --brand-fg: rgb(var(--abs-brand-fg-rgb));
+  --success: rgb(var(--abs-success-rgb));
+  --success-soft: rgb(var(--abs-success-soft-rgb));
+  --warning: rgb(var(--abs-warning-rgb));
+  --warning-soft: rgb(var(--abs-warning-soft-rgb));
+  --danger: rgb(var(--abs-danger-rgb));
+  --danger-soft: rgb(var(--abs-danger-soft-rgb));
+  --info: rgb(var(--abs-info-rgb));
+  --info-soft: rgb(var(--abs-info-soft-rgb));
+
+  /* Restrained radii. Everything-rounded reads as templated. */
+  --r-sm: 3px;
+  --r: 5px;
+  --r-lg: 8px;
+
+  /* Geist and JetBrains Mono are self-hosted by the Next app and cannot be
+   * reached from a backend-served page, so the wizard takes the same stacks
+   * minus the webfont. The fallbacks are the ones the panel already falls back
+   * to, which is why the two screens read as one product. */
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background:
-    radial-gradient(1000px 600px at 50% -10%, rgba(99, 102, 241, 0.12), transparent 60%),
-    var(--bg0);
-  color: var(--text0);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  background: var(--canvas);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-weight: 400;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   display: flex;
@@ -35,325 +136,399 @@ body {
   padding: 40px 20px;
 }
 
-/* ===== shell: split layout ===== */
+/* ===== shell ===== */
 .setup-shell {
-  position: relative;
   display: flex;
   width: 100%;
   max-width: 940px;
-  min-height: 600px;
-  background: linear-gradient(180deg, var(--bg-card), var(--bg1));
+  min-height: 580px;
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 40px 100px rgba(0, 0, 0, 0.6),
-    0 0 80px rgba(79, 70, 229, 0.06);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
-/* ===== left brand rail ===== */
+/* ===== rail: mark, stepper, one line of reassurance. Nothing else. ===== */
 .setup-rail {
-  position: relative;
-  flex: 0 0 304px;
-  padding: 38px 30px;
+  flex: 0 0 292px;
+  padding: 32px 26px;
   display: flex;
   flex-direction: column;
-  background-image:
-    linear-gradient(180deg, rgba(7, 9, 15, 0.5), rgba(7, 9, 15, 0.82)),
-    url("/setup/assets/setup-rail.jpg");
-  background-size: cover;
-  background-position: center top;
+  background: var(--sunken);
   border-right: 1px solid var(--border);
 }
-.setup-rail-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(400px 220px at 30% 0%, rgba(129, 140, 248, 0.16), transparent 70%);
-  pointer-events: none;
+.setup-rail-top {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 34px;
 }
-
-.setup-rail-top { position: relative; margin-bottom: 36px; }
-.logo-mark { display: inline-block; line-height: 0; }
-.logo-mark img {
-  border-radius: 18px;
-  filter: drop-shadow(0 8px 24px var(--brand-glow));
-}
+.logo-mark { display: inline-flex; line-height: 0; color: var(--fg); }
+.setup-wordmark { display: flex; flex-direction: column; }
 .setup-rail h1 {
-  margin: 16px 0 4px;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: 3px;
-  background: linear-gradient(180deg, #fff, #c7d0e6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 640;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--fg);
 }
 .setup-tagline {
   margin: 0;
-  color: var(--text1);
-  font-size: 11.5px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  font-size: 10.5px;
+  color: var(--fg-subtle);
+  letter-spacing: 0.04em;
 }
 
 /* vertical stepper */
-.setup-progress { position: relative; flex: 1; }
+.setup-progress { flex: 1; }
 .setup-steps {
   list-style: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
 }
 .setup-steps li {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   position: relative;
-  padding-bottom: 22px;
+  padding-bottom: 20px;
 }
 .setup-steps li:last-child { padding-bottom: 0; }
 .setup-steps li:not(:last-child)::after {
   content: "";
   position: absolute;
-  left: 16px;
-  top: 34px;
+  left: 13px;
+  top: 30px;
   bottom: 6px;
-  width: 2px;
-  transform: translateX(-50%);
-  background: var(--border);
-  transition: background 0.3s;
+  width: 1px;
+  background: var(--border-strong);
+  transition: background 0.2s;
 }
-.setup-steps li.done:not(:last-child)::after {
-  background: linear-gradient(180deg, var(--brand-primary-bright), var(--brand-deep));
-}
+.setup-steps li.done:not(:last-child)::after { background: var(--brand); }
+
 .setup-dot {
-  flex: 0 0 32px;
-  width: 32px;
-  height: 32px;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  font-weight: 700;
-  font-size: 13px;
-  color: var(--text1);
   position: relative;
   z-index: 1;
-  transition: all 0.25s ease;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--fg-subtle);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
 .setup-steps li.active .setup-dot {
-  background: var(--brand-gradient);
-  color: #fff;
-  border-color: var(--brand-primary-bright);
-  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.18), 0 4px 14px var(--brand-glow);
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-fg);
+  box-shadow: 0 0 0 3px rgb(var(--abs-brand-rgb) / 0.16);
 }
+/* A finished step shows a tick, not the number it used to be — the number is
+ * only useful while you still have to get there. */
 .setup-steps li.done .setup-dot {
-  background: rgba(129, 140, 248, 0.18);
-  color: var(--brand-primary);
-  border-color: var(--brand-primary-bright);
+  background: var(--brand-soft);
+  border-color: var(--brand);
+  color: transparent;
 }
-.setup-step-text { display: flex; flex-direction: column; gap: 2px; padding-top: 5px; }
-.setup-lbl { font-size: 13px; font-weight: 600; color: var(--text1); line-height: 1.2; }
-.setup-desc { font-size: 11px; color: var(--text2); line-height: 1.35; }
-.setup-steps li.active .setup-lbl { color: #fff; }
-.setup-steps li.active .setup-desc { color: var(--text1); }
-.setup-steps li.done .setup-lbl { color: var(--text0); }
+.setup-steps li.done .setup-dot::after {
+  content: "✓";
+  position: absolute;
+  color: var(--brand);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.setup-step-text { display: flex; flex-direction: column; gap: 1px; padding-top: 2px; }
+.setup-lbl { font-size: 13px; font-weight: 500; color: var(--fg-muted); line-height: 1.25; }
+.setup-desc { font-size: 11.5px; color: var(--fg-subtle); line-height: 1.35; }
+.setup-steps li.active .setup-lbl { color: var(--fg); font-weight: 600; }
+
+/* What a finished step actually answered — "License · Free tier". Replaces the
+ * step's own blurb once it is behind you, so you can see what you gave the
+ * installer without walking back through it. */
+.setup-answer { font-size: 11.5px; color: var(--brand); line-height: 1.35; }
 
 .setup-rail-foot {
-  position: relative;
-  margin: 28px 0 0;
-  font-size: 10.5px;
-  color: var(--text2);
-  letter-spacing: 0.3px;
+  margin: 26px 0 0;
+  font-size: 11px;
+  color: var(--fg-subtle);
 }
 
-/* ===== right content ===== */
+/* ===== main column ===== */
 .setup-main {
-  position: relative;
   flex: 1;
-  padding: 38px 40px;
+  padding: 32px 36px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  min-width: 0;
 }
 
 .setup-langbar {
-  position: absolute;
-  top: 26px;
-  right: 30px;
-  display: flex;
+  align-self: flex-end;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background: rgba(13, 17, 23, 0.6);
+  gap: 2px;
+  background: var(--raised);
   border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  padding: 3px 4px 3px 10px;
-  backdrop-filter: blur(6px);
+  border-radius: var(--r);
+  padding: 2px;
+  margin-bottom: 24px;
 }
-.setup-lang-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+.setup-lang-label {
+  font-size: 10px;
+  color: var(--fg-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 6px 0 4px;
+}
 .setup-lang {
+  font: 500 11px/1 var(--mono);
+  letter-spacing: 0.04em;
   background: transparent;
-  border: none;
-  color: var(--text1);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 9px;
-  border-radius: 999px;
+  border: 0;
+  color: var(--fg-subtle);
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: color 0.15s, background 0.15s;
 }
-.setup-lang:hover { color: var(--text0); }
+.setup-lang:hover { color: var(--fg); }
 .setup-lang.active {
-  background: var(--brand-gradient);
-  color: #fff;
-  box-shadow: 0 2px 8px var(--brand-glow);
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: var(--shadow-sm);
 }
 
-.setup-body { width: 100%; }
+.setup-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 
 /* ---- step body ---- */
-.setup-step { animation: setup-fade 0.3s ease; }
+.setup-step { animation: setup-fade 0.24s ease; }
 @keyframes setup-fade {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* "Step 3 of 6" — the wizard never told you how long it was. */
+.setup-eyebrow {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brand);
 }
 .setup-step h2 {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.2px;
-  color: var(--text0);
+  font-weight: 620;
+  letter-spacing: -0.015em;
+  color: var(--fg);
+  text-wrap: balance;
 }
-.setup-help { color: var(--text1); font-size: 13px; line-height: 1.55; margin: 0 0 22px; }
+.setup-help {
+  margin: 0 0 22px;
+  font-size: 13.5px;
+  color: var(--fg-muted);
+  max-width: 58ch;
+}
+.setup-mini { margin: 0; font-size: 12px; color: var(--fg-subtle); }
 
-.setup-step form { display: flex; flex-direction: column; gap: 16px; }
+.setup-step form { display: flex; flex-direction: column; gap: 14px; }
 .setup-step label {
   display: flex;
   flex-direction: column;
   gap: 6px;
   font-size: 12px;
-  font-weight: 600;
-  color: var(--text1);
-  letter-spacing: 0.2px;
+  font-weight: 500;
+  color: var(--fg-muted);
 }
+/* `display: flex` on a label beats the browser's `[hidden] { display: none }`,
+ * so the license and Anthropic key fields stayed on screen with their "I don't
+ * have one" box ticked — the field the box exists to put away. */
+.setup-step label[hidden] { display: none; }
 .setup-step input,
 .setup-step textarea,
 .setup-step select {
-  background: var(--bg1);
-  border: 1px solid var(--border);
-  color: var(--text0);
-  padding: 12px 14px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-family: inherit;
-  font-weight: 400;
-  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--fg);
+  padding: 9px 11px;
+  border-radius: var(--r);
+  font: 400 14px/1.4 var(--sans);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.setup-step input::placeholder { color: var(--text2); }
+.setup-step input::placeholder { color: var(--fg-subtle); }
 .setup-step input:focus,
 .setup-step textarea:focus,
 .setup-step select:focus {
   outline: none;
-  border-color: var(--brand-primary-bright);
-  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.16);
-  background: var(--bg-card);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgb(var(--abs-brand-rgb) / 0.16);
 }
-.setup-step textarea { resize: vertical; min-height: 92px; font-family: ui-monospace, "SF Mono", monospace; font-size: 12px; }
+.setup-step input:disabled,
+.setup-step select:disabled { opacity: 0.55; cursor: not-allowed; }
+.setup-step label.is-disabled { opacity: 0.55; }
+.setup-step textarea {
+  min-height: 84px;
+  resize: vertical;
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+.setup-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
-/* free-first skip row */
+/* Keys are set in mono: a typo in an API key is invisible in a proportional face. */
+.setup-key { font-family: var(--mono); font-size: 12.5px; }
+
+/* ---- free-first row (license + premium): the ticked box is the loudest thing
+       on the screen, because the free tier is the default answer. ---- */
 .setup-skip-row {
   flex-direction: row !important;
-  align-items: center;
-  gap: 12px !important;
-  color: var(--text0) !important;
+  align-items: flex-start;
+  gap: 11px !important;
+  background: var(--brand-soft);
+  border: 1px solid rgb(var(--abs-brand-rgb) / 0.35);
+  border-radius: var(--r);
+  padding: 13px 14px;
+  cursor: pointer;
+  color: var(--fg) !important;
   font-weight: 500 !important;
-  cursor: pointer;
-  background: rgba(129, 140, 248, 0.07);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
 }
-.setup-skip-row:hover { border-color: var(--brand-primary-bright); }
 .setup-skip-row input {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 auto;
-  accent-color: var(--brand-deep);
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--brand);
   cursor: pointer;
 }
+.setup-skip-text { display: flex; flex-direction: column; gap: 2px; }
+.setup-skip-text b { font-size: 13px; font-weight: 500; color: var(--fg); }
+.setup-skip-text span { font-size: 12px; font-weight: 400; color: var(--fg-muted); }
+
+/* ---- provider rows (step 5): each key says what it is for. Six bare inputs in
+       a column told a first-time customer nothing. ---- */
+.setup-providers { display: flex; flex-direction: column; gap: 8px; }
+.setup-prov {
+  display: grid !important;
+  grid-template-columns: 136px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 8px 10px 8px 12px;
+  background: var(--surface);
+}
+.setup-prov-name { display: flex; flex-direction: column; gap: 1px; }
+.setup-prov-name b { font-size: 13px; font-weight: 500; color: var(--fg); }
+.setup-prov-name span { font-size: 11px; font-weight: 400; color: var(--fg-subtle); }
+.setup-prov input { padding: 7px 10px; }
 
 /* ---- actions ---- */
-.setup-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 10px;
-}
+.setup-actions { display: flex; gap: 10px; margin-top: 8px; }
 .setup-actions button {
   flex: 1;
-  padding: 13px 18px;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 11px;
-  border: 1px solid var(--border);
+  padding: 10px 16px;
+  font: 600 13.5px/1.4 var(--sans);
+  border-radius: var(--r);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--fg-muted);
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.2s, background 0.2s, filter 0.2s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.setup-back {
-  background: var(--bg2);
-  color: var(--text1);
+.setup-actions .setup-back:hover { color: var(--fg); border-color: var(--fg-subtle); }
+/* Qualified with .setup-actions on purpose: `.setup-actions button` above is
+ * (0,1,1) and a bare `.setup-next` is (0,1,0), so the base rule would win and
+ * every primary button in the wizard would render as a plain outline. */
+.setup-actions .setup-next,
+.setup-actions .setup-finish,
+.setup-actions .setup-run-test {
+  flex: 2;
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-fg);
 }
-.setup-back:hover { color: var(--text0); border-color: var(--text2); }
-.setup-next, .setup-finish {
-  background: var(--brand-gradient);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.28);
+.setup-actions .setup-next:hover,
+.setup-actions .setup-finish:hover,
+.setup-actions .setup-run-test:hover { background: rgb(var(--abs-brand-rgb) / 0.88); }
+.setup-actions button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
-.setup-next:hover, .setup-finish:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.07);
-  box-shadow: 0 10px 26px rgba(79, 70, 229, 0.36);
-}
+.setup-actions button[disabled] { opacity: 0.6; cursor: progress; }
 
-/* ---- error / results ---- */
+/* ---- error, results, verdict ---- */
 .setup-error {
-  background: rgba(248, 113, 113, 0.1);
-  border: 1px solid rgba(248, 113, 113, 0.4);
-  color: var(--error);
-  padding: 12px 16px;
-  border-radius: 10px;
+  background: var(--danger-soft);
+  border: 1px solid rgb(var(--abs-danger-rgb) / 0.35);
+  color: var(--danger);
+  padding: 11px 14px;
+  border-radius: var(--r);
   margin-bottom: 18px;
   font-size: 13px;
+  white-space: pre-line;
 }
-#setup-test-results {
-  background: var(--bg1);
+
+#setup-test-results { margin-bottom: 14px; }
+.setup-test-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.setup-res {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   border: 1px solid var(--border);
-  padding: 14px;
-  border-radius: 10px;
-  font-family: ui-monospace, "SF Mono", monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--text1);
-  min-height: 60px;
-  margin-bottom: 18px;
-  white-space: pre-wrap;
-  word-break: break-word;
+  border-radius: var(--r);
+  padding: 9px 12px;
+  font-size: 13px;
+  background: var(--surface);
 }
+.setup-res-name { flex: 1; font-weight: 500; color: var(--fg); }
+.setup-res-reason { font-size: 12px; color: var(--fg-subtle); }
+.setup-pill {
+  font: 500 10.5px/1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 7px;
+  border-radius: var(--r-sm);
+}
+.setup-pill--ok { background: var(--success-soft); color: var(--success); }
+.setup-pill--fail { background: var(--danger-soft); color: var(--danger); }
+.setup-pill--skipped { background: var(--raised); color: var(--fg-subtle); }
+
+/* The verdict. Whether chat can answer at all is the only thing this step is
+ * really testing, so it gets said in a sentence rather than left for the
+ * customer to infer from a list of ticks. */
+.setup-verdict {
+  border-radius: var(--r);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--fg);
+}
+.setup-verdict--ok { background: var(--success-soft); border: 1px solid rgb(var(--abs-success-rgb) / 0.3); }
+.setup-verdict--warn { background: var(--warning-soft); border: 1px solid rgb(var(--abs-warning-rgb) / 0.35); }
+.setup-verdict b { font-weight: 600; }
 
 /* ---- responsive ---- */
 @media (max-width: 760px) {
-  body { align-items: flex-start; padding: 24px 14px; }
+  body { align-items: flex-start; padding: 20px 12px; }
   .setup-shell { flex-direction: column; min-height: 0; max-width: 520px; }
   .setup-rail {
     flex: none;
     border-right: none;
     border-bottom: 1px solid var(--border);
-    padding: 28px 24px 22px;
+    padding: 24px 20px 18px;
   }
-  .setup-rail-top { margin-bottom: 24px; }
+  .setup-rail-top { margin-bottom: 20px; }
   .setup-progress { flex: none; }
   .setup-steps { flex-direction: row; }
   .setup-steps li {
@@ -361,26 +536,32 @@ body {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 8px;
+    gap: 7px;
     padding-bottom: 0;
   }
   .setup-steps li:not(:last-child)::after {
-    left: calc(50% + 17px);
-    right: calc(-50% + 17px);
-    top: 15px;
+    left: calc(50% + 14px);
+    right: calc(-50% + 14px);
+    top: 13px;
     bottom: auto;
     width: auto;
-    height: 2px;
-    transform: none;
+    height: 1px;
   }
   .setup-step-text { padding-top: 0; align-items: center; }
-  .setup-desc { display: none; }
-  .setup-rail-foot { display: none; }
-  .setup-main { padding: 26px 24px 30px; justify-content: flex-start; }
-  .setup-langbar { position: static; margin: 0 0 18px auto; width: fit-content; }
+  .setup-desc, .setup-answer, .setup-rail-foot { display: none; }
+  /* Six labels across a 390px phone collide — "Premium AI" wrapped into
+   * "Providers" and the row read as one run-on word. The number is the position;
+   * only the step you are standing on needs to say its name. */
+  .setup-lbl { display: none; }
+  .setup-steps li.active .setup-lbl { display: block; font-size: 12px; }
+  .setup-main { padding: 22px 20px 26px; }
+  .setup-row-2 { grid-template-columns: 1fr; }
+  .setup-prov { grid-template-columns: minmax(0, 1fr); gap: 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .setup-step { animation: none; }
-  .setup-actions button, .setup-dot { transition: none; }
+  .setup-actions button,
+  .setup-dot,
+  .setup-steps li::after { transition: none; }
 }

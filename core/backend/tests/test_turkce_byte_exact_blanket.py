@@ -30,29 +30,28 @@ CHAT_PY = BACKEND_ROOT / "app" / "api" / "chat.py"
 # list can't drift from the real UTF-8 encoding. Every entry is a Turkish
 # string that actually appears in setup.js's TR i18n dictionary.
 REQUIRED_SETUP_TR = [
-    "İleri",
+    "Devam",
     "Geri",
     "Şifre",
-    "Yönetici Hesabı",
-    "Lisans Anahtarı",
+    "Yönetici hesabınızı",
+    "Lisans anahtarı",
     "yapıştırın",
     "Ücretsiz",
     "Sağlayıcılar",
-    "Bağlantı Testi",
+    "Testi çalıştır",
     "Kurulumu Bitir",
     "geliştirme",
 ]
 
 # ASCII garbled Turkish (mojibake / flatten) — must NOT be present in setup.js.
 FORBIDDEN_SETUP_ASCII = [
-    "Ileri",
     "Sifre",
-    "Yonetici Hesabi",
-    "Lisans Anahtari",
+    "Yonetici hesabinizi",
+    "Lisans anahtari",
     "yapistirin",
     "Ucretsiz",
     "Saglayicilar",
-    "Baglanti Testi",
+    "Testi calistir",
     "gelistirme",
 ]
 
