@@ -193,16 +193,28 @@ function GeneralTab() {
 // means the licence expired but still works for a few more days: saying
 // "licensed" there would turn into a surprise outage the week after.
 type LicenseInfo = {
-  status: "demo" | "licensed" | "in_grace" | "expired" | "invalid" | "revoked";
+  status:
+    | "trial"
+    | "trial_expired"
+    | "licensed"
+    | "in_grace"
+    | "expired"
+    | "invalid"
+    | "revoked";
   allowed: boolean;
   tier: string | null;
   jti: string | null;
   seat_count: number | null;
   expires_at: string | null;
   customer_id: string | null;
-  demo: { remaining_seconds?: number; expired?: boolean } | null;
+  demo: {
+    remaining_seconds?: number;
+    expired?: boolean;
+    days_remaining?: number;
+  } | null;
   grace_days?: number;
   reason?: string;
+  detail?: string;
 };
 
 function maskJti(jti: string): string {
@@ -282,7 +294,7 @@ function LicenseTab() {
     );
   }
 
-  const isDemo = info.status === "demo";
+  const trialDaysLeft = info.demo?.days_remaining ?? null;
   const tierLabel = info.tier ?? "—";
   const seatLabel = info.seat_count !== null ? String(info.seat_count) : "—";
   const expiresLabel = info.expires_at
@@ -348,13 +360,28 @@ function LicenseTab() {
         )}
       </div>
 
-      {isDemo && (
+      {info.status === "trial" && (
         <div
           data-test="license-demo-banner"
-          className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-amber-200"
+          className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-amber-700 dark:text-amber-200"
         >
-          You are running the demo. Paste your licence below to activate this
-          server.
+          {trialDaysLeft === 1
+            ? "Last day of your trial."
+            : `${trialDaysLeft ?? 7} days left in your trial.`}{" "}
+          Everything is unlocked. Subscribe, or paste a licence below, to keep
+          chat and the agent running after that.
+        </div>
+      )}
+
+      {info.status === "trial_expired" && (
+        <div
+          data-test="license-trial-over-banner"
+          className="rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-rose-700 dark:text-rose-200"
+        >
+          Your trial has ended, so chat and the agent are paused. Nothing you put
+          on this server has been touched — your documents, meetings and keys are
+          still here, and you can read, export or delete all of them. Subscribe,
+          or paste a licence below, to switch chat back on.
         </div>
       )}
 

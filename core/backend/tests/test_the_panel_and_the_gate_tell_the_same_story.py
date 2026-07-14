@@ -152,7 +152,7 @@ def test_an_expired_licence_past_grace_reads_as_expired_and_refuses(
     assert not _chat_allowed()
 
 
-def test_an_install_with_no_key_is_reported_as_demo_and_still_works(
+def test_an_install_with_no_key_is_reported_as_on_trial_and_still_works(
     licensed_app, monkeypatch, client
 ):
     from app.config import settings
@@ -161,9 +161,44 @@ def test_an_install_with_no_key_is_reported_as_demo_and_still_works(
 
     info = _info(client)
 
-    assert info["status"] == "demo"
+    assert info["status"] == "trial"
     assert info["allowed"] is True
     assert _chat_allowed()
+
+
+def test_a_finished_trial_is_not_described_as_licensed(
+    licensed_app, monkeypatch, client, tmp_path
+):
+    """The failure this whole file exists to prevent, in its newest form.
+
+    When the trial verdicts were added to the gate but not to `/v1/license/info`,
+    they fell through to the licensed branch: the settings page told the owner of
+    an expired-trial server that it was "licensed" — with every licence field
+    null — while chat refused every message. The page and the gate have to break
+    the same way.
+    """
+    import json
+    import time
+
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "license_key", "")
+    # Into *this install's* data dir. Pointing `data_dir` at an empty directory
+    # instead makes the app think it was never set up, and every request comes
+    # back as the setup wizard.
+    started = time.time() - 30 * 86400
+    (Path(settings.data_dir) / "trial.json").write_text(
+        json.dumps({"started_at": started, "seen_at": started}), encoding="utf-8"
+    )
+
+    info = _info(client)
+
+    assert info["status"] == "trial_expired"
+    assert info["allowed"] is False
+    assert not _chat_allowed()
+    assert "export" in info["detail"], (
+        "the page refuses without telling the customer their data is still theirs"
+    )
 
 
 def test_a_server_revocation_reaches_the_settings_page_too(

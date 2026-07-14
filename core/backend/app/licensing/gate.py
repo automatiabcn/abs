@@ -33,10 +33,17 @@ The rule now:
     a bad signature refuses          — that is the licence being wrong
     a server revocation refuses      — that is the licence being cancelled
     a network failure never refuses  — that is *our* problem, not the customer's
-    no licence key at all is allowed — that is the free tier, and it must work
+    no licence key at all is a TRIAL — seven days, and then chat stops
 
-Commercial use without a licence is prevented by the Business Source Licence and
-a contract, not by breaking the software of the people who paid us.
+The product is a monthly subscription. There is no free tier: a server that keeps
+answering questions forever without one is not a trial, it is the product, given
+away. What the trial's end does *not* touch is the customer's own data — their
+documents, transcripts and keys stay readable, exportable and deletable, because
+holding a person's data hostage to a renewal is not a business model.
+
+And the network rule survives all of it. A customer who has paid, on a machine
+that cannot reach us, keeps working: the signature on their key is checkable on
+their own disk, and an outage of ours is not a reason to break their product.
 """
 
 from __future__ import annotations
@@ -62,7 +69,9 @@ _GRACE_SECONDS = GRACE_DAYS * 86400
 
 class Verdict(str, enum.Enum):
     LICENSED = "licensed"
-    UNLICENSED = "unlicensed"  # no key configured — the free tier
+    TRIAL = "trial"  # no key yet, inside the seven days
+    TRIAL_EXPIRED = "trial_expired"  # no key, and the seven days are up
+    UNLICENSED = "unlicensed"  # no key configured (kept: some callers still read it)
     IN_GRACE = "in_grace"  # expired, still inside the grace window
     EXPIRED = "expired"  # expired, past the grace window
     INVALID = "invalid"  # bad signature, malformed, wrong machine
@@ -77,11 +86,28 @@ class Decision:
 
     @property
     def detail(self) -> str:
-        """The `detail` an HTTP 403 carries. Stable — the panel reads it."""
+        """What the customer is told when they are refused.
+
+        A person who has just watched their trial end is not debugging our
+        enum — they want to know what happened and what to do. The machine-
+        readable part stays first (the panel keys off it); the sentence follows.
+        """
         if self.verdict is Verdict.REVOKED:
             return f"license_revoked:{self.reason or 'revoked'}"
         if self.verdict is Verdict.EXPIRED:
-            return "license_expired"
+            return (
+                "license_expired: your subscription has lapsed. Chat and the agent "
+                "are paused — your documents, meetings and keys are still here and "
+                "still yours to export or delete. Renew in the panel under Settings "
+                "→ Licence."
+            )
+        if self.verdict is Verdict.TRIAL_EXPIRED:
+            return (
+                "trial_expired: the seven-day trial is over. Chat and the agent are "
+                "paused — nothing you put on this server has been touched, and you "
+                "can still read, export or delete all of it. Subscribe in the panel "
+                "under Settings → Licence."
+            )
         return "license_invalid"
 
 
@@ -196,14 +222,28 @@ def evaluate() -> Decision:
     and never lies because someone set an environment variable."""
     token = (settings.license_key or "").strip()
     if not token:
-        # The free tier. It has to be excellent, and it cannot be excellent
-        # while 403ing. Checked *before* demo mode, which auto-arms on an empty
-        # key: both are allowed, but "no licence" and "showcase install" are
-        # different facts and the settings page reports them differently.
-        return Decision(True, Verdict.UNLICENSED, "no_license_key")
+        # No key means the trial — seven days from the moment this server was
+        # installed, then chat and the agent stop. It is not a free tier any more:
+        # the product is a monthly subscription, and a server that answers
+        # questions forever without one is not a trial, it is the product.
+        #
+        # What does *not* stop is access to what the customer put here. Their
+        # documents, transcripts and keys stay readable, exportable and
+        # deletable. Holding a person's own data hostage to a renewal is not a
+        # business model, it is a hostage situation.
+        #
+        # There is exactly one free window, and this is it. The fourteen-day
+        # "demo" used to be a second one, armed on the same empty key and
+        # answering to a different clock — two implementations of one rule, which
+        # is how a customer ends up served by their editor and refused by their
+        # panel. `licensing.demo` now reads this trial; it is a name, not a
+        # timer.
+        from app.licensing import trial
 
-    if _demo_active():
-        return Decision(True, Verdict.LICENSED, "demo")
+        state = trial.status()
+        if state.active:
+            return Decision(True, Verdict.TRIAL, f"trial_days_left:{state.days_left}")
+        return Decision(False, Verdict.TRIAL_EXPIRED, "trial_elapsed")
 
     from app.licensing.verifier import verify_license
 

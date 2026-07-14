@@ -193,7 +193,10 @@ def test_a_licence_expired_past_the_grace_window_is_refused(licensed_app, monkey
     assert decision.verdict is licence_gate.Verdict.EXPIRED
     with pytest.raises(HTTPException) as exc:
         chat_api._assert_license_ok()
-    assert exc.value.detail == "license_expired"
+    # The panel keys off the prefix; the rest of the sentence is for the person
+    # reading it, and it has one job — say that their data is still theirs.
+    assert exc.value.detail.startswith("license_expired")
+    assert "export" in exc.value.detail and "delete" in exc.value.detail
 
 
 def test_the_grace_window_is_seven_days(licensed_app, monkeypatch):
@@ -303,10 +306,16 @@ def test_an_offline_marker_in_the_cache_never_refuses(licensed_app, monkeypatch)
 # ---------------------------------------------------------------------------
 
 
-def test_an_install_with_no_licence_key_can_still_chat(licensed_app, monkeypatch):
-    """The free tier has to be excellent, and it cannot be excellent while
-    answering 403. Commercial use without a licence is prevented by the Business
-    Source Licence and a contract — not by breaking the software."""
+def test_an_install_with_no_licence_key_is_on_trial_and_can_chat(
+    licensed_app, monkeypatch
+):
+    """A fresh install with no key works, immediately and completely.
+
+    This used to be the free tier — no key, no limit, forever. The product is a
+    monthly subscription now, so the same install is a trial: it still answers on
+    day one without anyone typing a licence, and it stops after seven days. What
+    it must never do is answer 403 to its own first message.
+    """
     from app.config import settings
 
     monkeypatch.setattr(settings, "license_key", "")
@@ -314,8 +323,33 @@ def test_an_install_with_no_licence_key_can_still_chat(licensed_app, monkeypatch
     decision = licence_gate.evaluate()
 
     assert decision.allowed
-    assert decision.verdict is licence_gate.Verdict.UNLICENSED
+    assert decision.verdict is licence_gate.Verdict.TRIAL
     chat_api._assert_license_ok()  # does not raise
+
+
+def test_a_trial_that_has_run_out_stops_chat(licensed_app, monkeypatch, tmp_path):
+    """And says so in a sentence, not an enum — including the part a person
+    actually wants to know, which is what happens to their documents."""
+    import json
+    import time
+
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "license_key", "")
+    monkeypatch.setattr(settings, "data_dir", str(tmp_path), raising=False)
+    started = time.time() - 30 * 86400
+    (tmp_path / "trial.json").write_text(
+        json.dumps({"started_at": started, "seen_at": started}), encoding="utf-8"
+    )
+
+    decision = licence_gate.evaluate()
+
+    assert not decision.allowed
+    assert decision.verdict is licence_gate.Verdict.TRIAL_EXPIRED
+    with pytest.raises(HTTPException) as exc:
+        chat_api._assert_license_ok()
+    assert exc.value.detail.startswith("trial_expired")
+    assert "export" in exc.value.detail
 
 
 # ---------------------------------------------------------------------------

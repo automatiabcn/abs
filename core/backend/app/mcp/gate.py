@@ -18,9 +18,8 @@ tool that quietly does nothing.
 from __future__ import annotations
 
 import logging
-import time
 from functools import wraps
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict
 
 from app.config import settings
 
@@ -28,71 +27,56 @@ logger = logging.getLogger(__name__)
 
 
 _BLOCK_MESSAGE = (
-    "[LICENSE REQUIRED] ABS currently requires a license. "
-    "Demo period ended or license not configured. "
-    "Buy: https://abs.automatiabcn.com/"
+    "[SUBSCRIPTION REQUIRED] This ABS server is not on an active subscription — "
+    "the seven-day trial has ended, or the licence has lapsed. Tools are paused. "
+    "Everything on the server is still yours: documents, transcripts and keys can "
+    "be read, exported and deleted from the panel. Subscribe under "
+    "Settings → Licence."
 )
 
 
-def _verify_license_payload() -> Optional[Dict[str, Any]]:
-    """The current licence payload, or None if there is none or it will not verify."""
-    if not settings.license_key:
-        return None
-    try:
-        from app.licensing import verify_license
-
-        payload = verify_license(settings.license_key)
-        exp = payload.get("exp", 0)
-        if exp <= time.time():
-            return None
-        return payload
-    except Exception:
-        return None
-
-
-def _license_revoked_in_db(jti: Optional[str]) -> bool:
-    """JWT gecerli ama DB'de revoke edilmis mi? (refund flow)"""
-    if not jti:
-        return False
-    try:
-        from sqlmodel import Session, select
-
-        from app.db.models import License
-        from app.db.session import get_engine
-
-        with Session(get_engine()) as db:
-            from app.db.query_helpers import first_or_none
-
-            row = first_or_none(db, select(License).where(License.jti == jti))
-            if row and row.revoked_at is not None:
-                return True
-    except Exception as exc:
-        logger.info("gate revoke check skipped: %s", exc)
-    return False
-
-
 def _gate_status() -> Dict[str, Any]:
-    """Anlik gate durumu — license_active, demo_active, allowed."""
-    payload = _verify_license_payload()
-    license_active = payload is not None
-    if license_active:
-        if _license_revoked_in_db((payload or {}).get("jti")):
-            license_active = False
+    """Where this install stands, asked of the one place that knows.
 
-    demo_active = False
-    try:
-        from app.licensing.demo import is_active as demo_is_active
+    This module used to answer the question itself: its own signature check, its
+    own expiry check, its own revocation query against the database. Two
+    implementations of the same rule drift, and these two already had — the chat
+    gate learned about grace windows, offline verdicts and, now, the trial, while
+    this one still only knew "is there a key that parses". A customer on day three
+    of their trial would have been refused by their editor and served by their
+    panel, and both would have been telling the truth as they understood it.
 
-        demo_active = demo_is_active()
-    except Exception:
-        demo_active = False
+    One rule, one place: `app.licensing.gate`.
+    """
+    from app.licensing import gate as licence_gate
 
-    allowed = (not settings.mcp_require_license) or license_active or demo_active
+    # Two questions, and they are not the same one.
+    #
+    # `enforce()` decides whether this request runs, and it reads the escape
+    # hatches (ABS_TEST_MODE, ABS_LICENSE_GATE_DISABLED) — that is their job.
+    # `evaluate()` says where the install actually stands, and the fields below
+    # that *describe* it are read from that, because a bypass may excuse a server
+    # from the rule but it must never let the server lie about itself. The
+    # licence page learned this the hard way: it read through the hatch and told
+    # a customer a junk key was "licensed".
+    decision = licence_gate.enforce()
+    truth = licence_gate.evaluate()
+    verdict = truth.verdict
+
     return {
-        "license_active": license_active,
-        "demo_active": demo_active,
-        "allowed": allowed,
+        "license_active": verdict is licence_gate.Verdict.LICENSED,
+        "trial_active": verdict is licence_gate.Verdict.TRIAL,
+        # Kept for the SSE banner, which has asked this question since before the
+        # free window was called a trial. It is the same window now.
+        "demo_active": verdict is licence_gate.Verdict.TRIAL,
+        # `mcp_require_license` stays as the operator's switch — an air-gapped
+        # install with a site licence may want the tools open regardless — but it
+        # is no longer the reason a subscription is optional. Its default is now
+        # on: tools are the product, and the product is a subscription.
+        "allowed": (not settings.mcp_require_license) or decision.allowed,
         "require_license": settings.mcp_require_license,
+        "verdict": verdict.value,
+        "detail": "" if decision.allowed else decision.detail,
     }
 
 

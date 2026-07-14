@@ -5,7 +5,7 @@
   "errors.signature_invalid": "Verificación de firma fallida",
   "errors.payload_invalid": "Payload inválido",
   "errors.license_expired": "La licencia ha expirado",
-  "errors.license_required": "[LICENCIA REQUERIDA] ABS requiere una licencia. El periodo demo terminó o no hay licencia configurada. Comprar: https://abs.automatiabcn.com/",
+  "errors.license_required": "[SE REQUIERE SUSCRIPCIÓN] Este servidor ABS no tiene una suscripción activa: la prueba ha finalizado o la licencia ha expirado. El chat y las herramientas están en pausa. Todo en el servidor sigue siendo tuyo: los documentos, las transcripciones y las claves pueden leerse, exportarse y eliminarse desde el panel. Suscríbete en Ajustes → Licencia.",
   "errors.license_not_found": "No se encontró licencia activa o falta Stripe customer ID",
   "errors.provider_connection": "Error de conexión del proveedor: {provider} — {detail}",
   "errors.provider_json_parse": "Error parseando JSON del proveedor: {provider}",

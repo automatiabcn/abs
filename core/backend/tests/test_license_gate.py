@@ -15,6 +15,14 @@ def gate_env(monkeypatch, tmp_path: Path):
     """data_dir + cache_dir isolated + empty license_key + require_license off (each test overrides)."""
     from app.config import settings
 
+    # The MCP gate used to answer the licence question itself, which is why it
+    # could be tested while `conftest` had `ABS_TEST_MODE=1` set for the whole
+    # session. It now asks `licensing.gate`, and that flag is one of the gate's
+    # escape hatches — leaving it set here would mean these tests watch the
+    # hatch, not the gate.
+    monkeypatch.delenv("ABS_TEST_MODE", raising=False)
+    monkeypatch.delenv("ABS_LICENSE_GATE_DISABLED", raising=False)
+
     data = tmp_path / "data"
     data.mkdir()
     monkeypatch.setattr(settings, "data_dir", str(data))
@@ -76,7 +84,11 @@ async def test_gate_blocks_when_demo_expired_no_license(
     )
     monkeypatch.setattr(settings, "mcp_require_license", True)
     out = await hooked_tool(prompt="should-block")
-    assert out.startswith("[LICENSE REQUIRED]")
+    assert out.startswith("[SUBSCRIPTION REQUIRED]")
+    # The tools are where a customer feels the gate first — their editor stops
+    # answering. The refusal has to say what is paused and what is not.
+    assert "exported" in out and "deleted" in out
+    assert "should-block" not in out  # the tool body never ran
 
 
 @pytest.mark.asyncio

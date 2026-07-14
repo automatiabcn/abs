@@ -24,8 +24,12 @@ REQUIRED_KEYS = {
 }
 
 
-def test_license_info_demo_branch_when_no_key(client):
-    """No configured key → demo status with the countdown payload inlined."""
+def test_license_info_trial_branch_when_no_key(client):
+    """No configured key → the seven-day trial, with the countdown inlined.
+
+    It used to say "demo" and mean fourteen days. The product is a monthly
+    subscription now, the free window is a trial, and there is only one of it.
+    """
     settings.license_key = ""
 
     r = client.get(INFO_URL)
@@ -33,7 +37,9 @@ def test_license_info_demo_branch_when_no_key(client):
 
     body = r.json()
     assert REQUIRED_KEYS.issubset(body), f"missing keys: {REQUIRED_KEYS - set(body)}"
-    assert body["status"] == "demo"
+    assert body["status"] == "trial"
+    assert body["allowed"] is True
+    assert 1 <= body["demo"]["days_remaining"] <= 7
     # All licensed fields are explicit nulls so the UI doesn't render
     # "undefined" or fall back to the old hardcoded mock.
     for field in ("tier", "jti", "seat_count", "expires_at", "customer_id"):
