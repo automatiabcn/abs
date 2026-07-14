@@ -62,10 +62,10 @@ export default function SignupPage() {
       data-page="signup"
       className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-6 py-12"
     >
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+      <h1 className="text-2xl font-semibold tracking-tight">
         Create an account
       </h1>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+      <p className="mt-2 text-sm text-muted-foreground">
         Your account starts out pending — an admin on your team activates it. The
         workspace name is your team&apos;s part of the URL (
         <code>{tenantSlug || "your-co"}</code>.abs.local).
@@ -73,24 +73,26 @@ export default function SignupPage() {
 
       <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-800 dark:text-zinc-100">
+          <span className="font-medium">
             Email
           </span>
           <input
+            name="email"
             type="email"
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@your-co.com"
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:ring-zinc-50"
+            className="rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-ring/40"
             autoComplete="email"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-800 dark:text-zinc-100">
+          <span className="font-medium">
             Workspace name
           </span>
           <input
+            name="workspace"
             type="text"
             required
             value={tenantSlug}
@@ -100,14 +102,14 @@ export default function SignupPage() {
             // flag, where a literal `-` in a char class is a syntax error
             // ("Invalid character in character class"). The submit handler's
             // SLUG_PATTERN.test() + the backend already validate the slug.
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:ring-zinc-50"
+            className="rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-ring/40"
             autoComplete="off"
           />
         </label>
         <button
           type="submit"
           disabled={state === "submitting"}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
         >
           {state === "submitting" ? "Creating…" : "Create account"}
         </button>
@@ -123,7 +125,7 @@ export default function SignupPage() {
               ? "text-emerald-600 dark:text-emerald-400"
               : state === "error"
                 ? "text-rose-600 dark:text-rose-400"
-                : "text-zinc-600 dark:text-zinc-300")
+                : "text-muted-foreground")
           }
         >
           {message}
@@ -133,7 +135,7 @@ export default function SignupPage() {
       {/* /login links here, and nothing linked back — someone who followed the
           signup link by mistake, or who already has an account, had no way out
           of this page but the address bar. */}
-      <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-300">
+      <p className="mt-6 text-sm text-muted-foreground">
         Already have an account?{" "}
         <a className="underline" href="/login">
           Sign in

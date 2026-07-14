@@ -24,7 +24,16 @@ def test_cache_key_owner_namespaced():
 # ── #6 tenant-aware activation ───────────────────────────────────────────────
 
 
-def test_extra_configured_activates_provider():
+def test_extra_configured_activates_provider(monkeypatch):
+    # The point of the test is what `extra_configured` does when the operator has
+    # NOT configured groq globally. It used to read that premise off the ambient
+    # environment, so on any machine with a real GROQ_API_KEY in .env — a
+    # developer's, or a customer's — the suite went red on a product that was
+    # working perfectly. State the premise instead of hoping for it.
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "groq_api_key", "", raising=False)
+
     # With no global key, groq is not active...
     assert "groq" not in get_active_providers()
     # ...but a per-owner key (extra_configured) activates it.

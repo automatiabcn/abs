@@ -77,8 +77,18 @@ export default function ProviderKeysPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...scopeBody(), value: value.trim() }),
       });
-      if (!r.ok) { setErr(`Kaydedilemedi (HTTP ${r.status})`); return; }
+      if (!r.ok) { setErr(`Could not save the key (HTTP ${r.status}).`); return; }
       setValue("");
+      // Saving used to be the end of it: the row appeared as "not checked yet"
+      // and stayed that way, so a key with a typo in it sat in the panel looking
+      // installed until the day someone asked a question and the answer did not
+      // come. The save proves itself now.
+      await fetch("/v1/admin/provider-keys/test", {
+        method: "POST",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(scopeBody()),
+      }).catch(() => undefined);
       load();
     } catch { setErr("Could not save — the server did not answer."); }
     finally { setBusy(false); }
@@ -98,7 +108,7 @@ export default function ProviderKeysPage() {
       });
       const j = await r.json().catch(() => ({}));
       setProbe(j.ok ? "✓ The key works" : `✗ ${j.reason || "the provider rejected this key"}`);
-    } catch { setProbe("✗ test edilemedi"); }
+    } catch { setProbe("✗ The server did not answer the test."); }
     finally { setBusy(false); }
   }
 
