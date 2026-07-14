@@ -1,4 +1,4 @@
-# Docs Publishing Policy (T-R07)
+# Docs Publishing Policy
 
 `docs.automatiabcn.com` is the canonical home for ABS Server documentation.
 This policy explains the build chain, version strategy, and search setup so the
@@ -44,7 +44,7 @@ A separate **admin key** lives only in the Algolia dashboard for crawler runs.
 pip install \
   "mkdocs-material[imaging]>=9.5" \
   "mike>=2.1"
-# Note: Sprint 2G ITEM 3 removed `mkdocs-algolia-docsearch` — the
+# Note: `mkdocs-algolia-docsearch` was removed — the
 # package was never published to PyPI. Site search uses MkDocs
 # Material's built-in lunr.js plugin.
 
@@ -83,4 +83,4 @@ Adding a new doc: drop the `.md` under `docs/`, append it to `nav:`, run `mkdocs
 
 ## Migrating from `docs.abs.automatiabcn.com`
 
-Sprint 19 will configure DNS at `docs.automatiabcn.com` to point at the GitHub Pages site. Until then, the workflow publishes to the existing `gh-pages` branch and the legacy URL keeps working.
+DNS at `docs.automatiabcn.com` will be pointed at the GitHub Pages site. Until then, the workflow publishes to the existing `gh-pages` branch and the legacy URL keeps working.

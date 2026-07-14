@@ -1,6 +1,6 @@
 # Disaster Recovery Runbook
 
-> Targets: **RTO < 1 hour, RPO < 15 minutes**. Last drilled: pending T-062 first run.
+> Targets: **RTO < 1 hour, RPO < 15 minutes**. Last drilled: pending the first scheduled run.
 
 ## Scope
 
@@ -130,14 +130,14 @@ sign off:
 
 | Layer | RTO target | RPO target | Last measured |
 |---|---|---|---|
-| Postgres | 30 min | 5 min | TBD (T-062) |
+| Postgres | 30 min | 5 min | TBD |
 | Qdrant | 20 min | 1 hour | TBD |
 | ClickHouse | 30 min | 1 hour | TBD |
 | NATS | 5 min | 0 (replicated) | TBD |
 | Cerbos audit | 60 min | 15 min | TBD |
 
 Filing the first measured numbers and any breach analysis is the close-out
-artifact for T-062.
+artifact for the drill.
 
 ## Contacts
 

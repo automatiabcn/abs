@@ -1,4 +1,4 @@
-// T-R05 — Web Vitals budget enforcement. Uses the standard `web-vitals` API
+// Web Vitals budget enforcement. Uses the standard `web-vitals` API
 // surface that ships in every modern browser via PerformanceObserver. We
 // inject a small probe into each route, wait for the metrics to land, then
 // assert against the budget table in docs/qa/perf-budget-policy.md.

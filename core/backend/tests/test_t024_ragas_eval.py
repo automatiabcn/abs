@@ -1,4 +1,4 @@
-"""T-024 — RAGAS eval + CI regression check tests."""
+"""RAGAS eval + CI regression check tests."""
 
 from __future__ import annotations
 

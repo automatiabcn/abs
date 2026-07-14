@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "description": "T-015 — Golden eval dataset for ABS RAG multi-tenancy E2E. Each row defines a tenant, a corpus document, and a query/expected-doc-id pair the retriever should hit at top-K.",
+  "description": "Golden eval dataset for ABS RAG multi-tenancy E2E. Each row defines a tenant, a corpus document, and a query/expected-doc-id pair the retriever should hit at top-K.",
   "entries": [
     {
       "tenant_id": "tenant-acme",

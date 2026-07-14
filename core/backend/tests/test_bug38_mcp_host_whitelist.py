@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""BUG-38 — FastMCP host whitelist resolves to localhost + customer
+"""FastMCP host whitelist resolves to localhost + customer
 domain + sslip.io + ABS_MCP_ALLOWED_HOSTS env extras.
 
 We test the helper functions only — module reload would re-create the

@@ -1,4 +1,4 @@
-# T-012 — Cerbos RAG resource policy test cases.
+# Cerbos RAG resource policy test cases.
 ---
 name: rag_collection_policy_tests
 description: "Coverage for resource.rag_collection.v1."

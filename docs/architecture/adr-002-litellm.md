@@ -8,13 +8,13 @@
 | Deciders | Automatia BCN engineering |
 | Supersedes | – |
 | Superseded by | – |
-| References | [`litellm-vs-native.md`](./litellm-vs-native.md), T-S02.1, T-S02.4, T-018 |
+| References | [`litellm-vs-native.md`](./litellm-vs-native.md) |
 
 ## Context
 
-Sprint 19 T-S02.4 evaluated routing every LLM call through a LiteLLM proxy versus keeping ABS's own provider adapters as the canonical path. The trade-off document covers the matrix in detail; this ADR records the formal decision so it is unambiguous in future audits and onboarding.
+We evaluated routing every LLM call through a LiteLLM proxy versus keeping ABS's own provider adapters as the canonical path. The trade-off document covers the matrix in detail; this ADR records the formal decision so it is unambiguous in future audits and onboarding.
 
-ABS today ships **17 native provider integrations** (5 hex-restructured in T-S02.1 + 12 cascade providers) that are production-tested with Cerbos pre-filter, LangFuse `@observe` traces, T-018 cost table, and the T-016 SOC2 audit chain. LiteLLM is a popular open-source gateway that speaks an OpenAI-compatible API to many upstream providers and ships its own budget UIs.
+ABS today ships **17 native provider integrations** (5 hexagonal packages + 12 cascade providers) that are production-tested with a Cerbos pre-filter, LangFuse `@observe` traces, the cost table, and the SOC2 audit chain. LiteLLM is a popular open-source gateway that speaks an OpenAI-compatible API to many upstream providers and ships its own budget UIs.
 
 ## Decision
 
@@ -26,9 +26,9 @@ The `LiteLLMProxyProvider` class in `app/providers/litellm_proxy.py` ships in ma
 
 ## Rationale
 
-1. **Latency.** Native httpx call to Groq median ~170 ms; LiteLLM proxy in same VPC adds 12–18 ms median (+25 ms p95). Across nested workflow steps (T-S03.1 templates frequently chain 3–5 nodes) the proxy hop compounds.
-2. **Operational control.** ABS already owns the cost table (`observability/cost_table.py`), retry / circuit breaker (`cascade/breaker.py`), and audit chain (T-016). Routing through LiteLLM creates dual-cost accounting and a second retry policy, which break SOC2 single-source-of-truth invariants.
-3. **Provider feature coverage.** Anthropic tool_use, Gemini grounding/multimodal, and Cohere rerank are first-class in our adapter.py modules. LiteLLM normalises everything to OpenAI `tool_calls` and drops vendor metadata that ABS RAG verification (T-021) depends on.
+1. **Latency.** Native httpx call to Groq median ~170 ms; LiteLLM proxy in same VPC adds 12–18 ms median (+25 ms p95). Across nested workflow steps (templates frequently chain 3–5 nodes) the proxy hop compounds.
+2. **Operational control.** ABS already owns the cost table (`observability/cost_table.py`), retry / circuit breaker (`cascade/breaker.py`), and the audit chain. Routing through LiteLLM creates dual-cost accounting and a second retry policy, which break SOC2 single-source-of-truth invariants.
+3. **Provider feature coverage.** Anthropic tool_use, Gemini grounding/multimodal, and Cohere rerank are first-class in our adapter.py modules. LiteLLM normalises everything to OpenAI `tool_calls` and drops vendor metadata that ABS RAG verification depends on.
 4. **Drop-in onboarding for LiteLLM-standardised orgs.** The opt-in adapter avoids a binary "use ABS or LiteLLM" choice — orgs already running LiteLLM gateways for budget UIs can flip the env var with no migration.
 5. **Maintenance burden.** Dual paths cost some test coverage and CI minutes; we accept this in exchange for #1–#4.
 

@@ -1,4 +1,4 @@
-# T-060 — nightly security scans (SAST + SCA + secrets + container + SBOM).
+# Nightly security scans (SAST + SCA + secrets + container + SBOM).
 # Soft-fail philosophy: flag findings as artifacts; only break the build on
 # explicit critical-severity exit codes.
 # Security: every interpolation routes through `env:` blocks or is internal

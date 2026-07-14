@@ -1,4 +1,4 @@
-// Sprint 2J FAZ B — Setup Wizard E2E via Playwright `request` fixture.
+// Setup Wizard E2E via Playwright `request` fixture.
 //
 // The setup wizard ships as a vanilla HTML+JS SPA served by the
 // backend at `/setup`, talking to `/v1/setup/*` JSON endpoints. The
@@ -32,7 +32,7 @@ type SetupState = {
 
 const LICENSE_KEY = process.env.ABS_SETUP_LICENSE_KEY ?? "";
 
-test.describe("Sprint 2J — setup wizard E2E (prod stack)", () => {
+test.describe("setup wizard E2E (prod stack)", () => {
   test.beforeEach(async ({ request }, testInfo) => {
     await requireProdStack(request, testInfo);
   });
@@ -163,13 +163,13 @@ test.describe("Sprint 2J — setup wizard E2E (prod stack)", () => {
   });
 });
 
-test.describe("Sprint 2J — license-key flow (gated, real JWT)", () => {
+test.describe("license-key flow (gated, real JWT)", () => {
   test.beforeEach(async ({ request }, testInfo) => {
     await requireProdStack(request, testInfo);
     if (!LICENSE_KEY) {
       testInfo.skip(
         true,
-        "Sprint 2J FAZ B: set ABS_SETUP_LICENSE_KEY to a freshly minted JWT to exercise the license + RAG smoke path.",
+        "Set ABS_SETUP_LICENSE_KEY to a freshly minted JWT to exercise the license + RAG smoke path.",
       );
     }
   });

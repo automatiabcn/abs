@@ -6,7 +6,7 @@ This document tracks every third-party software dependency bundled with **abs-se
 
 ## Table of Contents
 
-- [Runtime services (Sprint 20)](#runtime-services-sprint-20)
+- [Runtime services](#runtime-services)
 - [Python backend deps (existing)](#python-backend-deps-existing)
 - [Frontend deps (existing)](#frontend-deps-existing)
 - [TTS + ASR model files](#tts--asr-model-files)
@@ -15,7 +15,7 @@ This document tracks every third-party software dependency bundled with **abs-se
 
 ---
 
-## Runtime services (Sprint 20)
+## Runtime services
 
 | Service | SPDX License | Upstream URL | Role in ABS | Obligations |
 |---------|--------------|--------------|-------------|-------------|
@@ -81,7 +81,7 @@ The core ABS backend image ships exclusively with dependencies under permissive 
 
 The optional **Piper** container introduces **espeak-ng** under GPL-3.0-or-later. Because GPL-3.0 is a strong copyleft license, any redistribution of that container must also provide the complete source code for espeak-ng (including any modifications) and retain the GPL notice. This obligation does **not** cascade to the core ABS backend image because the GPL-covered binary is isolated in its own container layer. Operators who choose to ship the Piper container as part of a commercial offering must therefore publish the corresponding source archive or provide a written offer to supply it.
 
-During Sprint 20 we deliberately rejected the Coqui CPML-licensed TTS component (non-commercial clause) and replaced it with Piper to avoid non-permissive restrictions. Consequently, ABS contains no CPML, AGPL, or other non-commercial licenses.
+We deliberately rejected the Coqui CPML-licensed TTS component (non-commercial clause) and replaced it with Piper to avoid non-permissive restrictions. Consequently, ABS contains no CPML, AGPL, or other non-commercial licenses.
 
 ---
 
@@ -97,4 +97,4 @@ Compliance is the responsibility of the contributor; failure to update this docu
 
 ---
 
-_Last updated: 2026-04-29 (Sprint 20)_
+_Last updated: 2026-04-29_

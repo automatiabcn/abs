@@ -1,11 +1,11 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""Sprint 2K — RLS enforcement on the 3 audit tables.
+"""RLS enforcement on the 3 audit tables.
 
 The default lane runs against SQLite, which has no RLS engine; these
 tests therefore carry the ``postgres_only`` marker so they only run on
-the new CI postgres matrix lane (FAZ F). Locally the suite is skipped
+the new CI postgres matrix lane. Locally the suite is skipped
 when ``ABS_TEST_POSTGRES_URL`` is unset.
 
 The contract under test:
@@ -39,7 +39,7 @@ if not _RAW_POSTGRES_URL:
     )
 POSTGRES_URL: str = _RAW_POSTGRES_URL  # narrowed after the skip guard
 
-# Sprint 2N.2 FAZ D: data ops run as a non-superuser, non-BYPASSRLS role
+# Data ops run as a non-superuser, non-BYPASSRLS role
 # so the RLS policies actually filter. Falls back to POSTGRES_URL when the
 # RLS-specific URL isn't set (legacy single-role test runs continue to
 # work, just don't exercise RLS the same way).
@@ -69,7 +69,7 @@ def _run_alembic(args: list[str]) -> None:
 
 
 def _engine():
-    # Sprint 2N.2 FAZ D: NullPool prevents connection reuse across the
+    # NullPool prevents connection reuse across the
     # `with engine.connect()` blocks the tests use. Without it, the
     # second connect() inherits the prior block's SET abs.tenant_id
     # GUC from the pooled connection and the "no GUC" assertions fail.
@@ -201,7 +201,7 @@ def test_rls_downgrade_restores_global_visibility() -> None:
         conn.execute(text("SET abs.tenant_id = 'tenant_a'"))
         jti = _seed_audit_row(conn, "tenant_a")
 
-    # Sprint 2N.2 FAZ D: migration 0015b's downgrade intentionally runs
+    # Migration 0015b's downgrade intentionally runs
     # `DROP ROLE IF EXISTS abs_admin` without revoking grants first
     # (prod safety: a live admin connection must not be silently
     # stripped). CI granted abs_admin SELECT/CONNECT/USAGE, so the

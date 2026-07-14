@@ -10,7 +10,7 @@ ABS umbrella chart installed.
 2. Verify pods:
    kubectl get pods -l app.kubernetes.io/name={{ include "abs.name" . }} -l app.kubernetes.io/instance={{ .Release.Name }}
 
-3. Caveats closed by this chart (Sprint 15-16 / T-058):
+3. Caveats closed by this chart:
    #1  Real LLM/voice/SaaS swaps  → mockMode=false, anthropic + whisperx + elevenlabs
    #2  GPU node pool + budgets    → gpu.nodeSelector + gpu.budgets
    #3  Multi-replica state        → state.backend=postgres + state.redisUrl
@@ -24,5 +24,5 @@ ABS umbrella chart installed.
    #14 Stripe live mode           → stripe.liveMode=true (manual approval gate)
 
    Open caveats remaining for later tasks:
-   #4  PricingPage React          → T-061
-   #6  External OAuth pen-test    → T-060
+   #4  PricingPage React          → shipped
+   #6  External OAuth pen-test    → covered by the nightly security scans

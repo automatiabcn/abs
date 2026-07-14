@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""Sprint 2C ITEM-1 - /v1/admin/tenant + /v1/admin/branding guards."""
+"""/v1/admin/tenant + /v1/admin/branding guards."""
 
 from __future__ import annotations
 

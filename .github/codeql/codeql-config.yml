@@ -1,6 +1,6 @@
 name: "ABS CodeQL custom config"
 
-# Sprint 2E ITEM-B — `_safe_path._safe_open()` performs three sanitization
+# `_safe_path._safe_open()` performs three sanitization
 # steps that CodeQL's default `py/path-injection` taint model does not
 # recognise as a sanitizer:
 #

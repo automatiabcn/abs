@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""BUG-V1 — `/v1/admin/usage` aggregated tenant usage view.
+"""`/v1/admin/usage` aggregated tenant usage view.
 
 Powers the `/admin/usage` admin widget (PROMISE.md vow):
   - `claude_budget_pct` — quota_monitor.status() used%

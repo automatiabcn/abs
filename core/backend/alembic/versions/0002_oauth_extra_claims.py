@@ -1,4 +1,4 @@
-"""T-005 — Add extra_claims_json to oauth_auth_codes and oauth_refresh_tokens.
+"""Add extra_claims_json to oauth_auth_codes and oauth_refresh_tokens.
 
 Carries tenant_id / roles / future custom claims into issued JWTs.
 

@@ -1,11 +1,11 @@
-"""T-040 — Workflow + meeting tenant isolation pen-test.
+"""Workflow + meeting tenant isolation pen-test.
 
 Walks every meeting/workflow/email helper that takes a tenant_id and asserts:
   1. tenant A artefact is invisible to tenant B
   2. registry/store APIs reject empty/missing tenant_id
-  3. Cerbos pre-filter (T-012) runs BEFORE Qdrant (T-009 wrapper) on /v1/rag/*
+  3. The Cerbos pre-filter runs BEFORE the Qdrant wrapper on /v1/rag/*
 
-Closes the T-040 caveat ("workflow tenant isolation pen-test").
+Closes the workflow tenant-isolation pen-test caveat.
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
-"""BUG-V3 — opt-in flip + quota-block events emit to abs.audit.
+"""opt-in flip + quota-block events emit to abs.audit.
 
 PROMISE.md vow:
-  "every opt-in flip and quota-block event written to T-016 SOC2 audit log."
+  "every opt-in flip and quota-block event written to the SOC2 audit log."
 
 Two contracts pinned:
   1. `detect_and_emit_flip` writes nothing the first time (no prior

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Sprint 2D ITEM-2.3 — CodeQL py/stack-trace-exposure regression tests.
+"""CodeQL py/stack-trace-exposure regression tests.
 
 Three alerts:
   - #46 core/backend/app/api/admin/providers_save.py:245 (last_test.error)

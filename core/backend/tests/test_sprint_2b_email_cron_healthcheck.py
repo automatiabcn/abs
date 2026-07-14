@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""Sprint 2B — email-cron healthcheck override sanity guard.
+"""email-cron healthcheck override sanity guard.
 
 Static check: both customer + root compose files declare a process
 based probe (pgrep on email_tick) and override the inherited backend

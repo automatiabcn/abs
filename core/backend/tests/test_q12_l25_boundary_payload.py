@@ -6,7 +6,7 @@ Brief asked for limits at:
   - workflow 100 nodes
   - plugin install 50MB
 
-Audit revealed the *real* declared limits in code (post-Sprint 19+):
+The audit revealed the *real* declared limits in code:
 
 | Endpoint                    | Field             | Pre-Round 17 cap         |
 |-----------------------------|-------------------|--------------------------|

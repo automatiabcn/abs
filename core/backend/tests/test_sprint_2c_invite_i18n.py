@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""Sprint 2C ITEM-5 - invite email i18n templates extracted from inline HTML."""
+"""Invite email i18n templates extracted from inline HTML."""
 
 from __future__ import annotations
 

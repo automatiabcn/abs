@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""Sprint 2E ITEM-A — Gemini header-auth migration tests.
+"""Gemini header-auth migration tests.
 
 Verifies that all 9 migrated call sites send `x-goog-api-key: <KEY>` as a
 request header and that the request URL no longer contains `?key=<KEY>`.

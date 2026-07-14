@@ -1,4 +1,4 @@
-"""T-021 — Two-step plan-first text2SQL tests."""
+"""Two-step plan-first text2SQL tests."""
 
 from __future__ import annotations
 

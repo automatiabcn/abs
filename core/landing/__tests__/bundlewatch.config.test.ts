@@ -4,10 +4,10 @@
  * Production use requires a Commercial License - see LICENSE.
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  *
- * Sprint 2D ITEM-4 — Bundle threshold regression test.
+ * Bundle threshold regression test.
  *
- * Sprint 2C raised the `*.js` catchall to 160 KB as a pragmatic workaround.
- * Sprint 2D dynamically imports Tremor charts (UsageTrendChart) and tightens
+ * Raised the `*.js` catchall to 160 KB as a pragmatic workaround.
+ * Dynamically imports Tremor charts (UsageTrendChart) and tightens
  * the thresholds: synchronous first-load chunks (main, framework, vendor) are
  * capped at <=90 KB, async heavy chunks (three.js, recharts) keep the 160 KB
  * allowance.
@@ -26,7 +26,7 @@ function thresholdKbOf(path: string): number {
   return Number(m[1]);
 }
 
-describe("bundlewatch.config.json — Sprint 2D thresholds", () => {
+describe("bundlewatch.config.json — thresholds", () => {
   it("framework chunk is capped at <= 65 KB", () => {
     expect(thresholdKbOf(".next/static/chunks/framework-*.js")).toBeLessThanOrEqual(65);
   });
@@ -67,7 +67,7 @@ describe("bundlewatch.config.json — Sprint 2D thresholds", () => {
 
   it("there is no blanket *.js catchall at 160 KB", () => {
     // The 2C pragmatic config had a wildcard `.next/static/chunks/*.js` at
-    // 160 KB which hid regressions in first-load chunks. Sprint 2D removed
+    // 160 KB which hid regressions in first-load chunks. That catchall was removed
     // it in favour of scoped patterns.
     const blanket = config.files.find(
       (f: { path: string; maxSize: string }) =>

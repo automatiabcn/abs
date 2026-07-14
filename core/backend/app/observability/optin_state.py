@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""BUG-V3 — Track Anthropic opt-in flips and emit a SOC2 audit row.
+"""Track Anthropic opt-in flips and emit a SOC2 audit row.
 
 PROMISE.md:
   "every opt-in flip and quota-block event written to the SOC2

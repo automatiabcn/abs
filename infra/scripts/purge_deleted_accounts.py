@@ -105,7 +105,7 @@ def main(argv=None) -> int:
             if not args.dry_run:
                 entry["counts"] = _purge_one(db, row)
                 out["purged"] += 1
-                # Sprint 2I UAT-032 — purge success is part of the KVKK
+                # Purge success is part of the KVKK
                 # audit trail (Article 7 + GDPR Article 17). Background
                 # task → request=None.
                 emit_event(

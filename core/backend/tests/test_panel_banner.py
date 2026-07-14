@@ -15,7 +15,7 @@ def test_panel_html_contains_demo_banner():
 
 
 def test_panel_js_handles_license_status_event():
-    # T-R02 — panel.js was split into ES modules under panel/. The license
+    # panel.js was split into ES modules under panel/. The license
     # status event listener now lives in sse.js, the handler in widgets.js,
     # and the inline-onclick handler in ui.js.
     sse = (PANEL_DIR / "assets" / "panel" / "sse.js").read_text(encoding="utf-8")

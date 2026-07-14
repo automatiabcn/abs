@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-// T-R03 fix #2 — `ANALYZE=true npm run build` writes .next/analyze/*.html
+// `ANALYZE=true npm run build` writes .next/analyze/*.html
 // reports we can ship to the QA artifacts dir.
 //
 // Brief 4 R1 — `@next/bundle-analyzer` is an optional devDep we don't
@@ -31,7 +31,7 @@ if (ANALYZE_ENABLED) {
  * - Strict-Transport-Security: HSTS (production only — Caddy/Vercel adds in HTTP)
  * - Content-Security-Policy: tight allowlist for self + Stripe + Loom embeds
  */
-// T-R03 revise — dev mode adds `'unsafe-eval'` so React Refresh + Framer Motion
+// Dev mode adds `'unsafe-eval'` so React Refresh + Framer Motion
 // runtime can hydrate. Production CSP is unchanged (strict).
 const IS_DEV = process.env.NODE_ENV !== "production";
 
@@ -78,12 +78,12 @@ const BACKEND_URL = process.env.ABS_BACKEND_URL ?? "http://localhost:8000";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // T-Q06 — emit standalone server output so the multi-stage Dockerfile can
+  // Emit standalone server output so the multi-stage Dockerfile can
   // ship a minimal runtime image (`node server.js`).
   output: "standalone",
-  // T-Q06 — silence the multi-lockfile root-inference warning seen in dev.
+  // Silence the multi-lockfile root-inference warning seen in dev.
   outputFileTracingRoot: __dirname,
-  // BUG-2 — barrel imports from icon + animation libs were
+  // Barrel imports from icon + animation libs were
   // pulling ~8k modules into /admin/marketplace's first compile (21s) and
   // similar workflow pages. `optimizePackageImports` rewrites named imports
   // to deep entry points so dev compiles only touch the icons we actually

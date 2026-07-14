@@ -1,4 +1,4 @@
-"""Sprint 2K — backfill tenant_id for the 3 RLS-guarded audit tables.
+"""Backfill tenant_id for the 3 RLS-guarded audit tables.
 
 Revision ID: 0014b_backfill_tenant_id
 Revises: 0014_tenant_id_audit_tables

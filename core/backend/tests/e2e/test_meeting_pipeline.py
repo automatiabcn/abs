@@ -1,4 +1,4 @@
-"""T-032 — Meeting pipeline E2E (transcript → action items → tickets → RAG)."""
+"""Meeting pipeline E2E (transcript → action items → tickets → RAG)."""
 
 from __future__ import annotations
 

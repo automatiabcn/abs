@@ -1,4 +1,4 @@
-"""T-005 — MCP gateway base tests.
+"""MCP gateway base tests.
 
 Covers JWT validation, Cerbos authorization, and end-to-end happy path
 (authorize → token → /v1/projects/{id}). The Cerbos PDP is replaced by

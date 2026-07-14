@@ -1,4 +1,4 @@
-# T-033 — n8n self-host Helm values (queue mode for horizontal scaling).
+# n8n self-host Helm values (queue mode for horizontal scaling).
 # helm install n8n community-charts/n8n -n abs-workflow --create-namespace -f infra/helm/n8n-values.yaml
 
 global:

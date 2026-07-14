@@ -1,12 +1,12 @@
 # RLS Admin Bypass — Operations Runbook
 
 **Audience:** On-call operator running production deploys.
-**Owner:** Sprint 2K (Postgres RLS migration).
+**Scope:** the Postgres RLS migration.
 **Last updated:** 2026-05-14.
 
 ## Why this exists
 
-Sprint 2K enables Postgres Row Level Security on three audit tables:
+Migration `0015` enables Postgres Row Level Security on three audit tables:
 
 - `customer_audit_entries`
 - `webhook_events`

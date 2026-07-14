@@ -1,4 +1,4 @@
-# T-057 — full ABS CI/CD pipeline (lint → test → migration → build → helm → staging → prod manual approve).
+# Full ABS CI/CD pipeline (lint → test → migration → build → helm → staging → prod manual approve).
 # Security: every interpolation is from controlled sources (github.actor, github.sha, github.ref_name,
 # workflow_dispatch.inputs.target_env [choice], or `needs.*.outputs.*`). No untrusted PR/issue/commit text
 # is ever expanded into a `run:` block.
@@ -165,7 +165,7 @@ jobs:
           set -e
           charts=$(find infra/helm -name Chart.yaml | xargs -I {} dirname {} || true)
           if [ -z "$charts" ]; then
-            echo "::warning::No helm chart found yet (T-058 umbrella will land it)."
+            echo "::warning::No helm chart found yet (the umbrella chart will land it)."
             exit 0
           fi
           for d in $charts; do
@@ -261,7 +261,7 @@ jobs:
         run: |
           set -e
           if [ ! -f "infra/helm/abs/Chart.yaml" ]; then
-            echo "::warning::Umbrella chart at infra/helm/abs/ pending T-058 — dry-run only."
+            echo "::warning::Umbrella chart at infra/helm/abs/ is pending — dry-run only."
             exit 0
           fi
           if [ "${DEPLOY_DRY_RUN:-0}" = "1" ]; then
@@ -325,7 +325,7 @@ jobs:
           IMAGE_TAG: ${{ needs.docker-build.outputs.image_tag }}
         run: |
           if [ ! -f "infra/helm/abs/Chart.yaml" ]; then
-            echo "::error::Umbrella chart not present (T-058 prerequisite)."
+            echo "::error::Umbrella chart not present."
             exit 1
           fi
           helm upgrade --install abs ./infra/helm/abs \

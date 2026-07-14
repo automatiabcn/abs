@@ -1,4 +1,4 @@
-# T-009 — Qdrant overlay (vector DB with snapshot/backup volume).
+# Qdrant overlay (vector DB with snapshot/backup volume).
 # Compose with the dev base via:
 #   docker compose -f infra/docker-compose.yml \
 #                  -f infra/docker-compose.dev.yml \

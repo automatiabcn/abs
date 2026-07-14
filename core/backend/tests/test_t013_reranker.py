@@ -1,4 +1,4 @@
-"""T-013 — Cross-encoder reranker tests (mock backend, cache, fallback gates)."""
+"""Cross-encoder reranker tests (mock backend, cache, fallback gates)."""
 
 from __future__ import annotations
 

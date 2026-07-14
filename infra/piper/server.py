@@ -33,7 +33,7 @@ logger = logging.getLogger("piper-server")
 MODEL_DIR = Path(os.environ.get("ABS_PIPER_MODEL_DIR", "/models")).resolve(strict=False)
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
-# Sprint 2D ITEM-2.1 — only filenames matching this regex are allowed to be
+# Only filenames matching this regex are allowed to be
 # composed into MODEL_DIR. Defends against path-traversal even though
 # VOICE_INDEX is a closed allowlist (defense-in-depth).
 _VOICE_ID_RE = __import__("re").compile(r"^[A-Za-z0-9_-]+$")

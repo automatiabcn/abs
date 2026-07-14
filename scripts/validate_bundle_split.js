@@ -9,7 +9,7 @@
  *   delta_t = -savedBytes / throughput  +  extraRTTs * RTT
  *
  * Usage:
- *   node scripts/validate_bundle_split.js                # full Sprint 21 audit
+ *   node scripts/validate_bundle_split.js                # full audit
  *   node scripts/validate_bundle_split.js --json         # machine-readable
  */
 
@@ -128,7 +128,7 @@ if (require.main === module) {
   if (args.includes('--json')) {
     console.log(JSON.stringify({ rows, summary: summarize(rows) }, null, 2));
   } else {
-    console.log('Q12-L17 — Sprint 21 bundle code-split break-even decision matrix');
+    console.log('Bundle code-split break-even decision matrix');
     console.log('');
     console.log(renderMarkdown(rows));
     console.log('');

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# T-062 — Qdrant snapshot + S3 archive (per-collection).
+# Qdrant snapshot + S3 archive (per-collection).
 set -euo pipefail
 
 QDRANT_URL="${QDRANT_URL:-http://qdrant:6333}"

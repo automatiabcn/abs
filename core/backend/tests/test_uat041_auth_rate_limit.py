@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-041 — /auth/login rate-limit + per-email backoff."""
+"""/auth/login rate-limit + per-email backoff."""
 
 from __future__ import annotations
 

@@ -3,7 +3,7 @@
 **Status:** living document; revisit on every sprint that adds
 schema, RBAC, or new tenant-scoped resources.
 **Owner:** Security working group.
-**Last updated:** 2026-05-14 (Sprint 2K — Postgres RLS).
+**Last updated:** 2026-05-14 (Postgres RLS).
 
 ## In scope
 
@@ -33,12 +33,12 @@ those are tracked in `docs/security/owasp_rag_checklist.md` and the
 
 | Asset | Layer 1 (app filter) | Layer 2 (Cerbos PDP) | Layer 3 (Postgres RLS) | Notes |
 |-------|----------------------|----------------------|------------------------|-------|
-| `customer_audit_entries` | ✅ SQLModel queries filter on `license_jti`/tenant | ✅ `audit_log` policy | ✅ Sprint 2K — FORCE + BYPASSRLS role | KVKK/GDPR audit trail — highest blast radius |
-| `webhook_events` | ✅ filter by `license_jti` | ✅ `webhook` policy | ✅ Sprint 2K | Stripe PII + plan tier |
-| `vault_audit_entries` | ✅ filter by `actor` claim | ✅ `vault` policy | ✅ Sprint 2K | Vault key rotations |
-| `licenses` | ✅ via owner email | ✅ `license` policy | ⏳ Sprint 2L enrolment | Customer identity |
-| `meetings`, `chat_*`, `feature_usage_log`, `usage_log`, `data_export_jobs`, `tenant_invites`, `tenant_installed_plugins` | ✅ tenant_slug | ✅ resource policies | ⏳ Sprint 2L enrolment | Defence in depth gap until 2L |
-| Qdrant vectors | ✅ per-tenant collection name | ✅ pre-Qdrant Cerbos gate (T-012) | n/a (Qdrant has no RLS) | Cross-tenant DENY enforced pre-RPC |
+| `customer_audit_entries` | ✅ SQLModel queries filter on `license_jti`/tenant | ✅ `audit_log` policy | ✅ FORCE + BYPASSRLS role | KVKK/GDPR audit trail — highest blast radius |
+| `webhook_events` | ✅ filter by `license_jti` | ✅ `webhook` policy | ✅ `0015` | Stripe PII + plan tier |
+| `vault_audit_entries` | ✅ filter by `actor` claim | ✅ `vault` policy | ✅ `0015` | Vault key rotations |
+| `licenses` | ✅ via owner email | ✅ `license` policy | ⏳ pending enrolment | Customer identity |
+| `meetings`, `chat_*`, `feature_usage_log`, `usage_log`, `data_export_jobs`, `tenant_invites`, `tenant_installed_plugins` | ✅ tenant_slug | ✅ resource policies | ⏳ pending enrolment | Defence-in-depth gap until enrolment |
+| Qdrant vectors | ✅ per-tenant collection name | ✅ pre-Qdrant Cerbos gate | n/a (Qdrant has no RLS) | Cross-tenant DENY enforced pre-RPC |
 
 ## Attack scenarios reviewed
 
@@ -52,9 +52,9 @@ any of the three layers.
 ### S2 — Cerbos fail-open emergency switch left on
 
 Layer 2 collapses. Layer 1 still filters at the ORM and Layer 3
-(Sprint 2K) still enforces tenant match at the DB. A combined
+(migration `0015`) still enforces tenant match at the DB. A combined
 "emergency switch on" + "ORM filter forgotten on a new endpoint"
-incident is required for actual cross-leak. **Sprint 2L tracking:**
+incident is required for actual cross-leak. **Tracking:**
 convert the switch to time-boxed flag with audit emit.
 
 ### S3 — Admin tool with raw SQL forgets `WHERE tenant_id`
@@ -75,7 +75,7 @@ quarterly password rotation, `pg_stat_activity` audit of who used
 `abs_admin`. Detection > prevention here; the role boundary is
 intentional so audit logging is mechanically straightforward.
 
-### S5 — Cascade cache cross-tenant leak (UAT-016, closed Sprint 2I)
+### S5 — Cascade cache cross-tenant leak (closed)
 
 Pre-fix: a shared in-process cache keyed on the prompt text returned
 another tenant's cached completion. Fix: cache key includes
@@ -89,9 +89,9 @@ job retries through Inngest DLQ → on-call alert. Verified by the
 chaos suite. Workers must explicitly call `with_tenant(slug)` or
 operate as the `abs_admin` role for cross-tenant infra jobs.
 
-## Residual risk after Sprint 2K
+## Residual risk
 
-- 9 tables still without Layer 3 (Sprint 2L scope).
+- 9 tables still without Layer 3.
 - SQLite test lane cannot exercise Layer 3 — relies on the new
   postgres CI lane catching regressions before merge.
 - `_unknown` rows pre-existing in the audit tables before the
@@ -103,5 +103,4 @@ operate as the `abs_admin` role for cross-tenant infra jobs.
 - `docs/security/multi-tenant.md` — defence chain narrative.
 - `docs/operations/rls-admin-bypass.md` — production deploy steps.
 - `_agent-tasks/AUDIT_3RD_EYE_2026_05_14.md` — finding #16 closed.
-- `_agent-tasks/SPRINT_2I_REPORT.md` — UAT-016 cascade cache fix.
 - `_agent-tasks/SPRINT_2K_REPORT.md` — closeout artefacts.

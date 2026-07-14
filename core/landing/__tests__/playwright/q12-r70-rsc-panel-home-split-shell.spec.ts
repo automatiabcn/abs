@@ -1,4 +1,4 @@
-// Q12 R70 (S8) — Sprint 22 RSC Phase C: /panel home split-shell.
+// RSC split-shell: the /panel home.
 //
 // Server `page.tsx` fetches /v1/panel/tools + /v1/system/quota_status
 // + /v1/panel/cascade/recent in parallel with the caller's session

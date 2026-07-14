@@ -17,7 +17,7 @@ function read(rel: string): string {
 
 describe("Q11/L16 — error tile UX parity", () => {
   it("chat error tile (Q10-L9-001) ships Configure CTA + role=alert", () => {
-    // Sprint 21 Faz C split the panel chat route into a thin wrapper
+    // The panel chat route was split into a thin wrapper
     // (`page.tsx`) plus a dynamically-imported client (`ChatClient.tsx`).
     // The error tile contract moved with the client, not the wrapper.
     const src = read("app/panel/chat/ChatClient.tsx");

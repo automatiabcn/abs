@@ -3,7 +3,7 @@
 # Container start'ta /app/data/{public,private}.pem yoksa RSA-2048 üret;
 # ek olarak demo_license.jwt yaz (14-gün trial, demo customer).
 #
-# BUG-12 (2026-05-09) — when the image-baked founder pubkey is present
+# When the image-baked founder pubkey is present
 # at /etc/abs/manifest_pubkey.pem, both the keypair self-generation and
 # the demo-license mint are skipped. Production customer images bake
 # the founder's pubkey, the founder holds the matching private key
@@ -73,8 +73,8 @@ PY
     fi
 fi
 
-# Sprint 2N FAZ C (P0 #2M-026) — when ABS_DATABASE_URL points at Postgres,
-# run alembic upgrade head before launching uvicorn. Sprint 2K RLS migration
+# When ABS_DATABASE_URL points at Postgres,
+# run alembic upgrade head before launching uvicorn. The RLS migration
 # (0015_rls_audit_tables) needs to be applied or KVKK defense-in-depth is
 # silently bypassed. SQLite path keeps using SQLModel.metadata.create_all
 # (called by app startup) — no schema migration needed for the legacy

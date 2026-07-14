@@ -1,4 +1,4 @@
-"""T-Q01 — production-secret leak guard tests."""
+"""production-secret leak guard tests."""
 
 from __future__ import annotations
 

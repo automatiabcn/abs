@@ -1,6 +1,6 @@
 apiVersion: v2
 name: abs
-description: ABS umbrella chart (T-058) — backend + workers + NATS + Cerbos + Qdrant + Postgres + Redis + observability.
+description: ABS umbrella chart — backend + workers + NATS + Cerbos + Qdrant + Postgres + Redis + observability.
 type: application
 version: 1.0.0
 appVersion: "1.0.0"

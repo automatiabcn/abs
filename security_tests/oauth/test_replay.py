@@ -1,4 +1,4 @@
-"""T-060 — OAuth pen-test scaffolding.
+"""OAuth pen-test scaffolding.
 
 These tests live OUTSIDE the main pytest tree (security_tests/) so external
 researchers can run them against staging without spinning up the in-process

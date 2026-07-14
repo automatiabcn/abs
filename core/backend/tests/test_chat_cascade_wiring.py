@@ -1,4 +1,4 @@
-"""Round-4 BUG-9 regression — `chat._run_cascade` live wiring.
+"""Regression — `chat._run_cascade` live wiring.
 
 Founder Phase B evidence (3-turn chat → 3 stub responses):
     "Cascade canli uclari henuz aktif degil."
@@ -145,7 +145,7 @@ def test_chat_completions_no_stub_when_providers_configured(auth_client, monkeyp
 
 
 def test_chat_completions_no_provider_returns_503(auth_client, monkeypatch):
-    """Sprint 2N FAZ E (P1 #2M-018) — no provider → structured HTTP 503.
+    """No provider → structured HTTP 503.
 
     Pre-fix: chat completions opened a 200 SSE stream and yielded a
     Türkçe error event, so JS `response.ok = true` lost retry semantics.

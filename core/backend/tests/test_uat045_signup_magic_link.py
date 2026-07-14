@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-045 — /auth/signup magic_link reaches the customer only
+"""/auth/signup magic_link reaches the customer only
 by email in production. Response body never carries the token in prod."""
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ def test_signup_response_strips_magic_link_in_prod(client, monkeypatch):
     )
     assert r.status_code in (200, 201), r.text
     body = r.json()
-    # Security property (the point of UAT-045): the token never leaks into the
+    # The security property: the token never leaks into the
     # response body in prod — it can only reach the user out-of-band.
     assert "magic_link" not in body
     assert body["status"] == "pending"
@@ -48,7 +48,7 @@ def test_signup_response_retains_magic_link_in_dev(client):
 
 
 @pytest.mark.skip(
-    reason="Audit-log emit hook for signup is out of scope; UAT-045 only "
+    reason="Audit-log emit hook for signup is out of scope; this suite only "
     "covers response-body hygiene."
 )
 def test_signup_emits_audit_event():

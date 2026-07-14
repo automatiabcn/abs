@@ -1,9 +1,9 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""Sprint 2L — RLS enforcement on the tenant tables added in 0019.
+"""RLS enforcement on the tenant tables added in 0019.
 
-Sister suite to ``test_rls_audit_tables.py`` (Sprint 2K, the 3 audit tables).
+Sister suite to ``test_rls_audit_tables.py`` (the 3 audit tables).
 0019 extends the same ``abs.tenant_id`` GUC policy to the tenant-DATA tables.
 This suite proves the two policy shapes engage on Postgres:
 

@@ -1,4 +1,4 @@
-"""T-027 — Action item extractor tests."""
+"""Action item extractor tests."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Sprint 2B BUG-36 — tenant_invites table for the admin invite flow.
+"""tenant_invites table for the admin invite flow.
 
 Revision ID: 0010_tenant_invites
 Revises: 0009_chat_threading
@@ -31,7 +31,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Sprint 2B founder audit patch — DateTime(timezone=True) so Postgres
+    # DateTime(timezone=True) so Postgres
     # ships TIMESTAMP WITH TIME ZONE (SQLite ignores tz, idempotent);
     # CheckConstraint on role/status as defense-in-depth in case the
     # Pydantic Literal is bypassed via a low-level UPDATE.
@@ -40,7 +40,7 @@ def upgrade() -> None:
     # a "default" tenant slug as the bootstrap fallback that doesn't
     # always have a matching tenants row, so a NOT NULL FK would
     # regress existing flows. Application-level tenant resolution is
-    # sufficient until Sprint 2C lands the formal tenant lifecycle.
+    # sufficient until the formal tenant lifecycle lands.
     op.create_table(
         "tenant_invites",
         sa.Column("id", sa.Integer, primary_key=True),

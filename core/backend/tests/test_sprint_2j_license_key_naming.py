@@ -1,11 +1,11 @@
-"""Sprint 2J FAZ F — LICENSE_KEY → ABS_LICENSE_KEY naming sweep.
+"""LICENSE_KEY → ABS_LICENSE_KEY naming sweep.
 
 The 023 settings model already binds via ``env_prefix='ABS_'``, so the
-canonical env var is ``ABS_LICENSE_KEY``. Through Sprint 2I the
+canonical env var is ``ABS_LICENSE_KEY``. For a long time the
 30-minute quickstart guide still documented the un-prefixed
 ``LICENSE_KEY=demo-30min`` form, which pydantic silently ignored —
 a customer following the guide would boot in unlicensed/demo mode
-without any warning. FAZ F closes that gap two ways:
+without any warning. That gap is closed two ways:
 
 1. The doc is fixed in the same commit (see ``docs/quickstart-30min.md``).
 2. The config module promotes a legacy ``LICENSE_KEY`` into
@@ -39,8 +39,8 @@ def _scrub_env(monkeypatch) -> None:
 
 
 def test_legacy_license_key_promoted_with_deprecation_warning(monkeypatch):
-    # FAZ F — operator's .env still says LICENSE_KEY=demo-30min (the
-    # pre-Sprint 2J doc shape). The shim must copy that into
+    # operator's .env still says LICENSE_KEY=demo-30min (the
+    # the older doc shape). The shim must copy that into
     # ABS_LICENSE_KEY so the Settings model picks it up, AND emit a
     # DeprecationWarning visible to the operator's stderr.
     _scrub_env(monkeypatch)
@@ -57,7 +57,7 @@ def test_legacy_license_key_promoted_with_deprecation_warning(monkeypatch):
 
 
 def test_canonical_license_key_wins_over_legacy(monkeypatch):
-    # FAZ F — when both env vars are set, the canonical ABS_LICENSE_KEY
+    # When both env vars are set, the canonical ABS_LICENSE_KEY
     # must win unchanged. The shim is a fallback, never an override.
     _scrub_env(monkeypatch)
     monkeypatch.setenv("LICENSE_KEY", "legacy-should-be-ignored")
@@ -77,7 +77,7 @@ def test_canonical_license_key_wins_over_legacy(monkeypatch):
 
 
 def test_no_legacy_no_canonical_is_silent(monkeypatch):
-    # FAZ F — pure absence (e.g. customer running in demo mode) must be
+    # Pure absence (e.g. customer running in demo mode) must be
     # silent; an unset env var is not a deprecation event.
     _scrub_env(monkeypatch)
 

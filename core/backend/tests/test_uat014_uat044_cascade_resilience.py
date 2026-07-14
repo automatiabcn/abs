@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-014 + UAT-044 — cascade non-ProviderError fallback +
+"""Cascade non-ProviderError fallback +
 503 + structured detail when every provider is down."""
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ class _OkProvider(BaseProvider):
 
 @pytest.mark.asyncio
 async def test_connection_error_falls_through_to_next_provider(monkeypatch):
-    """UAT-014 — ConnectionError used to bypass cascade and raise 500."""
+    """ConnectionError used to bypass cascade and raise 500."""
     await orch_mod.default_cache.clear()
     chain = {
         "a": _RaisingProvider(lambda: ConnectionError("ECONNREFUSED")),
@@ -53,7 +53,7 @@ async def test_connection_error_falls_through_to_next_provider(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_timeout_error_falls_through_to_next_provider(monkeypatch):
-    """UAT-014 — asyncio.TimeoutError must be treated as transient."""
+    """asyncio.TimeoutError must be treated as transient."""
     await orch_mod.default_cache.clear()
     chain = {
         "a": _RaisingProvider(asyncio.TimeoutError),
@@ -68,7 +68,7 @@ async def test_timeout_error_falls_through_to_next_provider(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_httpx_error_falls_through_to_next_provider(monkeypatch):
-    """UAT-014 — httpx.HTTPError must be treated as transient."""
+    """httpx.HTTPError must be treated as transient."""
     await orch_mod.default_cache.clear()
     chain = {
         "a": _RaisingProvider(lambda: httpx.ConnectError("nope")),
@@ -83,7 +83,7 @@ async def test_httpx_error_falls_through_to_next_provider(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_all_providers_down_raises_503_with_chain(monkeypatch):
-    """UAT-044 — when the whole chain fails, surface HTTP 503 with the
+    """When the whole chain fails, surface HTTP 503 with the
     structured detail + Retry-After header instead of leaking the last
     ProviderError to the client as a 500."""
     await orch_mod.default_cache.clear()
@@ -122,7 +122,7 @@ async def test_all_providers_down_raises_503_with_chain(monkeypatch):
 
 
 def test_an_http_caller_still_gets_the_structured_503(monkeypatch):
-    """The other half of UAT-044, tested where it now happens.
+    """The other half of the fallback contract, tested where it now happens.
 
     Moving the 503 out of the cascade and into an exception handler is only safe
     if the response is identical. So: drive the app itself, with every provider
@@ -156,7 +156,7 @@ def test_an_http_caller_still_gets_the_structured_503(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_first_provider_ok_returns_200(monkeypatch):
-    """UAT-044 regression — single healthy provider still wins."""
+    """Regression — single healthy provider still wins."""
     await orch_mod.default_cache.clear()
     monkeypatch.setattr(orch_mod, "get_provider", lambda _n: _OkProvider())
     resp = await orch_mod.call_with_cascade(

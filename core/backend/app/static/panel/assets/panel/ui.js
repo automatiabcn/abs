@@ -1,4 +1,4 @@
-// T-R02 — UI bindings + clock + symbol explorer extracted from panel.js.
+// UI bindings + clock + symbol explorer extracted from panel.js.
 import { clear, makeEl, setText } from "./dom.js";
 
 export function startClock() {

@@ -1,4 +1,4 @@
-"""Sprint 2K — create the abs_admin Postgres role that owns BYPASSRLS.
+"""Create the abs_admin Postgres role that owns BYPASSRLS.
 
 Revision ID: 0015b_abs_admin_role
 Revises: 0015_rls_audit_tables

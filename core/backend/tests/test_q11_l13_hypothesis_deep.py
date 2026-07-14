@@ -65,7 +65,7 @@ def _cleanup_chat_sessions():
 
 @pytest.fixture(autouse=True)
 def _rag_stack_fakes(monkeypatch):
-    """Founder Tester Round 2 (BUG-6) — `/v1/rag/query` now accepts the
+    """`/v1/rag/query` now accepts the
     panel admin cookie session as a fallback for missing Bearer JWT, so
     the 1000-example hypothesis loop reaches the real embedder + Qdrant.
     Without these fakes those calls would 500 against an unreachable

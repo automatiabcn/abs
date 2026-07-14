@@ -1,4 +1,4 @@
-// T-R08 — 15-min real beta UI E2E. Walks the journey a beta tenant takes
+// 15-min real beta UI E2E. Walks the journey a beta tenant takes
 // in the landing app:
 //   1. Land on `/`           — hero + showcase + CTA visible.
 //   2. Hit `/pricing`        — tiers render with i18n + billing-disabled gate.

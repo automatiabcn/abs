@@ -1,6 +1,6 @@
 // Q12-L18 — Cold-cache first-visit LCP probe.
 //
-// Sprint 21 honest report measured LCP under warm-cache Playwright runs.
+// The earlier report measured LCP under warm-cache Playwright runs.
 // A fresh KOBİ pilot demo opens cold: no service worker, empty HTTP
 // cache, no localStorage. This spec enforces a per-page LCP budget under
 // genuine cold-cache conditions.
@@ -28,7 +28,7 @@ const PUBLIC_BUDGETS: PageBudget[] = [
 
 const PANEL_BUDGETS: PageBudget[] = [
   { path: "/panel",              authed: true,  budgetMs: 4500 },
-  { path: "/panel/chat",         authed: true,  budgetMs: 5500 }, // Sprint 21 acknowledged regression
+  { path: "/panel/chat",         authed: true,  budgetMs: 5500 }, // acknowledged regression
   { path: "/panel/tools",        authed: true,  budgetMs: 5500 },
   { path: "/panel/quota",        authed: true,  budgetMs: 4500 },
   { path: "/panel/meetings",     authed: true,  budgetMs: 4500 },
@@ -36,7 +36,7 @@ const PANEL_BUDGETS: PageBudget[] = [
   { path: "/admin/marketplace",  authed: true,  budgetMs: 4500 },
   { path: "/admin/providers",    authed: true,  budgetMs: 4500 },
   { path: "/admin/workflow-builder", authed: true, budgetMs: 5500 },
-  // Q12 R66 — Sprint 22 RSC Phase B targets. Pre-R64/R65 these
+  // RSC split-shell targets. Before the split these
   // routes were "use client" whole-page components that did a post-
   // hydration XHR to /v1/admin/audit/recent and /v1/admin/users
   // respectively. Now they're split-shells (server fetch → client

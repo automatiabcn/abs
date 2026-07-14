@@ -1,4 +1,4 @@
-// T-Q02 — every public route must return 200 and render without console errors.
+// Every public route must return 200 and render without console errors.
 import { test, expect, type ConsoleMessage } from "@playwright/test";
 
 const ROUTES = [

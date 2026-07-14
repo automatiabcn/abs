@@ -1,4 +1,4 @@
-# T-004 — Project resource policy. Multi-tenant: every action requires
+# Project resource policy. Multi-tenant: every action requires
 # tenant binding. Owners can update/delete; tenant admins can do anything;
 # tenant members can read + create.
 ---

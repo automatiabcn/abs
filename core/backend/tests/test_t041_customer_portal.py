@@ -1,4 +1,4 @@
-"""T-041 — Customer portal account + project store tests."""
+"""Customer portal account + project store tests."""
 
 from __future__ import annotations
 

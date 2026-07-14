@@ -1,4 +1,4 @@
-// Sprint 2I UAT-009 — fail-CLOSED middleware behaviour.
+// fail-CLOSED middleware behaviour.
 // When the backend /auth/me check times out or throws, the request must
 // redirect to /login?reason=backend-unreachable instead of falling through
 // to the protected page.
@@ -35,7 +35,7 @@ vi.mock("next/server", () => ({
   },
 }));
 
-describe("middleware fail-closed (UAT-009)", () => {
+describe("middleware fail-closed", () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {

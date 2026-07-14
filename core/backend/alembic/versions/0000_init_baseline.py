@@ -1,4 +1,4 @@
-"""T-057 — Initial baseline of pre-OAuth ABS tables (caveat clear).
+"""Initial baseline of pre-OAuth ABS tables (caveat clear).
 
 This revision formalises the legacy ABS schema (licenses, email_queue,
 oauth_states, connected_secrets, vault audit, GDPR consents, beta requests,

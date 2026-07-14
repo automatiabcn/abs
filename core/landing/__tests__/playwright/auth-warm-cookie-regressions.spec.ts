@@ -1,14 +1,14 @@
 // Regression suite for 3 bugs + page-title sweep surfaced by a headed
 // Playwright walkthrough.
 //
-//   BUG-1  HIGH  /login submit must land on /panel
-//   BUG-2  HIGH  /admin/marketplace must render under 5s (warm)
-//   BUG-3  MED   chat send button must expose aria-label + data-testid
+//   HIGH  /login submit must land on /panel
+//   HIGH  /admin/marketplace must render under 5s (warm)
+//   MED   chat send button must expose aria-label + data-testid
 //   SWEEP        every panel/admin route must ship a unique <title>
 //
 // The suite logs in once via API (so per-test cookies are warm) and
 // reuses storage state — much faster than driving the form per test
-// while still proving the redirect contract in BUG-1.
+// while still proving the redirect contract.
 
 import { expect, test, type Page } from "@playwright/test";
 
@@ -25,7 +25,7 @@ async function apiLogin(page: Page) {
   expect(res.ok()).toBeTruthy();
 }
 
-test.describe("login redirect (BUG-1)", () => {
+test.describe("login redirect", () => {
   test("login form lands on /panel within 10s", async ({ page }) => {
     await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded" });
     // Wait for React hydration; the submit button is gated on it so a
@@ -44,7 +44,7 @@ test.describe("login redirect (BUG-1)", () => {
   });
 });
 
-test.describe("marketplace render (BUG-2)", () => {
+test.describe("marketplace render", () => {
   test("/admin/marketplace renders within 5s warm", async ({ page }) => {
     await apiLogin(page);
     // First visit warms the dev compile cache; second visit is the budget.
@@ -62,7 +62,7 @@ test.describe("marketplace render (BUG-2)", () => {
   });
 });
 
-test.describe("chat send button a11y (BUG-3)", () => {
+test.describe("chat send button a11y", () => {
   test("send button exposes aria-label + data-testid", async ({ page }) => {
     await apiLogin(page);
     await page.goto(`${BASE}/panel/chat`, { waitUntil: "domcontentloaded" });

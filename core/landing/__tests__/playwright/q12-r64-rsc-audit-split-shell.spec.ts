@@ -1,4 +1,4 @@
-// Q12 R64 (S8) — Sprint 22 RSC Phase B leg 1: /admin/audit split-shell.
+// RSC split-shell: /admin/audit.
 //
 // The migrate moves the page from a `"use client"` whole-page component
 // to a server `page.tsx` that fetches initial audit entries with the

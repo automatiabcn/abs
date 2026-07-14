@@ -1,4 +1,4 @@
-// T-R02 — shared mutable state singletons for the panel.
+// Shared mutable state singletons for the panel.
 // Modules that touch SSE / spark instances / notifications import from here.
 
 export const sseState = {

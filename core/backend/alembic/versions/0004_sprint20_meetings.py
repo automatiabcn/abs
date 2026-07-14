@@ -1,4 +1,4 @@
-"""Sprint 20 — feature_usage_log + meetings + meeting_segments.
+"""feature_usage_log + meetings + meeting_segments.
 
 Revision ID: 0004_sprint20_meetings
 Revises: 0003_tenant_projects

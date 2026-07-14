@@ -124,7 +124,7 @@ Until that trigger fires, the policy above stays.
 
 | Date | Decision | Reference |
 |------|----------|-----------|
-| 2026-04-28 | T-061 ships PricingPage with EN/TR/ES at landing scope | session_resume_state_t061.md |
-| 2026-04-28 | T-R06 locale-parity test added | __tests__/locale-parity.test.ts |
-| 2026-04-29 | Sprint 19 onboarding flow stays TR-first inside operator UI | session_resume_state_s03_4.md |
+| 2026-04-28 | PricingPage ships with EN/TR/ES at landing scope | `app/pricing/` |
+| 2026-04-28 | Locale-parity test added | `__tests__/locale-parity.test.ts` |
+| 2026-04-29 | Onboarding flow stays TR-first inside the operator UI | `app/onboarding/` |
 | 2026-05-04 | Q12 R58 ratifies the bifurcation, adds scope drift guard | this doc |

@@ -1,4 +1,4 @@
-"""BUG-V1 — `/v1/admin/usage` contract test.
+"""`/v1/admin/usage` contract test.
 
 The PROMISE.md vow:
   - real-time `Free path: X %` + `Claude budget: Y %` widget on /admin/usage.

@@ -1,4 +1,4 @@
-"""T-020 — ERP hybrid retrieval classify + merge tests."""
+"""ERP hybrid retrieval classify + merge tests."""
 
 from __future__ import annotations
 

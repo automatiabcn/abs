@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""Sprint 2B BUG-36 — /v1/admin/users/invite flow guard tests."""
+"""/v1/admin/users/invite flow guard tests."""
 
 from __future__ import annotations
 

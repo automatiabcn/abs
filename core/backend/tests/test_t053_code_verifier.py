@@ -1,4 +1,4 @@
-"""T-053 — Code verifier tests."""
+"""Code verifier tests."""
 
 from __future__ import annotations
 

@@ -10,7 +10,7 @@
 }
 
 {$ABS_PUBLIC_HOSTNAME} {
-	# Sprint 2N FAZ F (P2 #2M-002) — pre-DNS smoke toggle.
+	# Pre-DNS smoke toggle.
 	# UNCOMMENT the next line to force self-signed certs (lets you hit
 	# https://abs.local with `curl -k` before DNS points at the host).
 	# Leave commented in production so Caddy's default ACME HTTP-01 flow
@@ -34,7 +34,7 @@
 	# transport on FastAPI (port 8000). Everything else (marketing pages
 	# + Next.js admin panels under /admin/*) goes to the landing image
 	# (Next.js standalone on port 3000).
-	# Sprint 2N FAZ E (P1 #2M-020) — `/me/*` added so KVKK / GDPR
+	# `/me/*` added so KVKK / GDPR
 	# self-service endpoints (data-export, delete-request, delete-confirm,
 	# consents, audit-log) reach FastAPI instead of falling through to
 	# the Next.js 404 page.

@@ -1,4 +1,4 @@
-# T-017 — LangFuse self-host (Helm)
+# LangFuse self-host (Helm)
 
 ```bash
 # Production

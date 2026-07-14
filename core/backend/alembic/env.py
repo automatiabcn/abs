@@ -1,4 +1,4 @@
-"""T-003/T-007 — Alembic environment.
+"""Alembic environment.
 
 Loads SQLModel metadata so `alembic revision --autogenerate` picks up
 ABS models. URL is read from app settings rather than alembic.ini so
@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 
 from app.config import settings  # noqa: E402
 from app.db import models as _abs_models  # noqa: F401,E402  — register tables
-from app.db import tenant_models as _tenant_models  # noqa: F401,E402  # T-009
+from app.db import tenant_models as _tenant_models  # noqa: F401,E402
 from app.auth.oauth import models as _oauth_models  # noqa: F401,E402
 
 config = context.config
@@ -51,7 +51,7 @@ def run_migrations_offline() -> None:
 
 
 _LEGACY_REVISION_REMAP = {
-    # Sprint 2N.1: revision IDs must fit Alembic's default VARCHAR(32)
+    # Revision IDs must fit Alembic's default VARCHAR(32)
     # alembic_version column. Rewrite the only legacy long ID before the
     # migration runner reads its current state.
     "0012_tenant_settings_and_fk_cascades": "0012_tenant_settings_fk",

@@ -1,11 +1,11 @@
-"""Sprint 2N FAZ D — Customer pkg mount completeness audit (smebes lesson 18).
+"""Customer package mount completeness audit.
 
 Customer compose içindeki HER host bind mount (`./xxx:/etc/...:ro`)
-karşılığı customer paketinde MUTLAKA olmalı. Smebes incident root cause:
+counterpart MUST exist in the customer package. The incident that taught us this:
 `./cerbos` mount edilmişti ama paket içinde yoktu → cerbos container exit
 → backend Cerbos PDP ile konuşamadı → projenin yarısı 503.
 
-Sprint 2N FAZ D bu pattern'i sistemleştiriyor:
+This test makes that pattern systematic:
 - compose'da `./` ile başlayan her mount → customer pkg'da olmalı
 - `build_customer_pkg.sh` tek-dosya tar.gz üretici, mount listesini
   kontrol edip eksik varsa exit-1
@@ -46,7 +46,7 @@ def _host_bind_mounts() -> list[tuple[str, str]]:
 
 def test_compose_has_at_least_three_host_bind_mounts() -> None:
     mounts = _host_bind_mounts()
-    # Sprint 2N FAZ D snapshot: ./scripts, ./cerbos, ./Caddyfile.
+    # Snapshot: ./scripts, ./cerbos, ./Caddyfile.
     assert len(mounts) >= 3, (
         f"compose declares {len(mounts)} host bind mount(s); expected at "
         f"least 3 (scripts, cerbos, Caddyfile). Got: {mounts}"
@@ -74,9 +74,7 @@ def test_onboard_copies_every_host_bind_mount_source() -> None:
 
 
 def test_builder_script_exists_and_executable() -> None:
-    assert BUILDER_SH.exists(), (
-        "scripts/build_customer_pkg.sh missing (Sprint 2N FAZ D smebes lesson)"
-    )
+    assert BUILDER_SH.exists(), "scripts/build_customer_pkg.sh missing"
     mode = BUILDER_SH.stat().st_mode
     assert mode & stat.S_IXUSR, "build_customer_pkg.sh must be chmod +x"
 
@@ -106,8 +104,8 @@ def test_onboard_email_template_documents_tarball_extract() -> None:
     raw = ONBOARD_SH.read_text()
     assert "tar -xzvf" in raw, (
         "onboarding email must instruct the customer to extract the tarball "
-        "(Sprint 2N FAZ D — single-file ship pattern replaces the 4-file "
-        "manual placement that bit smebes)"
+        "(the single-file ship pattern replaces the 4-file manual "
+        "placement that broke an early install)"
     )
     # The tarball name slug is interpolated into the template.
     assert "customer-pkg-" in raw
@@ -115,7 +113,7 @@ def test_onboard_email_template_documents_tarball_extract() -> None:
 
 @_needs_onboard
 def test_onboard_email_lists_scripts_directory() -> None:
-    """smebes incident pattern: scripts/ host mount not mentioned in email."""
+    """The incident pattern: a scripts/ host mount never mentioned in the email."""
     raw = ONBOARD_SH.read_text()
     assert "scripts/" in raw and "email_tick" in raw, (
         "onboarding email must mention scripts/ (mounted at "

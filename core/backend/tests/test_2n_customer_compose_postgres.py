@@ -1,12 +1,11 @@
-"""Sprint 2N FAZ C — Customer compose Postgres + RLS integration check (P0 #2M-026).
+"""Customer compose Postgres + RLS integration check.
 
 Compose dosyasının schema'sı (Postgres service + backend env + volume),
 entrypoint.sh'in alembic upgrade akışı ve .env.example'da ABS_DB_PASSWORD
 zorunluluğu test edilir. Postgres engine'i gerçekten ayağa kaldırmıyor;
-amaç customer paketinin Sprint 2K RLS migration'ı için gerekli tüm
+The goal: the customer package must carry everything the RLS migration
 parçalarının yerinde olduğunu CI'da doğrulamak.
 
-Sprint 2M bug log: #2M-026
 """
 
 from __future__ import annotations
@@ -31,8 +30,7 @@ def _load_compose() -> dict:
 def test_customer_compose_has_postgres_service() -> None:
     cfg = _load_compose()
     assert "postgres" in cfg["services"], (
-        "customer compose must declare a `postgres` service "
-        "(Sprint 2N FAZ C — Sprint 2K RLS is no-op on SQLite)"
+        "customer compose must declare a `postgres` service (RLS is a no-op on SQLite)"
     )
     pg = cfg["services"]["postgres"]
     assert pg["image"].startswith("postgres:16"), (
@@ -89,7 +87,7 @@ def test_entrypoint_runs_alembic_upgrade_on_postgres() -> None:
     raw = ENTRYPOINT.read_text()
     assert "alembic upgrade head" in raw, (
         "entrypoint.sh must run `alembic upgrade head` before launching "
-        "uvicorn (Sprint 2N FAZ C — Sprint 2K RLS migration application)"
+        "uvicorn (so the RLS migration is applied)"
     )
     # Postgres branch executes alembic.
     assert "postgresql*" in raw or "postgres*" in raw
@@ -109,8 +107,7 @@ def test_entrypoint_alembic_failure_exits_nonzero() -> None:
 def test_env_example_documents_abs_db_password() -> None:
     raw = ENV_EXAMPLE.read_text()
     assert "ABS_DB_PASSWORD" in raw, (
-        ".env.example must include ABS_DB_PASSWORD so customers know "
-        "to generate one (Sprint 2N onwards)"
+        ".env.example must include ABS_DB_PASSWORD so customers know to generate one"
     )
     # Generation recipe is documented.
     assert "openssl rand -base64 32" in raw

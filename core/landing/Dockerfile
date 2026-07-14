@@ -1,4 +1,4 @@
-# T-Q06 — Next.js 15 multi-stage Dockerfile for the ABS landing.
+# Next.js 15 multi-stage Dockerfile for the ABS landing.
 # Targets a small, non-root, standalone runtime.
 
 # ─── deps stage ───────────────────────────────────────────────────────────

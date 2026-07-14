@@ -1,5 +1,5 @@
 {
-  "_comment": "Q12-L32 R82 — slow-3G mobile profile. The desktop lighthouserc.json runs from perf-budget on PR; this profile runs nightly so a mobile regression has a clear daily signal. Throttling thresholds are intentionally looser than desktop because slow-3G shifts LCP/TBT into a different working region; the goal is `regression detection`, not desktop parity. Sprint 2E ITEM-C: dropped `preset: perf` (which skipped a11y / best-practices audits → `categories:accessibility auditRan` failed); replaced with explicit `onlyCategories` so the asserted categories actually run.",
+  "_comment": "Slow-3G mobile profile. The desktop lighthouserc.json runs from perf-budget on PR; this profile runs nightly so a mobile regression has a clear daily signal. Throttling thresholds are intentionally looser than desktop because slow-3G shifts LCP/TBT into a different working region; the goal is `regression detection`, not desktop parity. Dropped `preset: perf` (which skipped a11y / best-practices audits → `categories:accessibility auditRan` failed); replaced with explicit `onlyCategories` so the asserted categories actually run.",
   "ci": {
     "collect": {
       "url": [

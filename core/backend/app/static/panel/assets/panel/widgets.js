@@ -1,4 +1,4 @@
-// T-R02 — SSE event handlers + polling renderers extracted from panel.js.
+// SSE event handlers + polling renderers extracted from panel.js.
 import { clear, makeEl, setText } from "./dom.js";
 import { LOG_MAX } from "./constants.js";
 import { logBuffer, sparkInstances } from "./state.js";

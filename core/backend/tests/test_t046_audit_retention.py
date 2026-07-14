@@ -1,4 +1,4 @@
-"""T-046 — Audit chain + retention plan tests."""
+"""Audit chain + retention plan tests."""
 
 from __future__ import annotations
 

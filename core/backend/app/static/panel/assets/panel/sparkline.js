@@ -1,4 +1,4 @@
-// T-R02 — Canvas sparkline extracted from panel.js.
+// Canvas sparkline extracted from panel.js.
 import { SPARK_MAX_POINTS } from "./constants.js";
 
 export class Sparkline {

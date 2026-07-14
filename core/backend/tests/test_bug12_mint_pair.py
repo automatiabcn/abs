@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""BUG-12 — generate_license must refuse to mint when the configured
+"""generate_license must refuse to mint when the configured
 private key does not pair with the image-baked founder pubkey.
 
 The image-baked path is detected via the module-level

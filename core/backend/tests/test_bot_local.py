@@ -1,4 +1,4 @@
-"""T-F01 — local meeting bot + manual upload + WER<10% pipeline."""
+"""Local meeting bot + manual upload + WER<10% pipeline."""
 
 from __future__ import annotations
 

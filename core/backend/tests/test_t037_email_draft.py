@@ -1,4 +1,4 @@
-"""T-037 — Email RAG draft tests."""
+"""Email RAG draft tests."""
 
 from __future__ import annotations
 

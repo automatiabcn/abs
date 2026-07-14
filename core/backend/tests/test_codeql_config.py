@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""Sprint 2E ITEM-B — CodeQL config sanity tests.
+"""CodeQL config sanity tests.
 
 The repo ships `.github/codeql/codeql-config.yml` to exclude
 `py/path-injection` on `_safe_path` helper + 3 call sites + piper server.

@@ -1,13 +1,13 @@
 """021 — Cascade router latency benchmark (locust loadtest senaryosu).
 
-Locust ile çalıştırma:
+Run with locust:
   locust -f benchmarks/cascade_load.py --host http://localhost:8000 \\
          --users 100 --spawn-rate 10 --run-time 5m \\
          --html benchmarks/results/01_cascade_load.html \\
          --csv benchmarks/results/01_cascade_load --headless
 
-Live backend yokken (CI veya freeze altında) `python benchmarks/cascade_load.py`
-ile dry-run yapılabilir — locust import'u skip edilir, sadece senaryoyu print eder.
+With no live backend (in CI, or under a freeze) `python benchmarks/cascade_load.py`
+does a dry run: the locust import is skipped and it only prints the scenario.
 """
 
 from __future__ import annotations

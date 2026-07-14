@@ -1,4 +1,4 @@
-// T-R02 — panel.js split regression net.
+// panel.js split regression net.
 // We can't easily boot the FastAPI backend from Playwright in this repo, so
 // the test loads the panel HTML via `setContent` + intercepts the module
 // imports through `route()` to feed the actual ES-module sources from disk.

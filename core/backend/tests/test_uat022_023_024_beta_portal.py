@@ -1,8 +1,8 @@
-"""Sprint 2I UAT-022/023/024 — beta intake hardening.
+"""Beta intake hardening.
 
-UAT-022: auto-approve must NOT echo license_jti in the response.
-UAT-023: honeypot log line must contain only an email digest, not PII.
-UAT-024: duplicate within 24h returns the same neutral 200 body as the
+1. Auto-approve must NOT echo license_jti in the response.
+2. The honeypot log line must contain only an email digest, not PII.
+3. A duplicate within 24h returns the same neutral 200 body as the
 first call (no 429 oracle for email enumeration).
 """
 

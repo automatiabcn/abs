@@ -1,10 +1,10 @@
-# ABS Plugin Sandbox — Security Audit (G1)
+# ABS Plugin Sandbox — Security Audit
 
 > Status: PASSED — 0 critical · 0 high · 2 medium accepted · 2026-04-29
 
 ## Scope
 
-Audit of `app/marketplace/sandbox.py` (Sprint 19 T-S01.2). Reviewer is the `mcp__abs__code_review tier=exhaustive` model (GPT-OSS 120B). Five pen-test scenarios were exercised against the hardened module via `tests/security/test_marketplace_sandbox_pentest.py` (24 new test cases) plus the original `tests/test_marketplace_sandbox.py` (27 cases). Total: 56 / 56 passing.
+Audit of `app/marketplace/sandbox.py`. Five pen-test scenarios were exercised against the hardened module via `tests/security/test_marketplace_sandbox_pentest.py` (24 new test cases) plus the original `tests/test_marketplace_sandbox.py` (27 cases). Total: 56 / 56 passing.
 
 ## Initial Findings (pre-mitigation)
 

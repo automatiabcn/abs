@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-038 — GET /v1/me/account/deletion-status surfaces the
+"""GET /v1/me/account/deletion-status surfaces the
 30-day grace window to the panel UI."""
 
 from __future__ import annotations

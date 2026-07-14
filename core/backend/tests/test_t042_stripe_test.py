@@ -1,4 +1,4 @@
-"""T-042 — Stripe TEST mode tests."""
+"""Stripe TEST mode tests."""
 
 from __future__ import annotations
 

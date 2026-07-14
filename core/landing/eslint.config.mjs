@@ -1,4 +1,4 @@
-// T-Q06 — Next 15 + TS strict ESLint flat config.
+// Next 15 + TS strict ESLint flat config.
 // Run via `npm run lint` or `npx next lint`.
 import { FlatCompat } from "@eslint/eslintrc";
 import { dirname } from "path";
@@ -20,7 +20,7 @@ const eslintConfig = [
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
       "react-hooks/exhaustive-deps": "warn",
-      // T-Q05 — R3F custom JSX elements (e.g. `<line>`) need this off so
+      // R3F custom JSX elements (e.g. `<line>`) need this off so
       // three.js primitives don't trigger react/no-unknown-property.
       "react/no-unknown-property": [
         "warn",

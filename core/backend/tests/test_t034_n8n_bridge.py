@@ -1,4 +1,4 @@
-"""T-034 — n8n MCP bridge tests."""
+"""n8n MCP bridge tests."""
 
 from __future__ import annotations
 

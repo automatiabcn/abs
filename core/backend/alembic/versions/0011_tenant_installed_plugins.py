@@ -1,4 +1,4 @@
-"""Sprint 2B BUG-34 — tenant_installed_plugins persistence.
+"""tenant_installed_plugins persistence.
 
 Revision ID: 0011_tenant_installed_plugins
 Revises: 0010_tenant_invites
@@ -30,12 +30,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Sprint 2B founder audit patch — DateTime(timezone=True) so Postgres
+    # DateTime(timezone=True) so Postgres
     # ships TIMESTAMP WITH TIME ZONE (SQLite ignores tz, idempotent).
     # FK CASCADE to tenants.slug intentionally skipped — bootstrap
     # "default" tenant slug may not have a tenants row, NOT NULL FK
     # would regress install flow. Application-level tenant resolution
-    # is sufficient; Sprint 2C will formalise tenant lifecycle.
+    # is sufficient; the tenant lifecycle will be formalised later.
     op.create_table(
         "tenant_installed_plugins",
         sa.Column("id", sa.Integer, primary_key=True),

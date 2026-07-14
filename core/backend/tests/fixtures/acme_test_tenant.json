@@ -1,6 +1,6 @@
 {
   "tenant_id": "acme-test",
-  "tenant_name": "Acme Test (T-R08 beta E2E)",
+  "tenant_name": "Acme Test",
   "roles": ["admin", "pm"],
   "rag_corpus": [
     {

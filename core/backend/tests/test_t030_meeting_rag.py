@@ -1,4 +1,4 @@
-"""T-030 — Meeting → RAG indexer tests."""
+"""Meeting → RAG indexer tests."""
 
 from __future__ import annotations
 

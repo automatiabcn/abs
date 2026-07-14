@@ -3,7 +3,7 @@
   "appId": "abs-backend",
   "framework": "fastapi",
   "servePath": "/api/inngest",
-  "description": "ABS backend durable workflow app (T-002).",
+  "description": "ABS backend durable workflow app.",
   "functions": [
     {
       "id": "on_user_registered",

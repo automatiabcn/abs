@@ -27,7 +27,7 @@
 #   ABS_GHCR_NAMESPACE   — GHCR org/user that hosts the images. Defaults
 #                          to `automatiabcn`. Set to `enzoemir1` only if
 #                          you are pinned to the pre-2N.2 image namespace
-#                          (Sprint 2N.2 unified release publication on
+#                          (unified release publication on
 #                          ghcr.io/automatiabcn/abs-*).
 #   ABS_VAULT_KEY        — 32-byte base64 secret encrypting the local vault
 #                          (provider keys, OAuth state). Generate once with
@@ -50,7 +50,7 @@ services:
   # always has a vault recipient. Previously this required a manual
   # `infra/scripts/init_vault.sh` step; skipping it left the vault
   # uninitialised and the panel reported provider keys "saved" while they
-  # were silently lost on the next restart (UAT-012). The backend mounts
+  # were silently lost on the next restart. The backend mounts
   # abs-vault-key read-only — only THIS container has write access, so the
   # "a compromised backend cannot rewrite the master key" guarantee holds.
   # ---------------------------------------------------------------------------
@@ -93,15 +93,15 @@ services:
     pull_policy: always
     env_file: .env
     environment:
-      # Sprint 2N FAZ C (P0 #2M-026) — Postgres default for customer
-      # compose so the Sprint 2K RLS migration (0015_rls_audit_tables)
+      # Postgres default for customer
+      # compose so the RLS migration (0015_rls_audit_tables)
       # is active by default. SQLite legacy stays available via
       # ABS_DATABASE_URL=sqlite:////app/data/abs.db in .env.
       ABS_DATABASE_URL: "${ABS_DATABASE_URL:-postgresql+psycopg://abs:${ABS_DB_PASSWORD}@postgres:5432/abs}"
-      # Sprint 2N FAZ E (P1 #2M-024) — explicit prod env + rate limit
+      # Explicit prod env + rate limit
       # enable so customer compose never falls back to the dev-mode
-      # disable path. UAT-041 (/auth/login 5/min brute-force guard)
-      # depends on rate_limit_enabled=true; Sprint 2M repro found 10
+      # disable path. The /auth/login 5/min brute-force guard
+      # depends on rate_limit_enabled=true; a repro run found 10
       # consecutive wrong-password attempts returning 10x 401 with 0x 429.
       ABS_ENV: "${ABS_ENV:-prod}"
       ABS_RATE_LIMIT_ENABLED: "${ABS_RATE_LIMIT_ENABLED:-true}"
@@ -110,7 +110,7 @@ services:
       # this is defence-in-depth against a tampered/regressed image. (The vault
       # never writes plaintext — encrypt + decrypt both hard-require sops/age.)
       ABS_VAULT_REQUIRE_SOPS: "${ABS_VAULT_REQUIRE_SOPS:-true}"
-      # BUG-27 — point RAG/Cerbos at the in-stack services declared below.
+      # Point RAG/Cerbos at the in-stack services declared below.
       # Customers can override either URL in .env if they front-load their
       # own Qdrant/Cerbos clusters; defaults match the compose service names.
       ABS_QDRANT_URL: "${ABS_QDRANT_URL:-http://qdrant:6333}"
@@ -132,7 +132,7 @@ services:
       ABS_EMBEDDING_BACKEND: "${ABS_EMBEDDING_BACKEND:-auto}"
       ABS_EMBEDDING_MODEL_PATH: "${ABS_EMBEDDING_MODEL_PATH:-/app/data/models/bge-m3}"
       HF_HOME: "/app/data/models/hf-cache"
-      # BUG-29 — Knowledge graph wiring. Neo4j 5.20-community ships with the
+      # Knowledge graph wiring. Neo4j 5.20-community ships with the
       # stack; admin /panel/graph runs Cypher against this driver.
       ABS_NEO4J_URI: "${ABS_NEO4J_URI:-bolt://neo4j:7687}"
       ABS_NEO4J_USER: "${ABS_NEO4J_USER:-neo4j}"
@@ -153,9 +153,9 @@ services:
         # vault loads empty and provider-key saves can't be persisted.
         condition: service_completed_successfully
       postgres:
-        # Sprint 2N FAZ C — wait for Postgres before backend boot.
+        # Wait for Postgres before backend boot.
         # Backend entrypoint runs `alembic upgrade head` so the schema
-        # (incl. Sprint 2K RLS policies) is current before serving.
+        # (including the RLS policies) is current before serving.
         condition: service_healthy
       qdrant:
         # qdrant image has no curl/wget/nc/bash so a /dev/tcp probe always
@@ -236,7 +236,7 @@ services:
       # Mounts the script directory read-only — script lives in the image
       # but bind-mounting allows hot-patching without re-pulling.
       - ./scripts:/app/infra/scripts:ro
-    # Sprint 2B — the cron container reuses the backend image, but its
+    # The cron container reuses the backend image, but its
     # entrypoint is the email_tick loop, not the FastAPI server. The
     # backend Dockerfile HEALTHCHECK probes :8000 which never binds in
     # this container, so the inherited healthcheck would mark email-cron
@@ -260,7 +260,7 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # qdrant — vector store backing /v1/rag/* (BUG-27 fix). Single-node
+  # qdrant — vector store backing /v1/rag/*. Single-node
   # community image is enough for the customer self-host envelope (≤ 1M
   # chunks). Persistence lives in the named volume so an upgrade keeps
   # ingested embeddings; `docker compose down -v` wipes them.
@@ -277,11 +277,11 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # cerbos — policy decision point for /v1/rag/* and /v1/projects/* (T-004,
-  # T-012). Policies are baked into the backend image at /app/cerbos/policies
+  # cerbos — policy decision point for /v1/rag/* and /v1/projects/*.
+  # Policies are baked into the backend image at /app/cerbos/policies
   # and bind-mounted into cerbos read-only here.
   #
-  # IMPORTANT — bundle layout (Sprint 2J FAZ C, BUG-2J-C-01):
+  # IMPORTANT — bundle layout:
   # The `./cerbos/` directory next to this compose MUST contain BOTH
   # `config.yaml` AND `policies/`. Do NOT copy from the repo-root
   # `cerbos/` (which only ships policies); the canonical bundle lives
@@ -307,7 +307,7 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # neo4j — knowledge graph backing /v1/graph/* (BUG-29 fix). Community
+  # neo4j — knowledge graph backing /v1/graph/*. Community
   # 5.20 with APOC. Heap pinned at 512m so a 4 GB Hetzner CX22 can host
   # the full ABS stack without swapping. Bolt only — no HTTP exposure.
   # ---------------------------------------------------------------------------
@@ -332,9 +332,9 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # postgres — Sprint 2N FAZ C (P0 #2M-026) — KVKK defense-in-depth DB.
+  # postgres — the KVKK defense-in-depth database.
   #
-  # Sprint 2K shipped Row-Level Security on the audit_*/tenant_* tables,
+  # Row-Level Security is enabled on the audit_*/tenant_* tables,
   # but the customer compose previously had no Postgres service, so backend
   # silently fell back to SQLite and RLS was never engaged. From 1.0.1
   # onwards Postgres is the default; SQLite stays opt-in via
@@ -397,12 +397,12 @@ volumes:
   abs-vault-key:
   caddy-data:
   caddy-config:
-  # BUG-27 — qdrant payload + vectors. Survives container recreate; wiped
+  # Qdrant payload + vectors. Survives container recreate; wiped
   # only by `docker compose down -v`. Keep the name stable across upgrades.
   abs-qdrant-data:
-  # BUG-29 — neo4j graph + transaction logs. Same persistence contract as
+  # neo4j graph + transaction logs. Same persistence contract as
   # qdrant: stable across upgrades, wiped only by an explicit volume drop.
   abs-neo4j-data:
-  # Sprint 2N FAZ C (P0 #2M-026) — Postgres RLS-backed audit + tenant
+  # Postgres RLS-backed audit + tenant
   # tables. Single named volume; back this up nightly alongside abs-data.
   abs-postgres-data:

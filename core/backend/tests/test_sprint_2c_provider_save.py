@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""Sprint 2C ITEM-2 - POST /v1/admin/providers/{id} guards."""
+"""POST /v1/admin/providers/{id} guards."""
 
 from __future__ import annotations
 

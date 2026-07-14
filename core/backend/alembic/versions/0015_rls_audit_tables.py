@@ -1,4 +1,4 @@
-"""Sprint 2K — enable + force Row Level Security on the 3 audit tables.
+"""Enable + force Row Level Security on the 3 audit tables.
 
 Revision ID: 0015_rls_audit_tables
 Revises: 0014b_backfill_tenant_id

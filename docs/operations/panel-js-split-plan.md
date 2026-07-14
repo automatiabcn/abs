@@ -1,6 +1,6 @@
 # `panel.js` Modular Split Plan
 
-**Status:** scheduled (Sprint 18 candidate). Code untouched in T-Q07 because the panel has no automated regression net and a runtime regression would block the customer-facing dashboard.
+**Status:** scheduled. The code is untouched because the panel has no automated regression net and a runtime regression would block the customer-facing dashboard.
 
 ## Why split
 
@@ -69,4 +69,4 @@ The `panel.js` shim stays for any external bookmarks linking to it directly.
 
 ## Why deferred
 
-T-Q07 brief listed `panel.js (788 line)` as in-scope, but the panel has no automated coverage. Doing the split blind risks breaking the dashboard for current customers, which contradicts the Sprint 17 "production hardening" charter. The plan above is the safe path; it should be executed in a future sprint together with the test scaffolding it depends on.
+The split was listed as in-scope, but the panel has no automated coverage. Doing it blind risks breaking the dashboard for current customers. The plan above is the safe path; it should be executed together with the test scaffolding it depends on.

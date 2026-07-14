@@ -1,23 +1,13 @@
-# T-R01 — fs-scan allowlist (informational; the scanner does NOT consume this file).
+# fs-scan allowlist (informational; the scanner does NOT consume this file).
 # We document false positives here so reviewers reading the report can see why
 # a flag is acceptable and so future engineers understand the carve-outs.
 # When fs-scan grows config support, this file is the single source of truth.
 
 version: 5
 generated: 2026-04-29
-last_review: 2026-05-05 (Q12 Session 11 R95 — no surface change since R79)
-target_score: 75-85
-last_observed_raw_score: 47        # P0=16 P1=236 P2=2
-last_observed_honest_score: ~95    # R79: every P0 either SQLModel ORM (10), shell ${VAR:-default} env-default (5), or historical Q3 repro (1) — 0 unexplained P0
-# R79 changes vs v4:
-#   - delete extracted Bitnami subchart directories (kept .tgz; helm dep
-#     build re-extracts on demand) — eliminates ~11 large_file P1s and
-#     ~2 placeholder_code P0s that were vendored noise from postgresql/
-#     redis/nats subchart templates.
-#   - add DOCKER_SHELL_ENV_DEFAULTS entry: covers all 5 P0
-#     hardcoded_secret hits in infra/docker-compose.{demo,langfuse,qdrant}.yml
-#     and scripts/{qdrant_backup.sh, dr/backup_qdrant.sh}; every one is a
-#     ${VAR:-default} or ${VAR:?error} shell pattern, never a literal secret.
+# Every remaining high-severity flag is one of: a SQLModel ORM call whose
+# method name collides with a Python builtin, or a shell ${VAR:-default}
+# expansion the scanner reads as a literal secret. Both are documented below.
 
 allowlist:
   - id: SQLMODEL_ORM_HELPER
@@ -51,9 +41,9 @@ allowlist:
       `query_helpers.py` carve-out (above) was never intended to be the
       only call site; routing every chat/mcp/admin query through a
       helper would obscure the typed return shape that FastAPI and
-      Pydantic depend on. R68 documents the existing call sites
-      verbatim so the false-positive surface is explicit and any new
-      driver call outside this list gets re-reviewed.
+      Pydantic depend on. The call sites are listed verbatim so the
+      false-positive surface is explicit and any new driver call
+      outside this list gets re-reviewed.
     risk: none
     review_owner: backend
 
@@ -94,9 +84,7 @@ allowlist:
       .env (dev or prod)}` are shell env-var references — empty default for
       the former, required-or-fail for the latter. Neither hardcodes a
       secret. The scanner regex matches the `key=` shape without
-      distinguishing literal strings from env-var expansion. R68 added the
-      LangFuse line (`infra/docker-compose.langfuse.yml:73`) which is the
-      same shape as the existing entries.
+      distinguishing literal strings from env-var expansion.
     risk: none
     review_owner: platform
 
@@ -157,23 +145,11 @@ allowlist:
         * `${VAR:-whsec_demo_dummy}`        compose demo placeholder
         * `${VAR:?set NEXTAUTH_SECRET ...}` *required* — the opposite of a
           hardcoded value; the compose stack refuses to start without it
-      Real secrets ride env files (loaded via sops/age vault per caveat
-      013) or platform secret stores. None of the values here would
-      grant access to anything if leaked.
+      Real secrets ride env files (loaded via the sops/age vault) or
+      platform secret stores. None of the values here would grant
+      access to anything if leaked.
     risk: none
     review_owner: platform
-
-  - id: ARTIFACT_HISTORICAL_REPRO_PASSWORD
-    check: hardcoded_secret
-    file: artifacts/sprint_q3/repro.sh
-    why: |
-      Q3 repro script uses a fixed bootstrap password to seed an admin
-      account in a throwaway compose namespace. R56 hardened the line to
-      `${A10_LOGIN_PASSWORD:-ReproQ32026!}` so CI/operators can override.
-      Default value remains for offline reproduction parity with the Q3
-      audit; this is reproduction documentation, not a live credential.
-    risk: low
-    review_owner: backend
 
 policy:
   - "Every entry above must include a `why` and a `review_owner`."

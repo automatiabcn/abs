@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Sprint 2D ITEM-2.1 — CodeQL py/path-injection regression tests.
+"""CodeQL py/path-injection regression tests.
 
 Covers the 8 alerts (#33..#40) flagged on production code:
   - core/backend/app/symbols/index.py:19

@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-027 — beta license expires_at post-check + 7-day grace."""
+"""Beta license expires_at post-check + 7-day grace."""
 
 from __future__ import annotations
 

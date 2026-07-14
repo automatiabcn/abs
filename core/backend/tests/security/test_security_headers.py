@@ -1,4 +1,4 @@
-"""T-048 — Security headers + Lighthouse-friendly response shape tests.
+"""Security headers + Lighthouse-friendly response shape tests.
 
 These run in the regular pytest suite as a fast cousin of the nightly
 Lighthouse job. Lighthouse can fail nightly for visual reasons; this
@@ -63,7 +63,7 @@ def test_no_server_or_powered_by_header_on_public_paths() -> None:
 
 def test_jwks_endpoint_includes_baseline_security_hint() -> None:
     """Soft check: at least one canonical security header should be present;
-    middleware-level hardening lands when T-058 wires the FastAPI middleware."""
+    middleware-level hardening lands when the FastAPI middleware is wired."""
 
     with TestClient(app) as c:
         r = c.get("/.well-known/jwks.json")

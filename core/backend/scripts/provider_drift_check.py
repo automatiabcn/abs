@@ -1,4 +1,4 @@
-"""T-S02.3 — compare a probe artifact against the stored golden fingerprint.
+"""Compare a probe artifact against the stored golden fingerprint.
 
 Exit code 0 = no drift; non-zero = drift detected (CI fails the job).
 """

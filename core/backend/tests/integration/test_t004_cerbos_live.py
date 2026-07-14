@@ -1,4 +1,4 @@
-"""T-004 — Cerbos PDP live integration test.
+"""Cerbos PDP live integration test.
 
 Skipped unless ABS_CERBOS_HOST points at a reachable Cerbos PDP. Run via:
 

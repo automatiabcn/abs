@@ -1,4 +1,4 @@
-"""BUG-V4 — Sprint 13 win-rate eval harness contract.
+"""Win-rate eval harness contract.
 
 This test pins the harness's pure-function behaviour so future edits
 don't silently break the artifact format. It does NOT call any live
@@ -42,7 +42,7 @@ def _load_module():
 
 
 def test_promise_v4_dataset_balanced_after_v2_expansion():
-    """Dataset grew from 30 → 100 rows in Sprint Q12 consensus eval (R2).
+    """The dataset grew from 30 → 100 rows with the consensus eval.
 
     Locking the new size + per-category split so a future drop in
     coverage trips CI rather than silently weakening the win-rate

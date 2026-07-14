@@ -1,10 +1,10 @@
-# Release — Sprint 2G ITEM 11
+# Release
 #
 # Trigger: push of a semver tag (v1.0.0, v1.0.0-rcN). Creates the GitHub
 # Release entry which then triggers sbom.yml (release: published) to
 # attach the CycloneDX SBOMs as release assets.
 #
-# Sprint 2N.2 FAZ B: image namespace aligned to ghcr.io/automatiabcn/abs-*
+# Image namespace aligned to ghcr.io/automatiabcn/abs-*
 # so workflow GITHUB_TOKEN (which is scoped to automatiabcn/abs) can push.
 # The pre-2N.2 enzoemir1 namespace required a founder-supplied PAT and
 # v1.0.2 push failed with `permission_denied: installation does not
@@ -105,9 +105,9 @@ jobs:
           make_latest: ${{ steps.tag.outputs.is_prerelease == 'false' }}
 
   publish-images:
-    # Sprint 2N.1 FAZ B: build + push customer-facing images so cosign-sign
+    # Build + push customer-facing images so cosign-sign
     # has a real target. Previously absent — v1.0.1 release shipped no GHCR
-    # manifest (HTTP 404 on docker manifest inspect), blocking smebes upgrade.
+    # manifest (HTTP 404 on docker manifest inspect), blocking the customer upgrade path.
     name: Build + push container images
     runs-on: ubuntu-latest
     timeout-minutes: 45

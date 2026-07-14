@@ -1,11 +1,11 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""BUG-29 — `/admin/graph` Cypher returned HTTP 500 because the customer
+"""`/admin/graph` Cypher returned HTTP 500 because the customer
 compose had no Neo4j service and the legacy `/v1/graph/cypher` handler
 let the bolt driver's `ServiceUnavailable` bubble up untranslated.
 
-Sprint 2A:
+Behaviour:
 * Neo4j 5.20-community ships in `infra/docker-compose.customer.yml`.
 * `app/integrations/neo4j_seed.py` plants Person/Org/Project/Ticket nodes
   with a `tenant_id` property so the panel renders rows on first boot.
@@ -52,7 +52,7 @@ def admin_client(client: TestClient, admin_ctx: AuthContext):
 
 
 # ---------------------------------------------------------------------------
-# Tenant filter post-process — the unit-testable core of the BUG-29 fix.
+# Tenant filter post-process — the unit-testable core of the fix.
 # ---------------------------------------------------------------------------
 def test_filter_rows_keeps_matching_tenant() -> None:
     rows = [

@@ -1,4 +1,4 @@
-"""Q12 Founder Tester Round 2 (BUG-5) — `/v1/workflows/synthesize` LLM-first.
+"""Q12 Founder Tester Round 2 — `/v1/workflows/synthesize` LLM-first.
 
 Replaces the prior template-only fallback with a real LLM call routed through
 `call_with_cascade`. This test suite covers the route contract:

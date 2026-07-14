@@ -1,4 +1,4 @@
-"""T-008 — Auth lifecycle events (NATS publish + OAuth route emission)."""
+"""Auth lifecycle events (NATS publish + OAuth route emission)."""
 
 from __future__ import annotations
 

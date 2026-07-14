@@ -10,7 +10,7 @@ keys present. The cascade contract:
   * `POST /v1/cascade/run` with anthropic_mock OFF returns 503
     "no_providers_configured" when the active chain is empty, else
     walks the live cascade via `call_with_cascade`. Round 2 of the
-    Founder Tester session (BUG-4) replaced the prior 503
+    Founder Tester session replaced the prior 503
     "live_cascade_pending" gate with the real orchestrator wiring —
     this test now mocks the orchestrator so we keep the *gate*
     contract under test without making real provider HTTP calls.
@@ -153,7 +153,7 @@ def test_provider_degradation_matrix(
     # 2) /v1/cascade/run (mock off) — gate behaviour:
     #    • zero active   → 503 "no_providers_configured"
     #    • ≥1 active     → call_with_cascade walks the chain. Founder
-    #      Tester Round 2 (BUG-4) wired this live; we mock the
+    #      Tester Round 2 wired this live; we mock the
     #      orchestrator here so the test stays hermetic.
     async def _fake_call(prompt, *, primary, model=None, fallbacks=(), **kw):
         return ProviderResponse(

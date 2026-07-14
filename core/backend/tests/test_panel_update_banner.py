@@ -16,7 +16,7 @@ def test_panel_html_contains_update_banner():
 
 
 def test_panel_js_handles_update_event():
-    # T-R02 — panel.js was split into ES modules. The update-available SSE
+    # panel.js was split into ES modules. The update-available SSE
     # listener now sits in sse.js; the handler in widgets.js; the
     # /v1/update/apply fetch + window-attached handler in ui.js.
     sse = (PANEL_DIR / "assets" / "panel" / "sse.js").read_text(encoding="utf-8")

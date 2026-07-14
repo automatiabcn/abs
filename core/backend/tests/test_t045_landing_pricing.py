@@ -1,4 +1,4 @@
-"""T-045 — Landing pricing data + checkout link tests."""
+"""Landing pricing data + checkout link tests."""
 
 from __future__ import annotations
 

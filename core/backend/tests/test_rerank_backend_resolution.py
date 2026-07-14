@@ -6,7 +6,7 @@
 """A server with no reranker does not rerank.
 
 `rerank_backend` defaulted to `mock`: Jaccard word overlap, on a request whose API
-field is documented as `apply T-013 cross-encoder rerank`. It is not a weaker
+field is documented as `apply the cross-encoder rerank`. It is not a weaker
 cross-encoder — it is a different and worse ranking function, promoting chunks that
 repeat the query's words over chunks that answer the question. Measured on the golden
 set it ranked below not reranking at all, which is the whole story: the feature made

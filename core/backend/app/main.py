@@ -40,7 +40,7 @@ from app.api.admin import auth as admin_auth_router
 from app.api.admin import churn as admin_churn_router
 from app.api.admin import dashboard as admin_dashboard_router
 from app.api.admin import errors_recent as admin_errors_router
-from app.api.admin import usage as admin_usage_router  # BUG-V1 — /v1/admin/usage
+from app.api.admin import usage as admin_usage_router  # /v1/admin/usage
 from app.api.admin import users as admin_users_router  # Q8.5 finalize — /v1/admin/users
 from app.api.admin import widget_pricing as admin_widget_pricing_router  # Q12-R84
 from app.api.admin import providers_status as admin_providers_status_router  # Polish R7
@@ -181,7 +181,7 @@ async def lifespan(_app: FastAPI):
     except Exception as exc:
         _lf_logger.warning("vault boot_load skipped: %s", exc)
 
-    # BUG-V3 — Detect ABS_ANTHROPIC_ENABLED opt-in flips and emit
+    # Detect ABS_ANTHROPIC_ENABLED opt-in flips and emit
     # a SOC2 audit row (PROMISE.md "every opt-in flip ... audit log").
     try:
         from app.config import settings as _optin_settings
@@ -481,7 +481,7 @@ app.include_router(admin_churn_router.router)
 app.include_router(admin_errors_router.router)
 app.include_router(admin_audit_router.router)
 app.include_router(admin_users_router.router)  # Q8.5 finalize — /v1/admin/users
-app.include_router(admin_usage_router.router)  # BUG-V1 — /v1/admin/usage
+app.include_router(admin_usage_router.router)  # /v1/admin/usage
 app.include_router(
     admin_widget_pricing_router.router
 )  # Q12-R84 — /v1/admin/widget_pricing

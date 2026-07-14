@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sprint 2N FAZ D — build single-file customer tarball (smebes lesson 18).
+# Build the single-file customer tarball.
 #
 # Usage:
 #   ./scripts/build_customer_pkg.sh <slug>
@@ -26,7 +26,7 @@
 # The tarball is the single artefact you ship over an encrypted channel;
 # the customer extracts it into /opt/abs/ and runs `docker compose up -d`.
 # This pattern replaces the pre-Sprint-2N "attach 4 separate files +
-# manually instruct cerbos/ recreation" flow that bit smebes (Sprint 2M
+# manually instruct cerbos/ recreation" flow that broke an early install (the
 # bug log #2M-D).
 
 set -euo pipefail

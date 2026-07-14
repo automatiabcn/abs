@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// T-R03 fix #1 introduced `BILLING_ENABLED` as a build-time kill switch
+// `BILLING_ENABLED` is a build-time kill switch
 // that defaults to false. In jsdom we always want the Stripe path to
 // run, so we mock the flag module before importing the component.
 vi.mock("@/lib/billing-flag", () => ({

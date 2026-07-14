@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""Sprint 2C ITEM-3 - qual_* multi-model pipeline behaviour."""
+"""qual_* multi-model pipeline behaviour."""
 
 from __future__ import annotations
 
