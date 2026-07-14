@@ -36,10 +36,10 @@ export default function CategoryBarList({ data }: { data: CategoryBar[] }) {
     <TremorCard ref={rootRef} className="border-0 bg-transparent p-0 shadow-none">
       <Flex className="mb-2">
         <Title className="text-xs uppercase tracking-wider text-muted-foreground">
-          Kategori
+          Category
         </Title>
         <Subtitle className="text-xs uppercase tracking-wider text-muted-foreground">
-          Adet
+          Tools
         </Subtitle>
       </Flex>
       <BarList data={data} color="indigo" />

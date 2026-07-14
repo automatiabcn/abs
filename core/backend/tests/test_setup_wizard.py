@@ -213,3 +213,64 @@ def test_providers_step_rejects_bad_cf_account_id(isolated_setup, client):
     r = client.post("/v1/setup/step/providers", json={"cf_account_id": "not-32-hex"})
     assert r.status_code == 400, r.text
     assert "cf_account_id" in r.json()["detail"]["fields"]
+
+
+def test_a_customer_without_a_license_can_finish_the_wizard(isolated_setup, client):
+    """The free tier has to be reachable through the front door.
+
+    Step 2 used to be `license_key: str = Field(..., min_length=10)`, so the wizard
+    could not be completed without a key — on a product whose pitch is that the free
+    tier is the default, and on a screen that said so in as many words. A customer
+    with no key got to step 2 and stopped there.
+    """
+    client.post(
+        "/v1/setup/step/admin",
+        json={"email": "free@tier.co", "password": "longSecret123"},
+    )
+
+    r = client.post("/v1/setup/step/license", json={})
+    assert r.status_code == 200, r.text
+    assert r.json()["tier"] == "free"
+    assert r.json()["current_step"] == 3
+
+    # And the rest of it, with no keys anywhere: this is the zero-key install.
+    assert (
+        client.post(
+            "/v1/setup/step/domain", json={"mode": "ip", "ssl_mode": "internal"}
+        ).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            "/v1/setup/step/anthropic", json={"skip_paid_providers": True}
+        ).status_code
+        == 200
+    )
+    assert client.post("/v1/setup/step/providers", json={}).status_code == 200
+    assert client.post("/v1/setup/step/test", json={}).status_code == 200
+
+    status = client.get("/v1/setup/status").json()
+    assert status["completed"] is True
+    assert status["data"]["license"]["mode"] == "demo"
+
+
+def test_an_empty_license_string_is_the_same_as_no_license(isolated_setup, client):
+    """The wizard posts "" when the free-tier box is ticked, not an absent field."""
+    client.post(
+        "/v1/setup/step/admin",
+        json={"email": "free2@tier.co", "password": "longSecret123"},
+    )
+    r = client.post("/v1/setup/step/license", json={"license_key": "   "})
+    assert r.status_code == 200, r.text
+    assert r.json()["tier"] == "free"
+
+
+def test_a_bad_license_key_is_still_refused(isolated_setup, client):
+    """Optional is not the same as unchecked: a key that is present must verify."""
+    client.post(
+        "/v1/setup/step/admin",
+        json={"email": "bad@key.co", "password": "longSecret123"},
+    )
+    r = client.post("/v1/setup/step/license", json={"license_key": "not.a.valid.jwt"})
+    assert r.status_code == 400
+    assert "Invalid license" in r.text
