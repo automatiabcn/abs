@@ -1,7 +1,7 @@
-# T-004 / BUG-27 — Cerbos engine configuration for the customer compose.
-# infra/docker-compose.customer.yml bind-mounts ./cerbos read-only at /cerbos
-# inside the container, so policies live at /cerbos/policies and audit logs
-# stay inside the cerbos container's writable layer.
+# Cerbos policy decision point — the engine behind cross-tenant authorization.
+# The compose files bind-mount this directory read-only at /etc/cerbos, so the
+# policies below resolve to /etc/cerbos/policies, and the audit log stays inside
+# the container's own writable layer.
 
 server:
   httpListenAddr: ":3592"
@@ -29,3 +29,10 @@ engine:
 
 schema:
   enforcement: "warn"
+
+# Cerbos reports anonymous usage to its vendor unless told not to. The compose
+# already disables Next's telemetry on customer hosts for privacy and air-gap;
+# the policy engine has to hold the same line, or a self-hosted install still
+# talks to the internet on boot.
+telemetry:
+  disabled: true
