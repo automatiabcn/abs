@@ -15,6 +15,7 @@ import { redirect } from "next/navigation";
 // (Server Components can't pass ssr:false to next/dynamic).
 import CommandPalette from "@/components/panel/CommandPaletteLazy";
 import { PanelThemeProvider } from "@/components/panel/PanelThemeProvider";
+import UpdateBanner from "@/components/panel/UpdateBanner";
 import { AppShell } from "@/components/shell/AppShell";
 import ServiceWorkerRegister from "@/components/panel/ServiceWorkerRegister";
 import { Toaster } from "@/components/ui/sonner";
@@ -87,6 +88,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
     <PanelThemeProvider>
       <QueryProvider>
         <ServiceWorkerRegister />
+        <UpdateBanner />
         <AppShell>{children}</AppShell>
         <CommandPalette />
         <Toaster richColors position="top-right" />

@@ -16,6 +16,7 @@ import { redirect } from "next/navigation";
 // used by /panel/layout.tsx.
 import CommandPalette from "@/components/panel/CommandPaletteLazy";
 import { PanelThemeProvider } from "@/components/panel/PanelThemeProvider";
+import UpdateBanner from "@/components/panel/UpdateBanner";
 import { AppShell } from "@/components/shell/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/query-client";
@@ -122,6 +123,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   return (
     <PanelThemeProvider>
       <QueryProvider>
+        <UpdateBanner />
         <AppShell>{children}</AppShell>
         <CommandPalette />
         <Toaster richColors position="top-right" />

@@ -48,17 +48,3 @@ def test_admin_route_removed_on_backend(client):
     image must not also serve a vanilla 032 HTML page."""
     r = client.get("/admin", follow_redirects=False)
     assert r.status_code == 404
-
-
-def test_panel_assets_js_still_served(client):
-    """Static assets under `/panel/assets/*` survive — they back the
-    Next.js admin's embedded panel iframe widgets."""
-    r = client.get("/panel/assets/panel.js")
-    assert r.status_code == 200
-    assert 'import "./panel/main.js"' in r.text
-
-
-def test_panel_assets_css_still_served(client):
-    r = client.get("/panel/assets/panel.css")
-    assert r.status_code == 200
-    assert "--bg0" in r.text

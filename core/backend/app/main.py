@@ -110,7 +110,6 @@ from app.middleware.i18n import I18nMiddleware
 from app.middleware.rate_limit import install_rate_limit
 from app.middleware.request_id import RequestIDMiddleware
 
-PANEL_STATIC_DIR = Path(__file__).resolve().parent / "static" / "panel"
 SETUP_STATIC_DIR = Path(__file__).resolve().parent / "static" / "setup"
 # Brief 4 R4 — ADMIN_STATIC_DIR removed; /admin/* is Next.js territory
 # served by the `landing` container behind the Caddy route split.
@@ -541,14 +540,6 @@ app.include_router(me_consent_router.router)
 app.include_router(me_data_export_router.router)
 app.include_router(panel_router.router)
 
-# Panel assets (css/js/img). Mounted under /panel/assets so the StaticFiles
-# fallback cannot shadow the /panel and /panel/login routes.
-app.mount(
-    "/panel/assets",
-    StaticFiles(directory=str(PANEL_STATIC_DIR / "assets")),
-    name="panel-assets",
-)
-
 # Setup wizard static assets
 app.mount(
     "/setup/assets",
@@ -556,8 +547,8 @@ app.mount(
     name="setup-assets",
 )
 
-# Static fallback — /static/* serves everything under app/static/
-# (admin/index.html, panel/tools.html, connect.html and friends).
+# Static fallback — /static/* serves what is left under app/static/:
+# the setup wizard, connect.html and status.html.
 app.mount(
     "/static",
     StaticFiles(directory=str(Path(__file__).resolve().parent / "static"), html=True),
