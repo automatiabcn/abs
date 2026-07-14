@@ -179,17 +179,17 @@ def test_no_internal_release_process_in_customer_surface() -> None:
     )
 
 
-def test_test_029_uses_dynamic_repo_root() -> None:
+def test_gdpr_suite_uses_dynamic_repo_root() -> None:
     """Regression: GDPR test must not hardcode ``/Users/eneseserkan/...``.
 
     The original suite used absolute paths that broke on CI runners and
-    other developers' workstations. Brief R1 §9 requires a dynamic
+    other developers' workstations. The suite requires a dynamic
     ``Path(__file__).resolve().parents[3]`` resolver instead.
     """
-    test_file = REPO_ROOT / "core" / "backend" / "tests" / "test_029_gdpr_account.py"
+    test_file = REPO_ROOT / "core" / "backend" / "tests" / "test_gdpr_account.py"
     text = test_file.read_text(encoding="utf-8")
     assert "/Users/eneseserkan/" not in text, (
-        "test_029_gdpr_account.py still hardcodes the founder's home path. "
+        "test_gdpr_account.py still hardcodes the founder's home path. "
         "Use REPO_ROOT = Path(__file__).resolve().parents[3] instead."
     )
     assert "REPO_ROOT" in text, "test_029 must declare a REPO_ROOT helper."

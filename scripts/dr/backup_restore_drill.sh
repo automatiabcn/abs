@@ -35,7 +35,7 @@ KEEP="${ABS_DR_DRILL_KEEP:-0}"
 
 # Refuse to run against any namespace that could be live infrastructure.
 case "$PROJECT" in
-  infra|abs-cj|abs|q12-l21-drill)
+  infra|abs-cj|abs|abs-drill)
     echo "ERROR: refusing DR drill against live/sister namespace '${PROJECT}'." >&2
     echo "Set ABS_DR_DRILL_PROJECT to a sandbox value (default q12-dr-drill)." >&2
     exit 3
@@ -87,7 +87,7 @@ Q12-L28 DR backup-restore drill is GATED.
     ABS_DR_DRILL=1 bash $0
 
   Safety:
-    - refuses ABS_DR_DRILL_PROJECT in {infra, abs-cj, abs, q12-l21-drill}
+    - refuses ABS_DR_DRILL_PROJECT in {infra, abs-cj, abs, abs-drill}
     - DRY RUN by default
     - tears down the namespace on success unless ABS_DR_DRILL_KEEP=1
 ==================================================================
