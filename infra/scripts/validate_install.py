@@ -137,7 +137,7 @@ def _check_mcp() -> Dict[str, Any]:
 
 
 def _check_stripe() -> Dict[str, Any]:
-    # Sprint 2J FAZ D — honour the billing kill-switch the landing image
+    # Honour the billing kill-switch the landing image
     # already wires through `NEXT_PUBLIC_BILLING_ENABLED`. Self-host
     # customers who don't resell ABS opt out by setting
     # `ABS_BILLING_ENABLED=false`; the validator then reports OK with a

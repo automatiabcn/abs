@@ -1,4 +1,4 @@
-"""T-009 — Qdrant client wrapper unit tests (no live broker)."""
+"""Qdrant client wrapper unit tests (no live broker)."""
 
 from __future__ import annotations
 

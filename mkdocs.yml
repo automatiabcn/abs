@@ -87,16 +87,16 @@ markdown_extensions:
 
 plugins:
   - search
-  # T-R07 — version selector (mike).
+  # Version selector (mike).
   # Install with: pip install mike mkdocs-material[imaging]
   - mike:
       alias_type: copy
       canonical_version: latest
-  # Sprint 2G ITEM 3 — removed the previous `algolia_docsearch:` plugin
+  # Removed the previous `algolia_docsearch:` plugin
   # entry. It referenced a PyPI package `mkdocs-algolia-docsearch` that
   # was never published, so `pip install mkdocs-algolia-docsearch>=0.4`
-  # in .github/workflows/docs.yml has failed on every run since T-R07
-  # was introduced (Sprint 18). MkDocs Material's built-in `search`
+  # in .github/workflows/docs.yml had failed on every run since the docs
+  # site was introduced. MkDocs Material's built-in `search`
   # plugin (lunr.js) covers site search until a proper integration is
   # wired up.
   #
@@ -110,7 +110,7 @@ docs_dir: docs
 site_dir: site
 strict: false
 
-# Sprint 2G ITEM 3 — Validation tolerance. Several docs intentionally
+# Validation tolerance. Several docs intentionally
 # reference source files outside docs/ (`../core/backend/app/...`,
 # `../../LICENSE`, `../../.github/workflows/...`) as pointer references;
 # MkDocs `--strict` mode flags every one of these as "target not found

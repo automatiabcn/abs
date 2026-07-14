@@ -1,4 +1,4 @@
-# T-004 — Principal-policy reserved for emergency revocation of named users.
+# Principal-policy reserved for emergency revocation of named users.
 # General "suspended" handling lives in the resource policy so that role-set
 # matters. Specific user_id-keyed denies can be added here at any time.
 ---

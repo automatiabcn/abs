@@ -1,4 +1,4 @@
-// T-R03 fix #1 — verify the billing kill-switch disables every CTA on the
+// Verify the billing kill-switch disables every CTA on the
 // pricing surfaces. Default (no NEXT_PUBLIC_BILLING_ENABLED set) → all
 // disabled.
 import { test, expect } from "@playwright/test";

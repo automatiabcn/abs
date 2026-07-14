@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""Sprint 2L — TenantContextMiddleware unit tests (SQLite default lane).
+"""TenantContextMiddleware unit tests (SQLite default lane).
 
 Guards the keystone that activates Postgres RLS: the pure-ASGI middleware
 must pin the resolved tenant to ``current_tenant`` for the request and reset

@@ -21,7 +21,7 @@ type LoginState = "idle" | "submitting" | "success" | "error";
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Backend-unreachable banner (P0 #2M-025).
+  // Backend-unreachable banner.
   // /admin/* and /panel/* SSR layouts redirect here with this param
   // whenever the FastAPI backend /healthz probe fails.
   const backendUnreachable = searchParams?.get("reason") === "backend-unreachable";

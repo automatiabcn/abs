@@ -1,5 +1,5 @@
 /**
- * Sprint 2N FAZ B — UAT-009 fail-closed landing SSR (P0 #2M-025).
+ * Fail-closed landing SSR.
  *
  * The /admin/* and /panel/* SSR layouts redirect to
  * /login?reason=backend-unreachable when the backend /healthz probe fails.
@@ -18,7 +18,7 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-describe("LoginPage — backend-unreachable banner (P0 #2M-025)", () => {
+describe("LoginPage — backend-unreachable banner", () => {
   it("shows the banner when reason=backend-unreachable", () => {
     mockSearchParams.mockImplementation((key: string) =>
       key === "reason" ? "backend-unreachable" : null,

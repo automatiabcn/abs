@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-016 — cascade cache + breaker tenant namespacing."""
+"""Cascade cache + breaker tenant namespacing."""
 
 from __future__ import annotations
 

@@ -8,13 +8,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 FROM base AS builder
-# 010 — chromadb rust binding + patch_engine için build deps
-# 013 — sops + age binary'leri için curl + ca-certificates
+# Build deps for the chromadb rust binding + patch_engine.
+# curl + ca-certificates for the sops + age binaries.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ libsqlite3-dev patch curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 013 — sops + age (encrypted secrets vault için)
+# sops + age (for the encrypted secrets vault).
 ARG SOPS_VERSION=3.9.4
 ARG AGE_VERSION=1.2.1
 RUN curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64" \
@@ -63,8 +63,8 @@ ENV ABS_BUILD_HASH=${BUILD_HASH}
 LABEL abs.build.hash="${BUILD_HASH}" \
       org.opencontainers.image.title="abs-backend" \
       org.opencontainers.image.vendor="Automatia BCN"
-# 010 — apply_patch tool runtime'da `patch` binary'sine ihtiyaç duyar
-# 013 — sops/age binary'leri builder'dan kopyalanır (apt-install yerine küçük binary)
+# The apply_patch tool needs the `patch` binary at runtime.
+# The sops/age binaries are copied from the builder — a small binary beats an apt install.
 RUN apt-get update && apt-get install -y --no-install-recommends patch ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 # Audit R6 — upgrade pip+wheel (build tooling) past CVE-2025-8869 /
@@ -86,13 +86,13 @@ COPY --from=builder /app/app /app/app
 # boot; an attacker who edits the .so flips its sha256 and the gate
 # panics. Path is hard-coded in app/licensing/tamper_check.py.
 COPY --from=builder /tmp/verifier.hash /etc/abs.verifier.hash
-# BUG-12 — image-baked manifest pubkey (founder-shared). When this file
+# Image-baked manifest public key. When this file
 # is present, the entrypoint skips self-generation of /app/data/{pub,priv}.pem
 # so that licenses minted by the founder (signed with the founder's private
 # key, held offline) verify against this same pubkey on every customer install.
 # Pre-fix every container generated its own keypair on first boot, which
 # meant every customer rejected the founder's mint with "signature invalid".
-# Sprint 2N.2 FAZ A: copy from the tracked path under app/update/.
+# Copy from the tracked path under app/update/.
 # Sibling core/backend/manifest_pubkey.pem is gitignored (`*.pem` rule),
 # so it was present locally but missing on CI checkout, breaking
 # release.yml publish-images.
@@ -113,7 +113,7 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz').status==200 else 1)" || exit 1
 
 ENTRYPOINT ["/usr/local/bin/abs-entrypoint"]
-# Sprint 2N FAZ F (P2 #2M-010) — honour X-Forwarded-Proto so trailing-slash
+# Honour X-Forwarded-Proto so trailing-slash
 # 307 redirects from Caddy preserve HTTPS instead of falling back to http://.
 # --proxy-headers tells Uvicorn to read Forwarded / X-Forwarded-* from the
 # upstream reverse proxy; --forwarded-allow-ips="*" trusts every hop in the

@@ -1,4 +1,4 @@
-"""T-025 — Meeting transcribe dispatcher tests."""
+"""Meeting transcribe dispatcher tests."""
 
 from __future__ import annotations
 

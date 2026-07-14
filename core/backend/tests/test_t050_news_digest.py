@@ -1,4 +1,4 @@
-"""T-050 — News digest tests."""
+"""News digest tests."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 // Sample prompt audit. An earlier set leaked an internal team channel
 // reference and an internal-only doc.
-// FAZ B (2026-05-08) — SAMPLE_PROMPTS retired in favour of the
+// SAMPLE_PROMPTS retired in favour of the
 // 48-prompt library; EmptyState now hydrates hero prompts from
 // lib/prompt-library.ts via HERO_PROMPT_IDS. The retired-leak invariant
 // on chat/index.tsx still holds; the brief's four legacy openers no

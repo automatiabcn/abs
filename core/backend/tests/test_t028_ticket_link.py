@@ -1,4 +1,4 @@
-"""T-028 — Ticket linking tests."""
+"""Ticket linking tests."""
 
 from __future__ import annotations
 

@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""Sprint 2K — verify abs_admin BYPASSRLS sees every tenant.
+"""Verify abs_admin BYPASSRLS sees every tenant.
 
 Postgres-only. The default lane (SQLite) skips this module via the
 ``postgres_only`` marker plus the env-var guard.
@@ -33,7 +33,7 @@ if not (_RAW_POSTGRES_URL and _RAW_ADMIN_URL):
 POSTGRES_URL: str = _RAW_POSTGRES_URL
 ADMIN_URL: str = _RAW_ADMIN_URL
 
-# Sprint 2N.2 FAZ D: data ops use the non-superuser abs_app_rls role so
+# Data ops use the non-superuser abs_app_rls role so
 # RLS policies enforce on INSERT/SELECT. Migration calls (alembic) keep
 # using POSTGRES_URL (abs_app SUPERUSER).
 _RAW_RLS_URL = os.getenv("ABS_TEST_POSTGRES_RLS_URL")
@@ -66,7 +66,7 @@ def _migrated_database() -> Iterator[None]:
 
 
 def _engine(url: str):
-    # Sprint 2N.2 FAZ D: NullPool — see test_rls_audit_tables for context.
+    # NullPool — see test_rls_audit_tables for context.
     # Without it, the prior `with engine.connect()` GUC leaks into the next
     # connect block and the "blocked without GUC" assertion fails.
     from sqlalchemy import create_engine

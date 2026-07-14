@@ -1,4 +1,4 @@
-# T-058 — Helm umbrella chart matrix test (Kubernetes 1.27 / 1.28 / 1.29).
+# Helm umbrella chart matrix test (Kubernetes 1.27 / 1.28 / 1.29).
 # Spins up a kind cluster per K8s version, helm install (dry-run), validates rendered manifests.
 # Security: every interpolation in `run:` blocks is from a controlled source — github.sha (hex),
 # matrix.k8s_version (hardcoded enum: v1.27.16 / v1.28.13 / v1.29.8). No untrusted PR/issue text.

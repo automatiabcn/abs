@@ -1,4 +1,4 @@
-# T-004 — Cerbos engine configuration.
+# Cerbos engine configuration.
 # Hot-reload watches the policy directory; container mounts ./cerbos/policies
 # read-only at /policies.
 

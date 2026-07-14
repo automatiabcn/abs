@@ -1,4 +1,4 @@
-"""T-003 — OAuth 2.1 HTTP endpoints (FastAPI TestClient end-to-end)."""
+"""OAuth 2.1 HTTP endpoints (FastAPI TestClient end-to-end)."""
 
 from __future__ import annotations
 

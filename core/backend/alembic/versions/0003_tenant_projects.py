@@ -1,4 +1,4 @@
-"""T-009 — Tenant + project + tenant_projects (M2M).
+"""Tenant + project + tenant_projects (M2M).
 
 Revision ID: 0003_tenant_projects
 Revises: 0002_oauth_extra_claims

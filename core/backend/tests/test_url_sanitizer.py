@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""Sprint 2E ITEM-A — URL log sanitizer unit tests.
+"""URL log sanitizer unit tests.
 
 Defence-in-depth alongside Gemini header-auth migration: any future HTTP
 client that logs a URL with `?key=` / `?token=` / etc. must have the

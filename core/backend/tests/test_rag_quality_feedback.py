@@ -51,7 +51,7 @@ def test_parse_text_applies_cleaning() -> None:
 
 
 def test_parse_text_still_normalizes_crlf_and_bom() -> None:
-    # Regression: original T-011 contract must hold after cleaning was added.
+    # Regression: the original ingest contract must hold after cleaning was added.
     doc = pipe.parse_text(b"\xef\xbb\xbfhello\r\nworld", filename="t.txt")
     assert doc.text == "hello\nworld"
 

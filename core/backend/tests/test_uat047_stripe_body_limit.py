@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-047 — Stripe webhook body > 1 MiB rejected with 413
+"""Stripe webhook body > 1 MiB rejected with 413
 before any signature work, so the worker cannot be OOM'd by a giant
 POST."""
 

@@ -1,4 +1,4 @@
-"""BUG-V2 — Workflow execute response carries USD cost estimate.
+"""Workflow execute response carries USD cost estimate.
 
 PROMISE.md vow:
   "Estimated cost per run: $X.XX shows zero for free-tier-only

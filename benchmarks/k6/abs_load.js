@@ -1,4 +1,4 @@
-// T-059 — k6 load test for ABS Server (5 scenarios: rag/meeting/status/news/email).
+// k6 load test for ABS Server (5 scenarios: rag/meeting/status/news/email).
 // Targets: p99 <500ms overall, 100 RPS sustained 5min, 1000 concurrent ramp,
 // error rate <0.1%. Run via:
 //   k6 run -e ABS_BASE_URL=https://staging.abs-server.example.com \

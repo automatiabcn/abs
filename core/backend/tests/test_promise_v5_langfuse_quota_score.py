@@ -1,4 +1,4 @@
-"""BUG-V5 — `claude_tokens_used_pct_month` LangFuse score is wired.
+"""`claude_tokens_used_pct_month` LangFuse score is wired.
 
 PROMISE.md:
   "LangFuse dashboard `claude_tokens_used_pct_month` time-series."

@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""Sprint 2E ITEM-C — Lighthouse slow-3g config sanity.
+"""Lighthouse slow-3g config sanity.
 
 Pre-2E the slow-3g LHCI profile used `preset: "perf"`, which tells
 Lighthouse to run only the performance audits. But the assertion block
@@ -36,7 +36,7 @@ def test_slow3g_config_exists() -> None:
 
 def test_slow3g_drops_perf_preset() -> None:
     settings = _load()["ci"]["collect"]["settings"]
-    # `preset: perf` is the original Sprint 2D ITEM-2 cause for the
+    # `preset: perf` is the original cause of the
     # auditRan failure. It must NOT come back.
     assert settings.get("preset") != "perf", (
         "preset:perf re-introduced — accessibility audits will not run"

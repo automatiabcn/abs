@@ -1,4 +1,4 @@
-"""T-051 — Multi-model ensemble + Opus baseline tests."""
+"""Multi-model ensemble + Opus baseline tests."""
 
 from __future__ import annotations
 

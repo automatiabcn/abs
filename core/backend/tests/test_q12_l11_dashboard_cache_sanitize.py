@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Sprint 2D ITEM-2.2 — CodeQL py/clear-text-storage-sensitive-data (#32).
+"""CodeQL py/clear-text-storage-sensitive-data (#32).
 
 dashboard.py:50 wrote the aggregated admin payload to /tmp without masking
 fields that could transitively contain provider keys or webhook secrets.

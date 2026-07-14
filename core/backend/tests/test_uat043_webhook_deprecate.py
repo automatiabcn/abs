@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-043 — billing_v10.webhook_idempotent must emit a
+"""billing_v10.webhook_idempotent must emit a
 DeprecationWarning on import + the DB-backed alternative
 (app.api.webhooks.idempotency) is the canonical source of truth."""
 

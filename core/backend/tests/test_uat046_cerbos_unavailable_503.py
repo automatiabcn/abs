@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-046 — Cerbos PDP unreachable surfaces HTTP 503 with
+"""Cerbos PDP unreachable surfaces HTTP 503 with
 Retry-After (not 403, not 500) so clients retry instead of misreading
 a transport blip as a permanent forbidden."""
 
@@ -138,7 +138,7 @@ def test_pdp_unreachable_returns_503_with_retry_after(install_unreachable_cerbos
 
 
 def test_pdp_up_still_returns_200_baseline():
-    """Regression — UAT-046 503 path must not regress the happy 200 path."""
+    """Regression — the 503 path must not regress the happy 200 path."""
     from types import SimpleNamespace
 
     class _UpCerbos:

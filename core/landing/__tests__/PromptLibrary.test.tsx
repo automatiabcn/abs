@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// FAZ B (2026-05-08) — PromptLibrary drawer + prompt-library data
+// PromptLibrary drawer + prompt-library data
 // integrity. Five locked-in checks:
 //   1. renders Turkish category titles when lang="tr"
 //   2. typing into the search box filters prompts by title/description

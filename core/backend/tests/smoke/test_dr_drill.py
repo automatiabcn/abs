@@ -1,4 +1,4 @@
-"""T-062 — DR drill smoke checks.
+"""DR drill smoke checks.
 
 These tests run AFTER `scripts/dr/dr_drill.sh` restores from a snapshot. They
 verify the application boots, the alembic head matches what the migration chain

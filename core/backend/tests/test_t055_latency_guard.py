@@ -1,4 +1,4 @@
-"""T-055 — Latency p95 guard tests."""
+"""Latency p95 guard tests."""
 
 from __future__ import annotations
 

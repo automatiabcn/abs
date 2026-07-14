@@ -1,4 +1,4 @@
-"""T-047 — Onboarding sequence tests."""
+"""Onboarding sequence tests."""
 
 from __future__ import annotations
 

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Sprint Q12 — Cost ledger (token × pricing, zero API calls).
+"""Cost ledger (token × pricing, zero API calls).
 
 Reads `artifacts/promise_verify/latency_benchmark.json` and prices the
 recorded token usage against published pricing. No LLM call. No

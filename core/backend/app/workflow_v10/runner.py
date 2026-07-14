@@ -62,7 +62,7 @@ _PER_KIND_ESTIMATE_S: Dict[str, float] = {
 }
 
 
-# BUG-V2 — Per-call USD cost estimate (PROMISE.md: "Estimated cost per
+# Per-call USD cost estimate (PROMISE.md: "Estimated cost per
 # run: $X.XX shows zero for free-tier-only workflows").
 #
 # Free providers (Groq, Cloudflare, Gemini, Cohere, Ollama, local) all
@@ -196,7 +196,7 @@ def plan(workflow: Dict[str, Any]) -> List[Dict[str, Any]]:
             "estimate_s": _PER_KIND_ESTIMATE_S.get(
                 by_id.get(nid, {}).get("kind", ""), 0.5
             ),
-            # BUG-V2 — carry the source node so estimate_cost() can
+            # Carry the source node so estimate_cost() can
             # inspect provider/model config without re-walking the
             # workflow.
             "node": by_id.get(nid, {}),

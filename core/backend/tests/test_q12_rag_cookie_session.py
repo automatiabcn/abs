@@ -1,4 +1,4 @@
-"""Q12 Founder Tester Round 2 (BUG-6) — `/v1/rag/*` cookie-session fallback.
+"""Q12 Founder Tester Round 2 — `/v1/rag/*` cookie-session fallback.
 
 `/admin/rag` is an operator console served behind the panel admin cookie
 session (`abs_session`). Before this round it could not call `/v1/rag/ingest`
@@ -97,7 +97,7 @@ def test_ingest_via_cookie_session_returns_200(fake_qdrant) -> None:
 
 
 def test_query_no_cookie_no_bearer_still_401() -> None:
-    """Regression guard for the existing T-011 contract: anonymous
+    """Regression guard for the existing ingest contract: anonymous
     callers (no cookie, no Bearer) must still get 401 missing_bearer_token."""
     with TestClient(app) as c:
         r = c.post(

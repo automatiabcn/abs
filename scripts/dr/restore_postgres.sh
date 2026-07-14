@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# T-062 — Postgres restore from S3 dump.
+# Postgres restore from S3 dump.
 # Usage:
 #   ABS_PG_URL=postgres://user:pw@host:5432/db_restored \
 #   ABS_DR_S3_BUCKET=abs-pg-backups \

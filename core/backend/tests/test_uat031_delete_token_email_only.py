@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-031 — /me/account/delete-request token must reach the
+"""/me/account/delete-request token must reach the
 customer only via email in production. Response body never carries it."""
 
 from __future__ import annotations

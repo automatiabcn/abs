@@ -139,7 +139,7 @@ async function handleHeartbeat(req, env) {
   const existing = await env.ABS_LICENSE_KV.get(activationKey, { type: "json" });
   if (existing) {
     // CF Free Tier KV write budget: 1000/day. Backend heartbeat is 30s
-    // (BUG-21 fix) → 2880 hb/day per customer instance. Writing
+    // heartbeat → 2880 hb/day per customer instance. Writing
     // last_seen on EVERY heartbeat would burn 2.88x the daily write
     // budget per customer. Throttle: only re-write the activation
     // record when the cached last_seen is older than 1 hour. With this

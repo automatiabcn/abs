@@ -1,4 +1,4 @@
-"""T-F05 — feature usage tracker + idle detection."""
+"""Feature usage tracker + idle detection."""
 
 from __future__ import annotations
 
@@ -99,7 +99,7 @@ def test_suggest_alternative_no_match():
 
 
 def test_known_features_count_at_least_22():
-    """Catalog must cover the ABS-specific node types T-S03 advertises."""
+    """Catalog must cover the ABS-specific node types the workflow builder advertises."""
     assert len(fu.KNOWN_FEATURES) >= 22
 
 

@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Sprint Q12 — Cascade redundancy smoke (no live API calls).
+"""Cascade redundancy smoke (no live API calls).
 
 Proves the customer-facing redundancy promise by exercising
 `app.cascade.orchestrator.call_with_cascade` against the full

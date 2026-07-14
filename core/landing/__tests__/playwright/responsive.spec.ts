@@ -1,4 +1,4 @@
-// T-Q04 — responsive smoke: home + pricing render correctly at 3 breakpoints.
+// Responsive smoke: home + pricing render correctly at 3 breakpoints.
 import { test, expect } from "@playwright/test";
 
 const BREAKPOINTS = [

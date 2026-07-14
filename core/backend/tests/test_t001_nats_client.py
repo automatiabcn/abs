@@ -1,4 +1,4 @@
-"""T-001 — NATS client wrapper unit tests (no live broker required)."""
+"""NATS client wrapper unit tests (no live broker required)."""
 
 from __future__ import annotations
 

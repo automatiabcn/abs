@@ -1,10 +1,10 @@
-# ABS TTS — Self-host Setup (T-F02)
+# ABS TTS — Self-host Setup
 
-> Free-tier alternative to ElevenLabs. Sprint 20.
+> Free-tier alternative to ElevenLabs.
 
 ## Why
 
-Sprint 20 free-tier refactor: ElevenLabs (~$0.0006 / character) is now opt-in (`ABS_ELEVENLABS_ENABLED=true`). The default flow uses Coqui XTTS-v2 locally, with Piper TTS as the CPU fallback. Cost: $0/month.
+ElevenLabs (~$0.0006 / character) is opt-in (`ABS_ELEVENLABS_ENABLED=true`). The default flow uses Coqui XTTS-v2 locally, with Piper TTS as the CPU fallback. Cost: $0/month.
 
 ## Backends
 
@@ -87,4 +87,4 @@ The `TTSReminder` interface is identical so no callers need to change.
 
 ## Sign-off
 
-> Author: ABS engineering · Date: 2026-04-29 · Sprint 20 T-F02.
+> Author: ABS engineering · Date: 2026-04-29.

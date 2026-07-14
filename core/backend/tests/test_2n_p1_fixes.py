@@ -1,13 +1,13 @@
-"""Sprint 2N FAZ E — 6 P1 bug fix verification.
+"""6 P1 bug fix verification.
 
 Tests cover the surface area each fix touches without spinning up the
 full stack:
-  - #2M-009 panel/{path} → admin/{path} 308 route
-  - #2M-014 daily_cost MCP tool resilience (IndexError → fallback)
-  - #2M-018 cascade no-provider pre-flight HTTP 503 (not 200 SSE)
-  - #2M-020 Caddyfile.customer @backend includes /me/*
-  - #2M-023 ABS_VERSION=1.0.1 default + CHANGELOG entry
-  - #2M-024 customer compose explicit ABS_RATE_LIMIT_ENABLED=true
+  - panel/{path} → admin/{path} 308 route
+  - daily_cost MCP tool resilience (IndexError → fallback)
+  - cascade no-provider pre-flight HTTP 503 (not 200 SSE)
+  - Caddyfile.customer @backend includes /me/*
+  - ABS_VERSION=1.0.1 default + CHANGELOG entry
+  - customer compose explicit ABS_RATE_LIMIT_ENABLED=true
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ ENV_EXAMPLE = REPO_ROOT / ".env.example"
 CHANGELOG = REPO_ROOT / "docs" / "CHANGELOG.md"
 
 
-# ---- #2M-009 -----------------------------------------------------------------
+# ---- panel → admin redirect ------------------------------------------------
 def test_panel_subpath_compat_redirect_declared() -> None:
     raw = PANEL_PY.read_text()
     assert "panel_subpath_compat_redirect" in raw, (
@@ -50,7 +50,7 @@ def test_panel_catchall_returns_308_via_starlette_router() -> None:
     assert resp_root.headers["location"] == "/admin"
 
 
-# ---- #2M-014 -----------------------------------------------------------------
+# ---- daily-cost tool resilience --------------------------------------------
 def test_daily_cost_tool_handles_index_error() -> None:
     """Force estimate_daily_cost to raise IndexError, ensure tool catches.
 
@@ -68,7 +68,7 @@ def test_daily_cost_tool_handles_index_error() -> None:
     assert "No cost data yet" in body
 
 
-# ---- #2M-018 -----------------------------------------------------------------
+# ---- cascade pre-flight when every provider is down ------------------------
 def test_chat_completions_preflights_cascade_503() -> None:
     raw = CHAT_PY.read_text()
     assert "all_providers_unavailable" in raw, (
@@ -81,11 +81,11 @@ def test_chat_completions_preflights_cascade_503() -> None:
     head, _, tail = raw.partition("async def stream()")
     assert "get_active_providers" in head, (
         "provider probe must run pre-stream so HTTP status reflects "
-        "the all-down case (Sprint 2M repro: 200 SSE instead of 503)"
+        "the all-down case (a repro found: 200 SSE instead of 503)"
     )
 
 
-# ---- #2M-020 -----------------------------------------------------------------
+# ---- Caddyfile routes /me/* ------------------------------------------------
 def test_caddyfile_customer_backend_pattern_includes_me() -> None:
     raw = CADDYFILE_CUSTOMER.read_text()
     backend_line = next(
@@ -98,11 +98,11 @@ def test_caddyfile_customer_backend_pattern_includes_me() -> None:
     )
 
 
-# ---- #2M-023 -----------------------------------------------------------------
+# ---- version + changelog ---------------------------------------------------
 def test_env_example_version_is_one_zero_one() -> None:
     raw = ENV_EXAMPLE.read_text()
     assert re.search(r"^ABS_VERSION=1\.0\.1\b", raw, re.MULTILINE), (
-        "Sprint 2N ships images at 1.0.1 — .env.example must point there"
+        "the images ship at 1.0.1 — .env.example must point there"
     )
 
 
@@ -118,7 +118,7 @@ def test_changelog_documents_the_hotfix_release() -> None:
     )
 
 
-# ---- #2M-024 -----------------------------------------------------------------
+# ---- rate limit is on in the customer compose ------------------------------
 def test_customer_compose_forces_rate_limit_enabled() -> None:
     raw = COMPOSE_CUSTOMER.read_text()
     # Default-on substitution: ${ABS_RATE_LIMIT_ENABLED:-true}.
@@ -134,11 +134,11 @@ def test_customer_compose_forces_rate_limit_enabled() -> None:
 
 def test_auth_login_decorated_with_rate_limit() -> None:
     raw = (BACKEND_ROOT / "app" / "api" / "auth.py").read_text()
-    # Login route is rate-limited (Sprint 2I UAT-041 retained).
+    # The login route is rate-limited.
     block = raw.split('@router.post("/login")', 1)
     assert len(block) == 2, "auth.py missing @router.post('/login') decorator"
     next_segment = block[1][:300]
     assert "limiter.limit" in next_segment, (
         "/auth/login must retain the slowapi @limiter.limit decorator "
-        "(Sprint 2I UAT-041 → Sprint 2N #2M-024 customer enforcement)"
+        "(the brute-force guard, enforced in the customer compose)"
     )

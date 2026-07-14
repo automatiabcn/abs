@@ -43,7 +43,7 @@ def test_beta_request_persists_pending(client, monkeypatch):
     )
     assert r.status_code == 200
     body = r.json()
-    # Sprint 2I UAT-022/024 — response body is neutral so it cannot leak
+    # The response body is neutral so it cannot leak
     # tenant identifiers or be used as an email-enumeration oracle.
     assert body == {"ok": True, "status": "queued", "check_email": True}
 
@@ -63,7 +63,7 @@ def test_beta_request_dedupes_within_24h(client, monkeypatch):
     r1 = client.post("/v1/beta/request", json=payload)
     assert r1.status_code == 200
     r2 = client.post("/v1/beta/request", json=payload)
-    # UAT-024 — duplicate now returns the same neutral 200 instead of
+    # Duplicate now returns the same neutral 200 instead of
     # 429 with diagnostic body so the endpoint cannot be probed for
     # known emails.
     assert r2.status_code == 200
@@ -97,7 +97,7 @@ def test_beta_request_auto_approves_when_flag_set(client, monkeypatch):
     )
     assert r.status_code == 200
     body = r.json()
-    # UAT-022 — JTI never appears in the response; it travels via the
+    # JTI never appears in the response; it travels via the
     # magic-link email only. We only check the row got approved.
     assert body == {"ok": True, "status": "queued", "check_email": True}
 

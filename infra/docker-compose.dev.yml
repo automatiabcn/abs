@@ -102,7 +102,7 @@ services:
       - "8000:8000"   # dev — direct access for Playwright + manual tests
     environment:
       ABS_NATS_URL: "nats://nats:4222"
-      # Founder Tester Round 2 (BUG-6) — Python `cerbos.sdk.client` is the
+      # Python `cerbos.sdk.client` is the
       # HTTP transport. The previous override `cerbos:3593` (gRPC port,
       # no scheme) caused the SDK to read `cerbos://3593` and fail every
       # request with `Request protocol 'cerbos://'.`. Use the HTTP port

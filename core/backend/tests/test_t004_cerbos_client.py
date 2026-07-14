@@ -1,4 +1,4 @@
-"""T-004 — Cerbos client wrapper unit tests (no live PDP)."""
+"""Cerbos client wrapper unit tests (no live PDP)."""
 
 from __future__ import annotations
 

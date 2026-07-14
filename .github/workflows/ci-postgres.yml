@@ -67,7 +67,7 @@ jobs:
           psql -h localhost -U abs_app -d abs_rls_test \
             -c "GRANT SELECT ON customer_audit_entries, webhook_events, vault_audit_entries TO abs_admin;"
       - name: Create abs_app_rls — non-superuser role for RLS data ops
-        # Sprint 2N.2 FAZ D: postgres:15 creates POSTGRES_USER (abs_app)
+        # postgres:15 creates POSTGRES_USER (abs_app)
         # with SUPERUSER + BYPASSRLS, which lets it skip every RLS
         # policy the suite is verifying. The 5 audit RLS tests all
         # failed with `assert [(1,)] == []` because abs_app saw rows

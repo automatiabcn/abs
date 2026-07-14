@@ -1,4 +1,4 @@
-# T-004 — Cerbos policy test cases. Validate via `cerbos compile cerbos/policies`.
+# Cerbos policy test cases. Validate via `cerbos compile cerbos/policies`.
 ---
 name: project_policy_tests
 description: "Coverage for resource.project.v1 + derived_roles.common."

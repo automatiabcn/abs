@@ -1,4 +1,4 @@
-"""T-F03 — Claude monthly quota discipline + opt-in gate."""
+"""Claude monthly quota discipline + opt-in gate."""
 
 from __future__ import annotations
 
@@ -87,7 +87,7 @@ def test_simulated_1m_token_run_progresses_through_thresholds(ledger):
 
 
 def test_anthropic_provider_opt_in_default_off(monkeypatch):
-    """T-F03 — default config never reaches Anthropic."""
+    """Default config never reaches Anthropic."""
     from app.config import settings
     from app.providers.anthropic import AnthropicProvider
     from app.providers.schemas import ProviderError

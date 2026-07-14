@@ -212,7 +212,7 @@ class _StubQdrant:
 class TestRagRoundtripAndIsolation:
     """Q10 Round 18 — RAG layer integration enrichment.
 
-    Existing T-011 unit tests cover ingest happy-path and query mock
+    The existing unit tests cover the ingest happy path and the query mock
     independently. These contracts wire them together: the same
     document round-trips through ingest → query, and a second tenant
     on the same collection sees zero of the first tenant's data.

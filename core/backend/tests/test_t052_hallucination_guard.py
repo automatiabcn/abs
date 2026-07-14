@@ -1,4 +1,4 @@
-"""T-052 — Hallucination guard tests."""
+"""Hallucination guard tests."""
 
 from __future__ import annotations
 

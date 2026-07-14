@@ -1,4 +1,4 @@
-// T-Q02 / T-Q04 — Playwright config for the ABS landing routes.
+// Playwright config for the ABS landing routes.
 // Boots `next dev` on port 3457 and runs the suites under __tests__/playwright/.
 import { defineConfig, devices } from "@playwright/test";
 

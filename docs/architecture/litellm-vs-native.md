@@ -1,10 +1,10 @@
 # LiteLLM vs Native Provider Adapters — ABS Architecture Decision
 
-> Status: ACCEPTED 2026-04-29 · Sprint 19 T-S02.4
+> Status: ACCEPTED 2026-04-29
 
 ## Context
 
-Sprint 19 T-S02.1 restructured the 5 ABS providers (anthropic, groq, gemini, cohere, openrouter) into hexagonal packages with versioned `v1`/`v2` surface markers and Pact-style contract fixtures. With that hex layout in place, the question becomes: do we still need our own adapter code, or should we delegate everything to LiteLLM (a popular open-source proxy that speaks OpenAI-compatible API to N upstream providers)?
+An earlier refactor restructured the 5 ABS providers (anthropic, groq, gemini, cohere, openrouter) into hexagonal packages with versioned `v1`/`v2` surface markers and Pact-style contract fixtures. With that hex layout in place, the question becomes: do we still need our own adapter code, or should we delegate everything to LiteLLM (a popular open-source proxy that speaks OpenAI-compatible API to N upstream providers)?
 
 This document records the decision and the trade-off analysis.
 
@@ -14,7 +14,7 @@ This document records the decision and the trade-off analysis.
 
 ABS sends all chat completions to a LiteLLM proxy container (e.g., the official `ghcr.io/berriai/litellm:main-stable` image). The proxy fans out to upstream providers with its own routing, retries, and budget rules.
 
-### Option B — Native adapters as the only path (status quo before T-S02.4)
+### Option B — Native adapters as the only path (the status quo)
 
 ABS keeps `adapter.py` per provider, calls upstream APIs directly via `httpx` or the vendor SDK. Cost tracking, retries, and circuit breakers live in `app/cascade/` and `app/observability/`.
 
@@ -50,7 +50,7 @@ Option C accepts the maintenance penalty of dual paths in exchange for retaining
 
 **Retries + circuit breaker** — `app/cascade/breaker.py` already implements exponential backoff with provider health snapshots. LiteLLM has fallback chains too; running both yields conflicting behaviour. Native wins because the SOC2 audit links retries to the tenant principal.
 
-**Feature coverage** — Anthropic tool_use blocks, Gemini grounding/multimodal, and Cohere rerank are first-class in native adapters. LiteLLM normalises everything to OpenAI `tool_calls`, dropping vendor-specific metadata. For RAG + verification (T-018, T-021) we need the original shape.
+**Feature coverage** — Anthropic tool_use blocks, Gemini grounding/multimodal, and Cohere rerank are first-class in native adapters. LiteLLM normalises everything to OpenAI `tool_calls`, dropping vendor-specific metadata. For RAG + verification we need the original shape.
 
 ## When LiteLLM IS the right choice
 
@@ -80,9 +80,9 @@ Option C accepts the maintenance penalty of dual paths in exchange for retaining
 
 ## References
 
-- T-S02.1 hexagonal restructure (PR link placeholder)
-- T-S02.2 contract fixtures
-- T-018 LangFuse @observe + Cerbos pre-warm
+- The hexagonal provider restructure
+- The contract fixtures
+- LangFuse @observe + Cerbos pre-warm
 - LiteLLM repo: <https://github.com/BerriAI/litellm>
 
 Re-evaluate this decision when LiteLLM 2.0 ships (target Q3 2026) or when the dual-cost question reaches the eng-leads forum.

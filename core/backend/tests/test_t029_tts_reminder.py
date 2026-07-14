@@ -1,4 +1,4 @@
-"""T-029 — TTS reminder tests."""
+"""TTS reminder tests."""
 
 from __future__ import annotations
 
@@ -26,14 +26,14 @@ def test_synthesize_returns_audio_path(tmp_path: Path) -> None:
     assert Path(r.audio_path).exists()
     assert r.voice_id == "voice-x"
     assert r.duration_estimated_s > 0
-    # T-F02 — free tier: mock backend has zero cost.
+    # Free tier: mock backend has zero cost.
     assert r.cost_usd == 0.0
 
 
 def test_budget_only_enforced_for_paid_backend(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """T-F02 — budget gate only fires for opt-in ElevenLabs, not free backends."""
+    """Budget gate only fires for opt-in ElevenLabs, not free backends."""
     monkeypatch.setattr(settings, "elevenlabs_budget_usd", 0.000001, raising=False)
     # Mock (free) is unaffected by budget caps now.
     r = tts.TTSReminder("mock").synthesize(
@@ -49,7 +49,7 @@ def test_unsupported_backend_raises() -> None:
 
 
 def test_elevenlabs_requires_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
-    """T-F02 — ElevenLabs is now opt-in via ABS_ELEVENLABS_ENABLED."""
+    """ElevenLabs is now opt-in via ABS_ELEVENLABS_ENABLED."""
     monkeypatch.setattr(settings, "elevenlabs_enabled", False, raising=False)
     monkeypatch.setattr(settings, "elevenlabs_api_key", "anything", raising=False)
     with pytest.raises(ValueError, match="opt-in"):

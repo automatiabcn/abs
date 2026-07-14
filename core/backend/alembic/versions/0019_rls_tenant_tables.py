@@ -1,10 +1,10 @@
-"""Sprint 2L — extend Postgres RLS to the tenant-DATA tables.
+"""Extend Postgres RLS to the tenant-DATA tables.
 
 Revision ID: 0019_rls_tenant_tables
 Revises: 0018_project_slug_per_tenant
 Create Date: 2026-06-08
 
-Sprint 2K (0014/0015) activated RLS on the 3 audit tables as a proof of the
+Migrations 0014/0015 activated RLS on the 3 audit tables as a proof of the
 GUC + policy pattern. This migration extends the SAME tenant-isolation policy
 to the tenant-DATA tables that are read/written strictly inside an
 authenticated request, where ``app.middleware.tenant_context`` has already

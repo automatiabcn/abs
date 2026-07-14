@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""Sprint 2B BUG-33 — /v1/admin/providers/{id}/test endpoint guard."""
+"""/v1/admin/providers/{id}/test endpoint guard."""
 
 from __future__ import annotations
 

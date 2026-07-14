@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-032/040 — emit_event(outcome='ok') sweep across the
+"""An emit_event(outcome='ok') sweep across the
 four KVKK success paths: delete_requested, delete_confirmed,
 delete_cancelled, purge_executed."""
 

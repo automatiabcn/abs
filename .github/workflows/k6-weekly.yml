@@ -1,4 +1,4 @@
-# T-059 — weekly load test against staging using k6.
+# Weekly load test against staging using k6.
 # Off-hours window: Sunday 02:00 UTC. Manual dispatch supported.
 # Security: every run-block interpolation routes through `env:` block (no inline expansion of
 # untrusted text). inputs.base_url is a workflow_dispatch input (controlled), ABS_LOAD_TEST_TOKEN

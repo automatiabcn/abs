@@ -1,4 +1,4 @@
-# T-033 — n8n dev compose overlay (queue mode + Postgres + Redis).
+# n8n dev compose overlay (queue mode + Postgres + Redis).
 # docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml \
 #                -f infra/docker-compose.n8n.yml up -d n8n n8n-worker
 

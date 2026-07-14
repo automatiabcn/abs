@@ -1,6 +1,6 @@
-# Customer Journey Test — Checklist (G4)
+# Customer Journey Test — Checklist
 
-> Sprint 19 post-completion gate G4 · Pairs with `scripts/seed_demo_tenant.py` and `scripts/purge_demo_tenant.py`.
+> Pairs with `scripts/seed_demo_tenant.py` and `scripts/purge_demo_tenant.py`.
 > Total budget: 2–3 hours, Playwright headed, demo tenant `demo-acme`.
 
 ## Pre-flight

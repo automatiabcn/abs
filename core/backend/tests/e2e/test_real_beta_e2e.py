@@ -1,4 +1,4 @@
-"""T-R08 — Real beta E2E for the `acme-test` tenant.
+"""Real beta E2E for the `acme-test` tenant.
 
 Walks the full beta journey end to end using the real code paths:
 
@@ -14,12 +14,12 @@ Walks the full beta journey end to end using the real code paths:
 
 Stripe is intentionally **not** part of this flow — beta participants
 opt in without billing; their pricing UI was already gated by
-`NEXT_PUBLIC_BILLING_ENABLED=false` in T-R03.
+`NEXT_PUBLIC_BILLING_ENABLED=false`.
 
 The Qdrant store is the in-process mock backend, so this test runs
 inside CI without external services. The Gmail and Recall paths use
 their `mock` backends; the `_GoogleBackend` and `_RecallBackend`
-classes are exercised by their own respx-mocked unit tests (T-Q03).
+classes are exercised by their own respx-mocked unit tests.
 """
 
 from __future__ import annotations
@@ -172,7 +172,7 @@ def test_recall_bot_schedule_for_acme(acme: dict) -> None:
         meeting_url=acme["recall"]["meeting_url"],
         tenant_id=acme["tenant_id"],
         duration_minutes=int(acme["recall"]["duration_minutes"]),
-        metadata={"source": "T-R08-beta-E2E"},
+        metadata={"source": "beta-e2e"},
     )
     assert job.tenant_id == acme["tenant_id"]
     assert job.meeting_url == acme["recall"]["meeting_url"]
@@ -183,4 +183,4 @@ def test_recall_bot_schedule_for_acme(acme: dict) -> None:
     # Status round-trip pulls the same record back.
     refetched = bot.status(job.bot_id)
     assert refetched.bot_id == job.bot_id
-    assert refetched.metadata["source"] == "T-R08-beta-E2E"
+    assert refetched.metadata["source"] == "beta-e2e"

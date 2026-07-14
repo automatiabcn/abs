@@ -3,7 +3,7 @@
 // Brief originally framed this as a "5-message outbox + flush" test, but
 // no outbox / send-queue mechanism exists yet — only R48's IndexedDB draft
 // persistence (current textarea contents). Building an outbox is a
-// source-code change, separately scoped under Sprint 22 follow-on.
+// source-code change, scoped as a follow-on.
 //
 // What the existing system *can* race on, and what this round honestly
 // covers, is the offline↔online transition for the draft itself: a

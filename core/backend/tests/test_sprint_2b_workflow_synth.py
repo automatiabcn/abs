@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""Sprint 2B BUG-31 — workflow synthesizer warns when LLM JSON parse fails."""
+"""Workflow synthesizer warns when LLM JSON parse fails."""
 
 from __future__ import annotations
 
@@ -55,7 +55,7 @@ def test_synth_fallback_emits_explicit_warning(client, monkeypatch, panel_admin)
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["source"] == "template"
-    # Sprint 2B BUG-31 — the synth helper now inserts a leading
+    # The synth helper now inserts a leading
     # warning describing the fallback so the frontend can act on it.
     assert any(
         "LLM synthesis failed, using template match" in w for w in body["warnings"]

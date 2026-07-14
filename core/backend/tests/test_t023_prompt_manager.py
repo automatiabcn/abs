@@ -1,4 +1,4 @@
-"""T-023 — Prompt management tests."""
+"""Prompt management tests."""
 
 from __future__ import annotations
 

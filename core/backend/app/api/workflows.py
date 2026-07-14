@@ -270,7 +270,7 @@ async def execute(
 
     plan_steps = runner.plan(body.workflow)
     estimated_cost_usd = runner.estimate_cost(plan_steps)
-    # BUG-V2 — strip the embedded node from the response so the public
+    # Strip the embedded node from the response so the public
     # surface stays the same shape the panel canvas already binds to.
     public_steps = [{k: v for k, v in s.items() if k != "node"} for s in plan_steps]
     if body.dry_run:

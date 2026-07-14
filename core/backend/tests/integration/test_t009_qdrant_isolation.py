@@ -1,4 +1,4 @@
-"""T-009 — Qdrant live integration: cross-tenant isolation gate."""
+"""Qdrant live integration: cross-tenant isolation gate."""
 
 from __future__ import annotations
 
@@ -149,5 +149,5 @@ def test_search_p95_latency_under_150ms(collection: str) -> None:
 
     samples_ms.sort()
     p95 = samples_ms[int(0.95 * len(samples_ms))]
-    print(f"\n[T-009] qdrant search p50={samples_ms[49]:.2f}ms p95={p95:.2f}ms")
+    print(f"\nqdrant search p50={samples_ms[49]:.2f}ms p95={p95:.2f}ms")
     assert p95 < 150.0, f"p95 {p95:.2f}ms exceeds 150ms budget"

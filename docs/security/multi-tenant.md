@@ -1,6 +1,6 @@
 # Multi-Tenant Isolation — Defence in Depth
 
-**Status:** active (3 layers; Layer 3 RLS now request-wired + extended to tenant-data tables, Sprint 2L).
+**Status:** active (3 layers; Layer 3 RLS is request-wired and extended to the tenant-data tables).
 **Owner:** Security working group.
 **Last updated:** 2026-06-08.
 
@@ -32,10 +32,10 @@ cached briefly per request.
 | Out-of-band of the ORM — catches raw SQL too | Fail-open mode in incidents (`ABS_CERBOS_FAIL_OPEN=true` emergency switch) skips the PDP entirely. |
 | Auditable, replayable | A policy gap or `*` wildcard in a new policy can re-open cross-tenant reads. |
 
-## Layer 3 — Postgres Row Level Security (Sprint 2K + 2L)
+## Layer 3 — Postgres Row Level Security
 
-**Sprint 2K** activated RLS on three audit tables: `customer_audit_entries`,
-`webhook_events`, `vault_audit_entries`. **Sprint 2L** extended the identical
+Migration **`0015`** activated RLS on three audit tables: `customer_audit_entries`,
+`webhook_events`, `vault_audit_entries`. Migration **`0019`** extended the identical
 policy to the tenant-DATA tables (`0019_rls_tenant_tables`): `tenants`,
 `projects`, `tenant_projects`, `provider_keys`, `tenant_settings`,
 `project_members`, `chat_sessions`, `saved_workflow`, `meetings`, plus the
@@ -52,7 +52,7 @@ owner. The SQLAlchemy listener (`app/db/session.py::_set_tenant_guc`) emits
 `SET LOCAL abs.tenant_id = '<slug>'` before every cursor execute on Postgres,
 sourced from the request-scoped `current_tenant` ContextVar.
 
-**Sprint 2L wiring fix — the GUC is now actually populated.** Sprint 2K shipped
+**The wiring fix — the GUC is now actually populated.** Migration `0015` shipped
 the policies + listener but the dependency meant to set the ContextVar
 (`tenant_guc.py::set_request_tenant`) was never attached to a router, so in the
 live request path the GUC stayed unset and the policies never engaged outside
@@ -100,15 +100,15 @@ request ──► JWT decode (tnt claim)
 Operator (admin console) ──► abs_admin role (BYPASSRLS) ──► full audit view
 ```
 
-## Risk register (post-Sprint 2K)
+## Risk register
 
 | # | Risk | Status / mitigation |
 |---|------|---------------------|
 | 1 | Layer 1 filter forgotten in a new endpoint | PR review + ruff custom rule on raw `select(Audit*)` | 
-| 2 | Cerbos fail-open emergency switch | Sprint 2L: convert to time-boxed feature flag with audit emit |
+| 2 | Cerbos fail-open emergency switch | Convert to a time-boxed feature flag with an audit emit |
 | 3 | RLS active on Postgres only; SQLite tests cannot exercise it | CI matrix postgres lane (`.github/workflows/ci-postgres.yml`) runs the `postgres_only` suite |
 | 4 | Operator console must use the admin pool | DSN env var `ABS_ADMIN_DATABASE_URL`; ops runbook pins the GRANT |
-| 5 | Tenant-data tables without RLS | **Done (Sprint 2L `0019`)** — 10 tenant-data tables enrolled; identity/pre-auth + background-write tables deliberately excluded (see Layer 3). New tenant-data table → add to `0019`'s `_DIRECT`/`_CHILD` + a case in `test_rls_tenant_tables.py` |
+| 5 | Tenant-data tables without RLS | **Done (`0019`)** — 10 tenant-data tables enrolled; identity/pre-auth + background-write tables deliberately excluded (see Layer 3). New tenant-data table → add to `0019`'s `_DIRECT`/`_CHILD` + a case in `test_rls_tenant_tables.py` |
 | 6 | Background worker / MCP forgets to pin the GUC | Default is None → no GUC → reads return 0 rows, writes fail loudly with 403 (chaos test). MCP transport bridges via `transport_auth.py`; remaining background writers stay on excluded tables until wired |
 | 7 | HTTP route without the GUC populator | **Closed** — `TenantContextMiddleware` runs for every request (not a per-route dep), so no route can forget it |
 
@@ -119,15 +119,15 @@ Operator (admin console) ──► abs_admin role (BYPASSRLS) ──► full aud
 - `core/backend/alembic/versions/0014b_backfill_tenant_id.py`
 - `core/backend/alembic/versions/0015_rls_audit_tables.py`
 - `core/backend/alembic/versions/0015b_abs_admin_role.py`
-- `core/backend/alembic/versions/0019_rls_tenant_tables.py` (Sprint 2L — 10 tenant-data tables)
+- `core/backend/alembic/versions/0019_rls_tenant_tables.py` (10 tenant-data tables)
 - `core/backend/app/db/session.py::_set_tenant_guc`
 - `core/backend/app/api/v1/tenant_guc.py`
-- `core/backend/app/middleware/tenant_context.py` (Sprint 2L — pure-ASGI GUC populator, the keystone)
-- `core/backend/app/mcp/transport_auth.py` (Sprint 2L — MCP transport → GUC bridge)
+- `core/backend/app/middleware/tenant_context.py` (pure-ASGI GUC populator, the keystone)
+- `core/backend/app/mcp/transport_auth.py` (MCP transport → GUC bridge)
 - `core/backend/app/middleware/rls_violation_handler.py`
 - `core/backend/tests/integration/test_rls_audit_tables.py` (5 cases)
-- `core/backend/tests/integration/test_rls_tenant_tables.py` (Sprint 2L — provider_keys + chat + meetings child)
+- `core/backend/tests/integration/test_rls_tenant_tables.py` (provider_keys + chat + meetings child)
 - `core/backend/tests/integration/test_admin_bypass_rls.py` (2 cases)
-- `core/backend/tests/test_tenant_context_middleware.py` (Sprint 2L — 10 cases, SQLite lane)
+- `core/backend/tests/test_tenant_context_middleware.py` (10 cases, SQLite lane)
 - `core/backend/tests/chaos/test_rls_chaos_drop_guc.py` (4 cases)
 - `.github/workflows/ci-postgres.yml` — runs the `postgres_only` RLS suites

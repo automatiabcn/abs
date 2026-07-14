@@ -1,4 +1,4 @@
-"""T-Q03 — respx-mocked unit tests for the real-API SaaS backends.
+"""respx-mocked unit tests for the real-API SaaS backends.
 
 We never hit the live providers. respx intercepts the httpx client so the
 tests assert request shape (URL, headers, payload) and verify that the

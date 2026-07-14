@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""Sprint 2B BUG-19/20/25/26 — static guard for the 4 new admin pages.
+"""Static guard for the 4 admin pages.
 
 These tests don't render React; they only check that the canonical
 page files exist on disk (so a future refactor doesn't silently delete
@@ -26,7 +26,7 @@ def test_four_new_admin_pages_exist_on_disk():
 
 def test_next_config_no_longer_redirects_four_admin_routes():
     cfg = _read("next.config.ts")
-    # Sprint 2B BUG-19/20/25/26 — these four should be REAL routes, not
+    # These four should be REAL routes, not
     # 308 redirects, so the sidebar lands on a real page without losing
     # the URL.
     for source in (

@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-034 — /v1/admin/audit/recent pagination + cursor + cap."""
+"""/v1/admin/audit/recent pagination + cursor + cap."""
 
 from __future__ import annotations
 

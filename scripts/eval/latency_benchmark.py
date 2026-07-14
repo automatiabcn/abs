@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Sprint Q12 — Latency benchmark (judge-free, rate-limit-safe).
+"""Latency benchmark (judge-free, rate-limit-safe).
 
 Measures wall-clock latency for two providers on the same 100-prompt
 golden eval dataset. NO LLM-as-judge. NO Cohere/Gemini calls (those are

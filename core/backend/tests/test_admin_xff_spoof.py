@@ -9,7 +9,7 @@ caller:
      header (``/v1/admin/login`` has no slowapi decorator — the in-memory
      ``_too_many_failures`` bucket is its only throttle).
 
-The fix routes ``_client_ip`` through the trusted-proxy gate (UAT-042): XFF is
+The fix routes ``_client_ip`` through the trusted-proxy gate: XFF is
 honoured only when the immediate hop is in ``ABS_TRUSTED_PROXIES``. TestClient's
 socket host is ``testclient`` and is deliberately NOT trusted in these tests, so
 the header is ignored — exactly the production posture for a direct/origin hit.

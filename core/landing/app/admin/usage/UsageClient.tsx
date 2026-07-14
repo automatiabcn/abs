@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// BUG-V1 — Client island for /admin/usage.
+// Client island for /admin/usage.
 // Renders Tremor metric tiles + 7-day Claude token trend chart.
 "use client";
 

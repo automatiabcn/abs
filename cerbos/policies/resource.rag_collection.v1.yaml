@@ -1,5 +1,5 @@
-# T-012 — Cerbos RAG resource policy.
-# Defense-in-depth on top of Qdrant payload-filter (T-009). Every /v1/rag/* call
+# Cerbos RAG resource policy.
+# Defense-in-depth on top of the Qdrant payload filter. Every /v1/rag/* call
 # resolves to a `rag_collection` (one per tenant) before the Qdrant wrapper runs.
 ---
 apiVersion: api.cerbos.dev/v1

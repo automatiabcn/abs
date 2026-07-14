@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-019 — POST /v1/admin/providers/{id}/test is rate-limited
+"""POST /v1/admin/providers/{id}/test is rate-limited
 (5/min) so abusive automation cannot burn through real provider quota."""
 
 from __future__ import annotations

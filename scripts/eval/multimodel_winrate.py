@@ -3,10 +3,10 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""BUG-V4 — Sprint 13 multi-model win-rate harness.
+"""Multi-model win-rate harness.
 
 The PROMISE.md vow:
-  "Sprint 13 multi-model ensemble (T-049..T-056) verified that
+  "The multi-model ensemble verified that
    GPT-OSS-120B baseline answers reach >=50 % win-rate against
    Claude Opus on the golden eval set."
 
@@ -382,7 +382,7 @@ def render_markdown(
     mode: str,
 ) -> str:
     lines: list[str] = []
-    lines.append("# Sprint 13 multi-model win-rate evidence\n")
+    lines.append("# Multi-model win-rate evidence\n")
     lines.append(f"> Generated: {finished_at} · mode: `{mode}` · duration: {duration_s:.1f}s\n")
     lines.append(f"> Dataset: `core/backend/tests/fixtures/golden_eval_multimodel.json` ({len(results)} rows)\n")
     lines.append(f"> GPT-OSS model: `{gpt_oss_model}`\n")

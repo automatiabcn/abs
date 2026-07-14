@@ -1,4 +1,4 @@
-"""Sprint 2C - tenant branding columns + FK CASCADE follow-up (Lesson 9).
+"""Tenant branding columns + FK CASCADE follow-up (Lesson 9).
 
 Revision ID: 0012_tenant_settings_fk
 Revises: 0011_tenant_installed_plugins
@@ -11,7 +11,7 @@ Two related changes packaged into a single migration:
    ALTER is non-blocking on existing rows.
 2. ``tenant_invites.tenant_id`` and ``tenant_installed_plugins.tenant_id``
    gain a foreign key to ``tenants.slug`` with ``ondelete=CASCADE`` -
-   the Lesson 9 follow-up the Sprint 2B notes deferred. Pre-step seeds
+   the follow-up an earlier migration deferred. Pre-step seeds
    ``default`` plus any orphan ``tenant_id`` value the existing rows
    already reference, otherwise the ALTER would fail on Postgres.
 """

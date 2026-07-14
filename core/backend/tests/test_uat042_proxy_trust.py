@@ -1,4 +1,4 @@
-"""Sprint 2I UAT-042 — slowapi X-Forwarded-For trust + proxy allowlist."""
+"""Slowapi X-Forwarded-For trust + proxy allowlist."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# T-R05 — perf budget gate (Lighthouse CI + bundlewatch + web-vitals).
+# Perf budget gate (Lighthouse CI + bundlewatch + web-vitals).
 # Security: every interpolation routes through `env:` blocks. Sources used:
 # secrets.BUNDLEWATCH_GITHUB_TOKEN, github.repository_owner, github.sha,
 # github.ref_name, github.event.repository.name. None are untrusted PR/issue

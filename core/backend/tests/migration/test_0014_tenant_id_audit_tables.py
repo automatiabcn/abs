@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""Sprint 2K — 0014_tenant_id_audit_tables + 0014b_backfill_tenant_id.
+"""0014_tenant_id_audit_tables + 0014b_backfill_tenant_id.
 
 Run alembic upgrade/downgrade against a temporary sqlite database and
 verify:

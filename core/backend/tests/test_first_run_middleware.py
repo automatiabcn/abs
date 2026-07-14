@@ -84,7 +84,7 @@ def test_no_redirect_when_completed(completed_setup, client):
 
 
 def test_api_request_gets_503_json(incomplete_setup, client):
-    """Sprint 2N FAZ F (P2 #2M-001) — Accept: application/json istekleri
+    """Accept: application/json istekleri
     artık 307 HTML redirect yerine yapılandırılmış 503 JSON alır.
     API clients/SDK'lar `error` + `setup_url` alanlarını parse eder.
     """

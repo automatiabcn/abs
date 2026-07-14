@@ -1,5 +1,5 @@
-# T-058 — ABS umbrella values.
-# Each block below either configures a sub-component or closes a Sprint 1-14 caveat.
+# ABS umbrella values.
+# Each block below configures a sub-component of the stack.
 
 image:
   repository: "ghcr.io/automatiabcn/abs-server-product-backend"
@@ -116,7 +116,7 @@ stripe:
   liveMode: false
   webhookSecret: ""
 
-# --- T-062: DR drill CronJob (staging only) ---
+# --- DR drill CronJob (staging only) ---
 dr:
   drill:
     enabled: false   # flip on in staging values overlay only

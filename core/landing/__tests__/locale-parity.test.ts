@@ -1,4 +1,4 @@
-// T-R06 — locale parity guard. Fails the build if any of the three
+// Locale parity guard. Fails the build if any of the three
 // supported locales drifts from the EN canonical key set.
 import { describe, expect, it } from "vitest";
 
@@ -10,7 +10,7 @@ const enKeys = new Set(Object.keys(en));
 const trKeys = new Set(Object.keys(tr));
 const esKeys = new Set(Object.keys(es));
 
-describe("locale parity (T-R06)", () => {
+describe("locale parity", () => {
   it("EN canonical key set is non-empty", () => {
     expect(enKeys.size).toBeGreaterThan(0);
   });

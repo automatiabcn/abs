@@ -1,4 +1,4 @@
-// T-R02 — notification bell extracted from panel.js.
+// Notification bell extracted from panel.js.
 import { clear, makeEl } from "./dom.js";
 import { notifState } from "./state.js";
 

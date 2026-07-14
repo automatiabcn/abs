@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
 # Licensed under the Business Source License 1.1.
 
-"""Sprint 2K — RLS chaos: dropping the tenant GUC mid-request → 403.
+"""RLS chaos: dropping the tenant GUC mid-request → 403.
 
 Two layers of coverage:
 

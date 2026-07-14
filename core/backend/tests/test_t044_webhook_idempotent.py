@@ -1,4 +1,4 @@
-"""T-044 — Stripe webhook idempotency + signature tests."""
+"""Stripe webhook idempotency + signature tests."""
 
 from __future__ import annotations
 

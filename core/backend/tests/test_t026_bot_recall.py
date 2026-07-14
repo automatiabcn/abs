@@ -1,4 +1,4 @@
-"""T-026 — Recall.ai bot wrapper tests."""
+"""Recall.ai bot wrapper tests."""
 
 from __future__ import annotations
 

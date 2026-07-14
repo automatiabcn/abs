@@ -28,7 +28,7 @@ export async function middleware(req: NextRequest) {
 
   // Validate the cookie against the backend. We hit /auth/me directly
   // (not the proxy) so middleware avoids loops and edge-runtime fetch
-  // limitations. Sprint 2I UAT-009 — fail-CLOSED: backend timeout or
+  // limitations. Fail-CLOSED: a backend timeout or a
   // network error sends the request back to /login instead of leaking
   // /panel and /admin into an unauthenticated render.
   try {

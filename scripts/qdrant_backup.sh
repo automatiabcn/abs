@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# T-009 — Qdrant snapshot + tarball backup.
+# Qdrant snapshot + tarball backup.
 #
 # Triggers Qdrant snapshot endpoints for every collection, copies the resulting
 # files out of the snapshot volume, and tars them with a UTC timestamp.

@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""BUG-40 — chat.completions persists ALL new messages from
+"""chat.completions persists ALL new messages from
 body.messages and forwards full conversation history to the cascade
 orchestrator as a transcript.
 """
@@ -45,7 +45,7 @@ def client(monkeypatch):
 
     monkeypatch.setattr(chat_mod, "_run_cascade", fake_run_cascade)
     monkeypatch.setattr(chat_mod, "_assert_license_ok", lambda: None)
-    # Sprint 2N FAZ E (P1 #2M-018) — pre-flight provider probe gerektiriyor.
+    # pre-flight provider probe gerektiriyor.
     # _run_cascade fake'lendiği için chat path provider olmadan çalışıyor;
     # probe'u memnun etmek için en az bir provider varmış gibi davran.
     monkeypatch.setattr(

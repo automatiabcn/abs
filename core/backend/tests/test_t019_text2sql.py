@@ -1,4 +1,4 @@
-"""T-019 — Text2SQL safety + dispatcher unit tests."""
+"""Text2SQL safety + dispatcher unit tests."""
 
 from __future__ import annotations
 

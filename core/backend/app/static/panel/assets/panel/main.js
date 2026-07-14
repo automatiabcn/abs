@@ -1,4 +1,4 @@
-// T-R02 — panel ES-module entry point (replaces the legacy IIFE in panel.js).
+// Panel ES-module entry point (replaces the legacy IIFE in panel.js).
 // Loaded via `<script type="module" src="...panel/main.js">` from index.html.
 import { COLORS } from "./constants.js";
 import { Sparkline } from "./sparkline.js";

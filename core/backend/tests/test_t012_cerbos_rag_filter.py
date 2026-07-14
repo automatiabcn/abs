@@ -1,4 +1,4 @@
-"""T-012 — Cerbos RAG resource auth tests."""
+"""Cerbos RAG resource auth tests."""
 
 from __future__ import annotations
 
