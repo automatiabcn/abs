@@ -6,13 +6,16 @@
 """Stripe Checkout Session creation, called from the landing page.
 
 POST /v1/checkout/create-session
-  body: {"sku": "self-host" | "team-5" | "team-10", "customer_email": "x@y.com"}
+  body: {"sku": "solo" | "team", "customer_email": "x@y.com", "seats": 3}
   → {"checkout_url": "https://checkout.stripe.com/...", "session_id": "cs_..."}
 
-Stripe Price IDs are read from config (`abs_price_self_host`,
-`abs_price_team_5`, `abs_price_team_10`). They are not created automatically:
-run `infra/scripts/setup_stripe_products.py` and paste the resulting IDs
-into `.env`.
+The product is a monthly subscription: Solo is one seat, Team is priced per seat
+and starts at three — below that, Solo is cheaper, and offering a two-seat "team"
+would only be a way to sell someone the wrong thing.
+
+Stripe Price IDs are read from config (`abs_price_solo`, `abs_price_team`), and
+both must be *recurring* monthly prices. They are not created automatically: run
+`infra/scripts/setup_stripe_products.py` and paste the resulting IDs into `.env`.
 """
 
 from __future__ import annotations
@@ -32,17 +35,21 @@ router = APIRouter(prefix="/v1/checkout", tags=["checkout"])
 logger = logging.getLogger(__name__)
 
 
-# SKU → (price_id resolver, seat_count). Single source of truth for the mapping.
-_SKU_TO_PRICE: dict[str, tuple] = {
-    "self-host": (lambda: settings.abs_price_self_host, 1),
-    "team-5": (lambda: settings.abs_price_team_5, 5),
-    "team-10": (lambda: settings.abs_price_team_10, 10),
+# SKU → price resolver. Single source of truth for the mapping.
+_SKU_TO_PRICE: dict[str, object] = {
+    "solo": lambda: settings.abs_price_solo,
+    "team": lambda: settings.abs_price_team,
 }
+
+# Team is priced per seat, and starts here. A team of one or two is a Solo
+# subscription and costs less.
+MIN_TEAM_SEATS = 3
 
 
 class CreateSessionRequest(BaseModel):
-    sku: Literal["self-host", "team-5", "team-10"] = "self-host"
+    sku: Literal["solo", "team"] = "solo"
     customer_email: EmailStr
+    seats: int = Field(default=1, ge=1, le=500)
     success_url: str = Field(default="https://abs.automatiabcn.com/thanks")
     cancel_url: str = Field(default="https://abs.automatiabcn.com/")
 
@@ -62,13 +69,18 @@ async def create_session(
         raise HTTPException(
             status_code=503, detail=t("errors.stripe_not_configured", lang)
         )
-    price_resolver, seat_count = _SKU_TO_PRICE[body.sku]
-    price_id = price_resolver()
+    price_resolver = _SKU_TO_PRICE[body.sku]
+    price_id = price_resolver()  # type: ignore[operator]
     if not price_id:
         raise HTTPException(
             status_code=503,
             detail=t("errors.price_id_not_configured", lang, sku=body.sku),
         )
+
+    # Solo is one person by definition; a team starts at three. Trusting the
+    # browser's number would let a "team" be bought for one seat at the per-seat
+    # price, which is simply a cheaper Solo with a different name on it.
+    seat_count = 1 if body.sku == "solo" else max(MIN_TEAM_SEATS, body.seats)
 
     stripe.api_key = settings.stripe_secret_key
     try:
@@ -88,12 +100,15 @@ async def create_session(
         session = stripe.checkout.Session.create(
             mode=mode,
             payment_method_types=["card"],
-            line_items=[{"price": price_id, "quantity": 1}],
+            # Seats are the quantity. That is what makes the team plan cost what
+            # the pricing page says it costs, and it is what the renewal reads
+            # back to decide how many people the next key is for.
+            line_items=[{"price": price_id, "quantity": seat_count}],
             customer_email=body.customer_email,
             success_url=body.success_url,
             cancel_url=body.cancel_url,
             metadata={
-                "tier": "self-host" if body.sku == "self-host" else "team",
+                "tier": body.sku,
                 "seat_count": str(seat_count),
                 "sku": body.sku,
             },

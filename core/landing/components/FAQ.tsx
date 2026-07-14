@@ -43,7 +43,11 @@ const QUESTIONS: QA[] = [
   },
   {
     q: "How do updates arrive?",
-    a: "`docker compose pull && docker compose up -d` is all it takes. The Self-Host Lifetime plan includes 1 year of updates; with the Maintenance package updates keep coming for as long as you hold it.",
+    a: "`docker compose pull && docker compose up -d` is all it takes. Updates come with the subscription — while it is running, you are on the current version.",
+  },
+  {
+    q: "What happens when the trial ends, or I cancel?",
+    a: "Chat and the agent pause. That is the whole of it: your documents, meetings, transcripts and provider keys stay on your server, and you can still read them, export them and delete them. Nothing is taken away, and nothing is held to ransom — the licence pauses the product, not your data. Subscribe again and it picks up where it stopped.",
   },
   // 4 new questions
   {
@@ -60,7 +64,7 @@ const QUESTIONS: QA[] = [
   },
   {
     q: "Is it open source? What is the license model?",
-    a: "The backend and the landing site are open source (Apache 2.0). The premium add-ons (advanced RAG, team panel, and the future SaaS mode) are closed modules. When you buy Self-Host Lifetime you get the right to use both the open core and the premium add-ons for life.",
+    a: "The source is public and licensed under the Business Source License 1.1: you can read it, run it, and change it, and on the Change Date each release becomes Apache 2.0. Running it in production is what the subscription is for. A subscription — Solo, or a team by the seat — covers the whole product, updates included, for as long as it is running.",
   },
 ];
 

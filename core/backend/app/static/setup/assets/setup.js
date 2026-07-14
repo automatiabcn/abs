@@ -10,7 +10,7 @@ const I18N = {
   tr: {
     tagline: "Kendi sunucunda AI orkestrasyonu", lang_label: "Dil",
     s1: "Yönetici", s2: "Lisans", s3: "Adres", s4: "Premium AI", s5: "Sağlayıcılar", s6: "Test",
-    d1: "Giriş hesabını oluşturun", d2: "Opsiyonel — varsayılan ücretsiz katman",
+    d1: "Giriş hesabını oluşturun", d2: "Opsiyonel — 7 günlük deneme",
     d3: "IP veya domain, ve SSL", d4: "Opsiyonel — ücretli anahtar",
     d5: "Ücretsiz sağlayıcı anahtarlarınız", d6: "Cevap verebildiğini kanıtlayın",
     rail_foot: "Çalıştırması ücretsiz · ücretli AI opsiyonel · veriniz kendi sunucunuzda kalır",
@@ -23,8 +23,8 @@ const I18N = {
     f_email: "Email", f_password: "Şifre", pw_hint: "En az 8 karakter.",
 
     step2_h: "Lisans anahtarı",
-    step2_help: "ABS lisanssız da çalışır. Ticari lisans satın aldıysanız anahtarı yapıştırın; almadıysanız devam edin — ücretsiz katman istediğiniz sürece açık kalır.",
-    free_license_label: "Lisans anahtarım yok — ücretsiz katmanla devam et",
+    step2_help: "Anahtarsız da başlayabilirsiniz: 7 gün boyunca her şey açık, kart istemiyoruz. Deneme bitince sohbet ve ajan duraklar; belgeleriniz, toplantılarınız ve anahtarlarınız sunucunuzda kalır — okuyabilir, dışa aktarabilir, silebilirsiniz. Aboneliğiniz varsa anahtarı şimdi yapıştırın.",
+    free_license_label: "Anahtarım yok — 7 günlük denemeyle başla",
     free_license_sub: "Her şey çalışır. Lisans, ticari kullanımı ve desteği açar.",
     f_license: "Lisans", license_hint: "Anahtar yapıştırmak için işareti kaldırın.",
 
@@ -54,7 +54,7 @@ const I18N = {
     v_none: "Hiçbir sağlayıcı cevap vermedi.",
     v_none_tail: "Bitirebilirsiniz, ama sohbet henüz bir soruya cevap veremez. Geri dönüp bir anahtar ekleyin ya da panelde Ayarlar → Sağlayıcılar'dan ekleyin.",
     r_ok: "Cevapladı", r_fail: "Başarısız", r_skipped: "Anahtar yok",
-    a_free: "Ücretsiz katman", a_licensed: "Lisanslı", a_free_providers: "Sadece ücretsiz sağlayıcılar",
+    a_free: "Deneme", a_licensed: "Lisanslı", a_free_providers: "Sadece ücretsiz sağlayıcılar",
     e_email: "Bu bir e-posta adresine benzemiyor.",
     e_password: "Şifre en az 8 karakter olmalı.",
     e_generic: "Sunucu bu değeri kabul etmedi.",
@@ -62,7 +62,7 @@ const I18N = {
   es: {
     tagline: "Orquestación de IA autoalojada", lang_label: "Idioma",
     s1: "Administrador", s2: "Licencia", s3: "Dirección", s4: "IA premium", s5: "Proveedores", s6: "Prueba",
-    d1: "Cree la cuenta de acceso", d2: "Opcional — plan gratuito por defecto",
+    d1: "Cree la cuenta de acceso", d2: "Opcional — prueba de 7 días",
     d3: "IP o dominio, y SSL", d4: "Opcional — clave de pago",
     d5: "Sus claves gratuitas", d6: "Compruebe que puede responder",
     rail_foot: "Gratis de ejecutar · IA de pago opcional · sus datos se quedan en su servidor",
@@ -75,8 +75,8 @@ const I18N = {
     f_email: "Correo electrónico", f_password: "Contraseña", pw_hint: "Al menos 8 caracteres.",
 
     step2_h: "Clave de licencia",
-    step2_help: "ABS funciona sin ella. Pegue una clave solo si compró una licencia comercial; si no, continúe y el plan gratuito seguirá activo todo el tiempo que quiera.",
-    free_license_label: "No tengo clave de licencia — continuar con el plan gratuito",
+    step2_help: "Puede empezar sin clave: 7 días con todo activado y sin tarjeta. Al terminar la prueba, el chat y el agente se pausan; sus documentos, reuniones y claves siguen en su servidor — puede leerlos, exportarlos y borrarlos. Si ya tiene una suscripción, pegue la clave ahora.",
+    free_license_label: "No tengo clave — empezar la prueba de 7 días",
     free_license_sub: "Todo funciona. Una licencia habilita el uso comercial y el soporte.",
     f_license: "Licencia", license_hint: "Desmarque para pegar una clave.",
 
@@ -106,7 +106,7 @@ const I18N = {
     v_none: "Ningún proveedor respondió.",
     v_none_tail: "Puede terminar, pero el chat todavía no podrá responder. Vuelva atrás y añada una clave, o añádala en el panel en Ajustes → Proveedores.",
     r_ok: "Respondió", r_fail: "Falló", r_skipped: "Sin clave",
-    a_free: "Plan gratuito", a_licensed: "Con licencia", a_free_providers: "Solo proveedores gratuitos",
+    a_free: "Prueba", a_licensed: "Con licencia", a_free_providers: "Solo proveedores gratuitos",
     e_email: "Esto no parece una dirección de correo.",
     e_password: "La contraseña necesita al menos 8 caracteres.",
     e_generic: "El servidor no aceptó este valor.",
@@ -122,7 +122,7 @@ const EN_RUNTIME = {
   v_none: "No provider answered.",
   v_none_tail: "You can finish, but chat will not be able to answer a question yet. Go back and add a key, or add one in the panel under Settings → Providers.",
   r_ok: "Answered", r_fail: "Failed", r_skipped: "No key",
-  a_free: "Free tier", a_licensed: "Licensed", a_free_providers: "Free providers only",
+  a_free: "Trial", a_licensed: "Licensed", a_free_providers: "Free providers only",
   e_email: "That does not look like an email address.",
   e_password: "The password needs at least 8 characters.",
   e_generic: "The server would not accept this value.",

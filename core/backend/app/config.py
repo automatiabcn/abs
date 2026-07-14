@@ -232,13 +232,29 @@ class Settings(BaseSettings):
     mlx_url: str = ""  # Apple Silicon Neural Engine bridge (unset degrades gracefully)
 
     # Stripe Price IDs — copy them from setup_stripe_products.py output into .env
-    abs_price_self_host: str = ""  # Stripe Price ID — self-host SKU
-    abs_price_team_5: str = ""  # Stripe Price ID — team-pack 5 seat SKU
-    abs_price_team_10: str = ""  # Stripe Price ID — team-pack 10 seat SKU
+    # The product is a monthly subscription: both of these must be *recurring*
+    # prices, and the team one is priced per seat (quantity = seats).
+    abs_price_solo: str = ""  # Stripe Price ID — Solo, per month
+    abs_price_team: str = ""  # Stripe Price ID — Team, per seat per month
 
-    # Tier seat list prices (USD/month). Default 0.0 = pricing not
-    # configured; operators MUST set these in their own .env. Tier IDs
-    # ("self-host", "team-5", "team-10") are SKU keys, not prices.
+    # Where a customer's server asks for next month's key. Empty means it never
+    # asks — correct for an air-gapped install with a hand-delivered key, and the
+    # gate's grace window still applies.
+    license_renewal_url: str = "https://abs.automatiabcn.com/v1/license/renew"
+
+    # Retired one-off SKUs. Kept so an existing .env with these set still loads
+    # rather than crashing on an unknown field.
+    abs_price_self_host: str = ""
+    abs_price_team_5: str = ""
+    abs_price_team_10: str = ""
+
+    # List prices (USD per month). Default 0.0 = pricing not configured;
+    # operators MUST set these in their own .env. Solo is per subscription; team
+    # is per seat, per month.
+    abs_seat_price_solo: float = 0.0
+    abs_seat_price_team: float = 0.0
+
+    # Retired one-off list prices. Kept so an existing .env still loads.
     abs_seat_price_self_host: float = 0.0
     abs_seat_price_team_5: float = 0.0
     abs_seat_price_team_10: float = 0.0

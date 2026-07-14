@@ -74,5 +74,37 @@ curl -fsS -X DELETE "$ABS_QDRANT_URL/collections/$ABS_QDRANT_DEFAULT_COLLECTION"
 
 cd "$STATE"
 export PYTHONPATH="$BACKEND"
+
+# A licence, because the scenarios are a *customer's* server.
+#
+# The seat gate is real now: a trial covers one person, so an install with no
+# licence cannot invite anybody — and half of these scenarios are about inviting
+# somebody. That is the correct product behaviour and the wrong harness: a server
+# with colleagues on it belongs to someone who is paying for them.
+#
+# Minted here, with this run's own throwaway keypair, and handed to the wizard
+# through a file the setup step reads. Nothing is baked into the repository.
+"$BACKEND/.venv/bin/python" - <<'PY'
+import os
+from pathlib import Path
+
+from app.licensing.keys import generate_keypair
+from app.licensing.generator import generate_license
+
+priv = os.environ["ABS_PRIVATE_KEY_PATH"]
+pub = os.environ["ABS_PUBLIC_KEY_PATH"]
+if not Path(priv).is_file():
+    generate_keypair(priv, pub)
+
+token = generate_license(
+    customer_id="cus_e2e",
+    tier="team",
+    seat_count=10,
+    valid_days=30,
+)
+Path(os.environ["ABS_DATA_DIR"], "license_key.txt").write_text(token, encoding="utf-8")
+print(f"e2e licence minted: team, 10 seats")
+PY
+
 exec "$BACKEND/.venv/bin/uvicorn" app.main:app \
   --host 127.0.0.1 --port "$PORT" --log-level warning

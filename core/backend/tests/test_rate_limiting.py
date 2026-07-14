@@ -73,7 +73,7 @@ def test_checkout_rate_limit_returns_429_after_threshold(client, monkeypatch):
     for _ in range(15):
         r = client.post(
             "/v1/checkout/create-session",
-            json={"sku": "self-host", "customer_email": "rl@x.co"},
+            json={"sku": "solo", "customer_email": "rl@x.co"},
             headers={"X-Forwarded-For": "9.9.9.9"},
         )
         if r.status_code == 429:

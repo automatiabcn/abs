@@ -37,27 +37,41 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold">2. Scope of the License</h2>
           <p>
-            In exchange for the Self-Host Lifetime payment, the Provider grants
-            the User the right to run the ABS software on the User&apos;s own
-            servers. The license is{" "}
+            ABS is a <strong>monthly subscription</strong>. While it is running,
+            the Provider grants the User the right to run the ABS software on the
+            User&apos;s own servers. The license is{" "}
             <strong>personal / specific to one organization</strong>; it may not
-            be transferred or resold to third parties. Team packages carry a
-            concurrent-use limit tied to the number of seats.
+            be transferred or resold to third parties. The Team plan is licensed
+            per seat, and the seat count on the license is the number of people
+            who may hold an account on the server.
           </p>
           <p>
-            There is no additional commercial restriction on the open-source core
-            (Apache 2.0); the closed premium add-ons (advanced RAG, team panel)
-            are subject to the license terms.
+            Every install begins with a <strong>seven-day trial</strong>, with no
+            card and no license key. When the trial ends, or a subscription
+            lapses, chat and the agent stop.
+          </p>
+          <p>
+            <strong>The User&apos;s data is not part of the subscription.</strong>{" "}
+            Documents, meetings, transcripts and provider keys live on the
+            User&apos;s own server and remain readable, exportable and deletable
+            regardless of billing status. The Provider does not, and technically
+            cannot, delete or withhold them.
+          </p>
+          <p>
+            The source is published under the Business Source License 1.1; each
+            release converts to Apache 2.0 on its Change Date.
           </p>
         </section>
 
         <section>
           <h2 className="text-lg font-semibold">3. Payment and Invoicing</h2>
           <p>
-            All payments are processed through Stripe Payments Europe Ltd. Billed
-            amounts exclude VAT; for B2B purchases inside the EU, the reverse
-            charge may apply once the VAT number is validated through VIES.
-            Invoices are emailed within 7 days of payment confirmation.
+            Subscriptions are billed monthly in advance through Stripe Payments
+            Europe Ltd, and renew until cancelled. Cancelling stops the next
+            renewal; the subscription runs to the end of the period already paid
+            for. Billed amounts exclude VAT; for B2B purchases inside the EU, the
+            reverse charge may apply once the VAT number is validated through
+            VIES. Invoices are emailed within 7 days of payment confirmation.
           </p>
         </section>
 
@@ -65,10 +79,10 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold">4. Refund Policy</h2>
           <p>
             You have an unconditional right to a refund{" "}
-            <strong>within 14 days</strong> of the purchase date. The key of a
-            refunded license is marked <code>revoked_at</code> and deactivated.
-            See the <a href="/refund" className="underline">Refund Policy</a> page
-            for details.
+            <strong>within 14 days</strong> of a payment. The key of a refunded
+            license is marked <code>revoked_at</code> and deactivated. See the{" "}
+            <a href="/refund" className="underline">Refund Policy</a> page for
+            details.
           </p>
         </section>
 

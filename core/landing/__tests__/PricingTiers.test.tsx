@@ -1,4 +1,4 @@
-// PricingTiers (4-tier checkout surface) tests.
+// The pricing surface: a monthly subscription, sold two ways.
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -18,19 +18,40 @@ describe("PricingTiers", () => {
     });
   });
 
-  it("renders all four tier cards with their prices", () => {
+  it("renders the two plans and what they cost", () => {
     render(<PricingTiers />);
-    expect(screen.getByTestId("pricing-tier-self-host")).toBeInTheDocument();
-    expect(screen.getByTestId("pricing-tier-maintenance")).toBeInTheDocument();
-    expect(screen.getByTestId("pricing-tier-team-5")).toBeInTheDocument();
-    expect(screen.getByTestId("pricing-tier-team-10")).toBeInTheDocument();
-    expect(screen.getByText("$299")).toBeInTheDocument();
-    expect(screen.getByText("+$49")).toBeInTheDocument();
-    expect(screen.getByText("$1,196")).toBeInTheDocument();
-    expect(screen.getByText("$2,093")).toBeInTheDocument();
+    expect(screen.getByTestId("pricing-tier-solo")).toBeInTheDocument();
+    expect(screen.getByTestId("pricing-tier-team")).toBeInTheDocument();
+    expect(screen.getByText("$29")).toBeInTheDocument();
+    expect(screen.getByText("$19")).toBeInTheDocument();
+    expect(screen.getByText("/seat/month")).toBeInTheDocument();
   });
 
-  it("CheckoutButton POSTs to /api/checkout with the right tier", async () => {
+  it("says the trial is free and needs no card", () => {
+    render(<PricingTiers />);
+    expect(screen.getByText(/Seven days free, no card/i)).toBeInTheDocument();
+  });
+
+  it("promises the customer's data outlives the subscription", () => {
+    // The page must not imply that an unpaid invoice takes someone's documents
+    // away — it does not, and saying so plainly is the whole point.
+    render(<PricingTiers />);
+    expect(
+      screen.getByText(/documents, meetings and keys stay on your server/i),
+    ).toBeInTheDocument();
+  });
+
+  it("multiplies the team price by the seats chosen", async () => {
+    render(<PricingTiers />);
+    const input = screen.getByRole("spinbutton");
+    expect(screen.getByText("$57/month")).toBeInTheDocument(); // 3 × 19
+
+    await userEvent.clear(input);
+    await userEvent.type(input, "5");
+    expect(screen.getByText("$95/month")).toBeInTheDocument(); // 5 × 19
+  });
+
+  it("posts the plan and the seat count to checkout", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(
@@ -41,39 +62,23 @@ describe("PricingTiers", () => {
       );
 
     render(<PricingTiers />);
-    await userEvent.click(
-      screen.getByRole("button", { name: /Buy lifetime/i }),
-    );
+    const [soloCta] = screen.getAllByRole("button", { name: /Subscribe/i });
+    await userEvent.click(soloCta);
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/checkout",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ tier: "self-host" }),
+        body: JSON.stringify({ tier: "solo", seats: 1 }),
       }),
     );
   });
 
-  it("highlights the team-5 tier as recommended", () => {
+  it("highlights the team plan", () => {
     render(<PricingTiers />);
-    const card = screen.getByTestId("pricing-tier-team-5");
-    expect(card.className).toContain("ring-blue-500");
-  });
-
-  it("renders the four CTAs", () => {
-    render(<PricingTiers />);
-    expect(
-      screen.getByRole("button", { name: /Buy lifetime/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Add maintenance/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Buy 5-seat team/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Buy 10-seat team/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("pricing-tier-team").className).toContain(
+      "ring-blue-500",
+    );
   });
 });
 
