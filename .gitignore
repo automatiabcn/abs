@@ -105,6 +105,10 @@ infra/.cf-deploy-token
 # Local-only dev run artifacts (savepoint exclusions — never committed)
 .localrun/
 **/.localrun/
+# The throwaway server the scenario suite installs and then discards: a database,
+# an admin's credentials, a provider key typed into the wizard, and whatever the
+# agent wrote in its sandbox. None of it belongs anywhere near a commit.
+**/.e2e-state/
 core/landing/.localrun_frontend.sh
 core/landing/.localrun_*.mjs
 *.bak
