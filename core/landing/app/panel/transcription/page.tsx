@@ -6,7 +6,7 @@
  */
 
 // S20.6 — /panel/transcription: WebRTC mic → 5s chunked POST /v1/transcribe/stream → segments
-// Q9 Phase C — TR2 mic permission Modal + TR3 real-time waveform + TR6 empty state.
+// TR2 mic permission Modal + TR3 real-time waveform + TR6 empty state.
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -84,7 +84,7 @@ export default function TranscriptionPanel() {
     ).matches;
   }, []);
 
-  // TR2 — first run shows the data-handling modal; once acknowledged we go
+  // First run shows the data-handling modal; once acknowledged we go
   // straight to capture on subsequent sessions in the same tab.
   const requestStart = () => {
     if (!permissionAcknowledged) {

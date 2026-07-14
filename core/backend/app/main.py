@@ -44,10 +44,10 @@ from app.api.admin import usage as admin_usage_router  # BUG-V1 — /v1/admin/us
 from app.api.admin import users as admin_users_router  # Q8.5 finalize — /v1/admin/users
 from app.api.admin import widget_pricing as admin_widget_pricing_router  # Q12-R84
 from app.api.admin import providers_status as admin_providers_status_router  # Polish R7
-from app.api.admin import tenant as admin_tenant_router  # Sprint 2C ITEM-1
+from app.api.admin import tenant as admin_tenant_router
 from app.api.admin import (
     providers_save as admin_providers_save_router,
-)  # Sprint 2C ITEM-2
+)
 from app.api.admin import (
     provider_keys as admin_provider_keys_router,
 )  # MT Phase 1 — per-owner keys
@@ -76,18 +76,18 @@ from app.api import me_data_export as me_data_export_router
 from app.api import panel as panel_router
 from app.api import cascade as cascade_router  # /v1/cascade/*
 from app.api import agent_caps as agent_caps_router  # /v1/agent/capabilities
-from app.api import chat as chat_router  # Q8 Phase A — /v1/chat/*
-from app.api import mcp_tokens as mcp_tokens_router  # Q8 Phase N — /v1/mcp/tokens
-from app.api import claude_code_hooks as cc_hooks_router  # Q8 Phase P — /v1/hooks/*
-from app.api import marketplace as marketplace_router  # CJ-008 — /v1/marketplace/*
+from app.api import chat as chat_router  # /v1/chat/*
+from app.api import mcp_tokens as mcp_tokens_router  # /v1/mcp/tokens
+from app.api import claude_code_hooks as cc_hooks_router  # /v1/hooks/*
+from app.api import marketplace as marketplace_router  # /v1/marketplace/*
 from app.api import meetings as meetings_router  # S20.4 — /v1/meetings
 from app.api import workflows as workflows_router  # P1 S19 — /v1/workflows
-from app.api import graph as graph_router  # Q7 Phase A — /v1/graph
+from app.api import graph as graph_router  # /v1/graph
 from app.api import graph_rag as graph_rag_router  # GraphRAG — /v1/graph-rag
 from app.api import quota as quota_router
 from app.api.system import (
     quota as system_quota_router,
-)  # CJ-009 — /v1/system/quota_status
+)  # /v1/system/quota_status
 from app.api.system import feature_usage as system_feature_usage_router  # S20.3
 from app.api import transcribe as transcribe_router  # S20.2
 from app.api import tts as tts_router  # S20.1
@@ -153,7 +153,7 @@ async def lifespan(_app: FastAPI):
         except Exception as exc:
             _lf_logger.warning("growth demo seed skipped: %s", exc)
 
-    # Sprint 2E ITEM-A — install secret-bearing query-param sanitizer on
+    # Install secret-bearing query-param sanitizer on
     # httpx / uvicorn-access loggers so a regression elsewhere can't re-leak
     # credentials via URL logs (defence-in-depth alongside header auth).
     try:
@@ -312,7 +312,7 @@ async def lifespan(_app: FastAPI):
         return
 
     # Pre-warm Cerbos PDP client + LangFuse client so the first
-    # request doesn't pay the connection cost (closes T-005 caveat).
+    # request doesn't pay the connection cost.
     try:
         from cerbos.sdk.client import CerbosClient
 
@@ -432,7 +432,7 @@ async def _cascade_unavailable_handler(request, exc: _CascadeUnavailable):  # no
     )
 
 
-# T-058 caveat #11 — X-ABS-Audience enforcement (off by default; helm values flip it on).
+# X-ABS-Audience enforcement (off by default; helm values flip it on).
 from app.config import settings as _abs_settings_for_audience
 from app.middleware.audience import install_audience_enforcer
 
@@ -446,7 +446,7 @@ from app.middleware.body_size_limit import install_body_size_limit
 install_body_size_limit(app)
 # Pin the request's tenant to the RLS ContextVar so the Postgres
 # RLS policies (0015 audit tables + 0019 tenant tables) actually engage in the
-# live request path. Sprint 2K shipped the policies + GUC listener but never
+# live request path. The policies + GUC listener shipped, but nothing ever
 # attached a populator, so the GUC stayed unset outside the postgres_only
 # tests. Pure-ASGI so the ContextVar reaches the endpoint + DB session listener;
 # inert on SQLite (no RLS engine). Best-effort + fail-open.
@@ -488,12 +488,8 @@ app.include_router(
 app.include_router(
     admin_providers_status_router.router
 )  # Polish R7 — /v1/admin/providers/status
-app.include_router(
-    admin_tenant_router.router
-)  # Sprint 2C ITEM-1 — /v1/admin/tenant + /v1/admin/branding
-app.include_router(
-    admin_providers_save_router.router
-)  # Sprint 2C ITEM-2 — POST /v1/admin/providers/{id}
+app.include_router(admin_tenant_router.router)  # /v1/admin/tenant + /v1/admin/branding
+app.include_router(admin_providers_save_router.router)  # POST /v1/admin/providers/{id}
 app.include_router(
     admin_provider_keys_router.router
 )  # MT Phase 1 — /v1/admin/provider-keys
@@ -522,21 +518,21 @@ app.include_router(stripe_webhook_router.router)
 app.include_router(stream_router.router)
 app.include_router(symbol_graph_router.router)
 app.include_router(quota_router.router)
-app.include_router(graph_router.router)  # Q7 Phase A — /v1/graph
+app.include_router(graph_router.router)  # /v1/graph
 app.include_router(graph_rag_router.router)  # GraphRAG — /v1/graph-rag
-app.include_router(system_quota_router.router)  # CJ-009
+app.include_router(system_quota_router.router)
 app.include_router(system_feature_usage_router.router)  # S20.3
-app.include_router(marketplace_router.router)  # CJ-008
+app.include_router(marketplace_router.router)
 app.include_router(meetings_router.router)  # S20.4
 app.include_router(workflows_router.router)  # P1 S19 close
 app.include_router(cascade_router.router)  # /v1/cascade/*
-app.include_router(chat_router.router)  # Q8 Phase A — /v1/chat/*
+app.include_router(chat_router.router)  # /v1/chat/*
 app.include_router(agent_caps_router.router)  # what agent mode may do
-app.include_router(mcp_tokens_router.router)  # Q8 Phase N — /v1/mcp/tokens
+app.include_router(mcp_tokens_router.router)  # /v1/mcp/tokens
 from app.api import external_mcp as external_mcp_router  # External MCP federation
 
 app.include_router(external_mcp_router.router)  # /v1/admin/external-mcp (flag-gated)
-app.include_router(cc_hooks_router.router)  # Q8 Phase P — /v1/hooks/*
+app.include_router(cc_hooks_router.router)  # /v1/hooks/*
 app.include_router(transcribe_router.router)  # S20.2
 app.include_router(tts_router.router)  # S20.1
 app.include_router(disagreement_router.router)

@@ -8,7 +8,7 @@
 Pulls Linear closed tickets, GitHub merged PRs, Slack highlights, and logged
 hours via injected callables. Outputs a structured `StatusReport` ready for
 LLM summarisation + email send. The cron schedule (Friday 17:00) lives in the
-n8n workflow JSON exported in T-058.
+n8n workflow JSON.
 """
 
 from __future__ import annotations

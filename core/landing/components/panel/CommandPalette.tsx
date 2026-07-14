@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q8 Phase M — global ⌘K command palette (cmdk powered).
+// Global ⌘K command palette (cmdk powered).
 // Surfaces every panel/admin route + key actions (run cascade, search
 // tool, install plugin, switch session). Mounted once in the panel
 // layouts so any page exposes the same shortcut.

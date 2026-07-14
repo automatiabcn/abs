@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q8 Phase A — chat UI atoms (single-file barrel for /panel/chat).
+// Chat UI atoms (single-file barrel for /panel/chat).
 // Components: ProviderChip, MetaPills, MetaSidebar, ToolCallCard, Markdown,
 // MessageBubble, MessageInput (with SlashCommandPalette), ChatSidebar,
 // EmptyState. All "use client" — they import hooks and react-markdown.
@@ -711,10 +711,10 @@ export function EmptyState({
   onShowAll,
 }: {
   onPick: (prompt: string) => void;
-  // Phase B — default "en" so existing callers without the prop fall back
+  // Default "en" so existing callers without the prop fall back
   // to English copy. ChatClient passes the customer's preferred lang.
   lang?: PromptLang;
-  // Phase B — clicking the CTA opens the PromptLibrary drawer. Optional
+  // Clicking the CTA opens the PromptLibrary drawer. Optional
   // so non-chat consumers (workflow chat panel) keep their old behaviour.
   onShowAll?: () => void;
 }) {

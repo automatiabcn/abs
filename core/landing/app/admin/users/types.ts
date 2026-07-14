@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// R65 (S8) — shared between server page.tsx and UsersClient island so
+// Shared between server page.tsx and UsersClient island so
 // the two halves of the split-shell agree on the row shape and the
 // fallback fixture.
 

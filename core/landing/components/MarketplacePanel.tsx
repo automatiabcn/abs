@@ -66,7 +66,7 @@ export default function MarketplacePanel({
   const [filter, setFilter] = useState<FilterValue>("all");
   const [selected, setSelected] = useState<PluginManifest | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
-  // Sprint 2B BUG-34 — installed plugin ids drive the "Installed" badge +
+  // Installed plugin ids drive the "Installed" badge +
   // "Remove" button. Refetched after every install/uninstall.
   const [installedIds, setInstalledIds] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -131,7 +131,7 @@ export default function MarketplacePanel({
       if (!res.ok && typeof console !== "undefined") {
         console.warn("install_failed", selected.id, res.status);
       }
-      // Sprint 2B BUG-34 — refresh installed list so the card flips to
+      // Refresh installed list so the card flips to
       // "Installed" without forcing the operator to reload the page.
       const fresh = await fetchInstalled();
       setInstalledIds(fresh);

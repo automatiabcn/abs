@@ -22,7 +22,7 @@ API contract (upstream):
         ]
       }
 
-Our normalized return (closer to the Sprint 20 brief schema):
+Our normalized return:
   {
     "duration_sec": float,
     "speakers": [{"id": "spk_0", "name": "Speaker 1"}, ...],

@@ -3,17 +3,17 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""CJ-008 / Sprint 19 T-S01 — Plugin marketplace HTTP surface.
+"""Plugin marketplace HTTP surface.
 
-Sandbox + cosign verification + Cerbos pre-filter karmasik akislari Sprint 19'da
-modul katmaninda yer alir; bu router musteri-temas eden 4 endpoint'i acar:
+Sandbox launch, cosign verification and the Cerbos pre-filter live in the module
+layer; this router is the customer-facing surface, and it is four endpoints:
 
-  GET  /v1/marketplace/plugins          → 5 reference plugin
+  GET  /v1/marketplace/plugins          -> the reference catalogue
   GET  /v1/marketplace/plugins/{id}     -> one plugin (404 when unknown)
-  POST /v1/marketplace/install          → tenant-scoped install (admin auth)
-  GET  /v1/marketplace/installed        → plugins installed for this organisation
+  POST /v1/marketplace/install          -> tenant-scoped install (admin auth)
+  GET  /v1/marketplace/installed        -> plugins installed for this organisation
 
-Veri kaynagi static katalog (5 plugin); install kayitlari /app/data/marketplace_installs.json.
+The catalogue is static; install records live in /app/data/marketplace_installs.json.
 """
 
 from __future__ import annotations
@@ -150,7 +150,7 @@ def _write_installs(state: Dict[str, List[Dict[str, Any]]]) -> None:
     p.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
-# ---------- Sprint 2B BUG-34 — SQL persistence -----------------------------
+# ---------- SQL persistence ------------------------------------------------
 
 
 def _select_active_install(db: "Session", tenant: str, plugin_id: str):
@@ -287,7 +287,7 @@ async def get_plugin(plugin_id: str, request: Request) -> Dict[str, Any]:
 
 
 def _resolve_admin_tenant(admin: dict) -> str:
-    """Round-5 BUG-10 follow-up — resolve tenant for the active admin from
+    """Resolve tenant for the active admin from
     every available source so bootstrap (setup-wizard) admins are no longer
     forced into the ``"default"`` tenant.
 
@@ -344,7 +344,7 @@ def _resolve_admin_tenant(admin: dict) -> str:
 def _enforce_tenant_match(
     admin: dict, tenant: str, request: Request | None = None
 ) -> None:
-    """Q7 Phase B — block cross-tenant queries when admin claim carries a tenant.
+    """Block cross-tenant queries when admin claim carries a tenant.
 
     If the admin token has no tenant claim (legacy / single-tenant dev), we
     skip the check so existing flows keep working.
@@ -396,7 +396,7 @@ async def install(
 
     _enforce_tenant_match(_admin, body.tenant, request)
 
-    # Q7 Phase B — cosign signature gate (skip-mode by default in dev).
+    # Cosign signature gate (skip-mode by default in dev).
     from app.marketplace.cosign_verify import verify_signature
 
     # Verify the image we will actually launch. The descriptor's
@@ -441,7 +441,7 @@ async def install(
         "sandbox_status": "installed_no_sandbox",
     }
 
-    # Q7 Phase B — best-effort sandbox launch. If docker SDK / daemon is
+    # Best-effort sandbox launch. If docker SDK / daemon is
     # unavailable we still persist the install record so the catalog stays
     # consistent (real launch will retry in Q8 via reconcile loop).
     try:
@@ -521,7 +521,7 @@ async def uninstall(
     tenant: str = "default",
     _admin: dict = Depends(current_admin),
 ) -> Dict[str, Any]:
-    """Q7 Phase B — tenant-scoped uninstall. Removes the install record and
+    """Tenant-scoped uninstall. Removes the install record and
     best-effort stops the sandbox container."""
     _enforce_tenant_match(_admin, tenant, request)
 
@@ -584,7 +584,7 @@ async def installed(
     tenant: Optional[str] = None,
     _admin: dict = Depends(current_admin),
 ) -> Dict[str, Any]:
-    # Round-4 BUG-10: resolve from admin's users-row when caller omits the
+    # Resolve from admin's users-row when caller omits the
     # query param so the demo-acme operator does not fall back to the
     # bootstrap "default" tenant and get an empty list.
     resolved = tenant if tenant else _resolve_admin_tenant(_admin)
@@ -595,7 +595,7 @@ async def installed(
     # tenant_installed_plugins table is unreachable (boot-before-migrate).
     rows = _list_installed_rows(resolved)
 
-    # Q7 Phase B — best-effort live status enrichment. If docker SDK / daemon
+    # Best-effort live status enrichment. If docker SDK / daemon
     # is unavailable we just return the persisted records.
     try:
         from app.marketplace.sandbox import PluginSandbox

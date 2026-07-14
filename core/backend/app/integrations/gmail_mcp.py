@@ -8,7 +8,7 @@
 Mock backend simulates the Gmail API; real backend gated behind
 `google-api-python-client` deferred import. OAuth 2.0 PKCE token storage
 is plain-dict here; production wires it into the existing
-`app.vault.cache` SOPS-encrypted store (T-027 vault).
+`app.vault.cache` SOPS-encrypted store.
 """
 
 from __future__ import annotations

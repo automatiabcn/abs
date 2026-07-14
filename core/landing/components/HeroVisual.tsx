@@ -5,11 +5,11 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-Q05 — chooses between the 3D R3F scene and the static SVG fallback.
+// Chooses between the 3D R3F scene and the static SVG fallback.
 // Rules:
 //   - Mobile / tablet (< lg): always SVG (battery + perf).
 //   - prefers-reduced-motion: always SVG.
-//   - Slow connection (effectiveType 2g/slow-2g, or saveData): always SVG. (T-R03 #6)
+//   - Slow connection (effectiveType 2g/slow-2g, or saveData): always SVG.
 //   - Otherwise: lazy-load HeroScene3D client-side only.
 "use client";
 
@@ -24,7 +24,7 @@ const HeroScene3D = dynamic(() => import("./HeroScene3D"), {
   loading: () => null,
 });
 
-// T-R03 #6 — connection-aware: skip 3D on slow networks or save-data.
+// Connection-aware: skip 3D on slow networks or save-data.
 // `navigator.connection` (Network Information API) is only on Chromium-family;
 // we feature-detect and treat absence as "fast" (no opinion).
 type NetworkConnection = {

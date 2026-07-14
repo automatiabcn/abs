@@ -5,13 +5,13 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R03 revise — sticky glass header with AbsLogo, primary nav, and theme toggle.
+// Sticky glass header with AbsLogo, primary nav, and theme toggle.
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-// T-R03 fix #5 — Phosphor subpath SSR imports keep the icon footprint out
+// Phosphor subpath SSR imports keep the icon footprint out
 // of the shared first-load chunk (target: shared < 100 KB gzip).
 import { Moon } from "@phosphor-icons/react/dist/ssr/Moon";
 import { SunHorizon } from "@phosphor-icons/react/dist/ssr/SunHorizon";
@@ -55,7 +55,7 @@ function ThemeToggle() {
         return null;
       }
     })();
-    // T-R03 fix #2 — respect server-rendered class first (set from cookie in
+    // Respect server-rendered class first (set from cookie in
     // layout.tsx). Only flip if the user has an explicit saved preference.
     const serverIsLight = document.documentElement.classList.contains("light");
     const initial: "light" | "dark" =
@@ -76,7 +76,7 @@ function ThemeToggle() {
     applyTheme(next);
     try {
       localStorage.setItem("abs-theme", next);
-      // T-R03 fix #2 — server can read this cookie on next render to avoid FOUC.
+      // Server can read this cookie on next render to avoid FOUC.
       document.cookie = `abs-theme=${next}; max-age=${60 * 60 * 24 * 365}; path=/; samesite=lax`;
     } catch (_e) {
       // localStorage / cookie unavailable; non-fatal.

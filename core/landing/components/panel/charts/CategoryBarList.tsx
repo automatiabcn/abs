@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 21 / Faz B — Tremor BarList + scaffolding. Wrapped so the
+// Tremor BarList + scaffolding. Wrapped so the
 // /panel page can lazy-load it via next/dynamic, keeping Recharts +
 // Tremor base out of the panel chrome bundle.
 "use client";

@@ -5,7 +5,7 @@
 
 """LangFuse-compatible prompt management with versioning + rollback.
 
-Pre-T-018 we keep prompts in-memory + on disk; once LangFuse SDK fetch is
+For now we keep prompts in-memory + on disk; once LangFuse SDK fetch is
 wired (`langfuse.get_prompt(name, label="production")`), this module switches
 to the SDK without changing call sites.
 """

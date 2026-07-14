@@ -9,7 +9,7 @@ Powers the `/admin/usage` admin widget (PROMISE.md vow):
   - `claude_budget_pct` — quota_monitor.status() used%
   - `free_path_pct`     — free providers vs paid (anthropic) call share
                           over the last 24h (rag_usage.jsonl is the
-                          single-source-of-truth as of T-016 / T-018).
+                          single-source-of-truth).
   - `provider_mix_24h`  — per-provider call counts (last 24h).
   - `daily_trend`       — 7-day token series (Claude only) so the UI
                           can chart a sparkline.

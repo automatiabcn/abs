@@ -45,7 +45,7 @@ const QUESTIONS: QA[] = [
     q: "How do updates arrive?",
     a: "`docker compose pull && docker compose up -d` is all it takes. The Self-Host Lifetime plan includes 1 year of updates; with the Maintenance package updates keep coming for as long as you hold it.",
   },
-  // 018 — 4 new questions
+  // 4 new questions
   {
     q: "How does the sops/age vault protect my Anthropic API key?",
     a: "ABS uses a vault encrypted with sops + age. ANTHROPIC_API_KEY, ABS_STRIPE_SECRET_KEY and ABS_STRIPE_WEBHOOK_SECRET are always encrypted on disk; they are only decrypted into the in-memory settings object while the backend boots. The backup is the age private key file — you keep it in cold storage, and if it is lost the vault is recreated from scratch.",

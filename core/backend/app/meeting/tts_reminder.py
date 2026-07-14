@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""TTS reminder dispatcher (Sprint 20 T-F02 free-tier refactor).
+"""TTS reminder dispatcher (free-tier refactor).
 
 Backends:
   - mock      — deterministic file-write for unit tests (default).

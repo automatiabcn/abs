@@ -124,8 +124,8 @@ async def authorize(
     """Issue an authorization code.
 
     NOTE: in this MVP `user_subject` may be passed explicitly so the
-    Sprint 1 demo can run without a full login UI; production wiring
-    pulls it from the panel session (T-038 Cerbos+session bridge).
+    The demo can run without a full login UI; production wiring pulls it
+    from the panel session (the Cerbos + session bridge).
     """
 
     if response_type != "code":
@@ -185,7 +185,7 @@ async def authorize(
     except OAuthError as exc:
         return _err_response(exc)
 
-    # CodeQL ITEM-9 — read the redirect_uri back from the issued auth-code
+    # CodeQL — read the redirect_uri back from the issued auth-code
     # record. issue_authorization_code() called _check_redirect() against
     # the OAuthClient's registered allow-list (newline-separated, exact
     # match) before persisting, so `record.redirect_uri` is guaranteed to

@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R03 — RAG document + vector glyph.
+// RAG document + vector glyph.
 import type { SVGProps } from "react";
 
 export default function AbsRag({ size = 32, ...rest }: SVGProps<SVGSVGElement> & { size?: number }) {

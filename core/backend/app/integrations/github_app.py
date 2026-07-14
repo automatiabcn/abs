@@ -121,7 +121,7 @@ def verify_webhook_signature_typed(
       * "signature_mismatch"    — header present + well-formed but HMAC
                                   did not match. Attack signal.
 
-    Q12-L24-008 (LOW ops visibility) — pre-fix the single-boolean
+    Pre-fix the single-boolean
     return collapsed `secret_empty` and `signature_mismatch` into one
     `signature_invalid` audit event. Operations could not distinguish
     "we forgot to provision GITHUB_APP_WEBHOOK_SECRET" from "an

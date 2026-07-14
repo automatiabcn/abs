@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R03 — ABS-branded icon barrel. Pair with @phosphor-icons/react for the
+// ABS-branded icon barrel. Pair with @phosphor-icons/react for the
 // general-purpose set; these four are the brand-specific marks.
 export { default as AbsLogo } from "./AbsLogo";
 export { default as AbsCascade } from "./AbsCascade";

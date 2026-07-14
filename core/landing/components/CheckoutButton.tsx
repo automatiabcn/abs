@@ -30,7 +30,7 @@ export default function CheckoutButton({
   const [error, setError] = React.useState<string | null>(null);
 
   const handleClick = async () => {
-    // T-R03 fix #1 — honour the global billing kill-switch.
+    // Honour the global billing kill-switch.
     if (!BILLING_ENABLED) {
       setError(BILLING_DISABLED_TITLE);
       return;

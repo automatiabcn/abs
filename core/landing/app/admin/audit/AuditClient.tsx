@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// R64 (S8) — split-shell client island for /admin/audit. Original
+// Split-shell client island for /admin/audit. Original
 // logic from `page.tsx` lifted here verbatim; the only delta is that
 // `initialEntries` from the server component seeds React Query as
 // `initialData`, so the first paint already has rows and the page

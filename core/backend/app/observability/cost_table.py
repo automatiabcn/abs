@@ -105,7 +105,7 @@ PRICING: dict[str, PriceEntry] = {
         model="qwen3-reranker-4b",
         input_per_million_usd=0.05,
         output_per_million_usd=0.0,
-        notes="energy amortisation; bench update T-058",
+        notes="energy amortisation; bench update pending",
     ),
 }
 

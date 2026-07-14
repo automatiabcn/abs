@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q7 Phase A + BUG-29 — /v1/graph router.
+"""/v1/graph router.
 
 Tenant-aware Cypher / ingest / NL-query / schema / seed endpoints. Auth
 flips from the legacy cookie-only `current_admin` dep to the panel-or-bearer
@@ -14,7 +14,7 @@ flips from the legacy cookie-only `current_admin` dep to the panel-or-bearer
 * CI / future MCP clients can hit the same routes with a Bearer token,
 * every Cypher receives a `$tenant_id` parameter automatically and the
   response is post-filtered to drop rows whose nodes belong to a different
-  tenant — defense-in-depth against malformed user queries (T-015 parity).
+  tenant — defense-in-depth against malformed user queries.
 
 Neo4j outages return 503 with `neo4j_unavailable` instead of leaking 500.
 """

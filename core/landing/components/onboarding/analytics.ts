@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R04 — drop-off analytics. Posts events to /api/onboarding/event;
+// Drop-off analytics. Posts events to /api/onboarding/event;
 // the backend forwards to LangFuse so we can build a funnel chart.
 //
 // Failure mode is silent: walkthrough must keep working even if the

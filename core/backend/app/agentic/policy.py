@@ -46,10 +46,10 @@ Verdict = Literal["allow", "approve", "deny"]
 class Level(IntEnum):
     """What a tool call can cost you, ascending."""
 
-    READ = 0  # L0 — facts about this system
-    READ_FILE = 1  # L1 — file contents from an allowlisted root
-    WRITE = 2  # L2 — writes, sends, anything with a footprint outside
-    SHELL = 3  # L3 — arbitrary commands
+    READ = 0  # facts about this system
+    READ_FILE = 1  # file contents from an allowlisted root
+    WRITE = 2  # writes, sends, anything with a footprint outside
+    SHELL = 3  # arbitrary commands
 
 
 @dataclass(frozen=True)

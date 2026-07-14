@@ -11,7 +11,7 @@ embed → upsert into Qdrant under the caller's tenant.
 top-K hits.
 
 JWT-authenticated via `get_auth_context` and tenant-scoped via the
-Qdrant wrapper. Cerbos resource-level policy is added in T-012.
+Qdrant wrapper. Cerbos adds the resource-level policy on top.
 """
 
 from __future__ import annotations
@@ -75,7 +75,7 @@ class QueryRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=4_000)
     limit: int = Field(default=5, ge=1, le=50)
     score_threshold: float | None = Field(default=None, ge=0.0, le=1.0)
-    rerank: bool = Field(default=False, description="apply T-013 cross-encoder rerank")
+    rerank: bool = Field(default=False, description="apply cross-encoder rerank")
     rerank_top_k: int = Field(default=3, ge=1, le=50)
     # Re-interpret the vector hits into a complete answer (returning raw chunks
     # leaves the response truncated) + metadata filtering.
