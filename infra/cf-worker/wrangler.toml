@@ -1,12 +1,31 @@
-# Cloudflare Worker — ABS license activation server
+# Cloudflare Worker — ABS licence authority
+#
+# It mints licences, renews them, and revokes them. That is one job, in one
+# place, on purpose: revocation already lived here and the customer's server
+# already talks to this host, so putting minting anywhere else would mean two
+# implementations of one rule — which is how a customer ends up refused by their
+# editor and served by their panel on the same afternoon.
 #
 # Setup (founder, one-time):
 #   npm install -g wrangler
 #   wrangler login
 #
+#   # The signing key. Its public half is baked into every customer image
+#   # (core/backend/app/update/manifest_pubkey.pem), so this must be the private
+#   # half of THAT key or nothing we mint will verify anywhere.
+#   wrangler secret put ABS_LICENSE_PRIVATE_KEY   < ~/.config/automatia/.license-private-key.pem
+#   wrangler secret put ABS_LICENSE_PUBLIC_KEY    < ../../core/backend/app/update/manifest_pubkey.pem
+#
+#   # Read-only would be enough: the Worker only ever *asks* Stripe whether a
+#   # subscription is still alive.
+#   wrangler secret put STRIPE_SECRET_KEY
+#
 # Deploy:
 #   cd infra/cf-worker
 #   wrangler deploy
+#
+# Test the licence logic (no network, no account):
+#   node --test infra/cf-worker/
 #
 # Tail live logs:
 #   wrangler tail abs-license-activation
@@ -14,8 +33,9 @@
 # Free tier post-2026-04 daily limits:
 #   100,000 reads / 1,000 writes / 1,000 deletes / 1,000 lists
 # Worker-side throttle (1h activation last_seen rewrite) keeps each customer
-# instance under ~24 writes/day. Read budget is the binding scaling
-# constraint — paid plan ($5/mo) lifts to 10M reads + 1M writes.
+# instance under ~24 writes/day. A renewal is one write per customer per month,
+# which is noise next to that. Read budget is the binding scaling constraint —
+# paid plan ($5/mo) lifts to 10M reads + 1M writes.
 
 name = "abs-license-activation"
 main = "license-activation.js"

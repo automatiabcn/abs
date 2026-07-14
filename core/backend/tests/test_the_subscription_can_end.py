@@ -3,6 +3,12 @@
 
 """A monthly subscription that cannot end is not a subscription.
 
+(The seller's half — minting the next key, and asking Stripe whether the
+subscription is still alive — lives in the Cloudflare Worker that already owns
+revocation, and is tested there: `infra/cf-worker/licensing.test.mjs`. What is
+tested here is the customer's half: when this server asks, what it will accept,
+and what it does when nobody answers.)
+
 The licence is a signed token, checked offline, on a machine we cannot see. That
 is the product's best property and the thing that makes monthly billing hard: a
 key minted to last a year does not care that the customer cancelled in month two.
@@ -21,8 +27,6 @@ mode of it ends in "nothing was refused".
 
 from __future__ import annotations
 
-import time
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import httpx
@@ -125,115 +129,6 @@ def test_a_trial_has_nothing_to_renew(signing) -> None:
 
     signing.license_key = ""
     assert asyncio.run(renewal.renew_if_due()) is False
-
-
-class _FakeSub(dict):
-    pass
-
-
-def test_the_seller_refuses_a_cancelled_subscription(signing, monkeypatch) -> None:
-    """The whole mechanism, from the other end: no live subscription, no key.
-
-    And the refusal says what happens to their data, because that is the first
-    thing a person wonders when software tells them it is stopping.
-    """
-    from fastapi import HTTPException
-
-    from app.api import license_renew
-    from app.db.models import License
-    from app.db.session import get_engine
-    from sqlmodel import Session
-
-    monkeypatch.setattr(signing, "stripe_secret_key", "sk_test", raising=False)
-    token = _key(customer="cus_gone", days=1)
-
-    from app.licensing.verifier import verify_license
-
-    jti = verify_license(token)["jti"]
-    with Session(get_engine()) as db:
-        db.add(
-            License(
-                jti=jti,
-                customer_email="a@example.com",
-                customer_id_stripe="cus_gone",
-                tier="team",
-                seat_count=3,
-                issued_at=datetime.now(timezone.utc),
-                expires_at=datetime.now(timezone.utc) + timedelta(days=1),
-            )
-        )
-        db.commit()
-
-    monkeypatch.setattr(license_renew, "_subscription_for", lambda cid: None)
-
-    import asyncio
-
-    with pytest.raises(HTTPException) as exc:
-        asyncio.run(
-            license_renew.renew_license(
-                license_renew.RenewRequest(license_key=token), None
-            )
-        )
-
-    assert exc.value.status_code == 402
-    assert "exported" in exc.value.detail and "deleted" in exc.value.detail
-
-
-def test_a_live_subscription_gets_the_seats_it_pays_for(signing, monkeypatch) -> None:
-    """Seats come off the subscription, not off the old key.
-
-    An admin who added two seats last week is paying for them now. If the renewed
-    key still said "3", the seat gate would refuse the people they had just bought
-    room for — and it would be us, not them, who had made the mistake.
-    """
-    from sqlmodel import Session
-
-    from app.api import license_renew
-    from app.db.models import License
-    from app.db.session import get_engine
-    from app.licensing.verifier import verify_license
-
-    monkeypatch.setattr(signing, "stripe_secret_key", "sk_test", raising=False)
-    token = _key(customer="cus_live", days=1, seats=3)
-    jti = verify_license(token)["jti"]
-    with Session(get_engine()) as db:
-        db.add(
-            License(
-                jti=jti,
-                customer_email="b@example.com",
-                customer_id_stripe="cus_live",
-                tier="team",
-                seat_count=3,
-                issued_at=datetime.now(timezone.utc),
-                expires_at=datetime.now(timezone.utc) + timedelta(days=1),
-            )
-        )
-        db.commit()
-
-    period_end = time.time() + 30 * 86400
-    monkeypatch.setattr(
-        license_renew,
-        "_subscription_for",
-        lambda cid: {
-            "status": "active",
-            "current_period_end": period_end,
-            "items": {"data": [{"quantity": 5}]},
-        },
-    )
-
-    import asyncio
-
-    out = asyncio.run(
-        license_renew.renew_license(license_renew.RenewRequest(license_key=token), None)
-    )
-
-    payload = verify_license(out["license_key"])
-    assert payload["seat_count"] == 5
-    assert out["seat_count"] == 5
-    # One period, plus the grace window — not a year.
-    assert 30 <= (payload["exp"] - time.time()) / 86400 <= 40, (
-        "a monthly subscriber was handed a key that outlives their subscription"
-    )
 
 
 def test_a_failing_renewal_is_not_a_silent_one(signing, monkeypatch) -> None:

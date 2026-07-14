@@ -240,7 +240,9 @@ class Settings(BaseSettings):
     # Where a customer's server asks for next month's key. Empty means it never
     # asks — correct for an air-gapped install with a hand-delivered key, and the
     # gate's grace window still applies.
-    license_renewal_url: str = "https://abs.automatiabcn.com/v1/license/renew"
+    license_renewal_url: str = (
+        "https://abs-license-activation.automatiaabs.workers.dev/v1/renew"
+    )
 
     # Retired one-off SKUs. Kept so an existing .env with these set still loads
     # rather than crashing on an unknown field.
