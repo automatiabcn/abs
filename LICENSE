@@ -7,12 +7,24 @@ Licensed Work:        Automatia ABS
                       The Licensed Work is (c) 2026 Automatia BCN.
 Additional Use Grant: You may use the Licensed Work for non-production
                       development, evaluation, and internal testing
-                      without a separate commercial license. Any
-                      production deployment, customer-facing service,
-                      resale, sublicensing, or use that exposes the
-                      Licensed Work's functionality to a third party
-                      requires a Commercial License obtained from
-                      Automatia BCN. Contact: support@automatiabcn.com.
+                      without a separate commercial license.
+
+                      You may also use the Licensed Work in production,
+                      with every feature enabled, for a trial period of
+                      seven (7) days from the date it is first installed
+                      — no license key and no payment. This is the trial
+                      the software itself grants and enforces.
+
+                      After that period, any production deployment,
+                      customer-facing service, resale, sublicensing, or
+                      use that exposes the Licensed Work's functionality
+                      to a third party requires a Commercial License
+                      obtained from Automatia BCN. A Commercial License
+                      is granted for the duration of an active
+                      subscription, and is limited to the number of
+                      seats that subscription is issued for.
+
+                      Contact: support@automatiabcn.com.
 Change Date:          2030-05-07
 Change License:       Apache License, Version 2.0
 
