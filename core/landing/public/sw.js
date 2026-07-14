@@ -1,26 +1,37 @@
 /**
  * Service Worker — panel route cache
  *
- * Cache name: abs-panel-cache-v1
- *
  * Strategies (by URL pattern):
- *   /panel/chat*                → cache-first   (offline draft persistence)
- *   /panel/dashboard* or /panel → network-first (3 s timeout → cache)
- *   /panel/rag*                 → stale-while-revalidate (background sync)
+ *   /panel/*    (HTML documents) → network-first (3 s timeout → cache)
+ *   /panel/rag*                  → stale-while-revalidate (background sync)
  *
  * Excluded (always pass-through):
- *   /v1/*    — chat completions, RAG search, etc. must hit live backend
- *              so cascade chaos errors are surfaced (contract).
- *   /_next/* — dev/build chunks are versioned by hash, never reused.
+ *   /v1/*    — chat completions, RAG search, etc. must hit the live backend
+ *              so cascade errors are surfaced (contract).
+ *   /_next/* — build chunks are versioned by hash, never reused.
  *   /auth/*  — credential surface, must never be cached.
- *   non-GET methods (POST/PUT/PATCH/DELETE) — write paths bypass cache.
+ *   non-GET methods — write paths bypass the cache.
  *
- * Lifecycle:
- *   install  → skipWaiting()
- *   activate → claim clients + delete other versioned caches
+ * Two things this used to get wrong, and each one broke an upgrade:
+ *
+ * 1. /panel/chat was served **cache-first**, and what gets cached there is an
+ *    HTML document that names the JS chunks of the build it came from. Once a
+ *    customer had opened the chat page they kept that document forever. Ship a
+ *    new release, the chunks it names no longer exist, and the panel dies on load
+ *    with "Cannot read properties of undefined (reading 'call')" — or, worse, it
+ *    quietly goes on rendering the old UI. Offline drafts never needed the
+ *    document cached; they live in IndexedDB. Documents are network-first now,
+ *    with the cache as the offline fallback it was meant to be.
+ *
+ * 2. The cache name was the literal "abs-panel-cache-v1" and nothing ever bumped
+ *    it, so the activate handler — which deletes every cache that is not the
+ *    current one — never had anything to delete. The name now carries the app
+ *    version, passed in at registration as ?v=, so a new release opens a new
+ *    cache and the old one is dropped on activate.
  */
 
-const CACHE_NAME = "abs-panel-cache-v1";
+const VERSION = new URL(self.location.href).searchParams.get("v") || "dev";
+const CACHE_NAME = `abs-panel-cache-${VERSION}`;
 const NETWORK_TIMEOUT_MS = 3000;
 
 self.addEventListener("install", () => {
@@ -55,31 +66,12 @@ self.addEventListener("fetch", (event) => {
     return; // pass through to network
   }
 
-  if (path.startsWith("/panel/chat")) {
-    event.respondWith(cacheFirst(request));
-  } else if (path.startsWith("/panel/rag")) {
+  if (path.startsWith("/panel/rag")) {
     event.respondWith(staleWhileRevalidate(request));
-  } else if (
-    path.startsWith("/panel/dashboard") ||
-    path === "/panel" ||
-    path === "/panel/"
-  ) {
+  } else if (path.startsWith("/panel")) {
     event.respondWith(networkFirst(request));
   }
 });
-
-async function cacheFirst(req) {
-  const cache = await caches.open(CACHE_NAME);
-  const cached = await cache.match(req);
-  if (cached) return cached;
-  try {
-    const resp = await fetch(req);
-    if (resp && resp.ok) cache.put(req, resp.clone());
-    return resp;
-  } catch (_e) {
-    return Response.error();
-  }
-}
 
 async function networkFirst(req) {
   const controller = new AbortController();

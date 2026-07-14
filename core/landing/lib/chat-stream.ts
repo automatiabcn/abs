@@ -303,10 +303,24 @@ export function useChat({
           // instead of a bare HTTP status so the user knows whether to
           // configure a provider or retry. Falls back to status when the
           // body isn't JSON (FastAPI HTTPException is JSON by default).
+          // The backend's `detail` is a string for some errors and an object for
+          // others — the one that matters most, "you have no providers", is an
+          // object: {error, providers_tried, retry_after, hint}. This only read
+          // the string form, so the object fell through to a bare "Backend 503",
+          // and the server's own hint — "Add at least one provider key under
+          // Settings → Providers", the single most useful sentence a new customer
+          // can be told — was thrown away on the floor.
           let detail: string | null = null;
+          let code: string | null = null;
           try {
             const body = await res.clone().json();
-            if (typeof body?.detail === "string") detail = body.detail;
+            const d = body?.detail;
+            if (typeof d === "string") {
+              detail = d;
+            } else if (d && typeof d === "object") {
+              code = typeof d.error === "string" ? d.error : null;
+              detail = (typeof d.hint === "string" && d.hint) || code;
+            }
           } catch {
             try {
               detail = (await res.text()).slice(0, 200) || null;
@@ -314,9 +328,11 @@ export function useChat({
               detail = null;
             }
           }
-          if (detail && /no_providers_configured/i.test(detail)) {
+          const haystack = `${code ?? ""} ${detail ?? ""}`;
+          if (/no_providers_configured|all_providers_unavailable/i.test(haystack)) {
             throw new Error(
-              "No provider is configured yet. Use the Configure a provider link.",
+              detail ??
+                "No provider is configured yet. Use the Configure a provider link.",
             );
           }
           throw new Error(detail ? `${res.status} · ${detail}` : `Backend ${res.status}`);

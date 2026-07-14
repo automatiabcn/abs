@@ -228,14 +228,14 @@ export default function ChatClient() {
               data-test="sessions-error-retry"
               className="rounded border border-rose-500/40 px-2 py-0.5 text-xs hover:bg-rose-500/20"
             >
-              Tekrar dene
+              Try again
             </button>
           </div>
         )}
         <header className="flex items-center justify-between border-b border-border px-6 py-3">
           <div>
             <h1 className="text-base font-semibold tracking-tight">
-              Sohbet
+              Chat
             </h1>
             <p className="text-xs text-muted-foreground">
               Answers come from whichever provider is up — type / for commands
@@ -269,13 +269,14 @@ export default function ChatClient() {
                   data-test="chat-error-tile"
                   className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200"
                 >
-                  <span>Hata: {error}</span>
+                  <span>{error}</span>
                   <div className="flex items-center gap-2">
-                    {/* Cascade 503 routinely lands when the vault
-                        has no provider key. Always offer the Configure path
-                        next to the retry CTA so the user knows where to go. */}
+                    {/* A 503 here almost always means no provider key. The link
+                        went to /admin/settings, which is not where keys are added
+                        — a customer who followed it landed on the wrong page and
+                        was no closer to an answer. */}
                     <a
-                      href="/admin/settings"
+                      href="/admin/provider-keys"
                       data-test="configure-cta"
                       className="rounded border border-rose-500/40 px-2 py-0.5 text-xs hover:bg-rose-500/20"
                     >
@@ -286,7 +287,7 @@ export default function ChatClient() {
                       onClick={retry}
                       className="text-xs underline hover:text-rose-100"
                     >
-                      Tekrar dene
+                      Try again
                     </button>
                   </div>
                 </div>

@@ -75,11 +75,20 @@
           </form>
         </section>
 
+        <!-- Step 2 (license) — free-first, like step 4: the "no key" box is checked
+             by default and the key field is hidden until you ask for it. The field
+             used to be `required`, which meant a customer without a license could
+             not get past this screen — on the same screen that told them a license
+             was optional. -->
         <section class="setup-step" data-step="2" hidden>
           <h2><span data-i18n="step2_h">License Key</span></h2>
-          <p class="setup-help" data-i18n="step2_help">Paste the JWT license you received by email. Without a license, demo mode stays active for 14 days.</p>
+          <p class="setup-help" data-i18n="step2_help">ABS runs without a license. Paste a key only if you bought one — otherwise carry on, and the free tier stays active.</p>
           <form data-step-key="license">
-            <label><span data-i18n="f_license">License</span> <textarea name="license_key" rows="4" required></textarea></label>
+            <label class="setup-skip-row">
+              <input type="checkbox" id="setup-skip-license" name="skip_license_ui" checked>
+              <span data-i18n="free_license_label">I don't have a license key — continue on the free tier</span>
+            </label>
+            <label id="setup-license-row" style="display:none"><span data-i18n="f_license">License</span> <textarea id="setup-license-key" name="license_key" rows="4"></textarea></label>
             <div class="setup-actions">
               <button type="button" class="setup-back" data-i18n="btn_back">Back</button>
               <button type="submit" class="setup-next" data-i18n="btn_next">Next</button>
