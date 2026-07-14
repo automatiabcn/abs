@@ -17,6 +17,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.config import settings
+from app.licensing import gate as licence_gate
 from app.licensing import verify_license
 
 router = APIRouter(prefix="/v1/license", tags=["license"])
@@ -161,79 +162,97 @@ async def demo_status_endpoint() -> Dict[str, Any]:
     return demo_status()
 
 
+def _unverified_claims() -> Dict[str, Any]:
+    """The licence's own claims, read without checking the signature.
+
+    Only ever used to *describe* a key the gate has already judged — a tier or
+    an expiry date on a settings page, never a decision. Decisions come from
+    `licence_gate.evaluate()`, which does check the signature.
+    """
+    import jwt as pyjwt
+
+    try:
+        return dict(
+            pyjwt.decode(settings.license_key, options={"verify_signature": False})
+        )
+    except Exception:
+        return {}
+
+
 @router.get("/info", status_code=status.HTTP_200_OK)
 async def license_info() -> Dict[str, Any]:
     """Single source of truth for the Settings → License tab.
 
-    Combines ``/status`` and ``/demo-status`` into one shape so the frontend
-    no longer hardcodes the tier / jti / expires_at trio. Returns ``demo``
-    payload when no key is configured so the UI can render the countdown
-    inline instead of issuing a second request.
+    The verdict here is the same one the chat gate enforces —
+    `licence_gate.evaluate()`. It used to be computed separately, and the two
+    disagreed: the gate watched the activation cache for revocations while this
+    endpoint read `License.revoked_at` from the database, and neither knew about
+    the other's grace window. A settings page that says "licensed" while chat
+    answers 403 is worse than no settings page.
+
+    `allowed` is the honest headline: can this install actually be used right
+    now. `status` says why.
     """
     from app.licensing.demo import status as demo_status
 
-    if not settings.license_key:
-        return {
-            "status": "demo",
-            "tier": None,
-            "jti": None,
-            "seat_count": None,
-            "expires_at": None,
-            "customer_id": None,
-            "demo": demo_status(),
-        }
-
-    try:
-        payload = verify_license(settings.license_key)
-    except HTTPException as exc:
-        det = str(exc.detail or "").lower()
-        # Verify_license reports expiry only through the detail text, so the
-        # 401 has to be classified by substring; anything else is "invalid".
-        if exc.status_code == status.HTTP_401_UNAUTHORIZED and "expired" in det:
-            return {
-                "status": "expired",
-                "tier": None,
-                "jti": None,
-                "seat_count": None,
-                "expires_at": None,
-                "customer_id": None,
-                "demo": None,
-            }
-        return {
-            "status": "invalid",
-            "tier": None,
-            "jti": None,
-            "seat_count": None,
-            "expires_at": None,
-            "customer_id": None,
-            "demo": None,
-            "detail": exc.detail,
-        }
-
-    revoked_info = _check_revoked_at(payload.get("jti"))
-    if revoked_info is not None:
-        return {
-            "status": "revoked",
-            "tier": payload.get("tier"),
-            "jti": payload.get("jti"),
-            "seat_count": payload.get("seat_count"),
-            "expires_at": datetime.fromtimestamp(
-                payload["exp"], tz=timezone.utc
-            ).isoformat(),
-            "customer_id": payload.get("customer_id"),
-            "demo": None,
-            "revoked_at": revoked_info["revoked_at"],
-            "reason": revoked_info["reason"],
-        }
-
-    return {
-        "status": "licensed",
-        "tier": payload.get("tier"),
-        "jti": payload.get("jti"),
-        "seat_count": payload.get("seat_count"),
-        "expires_at": datetime.fromtimestamp(
-            payload["exp"], tz=timezone.utc
-        ).isoformat(),
-        "customer_id": payload.get("customer_id"),
+    empty = {
+        "tier": None,
+        "jti": None,
+        "seat_count": None,
+        "expires_at": None,
+        "customer_id": None,
         "demo": None,
     }
+
+    decision = licence_gate.evaluate()
+
+    if decision.verdict is licence_gate.Verdict.UNLICENSED:
+        return {**empty, "status": "demo", "allowed": True, "demo": demo_status()}
+
+    if decision.verdict is licence_gate.Verdict.INVALID:
+        return {
+            **empty,
+            "status": "invalid",
+            "allowed": False,
+            "detail": decision.reason,
+        }
+
+    claims = _unverified_claims()
+    described = {
+        "tier": claims.get("tier"),
+        "jti": claims.get("jti"),
+        "seat_count": claims.get("seat_count"),
+        "expires_at": (
+            datetime.fromtimestamp(claims["exp"], tz=timezone.utc).isoformat()
+            if claims.get("exp")
+            else None
+        ),
+        "customer_id": claims.get("customer_id"),
+        "demo": None,
+    }
+
+    if decision.verdict is licence_gate.Verdict.REVOKED:
+        revoked_info = _check_revoked_at(claims.get("jti")) or {}
+        return {
+            **described,
+            "status": "revoked",
+            "allowed": False,
+            "reason": decision.reason,
+            "revoked_at": revoked_info.get("revoked_at"),
+        }
+
+    if decision.verdict is licence_gate.Verdict.EXPIRED:
+        return {**described, "status": "expired", "allowed": False}
+
+    if decision.verdict is licence_gate.Verdict.IN_GRACE:
+        # Expired, still working, and the operator has a week to notice. Saying
+        # "licensed" here would be the kind of comfortable lie that turns into a
+        # surprise outage on day eight.
+        return {
+            **described,
+            "status": "in_grace",
+            "allowed": True,
+            "grace_days": licence_gate.GRACE_DAYS,
+        }
+
+    return {**described, "status": "licensed", "allowed": True}

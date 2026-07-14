@@ -185,16 +185,24 @@ function GeneralTab() {
   );
 }
 
-// Polish round R6 — shape returned by GET /v1/license/info. Fields are
-// nullable for the demo branch (no key configured yet).
+// The shape returned by GET /v1/license/info. Fields are nullable for the demo
+// branch (no key configured yet).
+//
+// `allowed` is the honest headline — whether the server will actually answer
+// right now — and it is the same verdict the chat gate enforces. `in_grace`
+// means the licence expired but still works for a few more days: saying
+// "licensed" there would turn into a surprise outage the week after.
 type LicenseInfo = {
-  status: "demo" | "licensed" | "expired" | "invalid" | "revoked";
+  status: "demo" | "licensed" | "in_grace" | "expired" | "invalid" | "revoked";
+  allowed: boolean;
   tier: string | null;
   jti: string | null;
   seat_count: number | null;
   expires_at: string | null;
   customer_id: string | null;
   demo: { remaining_seconds?: number; expired?: boolean } | null;
+  grace_days?: number;
+  reason?: string;
 };
 
 function maskJti(jti: string): string {
@@ -284,6 +292,25 @@ function LicenseTab() {
 
   return (
     <div data-test="license-tab" className="space-y-4 text-sm">
+      {info.status === "in_grace" && (
+        <p
+          data-test="license-grace-notice"
+          className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-200"
+        >
+          This licence expired on {expiresLabel}. The server keeps working for{" "}
+          {info.grace_days ?? 7} days after that — renew before the window closes,
+          or it will stop answering.
+        </p>
+      )}
+      {!info.allowed && (
+        <p
+          data-test="license-blocked-notice"
+          className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-rose-200"
+        >
+          The server is refusing requests: {info.reason ?? info.status}. Chat and
+          the API will answer 403 until a valid licence is in place.
+        </p>
+      )}
       <div className="space-y-3">
         <FormRow label="Status">
           <Badge

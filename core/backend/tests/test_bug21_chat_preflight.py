@@ -1,9 +1,20 @@
 # Copyright (c) 2026 Automatia BCN. All rights reserved.
-"""BUG-21 — chat preflight gate uses cached license state and triggers
-a synchronous heartbeat refresh when the cache is stale.
+"""The chat pre-flight licence check, and the activation cache behind it.
 
-The cache live on disk at ``STATE_PATH``; we monkeypatch it to a tmp
-file so the real ``/app/data/license_activation.json`` is untouched.
+This file used to pin the gate that shipped: read a cached activation state,
+and whenever the cache was missing or older than thirty seconds, block the
+request on a *synchronous heartbeat* to our activation server. Its own tests
+said so out loud — `test_gate_fail_closed_when_no_state_and_no_refresh`
+asserted a 403 for an install that had simply never managed to phone home,
+which is every fresh install, on its first message.
+
+That behaviour is gone (see `test_the_licence_gate_nobody_has_ever_tested.py`
+for the rule that replaced it). What remains here is the half that was always
+right: the activation cache is read from disk, and `force_heartbeat_sync` does
+not fan a burst of callers out into a storm of HTTP calls.
+
+`force_heartbeat_sync` is no longer reachable from the request path. It stays
+because the background heartbeat and the admin re-check still use it.
 """
 
 from __future__ import annotations
@@ -13,7 +24,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
-from fastapi import HTTPException
 
 from app.api import chat as chat_mod
 from app.licensing import phone_home
@@ -23,13 +33,10 @@ from app.licensing import phone_home
 def tmp_state(tmp_path, monkeypatch):
     state_path = tmp_path / "license_activation.json"
     monkeypatch.setattr(phone_home, "STATE_PATH", state_path)
-    # Disable test-mode bypass so the gate actually runs.
     monkeypatch.delenv("ABS_TEST_MODE", raising=False)
     monkeypatch.delenv("ABS_LICENSE_GATE_DISABLED", raising=False)
-    # _assert_license_ok() short-circuits when demo mode is active. The session
-    # boots with an empty license → demo auto-on, and demo-state can leak in
-    # from earlier tests, which would silently bypass the license gate these
-    # tests exercise. Pin demo OFF so the license path always runs (isolation).
+    # An empty licence key auto-opens demo mode, and demo state can leak in from
+    # earlier tests. Pin it shut so the licence path is what runs.
     monkeypatch.setattr("app.licensing.demo.is_active", lambda: False)
     return state_path
 
@@ -41,61 +48,29 @@ def _write_state(path: Path, *, valid: bool, age_secs: float, reason: str = "ok"
     )
 
 
-def test_gate_passes_when_cache_fresh_and_valid(tmp_state, monkeypatch):
-    _write_state(tmp_state, valid=True, age_secs=5)
-    # No sync heartbeat should be triggered (cache is fresh).
+def test_the_preflight_never_calls_the_heartbeat(tmp_state, monkeypatch):
+    """The point of the rewrite. Whatever the cache says or does not say, our
+    activation server is not in the customer's request path."""
     monkeypatch.setattr(
-        chat_mod,
+        phone_home,
         "force_heartbeat_sync",
-        lambda *a, **kw: pytest.fail("sync HB should not run on fresh cache"),
+        lambda *a, **kw: pytest.fail("the chat preflight phoned home"),
     )
+    _write_state(tmp_state, valid=True, age_secs=9999)  # stale by the old rule
+
+    chat_mod._assert_license_ok()  # no raise, no call
+
+
+def test_a_fresh_install_is_not_refused(tmp_state, monkeypatch):
+    """No state file at all — never activated. The old gate answered
+    `license_not_activated`; this is the 403 that met every new customer."""
+    assert not tmp_state.exists()
+
     chat_mod._assert_license_ok()  # no raise
-
-
-def test_gate_blocks_when_cache_says_invalid(tmp_state, monkeypatch):
-    _write_state(tmp_state, valid=False, age_secs=5, reason="revoked")
-    monkeypatch.setattr(chat_mod, "force_heartbeat_sync", lambda *a, **kw: None)
-
-    with pytest.raises(HTTPException) as exc_info:
-        chat_mod._assert_license_ok()
-    assert exc_info.value.status_code == 403
-    assert "license_revoked" in str(exc_info.value.detail)
-
-
-def test_gate_triggers_sync_hb_when_stale(tmp_state, monkeypatch):
-    _write_state(tmp_state, valid=True, age_secs=120)  # > 30s threshold
-
-    called = {"n": 0}
-
-    def fake_sync():
-        called["n"] += 1
-        return {
-            "valid": False,
-            "reason": "revoked_by_admin",
-            "last_check": datetime.now(timezone.utc).isoformat(),
-        }
-
-    monkeypatch.setattr(chat_mod, "force_heartbeat_sync", fake_sync)
-
-    with pytest.raises(HTTPException) as exc_info:
-        chat_mod._assert_license_ok()
-    assert called["n"] == 1
-    assert "revoked_by_admin" in str(exc_info.value.detail)
-
-
-def test_gate_fail_closed_when_no_state_and_no_refresh(tmp_state, monkeypatch):
-    # No state file written → cache empty → sync HB returns None (offline).
-    monkeypatch.setattr(chat_mod, "force_heartbeat_sync", lambda *a, **kw: None)
-
-    with pytest.raises(HTTPException) as exc_info:
-        chat_mod._assert_license_ok()
-    assert exc_info.value.status_code == 403
-    assert exc_info.value.detail == "license_not_activated"
 
 
 def test_gate_test_mode_bypass(tmp_state, monkeypatch):
     monkeypatch.setenv("ABS_TEST_MODE", "1")
-    # Even with no state and never-activated, test-mode bypass returns silently.
     chat_mod._assert_license_ok()
 
 

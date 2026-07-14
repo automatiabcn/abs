@@ -35,11 +35,7 @@ from app.api.cascade import (
     CascadeResponse,
     _try_mock,
 )
-from app.licensing.phone_home import (
-    cache_age_seconds,
-    force_heartbeat_sync,
-    get_cached_license_state,
-)
+from app.licensing import gate as licence_gate
 from app.cascade.orchestrator import call_with_cascade
 from app.chat import (
     ChatCitation,
@@ -538,72 +534,34 @@ def list_messages(session_id: int, admin: dict = Depends(current_admin)):
         ]
 
 
-_LICENSE_GATE_STALE_SECS = 30.0
-
-
 def _assert_license_ok() -> None:
-    """Pre-flight license cache gate with sync heartbeat refresh.
+    """Refuse the request when — and only when — the licence itself is bad.
 
-    The cascade router already gates paid providers via quota_monitor, but
-    the chat endpoint itself used to happily stream mock responses to a
-    revoked tenant for up to one heartbeat interval (60s).  The new flow:
+    This used to read a cached activation state and, whenever that cache was
+    missing or older than 30 seconds, block the request on a *synchronous
+    heartbeat* to our activation server. Which meant:
 
-    1. Read the cached activation state.
-    2. If the cache is missing, **or** older than
-       ``_LICENSE_GATE_STALE_SECS``, trigger a synchronous heartbeat
-       (best-effort, 3s timeout, 5s cooldown across requests). A
-       server-side revoke now propagates to the chat path within seconds
-       instead of waiting on the next 60s tick.
-    3. Refuse the request unless the (possibly refreshed) state has
-       ``valid=true``. Missing state after a refresh attempt means we
-       could not contact the activation server *and* never had a prior
-       successful activation — fail-closed so a fresh, never-activated
-       container cannot bypass the gate.
+      * a fresh install answered 403 `license_not_activated` to its very first
+        chat message, because it had not phoned home yet;
+      * our activation host sat in the request path of every chat turn on every
+        customer's machine, behind a 3-second timeout;
+      * "we could not reach the licence server" and "this licence is revoked"
+        produced the same refusal, so any outage of ours — or any customer
+        firewall — killed the product they had paid for.
 
-    Honours ``ABS_TEST_MODE=1`` and ``ABS_LICENSE_GATE_DISABLED=1`` so
-    the unit suite + dev environments are unaffected.
+    `app.licensing.gate` decides all of this offline, from the signature on the
+    key. Revocation still bites, because the persisted state can only have been
+    written by a real server response; a missing cache means we have not
+    managed to ask, and that is not the customer's fault. See the module
+    docstring there for the full rule.
     """
-    import os
-
-    if os.environ.get("ABS_TEST_MODE") == "1":
+    decision = licence_gate.enforce()
+    if decision.allowed:
         return
-    if os.environ.get("ABS_LICENSE_GATE_DISABLED") == "1":
-        return
-
-    # Demo mode (ABS_DEMO_MODE) — allow chat so a showcase install can exercise
-    # the playground, consistent with the MCP gate (app/mcp/gate.py already
-    # treats demo_active as allowed). Without this the demo could delegate via
-    # /mcp but the panel chat returned 403 license_not_activated — an
-    # inconsistent, confusing demo experience. Real customers run with a
-    # license (demo off), so the license path below still applies to them.
-    try:
-        from app.licensing.demo import is_active as _demo_active
-
-        if _demo_active():
-            return
-    except Exception:
-        pass
-
-    state = get_cached_license_state()
-    age = cache_age_seconds()
-    if not state or age is None or age > _LICENSE_GATE_STALE_SECS:
-        refreshed = force_heartbeat_sync()
-        if refreshed is not None:
-            state = refreshed
-
-    if not state:
-        # No prior activation, no successful sync refresh → fail-closed.
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="license_not_activated",
-        )
-
-    if not state.get("valid", False):
-        reason = state.get("reason") or "license_invalid"
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"license_revoked:{reason}",
-        )
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=decision.detail,
+    )
 
 
 @router.post("/completions")
