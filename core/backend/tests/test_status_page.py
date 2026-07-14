@@ -23,10 +23,18 @@ def test_status_json_db_check_passes_in_test_env(client):
     assert db["ok"] is True
 
 
-def test_status_json_overall_ok_in_healthy_env(client):
+def test_status_json_overall_ok_in_healthy_env(client, monkeypatch):
+    # "Healthy env" means a server that can answer a question — so give it a
+    # provider. It used to hope the machine had one lying around in its .env,
+    # which meant the test passed on a laptop with keys and failed on a fresh
+    # clone, where `providers` is red, `providers` is critical, and `down` is the
+    # honest verdict rather than a bug.
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "groq_api_key", "gsk_test_key", raising=False)
+
     r = client.get("/v1/status")
     body = r.json()
-    # Test env should have ≥5/7 healthy → ok
     assert body["overall"] in {"ok", "degraded"}
 
 

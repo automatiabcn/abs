@@ -138,7 +138,14 @@ export function isActive(href: string, pathname: string): boolean {
   if (pathname === href) return true;
   if (pathname.startsWith(href + "/")) return true;
   const live = REDIRECT_EQUIVALENTS[href];
-  if (live && (pathname === live || pathname.startsWith(live + "/"))) return true;
+  if (!live) return false;
+  if (pathname === live) return true;
+  // "/panel" is the root of every page in the panel, so prefix-matching it made
+  // Overview — which maps to it, and is first in DOMAINS — the active domain on
+  // *every* route. The whole product read "Overview" in the rail and the
+  // breadcrumb: on Chat, on Company memory, everywhere. Only the deeper
+  // equivalences may prefix-match.
+  if (live !== "/panel" && pathname.startsWith(live + "/")) return true;
   return false;
 }
 

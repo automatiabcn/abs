@@ -154,8 +154,18 @@ def test_the_status_page_says_down_when_the_server_really_is_down(monkeypatch, d
 
 
 def test_a_non_critical_failure_is_a_degradation_not_an_outage(monkeypatch):
-    """The other half. A verdict that is always bad is as useless as always good."""
+    """The other half. A verdict that is always bad is as useless as always good.
+
+    The premise — "the rest of the product still works" — has to be stated, not
+    borrowed from the machine. On a checkout with no provider key (a fresh clone,
+    a CI runner, anyone who has not pasted a key yet) `providers` is red, and it
+    is *critical*: the verdict is `down`, correctly, and this test failed for a
+    reason that had nothing to do with what it asserts.
+    """
     monkeypatch.setattr(sp, "_check_rag", lambda: {"name": "rag", "ok": False})
+    monkeypatch.setattr(
+        sp, "_check_providers", lambda: {"name": "providers", "ok": True}
+    )
     body = asyncio.run(sp.status_json())
     assert body["overall"] == "degraded", (
         "the knowledge base is down, which is bad, and the rest of the product "

@@ -33,6 +33,11 @@ function respondWith(status: number, body: unknown) {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  // restoreAllMocks does not undo stubGlobal — the stubbed fetch outlives the
+  // test that installed it, and the next file to assert on a request body is the
+  // one that goes red. A suite that is green in one order and not another is not
+  // a green suite.
+  vi.unstubAllGlobals();
 });
 
 describe("what the chat says when it cannot answer", () => {
