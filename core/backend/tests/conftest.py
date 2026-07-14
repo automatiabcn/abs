@@ -1,4 +1,4 @@
-"""Test fixture'ları — RSA keys + SQLite tmp DB + TestClient."""
+"""Test fixtures — RSA keys + a SQLite tmp DB + the TestClient."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import pytest
 
 @pytest.fixture(scope="session", autouse=True)
 def _session_env(tmp_path_factory):
-    """Test sırasında izole dizin + RSA çifti + SQLite + dummy stripe secret."""
+    """An isolated directory, an RSA pair, SQLite, and a dummy Stripe secret."""
     tmpdir: Path = tmp_path_factory.mktemp("abs-test")
 
     private_path = tmpdir / "private.pem"
@@ -19,7 +19,7 @@ def _session_env(tmp_path_factory):
     env_file = tmpdir / ".env"
     env_file.write_text("", encoding="utf-8")
 
-    # settings import'tan ÖNCE env var'ları set et (pydantic-settings load sırası)
+    # Set the env vars BEFORE settings is imported — pydantic-settings reads them at import.
     os.environ["ABS_PRIVATE_KEY_PATH"] = str(private_path)
     os.environ["ABS_PUBLIC_KEY_PATH"] = str(public_path)
     os.environ["ABS_DATABASE_URL"] = f"sqlite:///{db_path}"
@@ -31,22 +31,22 @@ def _session_env(tmp_path_factory):
     from app.config import settings  # noqa: WPS433
     from app.licensing.keys import generate_keypair
 
-    # env → settings senkronu (import sırası nedeniyle güvence)
+    # Sync env → settings, in case the import order got there first.
     settings.private_key_path = str(private_path)
     settings.public_key_path = str(public_path)
     settings.database_url = f"sqlite:///{db_path}"
     settings.stripe_webhook_secret = "whsec_test_dummy"
     settings.stripe_secret_key = "sk_test_dummy"
     settings.license_key = ""
-    # model_config env_file yolunu test dizinine çek (persist testleri için)
+    # Point model_config's env_file at the test directory (the persistence tests need it).
     settings.model_config["env_file"] = str(env_file)
 
     generate_keypair(str(private_path), str(public_path))
 
-    # DB init (tmp dir'de tabloları oluştur)
+    # Create the tables in the tmp dir.
     from app.db.session import init_db
 
-    # module-level engine cache'ini sıfırla
+    # Reset the module-level engine cache.
     import app.db.session as session_mod
 
     session_mod._engine = None
@@ -57,8 +57,8 @@ def _session_env(tmp_path_factory):
 
 @pytest.fixture(scope="session", autouse=True)
 def _session_data_dir(tmp_path_factory, _session_env):
-    """012 — settings.data_dir test-session boyunca tmp'e sabitle. Default
-    /app/data prod path'i write-only test ortaminda calismaz."""
+    """Pin settings.data_dir to a tmp dir for the whole session. The default
+    /app/data is a production path and is not writable under test."""
     from app.config import settings
 
     tmp = tmp_path_factory.mktemp("abs-data")
@@ -68,10 +68,9 @@ def _session_data_dir(tmp_path_factory, _session_env):
 
 @pytest.fixture(autouse=True)
 def _autocomplete_setup_state(_session_data_dir):
-    """012 — first-run middleware mevcut testleri bozmasin diye varsayilan
-    setup_state.json `completed:true` yaz. Setup wizard / first-run testleri
-    `monkeypatch.setattr(settings, 'data_dir', tmp_path)` ile override
-    ederek bu fixture'in yazdigini gormez."""
+    """Write a `completed: true` setup_state.json so the first-run middleware
+    does not hijack every other test. The setup-wizard and first-run tests
+    override `settings.data_dir` with monkeypatch, so they never see this."""
     import json
     import time
     from pathlib import Path
@@ -108,12 +107,36 @@ def _autocomplete_setup_state(_session_data_dir):
 
 @pytest.fixture(autouse=True)
 def _reset_rate_limiter():
-    """028 — Reset slowapi in-memory storage between tests so rate limits
-    don't leak across the suite (causing 429s in unrelated tests)."""
+    """Reset slowapi's in-memory storage between tests so rate limits don't leak
+    across the suite and 429 an unrelated test."""
     try:
         from app.middleware.rate_limit import limiter
 
         limiter.reset()
+    except Exception:
+        pass
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _reset_circuit_breaker():
+    """The breaker is a process-wide singleton and its failure counts were
+    surviving from one test into the next.
+
+    Five provider failures inside a minute open it, and this suite has far more
+    than five tests that fail a provider on purpose. Once it is open, `allow()`
+    refuses that provider — so a later test that mocks a *successful* call never
+    sees its mock called at all: the cascade skips the provider and reports that
+    everything failed. The test then fails for a reason unrelated to what it
+    asserts, and *which* tests fail depends on the order the files happen to be
+    collected in, which is why nobody noticed.
+
+    Same class of leak the rate limiter above already guards against.
+    """
+    try:
+        from app.cascade.breaker import default_breaker
+
+        default_breaker._states.clear()
     except Exception:
         pass
     yield
