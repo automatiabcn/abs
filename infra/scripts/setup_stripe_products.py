@@ -10,15 +10,18 @@ Kullanim:
   # Dry-run (hicbir API cagrisi yapmaz, sadece plan yazar):
   python infra/scripts/setup_stripe_products.py --mode test --dry-run
 
-3 product olusturur (varsa atlar):
-  - ABS Self-Host       ($299)   metadata.sku=self-host  metadata.mode=<mode>
-  - ABS Team Pack 5     ($1196)  metadata.sku=team-5     metadata.mode=<mode>
-  - ABS Team Pack 10    ($2093)  metadata.sku=team-10    metadata.mode=<mode>
+2 product olusturur (varsa atlar) — the product is a monthly subscription:
+  - ABS Solo   ($29/month)            metadata.sku=solo  metadata.mode=<mode>
+  - ABS Team   ($19/seat/month)       metadata.sku=team  metadata.mode=<mode>
+
+The team price is per seat: checkout sends the seat count as the line item
+quantity, so a five-person team is 5 x $19. Both prices are `recurring` — that is
+the difference between a subscription and a single charge, and getting it wrong
+means a customer who thinks they subscribed is billed once and never again.
 
 Output: Price ID'leri stdout. Cikan satirlari .env'e elle yapistir:
-  ABS_PRICE_SELF_HOST=price_...
-  ABS_PRICE_TEAM_5=price_...
-  ABS_PRICE_TEAM_10=price_...
+  ABS_PRICE_SOLO=price_...
+  ABS_PRICE_TEAM=price_...
 
 Idempotent: with the same (metadata.sku, metadata.mode) as existing product+matching
 unit_amount price varsa atlar.
@@ -37,25 +40,22 @@ import sys
 from typing import Dict, List
 
 
+# `recurring` is what makes a price a subscription. Without it Stripe creates a
+# one-time price, and a customer who believes they subscribed is charged once and
+# never again — which nobody notices until the month they expect a renewal and it
+# does not come.
 PRODUCTS: List[Dict] = [
-    {"name": "ABS Self-Host", "amount": 29900, "metadata_sku": "self-host"},
-    {"name": "ABS Team Pack 5", "amount": 119600, "metadata_sku": "team-5"},
-    {"name": "ABS Team Pack 10", "amount": 209300, "metadata_sku": "team-10"},
+    {"name": "ABS Solo", "amount": 2900, "metadata_sku": "solo",
+     "recurring": {"interval": "month"}},
+    # Per seat. Checkout multiplies by the seat count (the line item quantity),
+    # so this amount is what one person costs for one month.
+    {"name": "ABS Team", "amount": 1900, "metadata_sku": "team",
+     "recurring": {"interval": "month"}},
 ]
 
-# Annual subscriptions. `recurring` is what makes them subscriptions — without it
-# Stripe creates a one-time price, and a plan a customer bought as "annual" charges
-# them once and never renews. The flag that switches to this list is documented as
-# "one-time yerine subscription" (subscription instead of one-time); the prices it
-# created were one-time.
-ANNUAL_PRODUCTS: List[Dict] = [
-    {"name": "ABS Self-Host Annual", "amount": 29999,
-     "metadata_sku": "self-host-annual", "recurring": {"interval": "year"}},
-    {"name": "ABS Team Pack 5 Annual", "amount": 119999,
-     "metadata_sku": "team-5-annual", "recurring": {"interval": "year"}},
-    {"name": "ABS Team Pack 10 Annual", "amount": 209999,
-     "metadata_sku": "team-10-annual", "recurring": {"interval": "year"}},
-]
+# There is no annual SKU. The product is sold by the month, and an annual price
+# would be a second cadence to keep in step with the licence renewal, the seat
+# gate and the pricing page — for a discount nobody has asked for yet.
 
 
 def _validate_key_mode(api_key: str, mode: str) -> None:
@@ -95,11 +95,6 @@ def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="ABS Stripe Products bootstrap")
     parser.add_argument("--mode", choices=["test", "live"], default="test")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument(
-        "--annual",
-        action="store_true",
-        help="022 — Annual recurring SKU'ları kur (one-time yerine subscription).",
-    )
     args = parser.parse_args(argv)
 
     api_key = os.environ.get("ABS_STRIPE_SECRET_KEY", "")
@@ -107,7 +102,7 @@ def main(argv: List[str] | None = None) -> int:
         print("ABS_STRIPE_SECRET_KEY env var gerekli", file=sys.stderr)
         return 1
 
-    products_to_create = ANNUAL_PRODUCTS if args.annual else PRODUCTS
+    products_to_create = PRODUCTS
 
     if args.dry_run:
         # Dry-run mode-key uyumunu kontrol etmez; sadece plan yazar (CI/local guvenli).

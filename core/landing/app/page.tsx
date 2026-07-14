@@ -19,13 +19,16 @@ import Contact from "@/components/Contact";
 // number is worth more than it is in a sentence.
 const heroTitle = "Your own AI server. Chat with it, and it does the work.";
 
+// "Free to run" was true of a product that no longer exists. It is a monthly
+// subscription with a seven-day trial, and the sentence says so — a visitor who
+// finds that out after installing it has been told something we knew was false.
 const heroSubtitle =
-  "One package on your infrastructure: chat, 100+ tools, retrieval over your own documents, and a cascade across six providers so an outage at one of them is not an outage for you. Free to run — bring your own keys, or none at all.";
+  "One package on your infrastructure: chat, 100+ tools, retrieval over your own documents, and a cascade across six providers so an outage at one of them is not an outage for you. Seven days free — no card, no key, everything switched on.";
 
 // The primary button used to say "Watch the demo" and scroll to a box that says
 // "Demo video coming soon." — the site's main call to action, pointing at
 // nothing. It offers the thing that actually exists: the install.
-const primaryCta = { text: "Start free", href: "#install" };
+const primaryCta = { text: "Start the trial", href: "#install" };
 
 export default function HomePage() {
   return (

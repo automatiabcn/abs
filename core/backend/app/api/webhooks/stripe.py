@@ -53,6 +53,44 @@ def _parse_seat_count(raw) -> int:
     return 1
 
 
+# What a licence is worth when we cannot see the subscription it belongs to. Long
+# enough that a hand-issued key (a pilot, an air-gapped install, a purchase we
+# processed by hand) is not a monthly chore; the subscription path never uses it.
+_UNMETERED_VALID_DAYS = 365
+
+
+def _valid_days_for(session: dict) -> int:
+    """How long the first key should last.
+
+    Exactly the billing period the customer has just paid for, plus the grace
+    window — the whole point of a monthly subscription is that the key stops when
+    the paying does, on a machine we cannot reach. A year-long key handed to a
+    monthly subscriber turns the subscription into an honour system.
+
+    A one-off purchase has no subscription and no period; that keeps the old
+    behaviour.
+    """
+    from app.licensing.gate import GRACE_DAYS
+
+    sub_id = session.get("subscription")
+    if not sub_id:
+        return _UNMETERED_VALID_DAYS
+
+    try:
+        sub = stripe.Subscription.retrieve(str(sub_id))
+        period_end = float(sub["current_period_end"])
+    except Exception as exc:  # noqa: BLE001
+        # The customer has paid. Refusing to mint a key here — or minting one that
+        # dies tomorrow — would punish them for a call that failed on our side.
+        # A full period is the safe direction to be wrong in; the renewal will
+        # bring it back in line next month.
+        logger.warning("subscription_unreadable id=%s err=%s", sub_id, exc)
+        return 31 + GRACE_DAYS
+
+    left = period_end - datetime.now(timezone.utc).timestamp()
+    return max(1, int(left // 86400) + GRACE_DAYS)
+
+
 @router.post("/stripe", status_code=status.HTTP_200_OK)
 async def stripe_webhook(
     request: Request,
@@ -212,7 +250,12 @@ async def stripe_webhook(
 
         cust_id = stripe_cust or f"email:{email}"
 
-        token = generate_license(customer_id=cust_id, tier=tier, seat_count=seat_count)
+        token = generate_license(
+            customer_id=cust_id,
+            tier=tier,
+            seat_count=seat_count,
+            valid_days=_valid_days_for(session),
+        )
         payload_dict = verify_license(token)
 
         # Second idempotency layer: the license itself may already be stored.

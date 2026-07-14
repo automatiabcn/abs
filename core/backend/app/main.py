@@ -69,6 +69,7 @@ from app.api import email_unsubscribe as email_unsubscribe_router
 from app.api import health_full as health_full_router
 from app.api import hooks as hooks_router
 from app.api import license as license_router
+from app.api import license_renew as license_renew_router
 from app.api import me_account as me_account_router
 from app.api import me_audit as me_audit_router
 from app.api import me_consent as me_consent_router
@@ -263,6 +264,8 @@ async def lifespan(_app: FastAPI):
             )
 
             async def _heartbeat_loop(token: str, machine_fp: str, secs: int) -> None:
+                from app.licensing import renewal
+
                 while True:
                     try:
                         await asyncio.sleep(secs)
@@ -272,6 +275,16 @@ async def lifespan(_app: FastAPI):
                             hb.get("valid"),
                             hb.get("reason"),
                         )
+
+                        # The subscription is monthly, so the key is monthly. A
+                        # few days before it runs out this server asks for the
+                        # next one, and gets it if the subscription is still
+                        # alive. It happens here — on a timer, off the request
+                        # path — because a customer must never wait on our
+                        # billing system to send a chat message, and must never
+                        # be refused because we could not be reached.
+                        if await renewal.renew_if_due():
+                            token = _settings.license_key
                     except asyncio.CancelledError:
                         raise
                     except Exception as exc:
@@ -497,6 +510,7 @@ app.include_router(panel_tools_router.router)
 app.include_router(panel_cascade_router.router)
 app.include_router(panel_pipeline_router.router)
 app.include_router(license_router.router)
+app.include_router(license_renew_router.router)
 app.include_router(checkout_router.router)
 app.include_router(billing_portal_router.router)
 app.include_router(demo_admin_router.router)

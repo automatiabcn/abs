@@ -25,7 +25,7 @@ def _post_no_sig(client, headers):
 def _post_checkout(client, headers, body=None):
     return client.post(
         "/v1/checkout/create-session",
-        json=body or {"sku": "self-host", "customer_email": "u@x.co"},
+        json=body or {"sku": "solo", "customer_email": "u@x.co"},
         headers=headers,
     )
 

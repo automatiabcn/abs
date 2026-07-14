@@ -32,9 +32,7 @@ def _checkout_event(event_id: str, email: str, customer: str = "cus_e2e_1") -> d
 def test_e2e_checkout_create_session_returns_url(client, monkeypatch):
     """POST /v1/checkout/create-session — Stripe Session.create mocked."""
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_e2e")
-    monkeypatch.setattr(
-        settings, "abs_price_self_host", "price_e2e_self", raising=False
-    )
+    monkeypatch.setattr(settings, "abs_price_solo", "price_e2e_solo", raising=False)
 
     fake_session = types.SimpleNamespace(
         url="https://checkout.stripe.com/c/pay/cs_e2e_test",
@@ -44,7 +42,7 @@ def test_e2e_checkout_create_session_returns_url(client, monkeypatch):
 
     r = client.post(
         "/v1/checkout/create-session",
-        json={"sku": "self-host", "customer_email": "e2e@x.co"},
+        json={"sku": "solo", "customer_email": "e2e@x.co"},
     )
     assert r.status_code == 200, r.text
     body = r.json()

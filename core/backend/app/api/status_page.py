@@ -307,25 +307,27 @@ def _mrr_estimate_usd() -> int:
         from app.db.models import License
         from app.db.session import get_engine
 
-        # Heuristic share of seat-pack list price counted per active license per
-        # month. Defaults are 0.0 — operator configures via env to surface MRR.
-        # Keyed by (tier, seat_count) — the License.tier value is "self-host" /
-        # "team" (seat_count distinguishes the 5- vs 10-pack), NOT "team-5".
-        # The old "team-5"/"team-10" string keys never matched a real tier, so
-        # every team licence silently contributed $0 to MRR. Matches the
-        # (tier, seat_count) convention in billing_tools / status_tools.
-        TIER_MONTHLY: dict[tuple[str, int], float] = {
-            ("self-host", 1): _s.abs_seat_price_self_host / 12.0,
-            ("team", 5): _s.abs_seat_price_team_5 / 12.0,
-            ("team", 10): _s.abs_seat_price_team_10 / 12.0,
-        }
+        # Now that the product is a monthly subscription, monthly revenue is not a
+        # heuristic any more: it is what the plans cost. Solo is a flat monthly
+        # price; team is per seat, so a five-seat team is five times the seat
+        # price. Defaults are 0.0 — the operator sets list prices in .env.
+        #
+        # The old table keyed ("team", 5) and ("team", 10) exactly, so a team of
+        # six contributed nothing at all. Multiplying is both simpler and right.
+        solo_price = _s.abs_seat_price_solo
+        seat_price = _s.abs_seat_price_team
+
         with Session(get_engine()) as db:
             rows = list(db.scalars(select(License)).all())
+
         total = 0.0
         for r in rows:
-            key = (r.tier, r.seat_count)
-            if key in TIER_MONTHLY and r.revoked_at is None and r.purged_at is None:
-                total += TIER_MONTHLY[key]
+            if r.revoked_at is not None or r.purged_at is not None:
+                continue
+            if r.tier == "team":
+                total += seat_price * max(1, r.seat_count)
+            else:
+                total += solo_price
         return int(round(total))
     except Exception:
         return 0
