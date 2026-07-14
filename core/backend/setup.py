@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Optional Cython compile of license-critical modules (Q12 IP-Hardening R5).
+"""Optional Cython compile of license-critical modules (IP hardening).
 
 Source-readable Python lets a reverse engineer flip ``verify_license``
 to ``return {"valid": True}`` in a few seconds. Compiling these modules

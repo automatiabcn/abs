@@ -1,4 +1,4 @@
-"""027 Modul G — Disaster scenario tests (4 senaryo).
+"""Disaster scenario tests (4 senaryo).
 
 1. Master key file deleted → rotate after restoring (escrow flow)
 2. Vault file corrupted → restore from backup snapshot

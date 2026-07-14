@@ -1,4 +1,4 @@
-"""024 Modul D — Stripe end-to-end flow: checkout → webhook → license → revoke."""
+"""Stripe end-to-end flow: checkout → webhook → license → revoke."""
 
 from __future__ import annotations
 

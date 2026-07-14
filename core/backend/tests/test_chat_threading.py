@@ -1,4 +1,4 @@
-"""Q12 / Brief 3 R4 — chat thread sidebar regression suite.
+"""chat thread sidebar regression suite.
 
 Covers the four endpoints added in this round:
 

@@ -1,4 +1,4 @@
-"""023 Modul F — validate_install.py: 7 categories + fix hints."""
+"""validate_install.py: 7 categories + fix hints."""
 
 from __future__ import annotations
 

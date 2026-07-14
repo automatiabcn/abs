@@ -1,4 +1,4 @@
-"""Q11 Round 2 / L13 — fuzz / property-based input testing.
+"""fuzz / property-based input testing.
 
 Hammers /v1/chat/completions with malformed and boundary-condition
 payloads. The contract under test:
@@ -18,7 +18,7 @@ from __future__ import annotations
 import pytest
 
 
-class TestQ11L13ChatCompletionsFuzz:
+class TestChatCompletionsFuzz:
     @pytest.fixture()
     def admin_client(self, client):
         r = client.post(
@@ -39,7 +39,7 @@ class TestQ11L13ChatCompletionsFuzz:
     def _cleanup_chat_sessions(self):
         """Fuzz tests POST many /v1/chat/completions calls that each
         create a new session. Without cleanup the global sessions table
-        balloons and Q8's empty-list check fails when these tests run
+        balloons and the empty-list check fails when these tests run
         earlier in the suite ordering."""
         yield
         from sqlmodel import Session, delete
@@ -54,7 +54,7 @@ class TestQ11L13ChatCompletionsFuzz:
     # ─── 1. Boundary lengths ────────────────────────────────────────────
 
     def test_content_exact_max_length_accepted(self, admin_client):
-        """Q11-L13-001: ChatMessageIn.content max_length now mirrors
+        """ChatMessageIn.content max_length now mirrors
         CascadeRequest.prompt's 8000-char ceiling — boundary must pass."""
         content = "a" * 8000
         r = admin_client.post(
@@ -64,7 +64,7 @@ class TestQ11L13ChatCompletionsFuzz:
         assert r.status_code == 200, r.text
 
     def test_content_over_max_length_rejected_422(self, admin_client):
-        """Q11-L13-001: anything over 8000 must 422 at pydantic — never
+        """anything over 8000 must 422 at pydantic — never
         500 on the cascade ValidationError fallthrough."""
         content = "a" * 8001
         r = admin_client.post(
@@ -81,7 +81,7 @@ class TestQ11L13ChatCompletionsFuzz:
         assert r2.status_code == 422
 
     def test_content_empty_string_rejected_422(self, admin_client):
-        """Q11-L13-002: content min_length=1 stops the cascade-layer
+        """content min_length=1 stops the cascade-layer
         ValidationError that previously 500'd on empty input."""
         r = admin_client.post(
             "/v1/chat/completions",
@@ -176,7 +176,7 @@ class TestQ11L13ChatCompletionsFuzz:
         r = admin_client.post("/v1/chat/completions", json={"messages": msgs})
         assert r.status_code == 200, r.text
 
-    # ─── Q11 Round 15 — additional boundary fuzz ────────────────────────
+    # ─── an earlier release — additional boundary fuzz ────────────────────────
 
     def test_session_id_huge_int_rejected_or_404(self, admin_client):
         """Pydantic Optional[int] accepts arbitrary signed ints; backend

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Q7 backend bootstrap — image rebuild olmadan dev tarafında source güncellemesi için.
-# Production deploy backend imajını yeniden build eder; bu script dev iteration için.
+# backend bootstrap — update source on dev side without image rebuild.
+# Rebuilds the production deploy backend image; this script is for dev iteration.
 #
 # Usage:
-#   bash scripts/q7_bootstrap.sh
+#   bash scripts/dev_backend_bootstrap.sh
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -17,13 +17,13 @@ if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
     exit 1
 fi
 
-# Q7 Phase A — Neo4j sources
+# Phase A — Neo4j sources
 docker cp "$SOURCE/api/graph.py"               "${CONTAINER}:/app/app/api/graph.py"
 docker cp "$SOURCE/integrations/neo4j_client.py" "${CONTAINER}:/app/app/integrations/neo4j_client.py"
 docker cp "$SOURCE/main.py"                    "${CONTAINER}:/app/app/main.py"
 docker cp "$SOURCE/config.py"                  "${CONTAINER}:/app/app/config.py"
 
-# Q7 Phase B — Marketplace hardening
+# Phase B — Marketplace hardening
 docker cp "$SOURCE/marketplace/sandbox.py"        "${CONTAINER}:/app/app/marketplace/sandbox.py"
 docker cp "$SOURCE/marketplace/cosign_verify.py"  "${CONTAINER}:/app/app/marketplace/cosign_verify.py"
 docker cp "$SOURCE/api/marketplace.py"            "${CONTAINER}:/app/app/api/marketplace.py"
@@ -53,4 +53,4 @@ if docker ps --format '{{.Names}}' | grep -q "^${NEO4J_CONTAINER}$"; then
     fi
 fi
 
-echo "✓ Q7 bootstrap complete"
+echo "✓ bootstrap complete"

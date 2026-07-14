@@ -8,7 +8,7 @@
 
 
 /**
- * 026 Modul F — Connect dashboard panel.
+ * Connect dashboard panel.
  *
  * Public-facing equivalent of `app/static/connect.html`. Asks for the admin
  * Bearer token client-side, fetches `/v1/smart-link/connected-services`, and

@@ -1,4 +1,4 @@
-"""Auto-verify pipeline testleri — Ollama URL kontrolü."""
+"""Auto-verify pipeline tests — Ollama URL check."""
 
 from __future__ import annotations
 

@@ -1,18 +1,18 @@
-"""Q12 Round 19 / L23 sweep 3 — me_data_export.py audit coverage.
+"""sweep 3 — me_data_export.py audit coverage.
 
-Pre-Round 19: me_data_export.py had 10/10 silent raise sites — second
+Before this change: me_data_export.py had 10/10 silent raise sites — second
 top offender after me_account.py. GDPR Article 15 (right of access /
 data portability) endpoints had log_customer_action covering SUCCESS
 audits but every FAILURE path was silent — credential stuffing, replay
 of stolen license tokens, cross-license job_id enumeration all
 invisible to ops.
 
-Round 19 wires emit_event onto every failure path matching the
+This change wires emit_event onto every failure path matching the
 sweep-2 pattern (me.data_export.{auth,status,download} action
 families with reason taxonomy). The auth helper is threaded with
 optional `request` so it can emit too.
 
-Side fix (same Q12-L24 follow-up as sweep 2): pre-fix
+Side fix (the earlier follow-up as sweep 2): pre-fix
 `f"License verify failed: {exc}"` leaked PyJWT internals to client;
 post-fix uses generic `"license_verify_failed"` and audit log carries
 the exception class name internally.
@@ -57,7 +57,7 @@ def _mint_license_bearer(jti: str = "test-jti-l23s3") -> str:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep3DataExportAuth:
+class TestSweep3DataExportAuth:
     def test_missing_bearer_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -79,7 +79,7 @@ class TestQ12L23Sweep3DataExportAuth:
         assert r.status_code in (400, 401)
         events = _audits_for(caplog.records, "me.data_export.auth")
         assert events
-        # Q12-L24 follow-up: client must NOT see PyJWT internals.
+        # follow-up: client must NOT see PyJWT internals.
         assert "Signature" not in r.text and "Exception" not in r.text
 
 
@@ -88,7 +88,7 @@ class TestQ12L23Sweep3DataExportAuth:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep3DataExportStatus:
+class TestSweep3DataExportStatus:
     def test_job_not_found_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -109,7 +109,7 @@ class TestQ12L23Sweep3DataExportStatus:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep3DataExportDownload:
+class TestSweep3DataExportDownload:
     def test_download_job_not_found_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:

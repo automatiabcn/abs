@@ -1,4 +1,4 @@
-"""030 Modul G — provider_catalog.json schema + content guard."""
+"""provider_catalog.json schema + content guard."""
 
 from __future__ import annotations
 

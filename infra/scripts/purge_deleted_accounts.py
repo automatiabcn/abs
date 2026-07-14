@@ -1,4 +1,4 @@
-"""029 Modul C — Daily purge cron for accounts past their 30-day grace.
+"""Daily purge cron for accounts past their 30-day grace.
 
 Cron (daily):
   python infra/scripts/purge_deleted_accounts.py [--dry-run]

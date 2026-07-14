@@ -1,10 +1,10 @@
-"""022 Modul G — Judge feed real integration (placeholder kalktı)."""
+"""022 Module G — Judge feed real integration (placeholder removed)."""
 
 from __future__ import annotations
 
 
 def test_build_judge_returns_real_signal_when_aggregate_works(monkeypatch):
-    """Judge feed `judge.stats.aggregate()` veriyorsa real:True döner.
+    """Judge feed returns real:True if `judge.stats.aggregate()` provides data.
 
     Uses the keys aggregate() actually emits (avg_combined / count /
     outcome_counts). The old fake used total_count/avg_score/accept_rate — keys
@@ -21,7 +21,7 @@ def test_build_judge_returns_real_signal_when_aggregate_works(monkeypatch):
     import app.judge.stats as stats_mod
 
     monkeypatch.setattr(stats_mod, "aggregate", lambda *a, **k: fake_stats)
-    # Cache temizle ki yeni mock görsün
+    # Clear cache so new mock is visible
     stream_mod._JUDGE_CACHE["data"] = None
     stream_mod._JUDGE_CACHE["ts"] = 0
 

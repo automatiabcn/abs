@@ -230,7 +230,7 @@ class Settings(BaseSettings):
     abs_price_team_5: str = ""  # Stripe Price ID — team-pack 5 seat SKU
     abs_price_team_10: str = ""  # Stripe Price ID — team-pack 10 seat SKU
 
-    # Q12-R84 — Tier seat list prices (USD/month). Default 0.0 = pricing not
+    # Tier seat list prices (USD/month). Default 0.0 = pricing not
     # configured; operators MUST set these in their own .env. Tier IDs
     # ("self-host", "team-5", "team-10") are SKU keys, not prices.
     abs_seat_price_self_host: float = 0.0
@@ -322,7 +322,7 @@ class Settings(BaseSettings):
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
 
-    # Cosign signature verification (real verify lands in Q8)
+    # Cosign signature verification (lands later)
     cosign_skip: bool = True  # dev default; prod must set ABS_COSIGN_SKIP=false
     cosign_public_key_path: str = "/etc/abs/cosign.pub"
 

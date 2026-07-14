@@ -1,8 +1,8 @@
-"""Q12 Round 14 / L24 — secret/sensitive data leakage scan.
+"""secret/sensitive data leakage scan.
 
 Closes:
 
-* Q12-L24-001 (HIGH security) — `/auth/signup` previously wrote the
+* (HIGH security) — `/auth/signup` previously wrote the
   full magic_token to the application log
   (`logger.info("signup_pending email=%s slug=%s magic=/auth/magic?token=%s")`).
   The 24h-valid token grants admin session on first claim → anyone with
@@ -11,7 +11,7 @@ Closes:
   to the log; the response body still returns the link for self-host
   installs that lack SMTP.
 
-* Q12-L24-002 (MED) — `/v1/billing/portal` and `/v1/checkout/session`
+* `/v1/billing/portal` and `/v1/checkout/session`
   exception handlers leaked `str(exc)` (full Stripe error string,
   optionally truncated to 200 chars) into the client-facing detail.
   Stripe error strings can include internal account IDs (cus_*, sub_*,
@@ -44,11 +44,11 @@ from fastapi.testclient import TestClient
 
 
 # ----------------------------------------------------------------------
-# 1) Q12-L24-001 — magic token never in log
+# 1) magic token never in log
 # ----------------------------------------------------------------------
 
 
-class TestQ12L24SignupTokenNotLogged:
+class TestSignupTokenNotLogged:
     def test_full_magic_token_absent_from_log(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -69,7 +69,7 @@ class TestQ12L24SignupTokenNotLogged:
         for rec in caplog.records:
             msg = rec.getMessage()
             assert full_token not in msg, (
-                f"Q12-L24-001 REGRESSION: log line leaked full magic token: {msg!r}"
+                f"REGRESSION: log line leaked full magic token: {msg!r}"
             )
 
     def test_log_carries_token_hint_for_correlation(
@@ -91,11 +91,11 @@ class TestQ12L24SignupTokenNotLogged:
         signup_logs = [
             rec for rec in caplog.records if "signup_pending" in rec.getMessage()
         ]
-        assert signup_logs, "Q12-L24-001: no signup_pending log emitted"
+        assert signup_logs, "no signup_pending log emitted"
         assert any(
             hint in rec.getMessage() and "***" in rec.getMessage()
             for rec in signup_logs
-        ), "Q12-L24-001: log must carry token_hint for ops correlation"
+        ), "log must carry token_hint for ops correlation"
 
     def test_response_body_still_returns_magic_link(self, client: TestClient) -> None:
         # Self-host SMTP-less installs need the link surfaced in API
@@ -111,14 +111,14 @@ class TestQ12L24SignupTokenNotLogged:
         )
         assert r.status_code == 201
         assert "magic_link" in r.json()
-        # Q12 honesty round: link now points at the /activate SPA page; the
+        # honesty round: link now points at the /activate SPA page; the
         # security contract here is that the body still SURFACES the link
         # (SMTP-less installs need it), not which path it targets.
         assert r.json()["magic_link"].startswith("/activate?token=")
 
 
 # ----------------------------------------------------------------------
-# 2) Q12-L24-002 — Stripe error detail does not leak internal IDs
+# 2) Stripe error detail does not leak internal IDs
 # ----------------------------------------------------------------------
 
 
@@ -127,7 +127,7 @@ _STRIPE_INTERNAL_ID_PATTERN = re.compile(
 )
 
 
-class TestQ12L24StripeDetailScrub:
+class TestStripeDetailScrub:
     def test_billing_portal_stripe_error_detail_safe(self, client: TestClient) -> None:
         try:
             import stripe  # noqa: F401
@@ -172,9 +172,7 @@ class TestQ12L24StripeDetailScrub:
         if r.status_code == 502:
             body_text = r.text
             leaks = _STRIPE_INTERNAL_ID_PATTERN.findall(body_text)
-            assert not leaks, (
-                f"Q12-L24-002 REGRESSION: portal 502 leaked internal IDs: {leaks}"
-            )
+            assert not leaks, f"REGRESSION: portal 502 leaked internal IDs: {leaks}"
 
     def test_checkout_stripe_error_detail_safe(self, client: TestClient) -> None:
         try:
@@ -216,6 +214,4 @@ class TestQ12L24StripeDetailScrub:
         if r.status_code == 502:
             body_text = r.text
             leaks = _STRIPE_INTERNAL_ID_PATTERN.findall(body_text)
-            assert not leaks, (
-                f"Q12-L24-002 REGRESSION: checkout 502 leaked internal IDs: {leaks}"
-            )
+            assert not leaks, f"REGRESSION: checkout 502 leaked internal IDs: {leaks}"

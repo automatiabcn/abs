@@ -1,6 +1,6 @@
-"""Q12 Round 21 / L23 sweep 4 — smart_link.py + beta_admin.py audit coverage.
+"""sweep 4 — smart_link.py + beta_admin.py audit coverage.
 
-Pre-Round 21 inventory:
+An earlier audit:
     app/api/smart_link.py   — 7 silent raise sites:
         * _check_admin (401 missing bearer / 403 invalid token)
         * github_callback (400 invalid/expired/replayed state)
@@ -23,7 +23,7 @@ These are *operational* security probes that must NOT be silent:
       be benign typo or could be credential-stuffing across providers.
       No emit, no signal.
 
-Round 21 wires emit_event onto every gate/denial path mirroring
+This change wires emit_event onto every gate/denial path mirroring
 sweep-2/3 pattern. Brings L23 total to 4/3 deep (sweep 4 across the
 remaining 4 offenders identified by founder verify gap).
 """
@@ -65,7 +65,7 @@ def _wipe_beta_rows() -> None:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep4SmartLinkGate:
+class TestSweep4SmartLinkGate:
     def test_missing_bearer_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -108,7 +108,7 @@ class TestQ12L23Sweep4SmartLinkGate:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep4SmartLinkApiKey:
+class TestSweep4SmartLinkApiKey:
     def test_unsupported_provider_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -145,7 +145,7 @@ def _isolate_beta(monkeypatch):
     yield
 
 
-class TestQ12L23Sweep4BetaAdminGate:
+class TestSweep4BetaAdminGate:
     def test_missing_bearer_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -186,7 +186,7 @@ class TestQ12L23Sweep4BetaAdminGate:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L23Sweep4BetaApproveReject:
+class TestSweep4BetaApproveReject:
     def test_approve_not_found_emits_denied(
         self, client: TestClient, caplog: pytest.LogCaptureFixture
     ) -> None:

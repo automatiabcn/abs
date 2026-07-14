@@ -1,4 +1,4 @@
-"""016 — ML persona training (logistic regression) testleri."""
+"""ML persona training (logistic regression) testleri."""
 
 from __future__ import annotations
 

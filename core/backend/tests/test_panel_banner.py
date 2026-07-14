@@ -1,4 +1,4 @@
-"""012 — Panel demo countdown banner UI testleri (file content assertions)."""
+"""Panel demo countdown banner UI testleri (file content assertions)."""
 
 from __future__ import annotations
 

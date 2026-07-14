@@ -1,4 +1,4 @@
-"""030 Modul D — Groq compound MCP tools (mocked)."""
+"""Groq compound MCP tools (mocked)."""
 
 from __future__ import annotations
 

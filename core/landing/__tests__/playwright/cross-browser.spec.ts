@@ -1,6 +1,6 @@
-// Q11 Round 3 / L11 — cross-browser smoke.
+// cross-browser smoke.
 //
-// Q10 wrote 72 e2e tests but only ran them on Chromium. This spec
+// wrote 72 e2e tests but only ran them on Chromium. This spec
 // re-exercises the panel + admin surface on Firefox and WebKit so a
 // SSR or routing quirk specific to those engines doesn't slip into
 // production. Each test:
@@ -10,7 +10,7 @@
 //   4. asserts no harmful console errors
 //
 // Run with --project=firefox-desktop or --project=webkit-desktop;
-// the chromium-desktop project keeps Q10 coverage so this file is
+// the chromium-desktop project keeps the desktop coverage so this file is
 // safe to include in `npx playwright test`.
 
 import { test, expect, type ConsoleMessage, type Page } from "@playwright/test";
@@ -46,7 +46,7 @@ async function loginIfNeeded(page: Page) {
     .catch(() => null);
 }
 
-test.describe("Q11/L11 — cross-browser smoke", () => {
+test.describe("cross-browser smoke", () => {
   test.beforeEach(async ({ page }) => {
     await loginIfNeeded(page);
   });

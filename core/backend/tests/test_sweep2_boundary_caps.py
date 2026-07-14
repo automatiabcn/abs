@@ -1,7 +1,7 @@
-"""Q12 Round 24 / L25 sweep 2 — boundary payload caps for workflow execute
+"""sweep 2 — boundary payload caps for workflow execute
 + chat completions.
 
-Pre-Round 24 inventory:
+An earlier audit:
 
     POST /v1/workflows/execute   ExecuteRequest.workflow: Dict[str, Any]
                                  (UNBOUNDED nested dict, no nodes count
@@ -12,14 +12,14 @@ Pre-Round 24 inventory:
 Both are admin-auth surfaces, but post-auth a compromised JWT (or a
 multi-tenant escape) can use them to OOM the backend at the JSON
 parse / Pydantic validation step BEFORE any business logic. Same
-family as Q12-L25-001 (R17 marketplace InstallBody UNBOUNDED).
+family as 001 (R17 marketplace InstallBody UNBOUNDED).
 
-Q12-L25-002 (HIGH DoS) — workflow.execute accepts unbounded nodes/edges.
+(HIGH DoS) — workflow.execute accepts unbounded nodes/edges.
   runner.plan() walks every node, allocates per-node, and OOMs the
   worker on a 10k-node payload. Fix: model_validator caps
   `workflow.nodes` ≤ 200, `workflow.edges` ≤ 500.
 
-Q12-L25-003 (HIGH DoS) — chat.completions accepts unbounded messages.
+(HIGH DoS) — chat.completions accepts unbounded messages.
   10k × 8000 chars = 80 MB JSON parse before handler runs. Fix:
   Pydantic Field(min_length=1, max_length=200).
 
@@ -51,11 +51,11 @@ def auth_client(client: TestClient) -> TestClient:
 
 
 # ----------------------------------------------------------------------
-# Workflow execute — Q12-L25-002
+# Workflow execute — 002
 # ----------------------------------------------------------------------
 
 
-class TestQ12L25Sweep2WorkflowNodes:
+class TestSweep2WorkflowNodes:
     def test_nodes_count_within_cap_does_not_trip_validator(
         self, auth_client: TestClient
     ) -> None:
@@ -117,7 +117,7 @@ class TestQ12L25Sweep2WorkflowNodes:
 # ----------------------------------------------------------------------
 
 
-class TestQ12L25Sweep2WorkflowProof:
+class TestSweep2WorkflowProof:
     def test_pre_fix_cap_is_the_load_bearing_guard(self) -> None:
         """Construct the oversize payload directly via the model and
         assert (a) WITH the cap it raises and (b) WITHOUT the cap it
@@ -138,11 +138,11 @@ class TestQ12L25Sweep2WorkflowProof:
 
 
 # ----------------------------------------------------------------------
-# Chat completions — Q12-L25-003
+# Chat completions — 003
 # ----------------------------------------------------------------------
 
 
-class TestQ12L25Sweep2ChatMessages:
+class TestSweep2ChatMessages:
     def test_messages_within_cap_passes_validation(self) -> None:
         messages = [{"role": "user", "content": f"hello {i}"} for i in range(10)]
         # Direct Pydantic validation; happy path doesn't require a
@@ -164,7 +164,7 @@ class TestQ12L25Sweep2ChatMessages:
 
     def test_messages_empty_passes_pydantic_handler_owns_400(self) -> None:
         """Empty list passes Pydantic — the handler returns 400
-        messages_required (preserves the inherited Q10-L1 contract).
+        messages_required (preserves the inherited contract).
         Pydantic only protects against the upper-bound DoS."""
         body = chat_mod.ChatCompletionsRequest(messages=[])
         assert body.messages == []

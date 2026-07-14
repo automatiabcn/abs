@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Q7 Phase D — Credential reset + bootstrap re-seed (defense-in-depth).
+# Phase D — Credential reset + bootstrap re-seed (defense-in-depth).
 #
 # Standalone script: re-seeds admin@demo-acme.local + qa@abs.local in the
 # running ABS backend container so individual sprint repros don't fail with

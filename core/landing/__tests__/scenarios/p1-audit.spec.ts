@@ -1,4 +1,4 @@
-// P1 — S3: the audit log is a record, or it is nothing.
+// the audit log is a record, or it is nothing.
 //
 // This page has one job: tell an operator what really happened on their server,
 // and hand it to an auditor as evidence. It is the page a customer's security

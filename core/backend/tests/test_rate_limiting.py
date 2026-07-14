@@ -1,4 +1,4 @@
-"""028 Modul G — Rate limiting (slowapi)."""
+"""Rate limiting (slowapi)."""
 
 from __future__ import annotations
 

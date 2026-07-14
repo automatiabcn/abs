@@ -1,4 +1,4 @@
-"""025 Modul A + G — Public repo files + README contents."""
+"""Public repo files + README contents."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ def test_license_is_bsl_1_1():
     assert "Apache License" in text and "Version 2.0" in text
 
 
-# Modul G — README contents
+# README contents
 
 
 def test_readme_min_word_count_and_sections():

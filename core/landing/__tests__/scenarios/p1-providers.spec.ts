@@ -1,4 +1,4 @@
-// P1 — E1: the Providers page tells the truth about what is set up.
+// the Providers page tells the truth about what is set up.
 //
 // This is the page an operator stares at when the product is not working, and
 // the "test" button is the one thing they trust to tell them whether the problem

@@ -5,7 +5,7 @@
 
 """`/v1/system/quota_status` endpoint.
 
-`/api/quota-status` (legacy stub) ile karistirma — bu endpoint Claude Plus
+`/api/quota-status` (legacy stub) mix-up — this endpoint is Claude Plus
 + ucretsiz saglayicilarin gercek kullanim/limit verisini birlestirir ve
 80%/95% threshold uyarilarini birlikte yayar.
 """

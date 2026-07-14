@@ -14,7 +14,7 @@ afterEach(() => {
   mockFetch.mockReset();
 });
 
-describe("DemoBanner — 033 Modul D", () => {
+describe("DemoBanner", () => {
   it("renders nothing when /v1/demo-mode/status reports enabled=false", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,

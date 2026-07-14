@@ -21,7 +21,7 @@ REGISTERED_TOOLS: List[str] = []
 @mcp_server.tool()
 @with_hooks("vault_status")
 async def vault_status() -> str:
-    """Vault snapshot — configured key listesi + audit son 5 olay. Cleartext YOK."""
+    """Vault snapshot — configured key list + last 5 audit events. No cleartext."""
     await tracker.bump("vault_status")
     from app.vault.audit import read_recent
     from app.vault.cache import is_loaded, known_keys

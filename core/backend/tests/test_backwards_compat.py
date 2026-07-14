@@ -1,16 +1,16 @@
-"""Q12 Round 4 / L19 — Backwards-compat regression guard.
+"""Backwards-compat regression guard.
 
 Each test class protects against re-introduction of a historic HIGH-severity
 bug. The class docstring captures the original failure scenario; the test
 asserts the corrective behaviour.
 
 Coverage:
-  1. Q7  — graph router registration (404 must not return)
-  2. Q9  — chat session list reachable after login
-  3. Q10 — quota gate is enforced (429 surfaces under sustained load)
-  4. Q11 — chat content max_length boundary returns 422, never 500
-  5. Q11 — alembic 0008 blacklist migration file exists
-  6. Q11 — unauthenticated hook POSTs return 401, never 422
+  1. graph router registration (404 must not return)
+  2. chat session list reachable after login
+  3. quota gate is enforced (429 surfaces under sustained load)
+  4. chat content max_length boundary returns 422, never 500
+  5. alembic 0008 blacklist migration file exists
+  6. unauthenticated hook POSTs return 401, never 422
   7. Next.js bundle chunk totals stay within a +20% buffer of the
            honest baseline
 """
@@ -76,22 +76,22 @@ def _route_chunk_total(manifest: dict, route: str) -> int:
 
 
 class TestQ7GraphRouterRegression:
-    """Q7 finalize gap — `/v1/graph/cypher` was unmounted; clients saw 404
+    """finalize gap — `/v1/graph/cypher` was unmounted; clients saw 404
     instead of 401. Guard: any non-404 status with auth missing."""
 
     def test_graph_cypher_endpoint_not_404(self, client: TestClient) -> None:
         url = "/v1/graph/cypher"
         resp = client.post(url, json={"query": "MATCH (n) RETURN n LIMIT 1"})
         assert resp.status_code != 404, (
-            f"Q7 regression: {url} returned 404 — graph router unmounted"
+            f"regression: {url} returned 404 — graph router unmounted"
         )
         assert resp.status_code in {401, 403, 422}, (
-            f"Q7 regression: unexpected status {resp.status_code}"
+            f"regression: unexpected status {resp.status_code}"
         )
 
 
 class TestQ9ChatSessionRegression:
-    """Q9 — chat session list returned 404 after login due to mount order
+    """chat session list returned 404 after login due to mount order
     bug. Guard: post-login GET /v1/chat/sessions = 200."""
 
     def test_chat_sessions_after_login(self, client: TestClient) -> None:
@@ -99,12 +99,12 @@ class TestQ9ChatSessionRegression:
             pytest.skip("admin demo login unavailable in this fixture")
         resp = client.get("/v1/chat/sessions")
         assert resp.status_code == 200, (
-            f"Q9 regression: chat sessions returned {resp.status_code} after login"
+            f"regression: chat sessions returned {resp.status_code} after login"
         )
 
 
-class TestQ10L6QuotaGateRegression:
-    """Q10-L6-001 — quota gate was a silent no-op; 200 risky tool calls
+class TestQuotaGateRegression:
+    """quota gate was a silent no-op; 200 risky tool calls
     succeeded. The fix landed on `/v1/cascade/run`. In TestClient the
     rate limiter is reset between tests so 429 may not occur from
     in-process probing alone — guard verifies the pre-flight quota
@@ -117,23 +117,22 @@ class TestQ10L6QuotaGateRegression:
     def test_quota_hook_authed_and_cascade_present(self, client: TestClient) -> None:
         if _is_endpoint_404(client, "POST", self.QUOTA_HOOK):
             pytest.fail(
-                "Q10-L6 regression: /v1/hooks/quota-check unmounted — "
+                "regression: /v1/hooks/quota-check unmounted — "
                 "quota pre-flight gate gone"
             )
         if _is_endpoint_404(client, "POST", self.CASCADE_ENDPOINT):
             pytest.fail(
-                "Q10-L6 regression: /v1/cascade/run unmounted — "
-                "quota-gated runtime missing"
+                "regression: /v1/cascade/run unmounted — quota-gated runtime missing"
             )
         # Pre-flight hook must auth-gate (non-404, non-200 unauthed).
         r = client.post(self.QUOTA_HOOK, json={})
         assert r.status_code in {401, 403, 422}, (
-            f"Q10-L6 regression: quota-check hook unprotected ({r.status_code})"
+            f"regression: quota-check hook unprotected ({r.status_code})"
         )
 
 
-class TestQ11L13ChatContentMaxRegression:
-    """Q11-L13-001/003 — chat completions returned 500 on oversize content.
+class TestChatContentMaxRegression:
+    """chat completions returned 500 on oversize content.
     Guard: max-length boundary returns 422, never 500."""
 
     ENDPOINT = "/v1/chat/completions"
@@ -154,32 +153,32 @@ class TestQ11L13ChatContentMaxRegression:
         payload = {"messages": [{"role": "user", "content": "x" * size}]}
         resp = client.post(self.ENDPOINT, json=payload)
         assert resp.status_code != 500, (
-            f"Q11-L13 regression: size {size} produced 500 (max_length not enforced)"
+            f"regression: size {size} produced 500 (max_length not enforced)"
         )
         # Acceptance is broader than `allowed` only when auth makes 401 first;
         # accept 401 to avoid coupling this guard to login state.
         assert resp.status_code in allowed | {401}, (
-            f"Q11-L13 regression: size {size} returned {resp.status_code}"
+            f"regression: size {size} returned {resp.status_code}"
         )
 
 
-class TestQ11L14AlembicMigrationRegression:
-    """Q11-L14-001 — alembic blacklist migration 0008 was missing in the
+class TestAlembicMigrationRegression:
+    """alembic blacklist migration 0008 was missing in the
     repo, blocking prod deploy. Guard: 0008*.py exists in versions dir."""
 
     def test_alembic_0008_present(self) -> None:
         assert MIGRATIONS_DIR.is_dir(), (
-            f"Q11-L14 regression: alembic versions dir missing at {MIGRATIONS_DIR}"
+            f"regression: alembic versions dir missing at {MIGRATIONS_DIR}"
         )
         matches = sorted(MIGRATIONS_DIR.glob("0008*.py"))
         assert matches, (
-            "Q11-L14 regression: alembic 0008 migration file missing — "
+            "regression: alembic 0008 migration file missing — "
             "prod-blocker reintroduced"
         )
 
 
-class TestQ11L15HooksAuthGateRegression:
-    """Q11-L15-001 — hook endpoints leaked 422 (validation error) before
+class TestHooksAuthGateRegression:
+    """hook endpoints leaked 422 (validation error) before
     401 (auth missing), an information disclosure. Guard: 401 first."""
 
     ENDPOINTS = [
@@ -196,12 +195,12 @@ class TestQ11L15HooksAuthGateRegression:
             pytest.skip(f"{url} not present in this build")
         resp = client.post(url, json={})
         assert resp.status_code == 401, (
-            f"Q11-L15 regression: {url} returned {resp.status_code} unauthed (expected 401)"
+            f"regression: {url} returned {resp.status_code} unauthed (expected 401)"
         )
 
 
-class TestQ12L22OAuthAtomicClaimRegression:
-    """Q12-L22-005/006 (S4 R26) — OAuth code + refresh atomic single-use.
+class TestOAuthAtomicClaimRegression:
+    """OAuth code + refresh atomic single-use.
 
     Pre-fix: `exchange_code_for_tokens` and `refresh_access_token` both
     performed a non-atomic read-then-write on `used_at` /
@@ -226,20 +225,20 @@ class TestQ12L22OAuthAtomicClaimRegression:
 
         src = Path(oauth_server.__file__).read_text(encoding="utf-8")
         assert "OAuthAuthCode.used_at.is_(None)" in src, (
-            "Q12-L22-005 regression: atomic UPDATE on auth code is "
+            "regression: atomic UPDATE on auth code is "
             "missing the `used_at IS NULL` predicate; replay protection "
             "is broken"
         )
         assert "OAuthRefreshToken.rotated_to_hash.is_(None)" in src, (
-            "Q12-L22-006 regression: atomic UPDATE on refresh token is "
+            "regression: atomic UPDATE on refresh token is "
             "missing the `rotated_to_hash IS NULL` predicate"
         )
         assert "OAuthRefreshToken.revoked_at.is_(None)" in src, (
-            "Q12-L22-006 regression: refresh atomic UPDATE missing "
+            "regression: refresh atomic UPDATE missing "
             "the `revoked_at IS NULL` predicate"
         )
         assert "_revoke_refresh_family" in src, (
-            "Q12-L22-006 regression: OAuth 2.1 §6.1 family revocation helper missing"
+            "regression: OAuth 2.1 §6.1 family revocation helper missing"
         )
 
     def test_oauth_replay_returns_invalid_grant(self, client: TestClient) -> None:
@@ -263,14 +262,14 @@ class TestQ12L22OAuthAtomicClaimRegression:
         ), f"replay path must surface 4xx, not 5xx ({resp.status_code})"
 
 
-class TestQ12L25BodySizeLimitRegression:
-    """Q12-L25-004/005 (S4 R27) — HTTP-layer Content-Length cap.
+class TestBodySizeLimitRegression:
+    """HTTP-layer Content-Length cap.
 
     Pre-fix: admin endpoints accepted unbounded request bodies, parsing
     50 MB+ payloads fully into memory before Pydantic Field caps fired.
 
     Pin: `BodySizeLimitMiddleware` is installed at the right layer
-    (between DemoMode and RequestID per Q12-L23 audit continuity), and
+    (between DemoMode and RequestID per the earlier audit continuity), and
     a 50 MB payload to /v1/marketplace/install returns 413 with the
     `request_body_too_large` detail shape.
     """
@@ -281,7 +280,7 @@ class TestQ12L25BodySizeLimitRegression:
 
         names = [m.cls.__name__ for m in app.user_middleware]
         assert BodySizeLimitMiddleware.__name__ in names, (
-            "Q12-L25-004 regression: BodySizeLimitMiddleware no longer "
+            "regression: BodySizeLimitMiddleware no longer "
             "installed in app.user_middleware; admin endpoints can be "
             "DoS'd with oversize bodies"
         )
@@ -296,8 +295,7 @@ class TestQ12L25BodySizeLimitRegression:
             headers={"Content-Type": "application/json"},
         )
         assert resp.status_code == 413, (
-            f"Q12-L25-004 regression: oversize body must return 413, "
-            f"got {resp.status_code}"
+            f"regression: oversize body must return 413, got {resp.status_code}"
         )
         body = resp.json()
         assert body.get("detail") == "request_body_too_large"
@@ -305,8 +303,8 @@ class TestQ12L25BodySizeLimitRegression:
         assert "received_bytes" in body
 
 
-class TestQ12L24VerifierLeakRegression:
-    """Q12-L24-007 (S4 R29) — verifier.py PyJWTError catch-all.
+class TestVerifierLeakRegression:
+    """verifier.py PyJWTError catch-all.
 
     Pre-fix: catch-all branch surfaced
     `f"License verification error: {exc}"` to clients, exposing PyJWT
@@ -321,12 +319,12 @@ class TestQ12L24VerifierLeakRegression:
 
         src = Path(verifier_mod.__file__).read_text(encoding="utf-8")
         assert "license_verify_failed" in src, (
-            "Q12-L24-007 regression: generic `license_verify_failed` "
+            "regression: generic `license_verify_failed` "
             "detail missing — PyJWT internals may leak"
         )
         # The pre-fix f-string MUST NOT come back.
         assert "License verification error: {exc}" not in src, (
-            "Q12-L24-007 regression: the f-string str(exc) interpolation "
+            "regression: the f-string str(exc) interpolation "
             "is back in the catch-all branch"
         )
 
@@ -335,7 +333,7 @@ class TestQ12L24VerifierLeakRegression:
 
         src = Path(verifier_mod.__file__).read_text(encoding="utf-8")
         assert "license_verify_pyjwt_error" in src, (
-            "Q12-L24-007 regression: the ops audit warning "
+            "regression: the ops audit warning "
             "`license_verify_pyjwt_error` is missing — error_class "
             "taxonomy is no longer captured"
         )
@@ -371,8 +369,8 @@ class TestSprint21BundleRegression:
         )
 
 
-class TestQ12L20003RegressionPin:
-    """Q12-L20-003 (S6 R35) — regression pin for the chat sessions-error-tile fix.
+class TestRegressionPin:
+    """regression pin for the chat sessions-error-tile fix.
 
     Two protections beyond the Playwright suite:
       1. Source presence — the data-test attribute + the new useQuery
@@ -401,21 +399,21 @@ class TestQ12L20003RegressionPin:
 
             _pytest.skip("core/landing/app/panel/chat/ChatClient.tsx not on this build")
         src = chat_client.read_text(encoding="utf-8")
-        # Q12-L20-003 fix surface — sessions-error-tile banner.
+        # fix surface — sessions-error-tile banner.
         assert 'data-test="sessions-error-tile"' in src, (
-            "Q12-L20-003 regression: sessions-error-tile data-test is "
+            "regression: sessions-error-tile data-test is "
             "missing from ChatClient.tsx — the role=alert banner that "
             "surfaces /v1/chat/sessions 5xx is gone"
         )
         assert 'role="alert"' in src, (
-            'Q12-L20-003 regression: role="alert" attribute is missing '
+            'regression: role="alert" attribute is missing '
             "from ChatClient.tsx — the SR contract for the error banner is broken"
         )
 
     def test_chat_client_caps_useQuery_retry(self) -> None:
         """The retry default (3) keeps isLoading=true ~15s under cascade
         503; the fix capped it to 1. Reverting would re-introduce the
-        spinner-hang surface S6 R32 chaos suite caught."""
+        spinner-hang surface An earlier round chaos suite caught."""
         from pathlib import Path
 
         chat_client = (
@@ -432,13 +430,13 @@ class TestQ12L20003RegressionPin:
             _pytest.skip("ChatClient.tsx not on this build")
         src = chat_client.read_text(encoding="utf-8")
         assert "retry: 1" in src, (
-            "Q12-L20-003 regression: sessionsQuery retry cap (`retry: 1`) "
+            "regression: sessionsQuery retry cap (`retry: 1`) "
             "is missing — default retry: 3 with backoff would re-introduce "
             "the ~15s isLoading=true spinner-hang under cascade 503"
         )
 
     def test_no_test_fail_marker_on_chaos_multi_scenarios(self) -> None:
-        """The S6 R35 fix flipped scenarios 6+7 from test.fail() to test().
+        """An earlier fix flipped scenarios 6+7 from test.fail() to test().
         A future regression that re-marks them as test.fail() must surface.
         We match the actual call site (`test.fail(<whitespace>"scenario X:")`),
         not the empty-arg `test.fail()` reference that appears in prose."""
@@ -464,6 +462,6 @@ class TestQ12L20003RegressionPin:
             pattern = rf"test\.fail\(\s*[\"']{re.escape(scenario)}"
             if re.search(pattern, src):
                 raise AssertionError(
-                    f"Q12-L20-003 regression: {scenario} is gated by "
-                    "test.fail() again — the S6 R35 fix has been reverted"
+                    f"regression: {scenario} is gated by "
+                    "test.fail() again — the chat error-tile fix has been reverted"
                 )

@@ -1,4 +1,4 @@
-"""027 Modul A — sops binary detection + production fail-fast."""
+"""sops binary detection + production fail-fast."""
 
 from __future__ import annotations
 

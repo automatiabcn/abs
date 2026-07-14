@@ -1,4 +1,4 @@
-"""011 — License/demo gate enforcement testleri (with_hooks içinde)."""
+"""License/demo gate enforcement tests (inside with_hooks)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from app.licensing import generate_license
 
 @pytest.fixture
 def gate_env(monkeypatch, tmp_path: Path):
-    """data_dir + cache_dir izole + license_key boş + require_license off (her test override)."""
+    """data_dir + cache_dir isolated + empty license_key + require_license off (each test overrides)."""
     from app.config import settings
 
     data = tmp_path / "data"
@@ -26,7 +26,7 @@ def gate_env(monkeypatch, tmp_path: Path):
 
 @pytest.fixture
 def hooked_tool():
-    """with_hooks ile sarılı bir test fn — eldeki middleware patch'ini doğrular."""
+    """a test fn wrapped with with_hooks — validates the current middleware patch."""
     from app.mcp.middleware import with_hooks
 
     @with_hooks("gate_test_tool")
@@ -62,7 +62,7 @@ async def test_gate_blocks_when_demo_expired_no_license(
     from app.config import settings
     from app.licensing.demo import _state_path
 
-    # Süresi dolmuş demo state yaz
+    # Write expired demo state
     expired = time.time() - 86400
     _state_path().write_text(
         json.dumps(

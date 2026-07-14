@@ -1,4 +1,4 @@
-"""028 Modul H — `security_audit` MCP tool."""
+"""`security_audit` MCP tool."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""031 Modul B — 5×3 beta email templates exist + structurally valid."""
+"""5×3 beta email templates exist + structurally valid."""
 
 from __future__ import annotations
 

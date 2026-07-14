@@ -1,9 +1,9 @@
-# Mutation Weekend Policy (Q12 R41)
+# Mutation Weekend Policy (R41)
 
 ## Why a separate cron job
 
 `mutmut` mutates the source tree at runtime, then runs the test
-suite once per mutation. Empirically (Q12 S5 R31, on
+suite once per mutation. Empirically (R31, on
 `app/auth/oauth/server.py`) a single critical module takes
 **16–24 minutes** to mutate. Running this on every PR would push
 CI from ~6 minutes to ~30+ minutes for any auth/cascade change —

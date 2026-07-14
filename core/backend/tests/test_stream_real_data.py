@@ -1,4 +1,4 @@
-"""010 — SSE _build_mcp_tools + _build_budget gerçek tracker / workflow_state feed."""
+"""SSE _build_mcp_tools + _build_budget real tracker / workflow_state feed."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ async def test_stream_builders_use_real_tracker_and_workflow_stats(
 
 
 def test_license_status_event_payload(monkeypatch, tmp_path):
-    """011 — license-status SSE event payload kontratı."""
+    """license-status SSE event payload contract."""
     from app.api import stream as stream_mod
     from app.config import settings
 

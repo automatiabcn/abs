@@ -9,7 +9,7 @@ Production deployment must set ABS_COSIGN_SKIP=false and provide
 ABS_COSIGN_PUBLIC_KEY_PATH. In dev / CI the binary is typically absent and
 skip-mode lets the marketplace install flow succeed without compromising the
 production threat model. Real cosign keyring + Sigstore transparency log
-verification lands in Q8.
+lands later.
 """
 
 from __future__ import annotations

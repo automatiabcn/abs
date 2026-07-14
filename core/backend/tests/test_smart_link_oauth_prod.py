@@ -1,4 +1,4 @@
-"""026 Modul A — GitHub OAuth production: state DB cache, code exchange, refresh, revoke."""
+"""GitHub OAuth production: state DB cache, code exchange, refresh, revoke."""
 
 from __future__ import annotations
 

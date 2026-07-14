@@ -32,7 +32,7 @@ def test_token_vault_requires_inputs() -> None:
 def test_list_inbox_returns_seeded_messages() -> None:
     g = GmailMCP(backend="mock")
     g._impl.insert_for_test(
-        "t1", sender="a@b.c", subject="Q3 invoice question", body="hello"
+        "t1", sender="a@b.c", subject="invoice question", body="hello"
     )
     msgs = g.list_inbox(tenant_id="t1")
     assert len(msgs) == 1

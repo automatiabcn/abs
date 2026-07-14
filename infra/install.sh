@@ -11,10 +11,10 @@ if [ ! -f .env ]; then
   echo "[.env oluşturuldu — düzenleyip ABS_DOMAIN / ABS_ADMIN_EMAIL ayarlayın]"
 fi
 
-# 013 — Backend image build (init_vault.sh image'a ihtiyaç duyuyor)
+# 013 — Backend image build (init_vault.sh needs image)
 docker compose build backend
 
-# 013 — Vault initialize (master age key üretir, abs-vault-key volume'una yazar)
+# 013 — Vault initialize (produces master age key, writes to abs-vault-key volume)
 if [ -f scripts/init_vault.sh ]; then
   bash scripts/init_vault.sh
 fi

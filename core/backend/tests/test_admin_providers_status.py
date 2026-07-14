@@ -1,6 +1,6 @@
 """Polish round R7 — /v1/admin/providers/status sanity guard.
 
-The Settings → Sağlayıcılar tab leans on this endpoint to render a
+The Settings → Providers tab leans on this endpoint to render a
 "configured / missing" badge per provider. Failures here mean the UI either
 silently goes blank or worse, exposes raw API keys.
 

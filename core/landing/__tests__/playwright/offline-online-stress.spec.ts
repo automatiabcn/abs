@@ -1,4 +1,4 @@
-// Q12-L18 (S9 R81) — offline ↔ online transition stress for R48 drafts.
+// Offline ↔ online transition stress for the IndexedDB drafts.
 //
 // Brief originally framed this as a "5-message outbox + flush" test, but
 // no outbox / send-queue mechanism exists yet — only R48's IndexedDB draft
@@ -91,7 +91,7 @@ async function readStoredDraft(page: Page): Promise<string> {
   });
 }
 
-test.describe("Q12-L18 R81 — offline ↔ online transition stress", () => {
+test.describe("offline ↔ online transition stress", () => {
   test("draft survives 5-toggle O→F→O→F→O cycle without loss", async ({
     page,
     context,

@@ -1,4 +1,4 @@
-// Q12-L18 — Cold-cache first-visit LCP probe.
+// Cold-cache first-visit LCP probe.
 //
 // The earlier report measured LCP under warm-cache Playwright runs.
 // A fresh KOBİ pilot demo opens cold: no service worker, empty HTTP
@@ -150,7 +150,7 @@ for (const target of ALL_BUDGETS) {
 
     // eslint-disable-next-line no-console
     console.log(
-      `Q12-L18 cold ${target.path} LCP=${Math.round(sample.lcp)}ms ` +
+      `cold ${target.path} LCP=${Math.round(sample.lcp)}ms ` +
       `FCP=${Math.round(sample.fcp)}ms TTFB=${Math.round(sample.ttfb)}ms ` +
       `budget=${target.budgetMs}ms`,
     );

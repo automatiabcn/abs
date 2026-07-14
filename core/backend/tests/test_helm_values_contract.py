@@ -1,5 +1,5 @@
 """
-Q12-L27 R76 — helm umbrella values contract regression.
+helm umbrella values contract regression.
 
 Locks the fix from R76 where `cerbos.env` was a map (`{CERBOS_NO_TELEMETRY: "1"}`)
 that the cerbos subchart silently dropped (subchart expects a list of

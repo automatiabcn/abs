@@ -1,4 +1,4 @@
-"""017 — POST /v1/billing/portal: Stripe Customer Portal session."""
+"""POST /v1/billing/portal: Stripe Customer Portal session."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from app.db.session import get_engine
 
 @pytest.fixture()
 def _seed_active_license():
-    """Aktif lisans ekle (revoked_at IS NULL, customer_id_stripe='cus_portal_1')."""
+    """Add active license (revoked_at IS NULL, customer_id_stripe='cus_portal_1')."""
     now = datetime.now(timezone.utc)
     row = License(
         jti="jti_portal_active",
@@ -68,7 +68,7 @@ def test_portal_no_active_license_returns_404(client, monkeypatch):
 
 
 def test_portal_active_license_returns_url(client, monkeypatch, _seed_active_license):
-    """Aktif lisans + Stripe API mock → portal URL."""
+    """Active license + Stripe API mock → portal URL."""
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_x")
 
     fake_portal = types.SimpleNamespace(
@@ -89,7 +89,7 @@ def test_portal_active_license_returns_url(client, monkeypatch, _seed_active_lic
 
 
 def test_portal_revoked_license_returns_404(client, monkeypatch, _seed_revoked_license):
-    """Revoked lisans → portal kapalı (refund sonrası)."""
+    """Revoked license → portal closed (after refund)."""
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_x")
     r = client.post("/v1/billing/portal", json={"customer_email": "revoked@x.co"})
     assert r.status_code == 404

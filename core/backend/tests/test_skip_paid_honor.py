@@ -1,4 +1,4 @@
-"""Q12 Founder Tester Round 3 — `skip_paid_providers` honor.
+"""`skip_paid_providers` honor.
 
 Source: founder Playwright quality v2 session (2026-05-05). 8 cascade tasks
 were issued with `skip_paid_providers:true`; all 8 routed to Anthropic

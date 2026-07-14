@@ -1,4 +1,4 @@
-"""019 — Webhook checkout.session.completed → 4 onboarding email scheduled."""
+"""Webhook checkout.session.completed → 4 onboarding email scheduled."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def test_checkout_completed_schedules_4_onboarding_emails(client, monkeypatch):
 
 
 def test_duplicate_webhook_does_not_double_schedule(client, monkeypatch):
-    """Aynı event.id ikinci geldiğinde duplicate path → ek satır eklenmemeli."""
+    """When the same event.id arrives a second time duplicate path → no extra line should be added."""
     event = _make_event("evt_w_email_dup", "wmail-dup@x.co", "cus_w_email_dup")
     monkeypatch.setattr(stripe.Webhook, "construct_event", lambda *a, **k: event)
 

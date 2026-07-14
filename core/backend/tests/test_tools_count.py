@@ -1,4 +1,4 @@
-"""Feature Parity guard — registered MCP tool sayısı (010 sonrası 89+)."""
+"""Feature Parity guard — registered MCP tool count (after 010 89+)."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ def test_registered_tool_count_at_least_122():
 
 
 def test_billing_status_tool_registered_017():
-    """017 — billing_status tool'u registry'de tek başına doğrula."""
+    """verify billing_status tool alone in registry."""
     from app.mcp.server import mcp_server
 
     tools = asyncio.run(mcp_server.list_tools())
@@ -27,7 +27,7 @@ def test_billing_status_tool_registered_017():
 
 
 def test_email_queue_status_tool_registered_019():
-    """019 — email_queue_status tool'u registry'de."""
+    """email_queue_status tool'u registry'de."""
     from app.mcp.server import mcp_server
 
     tools = asyncio.run(mcp_server.list_tools())
@@ -36,7 +36,7 @@ def test_email_queue_status_tool_registered_019():
 
 
 def test_core_tool_names_registered():
-    """Task 008 + 009 + 010 kritik tool'ları mutlaka kayıtlı."""
+    """Task 008 + 009 + 010 critical tools must be registered."""
     from app.mcp.server import mcp_server
 
     tools = asyncio.run(mcp_server.list_tools())
@@ -114,7 +114,7 @@ def test_core_tool_names_registered():
         "judge_persona_status",
         "judge_persona_train",
         "judge_persona_reset",
-        # 011 — Lisans/demo tool'ları
+        # 011 — License/demo tools
         "license_status",
         "demo_status",
         # 012 — Setup wizard

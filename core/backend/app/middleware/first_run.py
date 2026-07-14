@@ -37,12 +37,12 @@ _WHITELIST_PREFIXES = (
     "/panel/assets/",
     "/static/",
     "/_internal/",
-    "/mcp",  # Claude Code kurulum oncesi setup_status'u sorgulayabilsin
+    "/mcp",  # so Claude Code can read setup_status before the wizard is finished
 )
 
 
 def _setup_completed() -> bool:
-    """Setup state file'i her istekte oku — file-stat hizli (<0.1ms)."""
+    """Read the setup state file on every request — a file stat costs <0.1ms."""
     try:
         from app.api.setup import setup_state_path
 

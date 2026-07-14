@@ -1,4 +1,4 @@
-"""019 — 5 yeni email template render + subject parse."""
+"""5 yeni email template render + subject parse."""
 
 from __future__ import annotations
 

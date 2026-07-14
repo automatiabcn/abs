@@ -1,4 +1,4 @@
-"""011 — Stripe Checkout Session endpoint testleri (mock'lu)."""
+"""Stripe Checkout Session endpoint testleri (mock'lu)."""
 
 from __future__ import annotations
 

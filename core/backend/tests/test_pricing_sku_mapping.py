@@ -1,4 +1,4 @@
-"""011 — Checkout SKU → Price ID + seat_count mapping kontrolleri."""
+"""Checkout SKU → Price ID + seat_count mapping kontrolleri."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ def test_sku_team_5_and_10_seats():
 
 
 def test_setup_stripe_products_script_compiles():
-    """Script syntax-check — runtime exec ZORUNLU değil, sadece py_compile."""
+    """Script syntax-check — runtime exec is NOT mandatory, only py_compile."""
     import py_compile
     from pathlib import Path
 

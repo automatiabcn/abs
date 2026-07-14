@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Q12-L17 — Bundle code-split BREAK-EVEN VALIDATOR
+ * Bundle code-split BREAK-EVEN VALIDATOR
  *
  * Re-evaluates each `next/dynamic` decision under throttled-network
  * conditions. Slow 3G (RTT 400ms / 400 KB/s) makes added round trips

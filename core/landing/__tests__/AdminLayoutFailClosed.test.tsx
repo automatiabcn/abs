@@ -2,12 +2,12 @@
  * Fail-closed AdminLayout SSR probe.
  *
  * AdminLayout (RSC) backend /healthz probe fail edince redirect('/login?
- * reason=backend-unreachable') çağırıyor. Middleware bypass edilse bile
- * defense-in-depth çalışıyor.
+ * calls reason=backend-unreachable') . Even if middleware is bypassed
+ * defense-in-depth is active.
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-// next/navigation.redirect throws — Next.js'in default davranışı.
+// next/navigation.redirect throws — Next.js default behavior.
 const redirectMock = vi.fn((url: string) => {
   throw new Error(`NEXT_REDIRECT: ${url}`);
 });
@@ -17,7 +17,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 // AppShell/CommandPalette/QueryProvider/ThemeProvider — RSC tree
-// için stub'lar. Bu test sadece probe + redirect davranışını doğruluyor.
+// stubs for it. This test only verifies probe + redirect behavior.
 vi.mock("@/components/panel/CommandPaletteLazy", () => ({ default: () => null }));
 vi.mock("@/components/shell/AppShell", () => ({
   AppShell: ({ children }: { children: React.ReactNode }) => children,

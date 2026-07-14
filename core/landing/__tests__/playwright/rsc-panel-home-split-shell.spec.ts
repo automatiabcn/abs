@@ -48,7 +48,7 @@ function loadAuthCookie(): {
   return null;
 }
 
-test.describe("Q12-R70 /panel home split-shell", () => {
+test.describe("/panel home split-shell", () => {
   test("page renders heading + StatCards (server-side initialData)", async ({
     page,
     context,

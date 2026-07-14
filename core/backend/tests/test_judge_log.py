@@ -60,7 +60,7 @@ def test_aggregate_window_7_days_basic():
 
 
 def test_drift_signal_tightening_detects_drop(monkeypatch):
-    """Önceki window 7.5 ortalama, şimdiki 6.5 → tightening (skor düştü)."""
+    """Previous window 7.5 average, current 6.5 → tightening (score dropped)."""
     p = Path(settings.data_dir) / "judge_log.jsonl"
     p.parent.mkdir(parents=True, exist_ok=True)
     now = time.time()

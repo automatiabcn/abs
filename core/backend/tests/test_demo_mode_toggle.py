@@ -1,4 +1,4 @@
-"""033 Modul A — Demo mode toggle + middleware header + status endpoint."""
+"""Demo mode toggle + middleware header + status endpoint."""
 
 from __future__ import annotations
 

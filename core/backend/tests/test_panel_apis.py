@@ -1,4 +1,4 @@
-"""033 Modul E + F + H — panel tools / cascade / pipeline endpoints."""
+"""panel tools / cascade / pipeline endpoints."""
 
 from __future__ import annotations
 

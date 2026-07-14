@@ -1,4 +1,4 @@
-"""031 Modul F — Discord beta-flow notifications (mocked transport)."""
+"""Discord beta-flow notifications (mocked transport)."""
 
 from __future__ import annotations
 

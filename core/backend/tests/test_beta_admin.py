@@ -1,4 +1,4 @@
-"""031 Modul E — Beta admin queue + approve/reject."""
+"""Beta admin queue + approve/reject."""
 
 from __future__ import annotations
 

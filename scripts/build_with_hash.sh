@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Q12 IP-Hardening R3 — build the backend image with an embedded hash
+# IP hardening — build the backend image with an embedded hash
 # that combines the git short SHA with a deterministic source-tree hash.
 #
 # Why two hashes:

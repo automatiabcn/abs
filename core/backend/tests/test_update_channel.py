@@ -1,4 +1,4 @@
-"""014 — Update channel manifest fetch + check/apply endpoint testleri."""
+"""Update channel manifest fetch + check/apply endpoint testleri."""
 
 from __future__ import annotations
 
@@ -26,9 +26,9 @@ def isolated_data_dir(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(
         settings, "update_manifest_url", "https://abs.local/manifest.json"
     )
-    # 015 — bu testler signature mock etmiyor, dev mode (False) ile bypass
+    # 015 — these tests do not mock signature, bypass with dev mode (False)
     monkeypatch.setattr(settings, "update_signature_required", False)
-    # Setup state'i tmp data_dir'da da var olsun ki first-run middleware redirect etmesin
+    # Ensure setup state also exists in tmp data_dir so first-run middleware doesn't redirect
     (tmp_path / "setup_state.json").write_text(
         json.dumps(
             {

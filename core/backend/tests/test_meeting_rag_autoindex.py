@@ -61,7 +61,7 @@ def test_autoindex_uses_default_collection_and_resolved_tenant(
         ],
     }
     n = meetings_mod._autoindex_meeting_rag(
-        meeting_id=42, title="Q3 sync.mp3", uploader_email="admin@acme", result=result
+        meeting_id=42, title="sync.mp3", uploader_email="admin@acme", result=result
     )
 
     assert n == 2

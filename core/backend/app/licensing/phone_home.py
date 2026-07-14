@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Online activation + heartbeat phone-home (Q12 IP-Hardening R2).
+"""Online activation + heartbeat phone-home (IP hardening).
 
 Calls https://license.automatiabcn.com on boot and once per 24h. The URL
 is hardcoded — env override would be a tampering vector. Behaviour is
@@ -61,7 +61,7 @@ def _extract_jti(license_token: str) -> str:
 
 
 def _read_build_hash() -> str:
-    """Read the build hash embedded into the image at build time (R3)."""
+    """Read the build hash embedded into the image at build time."""
 
     return os.environ.get("ABS_BUILD_HASH", "unknown")
 

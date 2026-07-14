@@ -82,7 +82,7 @@ export default function MarketplacePanel({
     };
   }, []);
 
-  // Q9 / MP4 — reset acknowledgement whenever the modal target changes.
+  // reset acknowledgement whenever the modal target changes.
   useEffect(() => {
     setAcknowledged(false);
   }, [selected?.id]);
@@ -243,7 +243,7 @@ export default function MarketplacePanel({
             <p className="mt-3 line-clamp-3 text-sm text-zinc-600 dark:text-zinc-300">
               {plugin.description}
             </p>
-            {/* Q9 / MP4 — permission preview chips on the card */}
+            {/* permission preview chips on the card */}
             <div
               data-testid={`permission-preview-${plugin.id}`}
               className="mt-3 flex flex-wrap gap-1.5 text-[10px]"
@@ -360,7 +360,7 @@ export default function MarketplacePanel({
               </PermissionRow>
             </dl>
 
-            {/* Q9 / MP4 — explicit warning + acknowledgement gate */}
+            {/* explicit warning + acknowledgement gate */}
             <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
               This plugin will reach the network endpoints and read the
               secrets listed above. It runs in a sandbox, but once you approve,

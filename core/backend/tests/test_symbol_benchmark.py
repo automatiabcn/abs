@@ -1,4 +1,4 @@
-"""021 — Symbol indexing benchmark validation."""
+"""Symbol indexing benchmark validation."""
 
 from __future__ import annotations
 
@@ -30,6 +30,6 @@ def test_symbol_indexing_meets_throughput_threshold():
     from benchmarks.symbol_indexing import main
 
     out = main()
-    # 10K LOC için < 60s threshold; ms_per_file < 100
+    # for 10K LOC < 60s threshold; ms_per_file < 100
     assert out["elapsed_s"] < out["expected_threshold_s_for_10k_loc"]
     assert out["ms_per_file"] < 200

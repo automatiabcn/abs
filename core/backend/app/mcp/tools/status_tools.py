@@ -95,7 +95,7 @@ async def status_check() -> str:
             "total": len(rows),
         }
 
-        # Revenue today (gross, simple SKU map). Q12-R84: prices from settings.
+        # Revenue today (gross, simple SKU map). Prices come from settings.
         from app.config import settings as _s
 
         today_start = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)

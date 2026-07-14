@@ -6,7 +6,7 @@
  */
 
 // Premium /panel/meetings refactor (S20.5 behaviour preserved).
-// MT8 fix: filter bar (search + status + speaker count + date range).
+// filter bar (search + status + speaker count + date range).
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
@@ -78,7 +78,7 @@ export default function MeetingsPanel() {
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  // Q9 / MT8 — filter state
+  // filter state
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [minSpeakers, setMinSpeakers] = useState<number | "">("");

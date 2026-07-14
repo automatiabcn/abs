@@ -1,4 +1,4 @@
-"""025 Modul E — Discord webhook integration."""
+"""Discord webhook integration."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ class _FakeResponse:
 
 
 def test_no_op_when_url_empty(monkeypatch):
-    """ABS_DISCORD_WEBHOOK_URL boş → no-op, return False."""
+    """ABS_DISCORD_WEBHOOK_URL empty → no-op, return False."""
     monkeypatch.setattr(settings, "discord_webhook_url", "")
 
     posted = []

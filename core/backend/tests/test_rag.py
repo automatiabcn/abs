@@ -1,4 +1,4 @@
-"""RAG indexer + query — Ollama erişimi yokken monkeypatch ile fake embed."""
+"""RAG indexer + query — fake embed with monkeypatch when Ollama access is unavailable."""
 
 from __future__ import annotations
 

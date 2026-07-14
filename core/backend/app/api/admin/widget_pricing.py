@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q12-R84 — Admin dashboard widget pricing endpoint.
+"""Admin dashboard widget pricing endpoint.
 
 GET /v1/admin/widget_pricing → revenue multiplier + tier list prices.
 

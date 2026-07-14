@@ -46,8 +46,8 @@ def client(monkeypatch):
     monkeypatch.setattr(chat_mod, "_run_cascade", fake_run_cascade)
     monkeypatch.setattr(chat_mod, "_assert_license_ok", lambda: None)
     # pre-flight provider probe gerektiriyor.
-    # _run_cascade fake'lendiği için chat path provider olmadan çalışıyor;
-    # probe'u memnun etmek için en az bir provider varmış gibi davran.
+    # because _run_cascade is faked, it works without a chat path provider;
+    # act as if at least one provider exists to satisfy the probe.
     monkeypatch.setattr(
         chat_mod,
         "get_active_providers",

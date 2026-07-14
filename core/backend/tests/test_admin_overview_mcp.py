@@ -1,4 +1,4 @@
-"""032 Modul I — admin_overview MCP tool."""
+"""admin_overview MCP tool."""
 
 from __future__ import annotations
 

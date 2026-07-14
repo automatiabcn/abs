@@ -23,7 +23,7 @@ describe("Demo (018 modul D)", () => {
     expect(iframe.getAttribute("src") ?? "").toMatch(/loom\.com\/embed/);
   });
 
-  it("renders placeholder copy (no iframe) when env var is unset (Q11-L11-001)", () => {
+  it("renders placeholder copy (no iframe) when env var is unset", () => {
     delete process.env.NEXT_PUBLIC_DEMO_LOOM_URL;
     render(<Demo />);
     expect(

@@ -334,7 +334,7 @@ def _resolve_admin_tenant(admin: dict) -> str:
         pass
 
     # The email-domain heuristic (admin@demo-acme.com → "demo-acme") was removed
-    # — it diverged from the runtime resolver (`_resolve_tenant` → "default"),
+    # it diverged from the runtime resolver (`_resolve_tenant` → "default"),
     # silently storing admin-managed entities under a different tenant than the
     # data + queries used. A real tenant comes from the JWT claim, the users
     # table, or admin_credentials.json (steps 1–3); otherwise "default".
@@ -443,7 +443,7 @@ async def install(
 
     # Best-effort sandbox launch. If docker SDK / daemon is
     # unavailable we still persist the install record so the catalog stays
-    # consistent (real launch will retry in Q8 via reconcile loop).
+    # consistent (real launch will retry via reconcile loop).
     try:
         from app.marketplace.sandbox import PluginSandbox
 

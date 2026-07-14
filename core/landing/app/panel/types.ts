@@ -10,7 +10,7 @@
 // the three first-paint endpoints (`/v1/panel/tools`,
 // `/v1/system/quota_status`, `/v1/panel/cascade/recent`) plus the
 // MOCK fallback used when the call fails (auth gone, transport down,
-// etc.) — same fallback semantics as the pre-R70 client `useQuery`.
+// etc.) — same fallback semantics as the earlier client `useQuery`.
 
 export interface ToolsResponse {
   total?: number;

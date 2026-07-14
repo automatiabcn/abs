@@ -6,7 +6,7 @@
  */
 
 // Premium dark/light toggle (next-themes powered).
-// Q8 / MT3 fix — defer the aria-label + icon swap until after mount so
+// defer the aria-label + icon swap until after mount so
 // SSR (theme=undefined) doesn't disagree with CSR (theme=resolvedTheme).
 "use client";
 

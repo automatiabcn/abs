@@ -1,4 +1,4 @@
-"""026 Modul G — smart_link_status + provider_validate MCP tools."""
+"""smart_link_status + provider_validate MCP tools."""
 
 from __future__ import annotations
 

@@ -6,12 +6,12 @@
 """Release manifest RS256 signature verification (fail-closed).
 
 Tasarim:
-  - Bizim taraf (release pipeline): private.pem ile imzala → manifest.json.sig
+  - Our side (release pipeline): sign with private.pem → manifest.json.sig
     `openssl dgst -sha256 -sign private.pem -out manifest.json.sig manifest.json`
     `base64 manifest.json.sig > manifest.json.sig.b64`
-  - Musteri taraf: app/update/manifest_pubkey.pem ile verify
+  - Customer side: verify with app/update/manifest_pubkey.pem
   - Manifest URL fetch + `.sig` URL fetch + verify
-  - Fail-closed: imza yok / dogrulanamiyorsa state="unknown" + error="signature"
+  - Fail-closed: no signature / if cannot verify, state="unknown" + error="signature"
 
 settings.update_signature_required default True (production guvenligi).
 Set to False in development, where there is no manifest signing flow.

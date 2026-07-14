@@ -1,4 +1,4 @@
-"""Q11 Round 14 / L10 — cascade chain concurrency stress.
+"""cascade chain concurrency stress.
 
 Hammers /v1/cascade/run with 100 concurrent requests in mock mode.
 The contracts under test:
@@ -12,7 +12,7 @@ The contracts under test:
     queue, no 429 from accidentally hitting a rate-limit gate that
     shouldn't apply to mock
 
-Q10 Round 6 covered the single-request roundtrip; this round
+covered the single-request roundtrip; this round
 exercises the same code path under contention so a race in the
 mock short-circuit (e.g. a shared mutable list re-used across
 requests) would surface here, not in production.
@@ -34,7 +34,7 @@ def _mock_mode(monkeypatch):
     monkeypatch.setattr(settings, "anthropic_mock_mode", "ok", raising=False)
 
 
-class TestQ11L10CascadeRace:
+class TestCascadeRace:
     @pytest.fixture()
     def admin_client(self, client):
         r = client.post(
@@ -53,7 +53,7 @@ class TestQ11L10CascadeRace:
             r = admin_client.post(
                 "/v1/cascade/run",
                 json={
-                    "prompt": "Q11 race probe",
+                    "prompt": "race probe",
                     "max_tokens": 64,
                     "fallback_order": [],
                 },

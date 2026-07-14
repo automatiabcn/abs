@@ -1,4 +1,4 @@
-// Q11 Round 24 / L16 — error tile UX consistency.
+// error tile UX consistency.
 //
 // Static source-level audit: the chat panel and pipeline runner both
 // must ship the panel-wide error pattern (Configure + Retry CTAs +
@@ -15,8 +15,8 @@ function read(rel: string): string {
   return fs.readFileSync(path.join(ROOT, rel), "utf8");
 }
 
-describe("Q11/L16 — error tile UX parity", () => {
-  it("chat error tile (Q10-L9-001) ships Configure CTA + role=alert", () => {
+describe("error tile UX parity", () => {
+  it("chat error tile ships Configure CTA + role=alert", () => {
     // The panel chat route was split into a thin wrapper
     // (`page.tsx`) plus a dynamically-imported client (`ChatClient.tsx`).
     // The error tile contract moved with the client, not the wrapper.
@@ -28,7 +28,7 @@ describe("Q11/L16 — error tile UX parity", () => {
     expect(src).toContain("Configure a provider");
   });
 
-  it("pipeline error tile (Q11-L16-001) ships Configure + Retry CTAs", () => {
+  it("pipeline error tile ships Configure + Retry CTAs", () => {
     const src = read("app/admin/pipelines/page.tsx");
     expect(src).toContain('role="alert"');
     expect(src).toContain('data-test="pipeline-error-tile"');
@@ -38,7 +38,7 @@ describe("Q11/L16 — error tile UX parity", () => {
     expect(src).toContain("Try again");
   });
 
-  it("setError sites name what failed (Q11-L16-002)", () => {
+  it("setError sites name what failed", () => {
     // meetings/[id] now prefixes errors
     const detail = read("app/panel/meetings/[id]/page.tsx");
     expect(detail).toContain("Could not load this meeting");

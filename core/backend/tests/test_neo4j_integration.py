@@ -1,4 +1,4 @@
-"""Q7 Phase A — Neo4j integration tests.
+"""Phase A — Neo4j integration tests.
 
 Live tests are skipped unless ABS_NEO4J_LIVE=1 (CI default = skip).
 The destructive-guard test runs without Neo4j — FastAPI rejects before

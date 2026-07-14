@@ -1,4 +1,4 @@
-// P0 — C2: a provider dies and the answer still lands.
+// a provider dies and the answer still lands.
 //
 // This is the promise the product is sold on. Everything else in the panel is a
 // feature; this is the reason to run your own server at all. So it gets proved

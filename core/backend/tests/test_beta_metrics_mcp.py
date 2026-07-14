@@ -1,4 +1,4 @@
-"""031 Modul H — beta_metrics MCP tool."""
+"""beta_metrics MCP tool."""
 
 from __future__ import annotations
 

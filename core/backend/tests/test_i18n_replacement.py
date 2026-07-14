@@ -1,6 +1,6 @@
-"""023 Modul B — i18n hard-coded string replacement regression.
+"""i18n hard-coded string replacement regression.
 
-Status_code'lar değişmemeli, sadece detail mesajı locale-aware çevrildi.
+Status_code should not change, only the detail message is locale-aware translated.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ def _post_webhook(client, headers=None):
 
 
 def test_webhook_signature_missing_message_localized_tr(client):
-    """Accept-Language tr → Türkçe message."""
+    """Accept-Language tr → Turkish message."""
     r = _post_webhook(client, {"Accept-Language": "tr-TR,tr;q=0.9"})
     assert r.status_code == 400
     assert "eksik" in r.json()["detail"].lower()

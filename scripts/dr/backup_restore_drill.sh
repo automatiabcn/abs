@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Q12-L28 R77 — DR backup-restore drill against an ISOLATED docker-compose
+# DR backup-restore drill against an ISOLATED docker-compose
 # namespace. Sister script to scripts/chaos/destructive_drill.sh (L21) but
 # scoped to data durability rather than fresh-deploy.
 #
@@ -45,7 +45,7 @@ esac
 if [ "${ABS_DR_DRILL:-0}" != "1" ]; then
   cat <<MSG
 ==================================================================
-Q12-L28 DR backup-restore drill is GATED.
+DR backup-restore drill is GATED.
 
   ABS_DR_DRILL is not set to 1 → DRY RUN only.
 

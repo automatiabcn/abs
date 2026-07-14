@@ -1,4 +1,4 @@
-"""Phase 2 / Q3 / Q2.CO5 — users table for magic-link multi-admin signup.
+"""Phase 2 — users table for magic-link multi-admin signup.
 
 Revision ID: 0006_users_magic_link
 Revises: 0005_usage_log

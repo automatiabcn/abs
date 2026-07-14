@@ -1,4 +1,4 @@
-"""013 — Dockerfile + docker-compose + init_vault.sh içerik kontrolleri."""
+"""Dockerfile + docker-compose + init_vault.sh content checks."""
 
 from __future__ import annotations
 

@@ -31,7 +31,7 @@ COPY app/ ./app/
 COPY setup.py ./
 RUN pip install --prefix=/install .
 
-# Q12 IP-Hardening R5 — compile license-critical modules to .so.
+# IP hardening — compile license-critical modules to .so.
 # R3 — when compile is on, delete the matching .py files so only the
 # binary `.so` survives in the builder's app/ tree. The runtime stage
 # copies that tree, so the production image cannot leak source for
@@ -54,7 +54,7 @@ RUN if [ "${ABS_COMPILE_CYTHON}" = "1" ]; then \
     fi
 
 FROM base AS runtime
-# Q12 IP-Hardening R3 — build hash embedded at image build time.
+# IP hardening — build hash embedded at image build time.
 # scripts/release.sh sets BUILD_HASH=<git-short>-<source-sha256>;
 # phone_home.py sends this to the activation server which can refuse
 # tampered images by comparing against the known-good registry.
@@ -76,7 +76,7 @@ COPY --from=builder /usr/local/bin/sops /usr/local/bin/sops
 COPY --from=builder /usr/local/bin/age /usr/local/bin/age
 COPY --from=builder /usr/local/bin/age-keygen /usr/local/bin/age-keygen
 COPY --from=builder /install /usr/local
-# Q12 R3 — copy app from builder (post-Cython), NOT from host. This
+# copy app from builder (post-Cython), NOT from host. This
 # guarantees the production image never sees the .py source files for
 # license-critical modules when ABS_COMPILE_CYTHON=1.
 COPY --from=builder /app/app /app/app

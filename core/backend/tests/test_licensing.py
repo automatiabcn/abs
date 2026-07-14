@@ -29,7 +29,7 @@ def test_expired_license_rejected():
 
 def test_tampered_signature_rejected():
     token = generate_license("cust_3")
-    # son 10 karakteri bozarak imzayı invalidate et
+    # invalidate the signature by corrupting the last 10 characters
     tampered = token[:-10] + ("A" * 10)
     with pytest.raises(HTTPException) as exc_info:
         verify_license(tampered)

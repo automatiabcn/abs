@@ -98,7 +98,7 @@ _COMPANIES = [
         "lifecycle": "customer",
         "opportunities": [
             {
-                "name": "Q2 window systems project",
+                "name": "window systems project",
                 "stage": "proposal",
                 "amount": 420000,
                 "campaign": "Meta Ads · Q2",
@@ -273,7 +273,7 @@ _RUNS = [
     ),
     (
         "campaign_attribution",
-        "Q2 campaign → revenue mapping · Meta Ads converts best · ERP-verified",
+        "campaign → revenue mapping · Meta Ads converts best · ERP-verified",
         "medium",
         False,
         35,

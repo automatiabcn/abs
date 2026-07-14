@@ -1,4 +1,4 @@
-"""017 — Webhook idempotency: aynı event_id sadece bir kez işlenir."""
+"""Webhook idempotency: same event_id processed only once."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ def _checkout_event(
 
 
 def test_duplicate_checkout_session_completed_returns_duplicate(client, monkeypatch):
-    """Aynı event.id ile iki kez gelirse ikinci 200 + duplicate=True."""
+    """If the same event.id arrives twice, second returns 200 + duplicate=True."""
     event = _checkout_event("evt_idem_001", email="dup@x.co", customer="cus_dup_1")
     monkeypatch.setattr(stripe.Webhook, "construct_event", lambda *a, **k: event)
 
@@ -60,7 +60,7 @@ def test_duplicate_checkout_session_completed_returns_duplicate(client, monkeypa
 
 
 def test_duplicate_refund_does_not_overwrite_revoked_at(client, monkeypatch):
-    """İkinci charge.refunded event_id aynı ise revoked_at değişmez."""
+    """If the second charge.refunded event_id is the same, revoked_at does not change."""
     now = datetime.now(timezone.utc)
     lic = License(
         jti="jti_idem_refund",
@@ -109,7 +109,7 @@ def test_duplicate_refund_does_not_overwrite_revoked_at(client, monkeypatch):
 
 
 def test_two_different_event_ids_both_processed(client, monkeypatch):
-    """Farklı event.id'li iki event ikisi de işlenir."""
+    """Two events with different event.id are both processed."""
     e1 = _checkout_event("evt_diff_001", email="a@x.co", customer="cus_diff_a")
     e2 = _checkout_event("evt_diff_002", email="b@x.co", customer="cus_diff_b")
 
@@ -126,7 +126,7 @@ def test_two_different_event_ids_both_processed(client, monkeypatch):
 
 
 def test_webhook_events_table_has_event_type_index():
-    """`event_type` üzerinde index tanımlı (recent events query hızlı)."""
+    """index defined on `event_type` (recent events query fast)."""
     from sqlalchemy import inspect
 
     insp = inspect(get_engine())
@@ -136,7 +136,7 @@ def test_webhook_events_table_has_event_type_index():
 
 
 def test_claim_event_race_condition_safe():
-    """İki claim_event aynı event_id → ikincisi DuplicateEventError raise."""
+    """Two claim_event with same event_id → second raises DuplicateEventError."""
     with Session(get_engine()) as s:
         row = claim_event(
             s, event_id="evt_race_001", event_type="checkout.session.completed"

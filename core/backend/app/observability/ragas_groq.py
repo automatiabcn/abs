@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Phase 7 / Q3 — Groq qwen32b LLM-judge backend for RAGAS evaluation.
+"""Phase 7 — Groq qwen32b LLM-judge backend for RAGAS evaluation.
 
 Replaces the token-overlap mock (`_MockBackend`) with a real LLM-as-judge
 that scores each `(question, answer, contexts)` tuple. Uses the OpenAI-

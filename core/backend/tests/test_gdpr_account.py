@@ -1,4 +1,4 @@
-"""029 Modul C — Right to erasure (account deletion + purge cron)."""
+"""Right to erasure (account deletion + purge cron)."""
 
 from __future__ import annotations
 

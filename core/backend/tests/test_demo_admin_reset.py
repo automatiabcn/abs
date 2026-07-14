@@ -1,4 +1,4 @@
-"""022 Modul C — Admin demo reset endpoint."""
+"""Admin demo reset endpoint."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ def _isolated_data_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "data_dir", str(tmp_path))
     monkeypatch.setattr(settings, "admin_token", "test-admin-token")
     state_file = tmp_path / "demo_state.json"
-    # setup_state.json (first-run middleware whitelist için)
+    # setup_state.json (for first-run middleware whitelist)
     (tmp_path / "setup_state.json").write_text(
         json.dumps(
             {

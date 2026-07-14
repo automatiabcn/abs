@@ -1,4 +1,4 @@
-"""017 — billing_status MCP tool: Stripe + revenue + license + recent events."""
+"""billing_status MCP tool: Stripe + revenue + license + recent events."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from app.db.session import get_engine
 
 def test_billing_status_no_stripe_returns_empty_products(monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "")
-    # Cache'i temizle ki onceki testten gelmesin
+    # Clear the cache so it doesn't come from previous test
     from app.mcp.tools import billing_tools as bt
 
     bt._PRODUCT_CACHE["data"] = None
@@ -77,7 +77,7 @@ def test_billing_status_revenue_aggregation(monkeypatch):
     raw = asyncio.run(bt.billing_status())
     out = json.loads(raw)
     rev = out["revenue"]
-    # Bu testte seeded 3 lisans + onceki testlerden de bazilari olabilir, ama
+    # In this test seeded 3 licenses + some from previous tests may exist, but
     # 299+1196+2093 = 3588 minimum
     assert rev["total_usd"] >= 3588
     assert rev["mtd_usd"] >= 3588
@@ -87,7 +87,7 @@ def test_billing_status_revenue_aggregation(monkeypatch):
 
 
 def test_billing_status_recent_events_ordered_desc(monkeypatch):
-    """WebhookEvent insert order: son 10 newest-first döner."""
+    """WebhookEvent insert order: returns the last 10 newest-first."""
     monkeypatch.setattr(settings, "stripe_secret_key", "")
     from app.mcp.tools import billing_tools as bt
 
@@ -109,7 +109,7 @@ def test_billing_status_recent_events_ordered_desc(monkeypatch):
     raw = asyncio.run(bt.billing_status())
     out = json.loads(raw)
     ev_ids = [e["event_id"] for e in out["recent_events"]]
-    # En yeni eklenen (evt_order_2) listenin basinda olmali
+    # The newest added (evt_order_2) should be at the start of the list
     idx = {
         eid: ev_ids.index(eid)
         for eid in ("evt_order_0", "evt_order_1", "evt_order_2")

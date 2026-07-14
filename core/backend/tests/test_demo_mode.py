@@ -1,4 +1,4 @@
-"""011 — Demo mode 14-day countdown testleri."""
+"""Demo mode 14-day countdown testleri."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import pytest
 
 @pytest.fixture
 def isolated_demo(monkeypatch, tmp_path: Path):
-    """data_dir + license_key reset. Setup state completed:true yazilir
+    """data_dir + license_key reset. Setup state completed:true written
     (first-run middleware /demo-status'u redirect etmesin)."""
     from app.config import settings
 

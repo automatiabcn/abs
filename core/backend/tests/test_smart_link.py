@@ -1,4 +1,4 @@
-"""023 Modul H — Smart Link foundation skeleton (post-026 superset).
+"""Smart Link foundation skeleton (post-026 superset).
 
 026 expanded the provider list (added groq + gemini) and made callback dependent
 on a real OAuth token exchange — these tests assert the surface still exists.
@@ -68,7 +68,7 @@ def test_github_callback_consumes_state_once(client, monkeypatch):
 
 
 def test_api_key_store_validates_provider_and_length(client, monkeypatch):
-    """026: anthropic now requires a real provider probe; 4xx without mock,
+    """anthropic now requires a real provider probe; 4xx without mock,
     so we mock the validator endpoint."""
     real_post = httpx.Client.post
 

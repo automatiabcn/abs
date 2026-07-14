@@ -1,4 +1,4 @@
-"""032 Modul H — admin guide + telemetry primer present + structured."""
+"""admin guide + telemetry primer present + structured."""
 
 from __future__ import annotations
 

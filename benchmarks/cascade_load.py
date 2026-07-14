@@ -1,4 +1,4 @@
-"""021 — Cascade router latency benchmark (locust loadtest senaryosu).
+"""Cascade router latency benchmark (locust loadtest senaryosu).
 
 Run with locust:
   locust -f benchmarks/cascade_load.py --host http://localhost:8000 \\
