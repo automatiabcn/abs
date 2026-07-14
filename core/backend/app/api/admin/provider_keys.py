@@ -100,7 +100,34 @@ async def _ping_provider(
         text = getattr(resp, "text", "") or ""
         return (bool(text), None if text else "empty response")
     except Exception as exc:  # noqa: BLE001 — bad key / timeout → fail result
-        return (False, str(exc)[:160])
+        return (False, _explain(provider, exc))
+
+
+# What the customer saw when a key was wrong, verbatim, in the panel:
+#
+#   ✗ Cohere UnauthorizedError: headers: {'cache-control': 'no-cache, no-store,
+#     no-transform, must-revalidate, private, max-age=0', 'content-encoding':
+#     'gzip', 'conte…
+#
+# — the provider SDK's exception with its HTTP response headers, truncated
+# mid-word. It says nothing about what to do, and it publishes our internals to
+# someone who was only trying to paste an API key. The exception is still logged;
+# what comes back is a sentence.
+def _explain(provider: str, exc: Exception) -> str:
+    name = provider.capitalize()
+    blob = f"{type(exc).__name__} {exc}".lower()
+    if "timeout" in blob or isinstance(exc, TimeoutError):
+        return f"{name} did not answer in time. Try again, or check the key later."
+    if "unauthor" in blob or "401" in blob or "invalid api key" in blob:
+        return f"{name} rejected this key. Check you copied all of it."
+    if "forbidden" in blob or "403" in blob:
+        return f"{name} accepted the key but refused the request — it may not have access to this model."
+    if "429" in blob or "rate limit" in blob or "quota" in blob:
+        return f"{name} says this key is out of quota right now."
+    if "not found" in blob or "404" in blob:
+        return f"{name} could not find the account or model this key belongs to."
+    logger.warning("provider_key_probe_failed provider=%s error=%s", provider, exc)
+    return f"{name} refused the key, and did not say why."
 
 
 def _resolve_owner(

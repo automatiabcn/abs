@@ -86,13 +86,20 @@ export default function LoginPage() {
     }
   };
 
+  // The sign-in page was the one screen still painted in raw Tailwind zinc: a
+  // black button, grey rules, no brand anywhere. Every other surface — the
+  // wizard the customer just finished, the panel they are signing in to — is the
+  // teal instrument theme. It is on the tokens now, so the door matches the
+  // house.
   return (
     <main
       data-page="auth-login"
-      className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-6 py-12 text-zinc-900 dark:text-zinc-100"
+      className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-6 py-12"
     >
-      <h1 className="text-2xl font-semibold">Automatia ABS · Sign in</h1>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+      <h1 className="text-2xl font-semibold tracking-tight">
+        Automatia ABS · Sign in
+      </h1>
+      <p className="mt-1 text-sm text-muted-foreground">
         Sign in with the email and password you set up in the setup wizard or
         received through a magic link.
       </p>
@@ -101,7 +108,7 @@ export default function LoginPage() {
         <p
           role="alert"
           data-testid="backend-unreachable-banner"
-          className="mt-4 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+          className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
         >
           The backend is unreachable right now. Please try again in a few minutes.
         </p>
@@ -114,10 +121,11 @@ export default function LoginPage() {
         className="mt-6 flex flex-col gap-4"
       >
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-800 dark:text-zinc-100">
-            Email
-          </span>
+          <span className="font-medium">Email</span>
+          {/* `name` as well as autoComplete: some password managers key off it,
+              and without either they leave the form alone. */}
           <input
+            name="email"
             type="email"
             required
             autoFocus
@@ -125,27 +133,26 @@ export default function LoginPage() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@your-co.com"
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:ring-zinc-50"
+            className="rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-ring/40"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-800 dark:text-zinc-100">
-            Password
-          </span>
+          <span className="font-medium">Password</span>
           <input
+            name="password"
             type="password"
             required
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:ring-zinc-50"
+            className="rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-ring/40"
           />
         </label>
         <button
           type="submit"
           disabled={!hydrated || state === "submitting"}
           data-testid="login-submit"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
         >
           {state === "submitting" ? "Signing in…" : "Sign in"}
         </button>
@@ -154,19 +161,19 @@ export default function LoginPage() {
       {state === "error" && message && (
         <p
           role="alert"
-          className="mt-4 rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:border-rose-700 dark:bg-rose-950 dark:text-rose-200"
+          className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {message}
         </p>
       )}
 
-      <p className="mt-6 text-xs text-zinc-600 dark:text-zinc-400">
+      <p className="mt-6 text-xs text-muted-foreground">
         Don&apos;t have an account?{" "}
-        <a className="underline" href="/signup">
+        <a className="underline hover:text-foreground" href="/signup">
           Sign up
         </a>{" "}
         ·{" "}
-        <a className="underline" href="/auth/magic">
+        <a className="underline hover:text-foreground" href="/auth/magic">
           Use your magic link
         </a>
       </p>

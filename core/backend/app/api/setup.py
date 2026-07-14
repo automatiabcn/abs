@@ -775,18 +775,44 @@ _FIELD_TO_PROVIDER: Dict[str, str] = {
 
 
 async def _run_provider_tests() -> Dict[str, Any]:
-    """Adim 6 — ping each configured provider with the just-entered key so the
-    operator sees IN the wizard whether their keys actually work (not later).
+    """Step 6 — ping every provider this server actually has a key for, so the
+    operator learns in the wizard whether they work, not the first time someone
+    asks the product a question.
 
     A failed ping is recorded as ``fail`` but never blocks completion. Skipped
     under ``ABS_TEST_MODE=1`` (no network in tests) and for non-pingable fields,
     so the existing setup-wizard test suite stays deterministic.
+
+    The list used to come only from the wizard's own state — the keys typed into
+    step 5. But the documented install path configures providers in the compose
+    `.env`, and those keys reach the server without ever passing through this
+    screen. On such an install the test found nothing to ping, reported an empty
+    result, and the honest verdict added on top of it ("no provider answered —
+    chat cannot answer yet") was a lie about a server whose chat works. So the
+    question is now "what does this server have", not "what was typed here".
     """
     results: Dict[str, Any] = {}
     state = read_state()
     configured = list(state.get("data", {}).get("providers_configured", []) or [])
     if state.get("data", {}).get("anthropic_configured"):
         configured = ["anthropic_api_key", *configured]
+
+    # `is_configured` is the cascade's own answer to "do we have a usable key for
+    # this provider" — the same one it uses when deciding who to call. Asking it,
+    # rather than re-deriving the answer here, is what keeps step 6 agreeing with
+    # what chat will actually do; it also already rejects the `replace-with-...`
+    # placeholders that .env.example ships, which a naive truthiness check counts
+    # as a configured provider and then reports as a scary red failure.
+    from app.providers.cascade import is_configured
+
+    for field_name, provider_name in _FIELD_TO_PROVIDER.items():
+        if field_name in configured:
+            continue
+        try:
+            if is_configured(provider_name):
+                configured.append(field_name)
+        except Exception:  # pragma: no cover — an unknown provider name
+            continue
 
     live = os.environ.get("ABS_TEST_MODE") != "1"
     for field_name in configured:

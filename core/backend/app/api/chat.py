@@ -104,6 +104,28 @@ class ChatCompletionsRequest(BaseModel):
     mode: Literal["chat", "agent"] = "chat"
 
 
+# Plain chat sent the user's text to the provider with nothing else attached —
+# no system prompt at all. So the model answered as whatever generic assistant
+# the provider had trained, and a customer who asked their own ABS server "check
+# this server's status" was told, in the panel that is running on that server,
+# "I'm not capable of accessing a server — try UptimeRobot or DownDetector."
+#
+# The preamble is deliberately short: who it is, where it runs, and what to say
+# instead of claiming an incapacity the product does not have. It does not
+# describe the tools — those belong to agent mode, which builds its own prompt.
+ASSISTANT_PREAMBLE = (
+    "You are ABS, an AI assistant running on the user's own server. "
+    "The user is signed in to that server's panel; their data and documents stay "
+    "on it. You answer plainly and briefly, and you do not pretend to have run "
+    "anything you have not.\n"
+    "You can look things up on this server — its health, its spending, its "
+    "documents — but only when the user turns on Agent mode in the composer. So "
+    "if a question needs live data from the server and Agent mode is off, say "
+    "that it can be answered with Agent mode switched on, rather than telling the "
+    "user you have no access to the machine you are running on."
+)
+
+
 class ChatSessionOut(BaseModel):
     id: int
     title: str
@@ -813,6 +835,8 @@ async def completions(
             prompt_for_cascade = build_citation_prompt_block(
                 citations, user_message=last_user_content
             )
+
+        prompt_for_cascade = f"{ASSISTANT_PREAMBLE}\n\n{prompt_for_cascade}"
 
         # Emit a "thinking" frame before the cascade call
         # so the client (and any intermediate proxy / load balancer) sees

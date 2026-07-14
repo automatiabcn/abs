@@ -146,35 +146,48 @@ const COMMAND_ACCENT: Record<string, string> = {
   analyze: "border-l-blue-500",
 };
 
+// Ask the agent for the server's status and it answers in a sentence — then
+// dumps forty lines of raw JSON into the conversation underneath it. The
+// customer did not ask for the payload; they asked a question, and the payload
+// is how the answer was obtained.
+//
+// So the card states what the agent did, and keeps the evidence one click away
+// for the person who wants to check it. It is a receipt, not the answer.
 export function ToolCallCard({ call }: { call: ToolCall }) {
   const accent = COMMAND_ACCENT[call.name] ?? "border-l-primary";
+  const lines = call.result ? call.result.split("\n").length : 0;
   return (
-    <div
+    <details
       data-test="tool-call-card"
       data-tool={call.name}
       className={cn(
-        "my-2 rounded-md border bg-background/40 p-3 font-mono text-xs",
+        "group my-2 rounded-md border bg-background/40 text-xs",
         "border-l-4",
         accent,
       )}
     >
-      <div className="mb-1 flex items-center gap-2 text-muted-foreground">
-        <Wrench className="h-3 w-3" />
-        <span className="font-semibold uppercase tracking-wider text-foreground">
-          /{call.name}
+      <summary className="flex cursor-pointer list-none items-center gap-2 p-3 text-muted-foreground">
+        <Wrench className="h-3 w-3 shrink-0" />
+        <span className="font-mono font-semibold uppercase tracking-wider text-foreground">
+          {call.name}
         </span>
-      </div>
-      {call.args?.query && (
-        <div className="text-foreground/80 break-words">
-          “{call.args.query}”
-        </div>
-      )}
+        {call.args?.query && (
+          <span className="truncate text-foreground/70">
+            “{call.args.query}”
+          </span>
+        )}
+        <span className="ml-auto shrink-0 text-[11px]">
+          {call.result
+            ? `${lines} line${lines === 1 ? "" : "s"} · show`
+            : "running…"}
+        </span>
+      </summary>
       {call.result && (
-        <div className="mt-2 rounded bg-muted/40 p-2 text-foreground/90 whitespace-pre-wrap">
+        <pre className="mx-3 mb-3 max-h-72 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-relaxed text-foreground/90">
           {call.result}
-        </div>
+        </pre>
       )}
-    </div>
+    </details>
   );
 }
 
