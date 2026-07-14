@@ -1,7 +1,11 @@
+import { handleIssue, handleRenew } from "./licensing.js";
+
 // Cloudflare Worker — ABS license activation server
 // Bindings:
 //   ABS_LICENSE_KV — KV namespace 'abs-license-state'
 // Endpoints:
+//   POST /v1/issue              — mint the first key after a purchase (admin)
+//   POST /v1/renew              — mint next month's key (authenticated by the key)
 //   POST /v1/activate           — first-boot activation (license + machine_fp)
 //   POST /v1/heartbeat          — 24h ping (license still valid?)
 //   POST /v1/admin/revoke       — founder admin: kill a license
@@ -10,15 +14,10 @@
 //   POST /v1/stripe-event/mark  — webhook idempotency state writer (admin auth)
 //   GET  /health                — uptime probe
 
-const PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAl5BvFEnugu006q6sledL
-Z11sy/u5CZV9cgsUmFbnahVXVWdgWzcGzGDUP/408OnZi/Psv9vpx1rvyJGED2AR
-6PmZvH2luiwNman59prwZr1Ql6T9fqxxp1YezPDL9RwlK3gjSFfee9piSpiamxbE
-kguOOxfalzCFgF/vyhWztm6a68wURNVoRbwgT7YaYgz1GdCWl6DfgWz7kRel/+YC
-qVVYqy2uXN4ItbLnLPwTmPXTBDLe/2PgiJBLycTJDWD7ees8hW4hDp+aHsiUdMEF
-a6NXVbN0Md4fHhik2yyg8FVqZX2kqh6cis/EYEy+fY58Zva3PFTIqKA94aDJ6Sj5
-fQIDAQAB
------END PUBLIC KEY-----`;
+// The verifying key lives in the ABS_LICENSE_PUBLIC_KEY secret, next to the
+// private half that signs. A copy used to be pasted here and never read once —
+// and it was not even the key the product verifies against, so a third authority
+// sat in this file looking authoritative.
 
 // SHA-256 of admin Bearer token (founder keeps the plaintext token offline)
 const ADMIN_TOKEN_HASH = "5f9fc4cd9d2b5aff8b0872ebe0678c2895cdb1f46ca80a3accada424b83937a2";
@@ -280,6 +279,21 @@ export default {
     }
     if (url.pathname === "/v1/heartbeat" && req.method === "POST") {
       return handleHeartbeat(req, env);
+    }
+    // A purchase, and the month after it. Minting lives in licensing.js — this
+    // Worker is the only place a licence is signed, because it is already the only
+    // place one is revoked, and a rule with two homes always ends up with two
+    // answers.
+    if (url.pathname === "/v1/issue" && req.method === "POST") {
+      if (!(await checkAdminAuth(req))) {
+        return jsonResponse({ error: "unauthorized" }, 401);
+      }
+      return handleIssue(req, env, jsonResponse);
+    }
+    if (url.pathname === "/v1/renew" && req.method === "POST") {
+      // No admin token: the caller is the customer's own server, and it proves
+      // who it is by presenting a licence we signed.
+      return handleRenew(req, env, jsonResponse);
     }
     if (url.pathname === "/v1/admin/revoke" && req.method === "POST") {
       return handleAdminRevoke(req, env);

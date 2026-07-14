@@ -69,7 +69,6 @@ from app.api import email_unsubscribe as email_unsubscribe_router
 from app.api import health_full as health_full_router
 from app.api import hooks as hooks_router
 from app.api import license as license_router
-from app.api import license_renew as license_renew_router
 from app.api import me_account as me_account_router
 from app.api import me_audit as me_audit_router
 from app.api import me_consent as me_consent_router
@@ -510,7 +509,6 @@ app.include_router(panel_tools_router.router)
 app.include_router(panel_cascade_router.router)
 app.include_router(panel_pipeline_router.router)
 app.include_router(license_router.router)
-app.include_router(license_renew_router.router)
 app.include_router(checkout_router.router)
 app.include_router(billing_portal_router.router)
 app.include_router(demo_admin_router.router)
