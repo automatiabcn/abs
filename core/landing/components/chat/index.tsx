@@ -61,17 +61,17 @@ const PROVIDER_PALETTE: Record<
   string,
   { label: string; tone: string; icon: typeof Layers }
 > = {
-  groq: { label: "Groq", tone: "bg-indigo-500/15 text-indigo-300 border-indigo-500/30", icon: Layers },
-  cerebras: { label: "Cerebras", tone: "bg-violet-500/15 text-violet-300 border-violet-500/30", icon: Layers },
-  cloudflare: { label: "Cloudflare", tone: "bg-orange-500/15 text-orange-300 border-orange-500/30", icon: Layers },
-  gemini: { label: "Gemini", tone: "bg-blue-500/15 text-blue-300 border-blue-500/30", icon: Layers },
-  cohere: { label: "Cohere", tone: "bg-pink-500/15 text-pink-300 border-pink-500/30", icon: Layers },
+  groq: { label: "Groq", tone: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30", icon: Layers },
+  cerebras: { label: "Cerebras", tone: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30", icon: Layers },
+  cloudflare: { label: "Cloudflare", tone: "bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30", icon: Layers },
+  gemini: { label: "Gemini", tone: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30", icon: Layers },
+  cohere: { label: "Cohere", tone: "bg-pink-500/15 text-pink-700 dark:text-pink-300 border-pink-500/30", icon: Layers },
   "anthropic-mock": {
     label: "Anthropic mock",
-    tone: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+    tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
     icon: Sparkles,
   },
-  none: { label: "Not configured", tone: "bg-rose-500/15 text-rose-300 border-rose-500/30", icon: Layers },
+  none: { label: "Not configured", tone: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30", icon: Layers },
 };
 
 export function ProviderChip({
@@ -590,7 +590,7 @@ export function ChatSidebar({
                     className="opacity-0 transition-opacity group-hover:opacity-100"
                     aria-label="Delete conversation"
                   >
-                    <Trash2 className="h-3.5 w-3.5 text-rose-400 hover:text-rose-300" />
+                    <Trash2 className="h-3.5 w-3.5 text-rose-400 hover:text-rose-700 dark:text-rose-300" />
                   </button>
                 </div>
               </li>

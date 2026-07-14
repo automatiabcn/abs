@@ -68,7 +68,7 @@ export default function DeletionStatusBanner({
     return (
       <section
         aria-label={t("deletion.purged.title", lang)}
-        className="rounded-md border border-zinc-300 bg-zinc-50 p-4 text-zinc-700"
+        className="rounded-md border border-border bg-muted/40 p-4 text-foreground"
       >
         <h2 className="font-semibold">{t("deletion.purged.title", lang)}</h2>
         <p className="mt-1 text-sm">

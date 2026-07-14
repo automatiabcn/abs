@@ -93,13 +93,13 @@ const PROVIDER_LABELS: Record<string, { label: string; tone: string }> = {
 };
 
 const TONE_BG: Record<string, string> = {
-  amber: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  indigo: "bg-indigo-500/15 text-indigo-300 border-indigo-500/30",
-  violet: "bg-violet-500/15 text-violet-300 border-violet-500/30",
-  orange: "bg-orange-500/15 text-orange-300 border-orange-500/30",
-  blue: "bg-blue-500/15 text-blue-300 border-blue-500/30",
-  pink: "bg-pink-500/15 text-pink-300 border-pink-500/30",
-  emerald: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  amber: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
+  indigo: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30",
+  violet: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30",
+  orange: "bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30",
+  blue: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30",
+  pink: "bg-pink-500/15 text-pink-700 dark:text-pink-300 border-pink-500/30",
+  emerald: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
 };
 
 async function fetchProviders(): Promise<ProvidersResponse> {
@@ -140,7 +140,7 @@ function StatusChip({
 }) {
   if (mock) {
     return (
-      <Badge variant="outline" className="border-amber-500/40 text-amber-300">
+      <Badge variant="outline" className="border-amber-500/40 text-amber-700 dark:text-amber-300">
         Mock on
       </Badge>
     );
@@ -148,13 +148,13 @@ function StatusChip({
   return configured ? (
     <Badge
       variant="outline"
-      className="border-emerald-500/40 text-emerald-300"
+      className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
     >
       <CheckCircle2 className="mr-1 h-3 w-3" />
       Ready
     </Badge>
   ) : (
-    <Badge variant="outline" className="border-rose-500/40 text-rose-300">
+    <Badge variant="outline" className="border-rose-500/40 text-rose-700 dark:text-rose-300">
       <XCircle className="mr-1 h-3 w-3" />
       No key
     </Badge>
@@ -321,7 +321,7 @@ export default function ProvidersPage() {
                 data-test="mock-mode-badge"
                 className={cn(
                   providers.data.anthropic_mock_mode !== "off"
-                    ? "border-amber-500/40 text-amber-300"
+                    ? "border-amber-500/40 text-amber-700 dark:text-amber-300"
                     : "border-border",
                 )}
               >
@@ -444,14 +444,14 @@ export default function ProvidersPage() {
                     {h.ok ? (
                       <Badge
                         variant="outline"
-                        className="border-emerald-500/40 text-[10px] text-emerald-300"
+                        className="border-emerald-500/40 text-[10px] text-emerald-700 dark:text-emerald-300"
                       >
                         {h.provider}
                       </Badge>
                     ) : (
                       <Badge
                         variant="outline"
-                        className="border-rose-500/40 text-[10px] text-rose-300"
+                        className="border-rose-500/40 text-[10px] text-rose-700 dark:text-rose-300"
                       >
                         FAIL
                       </Badge>
@@ -459,7 +459,7 @@ export default function ProvidersPage() {
                     {h.mock && (
                       <Badge
                         variant="outline"
-                        className="border-amber-500/40 text-[10px] text-amber-300"
+                        className="border-amber-500/40 text-[10px] text-amber-700 dark:text-amber-300"
                       >
                         mock
                       </Badge>
@@ -474,7 +474,7 @@ export default function ProvidersPage() {
                     </div>
                   )}
                   {h.detail && (
-                    <div className="text-rose-300">{h.detail}</div>
+                    <div className="text-rose-700 dark:text-rose-300">{h.detail}</div>
                   )}
                 </li>
               ))}

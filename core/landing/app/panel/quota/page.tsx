@@ -167,7 +167,7 @@ function ProviderRow({ slice, name }: { slice: Slice; name: string }) {
         <LightProgressBar value={pct} tone={t} className="mt-1" />
       )}
       {slice.percent >= 0.8 && (
-        <div className="mt-1 flex items-center gap-1 text-[11px] text-amber-300">
+        <div className="mt-1 flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-300">
           <AlertTriangle className="h-3 w-3" />
           {Math.round(slice.percent * 100)}% used — {slice.percent >= 0.95 ? "almost out" : "running low"}
         </div>

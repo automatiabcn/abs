@@ -66,8 +66,8 @@ function Score({ label, value, hint, accent }: { label: string; value: string; h
 }
 
 const INTENT_CHIP: Record<string, string> = {
-  high: "border-emerald-500/40 text-emerald-300",
-  medium: "border-amber-500/40 text-amber-300",
+  high: "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+  medium: "border-amber-500/40 text-amber-700 dark:text-amber-300",
   watching: "border-border text-muted-foreground",
 };
 const CONSENT_LABEL: Record<string, string> = {
@@ -103,7 +103,7 @@ export default function GrowthDashboardPage() {
           </p>
         </div>
         {d && (
-          <span className="rounded-full border border-emerald-500/40 px-3 py-1 text-[11px] text-emerald-300">
+          <span className="rounded-full border border-emerald-500/40 px-3 py-1 text-[11px] text-emerald-700 dark:text-emerald-300">
             ● All systems healthy · {d.scorecards.active_agents} agents running
           </span>
         )}
@@ -120,9 +120,9 @@ export default function GrowthDashboardPage() {
         <>
           {/* ── Scorecards ─────────────────────────── */}
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Score label="Growth Score" value={`${d.scorecards.growth_score}/100`} hint="average lead score" accent="text-emerald-300" />
+            <Score label="Growth Score" value={`${d.scorecards.growth_score}/100`} hint="average lead score" accent="text-emerald-700 dark:text-emerald-300" />
             <Score label="Hot Accounts" value={String(d.scorecards.hot_accounts)} hint="leads showing high intent" />
-            <Score label="Waiting for Approval" value={String(d.scorecards.pending_approvals)} hint={`${d.scorecards.high_risk_approvals} high-risk · needs a person`} accent="text-amber-300" />
+            <Score label="Waiting for Approval" value={String(d.scorecards.pending_approvals)} hint={`${d.scorecards.high_risk_approvals} high-risk · needs a person`} accent="text-amber-700 dark:text-amber-300" />
             <Score label="Agents Running" value={`${d.scorecards.active_agents}/${d.scorecards.total_agents}`} hint="seen in recent activity" />
           </div>
 
@@ -141,7 +141,7 @@ export default function GrowthDashboardPage() {
                       </div>
                       <div className="font-mono text-[10px] text-muted-foreground">{trTime(a.created_at)}</div>
                     </div>
-                    <span className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] ${a.requires_approval ? "border-amber-500/40 text-amber-300" : "border-emerald-500/40 text-emerald-300"}`}>
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] ${a.requires_approval ? "border-amber-500/40 text-amber-700 dark:text-amber-300" : "border-emerald-500/40 text-emerald-700 dark:text-emerald-300"}`}>
                       {a.requires_approval ? "needs approval" : "done"}
                     </span>
                   </div>
@@ -218,7 +218,7 @@ export default function GrowthDashboardPage() {
                 ? `${d.campaign.currency}${(d.campaign.attributed_revenue / 1_000_000).toFixed(2)}M`
                 : "—"}
               hint={d.campaign.top_channel ? `${d.campaign.top_channel} · ${d.campaign.period}` : "revenue attributed to campaigns"}
-              accent="text-emerald-300"
+              accent="text-emerald-700 dark:text-emerald-300"
             />
             <Score label="Inbound (today)" value={String(d.inbound_today)} hint="requests triaged" />
             <Score
@@ -235,7 +235,7 @@ export default function GrowthDashboardPage() {
               label="Model Gateway"
               value={`${d.model_gateway.currency}${d.model_gateway.cost}`}
               hint={`${d.model_gateway.mode} · ${d.model_gateway.models} models`}
-              accent="text-emerald-300"
+              accent="text-emerald-700 dark:text-emerald-300"
             />
           </div>
         </>

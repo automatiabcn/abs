@@ -30,15 +30,15 @@ type Action = {
 type Outbox = { items: Action[]; total: number; by_status: Record<string, number> };
 
 const RISK: Record<string, string> = {
-  low: "border-emerald-500/40 text-emerald-300",
-  medium: "border-amber-500/40 text-amber-300",
-  high: "border-rose-500/40 text-rose-300",
+  low: "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+  medium: "border-amber-500/40 text-amber-700 dark:text-amber-300",
+  high: "border-rose-500/40 text-rose-700 dark:text-rose-300",
 };
 const ACTION_STATUS: Record<string, string> = {
-  executed: "border-emerald-500/40 text-emerald-300",
-  sent: "border-emerald-500/40 text-emerald-300",
-  blocked: "border-rose-500/40 text-rose-300",
-  failed: "border-amber-500/40 text-amber-300",
+  executed: "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+  sent: "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+  blocked: "border-rose-500/40 text-rose-700 dark:text-rose-300",
+  failed: "border-amber-500/40 text-amber-700 dark:text-amber-300",
 };
 // What actually ran. An agent writing a file or running a command is not the
 // same event as a CRM note, and the outbox used to call both "internal action".
@@ -153,8 +153,8 @@ export default function ApprovalCenterPage() {
         </div>
         {d && (
           <div className="flex gap-2 text-[11px]">
-            <span className="rounded-full border border-amber-500/40 px-3 py-1 text-amber-300">{d.pending_total} waiting</span>
-            <span className="rounded-full border border-rose-500/40 px-3 py-1 text-rose-300">{d.by_risk.high ?? 0} high risk</span>
+            <span className="rounded-full border border-amber-500/40 px-3 py-1 text-amber-700 dark:text-amber-300">{d.pending_total} waiting</span>
+            <span className="rounded-full border border-rose-500/40 px-3 py-1 text-rose-700 dark:text-rose-300">{d.by_risk.high ?? 0} high risk</span>
           </div>
         )}
       </div>
@@ -230,7 +230,7 @@ export default function ApprovalCenterPage() {
                     <div className="flex w-[150px] shrink-0 flex-col gap-2">
                       <button onClick={() => decide(it.id, "approve")} disabled={pendingId === it.id} className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">✓ {pendingId === it.id ? "Working…" : it.channel === "email" ? "Approve & send" : "Approve"}</button>
                       <button onClick={() => decide(it.id, "edit")} disabled={pendingId === it.id} className="rounded-md border px-3 py-1.5 text-xs disabled:opacity-50">✎ Edit</button>
-                      <button onClick={() => decide(it.id, "reject")} disabled={pendingId === it.id} className="rounded-md border px-3 py-1.5 text-xs text-rose-300 disabled:opacity-50">✕ Reject</button>
+                      <button onClick={() => decide(it.id, "reject")} disabled={pendingId === it.id} className="rounded-md border px-3 py-1.5 text-xs text-rose-700 dark:text-rose-300 disabled:opacity-50">✕ Reject</button>
                       {it.risk === "high" && <div className="text-center text-[10px] text-muted-foreground">⏱ escalates in 4 h</div>}
                     </div>
                   </div>

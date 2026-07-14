@@ -41,12 +41,12 @@ type GraphEdge = { source: string; target: string };
 type Definition = { key: string; name: string; graph: { name: string; nodes: GraphNode[]; edges: GraphEdge[] }; ordered_steps: string[] };
 
 const KIND_CHIP: Record<string, string> = {
-  trigger: "border-sky-500/40 text-sky-300", agent: "border-primary/50 text-primary",
-  retrieval: "border-violet-500/40 text-violet-300", connector: "border-border text-muted-foreground",
-  policy: "border-amber-500/40 text-amber-300", approval: "border-rose-500/40 text-rose-300",
-  action: "border-emerald-500/40 text-emerald-300", branch: "border-border text-muted-foreground",
-  sub_workflow: "border-pink-500/40 text-pink-300", custom_ai: "border-primary/50 text-primary",
-  consent: "border-amber-500/40 text-amber-300",
+  trigger: "border-sky-500/40 text-sky-700 dark:text-sky-300", agent: "border-primary/50 text-primary",
+  retrieval: "border-violet-500/40 text-violet-700 dark:text-violet-300", connector: "border-border text-muted-foreground",
+  policy: "border-amber-500/40 text-amber-700 dark:text-amber-300", approval: "border-rose-500/40 text-rose-700 dark:text-rose-300",
+  action: "border-emerald-500/40 text-emerald-700 dark:text-emerald-300", branch: "border-border text-muted-foreground",
+  sub_workflow: "border-pink-500/40 text-pink-700 dark:text-pink-300", custom_ai: "border-primary/50 text-primary",
+  consent: "border-amber-500/40 text-amber-700 dark:text-amber-300",
 };
 
 const ENGINE = [
@@ -238,7 +238,7 @@ export default function WorkflowDesignerPage() {
           <p className="mt-1 text-[12px] text-muted-foreground">Drag steps, connect them, run. It pauses for your approval and picks up where it left off.</p>
         </div>
         <div className="flex items-center gap-2">
-          {saved && <span className="text-[11px] text-emerald-300/80">✓ {saved}</span>}
+          {saved && <span className="text-[11px] text-emerald-700 dark:text-emerald-300/80">✓ {saved}</span>}
           <button onClick={onSave} disabled={busy} className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50" data-test="wf-save">Save</button>
           <button onClick={() => run(true)} disabled={busy} className="rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50" data-test="wf-dryrun">Test run</button>
           <button onClick={() => run(false)} disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow disabled:opacity-50" data-test="wf-run">{busy ? "Running…" : "▶ Run"}</button>
@@ -279,7 +279,7 @@ export default function WorkflowDesignerPage() {
                       <td className="py-2.5 pr-3 text-muted-foreground">{r.trigger || "manual"}</td>
                       <td className="py-2.5 pr-3 font-mono">{r.step_count}</td>
                       <td className="py-2.5 pr-3 font-mono text-muted-foreground">{(r.elapsed_ms / 1000).toFixed(1)}s</td>
-                      <td className="py-2.5"><span className={r.status === "done" ? "text-emerald-300" : "text-amber-300"}>{r.status}{r.approvals_opened > 0 ? ` · ${r.approvals_opened} waiting for approval` : ""}</span></td>
+                      <td className="py-2.5"><span className={r.status === "done" ? "text-emerald-700 dark:text-emerald-300" : "text-amber-700 dark:text-amber-300"}>{r.status}{r.approvals_opened > 0 ? ` · ${r.approvals_opened} waiting for approval` : ""}</span></td>
                     </tr>
                   ))}
                 </tbody>

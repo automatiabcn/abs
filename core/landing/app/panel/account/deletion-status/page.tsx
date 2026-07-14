@@ -32,7 +32,7 @@ export default function DeletionStatusPage() {
       {data ? (
         <DeletionStatusBanner data={data} onCancel={onCancel} />
       ) : (
-        <p className="text-sm text-zinc-500">Loading…</p>
+        <p className="text-sm text-muted-foreground">Loading…</p>
       )}
     </main>
   );

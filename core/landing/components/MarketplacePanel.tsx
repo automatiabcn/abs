@@ -182,7 +182,7 @@ export default function MarketplacePanel({
 
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="relative max-w-md flex-1">
-          <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
+          <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <label htmlFor={searchId} className="sr-only">
             Search plugins
           </label>
@@ -192,7 +192,7 @@ export default function MarketplacePanel({
             aria-label="Search plugins"
             type="search"
             placeholder="Search plugins…"
-            className="w-full rounded-xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm text-zinc-900 ring-1 ring-zinc-900/5 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+            className="w-full rounded-xl border border-input bg-background py-2 pl-9 pr-3 text-sm text-foreground ring-1 ring-border focus:outline-none focus:ring-2 focus:ring-ring"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -222,25 +222,25 @@ export default function MarketplacePanel({
           <article
             key={plugin.id}
             data-testid={`plugin-card-${plugin.id}`}
-            className="flex flex-col rounded-2xl bg-zinc-50 p-5 ring-1 ring-zinc-900/5 dark:bg-zinc-950 dark:ring-zinc-50/10"
+            className="flex flex-col rounded-2xl bg-muted/40 p-5 ring-1 ring-border"
           >
             <header>
-              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+              <h3 className="text-lg font-semibold text-foreground">
                 {plugin.name}
               </h3>
               <div className="mt-1 flex items-center gap-2 text-xs">
-                <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
+                <span className="rounded-full bg-muted px-2 py-0.5 text-foreground">
                   {PLUGIN_TYPE_LABEL[plugin.type]}
                 </span>
-                <span className="font-mono text-zinc-500 dark:text-zinc-400">
+                <span className="font-mono text-muted-foreground">
                   v{plugin.version}
                 </span>
-                <span className="text-zinc-500 dark:text-zinc-400">
+                <span className="text-muted-foreground">
                   by {plugin.author}
                 </span>
               </div>
             </header>
-            <p className="mt-3 line-clamp-3 text-sm text-zinc-600 dark:text-zinc-300">
+            <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">
               {plugin.description}
             </p>
             {/* permission preview chips on the card */}
@@ -294,7 +294,7 @@ export default function MarketplacePanel({
                 data-testid={`install-button-${plugin.id}`}
                 disabled={!isAdmin || busyId === plugin.id}
                 onClick={() => setSelected(plugin)}
-                className="mt-5 inline-flex items-center justify-center rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:enabled:bg-zinc-200"
+                className="mt-5 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-primary/90"
               >
                 {busyId === plugin.id ? "Installing…" : "Install"}
               </button>
@@ -311,10 +311,10 @@ export default function MarketplacePanel({
           aria-labelledby="permission-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
         >
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl ring-1 ring-zinc-900/10 dark:bg-zinc-900 dark:ring-zinc-50/10">
+          <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-xl ring-1 ring-border">
             <h2
               id="permission-modal-title"
-              className="text-xl font-semibold text-zinc-900 dark:text-zinc-50"
+              className="text-xl font-semibold text-foreground"
             >
               Review permissions — {selected.name} v{selected.version}
             </h2>
@@ -343,7 +343,7 @@ export default function MarketplacePanel({
                 {selected.permissions.secrets.length > 0 ? (
                   <ChipList items={selected.permissions.secrets} tone="warn" />
                 ) : (
-                  <span className="text-zinc-500">None</span>
+                  <span className="text-muted-foreground">None</span>
                 )}
               </PermissionRow>
 
@@ -381,7 +381,7 @@ export default function MarketplacePanel({
                 type="button"
                 data-testid="permission-cancel"
                 onClick={() => setSelected(null)}
-                className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                className="rounded-xl border border-input px-4 py-2 text-sm font-medium text-foreground hover:bg-accent"
               >
                 Cancel
               </button>
@@ -390,7 +390,7 @@ export default function MarketplacePanel({
                 data-testid="permission-approve"
                 onClick={handleApprove}
                 disabled={!acknowledged}
-                className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Approve &amp; install
               </button>
@@ -422,8 +422,8 @@ function FilterChip({
       className={
         "rounded-full px-3 py-1 text-xs font-medium ring-1 transition " +
         (active
-          ? "bg-zinc-900 text-white ring-zinc-900 dark:bg-zinc-50 dark:text-zinc-900 dark:ring-zinc-50"
-          : "bg-white text-zinc-700 ring-zinc-200 hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-zinc-800 dark:hover:bg-zinc-800")
+          ? "bg-primary text-primary-foreground ring-primary"
+          : "bg-background text-muted-foreground ring-border hover:bg-accent hover:text-foreground")
       }
     >
       {label}
@@ -442,9 +442,9 @@ function PermissionRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 text-zinc-500">{icon}</div>
+      <div className="mt-0.5 text-muted-foreground">{icon}</div>
       <div className="flex-1">
-        <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {label}
         </dt>
         <dd className="mt-1">{children}</dd>
@@ -455,7 +455,7 @@ function PermissionRow({
 
 function ChipList({ items, tone }: { items: string[]; tone?: "warn" }) {
   if (items.length === 0) {
-    return <span className="text-zinc-500">None</span>;
+    return <span className="text-muted-foreground">None</span>;
   }
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -466,7 +466,7 @@ function ChipList({ items, tone }: { items: string[]; tone?: "warn" }) {
             "rounded-full px-2 py-0.5 text-xs ring-1 " +
             (tone === "warn"
               ? "bg-yellow-50 text-yellow-900 ring-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-200 dark:ring-yellow-800"
-              : "bg-zinc-100 text-zinc-800 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700")
+              : "bg-muted text-foreground ring-border")
           }
         >
           {item}

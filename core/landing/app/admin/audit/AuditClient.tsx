@@ -269,7 +269,7 @@ export default function AuditClient({
               data-test="audit-load-error"
               className="rounded-md border border-amber-500/40 bg-amber-500/5 p-4 text-sm"
             >
-              <p className="flex items-center gap-2 font-medium text-amber-300">
+              <p className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-300">
                 <ShieldX className="h-4 w-4" />
                 The audit log could not be read
               </p>
