@@ -6,7 +6,7 @@
 """Anthropic Messages API v1 surface markers.
 
 Versioned request/response shape lives in `contracts/{request,response}_v1.json`
-(T-S02.2 golden fixtures). The actual httpx call is in adapter.py.
+(golden fixtures). The actual httpx call is in adapter.py.
 """
 
 from __future__ import annotations

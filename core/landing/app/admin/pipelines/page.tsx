@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q8 Phase E — `/admin/pipelines` Quality Pipelines launcher. Lists all
+// `/admin/pipelines` Quality Pipelines launcher. Lists all
 // qual_* + race_* pipelines, exposes a Run form, polls
 // /v1/panel/pipeline/recent for run history.
 "use client";
@@ -334,7 +334,7 @@ export default function PipelinesPage() {
               className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200"
             >
               <span>The run failed: {error}</span>
-              {/* Q11-L16-001 — match the chat panel error UX: pair the
+              {/* Match the chat panel's error UX: pair the
                   raw error string with a configure path + retry CTA so
                   the user knows where to go and how to recover. */}
               <div className="flex items-center gap-2">

@@ -6,7 +6,7 @@
  */
 
 /**
- * 023 — Landing i18n helper.
+ * Landing i18n helper.
  *
  * Loads JSON locale dictionaries from `core/landing/locales/`.
  * Default lang `en`; supported `en|tr|es`. Missing keys → fallback to `en`.

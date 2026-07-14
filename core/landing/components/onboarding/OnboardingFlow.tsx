@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R04 — primary onboarding component. Renders a stepper + animated card
+// Primary onboarding component. Renders a stepper + animated card
 // + View Transitions API for smooth step changes + Shepherd.js fallback for
 // in-page tour overlays. Honours prefers-reduced-motion + slow connection.
 "use client";
@@ -71,7 +71,7 @@ export default function OnboardingFlow({
   const motionEnabled = !reduceMotion && !slow;
   const startedRef = useRef(false);
 
-  // T-R06 — locale-driven step copy.
+  // Locale-driven step copy.
   const steps = useMemo(() => buildOnboardingSteps(lang), [lang]);
   const tr = (key: string) => i18nT(key, lang);
 
@@ -202,7 +202,7 @@ export default function OnboardingFlow({
   );
 }
 
-// T-R04 nuance fix #1+#3 — footer caption is dev-only. In production we
+// The footer caption is dev-only. In production we
 // expose the same diagnostics via an icon-only `<details>` so a11y testers
 // can verify reduced-motion + connection state without the duplicate step
 // indicator competing with the progress tracker.

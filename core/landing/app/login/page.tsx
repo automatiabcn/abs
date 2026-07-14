@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q6 PB — frontend login page. Posts to /auth/login (proxied through
+// Frontend login page. Posts to /auth/login (proxied through
 // Next.js rewrite to FastAPI), receives the abs_session cookie, redirects
 // to /panel/meetings. No client-side token handling — the cookie is
 // HttpOnly and only readable by the backend.
@@ -21,7 +21,7 @@ type LoginState = "idle" | "submitting" | "success" | "error";
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Sprint 2N FAZ B — backend-unreachable banner (P0 #2M-025).
+  // Backend-unreachable banner (P0 #2M-025).
   // /admin/* and /panel/* SSR layouts redirect here with this param
   // whenever the FastAPI backend /healthz probe fails.
   const backendUnreachable = searchParams?.get("reason") === "backend-unreachable";
@@ -29,7 +29,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [state, setState] = useState<LoginState>("idle");
   const [message, setMessage] = useState<string>("");
-  // BUG-1 — gate the submit button until React hydrates
+  // Gate the submit button until React hydrates
   // so a fast click can't trigger a native GET form submission to /login?
   // (which is what Playwright was observing — the browser
   // POST never reached our handler because hydration hadn't run yet).
@@ -50,7 +50,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       if (res.ok) {
-        // BUG-1 — explicit App Router push so the URL flips
+        // Explicit App Router push so the URL flips
         // synchronously inside the click handler (Playwright was racing the
         // old `window.location.href` assign and reading `/login`). We keep a
         // hard-nav fallback in case `router.push` is no-op (e.g., when the

@@ -10,7 +10,7 @@ cross-encoder if a model path is, and otherwise no reranking at all — the dens
 order, untouched, which is the honest answer when no reranker exists.
 Real backends are gated behind deferred imports. Includes a tiny in-process
 LRU+TTL cache keyed on (backend, query, doc-hash) — no Redis dependency for
-Sprint 3; production can swap by writing a `_RedisCache` adapter later.
+Production can swap it out by writing a `_RedisCache` adapter later.
 """
 
 from __future__ import annotations

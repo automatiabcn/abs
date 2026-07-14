@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 2D ITEM-4 — Tremor AreaChart wrapper for /admin/usage. Extracted
+// Tremor AreaChart wrapper for /admin/usage. Extracted
 // so the parent UsageClient can `next/dynamic({ssr:false})` it, keeping
 // Tremor + Recharts out of the initial /admin/usage chunk.
 "use client";

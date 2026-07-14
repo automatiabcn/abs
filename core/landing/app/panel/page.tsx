@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// R70 (S8) — Sprint 22 RSC Phase C: split-shell for /panel home.
+// Split-shell for the /panel home route.
 //
 // Server-side fetches the three first-paint endpoints in parallel
 // (`/v1/panel/tools`, `/v1/system/quota_status`,

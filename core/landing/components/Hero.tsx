@@ -36,7 +36,7 @@ const Hero: FC<HeroProps> = ({ title, subtitle, primaryCta, secondaryCta }) => (
       aria-hidden="true"
       className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_50%_-20%,rgba(30,87,172,0.18),transparent_60%)]"
     />
-    {/* T-Q05 — 3D scene on desktop / static SVG on mobile + reduced-motion */}
+    {/* 3D scene on desktop / static SVG on mobile + reduced-motion */}
     <HeroVisual />
 
     <div className="container relative mx-auto grid gap-12 px-4 py-24 sm:py-32 lg:grid-cols-2 lg:items-center">

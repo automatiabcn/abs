@@ -12,7 +12,7 @@ Tracks per-month token usage when ABS hits Anthropic. Two thresholds:
 
 Free path (`groq`, `cloudflare`, `gemini`, `cohere`, `ollama`) is exempt and
 never hits this module. Storage is an append-only JSON-line ledger so audit
-chains stay single-source-of-truth (T-016 compatible).
+chains stay single-source-of-truth.
 """
 
 from __future__ import annotations

@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R04 — onboarding walkthrough route. T-R06 — i18n via ?lang= search param.
+// Onboarding walkthrough route. i18n via the ?lang= search param.
 import type { Metadata } from "next";
 
 import OnboardingFlow from "@/components/onboarding/OnboardingFlow";

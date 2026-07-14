@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Sprint 2D ITEM-2.1 — Path-injection canonicalization helper.
+"""Path-injection canonicalization helper.
 
 CodeQL `py/path-injection` flagged 8 sinks in core/backend/app/symbols/* and
 infra/piper/server.py. This module enforces ALLOWED_ROOTS canonicalization

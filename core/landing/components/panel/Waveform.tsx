@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q9 Phase C / TR3 — real-time microphone waveform via Web Audio API
+// Real-time microphone waveform via Web Audio API
 // AnalyserNode + Canvas. Drives 60fps repaint while a MediaStream is
 // flowing; fades to a flat baseline when `stream` is null. The
 // component is purely visual — capture is owned by the caller.

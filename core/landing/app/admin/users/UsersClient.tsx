@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// R65 (S8) — split-shell client island for /admin/users. Original
+// Split-shell client island for /admin/users. Original
 // logic from `page.tsx` lifted here verbatim; the only delta is that
 // `initialUsers` from the server component seeds React Query as
 // `initialData` so first paint already renders rows.
@@ -71,7 +71,7 @@ interface InviteResponse {
   activation_note?: string;
 }
 
-// Sprint 2B BUG-36 — real invite endpoint. The backend persists a
+// Real invite endpoint. The backend persists a
 // tenant_invites row and hashes the magic-link token. When SMTP is set it
 // emails the recipient and withholds the URL; when SMTP is unset it returns
 // the magic_url so the admin can deliver the activation link out-of-band.
@@ -230,7 +230,7 @@ export default function UsersClient({
   const failed =
     (loadError !== null || users.isError) && (users.data?.length ?? 0) === 0;
 
-  // Sprint 2B BUG-36 — invite list refreshes alongside the user table.
+  // Invite list refreshes alongside the user table.
   useEffect(() => {
     let active = true;
     void fetchInvites().then((rows) => {

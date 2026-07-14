@@ -8,7 +8,7 @@
 Builds a stable URL the frontend can hit to start the Stripe checkout for a
 given tier + tenant. Does NOT call Stripe — the actual session creation lives
 behind the existing `/v1/billing/checkout` API which the frontend hits via
-fetch (T-058 wires the route).
+fetch.
 """
 
 from __future__ import annotations

@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R03 revise — Glassmorphism pricing tier card with Framer Motion hover lift,
+// Glassmorphism pricing tier card with Framer Motion hover lift,
 // brand-gradient border on highlight, and cyan focus ring.
 "use client";
 
@@ -27,7 +27,7 @@ export interface PricingTierCardProps {
   tier?: "self-host" | "maintenance" | "managed";
 }
 
-// T-R03 fix #1 — when billing is gated off, every CTA on every PricingTierCard
+// When billing is gated off, every CTA on every PricingTierCard
 // is forced into a disabled visual + cannot be activated. We inject this at
 // component level so callers passing custom JSX still get gated.
 function gateCta(cta: ReactNode): ReactNode {

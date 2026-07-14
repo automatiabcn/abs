@@ -6,7 +6,7 @@
 """BUG-V3 — Track Anthropic opt-in flips and emit a SOC2 audit row.
 
 PROMISE.md:
-  "every opt-in flip and quota-block event written to T-016 SOC2
+  "every opt-in flip and quota-block event written to the SOC2
    audit log."
 
 Strategy: keep a tiny on-disk JSON file with the most recently

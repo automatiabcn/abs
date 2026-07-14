@@ -4,7 +4,7 @@
  * Production use requires a Commercial License - see LICENSE.
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  *
- * Sprint 2D ITEM-2.4 — CodeQL js/client-side-unvalidated-url-redirection (#42).
+ * CodeQL js/client-side-unvalidated-url-redirection (#42).
  * Validates the `next` query param against an internal-path allowlist so an
  * attacker cannot craft /login?next=https://evil.tld to phish a logged-in
  * user after a successful POST /auth/login.

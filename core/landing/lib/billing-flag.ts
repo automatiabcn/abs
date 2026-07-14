@@ -5,8 +5,8 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R03 fix #1 — single source of truth for the billing kill-switch.
-// Sprint 2I UAT-001 — pilot launch flips the default ON; operators may
+// Single source of truth for the billing kill-switch.
+// Pilot launch flips the default ON; operators may
 // opt out with `NEXT_PUBLIC_BILLING_ENABLED=false`. The optional
 // `NEXT_PUBLIC_BILLING_DISABLED_REASON` env var overrides the
 // disabled-banner copy when a kill-switch is in effect (e.g. while a

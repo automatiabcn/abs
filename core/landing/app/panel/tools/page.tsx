@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q8 Phase C — `/panel/tools` MCP tool browser. Renders 122-tool inventory
+// `/panel/tools` MCP tool browser. Renders 122-tool inventory
 // from `/v1/panel/tools` as a TanStack Table with category sidebar +
 // fuzzy search + slide-in detail Sheet (input schema + Try-it cascade run).
 "use client";
@@ -302,7 +302,7 @@ export default function ToolsPage() {
             type="button"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             aria-label="Sort by tool"
-            // Q11-L12-002: bumped to min-h-6 (24px) so the column-header
+            // Bumped to min-h-6 (24px) so the column-header
             // sort button clears the WCAG 2.5.8 touch baseline on
             // mobile/tablet without breaking the desktop table density.
             className="inline-flex min-h-6 items-center gap-1 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"

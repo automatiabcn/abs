@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
-// Sprint 21 / Faz B — Tremor was the panel/quota route's largest
+// Tremor was the panel/quota route's largest
 // dependency (~600KB across recharts + tremor chunks). Swap the
 // ProgressBar for a 4-line CSS bar (no semantic loss, the original
 // only renders a colored width%) and lazy-load DateRangePicker via
@@ -213,7 +213,7 @@ export default function QuotaPage() {
         }
       } catch (exc) {
         if (active) {
-          // Q11-L16-002: name what failed instead of a bare "unknown".
+          // Name what failed instead of a bare "unknown".
           setError(
             `Couldn't load usage: ${exc instanceof Error ? exc.message : "unknown error"}`
           );

@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R04 — animated progress tracker. 5 dots + connector lines. T-R06 — i18n.
+// Animated progress tracker: 5 dots + connector lines, i18n-driven.
 "use client";
 
 import { motion } from "framer-motion";

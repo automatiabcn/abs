@@ -256,7 +256,7 @@ def cerbos_check(
     plugin_tenant: str | None,
     action: str = "execute",
 ) -> bool:
-    """Tenant-boundary pre-filter. True only when both tenants match (T-005/T-012)."""
+    """Tenant-boundary pre-filter. True only when both tenants match."""
     if (
         isinstance(principal_tenant, str)
         and principal_tenant
@@ -418,7 +418,7 @@ __all__ = [
 
 
 # ==========================================================================
-# Q7 Phase B — Real Docker launcher / monitor
+# Real Docker launcher / monitor
 # ==========================================================================
 
 import time  # noqa: E402  (kept module-local for the Q7 launcher block)
@@ -433,7 +433,7 @@ except ImportError:  # pragma: no cover
 
 
 class PluginSandbox:
-    """Tenant-scoped Docker plugin launcher (Q7 Phase B).
+    """Tenant-scoped Docker plugin launcher.
 
     Wraps ``docker.from_env()`` and labels every container with
     ``abs.plugin=<id>`` + ``abs.tenant=<tid>`` for safe tenant isolation.

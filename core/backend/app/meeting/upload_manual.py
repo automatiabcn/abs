@@ -7,7 +7,7 @@
 
 Accept .mp3/.mp4/.wav from a tenant, persist to the local recordings dir,
 hand off to the existing `Transcriber` (whisperx local or mock in tests),
-and emit a `BotJob`-compatible record so downstream nodes (T-S03 workflow
+and emit a `BotJob`-compatible record so downstream nodes (the workflow
 node `abs.meeting_transcribe`) keep their interface.
 """
 

@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 21 / Faz D — client-side dynamic shim for CommandPalette.
+// Client-side dynamic shim for CommandPalette.
 // Server Components can't pass `{ssr:false}` to next/dynamic, so we
 // wrap the import in this client component and let panel + admin
 // layouts statically import the shim.

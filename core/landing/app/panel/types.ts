@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// R70 (S8) — shared between server `page.tsx` and the client island
+// Shared between server `page.tsx` and the client island
 // `PanelHomeClient.tsx`. The two halves agree on the shape of each of
 // the three first-paint endpoints (`/v1/panel/tools`,
 // `/v1/system/quota_status`, `/v1/panel/cascade/recent`) plus the

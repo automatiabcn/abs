@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 21 / Faz B — Tremor AreaChart wrapper. Extracted into its
+// Tremor AreaChart wrapper. Extracted into its
 // own file so the parent page can `next/dynamic({ssr:false})` the
 // chart, keeping Tremor + Recharts out of the initial /panel bundle.
 "use client";

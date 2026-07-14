@@ -5,7 +5,7 @@
 
 """Human-in-the-loop approval flow + panel-session→OAuth subject bridge.
 
-Closes the T-005 caveat: panel session cookies map to an OAuth subject so
+Panel session cookies map to an OAuth subject so
 `/v1/*` endpoints can run for a logged-in panel user without a separate
 JWT. The mapper is provider-agnostic — any caller-supplied `session_lookup`
 returning `(subject, tenant_id, roles)` is fine.

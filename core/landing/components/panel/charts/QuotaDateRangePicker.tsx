@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 21 / Faz B — Tremor DateRangePicker wrapper. Extracted so
+// Tremor DateRangePicker wrapper. Extracted so
 // the /panel/quota page can lazy-load Tremor + Recharts via
 // next/dynamic, keeping them out of the panel chrome bundle.
 "use client";

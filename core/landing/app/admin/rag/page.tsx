@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q8 Phase F + BUG-27 — `/admin/rag` knowledge-base console. Drag-drop
+// `/admin/rag` knowledge-base console. Drag-drop
 // ingest + real `/v1/rag/query` against BGE-M3 + Qdrant. Cookie-session
 // auth flows via `get_admin_or_bearer_auth_context`; failures surface as
 // inline errors so operators see real backend issues (Cerbos DENY,
@@ -61,7 +61,7 @@ interface RagHit {
 
 type KindFilter = "all" | "docs" | "images";
 
-// BUG-27 — local-only inventory; docs are appended after a real
+// Local-only inventory; docs are appended after a real
 // `/v1/rag/ingest-file` POST returns 200. We no longer pre-seed with mock
 // rows so the operator can see at a glance whether their tenant has any
 // actual chunks indexed.
@@ -105,7 +105,7 @@ export default function RagPage() {
   const [imgDesc, setImgDesc] = useState<string | null>(null);
 
   // Load the real indexed corpus on mount so a reload reflects what's stored
-  // in Qdrant (BUG-27 follow-up) — not just docs uploaded this session.
+  // in Qdrant — not just the docs uploaded this session.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -133,7 +133,7 @@ export default function RagPage() {
       setUploading(true);
       setError(null);
       setUploadProgress({ done: 0, total: files.length });
-      // BUG-27 — POST every file to /v1/rag/ingest individually so a single
+      // POST every file to /v1/rag/ingest individually so a single
       // failed upload doesn't poison the rest of the batch. Successful rows
       // are appended with the doc_id + chunk count returned by the backend
       // so the operator sees real chunk math, not estimated `size / 1200`.
@@ -296,7 +296,7 @@ export default function RagPage() {
         }),
       });
       if (!res.ok) {
-        // BUG-27 — surface the real backend failure instead of rendering a
+        // Surface the real backend failure instead of rendering a
         // synthetic mock. Operators need to see Cerbos DENY / embedder
         // warming up / Qdrant unreachable so they can fix infra.
         const detail = await res.text().catch(() => "");

@@ -185,9 +185,9 @@ def send_invite_email(
     invited_by: str,
     lang: str = "en",
 ) -> None:
-    """Sprint 2B BUG-36 / Sprint 2C ITEM-5 — admin invite email.
+    """Admin invite email.
 
-    Sprint 2C extracted the inline HTML to per-locale templates
+    The inline HTML was extracted to per-locale templates
     (invite_en.html / invite_tr.html / invite_es.html). Default locale
     is English to honour the global-first product stance; ``lang`` can
     be set per-call when the recipient's preference is known.

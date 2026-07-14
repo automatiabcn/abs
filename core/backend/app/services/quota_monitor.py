@@ -3,15 +3,15 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Sprint 20 / CJ-009 — Provider quota monitor.
+"""Provider quota monitor.
 
 `get_monthly_usage(provider, start, end)` dondurdugu deger:
     (used: int, limit: int)
 
-Veri kaynagi: app/db/models.py UsageLog tablosu (provider, tokens, ts).
+Source of truth: the UsageLog table in app/db/models.py (provider, tokens, ts).
 Returns 0/0 when the table does not exist yet, so a fresh install shows an empty state rather than an error.
 
-Quota tablosu (Sprint 20 brief'inden):
+The quota table:
 - anthropic: 1M tokens / month  (Claude Plus dahil paid tier)
 - groq: 200K tokens / day
 - gemini: 1500 requests / day

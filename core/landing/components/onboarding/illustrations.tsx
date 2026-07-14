@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R04 — empty-state SVG illustrations for each onboarding step.
+// Empty-state SVG illustrations for each onboarding step.
 // Single-color (currentColor), keep small (each <2 KB) so they ship inline.
 import type { SVGProps } from "react";
 

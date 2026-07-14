@@ -73,7 +73,7 @@ async def fetch_manifest(force: bool = False) -> Dict[str, Any]:
         if not isinstance(manifest, dict):
             return {"error": "manifest must be a JSON object"}
     except Exception:
-        # Sprint 2D ITEM-2.3 — CodeQL py/stack-trace-exposure (#12/#13). The
+        # CodeQL py/stack-trace-exposure (#12/#13). The
         # caller (api/update.py) embeds this `error` field in HTTP responses;
         # do not leak raw exception text. Log full detail server-side, return
         # only an opaque correlation id.

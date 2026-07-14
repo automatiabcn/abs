@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// R64 (S8) — Sprint 22 RSC Phase B leg 1: split-shell for /admin/audit.
+// Split-shell for /admin/audit.
 //
 // Server-side fetches the initial 200 audit entries with the caller's
 // session cookie forwarded, hands the array to <AuditClient> as

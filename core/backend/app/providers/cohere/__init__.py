@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Cohere provider package — hexagonal layout (T-S02.1)."""
+"""Cohere provider package — hexagonal layout."""
 
 from .adapter import CohereProvider
 

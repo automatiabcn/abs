@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// T-R04 — onboarding shared types.
+// Onboarding shared types.
 export type OnboardingStepId =
   | "workspace"
   | "project"

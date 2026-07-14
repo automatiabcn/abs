@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Q8 Phase N + P — MCP integration tokens.
+"""MCP integration tokens.
 
 Issues short-lived bearer tokens that the customer's Claude Code (or
 any external MCP client) attaches to:
@@ -12,7 +12,7 @@ any external MCP client) attaches to:
     `app/mcp/server.py` in `app.main`); this module supplies the auth
     token rotation surface.
 
-  * `${ABS}/v1/hooks/*` — Claude Code lifecycle hooks (Phase P), so the
+  * `${ABS}/v1/hooks/*` — Claude Code lifecycle hooks, so the
     same token gates `quota-check`, `audit-log`, and `session-start`.
 
 The token is HMAC-signed with the panel session secret so we don't need

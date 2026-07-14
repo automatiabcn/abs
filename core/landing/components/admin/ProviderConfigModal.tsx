@@ -10,7 +10,7 @@
 // Shows the operator's stored API key (masked, never the full value), a
 // "Test it now" button (`POST /v1/admin/providers/{id}/test`), AND an
 // in-place key edit form that POSTs the new key to
-// `POST /v1/admin/providers/{id}` (the Sprint 2C save endpoint). Previously
+// `POST /v1/admin/providers/{id}` (the save endpoint). Previously
 // the only edit path was a link to /setup/step/providers, which 404s /
 // redirects to /admin once initial setup is complete — so post-setup the
 // operator had no working way to rotate a provider key from the panel.

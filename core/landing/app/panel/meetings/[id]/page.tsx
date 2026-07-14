@@ -57,7 +57,7 @@ export default function MeetingDetailPage() {
         return (await res.json()) as MeetingDetail;
       })
       .then(setData)
-      // Q11-L16-002: prefix the raw error with context so the user sees a
+      // Prefix the raw error with context so the user sees a
       // full sentence instead of a bare HTTP code.
       .catch((exc: Error) => setError(`Could not load this meeting: ${exc.message}`));
   }, [params?.id]);

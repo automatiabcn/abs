@@ -9,8 +9,8 @@ Enforces a per-path Content-Length cap **before** FastAPI/Pydantic parses
 the body. Without this, a client could ship a 100 MB JSON payload to any
 admin endpoint and exhaust memory in the parser pipeline:
 
-* Q12-L25-004 (HIGH DoS) — `/v1/marketplace/install` accepted unbounded
-  request bodies. Pydantic Field caps on `plugin_id`/`tenant` (R17) only
+* HIGH DoS — `/v1/marketplace/install` accepted unbounded
+  request bodies. Pydantic Field caps on `plugin_id`/`tenant` only
   fire **after** the entire body is read into memory.
 
 The cap works on the Content-Length header (the typical attack vector;
@@ -39,8 +39,8 @@ DEFAULT_CAPS: Mapping[str, int] = {
     "/v1/marketplace/install": 64 * 1024,  # 64 KB — admin payload
     "/v1/marketplace/uninstall": 16 * 1024,  # 16 KB
     "/v1/workflows/synthesize": 256 * 1024,  # 256 KB
-    "/v1/workflows/execute": 1 * 1024 * 1024,  # 1 MB — execute caps in Q12-L25-002
-    "/v1/chat/completions": 8 * 1024 * 1024,  # 8 MB — Q12-L25-003 already caps msgs
+    "/v1/workflows/execute": 1 * 1024 * 1024,  # 1 MB — execute caps the rest
+    "/v1/chat/completions": 8 * 1024 * 1024,  # 8 MB — messages are capped too
     # Meetings are long, and audio is big: an hour of recorded conversation is
     # 30–60 MB as mp3 and far more as wav. This path had no entry, so it fell to
     # the 5 MB default while the endpoint itself advertised a 250 MB limit — two

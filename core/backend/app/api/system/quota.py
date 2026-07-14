@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""CJ-009 / Sprint 20 — `/v1/system/quota_status` endpoint.
+"""`/v1/system/quota_status` endpoint.
 
 `/api/quota-status` (legacy stub) ile karistirma — bu endpoint Claude Plus
 + ucretsiz saglayicilarin gercek kullanim/limit verisini birlestirir ve

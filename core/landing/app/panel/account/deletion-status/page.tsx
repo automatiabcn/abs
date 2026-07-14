@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 2I UAT-038 — /panel/account/deletion-status — KVKK/GDPR
+// /panel/account/deletion-status — KVKK/GDPR
 // 30-day grace window surface so the customer can see and cancel.
 "use client";
 

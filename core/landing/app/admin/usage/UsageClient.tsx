@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Card, ProgressBar } from "@tremor/react";
 
-// Sprint 2D ITEM-4 — Lazy-load the Tremor AreaChart (pulls in recharts ~80KB).
+// Lazy-load the Tremor AreaChart (pulls in recharts ~80KB).
 // The empty-state path doesn't need it at all; the chart only mounts when
 // `trendData` has at least one non-zero point.
 const UsageTrendChart = dynamic(

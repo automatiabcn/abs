@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Sprint 2I UAT-001 — /pricing renders the 4-tier purchase surface.
+// /pricing renders the 4-tier purchase surface.
 // Previously this route 308-redirected to /#contact, severing the
 // checkout flow. The component lives at PricingTiers.tsx so legacy
 // PricingPage.test.tsx (Pilot/PoC contact stub) keeps passing.

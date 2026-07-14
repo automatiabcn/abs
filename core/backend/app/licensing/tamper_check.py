@@ -18,7 +18,7 @@ The expected hash is resolved in this order:
 2. ``ABS_VERIFIER_HASH`` env var — backwards compatibility / dev escape.
 3. Empty — gate is a no-op (dev environments without a baked hash).
 
-Patch A (P1, 2026-05-08) — pilot Round 5 found this gate silently
+A pilot found this gate silently
 disabled in production: ``_verifier_path()`` returned ``verifier.py``
 which the Dockerfile strips, and ``ABS_VERIFIER_HASH`` was never set.
 Both are now fixed: path resolves the ``.so`` and the gate reads the

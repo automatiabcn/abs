@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Q8 Phase A — custom SSE parser for `/v1/chat/completions` and helpers
+// Custom SSE parser for `/v1/chat/completions` and helpers
 // for `/v1/chat/sessions[/{id}/messages]`. Keeps a tight grip on the
 // custom event protocol (session/tool-call/tool-result/text/meta/[DONE]).
 "use client";
@@ -278,7 +278,7 @@ export function useChat({
       const controller = new AbortController();
       abortRef.current = controller;
 
-      // Q12-L20-001 — chat completions is a POST + SSE; the backend never
+      // Chat completions is a POST + SSE; the backend never
       // legitimately returns a 3xx, so `redirect: "error"` makes a
       // misconfigured proxy (e.g. Caddy redir loop) surface as a fetch
       // rejection rather than silently following until the browser's
@@ -299,7 +299,7 @@ export function useChat({
           signal: controller.signal,
         });
         if (!res.ok) {
-          // Q10-L9-002 — surface the backend detail (e.g. "no_providers_configured")
+          // Surface the backend detail (e.g. "no_providers_configured")
           // instead of a bare HTTP status so the user knows whether to
           // configure a provider or retry. Falls back to status when the
           // body isn't JSON (FastAPI HTTPException is JSON by default).

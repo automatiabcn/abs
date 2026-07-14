@@ -11,11 +11,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def _promote_legacy_license_key_env() -> None:
-    """Sprint 2J FAZ F — accept the legacy un-prefixed LICENSE_KEY env var.
+    """Accept the legacy un-prefixed LICENSE_KEY env var.
 
     The 023 settings model uses ``env_prefix='ABS_'``, so a customer
     whose ``.env`` carries the un-prefixed ``LICENSE_KEY=...`` (the
-    name docs/quickstart-30min.md shipped through Sprint 2I) would
+    name docs/quickstart-30min.md used to ship) would
     silently boot in demo mode. Detect the typo before pydantic
     parses, promote the value into ``ABS_LICENSE_KEY``, and emit a
     DeprecationWarning so the operator sees the rename in logs.
@@ -312,7 +312,7 @@ class Settings(BaseSettings):
     rerank_cache_ttl_seconds: int = 3600
     rerank_cache_max_entries: int = 4096
 
-    # RAG cost + usage tracking (LangFuse-compatible JSONL pre-T-018)
+    # RAG cost + usage tracking (LangFuse-compatible JSONL)
     usage_log_path: str = "data/rag_usage.jsonl"
     usage_log_sample_rate: float = 1.0  # 0.0..1.0; production=1.0, dev=0.1
 
@@ -322,7 +322,7 @@ class Settings(BaseSettings):
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
 
-    # Q7 Phase B — cosign signature verification (real verify lands in Q8)
+    # Cosign signature verification (real verify lands in Q8)
     cosign_skip: bool = True  # dev default; prod must set ABS_COSIGN_SKIP=false
     cosign_public_key_path: str = "/etc/abs/cosign.pub"
 
@@ -343,7 +343,7 @@ class Settings(BaseSettings):
     ragas_baseline_path: str = "tests/fixtures/ragas_baseline.json"
     ragas_max_drop: float = 0.05
 
-    # T-025..T-032 — Meeting pipeline
+    # Meeting pipeline
     transcribe_backend: str = "mock"  # mock | whisperx | deepgram | groq
     transcribe_device: str = "cuda"
     deepgram_api_key: str = ""
@@ -415,7 +415,7 @@ class Settings(BaseSettings):
     # Env
     env: str = "dev"  # "dev" | "prod"
 
-    # Q7 Phase A — Neo4j graph DB
+    # Neo4j graph DB
     neo4j_uri: str = "bolt://neo4j:7687"
     neo4j_user: str = "neo4j"
     neo4j_password: str = "AbsNeo2026!"
@@ -448,7 +448,7 @@ class Settings(BaseSettings):
     # it was asking about anyway.
     multi_tenant_strict: bool = True
 
-    # GraphRAG — knowledge graph over the RAG corpus (Phase 2).
+    # GraphRAG — knowledge graph over the RAG corpus.
     # When enabled, ingest best-effort extracts entities/relations into Neo4j;
     # the /v1/graph-rag/build endpoint can (re)process the existing corpus.
     graphrag_enabled: bool = False
