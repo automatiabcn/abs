@@ -272,4 +272,27 @@ async def license_info() -> Dict[str, Any]:
             "grace_days": licence_gate.GRACE_DAYS,
         }
 
-    return {**described, "status": "licensed", "allowed": True}
+    return {**described, "status": "licensed", "allowed": True, "renewal": _renewal()}
+
+
+def _renewal() -> Dict[str, Any]:
+    """Whether this server can still fetch next month's key — and if not, why.
+
+    The subscription is monthly, so the key is monthly, so a renewal that keeps
+    failing is a server that stops. Silently, on a morning nobody chose. This is
+    what the licence page needs in order to say so first.
+    """
+    from app.licensing import renewal
+
+    token = (settings.license_key or "").strip()
+    left = renewal.seconds_left(token) if token else None
+    last = renewal.last_attempt()
+
+    return {
+        "configured": bool(settings.license_renewal_url),
+        "days_left": None if left is None else round(left / 86400, 1),
+        "due": bool(token) and renewal.is_due(token),
+        "last_attempt_at": last["attempted_at"],
+        "last_attempt_ok": last["ok"],
+        "last_error": last["error"],
+    }
