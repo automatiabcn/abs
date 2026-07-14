@@ -36,7 +36,7 @@ SCREENS: list[tuple[str, str]] = [
     ("connect", "/panel/connect"),
     ("privacy", "/privacy?lang=en"),
     ("admin", "/admin"),
-    ("tools", "/panel/tools.html"),
+    ("tools", "/panel/tools"),
 ]
 
 REPO_ROOT = Path(__file__).resolve().parents[1]

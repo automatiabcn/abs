@@ -169,6 +169,15 @@
   --abs-danger: rgb(var(--abs-danger-rgb));
   --abs-info: rgb(var(--abs-info-rgb));
 
+  /* The four soft grounds were defined as rgb triples and never turned into
+   * colours, so `var(--abs-warning-soft)` resolved to nothing and the demo
+   * banner — the strip that says "this data is not real" — rendered on a
+   * transparent background. */
+  --abs-success-soft: rgb(var(--abs-success-soft-rgb));
+  --abs-warning-soft: rgb(var(--abs-warning-soft-rgb));
+  --abs-danger-soft: rgb(var(--abs-danger-soft-rgb));
+  --abs-info-soft: rgb(var(--abs-info-soft-rgb));
+
   --abs-ring: rgb(var(--abs-ring-rgb));
 
   /* Elevation. Shadows stay near-neutral; a tinted shadow on a light canvas

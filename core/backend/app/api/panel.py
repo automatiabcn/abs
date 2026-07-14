@@ -13,16 +13,12 @@ index to `/admin/dashboard`.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from fastapi import APIRouter, Request
-from fastapi.responses import FileResponse, RedirectResponse, Response
+from fastapi.responses import RedirectResponse, Response
 
 from app.api.auth import COOKIE_NAME, current_admin
 
 router = APIRouter(tags=["panel"])
-
-PANEL_DIR = Path(__file__).resolve().parents[1] / "static" / "panel"
 
 
 @router.get("/panel/login")
@@ -59,25 +55,14 @@ def panel_legacy_disabled(request: Request) -> Response:
     )
 
 
-# Catch-all, so that any legacy `/panel/<x>` link redirects instead of 404ing:
+# Catch-all, so that any legacy `/panel/<x>` link redirects instead of 404ing.
 # Only `/panel`, `/panel/login` and `/panel/legacy` have explicit handlers.
 #
-# `/panel/assets/*` must be excluded. main.py mounts StaticFiles AFTER this
-# Router, but Starlette matches routes in declaration order, so the catch-all
-# Would shadow the mount. Once a request matches here the router chain stops,
-# so an asset path cannot be handed on to the mount — it has to be served
-# Directly with FileResponse rather than 404ed.
+# Nothing is carved out of this any more: the vanilla panel's HTML and its
+# assets are gone from the image, so there is no file left under /panel to
+# serve.
 @router.get("/panel/{path:path}")
 def panel_subpath_compat_redirect(path: str) -> Response:
-    """Legacy `/panel/<x>` → `/admin/<x>` 308 redirect.
-
-    `/panel/assets/*` is served from the static panel directory instead of
-    being redirected.
-    """
-    if path.startswith("assets/"):
-        asset_path = PANEL_DIR / path
-        if asset_path.is_file():
-            return FileResponse(str(asset_path))
-        return Response(status_code=404)
+    """Legacy `/panel/<x>` → `/admin/<x>` 308 redirect."""
     target = f"/admin/{path}" if path else "/admin"
     return RedirectResponse(url=target, status_code=308)
