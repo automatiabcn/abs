@@ -129,6 +129,16 @@ export default function SignupPage() {
           {message}
         </p>
       )}
+
+      {/* /login links here, and nothing linked back — someone who followed the
+          signup link by mistake, or who already has an account, had no way out
+          of this page but the address bar. */}
+      <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-300">
+        Already have an account?{" "}
+        <a className="underline" href="/login">
+          Sign in
+        </a>
+      </p>
     </main>
   );
 }
