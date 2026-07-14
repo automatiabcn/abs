@@ -7,6 +7,10 @@ from pathlib import Path
 
 import pytest
 
+# Filled in by `_session_env`: the live SQLite file every test talks to, and a
+# pristine copy of it taken right after the tables were created.
+_DB_PATHS: dict[str, Path] = {}
+
 
 @pytest.fixture(scope="session", autouse=True)
 def _session_env(tmp_path_factory):
@@ -52,6 +56,15 @@ def _session_env(tmp_path_factory):
     session_mod._engine = None
     init_db()
 
+    # Keep a pristine copy of the freshly-migrated database. `_isolate_db` below
+    # restores it before every test, so no test inherits another's rows.
+    import shutil
+
+    pristine = tmpdir / "pristine.db"
+    shutil.copyfile(db_path, pristine)
+    _DB_PATHS["live"] = db_path
+    _DB_PATHS["pristine"] = pristine
+
     yield
 
 
@@ -68,18 +81,31 @@ def _session_data_dir(tmp_path_factory, _session_env):
 
 @pytest.fixture(autouse=True)
 def _autocomplete_setup_state(_session_data_dir):
-    """Write a `completed: true` setup_state.json so the first-run middleware
-    does not hijack every other test. The setup-wizard and first-run tests
-    override `settings.data_dir` with monkeypatch, so they never see this."""
+    """Hand every test an empty data directory with a `completed: true`
+    setup_state.json, so the first-run middleware does not hijack it.
+
+    Emptying the directory matters as much as writing the state file. The admin's
+    credentials live on disk, in `admin_credentials.json`, not in the database —
+    and the setup-wizard tests write that file. It used to survive into every test
+    that ran after them, which meant `admin@local` / `CHANGEME` stopped being the
+    password and a hundred unrelated tests got a 401 from a wizard they never ran.
+    Whether that happened depended on the collection order.
+
+    The setup-wizard and first-run tests point `settings.data_dir` somewhere else
+    with monkeypatch, so none of this touches them."""
     import json
+    import shutil
     import time
     from pathlib import Path
 
     from app.config import settings
 
-    state_path = Path(settings.data_dir) / "setup_state.json"
+    data_dir = Path(settings.data_dir)
+    state_path = data_dir / "setup_state.json"
     try:
-        state_path.parent.mkdir(parents=True, exist_ok=True)
+        if data_dir.exists():
+            shutil.rmtree(data_dir)
+        data_dir.mkdir(parents=True, exist_ok=True)
         state_path.write_text(
             json.dumps(
                 {
@@ -100,6 +126,51 @@ def _autocomplete_setup_state(_session_data_dir):
             ),
             encoding="utf-8",
         )
+    except Exception:
+        pass
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _restore_settings():
+    """Hand back the settings object exactly as the test found it.
+
+    `settings` is one object for the whole process. Most tests change it through
+    monkeypatch and get their change undone for free; the ones that assign to it
+    directly do not, and what they leave behind is invisible until some later test
+    asks a question whose answer depends on it. That is how a test asserting "groq
+    is not configured" ended up reading a key another test had set an hour of
+    collection order earlier.
+    """
+    from app.config import settings
+
+    before = dict(settings.__dict__)
+    yield
+    settings.__dict__.clear()
+    settings.__dict__.update(before)
+
+
+@pytest.fixture(autouse=True)
+def _reset_health_monitor():
+    """The health monitor is another process-wide singleton, and the probe results
+    it collects were outliving the test that provoked them — so a test asserting
+    that a fresh monitor reports every provider as `unknown` read a neighbour's
+    results instead."""
+    try:
+        from app.health.monitor import monitor
+
+        monitor._results.clear()
+    except Exception:
+        pass
+    try:
+        # The SSE judge feed caches its aggregate for 60s in a module-level dict.
+        # Inside a test run that is longer than the whole suite: one test writes a
+        # score into it and every later test that reads the feed gets that score
+        # back instead of the empty one it set up for.
+        from app.api.stream import _JUDGE_CACHE
+
+        _JUDGE_CACHE["data"] = None
+        _JUDGE_CACHE["ts"] = 0.0
     except Exception:
         pass
     yield
@@ -139,6 +210,44 @@ def _reset_circuit_breaker():
         default_breaker._states.clear()
     except Exception:
         pass
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _isolate_db():
+    """Give every test the database as it was before any test touched it.
+
+    One SQLite file was shared by the whole session, so every row a test wrote
+    was still there for the next one. That is how the suite ended up green in
+    exactly one collection order and red in others:
+
+      * `FailedLoginAttempt` — dozens of tests submit a bad password on purpose,
+        because that is the thing they are testing. Each one pushes `admin@local`
+        closer to a lockout, and whichever test crosses the threshold hands every
+        later admin login a 429 before the password is even checked.
+      * `Tenant` — the raw-Cypher guard refuses when the install serves more than
+        one tenant. Tests that create tenants leave them behind, so a graph test
+        that would pass alone gets a 403 from a neighbour's rows.
+      * The admin's password, provider keys, secrets — all of it carried over.
+
+    Restoring a pristine copy of the file is cheap (SQLite is one file, and the
+    copy is milliseconds) and it closes the whole class rather than one symptom
+    at a time. The engine is disposed first so its pooled connections do not keep
+    writing to the file we are about to overwrite.
+    """
+    import shutil
+
+    live = _DB_PATHS.get("live")
+    pristine = _DB_PATHS.get("pristine")
+    if live and pristine and pristine.exists():
+        try:
+            import app.db.session as session_mod
+
+            if session_mod._engine is not None:
+                session_mod._engine.dispose()
+            shutil.copyfile(pristine, live)
+        except Exception:
+            pass
     yield
 
 
