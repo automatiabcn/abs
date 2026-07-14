@@ -75,6 +75,7 @@ export default function MeetingsPanel() {
   const [meetings, setMeetings] = useState<MeetingRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -145,6 +146,40 @@ export default function MeetingsPanel() {
   useEffect(() => {
     fetchMeetings();
   }, []);
+
+  // There was no way to do this. A recording of a private conversation went in,
+  // was transcribed, was indexed, and answered questions from then on — and the
+  // only thing the panel let you do with it was read it. Documents could be
+  // deleted; the conversation could not.
+  const remove = async (meeting: MeetingRow) => {
+    const ok = window.confirm(
+      `Delete "${meeting.filename}"?\n\n` +
+        "The transcript and everything the assistant learned from this recording " +
+        "are removed — it will stop answering questions from it. This cannot be undone.",
+    );
+    if (!ok) return;
+    setDeleting(meeting.id);
+    setError(null);
+    try {
+      const res = await fetch(`/v1/meetings/${meeting.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const detail = await res.text();
+        // The server refuses to delete the transcript when it cannot remove the
+        // searchable copy, and says why. Passing that through matters: "deleted"
+        // over a recording that still answers questions is the one lie this page
+        // must never tell.
+        throw new Error(detail || `HTTP ${res.status}`);
+      }
+      setMeetings((rows) => rows.filter((row) => row.id !== meeting.id));
+    } catch (exc) {
+      setError(`Could not delete this recording: ${(exc as Error).message}`);
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const onFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -405,12 +440,23 @@ export default function MeetingsPanel() {
                         </div>
                       </td>
                       <td className="py-3">
-                        <a
-                          className="text-xs text-primary hover:underline"
-                          href={`/panel/meetings/${m.id}`}
-                        >
-                          Open
-                        </a>
+                        <div className="flex items-center justify-end gap-3">
+                          <a
+                            className="text-xs text-primary hover:underline"
+                            href={`/panel/meetings/${m.id}`}
+                          >
+                            Open
+                          </a>
+                          <button
+                            type="button"
+                            data-test="meeting-delete"
+                            onClick={() => remove(m)}
+                            disabled={deleting === m.id}
+                            className="text-xs text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
+                          >
+                            {deleting === m.id ? "Deleting…" : "Delete"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
