@@ -89,6 +89,30 @@ jobs:
             echo "::warning::Coverage ${total}% is below 70%"
           fi
 
+  # The suite used to pass in exactly one collection order — the alphabetical one
+  # it happened to have — because seven pieces of process-wide state leaked from
+  # each test into the next. Renaming a few files was enough to turn 57 of them
+  # red. A green run in one order proves nothing on its own, so this job runs the
+  # files in the opposite order and the two have to agree.
+  test-reverse-order:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: core/backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: core/backend/pyproject.toml
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+      - name: Run the suite backwards
+        run: pytest -q --tb=line $(ls tests/*.py | sort -r | tr '\n' ' ')
+
   # The panel had no CI at all. 231 vitest tests and a clean `tsc` ran only on a
   # laptop, so nothing stopped a merge that broke the console — including the
   # guard tests that exist specifically to stop the panel inventing data it
