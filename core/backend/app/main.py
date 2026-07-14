@@ -248,15 +248,19 @@ async def lifespan(_app: FastAPI):
                     "license_offline_grace_expired — paid providers blocked"
                 )
 
-            # Periodic heartbeat so a server-side revoke
-            # propagates to /v1/chat/completions within one interval
-            # instead of waiting for the next manual restart. Default
-            # 60s for live pilots; production deployments override via
-            # ABS_HEARTBEAT_INTERVAL_SECS to keep CF Worker pressure
-            # sane. ABS_PHONE_HOME_DISABLED disables this loop too.
+            # Periodic heartbeat: the only way a server-side revoke (a refund,
+            # a cancelled contract) reaches a running install. It is the ONLY
+            # thing the network is used for — the licence itself is checked
+            # offline, in `app.licensing.gate`, on every request.
+            #
+            # This defaulted to 30 seconds, which is 2,880 calls a day from
+            # every customer to a single Cloudflare Worker, to answer a
+            # question whose answer changes maybe once in a licence's life.
+            # Hourly means a revocation lands within the hour; the 7-day
+            # offline grace covers the case where we are unreachable.
             interval = max(
-                15,
-                int(_ph_os.environ.get("ABS_HEARTBEAT_INTERVAL_SECS", "30")),
+                60,
+                int(_ph_os.environ.get("ABS_HEARTBEAT_INTERVAL_SECS", "3600")),
             )
 
             async def _heartbeat_loop(token: str, machine_fp: str, secs: int) -> None:
