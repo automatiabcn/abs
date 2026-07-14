@@ -51,6 +51,24 @@ RENEW_BEFORE_DAYS = 3
 
 _TIMEOUT_S = 8.0
 
+# The last thing renewal did, so the panel can say it out loud.
+#
+# A renewal that quietly fails is the worst failure this module has, because it
+# looks exactly like one that quietly works — right up to the morning the key runs
+# out and a paying customer's server stops for a reason nobody warned them about.
+# So every attempt is recorded, and `/v1/license/info` reports it.
+_LAST: Dict[str, Any] = {"attempted_at": None, "ok": None, "error": None}
+
+
+def last_attempt() -> Dict[str, Any]:
+    return dict(_LAST)
+
+
+def _record(ok: bool, error: Optional[str] = None) -> None:
+    import time
+
+    _LAST.update({"attempted_at": time.time(), "ok": ok, "error": error})
+
 
 def _claims(token: str) -> Dict[str, Any]:
     """The token's own claims, signature unchecked and expiry ignored.
@@ -156,7 +174,17 @@ async def renew_if_due(token: Optional[str] = None) -> bool:
                 json={"license_key": current},
             )
     except Exception as exc:  # noqa: BLE001 — our outage is not their problem
-        logger.warning("renewal_unreachable err=%s (nothing is refused)", exc)
+        # Nothing is refused. But a customer who is paying us and whose key is
+        # days from running out has to hear about it while there is still time to
+        # do something, so this is loud and it reaches the licence page.
+        logger.error(
+            "renewal_unreachable url=%s err=%s — the licence on this server expires "
+            "in %.1f days and could not be renewed. Nothing is blocked yet.",
+            settings.license_renewal_url,
+            exc,
+            (seconds_left(current) or 0) / 86400,
+        )
+        _record(False, f"could not reach {settings.license_renewal_url}")
         return False
 
     if res.status_code == 402:
@@ -164,16 +192,21 @@ async def renew_if_due(token: Optional[str] = None) -> bool:
         # do: the key that is already here will run out on its own, and the gate
         # will say so in words.
         logger.info("renewal_declined reason=subscription_inactive")
+        _record(False, "the subscription is no longer active")
         return False
 
     if res.status_code != 200:
         logger.warning("renewal_failed status=%s", res.status_code)
+        _record(False, f"the renewal service answered {res.status_code}")
         return False
 
     try:
         fresh = (res.json() or {}).get("license_key", "")
     except Exception:  # noqa: BLE001
         logger.warning("renewal_failed reason=unreadable_response")
+        _record(False, "the renewal service sent something unreadable")
         return False
 
-    return apply_renewed_key(fresh)
+    installed = apply_renewed_key(fresh)
+    _record(installed, None if installed else "the new key was rejected")
+    return installed

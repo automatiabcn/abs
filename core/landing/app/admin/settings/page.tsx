@@ -215,6 +215,13 @@ type LicenseInfo = {
   grace_days?: number;
   reason?: string;
   detail?: string;
+  renewal?: {
+    configured: boolean;
+    days_left: number | null;
+    due: boolean;
+    last_attempt_ok: boolean | null;
+    last_error: string | null;
+  };
 };
 
 function maskJti(jti: string): string {
@@ -359,6 +366,22 @@ function LicenseTab() {
           </FormRow>
         )}
       </div>
+
+      {info.renewal &&
+        info.renewal.last_attempt_ok === false &&
+        info.renewal.days_left !== null && (
+          <p
+            data-test="license-renewal-warning"
+            className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-rose-700 dark:text-rose-200"
+          >
+            This server could not renew its licence
+            {info.renewal.last_error ? ` — ${info.renewal.last_error}` : ""}. The
+            key it is running on expires in {info.renewal.days_left} days, and
+            chat will pause when it does. Nothing is blocked yet, and your data is
+            not affected. If your subscription is active, contact support before
+            then.
+          </p>
+        )}
 
       {info.status === "trial" && (
         <div
