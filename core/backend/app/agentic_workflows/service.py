@@ -474,6 +474,11 @@ async def run_workflow_graph(
         if kind == "retrieval":
             top_k = cfg.get("top_k") if isinstance(cfg.get("top_k"), int) else 5
             query_text = (cfg.get("query") or "").strip() or prev_summary or input_text
+            scope = (cfg.get("scope_company") or "").strip()
+            if scope:
+                # Focus on one company: prefixing the firm name steers both the
+                # cosine pull and the BM25 re-rank toward that company's context.
+                query_text = f"{scope}: {query_text}".strip()
             try:
                 from app.rag.hybrid import query_hybrid
 
@@ -497,7 +502,13 @@ async def run_workflow_graph(
             snippets = [s for s in snippets if s]
             context_snippets.extend(snippets[:5])
             results.append(
-                {"kind": kind, "name": nm, "status": "done", "retrieved": len(snippets)}
+                {
+                    "kind": kind,
+                    "name": nm,
+                    "status": "done",
+                    "retrieved": len(snippets),
+                    "scope": scope or None,
+                }
             )
             executed += 1
             continue
