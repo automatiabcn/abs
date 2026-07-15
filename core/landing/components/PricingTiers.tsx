@@ -112,7 +112,7 @@ export default function PricingTiers() {
               className={
                 "flex flex-col rounded-2xl border p-6 shadow-sm " +
                 (tier.highlight
-                  ? "border-blue-500 ring-1 ring-blue-500"
+                  ? "border-primary ring-1 ring-primary"
                   : "border-border/60")
               }
             >
