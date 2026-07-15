@@ -23,12 +23,20 @@ describe("Demo (018 modul D)", () => {
     expect(iframe.getAttribute("src") ?? "").toMatch(/loom\.com\/embed/);
   });
 
-  it("renders placeholder copy (no iframe) when env var is unset", () => {
+  it("renders the real product gallery (no iframe) when env var is unset", () => {
     delete process.env.NEXT_PUBLIC_DEMO_LOOM_URL;
     render(<Demo />);
+    // No iframe, and no "coming soon" dead box — the fallback is now the real
+    // panel: a heading that invites a look and the screen tabs beneath it.
     expect(
       screen.queryByTitle("ABS demo screencast"),
     ).not.toBeInTheDocument();
-    expect(screen.getByText(/coming soon/i)).toBeInTheDocument();
+    expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /see the panel/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /workflows/i }),
+    ).toBeInTheDocument();
   });
 });
