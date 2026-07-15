@@ -198,7 +198,7 @@ export default function LeadIntelligencePage() {
                 <div key={k} className="flex items-center gap-3 text-[12px]">
                   <span className="w-44 shrink-0 text-muted-foreground">{k}</span>
                   <div className="h-[6px] flex-1 overflow-hidden rounded bg-muted/40">
-                    <div className="h-full rounded" style={{ width: `${Math.round(v * 100)}%`, background: "linear-gradient(90deg,#1e57ac,#3a9dff)" }} />
+                    <div className="h-full rounded" style={{ width: `${Math.round(v * 100)}%`, background: "linear-gradient(90deg,#0b7c74,#4ecdc2)" }} />
                   </div>
                   <span className="w-9 shrink-0 text-right font-mono">{v.toFixed(2).replace(/^0/, "")}</span>
                 </div>
@@ -252,13 +252,13 @@ export default function LeadIntelligencePage() {
                     <td className="py-2.5 pr-3 text-muted-foreground">{l.sector || "—"}</td>
                     <td className="py-2.5 pr-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-[5px] w-14 overflow-hidden rounded bg-muted/40"><div className="h-full" style={{ width: `${Math.round(l.score * 100)}%`, background: "linear-gradient(90deg,#1e57ac,#3a9dff)" }} /></div>
+                        <div className="h-[5px] w-14 overflow-hidden rounded bg-muted/40"><div className="h-full" style={{ width: `${Math.round(l.score * 100)}%`, background: "linear-gradient(90deg,#0b7c74,#4ecdc2)" }} /></div>
                         <span className="font-mono text-xs">{l.score.toFixed(2)}</span>
                       </div>
                     </td>
                     <td className="py-2.5 pr-3"><span className={`rounded-full border px-2 py-0.5 text-[10px] ${INTENT[l.intent] ?? ""}`}>{l.intent}</span></td>
                     <td className="py-2.5 pr-3 text-muted-foreground">{l.consent_status || "—"}</td>
-                    <td className="py-2.5 pr-3 text-muted-foreground">{l.buying_group_count} roles</td>
+                    <td className="py-2.5 pr-3 text-muted-foreground">{l.buying_group_count} {l.buying_group_count === 1 ? "role" : "roles"}</td>
                     <td className="py-2.5 pr-3 font-mono text-[11px] text-muted-foreground">{l.source || "—"}</td>
                     <td className="py-2.5 pr-3 text-muted-foreground">{l.recommended_action}</td>
                     <td className="py-2.5"><button onClick={(e) => { e.stopPropagation(); score(l.id); }} className="rounded-md border px-2.5 py-1 text-[11px]">Score</button></td>
