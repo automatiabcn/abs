@@ -10,6 +10,8 @@
 // /v1/panel/pipeline/recent for run history.
 "use client";
 
+import { formatDateTime } from "@/lib/format";
+
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -404,7 +406,7 @@ export default function PipelinesPage() {
                     {r.tool}
                   </Badge>
                   <span className="text-muted-foreground">
-                    {new Date(r.ts).toLocaleString()}
+                    {formatDateTime(new Date(r.ts), "en")}
                   </span>
                   <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
                     {r.steps.map((s, j) => (

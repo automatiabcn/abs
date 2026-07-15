@@ -11,6 +11,8 @@
 // and /v1/license/* finishes alongside the customer journey gate (O).
 "use client";
 
+import { formatDate } from "@/lib/format";
+
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -305,7 +307,7 @@ function LicenseTab() {
   const tierLabel = info.tier ?? "—";
   const seatLabel = info.seat_count !== null ? String(info.seat_count) : "—";
   const expiresLabel = info.expires_at
-    ? new Date(info.expires_at).toLocaleDateString()
+    ? formatDate(new Date(info.expires_at), "en")
     : "—";
   const jtiLabel = info.jti ? maskJti(info.jti) : "—";
 

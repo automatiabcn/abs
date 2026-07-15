@@ -11,6 +11,8 @@
 // button that fires a `/v1/cascade/run` for live trace.
 "use client";
 
+import { formatDate } from "@/lib/format";
+
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -439,7 +441,7 @@ export default function ProvidersPage() {
                   <div className="mb-1 flex items-center gap-2">
                     <Boxes className="h-3 w-3 text-muted-foreground" />
                     <span className="font-mono text-muted-foreground">
-                      {new Date(h.ts).toLocaleTimeString()}
+                      {formatDate(new Date(h.ts), "en", { timeStyle: "short" })}
                     </span>
                     {h.ok ? (
                       <Badge

@@ -9,6 +9,8 @@
 // Renders Tremor metric tiles + 7-day Claude token trend chart.
 "use client";
 
+import { formatNumber } from "@/lib/format";
+
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Card, ProgressBar } from "@tremor/react";
@@ -168,8 +170,8 @@ export default function UsageClient({
             className="mt-3"
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            {data.claude.used_tokens.toLocaleString()} of{" "}
-            {data.claude.limit_tokens.toLocaleString()} tokens
+            {formatNumber(data.claude.used_tokens, "en")} of{" "}
+            {formatNumber(data.claude.limit_tokens, "en")} tokens
           </p>
         </Card>
         <Card data-test="usage-tile-paid-path">

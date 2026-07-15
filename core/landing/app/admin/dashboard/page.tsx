@@ -28,6 +28,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard, type StatTone } from "@/components/ui/stat-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatDateTime } from "@/lib/format";
 
 interface BillingSummary {
   licenses_total?: number;
@@ -217,7 +218,7 @@ export default function AdminDashboardPage() {
 
       {data?.generated_at ? (
         <p className="mt-4 text-xs text-subtle">
-          Updated {new Date(data.generated_at * 1000).toLocaleString("en-GB")}
+          Updated {formatDateTime(new Date(data.generated_at * 1000), "en")}
           {data.cached ? " · cached" : " · live"}
         </p>
       ) : null}

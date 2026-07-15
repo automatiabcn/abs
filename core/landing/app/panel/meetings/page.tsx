@@ -9,6 +9,8 @@
 // filter bar (search + status + speaker count + date range).
 "use client";
 
+import { formatDate } from "@/lib/format";
+
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { FilterX, Mic, RefreshCw, Search, Upload } from "lucide-react";
 
@@ -51,7 +53,7 @@ function fmtDuration(sec: number): string {
 
 function fmtDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleString(undefined, {
+    return formatDate(new Date(iso), "en", {
       hour12: false,
       timeStyle: "short",
       dateStyle: "short",

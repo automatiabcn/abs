@@ -11,6 +11,8 @@
 // `initialData` so first paint already renders rows.
 "use client";
 
+import { formatDate, formatDateTime } from "@/lib/format";
+
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -427,7 +429,7 @@ export default function UsersClient({
                     <span className="text-muted-foreground" suppressHydrationWarning>
                       {inv.role} · {inv.status}
                       {inv.expires_at
-                        ? ` · ${new Date(inv.expires_at).toLocaleDateString()}`
+                        ? ` · ${formatDate(new Date(inv.expires_at), "en")}`
                         : ""}
                     </span>
                   </div>
@@ -538,7 +540,7 @@ export default function UsersClient({
                         suppressHydrationWarning
                       >
                         {u.last_login
-                          ? new Date(u.last_login).toLocaleString()
+                          ? formatDateTime(new Date(u.last_login), "en")
                           : "—"}
                       </td>
                       <td className="px-3 py-2">
