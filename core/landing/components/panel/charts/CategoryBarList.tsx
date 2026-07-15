@@ -33,7 +33,7 @@ export default function CategoryBarList({ data }: { data: CategoryBar[] }) {
   }, [data]);
 
   return (
-    <TremorCard ref={rootRef} className="border-0 bg-transparent p-0 shadow-none">
+    <TremorCard ref={rootRef} className="border-0 bg-transparent p-0 shadow-none ring-0">
       <Flex className="mb-2">
         <Title className="text-xs uppercase tracking-wider text-muted-foreground">
           Category
@@ -42,7 +42,7 @@ export default function CategoryBarList({ data }: { data: CategoryBar[] }) {
           Tools
         </Subtitle>
       </Flex>
-      <BarList data={data} color="indigo" />
+      <BarList data={data} color="teal" />
     </TremorCard>
   );
 }
