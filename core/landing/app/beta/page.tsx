@@ -23,7 +23,7 @@ export default function BetaPage() {
       </h1>
       <p className="mt-3 text-sm text-muted-foreground">
         ABS is shipping fast and we want feedback from real teams. Beta is free
-        for 30 days; you keep ownership of all data and you can cancel any
+        for 7 days; you keep ownership of all data and you can cancel any
         time.
       </p>
       <div className="mt-8">
