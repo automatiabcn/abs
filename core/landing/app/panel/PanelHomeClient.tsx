@@ -89,6 +89,42 @@ interface PanelHomeClientProps {
   initialCascade: CascadeResponse;
 }
 
+// One real agent execution, as the dashboard reports it — the raw material for
+// the "what the server did" feed.
+type ActivityItem = {
+  id: number;
+  agent_id: string;
+  summary: string;
+  risk?: string;
+  requires_approval?: boolean;
+  provider?: string;
+  elapsed_ms?: number;
+  created_at?: string | null;
+};
+
+const ACTIVITY_RISK: Record<string, string> = {
+  low: "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+  medium: "border-amber-500/40 text-amber-700 dark:text-amber-300",
+  high: "border-red-500/40 text-red-700 dark:text-red-300",
+};
+
+function prettyAgent(id: string): string {
+  return id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function relTime(iso?: string | null): string {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const s = Math.max(0, Math.round((Date.now() - then) / 1000));
+  if (s < 60) return "just now";
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.round(h / 24)}d ago`;
+}
+
 export default function PanelHomeClient({
   initialTools,
   initialQuota,
@@ -112,6 +148,14 @@ export default function PanelHomeClient({
     initialData: initialCascade,
     initialDataUpdatedAt: 0,
   });
+  // Real agent runs for the "what the server did" feed (the page already
+  // promises this — "who ran what" — but never rendered the list).
+  const dashboard = useQuery({
+    queryKey: ["panel", "dashboard-activity"],
+    queryFn: () => fetchJson<{ activity?: ActivityItem[] }>("/v1/dashboard"),
+    retry: false,
+  });
+  const activity = dashboard.data?.activity ?? [];
 
   const toolsTotal = tools.data?.total ?? 0;
   const cascadeCount = cascade.data?.count ?? 0;
@@ -299,6 +343,56 @@ export default function PanelHomeClient({
             </CardContent>
           </Card>
         </motion.div>
+      </section>
+
+      <section className="mt-8">
+        <Card className="bg-card/60 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" />
+              Recent activity
+            </CardTitle>
+            <CardDescription>
+              What the server actually did — the newest agent runs, in plain
+              language. Each row is a real run, not an example.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {dashboard.isLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : activity.length === 0 ? (
+              <div className="flex h-24 items-center justify-center text-center text-sm text-muted-foreground">
+                Nothing yet — as the server answers questions and runs agents,
+                each action shows up here.
+              </div>
+            ) : (
+              <ul className="divide-y divide-border" data-test="home-activity">
+                {activity.map((a) => (
+                  <li key={a.id} className="flex items-start justify-between gap-3 py-2.5">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium">{prettyAgent(a.agent_id)}</div>
+                      <div className="truncate text-xs text-muted-foreground">{a.summary || "—"}</div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2 text-[11px]">
+                      {a.requires_approval && (
+                        <span className="rounded-full border border-rose-500/40 px-1.5 py-0.5 text-rose-700 dark:text-rose-300">needs approval</span>
+                      )}
+                      {a.risk && (
+                        <span className={`rounded-full border px-1.5 py-0.5 font-mono ${ACTIVITY_RISK[a.risk] ?? "border-border text-muted-foreground"}`}>{a.risk}</span>
+                      )}
+                      {a.provider && <span className="hidden font-mono text-muted-foreground sm:inline">{a.provider}</span>}
+                      <span className="whitespace-nowrap text-muted-foreground">{relTime(a.created_at)}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <section className="mt-8">
