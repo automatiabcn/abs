@@ -13,7 +13,7 @@
 // swap in a moment later.
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -91,15 +91,24 @@ interface PanelHomeClientProps {
 
 // One real agent execution, as the dashboard reports it — the raw material for
 // the "what the server did" feed.
+type ActivityEvidence = { kind: string; ref: string; excerpt: string };
 type ActivityItem = {
   id: number;
   agent_id: string;
+  task?: string;
   summary: string;
   risk?: string;
   requires_approval?: boolean;
   provider?: string;
   elapsed_ms?: number;
   created_at?: string | null;
+  evidence?: ActivityEvidence[];
+};
+
+const EVIDENCE_KIND: Record<string, string> = {
+  rag: "border-violet-500/40 text-violet-700 dark:text-violet-300",
+  graph: "border-primary/50 text-primary",
+  signal: "border-amber-500/40 text-amber-700 dark:text-amber-300",
 };
 
 const ACTIVITY_RISK: Record<string, string> = {
@@ -156,6 +165,7 @@ export default function PanelHomeClient({
     retry: false,
   });
   const activity = dashboard.data?.activity ?? [];
+  const [openRun, setOpenRun] = useState<number | null>(null);
 
   const toolsTotal = tools.data?.total ?? 0;
   const cascadeCount = cascade.data?.count ?? 0;
@@ -371,24 +381,69 @@ export default function PanelHomeClient({
               </div>
             ) : (
               <ul className="divide-y divide-border" data-test="home-activity">
-                {activity.map((a) => (
-                  <li key={a.id} className="flex items-start justify-between gap-3 py-2.5">
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium">{prettyAgent(a.agent_id)}</div>
-                      <div className="truncate text-xs text-muted-foreground">{a.summary || "—"}</div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2 text-[11px]">
-                      {a.requires_approval && (
-                        <span className="rounded-full border border-rose-500/40 px-1.5 py-0.5 text-rose-700 dark:text-rose-300">needs approval</span>
+                {activity.map((a) => {
+                  const open = openRun === a.id;
+                  const ev = a.evidence ?? [];
+                  return (
+                    <li key={a.id}>
+                      <button
+                        type="button"
+                        onClick={() => setOpenRun(open ? null : a.id)}
+                        aria-expanded={open}
+                        className="flex w-full items-start justify-between gap-3 py-2.5 text-left transition hover:opacity-80"
+                        data-test="home-activity-row"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 text-sm font-medium">
+                            <span className={`text-[10px] text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`}>▶</span>
+                            {prettyAgent(a.agent_id)}
+                          </div>
+                          <div className={`text-xs text-muted-foreground ${open ? "" : "truncate"}`}>{a.summary || "—"}</div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2 text-[11px]">
+                          {a.requires_approval && (
+                            <span className="rounded-full border border-rose-500/40 px-1.5 py-0.5 text-rose-700 dark:text-rose-300">needs approval</span>
+                          )}
+                          {a.risk && (
+                            <span className={`rounded-full border px-1.5 py-0.5 font-mono ${ACTIVITY_RISK[a.risk] ?? "border-border text-muted-foreground"}`}>{a.risk}</span>
+                          )}
+                          {a.provider && <span className="hidden font-mono text-muted-foreground sm:inline">{a.provider}</span>}
+                          <span className="whitespace-nowrap text-muted-foreground">{relTime(a.created_at)}</span>
+                        </div>
+                      </button>
+                      {open && (
+                        <div className="mb-2 space-y-2 rounded-lg border border-border bg-muted/30 p-3 text-xs">
+                          {a.task && (
+                            <div>
+                              <div className="mb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">Asked to</div>
+                              <div className="text-foreground">{a.task}</div>
+                            </div>
+                          )}
+                          <div>
+                            <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                              What it pulled {ev.length > 0 && `· ${ev.length} source${ev.length === 1 ? "" : "s"}`}
+                            </div>
+                            {ev.length === 0 ? (
+                              <div className="text-muted-foreground">No sources recorded for this run — it answered from the model alone.</div>
+                            ) : (
+                              <ul className="space-y-1.5">
+                                {ev.map((e, i) => (
+                                  <li key={i} className="flex gap-2">
+                                    <span className={`mt-0.5 h-fit shrink-0 rounded-full border px-1.5 py-0.5 font-mono text-[9px] uppercase ${EVIDENCE_KIND[e.kind] ?? "border-border text-muted-foreground"}`}>{e.kind}</span>
+                                    <span className="min-w-0">
+                                      {e.ref && <span className="font-mono text-[10px] text-muted-foreground">{e.ref}</span>}
+                                      {e.excerpt && <span className="block text-foreground">{e.excerpt}</span>}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </div>
                       )}
-                      {a.risk && (
-                        <span className={`rounded-full border px-1.5 py-0.5 font-mono ${ACTIVITY_RISK[a.risk] ?? "border-border text-muted-foreground"}`}>{a.risk}</span>
-                      )}
-                      {a.provider && <span className="hidden font-mono text-muted-foreground sm:inline">{a.provider}</span>}
-                      <span className="whitespace-nowrap text-muted-foreground">{relTime(a.created_at)}</span>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </CardContent>
