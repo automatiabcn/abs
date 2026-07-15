@@ -158,10 +158,22 @@ async def score_lead(
 
     from app.agents.runtime import run_agent
 
+    # The rubric is fixed. Left to invent its own criteria, the model scored
+    # companies on a generic report card (innovation, supply chain, employee
+    # satisfaction) that differed every run and told a sales user nothing about
+    # whether to pursue the lead. These 15 are lead-qualification criteria — the
+    # same rubric the panel renders and the demo seed uses (icp_fit, intent, …).
     task = (
-        f"Score this company against 15 criteria (0..1). Return JSON with "
-        f"payload.score (0..1) and payload.criteria (a criterion→0..1 map). "
-        f"Company: {company_name} (sector: {sector or 'unknown'})."
+        "Score this sales lead on how good a prospect it is to pursue, using "
+        "EXACTLY these 15 criteria, each 0..1. Return JSON with payload.score "
+        "(0..1 overall) and payload.criteria — an object whose keys are exactly:\n"
+        "icp_fit, purchase_likelihood, budget_potential, intent_signal, "
+        "service_need, timing_fit, decision_maker_access, crm_history, "
+        "engagement_recency, competitive_position, sector_fit, growth_signal, "
+        "contact_consent, risk_level, data_confidence.\n"
+        f"Company: {company_name} (sector: {sector or 'unknown'}). "
+        "Judge fit for a B2B seller. When the evidence is thin, score "
+        "conservatively and lower data_confidence rather than guessing high."
     )
     res = await run_agent(
         "lead_scoring", task, tenant_id=tenant_slug, user_subject=actor
