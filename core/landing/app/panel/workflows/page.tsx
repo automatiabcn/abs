@@ -86,7 +86,8 @@ const CONFIG_FIELDS: Record<string, CfgField[]> = {
     { key: "target", label: "Where it goes", as: "text", placeholder: "CRM · channel · recipient" },
   ],
   connector: [
-    { key: "connector_id", label: "Connector", as: "text", placeholder: "hubspot · parasut · csv_import …" },
+    // Rendered as a picker bound to the tenant's real connectors (see inspector).
+    { key: "connector_id", label: "Which connector to sync", as: "select" },
   ],
 };
 
@@ -103,6 +104,7 @@ function toFlowEdges(g: Definition["graph"]): Edge[] {
 export default function WorkflowDesignerPage() {
   const [agents, setAgents] = useState<Record<string, AgentDetail>>({});
   const [palette, setPalette] = useState<Palette | null>(null);
+  const [connectors, setConnectors] = useState<{ id: string; name: string; has_adapter: boolean }[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -128,6 +130,13 @@ export default function WorkflowDesignerPage() {
       }).catch((e) => setErr(String(e)));
     fetch("/v1/agentic-workflows/palette", { credentials: "include", cache: "no-store" })
       .then((r) => r.json()).then((j: Palette) => setPalette(j)).catch(() => {});
+    // A Connector step binds to a real connector, so the inspector offers the
+    // tenant's actual connectors instead of a free-text id nobody can get right.
+    fetch("/v1/connectors", { credentials: "include", cache: "no-store" })
+      .then((r) => r.json())
+      .then((j: { groups?: { connectors: { id: string; name: string; has_adapter: boolean }[] }[] }) =>
+        setConnectors((j.groups ?? []).flatMap((g) => g.connectors)))
+      .catch(() => {});
     fetch("/v1/agentic-workflows/definition", { credentials: "include", cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((d: Definition) => {
@@ -330,6 +339,26 @@ export default function WorkflowDesignerPage() {
                       {f.as === "textarea" ? (
                         <textarea className={`${cls} min-h-[72px]`} placeholder={f.placeholder} value={String(val)}
                           onChange={(e) => updateNodeConfig(selNode.id, f.key, e.target.value)} data-test={`cfg-${f.key}`} />
+                      ) : f.key === "connector_id" ? (
+                        // Bind the box to a real connector, not a hand-typed id.
+                        connectors.length === 0 ? (
+                          <a href="/panel/connectors" className="block rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground">
+                            No connectors yet — set one up first ↗
+                          </a>
+                        ) : (
+                          <>
+                            <select className={cls} value={String(val)}
+                              onChange={(e) => updateNodeConfig(selNode.id, f.key, e.target.value)} data-test="cfg-connector_id">
+                              <option value="">Pick a connector…</option>
+                              {connectors.map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}{c.has_adapter ? " · syncs now" : " · roadmap"}</option>
+                              ))}
+                            </select>
+                            {val && !connectors.find((c) => c.id === val)?.has_adapter && (
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400">This connector has no live sync yet — the step will be skipped until it does.</span>
+                            )}
+                          </>
+                        )
                       ) : f.as === "select" ? (
                         <select className={cls} value={String(val)}
                           onChange={(e) => updateNodeConfig(selNode.id, f.key, e.target.value)} data-test={`cfg-${f.key}`}>
