@@ -151,11 +151,20 @@ export default function WorkflowDesignerPage() {
     const id = `${kind}-${(idc.current += 1)}`;
     const config: NodeConfig = {};
     (CONFIG_FIELDS[kind] ?? []).forEach((f) => { config[f.key] = f.as === "number" ? 0 : (f.options?.[0] ?? ""); });
+    // The tail of the chain: the last node nothing flows out of. A new step is
+    // dropped just to its right and wired onto the end automatically, so the
+    // flow reads left→right and a person never has to discover the connect
+    // handles to make their step actually run (an unwired step is skipped).
+    const sources = new Set(edges.map((e) => e.source));
+    const tail = [...nodes].reverse().find((n) => !sources.has(n.id)) ?? nodes[nodes.length - 1];
+    const pos = tail
+      ? { x: tail.position.x + 210, y: tail.position.y }
+      : { x: 120, y: 200 };
     setNodes((nds) => nds.concat({
-      id, type: "agentic",
-      position: { x: 120 + (nds.length % 4) * 30, y: 360 + (nds.length % 3) * 20 },
+      id, type: "agentic", position: pos,
       data: { kind, name: label, desc, agent_id, config },
     }));
+    if (tail) setEdges((eds) => addEdge({ source: tail.id, target: id, id: `e-${tail.id}-${id}` }, eds));
     setSelected(id);   // open the inspector so the new node can be configured
     setSaved(null);
   }
@@ -251,7 +260,7 @@ export default function WorkflowDesignerPage() {
         <div className="space-y-6 lg:col-span-2">
           <div className="rounded-xl border bg-card/60 p-4">
             <div className="mb-2 flex items-center justify-between">
-              <div className="text-sm font-semibold">◆ Canvas <span className="font-normal text-muted-foreground">· drag a step · drag handle to handle to connect · Delete to remove</span></div>
+              <div className="text-sm font-semibold">◆ Canvas <span className="font-normal text-muted-foreground">· steps run left → right · a new step joins the end on its own · drag a dot to another step to rewire · Delete to remove</span></div>
             </div>
             <AgenticFlowCanvas
               nodes={flowNodes}
@@ -348,13 +357,15 @@ export default function WorkflowDesignerPage() {
             <div className="mb-3 flex flex-wrap gap-1.5">
               {(palette?.node_kinds ?? []).filter((k) => k !== "agent").map((k) => (
                 <button key={k} onClick={() => addNode(k, null, KIND_LABEL[k] ?? k, "")}
-                  className={`rounded-md border px-2 py-1 text-[11px] capitalize hover:bg-muted/40 ${KIND_CHIP[k] ?? "border-border text-muted-foreground"}`}
-                  data-test={`palette-${k}`}>+ {k.replace("_", "-")}</button>
+                  className={`rounded-md border px-2 py-1 text-[11px] hover:bg-muted/40 ${KIND_CHIP[k] ?? "border-border text-muted-foreground"}`}
+                  data-test={`palette-${k}`}>+ {KIND_LABEL[k] ?? k.replace("_", "-")}</button>
               ))}
             </div>
             <div className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Agents</div>
-            <div className="flex flex-wrap gap-1.5">
-              {Object.values(palette?.agents ?? {}).flat().slice(0, 10).map((a) => (
+            {/* Every agent is reachable — a scroll cap keeps the rail short without
+                hiding half the roster behind an arbitrary cut-off. */}
+            <div className="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">
+              {Object.values(palette?.agents ?? {}).flat().map((a) => (
                 <button key={a.id} onClick={() => addNode("agent", a.id, a.name, a.risk + " risk")}
                   className="rounded-md border border-primary/40 px-2 py-1 text-[11px] text-primary hover:bg-primary/10"
                   data-test={`palette-agent-${a.id}`}>+ {a.name}</button>
