@@ -1,0 +1,2752 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Self-host AI orchestration for Claude Code — 100+ MCP tools, 6 provider cascade, RAG hybrid, multilingual quality pipelines.">
+      
+      
+        <meta name="author" content="Automatia BCN">
+      
+      
+        <link rel="canonical" href="https://docs.automatiabcn.com/latest/CUSTOMER_USER_GUIDE/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Automatia ABS — Customer User Guide - Automatia ABS Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#automatia-abs-customer-user-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Automatia ABS Documentation" class="md-header__button md-logo" aria-label="Automatia ABS Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Automatia ABS Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Automatia ABS — Customer User Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/automatiabcn/abs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../setup-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Setup Guide
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart-30min/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quickstart (30 min)
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api-reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../billing-runbook/" class="md-tabs__link">
+          
+  
+  
+  Operations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../security/scope/" class="md-tabs__link">
+          
+  
+  
+  Security
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../qa/perf-budget-policy/" class="md-tabs__link">
+          
+  
+  
+  QA & Policy
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api-reference/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../design-decisions/" class="md-tabs__link">
+          
+  
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../CHANGELOG/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CHANGELOG
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Automatia ABS Documentation" class="md-nav__button md-logo" aria-label="Automatia ABS Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Automatia ABS Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/automatiabcn/abs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart-30min/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart (30 min)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../billing-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Billing Runbook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dr-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Disaster Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vault-recovery-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vault Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-rotation-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook Rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/owasp_rag_checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OWASP + RAG Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/oauth_pentest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OAuth Pen-Test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/hackerone_program/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HackerOne Program
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QA & Policy
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    QA & Policy
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/perf-budget-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Perf Budget
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/i18n-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    i18n Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/fs-scan-allowlist-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    fs-scan Allowlist Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/docs-publishing-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docs Publishing Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/beta-e2e-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beta E2E Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CHANGELOG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CHANGELOG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#welcome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Welcome
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-buying-abs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Buying ABS
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Buying ABS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-product-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Product page
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-payment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Payment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-confirmation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Confirmation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-preparing-the-vps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Preparing the VPS
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Preparing the VPS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-suggested-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Suggested providers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-creating-the-server-general-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Creating the server (general steps)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-installing-abs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Installing ABS
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Installing ABS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-install-docker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Install Docker
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-get-the-abs-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Get the ABS repository
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-environment-file-env" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Environment file (.env)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-start-the-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Start the stack
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-health-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Health check
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-first-configuration-setup-wizard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. First configuration (Setup Wizard)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. First configuration (Setup Wizard)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-admin-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 — Admin account
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 — License
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-domain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3 — Domain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-anthropic-api-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 — Anthropic API key
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-other-providers-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5 — Other providers (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6 — Test
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-provider-api-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Provider API keys
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Provider API keys">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-anthropic-claude-recommended-primary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Anthropic Claude (recommended, primary)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-groq-free-tier-fast" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Groq (free tier, fast)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-google-gemini-free-tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Google Gemini (free tier)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-cerebras-very-fast" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Cerebras (very fast)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#55-cohere-free-trial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.5 Cohere (free trial)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#56-cloudflare-workers-ai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.6 Cloudflare Workers AI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-your-first-chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Your first chat
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Your first chat">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-start-a-chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Start a chat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-choosing-a-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Choosing a pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-rag-knowledge-base" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. RAG knowledge base
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. RAG knowledge base">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-uploading-documents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Uploading documents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-querying" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Querying
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-quality-pipelines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Quality Pipelines
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-workflow-builder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Workflow Builder
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Workflow Builder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-creating-a-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Creating a workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-knowledge-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Knowledge Graph
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Knowledge Graph">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-cypher-editor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Cypher editor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-natural-language-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Natural-language query
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-plugin-marketplace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Plugin Marketplace
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Plugin Marketplace">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-installing-a-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 Installing a plugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 Filtering
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-admin-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Admin settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-license-and-refunds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. License and refunds
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="13. License and refunds">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#131-14-day-no-questions-asked-refund" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.1 14-day no-questions-asked refund
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#132-renewal-maintenance-pack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.2 Renewal (Maintenance Pack)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#133-moving-your-license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.3 Moving your license
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legal-notices-and-trademarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legal notices and trademarks
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="automatia-abs-customer-user-guide">Automatia ABS — Customer User Guide<a class="headerlink" href="#automatia-abs-customer-user-guide" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Self-hosted AI orchestrator. Automate the chaos on your own server.</strong></p>
+<p>Version: 1.0 · Last updated: 2026-05-09 · License: BSL 1.1</p>
+</blockquote>
+<hr />
+<h2 id="contents">Contents<a class="headerlink" href="#contents" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#welcome">Welcome</a></li>
+<li><a href="#1-buying-abs">Buying ABS</a></li>
+<li><a href="#2-preparing-the-vps">Preparing the VPS</a></li>
+<li><a href="#3-installing-abs">Installing ABS</a></li>
+<li><a href="#4-first-configuration-setup-wizard">First configuration (Setup Wizard)</a></li>
+<li><a href="#5-provider-api-keys">Provider API keys</a></li>
+<li><a href="#6-your-first-chat">Your first chat</a></li>
+<li><a href="#7-rag-knowledge-base">RAG knowledge base</a></li>
+<li><a href="#8-quality-pipelines">Quality Pipelines</a></li>
+<li><a href="#9-workflow-builder">Workflow Builder</a></li>
+<li><a href="#10-knowledge-graph">Knowledge Graph</a></li>
+<li><a href="#11-plugin-marketplace">Plugin Marketplace</a></li>
+<li><a href="#12-admin-settings">Admin settings</a></li>
+<li><a href="#13-license-and-refunds">License and refunds</a></li>
+<li><a href="#14-troubleshooting">Troubleshooting</a></li>
+<li><a href="#legal-notices-and-trademarks">Legal notices and trademarks</a></li>
+</ol>
+<hr />
+<h2 id="welcome">Welcome<a class="headerlink" href="#welcome" title="Permanent link">&para;</a></h2>
+<p>ABS (Automation Backbone System) is an AI orchestrator that runs on your own server. It gives you 100+ MCP tools, a router across 6 providers (Anthropic, Groq, Cerebras, Gemini, Cloudflare, Cohere) and hybrid RAG as a single AI infrastructure.</p>
+<p><strong>Usage rights:</strong> As a customer you may run ABS in <strong>production</strong> on your own server. The BSL 1.1 license converts to Apache 2.0 automatically after 4 years (2030-05-07).</p>
+<p><strong>Scope of this guide:</strong> the 30-minute path from purchase to a running install, plus basic usage. For advanced topics see <a href="../api-reference/">docs/api-reference.md</a> and <a href="runbooks/">docs/runbooks/</a>.</p>
+<hr />
+<h2 id="1-buying-abs">1. Buying ABS<a class="headerlink" href="#1-buying-abs" title="Permanent link">&para;</a></h2>
+<h3 id="11-product-page">1.1 Product page<a class="headerlink" href="#11-product-page" title="Permanent link">&para;</a></h3>
+<p><a href="https://automatiabcn.com/products/abs">automatiabcn.com/products/abs</a> — three tiers:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Price</th>
+<th>Includes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Self-Host</td>
+<td>$299 (one-off)</td>
+<td>1 seat · 1 deployment · email support (48h)</td>
+</tr>
+<tr>
+<td>Team 5</td>
+<td>$1,196/year</td>
+<td>5 seats · priority email (24h) · onboarding call</td>
+</tr>
+<tr>
+<td>Team 10</td>
+<td>$2,093/year</td>
+<td>10 seats · 24h SLA · priority support line</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Every tier comes with a 14-day no-questions-asked refund. See <a href="#13-license-and-refunds">Section 13</a>.</p>
+</blockquote>
+<h3 id="12-payment">1.2 Payment<a class="headerlink" href="#12-payment" title="Permanent link">&para;</a></h3>
+<p>The "Buy now" button takes you to a secure payment page (3D Secure supported). The form asks for:</p>
+<ul>
+<li>Email (your license is sent to this address — enter it correctly)</li>
+<li>Card number, expiry, CVC</li>
+<li>Cardholder name and country</li>
+</ul>
+<h3 id="13-confirmation">1.3 Confirmation<a class="headerlink" href="#13-confirmation" title="Permanent link">&para;</a></h3>
+<p>Once payment is approved you see a "Thanks for your payment" page, and:</p>
+<ol>
+<li>A <strong>welcome email</strong> (order summary + the 7 install steps) reaches that address within about a minute.</li>
+<li>A <strong>notification</strong> goes to the Automatia BCN team.</li>
+<li>Your <strong>license JWT</strong> is minted by the Automatia BCN team and sent in a separate email within 24 hours.</li>
+</ol>
+<blockquote>
+<p><strong>No email?</strong> Check your spam folder. If it is still missing, write to <code>info@automatiabcn.com</code> with your order ID.</p>
+</blockquote>
+<hr />
+<h2 id="2-preparing-the-vps">2. Preparing the VPS<a class="headerlink" href="#2-preparing-the-vps" title="Permanent link">&para;</a></h2>
+<p>ABS runs on any Linux x86_64 / ARM64 server. <strong>Minimum:</strong> 2 vCPU, 4 GB RAM, 40 GB SSD. Ubuntu 22.04 LTS is recommended.</p>
+<h3 id="21-suggested-providers">2.1 Suggested providers<a class="headerlink" href="#21-suggested-providers" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Plan</th>
+<th>Monthly</th>
+<th>Regions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hetzner Cloud</td>
+<td>CPX22 (AMD, 2 vCPU, 4 GB, 80 GB NVMe)</td>
+<td>≈ €4.99</td>
+<td>Germany/Finland/USA</td>
+</tr>
+<tr>
+<td>DigitalOcean</td>
+<td>Basic 4GB</td>
+<td>≈ $24</td>
+<td>Frankfurt/Amsterdam/NYC</td>
+</tr>
+<tr>
+<td>Linode (Akamai)</td>
+<td>Linode 4GB</td>
+<td>≈ $24</td>
+<td>global</td>
+</tr>
+<tr>
+<td>Vultr</td>
+<td>Cloud Compute 4GB</td>
+<td>≈ $24</td>
+<td>global</td>
+</tr>
+<tr>
+<td>Your own server</td>
+<td>Bare-metal / Proxmox VM</td>
+<td>—</td>
+<td>on-premises</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>This list is guidance only; we do not resell any of it. Product names are trademarks of their respective companies.</p>
+</blockquote>
+<h3 id="22-creating-the-server-general-steps">2.2 Creating the server (general steps)<a class="headerlink" href="#22-creating-the-server-general-steps" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Create a new server in your provider's web panel: 2 vCPU + 4 GB RAM minimum.</li>
+<li>Image: <strong>Ubuntu 22.04 LTS</strong>.</li>
+<li>Upload your SSH key (if you do not have one, create it with <code>ssh-keygen -t ed25519 -C "abs-customer"</code> and paste the public key into the panel).</li>
+<li>When the server is up, note its <strong>public IPv4</strong> address.</li>
+<li>Connect over SSH: <code>ssh -i ~/.ssh/abs-customer root@&lt;IPv4&gt;</code>.</li>
+</ol>
+<blockquote>
+<p><strong>A domain is optional.</strong> Without one, use the <code>&lt;IPv4&gt;.sslip.io</code> form (for example <code>203-0-113-7.sslip.io</code>) and Caddy will issue a Let's Encrypt certificate automatically. You do not need to add a DNS record.</p>
+</blockquote>
+<hr />
+<h2 id="3-installing-abs">3. Installing ABS<a class="headerlink" href="#3-installing-abs" title="Permanent link">&para;</a></h2>
+<h3 id="31-install-docker">3.1 Install Docker<a class="headerlink" href="#31-install-docker" title="Permanent link">&para;</a></h3>
+<p>On Ubuntu 22.04:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>apt-get<span class="w"> </span>update
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>docker.io<span class="w"> </span>docker-compose-v2<span class="w"> </span>docker-buildx
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>systemctl<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>--now<span class="w"> </span>docker
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>docker<span class="w"> </span>--version<span class="w">          </span><span class="c1"># must be 24+</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>version<span class="w">    </span><span class="c1"># must be v2.20+</span>
+</span></code></pre></div>
+<h3 id="32-get-the-abs-repository">3.2 Get the ABS repository<a class="headerlink" href="#32-get-the-abs-repository" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/automatiabcn/abs.git<span class="w"> </span>/opt/abs
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>/opt/abs
+</span></code></pre></div>
+<blockquote>
+<p>The repository is public (BSL 1.1). You can read the source, but commercial use requires a license.</p>
+</blockquote>
+<h3 id="33-environment-file-env">3.3 Environment file (.env)<a class="headerlink" href="#33-environment-file-env" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cp<span class="w"> </span>.env.example<span class="w"> </span>.env
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>nano<span class="w"> </span>.env
+</span></code></pre></div>
+<p>Fill in these values (the welcome email has examples):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ABS_LICENSE_KEY=&lt;license-jwt-from-email&gt;
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>ABS_PUBLIC_HOSTNAME=&lt;domain or 203-0-113-7.sslip.io&gt;
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>ABS_PUBLIC_URL=https://${ABS_PUBLIC_HOSTNAME}
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>ABS_ACME_EMAIL=&lt;address-for-certificate-notices&gt;
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>ABS_VAULT_KEY=$(openssl rand -base64 32)
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>ABS_VERSION=1.0.0-rc4
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>ANTHROPIC_API_KEY=sk-ant-...   # you will get this in Section 5
+</span></code></pre></div>
+<h3 id="34-start-the-stack">3.4 Start the stack<a class="headerlink" href="#34-start-the-stack" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>ps<span class="w">          </span><span class="c1"># 4 containers must be &quot;healthy&quot; (≈30 s)</span>
+</span></code></pre></div>
+<p>On first start the backend pulls about 1.3 GB from GHCR.</p>
+<h3 id="35-health-check">3.5 Health check<a class="headerlink" href="#35-health-check" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>https://<span class="si">${</span><span class="nv">ABS_PUBLIC_HOSTNAME</span><span class="si">}</span>/healthz
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># expected response: {&quot;status&quot;:&quot;ok&quot;,&quot;service&quot;:&quot;abs-backend&quot;}</span>
+</span></code></pre></div>
+<blockquote>
+<p>On first boot Caddy issues the Let's Encrypt certificate within about 30 s. Your first browser request may wait for that.</p>
+</blockquote>
+<hr />
+<h2 id="4-first-configuration-setup-wizard">4. First configuration (Setup Wizard)<a class="headerlink" href="#4-first-configuration-setup-wizard" title="Permanent link">&para;</a></h2>
+<p>Open <code>https://&lt;ABS_PUBLIC_HOSTNAME&gt;/setup</code> in your browser. A 6-step wizard starts.</p>
+<h3 id="step-1-admin-account">Step 1 — Admin account<a class="headerlink" href="#step-1-admin-account" title="Permanent link">&para;</a></h3>
+<p>Define the main account that signs in to the panel:
+- Email (for example <code>admin@yourcompany.com</code>)
+- Password (at least 8 characters)</p>
+<h3 id="step-2-license">Step 2 — License<a class="headerlink" href="#step-2-license" title="Permanent link">&para;</a></h3>
+<p>Paste the JWT token from your email, then click "Activate". The backend verifies the signature.</p>
+<h3 id="step-3-domain">Step 3 — Domain<a class="headerlink" href="#step-3-domain" title="Permanent link">&para;</a></h3>
+<p>Pick a mode:
+- <strong>IP</strong>: a one-off smoke test (<code>&lt;IP&gt;.sslip.io</code>).
+- <strong>Domain</strong>: your own domain (recommended).</p>
+<p>SSL mode: <strong>ACME</strong> (Let's Encrypt) is the default.</p>
+<h3 id="step-4-anthropic-api-key">Step 4 — Anthropic API key<a class="headerlink" href="#step-4-anthropic-api-key" title="Permanent link">&para;</a></h3>
+<p>Create an API key in the Anthropic Console (<a href="https://console.anthropic.com/">console.anthropic.com</a>) and paste it in. The key must start with <code>sk-ant-</code>. For the full provider sign-up flow see <a href="#5-provider-api-keys">Section 5</a>.</p>
+<h3 id="step-5-other-providers-optional">Step 5 — Other providers (optional)<a class="headerlink" href="#step-5-other-providers-optional" title="Permanent link">&para;</a></h3>
+<p>Additional providers for the router:
+- Groq (<code>gsk_...</code>)
+- Gemini / Google AI (<code>AIza...</code>)
+- Cerebras (<code>csk-...</code>)
+- Cohere (<code>...</code>)
+- Cloudflare Workers AI (Account ID + API Token)</p>
+<p>Whichever you enter is added to the fallback chain.</p>
+<h3 id="step-6-test">Step 6 — Test<a class="headerlink" href="#step-6-test" title="Permanent link">&para;</a></h3>
+<p>Shows the ping test result for each configured provider. When they PASS, the wizard completes.</p>
+<hr />
+<h2 id="5-provider-api-keys">5. Provider API keys<a class="headerlink" href="#5-provider-api-keys" title="Permanent link">&para;</a></h2>
+<p>You get provider API keys <strong>from your own accounts</strong>, and those providers bill <strong>your own accounts</strong>. ABS takes no commission.</p>
+<h3 id="51-anthropic-claude-recommended-primary">5.1 Anthropic Claude (recommended, primary)<a class="headerlink" href="#51-anthropic-claude-recommended-primary" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="https://console.anthropic.com/">console.anthropic.com</a> → Settings → API Keys → "Create Key"</li>
+<li>Name: <code>abs-orchestrator-prod</code></li>
+<li>Workspace: your default</li>
+<li>The key is shown once — store it somewhere safe (<code>sk-ant-api03-...</code>)</li>
+<li>Paste it into Setup Wizard Step 4</li>
+</ol>
+<blockquote>
+<p><strong>Cost:</strong> the Claude API is billed per use (by token). The $20/month Pro plan covers the API bill.</p>
+</blockquote>
+<h3 id="52-groq-free-tier-fast">5.2 Groq (free tier, fast)<a class="headerlink" href="#52-groq-free-tier-fast" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="https://console.groq.com/keys">console.groq.com</a> → "Create API Key"</li>
+<li>The key starts with <code>gsk_</code></li>
+<li>Setup Wizard Step 5</li>
+</ol>
+<blockquote>
+<p>The free tier is excellent for high speed (Llama 3.3 70B). Rate limit: 30 requests/minute.</p>
+</blockquote>
+<h3 id="53-google-gemini-free-tier">5.3 Google Gemini (free tier)<a class="headerlink" href="#53-google-gemini-free-tier" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="https://aistudio.google.com/app/apikey">aistudio.google.com</a> → "Create API key"</li>
+<li>The key starts with <code>AIza</code></li>
+<li>Setup Wizard Step 5</li>
+</ol>
+<blockquote>
+<p>The Gemini 2.5 Flash free limit is generous. The Pro plan is optional.</p>
+</blockquote>
+<h3 id="54-cerebras-very-fast">5.4 Cerebras (very fast)<a class="headerlink" href="#54-cerebras-very-fast" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="https://cloud.cerebras.ai/">cloud.cerebras.ai</a> → API Keys</li>
+<li>The key starts with <code>csk-</code></li>
+<li>Setup Wizard Step 5</li>
+</ol>
+<blockquote>
+<p>The Cerebras WSE-3 answers in milliseconds rather than seconds.</p>
+</blockquote>
+<h3 id="55-cohere-free-trial">5.5 Cohere (free trial)<a class="headerlink" href="#55-cohere-free-trial" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="https://dashboard.cohere.com/api-keys">dashboard.cohere.com</a> → "API Keys"</li>
+<li>You start with a trial key</li>
+<li>Setup Wizard Step 5</li>
+</ol>
+<h3 id="56-cloudflare-workers-ai">5.6 Cloudflare Workers AI<a class="headerlink" href="#56-cloudflare-workers-ai" title="Permanent link">&para;</a></h3>
+<ol>
+<li><a href="https://dash.cloudflare.com/">dash.cloudflare.com</a> → AI → Workers AI</li>
+<li>Account ID: copy it from the bottom-right corner</li>
+<li>API Token: My Profile → API Tokens → Workers AI Read template</li>
+</ol>
+<blockquote>
+<p><strong>Trademark note:</strong> Anthropic, Claude, Groq, Gemini, Cerebras, Cohere and Cloudflare are trademarks of their respective companies. ABS provides the customer-side integration with these services; that is not an official partnership or endorsement.</p>
+</blockquote>
+<hr />
+<h2 id="6-your-first-chat">6. Your first chat<a class="headerlink" href="#6-your-first-chat" title="Permanent link">&para;</a></h2>
+<p>Sign in to the panel at <code>https://&lt;domain&gt;/login</code> with the admin email and password you set in the Setup Wizard.</p>
+<h3 id="61-start-a-chat">6.1 Start a chat<a class="headerlink" href="#61-start-a-chat" title="Permanent link">&para;</a></h3>
+<p>In the left nav go to <strong>Chat</strong> → New chat → type your message. The answer comes back through the provider router.</p>
+<p>The <code>meta</code> block shows which provider answered (<code>provider: anthropic</code>), the token count and the latency.</p>
+<h3 id="62-choosing-a-pipeline">6.2 Choosing a pipeline<a class="headerlink" href="#62-choosing-a-pipeline" title="Permanent link">&para;</a></h3>
+<p>A standard chat uses the <code>auto_direct</code> pipeline. The advanced pipelines are:</p>
+<table>
+<thead>
+<tr>
+<th>Pipeline</th>
+<th>Purpose</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auto_direct</code></td>
+<td>Single model, fast answer</td>
+<td>~1-3 s</td>
+</tr>
+<tr>
+<td><code>qual_code</code></td>
+<td>Code generation (generate → verify → fix)</td>
+<td>~3-8 s</td>
+</tr>
+<tr>
+<td><code>qual_tr</code></td>
+<td>Turkish text (generate → check → polish)</td>
+<td>~3-8 s</td>
+</tr>
+<tr>
+<td><code>qual_translate</code></td>
+<td>Translation (translate → back-translate → verify)</td>
+<td>~3-8 s</td>
+</tr>
+<tr>
+<td><code>qual_analysis</code></td>
+<td>3-perspective analysis + synthesis</td>
+<td>~10-15 s</td>
+</tr>
+<tr>
+<td><code>race_code</code></td>
+<td>3 models race, the fastest wins</td>
+<td>~2-5 s</td>
+</tr>
+</tbody>
+</table>
+<p>Each pipeline appears as a card in the UI. Click it, write your prompt, then run it.</p>
+<hr />
+<h2 id="7-rag-knowledge-base">7. RAG knowledge base<a class="headerlink" href="#7-rag-knowledge-base" title="Permanent link">&para;</a></h2>
+<p>Left nav → <strong>RAG Knowledge Base</strong>. The page shows the document count, chunk count, total size and the top-K setting.</p>
+<h3 id="71-uploading-documents">7.1 Uploading documents<a class="headerlink" href="#71-uploading-documents" title="Permanent link">&para;</a></h3>
+<p>PDF · MD · TXT · DOCX (≤ 25 MB). Drag and drop, or click "Choose file". ABS chunks and indexes the document automatically with BGE-M3 dense embeddings.</p>
+<h3 id="72-querying">7.2 Querying<a class="headerlink" href="#72-querying" title="Permanent link">&para;</a></h3>
+<p>Type a question into the query box in any language and click "Run query". You get the top-K results (5 by default) with their scores.</p>
+<blockquote>
+<p><strong>Data security:</strong> the RAG index stays entirely on your server (ChromaDB + Qdrant). No document content is sent to Anthropic or any other provider — only your query plus the retrieved chunks go to the LLM, so it can compose an answer.</p>
+</blockquote>
+<hr />
+<h2 id="8-quality-pipelines">8. Quality Pipelines<a class="headerlink" href="#8-quality-pipelines" title="Permanent link">&para;</a></h2>
+<p>Not a single model but a chain: generate → verify → fix, or a race where the fastest answer wins.</p>
+<p>There are 9 pipelines. See <a href="#62-choosing-a-pipeline">Section 6.2</a> for the details.</p>
+<blockquote>
+<p>The pipelines use Anthropic and the other providers in parallel; output quality goes up compared with a single model while cost stays in check (when Claude is down, Groq takes over).</p>
+</blockquote>
+<hr />
+<h2 id="9-workflow-builder">9. Workflow Builder<a class="headerlink" href="#9-workflow-builder" title="Permanent link">&para;</a></h2>
+<p>Describe a workflow in plain language and ABS turns it into an n8n-compatible node graph.</p>
+<h3 id="91-creating-a-workflow">9.1 Creating a workflow<a class="headerlink" href="#91-creating-a-workflow" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Describe the workflow in the "Describe your workflow" box (for example, "Classify incoming Gmail messages and draft a reply to anything tagged sales").</li>
+<li><strong>Synthesize</strong> → ABS generates the workflow JSON with an LLM.</li>
+<li>Edit it → you can add a human-approval (HITL) step.</li>
+<li><strong>Dry run</strong> → simulate it.</li>
+<li><strong>Save</strong> → it is added to your organisation's workflow list and can be exported to n8n.</li>
+</ol>
+<blockquote>
+<p>The estimated cost per run is shown in the panel.</p>
+</blockquote>
+<hr />
+<h2 id="10-knowledge-graph">10. Knowledge Graph<a class="headerlink" href="#10-knowledge-graph" title="Permanent link">&para;</a></h2>
+<p>A company graph built on Neo4j 5: Person, Org, Project and Ticket nodes, plus WORKS_AT, OWNS, MANAGES and ASSIGNED_TO relationships. The page gives you the schema, saved queries, a Cypher editor and natural-language query.</p>
+<h3 id="101-cypher-editor">10.1 Cypher editor<a class="headerlink" href="#101-cypher-editor" title="Permanent link">&para;</a></h3>
+<p>Read-only users can run only MATCH/RETURN. For example:</p>
+<div class="language-cypher highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">MATCH</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="p">:</span><span class="n">Person</span><span class="p">)</span><span class="o">-[</span><span class="p">:</span><span class="n">WORKS_AT</span><span class="o">]-&gt;</span><span class="p">(</span><span class="n">o</span><span class="p">:</span><span class="n">Org</span><span class="w"> </span><span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="s">&quot;Acme&quot;</span><span class="p">})</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">RETURN</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">email</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="m">25</span>
+</span></code></pre></div>
+<h3 id="102-natural-language-query">10.2 Natural-language query<a class="headerlink" href="#102-natural-language-query" title="Permanent link">&para;</a></h3>
+<p>"Find everyone who works at Acme" → ABS generates the Cypher → you run it.</p>
+<blockquote>
+<p>Neo4j and Cypher are trademarks of Neo4j, Inc. Use is subject to the Neo4j Community Edition license.</p>
+</blockquote>
+<hr />
+<h2 id="11-plugin-marketplace">11. Plugin Marketplace<a class="headerlink" href="#11-plugin-marketplace" title="Permanent link">&para;</a></h2>
+<p>Left nav → <strong>Marketplace</strong>. The ABS ecosystem: LLM providers, RAG sources, MCP tools and workflow templates — for example Slack Receiver, Gmail Archiver, Linear Bridge, Notion Sync and Postgres Mirror.</p>
+<h3 id="111-installing-a-plugin">11.1 Installing a plugin<a class="headerlink" href="#111-installing-a-plugin" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Click <strong>Install</strong> on the plugin card → a "Review permissions" modal opens.</li>
+<li>It lists network egress, mounts, secrets, resource usage (CPU/RAM) and the scope within your organisation.</li>
+<li>Tick the confirmation box → <strong>Approve &amp; Install</strong>.</li>
+<li>The plugin starts inside a sandbox cgroup and the install is written to the audit log.</li>
+</ol>
+<h3 id="112-filtering">11.2 Filtering<a class="headerlink" href="#112-filtering" title="Permanent link">&para;</a></h3>
+<p>Use the category chips at the top (LLM Provider / RAG Source / MCP Tool / Workflow Template) and the search box.</p>
+<blockquote>
+<p>Slack, Gmail, Linear, Notion and Postgres are trademarks of their respective companies. The plugins use the customer-side APIs of those services.</p>
+</blockquote>
+<hr />
+<h2 id="12-admin-settings">12. Admin settings<a class="headerlink" href="#12-admin-settings" title="Permanent link">&para;</a></h2>
+<p>Left nav → <strong>Settings</strong>. Seven sub-tabs:</p>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>General</td>
+<td>Organisation name, slug, domain, SSL</td>
+</tr>
+<tr>
+<td>License</td>
+<td>Active license status, JWT renewal</td>
+</tr>
+<tr>
+<td>Providers</td>
+<td>Provider order, mock mode, "Configure" for each provider</td>
+</tr>
+<tr>
+<td>Webhooks</td>
+<td>Slack, email and Discord webhook URLs</td>
+</tr>
+<tr>
+<td>Alerts</td>
+<td>Quota alert threshold, p95 latency SLO</td>
+</tr>
+<tr>
+<td>Branding</td>
+<td>Logo, favicon, brand colour, login message</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>Magic-link lifetime, session length, audience checks</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Every change is isolated to your organisation and written to the audit log.</p>
+</blockquote>
+<hr />
+<h2 id="13-license-and-refunds">13. License and refunds<a class="headerlink" href="#13-license-and-refunds" title="Permanent link">&para;</a></h2>
+<h3 id="131-14-day-no-questions-asked-refund">13.1 14-day no-questions-asked refund<a class="headerlink" href="#131-14-day-no-questions-asked-refund" title="Permanent link">&para;</a></h3>
+<p>Self-Host: if you ask for a refund within 14 days you get the full amount back, your license is revoked in the Cloudflare Worker, and your ABS instance starts rejecting chat calls at the next heartbeat (≤60 s).</p>
+<p><strong>How to get a refund:</strong></p>
+<ol>
+<li>Email your order ID to <code>info@automatiabcn.com</code>.</li>
+<li>The Stripe refund starts within 5 business days (it can take another 5-10 business days to reach your card, depending on your bank).</li>
+<li>Your license token is revoked; the backend moves to <code>license_state.valid = False</code>.</li>
+<li>New chat calls are rejected with 403. Your local configuration (admin password, RAG index) is left intact.</li>
+</ol>
+<h3 id="132-renewal-maintenance-pack">13.2 Renewal (Maintenance Pack)<a class="headerlink" href="#132-renewal-maintenance-pack" title="Permanent link">&para;</a></h3>
+<p>After 12 months, the <strong>optional</strong> $49/year Maintenance Pack keeps updates and email support running. If you skip it, ABS keeps running on its current version indefinitely, but you lose access to new image updates.</p>
+<h3 id="133-moving-your-license">13.3 Moving your license<a class="headerlink" href="#133-moving-your-license" title="Permanent link">&para;</a></h3>
+<p>Hardware fingerprint binding is <strong>optional</strong> (CJ-005). If no fingerprint was assigned when the license was minted (<code>machine_fp: null</code>), you can move the license to another machine; the Cloudflare Worker records the new IP/fingerprint on activation.</p>
+<hr />
+<h2 id="14-troubleshooting">14. Troubleshooting<a class="headerlink" href="#14-troubleshooting" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docker compose up -d</code> says "exec format error"</td>
+<td>The image is multi-arch from rc4 on — the older tags (rc1/rc2) do not run on Apple Silicon. Set <code>ABS_VERSION=1.0.0-rc4</code>.</td>
+</tr>
+<tr>
+<td>Caddy 502 / TLS error</td>
+<td>Ports 80 and 443 must be open in the firewall (Let's Encrypt HTTP-01). Run <code>ufw allow 80,443/tcp</code>.</td>
+</tr>
+<tr>
+<td>Setup Wizard says "License signature invalid"</td>
+<td>The license signature may not match the public key in the container; contact the Automatia BCN team.</td>
+</tr>
+<tr>
+<td>Chat returns "license_invalid" 403</td>
+<td>The heartbeat saw the license as revoked. Check your license email or renew it.</td>
+</tr>
+<tr>
+<td>RAG query returns nothing</td>
+<td>The document is not indexed yet. Run <code>docker compose logs backend</code> and wait for the "embedding done" message.</td>
+</tr>
+<tr>
+<td>Knowledge Graph returns "Internal Server Error"</td>
+<td>The Neo4j initialisation for your organisation may be incomplete. Try <code>docker compose restart</code>, then contact Automatia BCN support.</td>
+</tr>
+<tr>
+<td>Email never arrived</td>
+<td>Check your spam folder; if you run your own SMTP relay, check Settings → Webhooks → Email alerts.</td>
+</tr>
+<tr>
+<td>High RAM usage</td>
+<td>The Whisper/TTS models are optional; turn them off with <code>ABS_DISABLE_TTS=1</code> in <code>.env</code>.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>If you cannot find an answer, email <code>info@automatiabcn.com</code> (24h response) or use your own support channel.</p>
+</blockquote>
+<hr />
+<h2 id="legal-notices-and-trademarks">Legal notices and trademarks<a class="headerlink" href="#legal-notices-and-trademarks" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Automatia ABS™</strong> is a trademark of Automatia BCN.</li>
+<li><strong>Anthropic®, Claude®, Cohere®, Cerebras®, Groq®, Gemini™, Cloudflare®, Stripe®, Hetzner®, DigitalOcean®, Linode®, Vultr®, Slack®, Gmail™, Linear®, Notion®, PostgreSQL®, Neo4j®, Docker®, Caddy®, Let's Encrypt®</strong> are trademarks of their respective companies. The references in this guide are customer-side integration information only; they do not imply an official partnership or endorsement.</li>
+<li>Provider API usage is billed <strong>to the customer's own account</strong>. Automatia BCN takes no share of those charges and does not invoice them.</li>
+<li>ABS is distributed under the BSL 1.1 license (see the <code>LICENSE</code> file). It converts to the Apache License 2.0 automatically on 2030-05-07.</li>
+<li>Under GDPR (and Turkey's KVKK) you process personal data <strong>on your own server</strong>, as the data processor. Automatia BCN has no access to that data. For retention periods see Settings → Security.</li>
+</ul>
+<hr />
+<p><strong>Last updated:</strong> 2026-05-09 · v1.0<br />
+<strong>Contact:</strong> info@automatiabcn.com<br />
+<strong>Source:</strong> <a href="https://github.com/automatiabcn/abs">github.com/automatiabcn/abs</a><br />
+<strong>Made in Barcelona</strong> — <em>Automate the chaos</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.expand", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

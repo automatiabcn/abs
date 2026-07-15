@@ -1,0 +1,2438 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Self-host AI orchestration for Claude Code — 100+ MCP tools, 6 provider cascade, RAG hybrid, multilingual quality pipelines.">
+      
+      
+        <meta name="author" content="Automatia BCN">
+      
+      
+        <link rel="canonical" href="https://docs.automatiabcn.com/latest/troubleshooting/">
+      
+      
+        <link rel="prev" href="../operations/">
+      
+      
+        <link rel="next" href="../dr-runbook/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Troubleshooting - Automatia ABS Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#troubleshooting" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Automatia ABS Documentation" class="md-header__button md-logo" aria-label="Automatia ABS Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Automatia ABS Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Troubleshooting
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/automatiabcn/abs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../setup-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Setup Guide
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart-30min/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quickstart (30 min)
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api-reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../billing-runbook/" class="md-tabs__link">
+          
+  
+  
+  Operations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../security/scope/" class="md-tabs__link">
+          
+  
+  
+  Security
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../qa/perf-budget-policy/" class="md-tabs__link">
+          
+  
+  
+  QA & Policy
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api-reference/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../design-decisions/" class="md-tabs__link">
+          
+  
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../CHANGELOG/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CHANGELOG
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Automatia ABS Documentation" class="md-nav__button md-logo" aria-label="Automatia ABS Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Automatia ABS Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/automatiabcn/abs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart-30min/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart (30 min)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../billing-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Billing Runbook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#landing-routes-404-after-adding-a-new-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Landing routes 404 after adding a new page
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vault-sops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vault / sops
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Vault / sops">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vault-disabled-binary-or-master-key-missing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        vault disabled (binary or master key missing)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sops-failed-to-decrypt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sops: failed to decrypt
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stripe-webhook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stripe webhook
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stripe webhook">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#400-stripe-signature-header-missing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        400 Stripe-Signature header missing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#400-signature-verification-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        400 Signature verification failed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refund-webhooks-never-arrive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refund webhooks never arrive
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-claude-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP / Claude Code
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MCP / Claude Code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#license-required-abs-currently-requires-a-license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [LICENSE REQUIRED] ABS currently requires a license
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-tool-not-found-ask_xyz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP tool not found: ask_xyz
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claude-code-will-not-connect-to-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Claude Code will not connect to MCP
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider errors
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Provider errors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#circuit_breaker_open-anthropic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        circuit_breaker_open: anthropic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rate_limited-groq" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rate_limited: groq
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#email-is-not-being-sent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Email is not being sent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sqlite3operationalerror-database-is-locked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sqlite3.OperationalError: database is locked
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#no-such-table-webhook_events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        no such table: webhook_events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup-wizard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup Wizard
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup Wizard">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup-stopped-halfway-the-panel-will-not-open" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup stopped halfway, the panel will not open
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cerbos-helm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cerbos / Helm
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cerbos / Helm">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#helm-upgrade-abs-puts-the-cerbos-pod-into-crashloopbackoff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        helm upgrade abs puts the Cerbos pod into CrashLoopBackOff
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unknown-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unknown errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dr-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Disaster Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vault-recovery-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vault Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-rotation-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook Rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/owasp_rag_checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OWASP + RAG Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/oauth_pentest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OAuth Pen-Test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/hackerone_program/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HackerOne Program
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QA & Policy
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    QA & Policy
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/perf-budget-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Perf Budget
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/i18n-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    i18n Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/fs-scan-allowlist-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    fs-scan Allowlist Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/docs-publishing-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docs Publishing Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/beta-e2e-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beta E2E Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CHANGELOG/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CHANGELOG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#landing-routes-404-after-adding-a-new-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Landing routes 404 after adding a new page
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#vault-sops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vault / sops
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Vault / sops">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vault-disabled-binary-or-master-key-missing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        vault disabled (binary or master key missing)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sops-failed-to-decrypt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sops: failed to decrypt
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stripe-webhook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stripe webhook
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Stripe webhook">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#400-stripe-signature-header-missing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        400 Stripe-Signature header missing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#400-signature-verification-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        400 Signature verification failed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refund-webhooks-never-arrive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refund webhooks never arrive
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-claude-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP / Claude Code
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MCP / Claude Code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#license-required-abs-currently-requires-a-license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [LICENSE REQUIRED] ABS currently requires a license
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-tool-not-found-ask_xyz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP tool not found: ask_xyz
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claude-code-will-not-connect-to-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Claude Code will not connect to MCP
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider errors
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Provider errors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#circuit_breaker_open-anthropic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        circuit_breaker_open: anthropic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rate_limited-groq" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rate_limited: groq
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#email-is-not-being-sent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Email is not being sent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sqlite3operationalerror-database-is-locked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sqlite3.OperationalError: database is locked
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#no-such-table-webhook_events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        no such table: webhook_events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup-wizard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup Wizard
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup Wizard">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup-stopped-halfway-the-panel-will-not-open" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup stopped halfway, the panel will not open
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cerbos-helm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cerbos / Helm
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cerbos / Helm">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#helm-upgrade-abs-puts-the-cerbos-pod-into-crashloopbackoff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        helm upgrade abs puts the Cerbos pod into CrashLoopBackOff
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unknown-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unknown errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h1>
+<p>Common errors you will hit while installing or running ABS, and how to fix them.</p>
+<h2 id="landing-routes-404-after-adding-a-new-page">Landing routes 404 after adding a new page<a class="headerlink" href="#landing-routes-404-after-adding-a-new-page" title="Permanent link">&para;</a></h2>
+<p><strong>Symptom:</strong> <code>/pricing</code>, <code>/beta</code>, etc. return 404 in <code>next dev</code> even though <code>app/&lt;route&gt;/page.tsx</code> exists.</p>
+<p><strong>Cause:</strong> stale <code>.next/</code> build cache after a new App Router page is added.</p>
+<p><strong>Fix:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">cd</span><span class="w"> </span>core/landing
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>rm<span class="w"> </span>-rf<span class="w"> </span>.next
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>npx<span class="w"> </span>next<span class="w"> </span>dev
+</span></code></pre></div>
+<p><strong>Verification:</strong> <code>npm run test:e2e</code> (Playwright suite at <code>__tests__/playwright/routes.spec.ts</code>) probes every public route for status 200 and no console errors.</p>
+<h2 id="vault-sops">Vault / sops<a class="headerlink" href="#vault-sops" title="Permanent link">&para;</a></h2>
+<h3 id="vault-disabled-binary-or-master-key-missing"><code>vault disabled (binary or master key missing)</code><a class="headerlink" href="#vault-disabled-binary-or-master-key-missing" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> the <code>sops</code> or <code>age</code> binaries are missing inside the container, or
+<code>/app/vault-key/age.txt</code> is not mounted.</p>
+<p><strong>Fix:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>backend<span class="w"> </span>which<span class="w"> </span>sops<span class="w"> </span>age<span class="w">   </span><span class="c1"># both must resolve</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>ls<span class="w"> </span>-la<span class="w"> </span>vault-key/age.txt<span class="w">                     </span><span class="c1"># does the file exist on the host?</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w">  </span><span class="c1"># remount</span>
+</span></code></pre></div></p>
+<p><code>age.txt</code> must contain the <code># created: ...</code> and <code>AGE-SECRET-KEY-1...</code> lines.</p>
+<h3 id="sops-failed-to-decrypt"><code>sops: failed to decrypt</code><a class="headerlink" href="#sops-failed-to-decrypt" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> the secret was encrypted with a different public key than the age
+public key in <code>.env</code> (<code>ABS_VAULT_AGE_PUBLIC_KEY</code>).</p>
+<p><strong>Fix:</strong> get the correct public key out of <code>vault-key/age.txt</code>
+(<code>grep public-key vault-key/age.txt</code>). Update <code>.env</code> and restart.</p>
+<h2 id="stripe-webhook">Stripe webhook<a class="headerlink" href="#stripe-webhook" title="Permanent link">&para;</a></h2>
+<h3 id="400-stripe-signature-header-missing"><code>400 Stripe-Signature header missing</code><a class="headerlink" href="#400-stripe-signature-header-missing" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> the request to the webhook endpoint came from some client other than Stripe.</p>
+<p><strong>Fix:</strong> Stripe Dashboard → Webhooks → confirm the endpoint URL is <code>/webhooks/stripe</code>.
+Send a test webhook.</p>
+<h3 id="400-signature-verification-failed"><code>400 Signature verification failed</code><a class="headerlink" href="#400-signature-verification-failed" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> <code>ABS_STRIPE_WEBHOOK_SECRET</code> is wrong. The secret may have changed when
+you switched to live mode.</p>
+<p><strong>Fix:</strong> Stripe Dashboard → Webhooks → endpoint detail → <code>Roll secret</code>, or reveal
+the current one → write it into the vault → restart the backend.</p>
+<h3 id="refund-webhooks-never-arrive">Refund webhooks never arrive<a class="headerlink" href="#refund-webhooks-never-arrive" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> <code>charge.refunded</code> is not in the endpoint's event list in
+Stripe Dashboard → Webhooks.</p>
+<p><strong>Fix:</strong> endpoint detail → Add events → select <code>charge.refunded</code> +
+<code>customer.subscription.deleted</code>. Send a test webhook.</p>
+<h2 id="mcp-claude-code">MCP / Claude Code<a class="headerlink" href="#mcp-claude-code" title="Permanent link">&para;</a></h2>
+<h3 id="license-required-abs-currently-requires-a-license"><code>[LICENSE REQUIRED] ABS currently requires a license</code><a class="headerlink" href="#license-required-abs-currently-requires-a-license" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> <code>ABS_MCP_REQUIRE_LICENSE=true</code> but there is no licence, or the demo period expired.</p>
+<p><strong>Fix:</strong> open the setup wizard and activate a licence. To extend the demo, delete
+<code>/app/data/demo_state.json</code> and restart (a fresh 14 days starts).</p>
+<h3 id="mcp-tool-not-found-ask_xyz"><code>MCP tool not found: ask_xyz</code><a class="headerlink" href="#mcp-tool-not-found-ask_xyz" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> the tool is not in the registry. Your version may be out of date.</p>
+<p><strong>Fix:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>backend<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="s2">&quot;from app.mcp.server import mcp_server; import asyncio; \</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="s2">   tools = asyncio.run(mcp_server.list_tools()); \</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="s2">   print(sorted(t.name for t in tools))&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ask_xyz
+</span></code></pre></div></p>
+<p>If the output is empty, run <code>git pull &amp;&amp; docker compose pull &amp;&amp; docker compose up -d</code>.</p>
+<h3 id="claude-code-will-not-connect-to-mcp">Claude Code will not connect to MCP<a class="headerlink" href="#claude-code-will-not-connect-to-mcp" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> the <code>/mcp</code> path is missing from the URL, or the URL is not HTTPS.</p>
+<p><strong>Fix:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>claude<span class="w"> </span>mcp<span class="w"> </span>remove<span class="w"> </span>abs
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>abs<span class="w"> </span>https://abs.yourcompany.com/mcp
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>claude<span class="w"> </span>mcp<span class="w"> </span>list<span class="w">   </span><span class="c1"># status must be: connected</span>
+</span></code></pre></div></p>
+<h2 id="provider-errors">Provider errors<a class="headerlink" href="#provider-errors" title="Permanent link">&para;</a></h2>
+<h3 id="circuit_breaker_open-anthropic"><code>circuit_breaker_open: anthropic</code><a class="headerlink" href="#circuit_breaker_open-anthropic" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> the Anthropic API returned 5 consecutive errors within the last 5 minutes,
+so the provider chain opened its breaker.</p>
+<p><strong>Fix:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>ask<span class="w"> </span><span class="s2">&quot;breaker_status&quot;</span><span class="w"> </span>gptoss<span class="w">   </span><span class="c1"># inspect the state</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># manual reset:</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>backend<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="s2">&quot;from app.cascade.breaker import reset_breaker; reset_breaker(&#39;anthropic&#39;)&quot;</span>
+</span></code></pre></div></p>
+<p>Check the Anthropic status page: <code>status.anthropic.com</code>.</p>
+<h3 id="rate_limited-groq"><code>rate_limited: groq</code><a class="headerlink" href="#rate_limited-groq" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> you hit the Groq free tier rate limit (6000 TPM).</p>
+<p><strong>Fix:</strong> use a single-shot call such as <code>kimi</code> or <code>gptoss</code> instead of parallel
+pipelines like <code>qual-code</code> / <code>race</code>. Or upgrade to the Groq Dev Tier.</p>
+<h3 id="email-is-not-being-sent">Email is not being sent<a class="headerlink" href="#email-is-not-being-sent" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> <code>ABS_SMTP_HOST</code> is empty — the console fallback is active (it only writes to the logs).</p>
+<p><strong>Fix:</strong> configure a real SMTP server:
+<div class="language-ini highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="na">ABS_SMTP_HOST</span><span class="o">=</span><span class="s">smtp.resend.com</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="na">ABS_SMTP_PORT</span><span class="o">=</span><span class="s">587</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="na">ABS_SMTP_USER</span><span class="o">=</span><span class="s">resend</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="na">ABS_SMTP_PASSWORD</span><span class="o">=</span><span class="s">re_xxxxxxxx</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="na">ABS_SMTP_FROM</span><span class="o">=</span><span class="s">noreply@yourcompany.com</span>
+</span></code></pre></div></p>
+<p>Watch the tick output with <code>docker compose logs email-cron | tail -20</code>.</p>
+<h2 id="database">Database<a class="headerlink" href="#database" title="Permanent link">&para;</a></h2>
+<h3 id="sqlite3operationalerror-database-is-locked"><code>sqlite3.OperationalError: database is locked</code><a class="headerlink" href="#sqlite3operationalerror-database-is-locked" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> two processes wrote to the SQLite WAL at the same time (rare, usually a
+cron job colliding with a manual query).</p>
+<p><strong>Fix:</strong> it normally clears in 1-2 seconds. If it persists:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>backend<span class="w"> </span>sqlite3<span class="w"> </span>/app/data/abs.db<span class="w"> </span><span class="s2">&quot;PRAGMA journal_mode=WAL;&quot;</span>
+</span></code></pre></div></p>
+<h3 id="no-such-table-webhook_events"><code>no such table: webhook_events</code><a class="headerlink" href="#no-such-table-webhook_events" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> the migration did not run at boot (upgrade from a very old version).</p>
+<p><strong>Fix:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>backend<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="s2">&quot;from app.db.session import init_db; init_db()&quot;</span>
+</span></code></pre></div></p>
+<h2 id="setup-wizard">Setup Wizard<a class="headerlink" href="#setup-wizard" title="Permanent link">&para;</a></h2>
+<h3 id="setup-stopped-halfway-the-panel-will-not-open">Setup stopped halfway, the panel will not open<a class="headerlink" href="#setup-stopped-halfway-the-panel-will-not-open" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> the first-run middleware is active and <code>setup_state.json</code> still has <code>completed:false</code>.</p>
+<p><strong>Fix:</strong> go to <code>/setup</code> and continue where you left off. Or do it manually:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>backend<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="s2">&quot;import json, time, pathlib; \</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="s2">   p = pathlib.Path(&#39;/app/data/setup_state.json&#39;); \</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="s2">   p.write_text(json.dumps({&#39;completed&#39;:True,&#39;current_step&#39;:6,&#39;completed_steps&#39;:[&#39;admin&#39;,&#39;license&#39;,&#39;domain&#39;,&#39;anthropic&#39;,&#39;providers&#39;,&#39;test&#39;],&#39;started_at&#39;:time.time(),&#39;completed_at&#39;:time.time(),&#39;data&#39;:{}}))&quot;</span>
+</span></code></pre></div></p>
+<h2 id="cerbos-helm">Cerbos / Helm<a class="headerlink" href="#cerbos-helm" title="Permanent link">&para;</a></h2>
+<h3 id="helm-upgrade-abs-puts-the-cerbos-pod-into-crashloopbackoff"><code>helm upgrade abs</code> puts the Cerbos pod into CrashLoopBackOff<a class="headerlink" href="#helm-upgrade-abs-puts-the-cerbos-pod-into-crashloopbackoff" title="Permanent link">&para;</a></h3>
+<p><strong>Cause:</strong> <code>infra/helm/abs/values*.yaml</code> may carry fields that Cerbos does not accept
+on your Kubernetes version (<code>policy_compile_failed</code>). The current
+<code>values.production.yaml</code> closes this off.</p>
+<p><strong>Fix:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">cd</span><span class="w"> </span>infra/helm/abs
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>abs<span class="w"> </span>.<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span>--namespace<span class="w"> </span>abs-prod<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span>--values<span class="w"> </span>values.production.yaml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span>--atomic<span class="w"> </span>--timeout<span class="w"> </span>5m
+</span></code></pre></div>
+<p><strong>Verification:</strong></p>
+<ol>
+<li><code>kubectl -n abs-prod rollout status deployment/abs-cerbos</code></li>
+<li><code>kubectl -n abs-prod logs deployment/abs-cerbos --tail 50</code> — <code>policy_compile_failed</code> must not appear</li>
+<li><code>kubectl -n abs-prod exec deployment/abs-api -- curl -s localhost:3592/_cerbos/healthz</code> → <code>{"status":"SERVING"}</code></li>
+<li><code>kubectl -n abs-prod exec deployment/abs-api -- curl -s localhost:3592/api/check</code> with a sample policy request → 200</li>
+</ol>
+<h2 id="unknown-errors">Unknown errors<a class="headerlink" href="#unknown-errors" title="Permanent link">&para;</a></h2>
+<p>Send the output of <code>docker compose logs backend | tail -100</code> to
+<code>support@automatiabcn.com</code>. Maintenance customers get a response within 24h;
+everyone else within 48h.</p>
+<p>Other resources you may need:</p>
+<ul>
+<li><a href="../faq/">FAQ</a> — short answers</li>
+<li><a href="../setup-guide/">Setup Guide</a> — installation from scratch</li>
+<li><a href="../api-reference/">API Reference</a> — the MCP tool list</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.expand", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
