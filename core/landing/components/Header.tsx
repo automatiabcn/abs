@@ -19,9 +19,11 @@ import { SunHorizon } from "@phosphor-icons/react/dist/ssr/SunHorizon";
 import AbsLogo from "@/components/icons/AbsLogo";
 import ManageModal from "./ManageModal";
 
+// /showcase is an internal design-system gallery (token swatches, brand icons)
+// — a developer reference, not a customer surface. The route stays reachable by
+// direct URL; it just doesn't belong in the nav a buyer reads.
 const NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/showcase", label: "Showcase" },
   { href: "/pricing", label: "Pricing" },
   { href: "/beta", label: "Beta" },
 ] as const;
