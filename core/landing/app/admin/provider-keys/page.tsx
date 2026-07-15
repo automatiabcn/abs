@@ -158,7 +158,7 @@ export default function ProviderKeysPage() {
           Bring your own provider. A key you add here answers your questions first,
           and the free providers stay behind it as the fallback — so you keep working
           even when your provider is down or out of quota. A key on a project beats one
-          on your account, which beats one on the organisation. Keys are stored
+          on your account, which beats one on the organization. Keys are stored
           encrypted and never shown again.
         </p>
       </div>
@@ -184,7 +184,7 @@ export default function ProviderKeysPage() {
               <select value={ownerType} onChange={(e) => setOwnerType(e.target.value as typeof ownerType)}
                 data-test="pk-owner-type"
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm">
-                <option value="org">everyone in the organisation</option>
+                <option value="org">everyone in the organization</option>
                 <option value="user">one person</option>
                 <option value="project">one project</option>
               </select>

@@ -57,7 +57,7 @@ describe("ManageModal (018 modul E)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Open billing portal" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      /no licence found/i,
+      /no license found/i,
     );
   });
 

@@ -49,7 +49,7 @@ const Install: FC = () => (
         Install it in about fifteen minutes
       </h2>
       <p className="mt-4 text-muted-foreground">
-        On your own server, with no license key. A licence covers commercial use
+        On your own server, with no license key. A license covers commercial use
         and support — it is not what makes the software run.
       </p>
     </div>

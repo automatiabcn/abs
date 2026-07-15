@@ -29,7 +29,7 @@ const Contact: FC = () => (
       </h2>
       <p className="mt-4 text-muted-foreground">
         Ask us anything about running ABS on your own infrastructure — which
-        providers to start with, what it needs from a server, how the licence
+        providers to start with, what it needs from a server, how the license
         works.
       </p>
 
