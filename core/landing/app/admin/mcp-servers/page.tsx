@@ -11,6 +11,8 @@
 // Distinct from /admin/mcp-tokens (which connects a client TO ABS).
 "use client";
 
+import { formatDateTime } from "@/lib/format";
+
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -343,7 +345,7 @@ export default function McpServersPage() {
                         {s.last_checked_at && (
                           <span suppressHydrationWarning>
                             · last tested:{" "}
-                            {new Date(s.last_checked_at).toLocaleString()}
+                            {formatDateTime(new Date(s.last_checked_at), "en")}
                           </span>
                         )}
                       </div>

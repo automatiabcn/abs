@@ -15,9 +15,12 @@
 // every helper takes the active `lang` (Lang from lib/i18n.ts) and
 // expands it to the right BCP-47 tag.
 //
-// Panel + admin + components/chat are TR-first by design and continue
-// to call `(...).toLocaleString("tr-TR")` directly. R58's guard
-// already exempts those directories.
+// Panel + admin + components/chat are English-first (the product ships
+// globally) and now route their number/date rendering through these
+// helpers with an explicit `"en"` so a date never renders as an
+// ambiguous, viewer-locale-dependent string. R58's guard exempts those
+// directories from the "no hardcoded BCP-47 tag" rule, but the helpers
+// keep the locale single-sourced here regardless.
 
 import type { Lang } from "./i18n";
 

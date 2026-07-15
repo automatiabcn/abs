@@ -12,6 +12,8 @@
 // value is shown exactly once and must be copied immediately.
 "use client";
 
+import { formatDate } from "@/lib/format";
+
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { KeyRound, Copy, Check, Trash2, ShieldAlert, FileCode2 } from "lucide-react";
@@ -216,7 +218,7 @@ export default function McpTokensPage() {
           <CardTitle className="text-base">Issue a token</CardTitle>
           <CardDescription>
             The label is just a reminder of where the token lives (e.g.
-            &quot;emre-laptop-claude&quot;). Once it expires, the token stops
+            &quot;laptop-claude&quot;). Once it expires, the token stops
             working.
           </CardDescription>
         </CardHeader>
@@ -225,7 +227,7 @@ export default function McpTokensPage() {
             <Input
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Label (e.g. emre-claude-code)"
+              placeholder="Label (e.g. laptop-claude-code)"
               data-test="mcp-token-label"
             />
             <select
@@ -277,7 +279,7 @@ export default function McpTokensPage() {
                 Token issued — <strong>{minted.label}</strong> · scope{" "}
                 {minted.scope} · expires{" "}
                 <span suppressHydrationWarning>
-                  {new Date(minted.expires_at).toLocaleDateString()}
+                  {formatDate(new Date(minted.expires_at), "en")}
                 </span>
               </div>
 
@@ -365,10 +367,10 @@ export default function McpTokensPage() {
                       <td className="py-1.5 pr-3 font-medium">{t.label || "—"}</td>
                       <td className="py-1.5 pr-3 font-mono">{t.scope}</td>
                       <td className="py-1.5 pr-3" suppressHydrationWarning>
-                        {new Date(t.issued_at).toLocaleDateString()}
+                        {formatDate(new Date(t.issued_at), "en")}
                       </td>
                       <td className="py-1.5 pr-3" suppressHydrationWarning>
-                        {t.expires_at ? new Date(t.expires_at).toLocaleDateString() : "—"}
+                        {t.expires_at ? formatDate(new Date(t.expires_at), "en") : "—"}
                       </td>
                       <td className="py-1.5 pr-3">
                         <span className={

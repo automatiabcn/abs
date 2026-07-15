@@ -13,6 +13,8 @@
 // on slow 3G.
 "use client";
 
+import { formatDateTime } from "@/lib/format";
+
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -327,7 +329,7 @@ export default function AuditClient({
                       className="text-muted-foreground"
                       suppressHydrationWarning
                     >
-                      {new Date(e.ts).toLocaleString()}
+                      {formatDateTime(new Date(e.ts), "en")}
                     </span>
                     <span className="font-mono text-muted-foreground">
                       {e.actor}
