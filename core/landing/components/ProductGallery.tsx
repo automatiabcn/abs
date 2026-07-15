@@ -60,6 +60,11 @@ export default function ProductGallery() {
   const reduced = useRef(false);
 
   useEffect(() => {
+    // matchMedia is absent in jsdom and some non-browser contexts; treat its
+    // absence as "no reduced-motion preference expressed" rather than crashing
+    // the whole section.
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function")
+      return;
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     reduced.current = mq.matches;
     const onChange = () => {

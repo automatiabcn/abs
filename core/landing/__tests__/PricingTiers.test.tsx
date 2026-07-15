@@ -77,7 +77,7 @@ describe("PricingTiers", () => {
   it("highlights the team plan", () => {
     render(<PricingTiers />);
     expect(screen.getByTestId("pricing-tier-team").className).toContain(
-      "ring-blue-500",
+      "ring-primary",
     );
   });
 });
