@@ -231,10 +231,18 @@ def recent_agent_runs(*, tenant_slug: str, limit: int = 20) -> List[dict]:
                 .limit(limit)
             )
         )
+    def _evidence(raw: str) -> list:
+        try:
+            ev = json.loads(raw or "[]")
+            return ev if isinstance(ev, list) else []
+        except Exception:  # noqa: BLE001 — malformed row shouldn't break the feed
+            return []
+
     return [
         {
             "id": r.id,
             "agent_id": r.agent_id,
+            "task": r.task,
             "summary": r.summary,
             "confidence": r.confidence,
             "risk": r.risk,
@@ -242,6 +250,7 @@ def recent_agent_runs(*, tenant_slug: str, limit: int = 20) -> List[dict]:
             "provider": r.provider,
             "elapsed_ms": r.elapsed_ms,
             "created_at": r.created_at.isoformat() if r.created_at else None,
+            "evidence": _evidence(r.evidence_json),
         }
         for r in rows
     ]
