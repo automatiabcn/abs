@@ -82,7 +82,7 @@ export default function AgentRegistryPage() {
       {data && (
         <>
           <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat label="Agents" value={String(data.total)} hint="5 categories · 120 tools" />
+            <Stat label="Agents" value={String(data.total)} hint={`${data.categories.length} categories · 120 tools`} />
             <Stat label="Need approval" value={String(data.approval_gated)} hint="medium risk and above ask you first" />
             <Stat label="Answer format" value="Fixed" hint="every answer carries its evidence and confidence" />
             <Stat label="Categories" value={String(data.categories.length)} hint="discovery · intel · engage · ops" />
