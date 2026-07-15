@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// `/panel/tools` MCP tool browser. Renders 122-tool inventory
+// `/panel/tools` MCP tool browser. Renders the live tool inventory
 // from `/v1/panel/tools` as a TanStack Table with category sidebar +
 // fuzzy search + slide-in detail Sheet (input schema + Try-it cascade run).
 "use client";

@@ -16,7 +16,7 @@ const FEATURES: Feature[] = [
   {
     title: "100+ MCP tools",
     description:
-      "Installed and ready, and extensible. You can add your own tools (measurement: 122 tools).",
+      "Installed and ready, and extensible. You can add your own tools (measured: 120 tools).",
   },
   {
     title: "13 quality pipelines",
