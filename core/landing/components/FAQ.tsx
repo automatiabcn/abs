@@ -39,7 +39,7 @@ const QUESTIONS: QA[] = [
   },
   {
     q: "Why ABS when Cursor / Cline / Aider exist?",
-    a: "ABS is not an IDE plugin, it is a self-hosted AI network. It ships with 100+ MCP tools (122 measured), a 6-provider cascade (Anthropic, Groq, Cerebras, Gemini, CloudFlare, Cohere), quality pipelines and RAG. The founder has been building it while using it daily for 6 months.",
+    a: "ABS is not an IDE plugin, it is a self-hosted AI network. It ships with 100+ MCP tools (120 measured), a 6-provider cascade (Anthropic, Groq, Cerebras, Gemini, CloudFlare, Cohere), quality pipelines and RAG. The founder has been building it while using it daily for 6 months.",
   },
   {
     q: "How do updates arrive?",
