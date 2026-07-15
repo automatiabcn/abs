@@ -1,0 +1,2942 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Self-host AI orchestration for Claude Code — 100+ MCP tools, 6 provider cascade, RAG hybrid, multilingual quality pipelines.">
+      
+      
+        <meta name="author" content="Automatia BCN">
+      
+      
+        <link rel="canonical" href="https://docs.automatiabcn.com/latest/CHANGELOG/">
+      
+      
+        <link rel="prev" href="../faq/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>CHANGELOG - Automatia ABS Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Automatia ABS Documentation" class="md-header__button md-logo" aria-label="Automatia ABS Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Automatia ABS Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CHANGELOG
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/automatiabcn/abs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../setup-guide/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Setup Guide
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart-30min/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quickstart (30 min)
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api-reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../billing-runbook/" class="md-tabs__link">
+          
+  
+  
+  Operations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../security/scope/" class="md-tabs__link">
+          
+  
+  
+  Security
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../qa/perf-budget-policy/" class="md-tabs__link">
+          
+  
+  
+  QA & Policy
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api-reference/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../design-decisions/" class="md-tabs__link">
+          
+  
+  
+  Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CHANGELOG
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Automatia ABS Documentation" class="md-nav__button md-logo" aria-label="Automatia ABS Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Automatia ABS Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/automatiabcn/abs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart-30min/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart (30 min)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../billing-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Billing Runbook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dr-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Disaster Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vault-recovery-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vault Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-rotation-runbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook Rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/owasp_rag_checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OWASP + RAG Checklist
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/oauth_pentest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OAuth Pen-Test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/hackerone_program/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HackerOne Program
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    QA & Policy
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    QA & Policy
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/perf-budget-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Perf Budget
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/i18n-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    i18n Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/fs-scan-allowlist-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    fs-scan Allowlist Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/docs-publishing-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docs Publishing Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../qa/beta-e2e-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beta E2E Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../design-decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CHANGELOG
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CHANGELOG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#106-2026-05-25-audit-hardening-11-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.6 (2026-05-25) — Audit hardening (11 fixes)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#104-2026-05-16-docs-alias-split-v103-yellow-green" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.4 (2026-05-16) — Docs alias split (v1.0.3 yellow → green)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#103-2026-05-16-hot-patch-release-ga-docs-gap-open" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.3 (2026-05-16) — Hot-patch (release GA, docs gap open)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.0.3 (2026-05-16) — Hot-patch (release GA, docs gap open)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixes-hot-patch-round-1-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes — hot-patch round 1 (3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixes-hot-patch-round-2-3-closed-1-partial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes — hot-patch round 2 (3 closed + 1 partial)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#infra-ship-v103" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Infra ship (v1.0.3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ci-status-post-v103-push" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI status (post-v1.0.3 push)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pytest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pytest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customer-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customer upgrade
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#101-2026-05-14-hot-fix-patch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.1 (2026-05-14) — Hot-fix patch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.0.1 (2026-05-14) — Hot-fix patch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixes-p0-44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes — P0 (4/4)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixes-p1-66" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes — P1 (6/6)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customer-onboarding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customer onboarding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ci-regression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI / regression
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#100-2026-05-11-first-production-release-busl-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.0 (2026-05-11) — First production release · BUSL-1.1
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.0.0 (2026-05-11) — First production release · BUSL-1.1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#highlights-since-rc1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Highlights since rc1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ship-integrity-reconciliation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ship integrity reconciliation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#final-readiness-deltas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Final readiness deltas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#100-rc1-2026-04-28-qa-3d-hero" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.0-rc1 (2026-04-28) — QA + 3D Hero
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.0.0-rc1 (2026-04-28) — QA + 3D Hero">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3d-hero-scene" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3D Hero Scene
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#playwright-bug-hunt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Playwright Bug-Hunt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-saas-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real SaaS Backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#route-404" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Route 404
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p0-security-fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P0 Security Fix
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-2026-04-27-documentation-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.0 (2026-04-27) — Documentation Site
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.1.0 (2026-04-27) — Documentation Site">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#documentation-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation Site
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#onboarding-email-sequence-2026-04-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Onboarding Email Sequence (2026-04-27)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#landing-page-premium-2026-04-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Landing Page Premium (2026-04-27)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stripe-live-customer-portal-first-customer-playbook-2026-04-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stripe Live + Customer Portal + First Customer Playbook (2026-04-26)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#symbol-graph-rag-hybrid-ml-persona-tokens-2026-04-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symbol Graph + RAG Hybrid + ML Persona + Tokens (2026-04-26)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#panel-real-data-manifest-signature-2026-04-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Panel Real Data + Manifest Signature (2026-04-25)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-channel-health-breaker-watchdog-2026-04-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update Channel + Health + Breaker + Watchdog (2026-04-25)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#encrypted-secrets-vault-sops-age-2026-04-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Encrypted Secrets Vault sops + age (2026-04-24)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-wizard-first-run-email-2026-04-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup Wizard + First-Run + Email (2026-04-24)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stripe-checkout-demo-gate-refund-2026-04-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stripe Checkout + Demo + Gate + Refund (2026-04-23)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow-mlx-judge-rag-dockerfile-2026-04-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow + MLX + Judge + RAG + Dockerfile (2026-04-22)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#00x-up-to-2026-04-20-production-feature-parity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.0.x (up to 2026-04-20) — Production Feature Parity
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#106-2026-05-25-audit-hardening-11-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.6 (2026-05-25) — Audit hardening (11 fixes)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#104-2026-05-16-docs-alias-split-v103-yellow-green" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.4 (2026-05-16) — Docs alias split (v1.0.3 yellow → green)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#103-2026-05-16-hot-patch-release-ga-docs-gap-open" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.3 (2026-05-16) — Hot-patch (release GA, docs gap open)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.0.3 (2026-05-16) — Hot-patch (release GA, docs gap open)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixes-hot-patch-round-1-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes — hot-patch round 1 (3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixes-hot-patch-round-2-3-closed-1-partial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes — hot-patch round 2 (3 closed + 1 partial)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#infra-ship-v103" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Infra ship (v1.0.3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ci-status-post-v103-push" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI status (post-v1.0.3 push)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pytest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pytest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customer-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customer upgrade
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#101-2026-05-14-hot-fix-patch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.1 (2026-05-14) — Hot-fix patch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.0.1 (2026-05-14) — Hot-fix patch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixes-p0-44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes — P0 (4/4)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixes-p1-66" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixes — P1 (6/6)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customer-onboarding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Customer onboarding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ci-regression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI / regression
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#100-2026-05-11-first-production-release-busl-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.0 (2026-05-11) — First production release · BUSL-1.1
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.0.0 (2026-05-11) — First production release · BUSL-1.1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#highlights-since-rc1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Highlights since rc1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ship-integrity-reconciliation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ship integrity reconciliation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#final-readiness-deltas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Final readiness deltas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#100-rc1-2026-04-28-qa-3d-hero" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.0.0-rc1 (2026-04-28) — QA + 3D Hero
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1.0.0-rc1 (2026-04-28) — QA + 3D Hero">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3d-hero-scene" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3D Hero Scene
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#playwright-bug-hunt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Playwright Bug-Hunt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-saas-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real SaaS Backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#route-404" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Route 404
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p0-security-fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        P0 Security Fix
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-2026-04-27-documentation-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.1.0 (2026-04-27) — Documentation Site
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.1.0 (2026-04-27) — Documentation Site">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#documentation-site" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation Site
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#onboarding-email-sequence-2026-04-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Onboarding Email Sequence (2026-04-27)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#landing-page-premium-2026-04-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Landing Page Premium (2026-04-27)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stripe-live-customer-portal-first-customer-playbook-2026-04-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stripe Live + Customer Portal + First Customer Playbook (2026-04-26)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#symbol-graph-rag-hybrid-ml-persona-tokens-2026-04-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symbol Graph + RAG Hybrid + ML Persona + Tokens (2026-04-26)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#panel-real-data-manifest-signature-2026-04-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Panel Real Data + Manifest Signature (2026-04-25)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-channel-health-breaker-watchdog-2026-04-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update Channel + Health + Breaker + Watchdog (2026-04-25)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#encrypted-secrets-vault-sops-age-2026-04-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Encrypted Secrets Vault sops + age (2026-04-24)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-wizard-first-run-email-2026-04-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup Wizard + First-Run + Email (2026-04-24)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stripe-checkout-demo-gate-refund-2026-04-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stripe Checkout + Demo + Gate + Refund (2026-04-23)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow-mlx-judge-rag-dockerfile-2026-04-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow + MLX + Judge + RAG + Dockerfile (2026-04-22)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#00x-up-to-2026-04-20-production-feature-parity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.0.x (up to 2026-04-20) — Production Feature Parity
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<p>Version history — one line per change, date + delta.</p>
+<h2 id="106-2026-05-25-audit-hardening-11-fixes">1.0.6 (2026-05-25) — Audit hardening (11 fixes)<a class="headerlink" href="#106-2026-05-25-audit-hardening-11-fixes" title="Permanent link">&para;</a></h2>
+<p>Full-system audit across five lenses (rendering/function, design intent,
+security, resilience, E2E). Fixes:
+- <strong>Cascade now defaults to the free path</strong> — <code>PROVIDER_ORDER_DEFAULT</code>
+  (Groq → … → Anthropic as the last fallback), aligned with
+  <code>ABS_HYBRID_TIER_PROMISE</code>; chat + cascade + workflows all default to the free
+  path. The UI <code>providers_status</code> follows the same order.
+- <strong>Graph NL→Cypher</strong> called <code>cascade_call</code> (which does not exist) → now uses
+  <code>call_with_cascade</code> + JSON-fence strip.
+- <strong>Single source of truth for the version</strong> — <code>settings.version</code> (ABS_VERSION)
+  → status/main/footer/pyproject.
+- <strong><code>configs.py</code> <code>_default_dir()</code></strong> guards the <code>parents[4]</code> IndexError
+  (a cold deploy without env crashed).
+- <strong>Empty graph/cypher</strong> 500 → 422, <strong>empty graph/nl-query intent</strong> 502 → 422.
+- <strong>Panel cascade</strong> now returns <code>providers_active</code> + <code>timeseries</code> (the panel
+  showed "0").
+- <strong>admin/usage</strong> merges the live <code>usage_log</code> from the DB + <code>cerebras</code> added to
+  FREE_PROVIDERS.
+- <strong>RAG</strong> <code>GET /v1/rag/documents</code> + <code>qc.list_documents</code> (the page now shows the
+  store).
+- Quota header overlap (flex-wrap), /admin/audit React #418 (timeZone pin).</p>
+<p>Security sweep clean: auth-required endpoints return 401, tenant isolation
+holds, rate limit returns 429, destructive cypher 400, forged MCP token 401, no
+secret leaks. Known open ends: the admin panel is not internationalized
+(Turkish only), and the GitHub Smart Link OAuth flow is a placeholder.</p>
+<h2 id="104-2026-05-16-docs-alias-split-v103-yellow-green">1.0.4 (2026-05-16) — Docs alias split (v1.0.3 yellow → green)<a class="headerlink" href="#104-2026-05-16-docs-alias-split-v103-yellow-green" title="Permanent link">&para;</a></h2>
+<p>Single change: <code>docs.yml</code> now derives <code>MIKE_VERSION</code> from <code>github.ref_name</code>
+(tag → <code>v1.0.x</code>, push to main → <code>main</code>); the <code>latest</code> alias is updated on a
+separate channel. This closes the version+alias collision that was the root
+cause of the previous 5 consecutive failures (run 25968243819 and earlier). The
+docs workflow is GREEN for the first time; <code>docs.automatiabcn.com/v1.0.4/</code> and
+<code>/</code> (alias) are live. Merge commit <code>f433dcb</code>, run 25968714499.</p>
+<p>All v1.0.3 changes carry over; the runtime image content is unchanged (backend
++ landing were re-pushed with the <code>:1.0.4</code> + <code>:latest</code> tags). The only change
+for a customer upgrade is <code>ABS_VERSION=1.0.4</code> in <code>.env</code>.</p>
+<p>See the v1.0.3 entry for the previous release.</p>
+<h2 id="103-2026-05-16-hot-patch-release-ga-docs-gap-open">1.0.3 (2026-05-16) — Hot-patch (release GA, docs gap open)<a class="headerlink" href="#103-2026-05-16-hot-patch-release-ga-docs-gap-open" title="Permanent link">&para;</a></h2>
+<p>In the v1.0.1 and v1.0.2 releases the release.yml workflow reported green even
+though no customer image existed on ghcr.io — upgrades and new deployments were
+blocked with HTTP 404. Two hot-patch rounds closed 4 + 4 gaps; v1.0.3 is the
+first release that actually ships an image.</p>
+<p><strong>The one gap still open:</strong> the docs / mike deploy still fails with
+<code>duplicated version and alias</code> (run 25968243819). It will be closed by a
+single-fix patch chain (<code>docs.yml</code> resolve-version step + alias/version split).
+Because of this, docs.automatiabcn.com does not reflect the v1.0.3 pages; the
+GitHub Release notes + this CHANGELOG are canonical.</p>
+<h3 id="fixes-hot-patch-round-1-3">Fixes — hot-patch round 1 (3)<a class="headerlink" href="#fixes-hot-patch-round-1-3" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Postgres CI</strong> — oauth_clients migration <code>BOOLEAN DEFAULT 0</code> →
+  <code>DEFAULT FALSE</code>; alembic revision id 36 chars → 24 chars (the varchar(32)
+  <code>alembic_version</code> limit); env.py gained a legacy revision rewrite shim, so
+  SQLite customers stay backward compatible.</li>
+<li><strong>release.yml</strong> — added the <code>publish-images</code> job (cosign-sign was signing when
+  no image existed); matrix backend+landing build+push + provenance + SBOM +
+  cosign keyless chain.</li>
+<li><strong>docs mike deploy</strong> — idempotent first attempt (improved in round 2, closed
+  in v1.0.4 — the <code>grep</code> regex did not match the <code>[latest]</code> brackets).</li>
+</ul>
+<h3 id="fixes-hot-patch-round-2-3-closed-1-partial">Fixes — hot-patch round 2 (3 closed + 1 partial)<a class="headerlink" href="#fixes-hot-patch-round-2-3-closed-1-partial" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Backend Dockerfile</strong> pubkey path → <code>app/update/manifest_pubkey.pem</code> (the
+  sibling <code>core/backend/manifest_pubkey.pem</code> was gitignored by <code>*.pem</code>, so the
+  CI checkout was missing it). Release backend GREEN.</li>
+<li><strong>GHCR namespace</strong> <code>enzoemir1</code> → <code>automatiabcn</code> (the workflow GITHUB_TOKEN
+  cannot push cross-account; <code>permission_denied: installation does not exist</code>).
+  The customer compose is parametrized via the <code>ABS_GHCR_NAMESPACE</code> env var,
+  default <code>automatiabcn</code>. Release landing GREEN.</li>
+<li><strong>docs mike pre-delete</strong> made unconditional. Partial: <code>mike delete latest</code>
+  removes the alias but leaves the version behind, so the next deploy hits the
+  same duplicate error. Carried to v1.0.4.</li>
+<li><strong>CI Postgres RLS</strong> 5 failing tests — two role models (<code>abs_app</code> SUPERUSER for
+  alembic, <code>abs_app_rls</code> NOSUPERUSER NOBYPASSRLS for data ops), GUC leak fixed
+  with NullPool, downgrade test restores LOGIN + grants in <code>finally</code>. CI
+  Postgres 7/7 GREEN.</li>
+</ul>
+<h3 id="infra-ship-v103">Infra ship (v1.0.3)<a class="headerlink" href="#infra-ship-v103" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ghcr.io/automatiabcn/abs-backend:1.0.3</code> (sha256:459bb68e9ad8b6...)</li>
+<li><code>ghcr.io/automatiabcn/abs-landing:1.0.3</code> (sha256:8c51aca0d591cf...)</li>
+<li>Both carry the same digest as <code>:latest</code>; multi-platform OCI index + cosign
+  keyless attestation.</li>
+</ul>
+<h3 id="ci-status-post-v103-push">CI status (post-v1.0.3 push)<a class="headerlink" href="#ci-status-post-v103-push" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Workflow</th>
+<th>Run id</th>
+<th>Conclusion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Release</td>
+<td>25968244147</td>
+<td>success (publish-images + cosign)</td>
+</tr>
+<tr>
+<td>SBOM Generation</td>
+<td>25968244153</td>
+<td>success</td>
+</tr>
+<tr>
+<td>CI Postgres (RLS)</td>
+<td>25968243828</td>
+<td>success</td>
+</tr>
+<tr>
+<td>CodeQL Advanced</td>
+<td>25968243837</td>
+<td>success</td>
+</tr>
+<tr>
+<td>docs</td>
+<td>25968243819</td>
+<td>failure (mike duplicate)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pytest">Pytest<a class="headerlink" href="#pytest" title="Permanent link">&para;</a></h3>
+<ul>
+<li>2171 passed, 24 skipped, 3 deselected (SQLite baseline preserved)</li>
+<li>CI Postgres (RLS) 7/7 GREEN, independent of module order</li>
+</ul>
+<h3 id="customer-upgrade">Customer upgrade<a class="headerlink" href="#customer-upgrade" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a># Existing v1.0.x customer .env update
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>ABS_VERSION=1.0.3
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>ABS_GHCR_NAMESPACE=automatiabcn
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>docker compose -f infra/docker-compose.customer.yml pull
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>docker compose -f infra/docker-compose.customer.yml up -d
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>curl -sf https://${ABS_PUBLIC_HOSTNAME}/healthz
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>curl -sf https://${ABS_PUBLIC_HOSTNAME}/readyz
+</span></code></pre></div>
+<p>Customers who want to stay on the previous <code>enzoemir1</code> namespace can keep it
+pinned with <code>ABS_GHCR_NAMESPACE=enzoemir1</code>.</p>
+<h2 id="101-2026-05-14-hot-fix-patch">1.0.1 (2026-05-14) — Hot-fix patch<a class="headerlink" href="#101-2026-05-14-hot-fix-patch" title="Permanent link">&para;</a></h2>
+<p>Closes the 4 P0 + 6 P1 findings of the customer E2E audit, plus a customer
+onboarding incident from the first deployment.</p>
+<h3 id="fixes-p0-44">Fixes — P0 (4/4)<a class="headerlink" href="#fixes-p0-44" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Setup wizard HTML now matches the Turkish copy byte-exactly (18+ terms: Next,
+  Admin Account, Password, License Key, Finish Setup, …).</li>
+<li>Cascade fallback: 5 user-facing messages restored byte-exactly (for example
+  the "all providers are temporarily failing; please try again" message).</li>
+<li>Fail-closed restore — the <code>/admin/*</code> and <code>/panel/*</code> SSR layouts probe the
+  backend <code>/healthz</code>; on failure they redirect to
+  <code>/login?reason=backend-unreachable</code> with a Turkish banner.</li>
+<li>Customer compose defaults to Postgres 16 + RLS (SQLite becomes legacy opt-in);
+  the entrypoint gates on <code>alembic upgrade head</code>.</li>
+</ul>
+<h3 id="fixes-p1-66">Fixes — P1 (6/6)<a class="headerlink" href="#fixes-p1-66" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>/panel/{path}</code> → <code>/admin/{path}</code> 308 catch-all redirect.</li>
+<li><code>daily_cost</code> MCP tool IndexError → graceful 0.0 fallback.</li>
+<li>Cascade with all 6 providers down now returns a structured HTTP 503
+  (Retry-After 60s) from a pre-flight provider probe, instead of a silent 200 SSE.</li>
+<li>Caddyfile.customer <code>@backend</code> pattern gained <code>/me/*</code> (GDPR self-service
+  endpoints).</li>
+<li>Image tag 1.0.0 → 1.0.1.</li>
+<li><code>/auth/login</code> rate limited to 5/min (brute-force guard).</li>
+</ul>
+<h3 id="customer-onboarding">Customer onboarding<a class="headerlink" href="#customer-onboarding" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>scripts/build_customer_pkg.sh</code> — single-file tar.gz package builder; guards
+  the REQUIRED files; excludes <code>__pycache__</code>.</li>
+<li><code>scripts/customer_onboard.sh</code> — packages the <code>./scripts</code> host mount target
+  (email-cron mounts <code>./scripts:/app/infra/scripts:ro</code> in compose); the email
+  template spells out the single-file <code>tar -xzvf</code> flow.</li>
+</ul>
+<h3 id="ci-regression">CI / regression<a class="headerlink" href="#ci-regression" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>tests/test_turkce_byte_exact_blanket.py</code> (4) — byte-exact Turkish gate.</li>
+<li><code>tests/test_customer_compose_postgres.py</code> (8) — compose schema + alembic
+  boot gate.</li>
+<li><code>tests/test_customer_pkg_mount_audit.py</code> (7) — mount completeness.</li>
+<li>Backend pytest baseline preserved (2143 + the new tests).</li>
+</ul>
+<h2 id="100-2026-05-11-first-production-release-busl-11">1.0.0 (2026-05-11) — First production release · BUSL-1.1<a class="headerlink" href="#100-2026-05-11-first-production-release-busl-11" title="Permanent link">&para;</a></h2>
+<p>ABS Server <strong>v1.0.0</strong> — first production-ready release, source-available
+under <a href="../LICENSE">Business Source License 1.1</a>. Change Date 2030-05-07,
+Change License Apache 2.0.</p>
+<h3 id="highlights-since-rc1">Highlights since rc1<a class="headerlink" href="#highlights-since-rc1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>6-provider cascade</strong> with circuit breaker — Anthropic + Groq + Cerebras</li>
+<li>Gemini + Cloudflare + Cohere (hexagonal restructure, pact contract tests,
+  nightly regression).</li>
+<li><strong>123 MCP tools</strong> across code, RAG, judge ML, fullstack, billing,
+  observability, marketplace, compliance (was 107 in early rc).</li>
+<li><strong>Plugin marketplace</strong> with cosign verification + Docker sandbox +
+  Cerbos pre-filter + Next.js admin UI.</li>
+<li><strong>NL workflow builder</strong> — natural-language → JSON synthesizer +
+  2-stage validator + canvas.</li>
+<li><strong>Free-tier hybrid promise</strong> — Claude quota discipline + paid-SaaS
+  opt-in only + Anthropic policy compliance.</li>
+<li><strong>License + IP hardening</strong> — JWT RS256, hardware fingerprint, phone-home
+  with 7-day grace, Cython-compiled verifier.</li>
+<li><strong>Image-only customer distribution</strong> — ghcr.io compose with source
+  strip in the production stage (Cython gate verified across 1.0.0-rc2..rc8).</li>
+<li><strong>i18n EN/TR/ES</strong> — landing, admin, customer portal, 24 email templates,
+  /panel/* + /404 in three locales.</li>
+<li><strong>Lighthouse 100/100/100/100</strong> desktop + slow-3g accessibility.</li>
+<li><strong>Test corpus 2065 passing</strong> (pytest backend) + 53 vitest + 41 Playwright</li>
+<li>8 axe-core a11y — zero failure across CI green.</li>
+</ul>
+<h3 id="ship-integrity-reconciliation">Ship integrity reconciliation<a class="headerlink" href="#ship-integrity-reconciliation" title="Permanent link">&para;</a></h3>
+<p>Images for <code>1.0.0-rc9</code>, <code>1.0.0-rc10</code> and <code>1.0.0-rc11</code> were shipped to GHCR, but
+the matching git tags never reached <code>origin</code>. This release reconciles the gap:</p>
+<ul>
+<li><code>v1.0.0-rc9</code> retro-tagged at commit <code>d225a1c</code> (CodeQL prod fix x13 + dynamic
+  imports + commit signing)</li>
+<li><code>v1.0.0-rc10</code> retro-tagged at commit <code>9e0d837</code> (Gemini header-auth + URL
+  sanitizer + CodeQL config + lighthouse slow-3g a11y)</li>
+<li><code>v1.0.0-rc11</code> retro-tagged at commit <code>10868d6</code> (NOTICE.md + trademarks +
+  license metadata + SBOM CI + heartbeat privacy doc)</li>
+<li><code>v1.0.0</code> — first production GA tag, with SBOM (CycloneDX) + cosign keyless
+  signature attached via release.yml.</li>
+</ul>
+<p><code>scripts/release.sh</code> now mandates a
+<code>git ls-remote --tags origin | grep v${VERSION}</code> verification gate; no future RC
+ships with a silent tag-push failure.</p>
+<h3 id="final-readiness-deltas">Final readiness deltas<a class="headerlink" href="#final-readiness-deltas" title="Permanent link">&para;</a></h3>
+<ul>
+<li>release.sh tag-push verification gate.</li>
+<li>rc9/rc10/rc11 retroactive git tags + GitHub Release notes.</li>
+<li>docs workflow: phantom <code>mkdocs-algolia-docsearch</code> removed (the PyPI package
+  never existed); validation tolerance + mike-only deps.</li>
+<li>License Detection workflow no longer expects an upstream <code>bsl-1.1</code> Licensee
+  template that does not exist; replaced with body-shape verification.</li>
+<li>README "GitHub Other / NOASSERTION" disclosure (the Licensee gem does not
+  bundle BUSL-1.1; documented as an upstream gap).</li>
+<li>CodeQL default-setup → advanced workflow with a config file + matrix python /
+  javascript-typescript.</li>
+<li>Branch protection on main with 7 required status checks (CodeQL python + ts,
+  Perf Budget lighthouse + bundlewatch + web-vitals, Lighthouse Nightly desktop</li>
+<li>slow-3g).</li>
+<li>All production CodeQL alerts resolved, or dismissed with a per-alert
+  documented rationale (no mass-dismiss).</li>
+<li>All Dependabot alerts patched or closed with a rationale.</li>
+<li><code>v1.0.0</code> git tag + SBOM (CycloneDX) + cosign keyless + multi-arch Docker
+  images (linux/amd64 + linux/arm64) + GitHub Release.</li>
+<li>README + CHANGELOG + CUSTOMER_USER_GUIDE final review; README badges
+  refreshed (tests 2065, MCP tools 123, CI + CodeQL workflow badges, "Made in
+  Barcelona").</li>
+</ul>
+<p>The BGE-M3 default embedder flip is deferred to a later release.</p>
+<hr />
+<h2 id="100-rc1-2026-04-28-qa-3d-hero">1.0.0-rc1 (2026-04-28) — QA + 3D Hero<a class="headerlink" href="#100-rc1-2026-04-28-qa-3d-hero" title="Permanent link">&para;</a></h2>
+<h3 id="3d-hero-scene">3D Hero Scene<a class="headerlink" href="#3d-hero-scene" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>core/landing/components/HeroScene3D.tsx</code>: React Three Fiber canvas (central icosahedron orb + 24 Fibonacci network nodes + 600-particle inward flow).</li>
+<li><code>HeroSvgFallback.tsx</code> for mobile / <code>prefers-reduced-motion</code> users.</li>
+<li><code>HeroVisual.tsx</code> gate decides 3D vs SVG via <code>matchMedia</code> (defensive against jsdom).</li>
+<li>Lazy-loaded with <code>next/dynamic({ ssr: false })</code> so three.js stays out of the initial document.</li>
+<li>53/53 vitest, 23/23 Playwright, 8/8 axe-core a11y green.</li>
+</ul>
+<h3 id="playwright-bug-hunt">Playwright Bug-Hunt<a class="headerlink" href="#playwright-bug-hunt" title="Permanent link">&para;</a></h3>
+<ul>
+<li>New <code>playwright.config.ts</code> (chromium-desktop + chromium-mobile, autobooted dev server).</li>
+<li>23 tests: routes (status + console-error), axe-core a11y (WCAG 2 AA), responsive (mobile horizontal-scroll guard).</li>
+<li>Fixed: <code>/beta</code> form fields gained <code>text-slate-900 placeholder:text-slate-400</code> (contrast was 1.04; now WCAG 2 AA).</li>
+<li><code>npm run test:e2e</code> and <code>test:e2e:headed</code> scripts.</li>
+</ul>
+<h3 id="real-saas-backends">Real SaaS Backends<a class="headerlink" href="#real-saas-backends" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Recall.ai <code>/api/v1/bot[/&lt;id&gt;]</code> httpx client (schedule / status / cancel).</li>
+<li>Deepgram <code>/v1/listen</code> httpx client with diarized-word parsing.</li>
+<li>ElevenLabs <code>/v1/text-to-speech/&lt;voice&gt;</code> httpx client (Multilingual v2, mp3 output).</li>
+<li>Gmail OAuth refresh + REST list / draft / send / label without <code>googleapiclient</code> SDK.</li>
+<li>7 respx-mocked tests + 1 updated import test.</li>
+</ul>
+<h3 id="route-404">Route 404<a class="headerlink" href="#route-404" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Root cause: stale <code>.next/</code> cache after <code>/pricing</code> was added.</li>
+<li>9-test Playwright route suite (status 200 + non-empty body + no console error).</li>
+<li>New <code>docs/troubleshooting.md</code> section.</li>
+</ul>
+<h3 id="p0-security-fix">P0 Security Fix<a class="headerlink" href="#p0-security-fix" title="Permanent link">&para;</a></h3>
+<ul>
+<li>2 SQL injection findings annotated <code># nosec B608</code> with proof of safety (server-generated <code>?</code> placeholders).</li>
+<li>1 SQL injection strengthened with double-validation + 4 KiB length cap.</li>
+<li>9 dev secrets gated by <code>assert_production_safe()</code> — boot fails fast in <code>env=prod</code> if any default leaks.</li>
+<li>Full <code>core/backend/.env.example</code> inventory.</li>
+<li>4 SQLModel ORM call sites confirmed as ORM (not subprocess); ignored at scanner config.</li>
+</ul>
+<h2 id="010-2026-04-27-documentation-site">0.1.0 (2026-04-27) — Documentation Site<a class="headerlink" href="#010-2026-04-27-documentation-site" title="Permanent link">&para;</a></h2>
+<h3 id="documentation-site">Documentation Site<a class="headerlink" href="#documentation-site" title="Permanent link">&para;</a></h3>
+<ul>
+<li>MkDocs Material build, navigation, search, brand-aligned.</li>
+<li>6 new docs: index, setup-guide, api-reference (auto-generated, 104 tools), troubleshooting, faq, CHANGELOG.</li>
+<li>Build script + GitHub Actions workflow.</li>
+</ul>
+<h3 id="onboarding-email-sequence-2026-04-27">Onboarding Email Sequence (2026-04-27)<a class="headerlink" href="#onboarding-email-sequence-2026-04-27" title="Permanent link">&para;</a></h3>
+<ul>
+<li>5 email templates (welcome, walkthrough, first_success, expiry_warning, recovery).</li>
+<li><code>EmailQueue</code> SQLModel + scheduler (schedule, tick, retry with exponential backoff, unsubscribe JWT).</li>
+<li>Webhook hook → 4 emails auto-scheduled on <code>checkout.session.completed</code>.</li>
+<li>First-success middleware trigger.</li>
+<li>Cron worker docker service <code>email-cron</code> (every 5min).</li>
+<li>MCP tool <code>email_queue_status</code>.</li>
+<li>Unsubscribe endpoint <code>GET /v1/email/unsubscribe?token=...</code>.</li>
+<li>18 new tests, 1 new MCP tool.</li>
+</ul>
+<h3 id="landing-page-premium-2026-04-27">Landing Page Premium (2026-04-27)<a class="headerlink" href="#landing-page-premium-2026-04-27" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Hero premium SVG illustration (isometric cube stack, brand gradient).</li>
+<li>Pricing CTA → /api/checkout POST + Stripe redirect.</li>
+<li>FAQ 8 → 12 (vault, refund, GDPR, open source).</li>
+<li>Quotes section (3 testimonials), Demo section (Loom iframe lazy).</li>
+<li>ManageModal — Stripe Customer Portal modal.</li>
+<li>Privacy / Terms / Refund pages (GDPR compliant, EU 2011/83/EU).</li>
+<li>Lighthouse 100/100 desktop+mobile.</li>
+<li>17 vitest (8 files).</li>
+</ul>
+<h3 id="stripe-live-customer-portal-first-customer-playbook-2026-04-26">Stripe Live + Customer Portal + First Customer Playbook (2026-04-26)<a class="headerlink" href="#stripe-live-customer-portal-first-customer-playbook-2026-04-26" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>WebhookEvent</code> table + idempotency (claim_event / mark_processed).</li>
+<li><code>POST /v1/billing/portal</code> Stripe Customer Portal session.</li>
+<li><code>setup_stripe_products.py</code> argparse refactor (<code>--mode test|live</code> + safeguard + <code>--dry-run</code>).</li>
+<li>MCP tool <code>billing_status</code> (Stripe products + revenue + license counts + recent events).</li>
+<li><code>docs/billing-runbook.md</code> + <code>docs/first-customer-playbook.md</code>.</li>
+<li>22 new tests (270 → 292), 1 new MCP tool (102 → 103).</li>
+</ul>
+<h3 id="symbol-graph-rag-hybrid-ml-persona-tokens-2026-04-26">Symbol Graph + RAG Hybrid + ML Persona + Tokens (2026-04-26)<a class="headerlink" href="#symbol-graph-rag-hybrid-ml-persona-tokens-2026-04-26" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Symbol DB (SQLite + AST parser, neighbors BFS).</li>
+<li>RAG hybrid (BM25 + cosine fusion, alpha_semantic param).</li>
+<li>ML persona predict (pure-Python logistic regression, 200 epochs).</li>
+<li>Real token tracking (tokens_in_24h / tokens_out_24h aggregation).</li>
+<li>Cost estimator separates measured cost from estimated cost.</li>
+<li>4 new tests, 3 new MCP tools (99 → 102).</li>
+</ul>
+<h3 id="panel-real-data-manifest-signature-2026-04-25">Panel Real Data + Manifest Signature (2026-04-25)<a class="headerlink" href="#panel-real-data-manifest-signature-2026-04-25" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>cost_estimator.py</code> token-aware billing.</li>
+<li><code>learnings/store.py</code> JSONL append-only (24h dedup, 6 categories).</li>
+<li><code>update/signature.py</code> (RSA PKCS1v15+SHA256, fail-closed).</li>
+<li>MCP tools <code>daily_cost</code>, <code>learnings_recent</code>, <code>learnings_log</code>.</li>
+<li>Watchdog deploy.sh, manifest-keys generator.</li>
+</ul>
+<h3 id="update-channel-health-breaker-watchdog-2026-04-25">Update Channel + Health + Breaker + Watchdog (2026-04-25)<a class="headerlink" href="#update-channel-health-breaker-watchdog-2026-04-25" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>update/manifest.py</code> 4-state (current/available/critical/unknown).</li>
+<li><code>health/monitor.py</code> 60s asyncio loop.</li>
+<li><code>cascade/persist.py</code> breaker state on disk.</li>
+<li>6 provider YAML configs.</li>
+<li>Watchdog skeleton (VPS deploy ready).</li>
+<li>3 new MCP tools (update_check, health_status, breaker_status).</li>
+</ul>
+<h3 id="encrypted-secrets-vault-sops-age-2026-04-24">Encrypted Secrets Vault sops + age (2026-04-24)<a class="headerlink" href="#encrypted-secrets-vault-sops-age-2026-04-24" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Mozilla sops + age binary integration.</li>
+<li><code>vault/runner.py</code> + <code>cache.py</code> + <code>migration.py</code> + <code>audit.py</code>.</li>
+<li>11-key map (Stripe + Anthropic + SMTP + provider keys).</li>
+<li>Plaintext .env migration (idempotent).</li>
+<li>MCP tool <code>vault_status</code>.</li>
+</ul>
+<h3 id="setup-wizard-first-run-email-2026-04-24">Setup Wizard + First-Run + Email (2026-04-24)<a class="headerlink" href="#setup-wizard-first-run-email-2026-04-24" title="Permanent link">&para;</a></h3>
+<ul>
+<li>6-step setup wizard (vanilla HTML/JS).</li>
+<li>First-run middleware (whitelist redirect to /setup).</li>
+<li>Email templates: license_refund, license_expired.</li>
+<li>MCP tool <code>setup_status</code>.</li>
+</ul>
+<h3 id="stripe-checkout-demo-gate-refund-2026-04-23">Stripe Checkout + Demo + Gate + Refund (2026-04-23)<a class="headerlink" href="#stripe-checkout-demo-gate-refund-2026-04-23" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>POST /v1/checkout/create-session</code> (3 SKU mapping).</li>
+<li>Demo countdown 14 days.</li>
+<li>MCP gate (<code>mcp_require_license</code> toggle).</li>
+<li>Webhook handlers: <code>charge.refunded</code> + <code>customer.subscription.deleted</code>.</li>
+<li>MCP tools <code>license_status</code>, <code>demo_status</code>.</li>
+</ul>
+<h3 id="workflow-mlx-judge-rag-dockerfile-2026-04-22">Workflow + MLX + Judge + RAG + Dockerfile (2026-04-22)<a class="headerlink" href="#workflow-mlx-judge-rag-dockerfile-2026-04-22" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>WorkflowSession</code> (no-op when <code>workflow_durable=False</code>).</li>
+<li>MLX provider HTTP bridge (port 11436).</li>
+<li>Judge persona training (<code>train_persona</code>, <code>persona_status</code>, <code>reset_persona</code>).</li>
+<li>RAG chunker (Python AST + Markdown heading + char fallback).</li>
+<li>Dockerfile multi-stage (builder + runtime).</li>
+<li>MCP tools <code>judge_persona_*</code>.</li>
+</ul>
+<h2 id="00x-up-to-2026-04-20-production-feature-parity">0.0.x (up to 2026-04-20) — Production Feature Parity<a class="headerlink" href="#00x-up-to-2026-04-20-production-feature-parity" title="Permanent link">&para;</a></h2>
+<p>Final baseline before the 0.1.0 feature line: 89 MCP tools, 118 tests.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.expand", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
