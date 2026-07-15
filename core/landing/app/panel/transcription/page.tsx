@@ -66,6 +66,9 @@ export default function TranscriptionPanel() {
   const [statusMessage, setStatusMessage] = useState<string>("Ready");
   const [error, setError] = useState<string | null>(null);
   const [voice, setVoice] = useState<string>(DEFAULT_VOICE_ID);
+  // What to listen to: your own mic, or the audio of a meeting tab (both sides
+  // of the call). The bot will automate the tab case later — see the roadmap.
+  const [source, setSource] = useState<"mic" | "tab">("mic");
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const cumulativeOffset = useRef<number>(0);
@@ -109,10 +112,32 @@ export default function TranscriptionPanel() {
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      setActiveStream(stream);
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      // Full source stream (kept so stop() ends every track, incl. the tab's
+      // video), and the audio-only stream the recorder + waveform actually use.
+      let fullStream: MediaStream;
+      let audioStream: MediaStream;
+      if (source === "tab") {
+        if (!navigator.mediaDevices.getDisplayMedia) {
+          setError("This browser can't capture a tab. Try Chrome or Edge on desktop.");
+          return;
+        }
+        fullStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        const audioTracks = fullStream.getAudioTracks();
+        if (audioTracks.length === 0) {
+          fullStream.getTracks().forEach((t) => t.stop());
+          setError("No tab audio was shared. When the picker opens, choose the meeting tab and tick “Share tab audio”.");
+          return;
+        }
+        audioStream = new MediaStream(audioTracks);
+        // If the person stops sharing from the browser bar, end the session too.
+        audioTracks[0].addEventListener("ended", () => stop());
+      } else {
+        fullStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioStream = fullStream;
+      }
+      streamRef.current = fullStream;
+      setActiveStream(audioStream);
+      const recorder = new MediaRecorder(audioStream, { mimeType: "audio/webm" });
       recorder.ondataavailable = async (event) => {
         if (!event.data || event.data.size === 0) return;
         const form = new FormData();
@@ -150,7 +175,11 @@ export default function TranscriptionPanel() {
       setRecording(true);
       setStatusMessage("Recording — sending audio every 5 seconds…");
     } catch (exc) {
-      setError(`Could not open the microphone: ${(exc as Error).message}`);
+      setError(
+        source === "tab"
+          ? `Could not capture the tab: ${(exc as Error).message}`
+          : `Could not open the microphone: ${(exc as Error).message}`,
+      );
     }
   };
 
@@ -225,8 +254,8 @@ export default function TranscriptionPanel() {
       <header className="mb-6">
         <h1 className="text-2xl font-semibold">Live Transcription</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Turn on your microphone and the transcript builds as you speak, with
-          each speaker labelled. Play any line back in the voice you choose.
+          Capture your microphone or a meeting tab and the transcript builds live,
+          with each speaker labelled. Play any line back in the voice you choose.
         </p>
       </header>
 
@@ -248,6 +277,22 @@ export default function TranscriptionPanel() {
           >
             Start
           </button>
+        )}
+        {!recording && (
+          <div className="inline-flex overflow-hidden rounded-lg border border-border text-xs" role="group" aria-label="Capture source">
+            {([["mic", "My mic"], ["tab", "Meeting tab"]] as const).map(([val, label]) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setSource(val)}
+                aria-pressed={source === val}
+                data-test={`capture-source-${val}`}
+                className={`px-3 py-1.5 font-medium transition ${source === val ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted/50"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         )}
         <span
           aria-live="polite"
@@ -323,11 +368,12 @@ export default function TranscriptionPanel() {
               </li>
               <li className="rounded-md border border-border bg-background/40 p-3">
                 <span className="font-mono text-primary">2.</span>{" "}
-                Press <strong>Start</strong> and allow microphone access
+                Pick <strong>My mic</strong> or <strong>Meeting tab</strong>, press{" "}
+                <strong>Start</strong> and allow access
               </li>
               <li className="rounded-md border border-border bg-background/40 p-3">
                 <span className="font-mono text-primary">3.</span>{" "}
-                Start talking — your words appear here as you go
+                Talk, or let the meeting run — words appear here as you go
               </li>
             </ol>
           </div>
