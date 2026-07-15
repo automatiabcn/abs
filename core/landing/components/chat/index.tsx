@@ -355,7 +355,7 @@ function SlashCommandPalette({
   return (
     <div
       data-test="slash-palette"
-      className="absolute bottom-full left-0 mb-2 w-full max-w-md rounded-lg border border-border bg-popover p-1 shadow-lg"
+      className="absolute bottom-full left-0 z-20 mb-2 w-full max-w-md rounded-lg border border-border bg-card p-1 shadow-lg"
     >
       {matches.map((c) => (
         <button
