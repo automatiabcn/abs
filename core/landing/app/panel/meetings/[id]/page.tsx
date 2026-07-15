@@ -86,6 +86,10 @@ export default function MeetingDetailPage() {
     const idx = data.speakers.findIndex((s) => s.id === id);
     return SPEAKER_COLORS[Math.max(0, idx) % SPEAKER_COLORS.length];
   };
+  // The transcript should read in the same names the legend uses ("Speaker 1"),
+  // not the raw diarizer id ("spk_0"); fall back to the id if it isn't listed.
+  const speakerName = (id: string) =>
+    data.speakers.find((s) => s.id === id)?.name ?? id;
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12 text-foreground">
@@ -168,7 +172,7 @@ export default function MeetingDetailPage() {
                 className="rounded px-2 py-0.5 font-mono text-xs"
                 style={{ background: speakerColor(seg.speaker_id), color: "#0a0e14" }}
               >
-                {seg.speaker_id}
+                {speakerName(seg.speaker_id)}
               </span>
               <span className="flex-1">{seg.text}</span>
             </li>
