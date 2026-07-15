@@ -54,16 +54,16 @@ describe("approvals action safety", () => {
   beforeEach(() => { cap = {}; vi.stubGlobal("fetch", installFetch(cap)); });
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
-  it("labels the compact queue action 'Onayla', never the misleading 'İncele'", async () => {
+  it("labels the compact queue action 'Approve', never the misleading 'Review'", async () => {
     render(<ApprovalCenterPage />);
-    await waitFor(() => expect(screen.getByText("Onayla")).toBeTruthy());
-    expect(screen.queryByText("İncele")).toBeNull();
+    await waitFor(() => expect(screen.getByText("Approve")).toBeTruthy());
+    expect(screen.queryByText("Review")).toBeNull();
   });
 
   it("does NOT fire the action when the confirm is cancelled", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<ApprovalCenterPage />);
-    const btn = await screen.findByText("Onayla");
+    const btn = await screen.findByText("Approve");
     fireEvent.click(btn);
     // give any (wrongly) fired request a tick to land
     await new Promise((r) => setTimeout(r, 30));
@@ -73,7 +73,7 @@ describe("approvals action safety", () => {
   it("fires decide(approve) only after the confirm is accepted", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<ApprovalCenterPage />);
-    const btn = await screen.findByText("Onayla");
+    const btn = await screen.findByText("Approve");
     fireEvent.click(btn);
     await waitFor(() => expect(cap.decide).toBeTruthy());
     expect(cap.decide).toMatchObject({ decision: "approve" });

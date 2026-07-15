@@ -125,7 +125,7 @@ export default function ContextGraphPage() {
                     <svg className="pointer-events-none absolute inset-0 h-full w-full">
                       {layout.placed.map((p, i) => (
                         <line key={i} x1="50%" y1="48%" x2={`${p.left}%`} y2={`${p.top}%`}
-                          stroke={p.highlight ? "#3a9dff" : "rgba(118,138,154,.3)"}
+                          stroke={p.highlight ? "#4ecdc2" : "rgba(118,138,154,.3)"}
                           strokeWidth={p.highlight ? 2 : 1.5}
                           strokeDasharray={p.node.type === "contact" || p.node.type === "company" ? "4 4" : undefined} />
                       ))}

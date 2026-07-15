@@ -267,7 +267,7 @@ export default function MeetingsPanel() {
                 <>
                   {" · "}
                   <span className="text-primary">{filtered.length}</span>{" "}
-                  filtreli
+                  filtered
                 </>
               )}
               {" · "}
@@ -283,7 +283,7 @@ export default function MeetingsPanel() {
             data-test="meetings-refresh"
           >
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
-            Yenile
+            Refresh
           </Button>
         </CardHeader>
         <div
@@ -349,7 +349,7 @@ export default function MeetingsPanel() {
               className="col-span-2 sm:col-span-5"
             >
               <FilterX className="mr-2 h-3.5 w-3.5" />
-              Filtreleri temizle
+              Clear filters
             </Button>
           )}
         </div>
