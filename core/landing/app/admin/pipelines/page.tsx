@@ -140,17 +140,46 @@ const TONE: Record<string, string> = {
   indigo: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30",
 };
 
+interface RecentStep {
+  role: string;
+  model: string;
+  latency_ms: number;
+  ok: boolean;
+}
+
 interface RecentRun {
   ts: string;
   tool: string;
-  // license_jti removed: the /v1/panel/pipeline/recent endpoint no longer
-  // exposes the per-customer license token id (unauthenticated dashboard).
-  steps: { role: string; model: string; latency_ms: number }[];
+  elapsed_ms: number | null;
+  // Real steps this run executed. Empty for rows written before step
+  // recording — the row then shows "steps not recorded" rather than a
+  // fabricated chain.
+  steps: RecentStep[];
 }
 
 interface RecentResponse {
   count: number;
   pipeline_runs: RecentRun[];
+}
+
+interface RunStage {
+  name: string;
+  model: string;
+  elapsed_ms: number;
+  ok: boolean;
+  error: string | null;
+}
+
+interface RunResponse {
+  pipeline_id: string;
+  completion: string;
+  stages: RunStage[];
+  providers: string[];
+  verified: boolean | null;
+  revisions: number | null;
+  elapsed_ms: number;
+  fallback: boolean;
+  fallback_reason: string | null;
 }
 
 async function fetchRecent(): Promise<RecentResponse> {
@@ -162,36 +191,28 @@ async function fetchRecent(): Promise<RecentResponse> {
   return res.json();
 }
 
-async function runPipeline(pipelineId: string, prompt: string) {
-  // Phase E ships a thin proxy through cascade — every pipeline gets
-  // `${pipelineId}: ${prompt}` so the server can route by tool prefix.
-  const res = await fetch("/v1/cascade/run", {
+async function runPipeline(pipelineId: string, prompt: string): Promise<RunResponse> {
+  // Runs the pipeline for real — the four qual_* chains through the QualResult
+  // runner, race_* / humanize through the BasePipeline runner. The response
+  // carries the steps it actually executed, not a placeholder.
+  const res = await fetch("/v1/panel/pipeline/run", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      prompt: `[${pipelineId}] ${prompt}`,
-      max_tokens: 512,
-    }),
+    body: JSON.stringify({ pipeline_id: pipelineId, prompt }),
   });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text.slice(0, 200) || `HTTP ${res.status}`);
   }
-  return res.json() as Promise<{
-    completion: string;
-    provider: string;
-    fallback_chain: string[];
-    tokens_used: number;
-    mock: boolean;
-  }>;
+  return res.json() as Promise<RunResponse>;
 }
 
 export default function PipelinesPage() {
   const queryClient = useQueryClient();
   const [activePipeline, setActivePipeline] = useState<string>("qual_code");
   const [prompt, setPrompt] = useState("");
-  const [output, setOutput] = useState<string>("");
+  const [result, setResult] = useState<RunResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const recent = useQuery<RecentResponse>({
@@ -203,7 +224,7 @@ export default function PipelinesPage() {
   const run = useMutation({
     mutationFn: () => runPipeline(activePipeline, prompt),
     onSuccess: (data) => {
-      setOutput(`[${data.provider}${data.mock ? " · mock" : ""}] ${data.completion}`);
+      setResult(data);
       setError(null);
       void queryClient.invalidateQueries({
         queryKey: ["admin", "pipeline", "recent"],
@@ -211,7 +232,7 @@ export default function PipelinesPage() {
     },
     onError: (exc) => {
       setError(exc instanceof Error ? exc.message : "unknown");
-      setOutput("");
+      setResult(null);
     },
   });
 
@@ -253,7 +274,11 @@ export default function PipelinesPage() {
             <button
               key={p.id}
               type="button"
-              onClick={() => setActivePipeline(p.id)}
+              onClick={() => {
+                setActivePipeline(p.id);
+                setResult(null);
+                setError(null);
+              }}
               data-test="pipeline-card"
               data-pipeline-id={p.id}
               data-active={isActive}
@@ -359,13 +384,64 @@ export default function PipelinesPage() {
               </div>
             </div>
           )}
-          {output && (
+          {result && (
             <div
               data-test="pipeline-output"
-              className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm"
+              className="space-y-3 rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm"
             >
-              <pre className="whitespace-pre-wrap break-words font-mono text-xs">
-                {output}
+              {/* The steps this run actually executed, in order, with the model
+                  and timing each took. This is what makes it a pipeline and not
+                  a single call — so it is shown, not summarised away. */}
+              {result.stages.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1 text-[11px]">
+                  {result.stages.map((s, i) => (
+                    <span key={i} className="flex items-center gap-1">
+                      <span
+                        className={cn(
+                          "flex items-center gap-1 rounded px-1.5 py-0.5 font-mono",
+                          s.ok
+                            ? "bg-muted/60 text-muted-foreground"
+                            : "bg-rose-500/15 text-rose-600 dark:text-rose-300",
+                        )}
+                        title={s.error ?? undefined}
+                      >
+                        {s.name} · {s.model || "—"} ({s.elapsed_ms}ms)
+                        {!s.ok && " ✕"}
+                      </span>
+                      {i < result.stages.length - 1 && (
+                        <GitMerge className="h-2.5 w-2.5 text-muted-foreground" />
+                      )}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                {result.verified != null && (
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "font-mono",
+                      result.verified
+                        ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+                        : "border-amber-500/40 text-amber-700 dark:text-amber-300",
+                    )}
+                  >
+                    {result.verified ? "verified" : "not verified"}
+                  </Badge>
+                )}
+                {result.revisions != null && result.revisions > 0 && (
+                  <span>{result.revisions} revision{result.revisions === 1 ? "" : "s"}</span>
+                )}
+                <span>{result.elapsed_ms}ms total</span>
+                {result.fallback && (
+                  <span className="text-amber-600 dark:text-amber-400">
+                    fell back to a single model
+                    {result.fallback_reason ? ` — ${result.fallback_reason}` : ""}
+                  </span>
+                )}
+              </div>
+              <pre className="whitespace-pre-wrap break-words font-mono text-xs text-foreground">
+                {result.completion}
               </pre>
             </div>
           )}
@@ -380,7 +456,7 @@ export default function PipelinesPage() {
             Recent runs
           </CardTitle>
           <CardDescription>
-            The last 20 qual_* and race_* calls, refreshed every 10 seconds.
+            The last 20 pipeline runs, refreshed every 10 seconds.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -408,15 +484,30 @@ export default function PipelinesPage() {
                   <span className="text-muted-foreground">
                     {formatDateTime(new Date(r.ts), "en")}
                   </span>
+                  {r.elapsed_ms != null && (
+                    <span className="font-mono text-muted-foreground">
+                      {r.elapsed_ms}ms
+                    </span>
+                  )}
                   <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
-                    {r.steps.map((s, j) => (
-                      <span
-                        key={j}
-                        className="flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5 font-mono"
-                      >
-                        {s.role} · {s.model} ({s.latency_ms}ms)
-                      </span>
-                    ))}
+                    {r.steps.length === 0 ? (
+                      <span className="italic">steps not recorded</span>
+                    ) : (
+                      r.steps.map((s, j) => (
+                        <span
+                          key={j}
+                          className={cn(
+                            "flex items-center gap-1 rounded px-1.5 py-0.5 font-mono",
+                            s.ok
+                              ? "bg-muted/60"
+                              : "bg-rose-500/15 text-rose-600 dark:text-rose-300",
+                          )}
+                        >
+                          {s.role} · {s.model || "—"} ({s.latency_ms}ms)
+                          {!s.ok && " ✕"}
+                        </span>
+                      ))
+                    )}
                   </div>
                 </li>
               ))}
