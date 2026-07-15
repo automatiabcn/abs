@@ -42,11 +42,16 @@ const ManageModal: React.FC<ManageModalProps> = ({ linkLabel = "Manage" }) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    // A stuck endpoint must not strand the button on "Opening…" — abort after
+    // 15s and surface an error the person can retry, rather than spin forever.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15_000);
     try {
       const res = await fetch(PORTAL_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ customer_email: email }),
+        signal: ctrl.signal,
       });
       if (res.status === 404) {
         throw new Error("No license found for that email. Check the address, or buy a license first.");
@@ -62,8 +67,16 @@ const ManageModal: React.FC<ManageModalProps> = ({ linkLabel = "Manage" }) => {
       }
       throw new Error("Could not open the billing portal. Try again.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Try again.");
+      const msg =
+        err instanceof DOMException && err.name === "AbortError"
+          ? "The billing portal is taking too long. Try again."
+          : err instanceof Error
+            ? err.message
+            : "Something went wrong. Try again.";
+      setError(msg);
       setLoading(false);
+    } finally {
+      clearTimeout(timer);
     }
   };
 
