@@ -18,6 +18,7 @@ import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 
+import { formatNumber } from "@/lib/format";
 import type { CosmosWorld } from "@/components/CosmosGraph/buildGraph";
 import {
   Activity,
@@ -203,7 +204,7 @@ export default function PanelHomeClient({
         />
         <StatCard
           title="Answers today"
-          value={cascade.isLoading ? "…" : cascadeCount.toLocaleString()}
+          value={cascade.isLoading ? "…" : formatNumber(cascadeCount, "en")}
           hint={`${providersActive} providers answering`}
           icon={Activity}
           delay={0.05}
@@ -213,7 +214,7 @@ export default function PanelHomeClient({
           value={`${claudePct}%`}
           delta={
             claudeLimit > 0
-              ? `${claudeUsed.toLocaleString()} / ${claudeLimit.toLocaleString()}`
+              ? `${formatNumber(claudeUsed, "en")} / ${formatNumber(claudeLimit, "en")}`
               : undefined
           }
           deltaType={
