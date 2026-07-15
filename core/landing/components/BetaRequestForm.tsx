@@ -160,7 +160,7 @@ export default function BetaRequestForm() {
       <button
         type="submit"
         disabled={state.status === "submitting"}
-        className="rounded-md bg-blue-700 px-4 py-2 font-medium text-white disabled:opacity-50"
+        className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-50"
       >
         {state.status === "submitting" ? "Submitting…" : "Request beta access"}
       </button>
