@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -133,8 +134,16 @@ def test_panel_endpoints_do_not_leak_license_jti(client):
         db.add(
             CustomerAuditEntry(
                 license_jti="secret_jti_must_not_leak",
-                action="tool_call",
+                action="pipeline_run",
                 resource="qual_code",
+                detail=json.dumps(
+                    {
+                        "stages": [
+                            {"n": "generate", "m": "groq", "ms": 200, "ok": True}
+                        ],
+                        "elapsed_ms": 200,
+                    }
+                ),
                 ts=datetime.now(timezone.utc),
             )
         )
@@ -150,54 +159,112 @@ def test_panel_endpoints_do_not_leak_license_jti(client):
 
 
 def _seed_pipeline_audit() -> None:
+    """Seed real pipeline runs — action=pipeline_run + the steps they ran,
+    the way POST /v1/panel/pipeline/run records them."""
     now = datetime.now(timezone.utc)
+    stages = [
+        {"n": "generate-primary", "m": "groq", "ms": 210, "ok": True},
+        {"n": "verify", "m": "groq", "ms": 130, "ok": True},
+        {"n": "fix", "m": "groq", "ms": 90, "ok": True},
+    ]
+    detail = json.dumps({"stages": stages, "elapsed_ms": 430})
     with Session(get_engine()) as db:
-        for i, tool in enumerate(("qual_code", "qual_tr", "qual_translate")):
+        for i, tool in enumerate(("qual_code", "qual_tr", "race")):
             db.add(
                 CustomerAuditEntry(
                     license_jti="demo_pipeline_jti",
-                    action="tool_call",
+                    action="pipeline_run",
                     resource=tool,
+                    detail=detail,
                     ts=now - timedelta(minutes=i),
                 )
             )
         db.commit()
 
 
-def test_pipeline_recent_returns_qual_runs_only(client):
+def test_pipeline_recent_returns_only_known_pipelines(client):
     _seed_pipeline_audit()
     r = client.get("/v1/panel/pipeline/recent?limit=10")
     body = r.json()
     assert body["count"] >= 3
+    known = {
+        "qual_code",
+        "qual_tr",
+        "qual_analysis",
+        "qual_translate",
+        "qual_human",
+        "qual_code_human",
+        "race",
+        "race_code",
+        "race_tr",
+    }
     for run in body["pipeline_runs"]:
-        assert run["tool"].startswith("qual_")
+        assert run["tool"] in known
 
 
-def test_pipeline_recent_each_run_has_three_steps(client):
+def test_pipeline_recent_reports_the_steps_that_ran(client):
+    """Steps are the ones recorded at run time — not a fixed placeholder."""
     _seed_pipeline_audit()
     body = client.get("/v1/panel/pipeline/recent").json()
+    assert body["pipeline_runs"], "expected seeded runs"
     for run in body["pipeline_runs"]:
+        # Seed wrote three real stages; the endpoint must echo those, not
+        # invent a canned chain.
         assert len(run["steps"]) == 3
+        names = [s["role"] for s in run["steps"]]
+        assert names == ["generate-primary", "verify", "fix"]
         for step in run["steps"]:
-            for k in ("role", "model", "latency_ms"):
+            for k in ("role", "model", "latency_ms", "ok"):
                 assert k in step
 
 
-def test_pipeline_recent_excludes_non_qual_tools(client):
+def test_pipeline_recent_shows_no_steps_for_unrecorded_runs(client):
+    """A run row with no recorded detail shows [] steps, never a fake chain."""
+    with Session(get_engine()) as db:
+        db.add(
+            CustomerAuditEntry(
+                license_jti="demo_pipeline_jti_bare",
+                action="pipeline_run",
+                resource="qual_code",
+                detail=None,
+                ts=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+    body = client.get("/v1/panel/pipeline/recent").json()
+    bare = [r for r in body["pipeline_runs"] if r["tool"] == "qual_code"]
+    assert bare, "expected the bare run"
+    assert all(r["steps"] == [] for r in bare)
+
+
+def test_pipeline_recent_excludes_non_pipeline_actions(client):
+    """Only action=pipeline_run rows count — a plain tool_call on the same
+    resource name must not masquerade as a pipeline run."""
     now = datetime.now(timezone.utc)
     with Session(get_engine()) as db:
         db.add(
             CustomerAuditEntry(
                 license_jti="demo_pipeline_jti_filter",
                 action="tool_call",
+                resource="qual_code",
+                ts=now,
+            )
+        )
+        db.add(
+            CustomerAuditEntry(
+                license_jti="demo_pipeline_jti_filter",
+                action="pipeline_run",
                 resource="ask_groq_fast",
                 ts=now,
             )
         )
         db.commit()
     body = client.get("/v1/panel/pipeline/recent").json()
-    for run in body["pipeline_runs"]:
-        assert run["tool"] != "ask_groq_fast"
+    # The tool_call qual_code row is not a run (wrong action); the pipeline_run
+    # ask_groq_fast row is not a pipeline (wrong resource). Neither appears.
+    tools = [r["tool"] for r in body["pipeline_runs"]]
+    assert "ask_groq_fast" not in tools
+    assert "qual_code" not in tools
 
 
 def test_pipeline_recent_respects_limit(client):

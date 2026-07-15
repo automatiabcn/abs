@@ -962,14 +962,6 @@ async def completions(
                 "fallback": qual_meta.get("fallback", False),
                 "fallback_reason": qual_meta.get("fallback_reason"),
             }
-        if qual_meta is not None:
-            meta["qual"] = {
-                "verified": qual_meta.get("verified", False),
-                "revisions": qual_meta.get("revisions", 0),
-                "stages": qual_meta.get("stages", []),
-                "fallback": qual_meta.get("fallback", False),
-                "fallback_reason": qual_meta.get("fallback_reason"),
-            }
         yield f"data: {json.dumps(meta)}\n\n"
         yield "data: [DONE]\n\n"
 
