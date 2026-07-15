@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
+import { formatDate, formatNumber } from "@/lib/format";
+
 // Tremor was the panel/quota route's largest
 // dependency (~600KB across recharts + tremor chunks). Swap the
 // ProgressBar for a 4-line CSS bar (no semantic loss, the original
@@ -102,16 +104,17 @@ interface QuotaPayload {
 
 const REFRESH_MS = 5 * 60 * 1000;
 
+// The panel is English-first; format through the shared util with an explicit
+// locale so a date never renders as an ambiguous "01/07/2026" that depends on
+// the viewer's browser locale. Month name removes the day/month ambiguity.
 function fmtNumber(n: number): string {
-  return n.toLocaleString();
+  return formatNumber(n, "en");
 }
 
 function fmtDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString();
-  } catch {
-    return iso;
-  }
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return formatDate(d, "en", { year: "numeric", month: "short", day: "numeric" });
 }
 
 function tone(percent: number): "emerald" | "amber" | "rose" {
