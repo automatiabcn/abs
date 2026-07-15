@@ -12,6 +12,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
+import { formatDateTime } from "@/lib/format";
+
 interface Segment {
   speaker_id: string;
   start: number;
@@ -109,7 +111,7 @@ export default function MeetingDetailPage() {
         </div>
         <div>
           <dt className="text-xs uppercase text-muted-foreground">Uploaded</dt>
-          <dd className="font-mono">{new Date(data.created_at).toLocaleString()}</dd>
+          <dd className="font-mono">{formatDateTime(new Date(data.created_at), "en")}</dd>
         </div>
       </dl>
 

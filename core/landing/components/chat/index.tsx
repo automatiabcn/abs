@@ -14,6 +14,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { motion } from "framer-motion";
+
+import { formatNumber } from "@/lib/format";
 import {
   Activity,
   ArrowDownToLine,
@@ -123,13 +125,13 @@ export function MetaPills({
       {latencyMs != null && (
         <span className="inline-flex items-center gap-1">
           <Clock className="h-3 w-3" />
-          {latencyMs.toLocaleString()} ms
+          {formatNumber(latencyMs, "en")} ms
         </span>
       )}
       {tokensUsed != null && (
         <span className="inline-flex items-center gap-1">
           <Activity className="h-3 w-3" />
-          {tokensUsed.toLocaleString()} tokens
+          {formatNumber(tokensUsed, "en")} tokens
         </span>
       )}
     </span>
@@ -652,13 +654,13 @@ export function MetaSidebar({ meta }: { meta: MetaEvent | null }) {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Response time</span>
                 <span className="font-mono">
-                  {meta.latencyMs.toLocaleString()} ms
+                  {formatNumber(meta.latencyMs, "en")} ms
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Tokens</span>
                 <span className="font-mono">
-                  {meta.tokensUsed.toLocaleString()}
+                  {formatNumber(meta.tokensUsed, "en")}
                 </span>
               </div>
             </CardContent>
