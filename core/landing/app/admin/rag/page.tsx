@@ -370,9 +370,9 @@ export default function RagPage() {
           Knowledge Base
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Upload your documents, then ask questions of them. Each organisation
+          Upload your documents, then ask questions of them. Each organization
           gets its own isolated collection — a search never reaches another
-          organisation&apos;s documents.
+          organization&apos;s documents.
         </p>
       </motion.header>
 
@@ -902,7 +902,7 @@ export default function RagPage() {
           <CardHeader className="pb-2"><CardTitle className="text-base">⛨ Who sees what</CardTitle></CardHeader>
           <CardContent>
             <p className="text-[12px] leading-relaxed text-muted-foreground">
-              Every result is checked against organisation, role, department, sensitivity, PII and the sources an agent is allowed to read — a document an agent may not see never reaches the answer.
+              Every result is checked against organization, role, department, sensitivity, PII and the sources an agent is allowed to read — a document an agent may not see never reaches the answer.
             </p>
           </CardContent>
         </Card>

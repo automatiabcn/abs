@@ -352,9 +352,9 @@ export default function ProjectsPage() {
             Your own provider keys (BYOK)
           </CardTitle>
           <CardDescription>
-            A user, a project or the whole organisation can bring its own API
+            A user, a project or the whole organization can bring its own API
             key. On each request we look for a key in that order — project,
-            then user, then organisation, then the server default.
+            then user, then organization, then the server default.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -364,7 +364,7 @@ export default function ProjectsPage() {
               onChange={(e) => setKeyOwnerType(e.target.value)}
               className="rounded-md border border-border bg-background p-2 text-sm"
             >
-              <option value="org">organisation</option>
+              <option value="org">organization</option>
               <option value="user">just me</option>
               <option value="project">selected project</option>
             </select>

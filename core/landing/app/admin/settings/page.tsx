@@ -47,7 +47,7 @@ type Tab =
 
 const TABS: { id: Tab; label: string; icon: typeof SettingsIcon }[] = [
   { id: "general", label: "General", icon: Building2 },
-  { id: "license", label: "Licence", icon: ScrollText },
+  { id: "license", label: "License", icon: ScrollText },
   { id: "providers", label: "Providers", icon: Layers },
   { id: "webhooks", label: "Webhooks", icon: Boxes },
   { id: "alerts", label: "Alerts", icon: Bell },
@@ -138,13 +138,13 @@ function GeneralTab() {
 
   return (
     <div className="space-y-4">
-      <FormRow label="Organisation name" hint="The name your people see">
+      <FormRow label="Organization name" hint="The name your people see">
         <Input
           value={tenantName}
           onChange={(e) => setTenantName(e.target.value)}
           placeholder="Not set yet"
           data-test="settings-tenant-name"
-          aria-label="Organisation name"
+          aria-label="Organization name"
         />
       </FormRow>
       <FormRow label="Slug" hint="Used in URLs — cannot be changed">
@@ -190,7 +190,7 @@ function GeneralTab() {
 //
 // `allowed` is the honest headline — whether the server will actually answer
 // right now — and it is the same verdict the chat gate enforces. `in_grace`
-// means the licence expired but still works for a few more days: saying
+// means the license expired but still works for a few more days: saying
 // "licensed" there would turn into a surprise outage the week after.
 type LicenseInfo = {
   status:
@@ -269,7 +269,7 @@ function LicenseTab() {
         throw new Error(text || `HTTP ${res.status}`);
       }
       setActivateState("ok");
-      setActivateMessage("Licence activated.");
+      setActivateMessage("License activated.");
       setPendingKey("");
       await reload();
     } catch (err) {
@@ -284,7 +284,7 @@ function LicenseTab() {
     return (
       <div data-test="license-tab" className="space-y-3 text-sm">
         <p className="text-destructive">
-          Could not read the licence: {loadError}
+          Could not read the license: {loadError}
         </p>
         <Button onClick={() => void reload()} variant="outline">
           Try again
@@ -316,7 +316,7 @@ function LicenseTab() {
           data-test="license-grace-notice"
           className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-200"
         >
-          This licence expired on {expiresLabel}. The server keeps working for{" "}
+          This license expired on {expiresLabel}. The server keeps working for{" "}
           {info.grace_days ?? 7} days after that — renew before the window closes,
           or it will stop answering.
         </p>
@@ -327,7 +327,7 @@ function LicenseTab() {
           className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-rose-200"
         >
           The server is refusing requests: {info.reason ?? info.status}. Chat and
-          the API will answer 403 until a valid licence is in place.
+          the API will answer 403 until a valid license is in place.
         </p>
       )}
       <div className="space-y-3">
@@ -344,7 +344,7 @@ function LicenseTab() {
             {tierLabel}
           </Badge>
         </FormRow>
-        <FormRow label="Licence ID">
+        <FormRow label="License ID">
           <code
             data-test="license-jti"
             className="rounded bg-muted px-2 py-1 font-mono text-xs"
@@ -374,7 +374,7 @@ function LicenseTab() {
             data-test="license-renewal-warning"
             className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-rose-700 dark:text-rose-200"
           >
-            This server could not renew its licence
+            This server could not renew its license
             {info.renewal.last_error ? ` — ${info.renewal.last_error}` : ""}. The
             key it is running on expires in {info.renewal.days_left} days, and
             chat will pause when it does. Nothing is blocked yet, and your data is
@@ -391,7 +391,7 @@ function LicenseTab() {
           {trialDaysLeft === 1
             ? "Last day of your trial."
             : `${trialDaysLeft ?? 7} days left in your trial.`}{" "}
-          Everything is unlocked. Subscribe, or paste a licence below, to keep
+          Everything is unlocked. Subscribe, or paste a license below, to keep
           chat and the agent running after that.
         </div>
       )}
@@ -404,7 +404,7 @@ function LicenseTab() {
           Your trial has ended, so chat and the agent are paused. Nothing you put
           on this server has been touched — your documents, meetings and keys are
           still here, and you can read, export or delete all of them. Subscribe,
-          or paste a licence below, to switch chat back on.
+          or paste a license below, to switch chat back on.
         </div>
       )}
 
@@ -414,11 +414,11 @@ function LicenseTab() {
         className="space-y-2"
       >
         <label className="block text-xs font-medium text-muted-foreground">
-          Paste your licence
+          Paste your license
         </label>
         <textarea
           data-test="license-activation-input"
-          aria-label="Licence"
+          aria-label="License"
           value={pendingKey}
           onChange={(event) => setPendingKey(event.target.value)}
           rows={3}
@@ -788,7 +788,7 @@ export default function SettingsPage() {
           Settings
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Your organisation, your licence, the providers you answer with, and
+          Your organization, your license, the providers you answer with, and
           how the server reaches you.
         </p>
       </motion.header>
@@ -824,7 +824,7 @@ export default function SettingsPage() {
               {TABS.find((t) => t.id === active)?.label}
             </CardTitle>
             <CardDescription>
-              Changes apply to this organisation only, and every one of them is
+              Changes apply to this organization only, and every one of them is
               written to the audit log.
             </CardDescription>
           </CardHeader>

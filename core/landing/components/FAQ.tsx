@@ -47,7 +47,7 @@ const QUESTIONS: QA[] = [
   },
   {
     q: "What happens when the trial ends, or I cancel?",
-    a: "Chat and the agent pause. That is the whole of it: your documents, meetings, transcripts and provider keys stay on your server, and you can still read them, export them and delete them. Nothing is taken away, and nothing is held to ransom — the licence pauses the product, not your data. Subscribe again and it picks up where it stopped.",
+    a: "Chat and the agent pause. That is the whole of it: your documents, meetings, transcripts and provider keys stay on your server, and you can still read them, export them and delete them. Nothing is taken away, and nothing is held to ransom — the license pauses the product, not your data. Subscribe again and it picks up where it stopped.",
   },
   // 4 new questions
   {

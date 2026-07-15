@@ -73,7 +73,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
         <h1 className="text-xl font-semibold">You need admin access</h1>
         <p className="max-w-md text-sm text-muted-foreground">
           This area is for admin accounts only. Sign in with an admin account,
-          or ask an admin in your organisation to give you access.
+          or ask an admin in your organization to give you access.
         </p>
         <a
           href="/login"
