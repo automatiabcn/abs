@@ -56,18 +56,18 @@ function AgenticNode({ data, selected }: NodeProps<Node<FlowNodeData>>) {
   const isAgent = data.kind === "agent";
   return (
     <div
-      className={`w-[150px] rounded-[10px] border bg-[#131920] px-3 py-2.5 ${selected ? "ring-2 ring-primary/70" : ""}`}
-      style={{ borderColor: tone.border, boxShadow: selected ? `0 0 16px ${tone.border}40` : undefined }}
+      className={`w-[150px] rounded-[10px] border-2 bg-card px-3 py-2.5 shadow-sm ${selected ? "ring-2 ring-primary/70" : ""}`}
+      style={{ borderColor: tone.border, boxShadow: selected ? `0 0 16px ${tone.border}55` : undefined }}
     >
       <Handle type="target" position={Position.Left} title="Connect a previous step here"
-        style={{ background: tone.border, width: 11, height: 11, border: "2px solid #131920" }} />
-      <div className={`font-mono text-[9px] uppercase tracking-wider ${tone.label}`}>
+        style={{ background: tone.border, width: 11, height: 11, boxShadow: "0 0 0 2px rgba(127,127,127,.4)" }} />
+      <div className={`font-mono text-[9px] font-semibold uppercase tracking-wider ${tone.label}`}>
         {isAgent ? "⚡ " : ""}{data.kind.replace("_", "-")}
       </div>
-      <div className="mt-0.5 text-[12px] font-semibold leading-tight">{data.name}</div>
-      <div className="text-[10px] text-muted-foreground leading-tight">{data.desc}</div>
+      <div className="mt-0.5 text-[12px] font-semibold leading-tight text-foreground">{data.name}</div>
+      <div className="text-[10px] leading-tight text-muted-foreground">{data.desc}</div>
       <Handle type="source" position={Position.Right} title="Drag from here to the next step"
-        style={{ background: tone.border, width: 11, height: 11, border: "2px solid #131920" }} />
+        style={{ background: tone.border, width: 11, height: 11, boxShadow: "0 0 0 2px rgba(127,127,127,.4)" }} />
     </div>
   );
 }

@@ -192,7 +192,7 @@ function GraphNode({ left, top, type, label, center }: {
 }) {
   return (
     <div
-      className={`absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-[9px] border bg-[#131920] px-2.5 py-1.5 text-center text-[11px] font-medium ${TYPE_BORDER[type] ?? "border-border"} ${center ? "shadow-[0_0_18px_rgba(58,157,255,.25)]" : ""}`}
+      className={`absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-[9px] border-2 bg-card px-2.5 py-1.5 text-center text-[11px] font-medium text-foreground shadow-sm ${TYPE_BORDER[type] ?? "border-border"} ${center ? "shadow-[0_0_18px_rgba(78,205,194,.4)]" : ""}`}
       style={{ left: `${left}%`, top: `${top}%`, zIndex: center ? 10 : 1 }}
     >
       <span className="block font-mono text-[8.5px] uppercase tracking-wide text-muted-foreground">{TYPE_LABEL[type] ?? type}</span>
