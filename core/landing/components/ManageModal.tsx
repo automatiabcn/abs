@@ -49,7 +49,7 @@ const ManageModal: React.FC<ManageModalProps> = ({ linkLabel = "Manage" }) => {
         body: JSON.stringify({ customer_email: email }),
       });
       if (res.status === 404) {
-        throw new Error("No licence found for that email. Check the address, or buy a licence first.");
+        throw new Error("No license found for that email. Check the address, or buy a license first.");
       }
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -102,7 +102,7 @@ const ManageModal: React.FC<ManageModalProps> = ({ linkLabel = "Manage" }) => {
               Manage your subscription
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Enter the email on your licence and we&apos;ll take you to the
+              Enter the email on your license and we&apos;ll take you to the
               Stripe billing portal.
             </p>
 

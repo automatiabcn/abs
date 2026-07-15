@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Overview — licence, beta, compliance, security and vault state from the
+// Overview — license, beta, compliance, security and vault state from the
 // single `/v1/admin/dashboard` endpoint.
 //
 // Redesign pass: English copy, the shared StatCard, and — the part that
@@ -140,7 +140,7 @@ export default function AdminDashboardPage() {
     >
       <PageHeader
         title="Overview"
-        description="Licences, beta accounts, compliance, security and the secret vault — five sources, one screen."
+        description="Licenses, beta accounts, compliance, security and the secret vault — five sources, one screen."
       />
 
       {error && (
@@ -163,7 +163,7 @@ export default function AdminDashboardPage() {
         ) : (
           <>
             <StatCard
-              label="Active licences"
+              label="Active licenses"
               value={billing.licenses_active ?? 0}
               hint={`${billing.licenses_total ?? 0} on record`}
               icon={CreditCard}
@@ -200,7 +200,7 @@ export default function AdminDashboardPage() {
               icon={Lock}
             />
             <StatCard
-              label="Licence tiers"
+              label="License tiers"
               value={tierTotal}
               hint={
                 Object.keys(billing.tier_breakdown ?? {}).length

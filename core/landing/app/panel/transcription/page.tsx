@@ -416,7 +416,7 @@ export default function TranscriptionPanel() {
             </li>
             <li className="flex items-start gap-2">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-              Transcripts stay in your organisation&apos;s database. They are
+              Transcripts stay in your organization&apos;s database. They are
               never sent to an outside provider.
             </li>
             <li className="flex items-start gap-2">
