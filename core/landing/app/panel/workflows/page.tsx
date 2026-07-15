@@ -69,6 +69,8 @@ const CONFIG_FIELDS: Record<string, CfgField[]> = {
     { key: "instruction", label: "What should this step do?", as: "textarea", placeholder: "In plain English. E.g. Draft a quote for the customer and cite the price list." },
   ],
   retrieval: [
+    // Rendered as a picker bound to the Context Graph's companies (see inspector).
+    { key: "scope_company", label: "Focus on a company (optional)", as: "select" },
     { key: "query", label: "What to look up (blank = the previous step)", as: "text", placeholder: "price list" },
     { key: "top_k", label: "How many results", as: "number", placeholder: "5" },
   ],
@@ -83,7 +85,9 @@ const CONFIG_FIELDS: Record<string, CfgField[]> = {
   ],
   action: [
     { key: "action_type", label: "What to do", as: "select", options: ["note", "email", "route", "crm_update"] },
-    { key: "target", label: "Where it goes", as: "text", placeholder: "CRM · channel · recipient" },
+    // Target is a picker bound to real things: a graph company for note/crm_update,
+    // a channel for email/route (see inspector — options follow action_type).
+    { key: "target", label: "Where it goes", as: "select" },
   ],
   connector: [
     // Rendered as a picker bound to the tenant's real connectors (see inspector).
@@ -105,6 +109,7 @@ export default function WorkflowDesignerPage() {
   const [agents, setAgents] = useState<Record<string, AgentDetail>>({});
   const [palette, setPalette] = useState<Palette | null>(null);
   const [connectors, setConnectors] = useState<{ id: string; name: string; has_adapter: boolean }[]>([]);
+  const [companies, setCompanies] = useState<string[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -136,6 +141,13 @@ export default function WorkflowDesignerPage() {
       .then((r) => r.json())
       .then((j: { groups?: { connectors: { id: string; name: string; has_adapter: boolean }[] }[] }) =>
         setConnectors((j.groups ?? []).flatMap((g) => g.connectors)))
+      .catch(() => {});
+    // Companies from the Context Graph: a Retrieval step can focus on one, and
+    // an Action step can file its note/update against a real record.
+    fetch("/v1/context-graph", { credentials: "include", cache: "no-store" })
+      .then((r) => r.json())
+      .then((j: { nodes?: { type: string; label: string }[] }) =>
+        setCompanies((j.nodes ?? []).filter((n) => n.type === "company").map((n) => n.label)))
       .catch(() => {});
     fetch("/v1/agentic-workflows/definition", { credentials: "include", cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
@@ -359,6 +371,46 @@ export default function WorkflowDesignerPage() {
                             )}
                           </>
                         )
+                      ) : f.key === "scope_company" ? (
+                        // Narrow retrieval to one real company from the graph.
+                        companies.length === 0 ? (
+                          <a href="/panel/graph" className="block rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground">
+                            No companies in the graph yet — import data first ↗
+                          </a>
+                        ) : (
+                          <select className={cls} value={String(val)}
+                            onChange={(e) => updateNodeConfig(selNode.id, f.key, e.target.value)} data-test="cfg-scope_company">
+                            <option value="">Everything (no focus)</option>
+                            {companies.map((c) => (<option key={c} value={c}>{c}</option>))}
+                          </select>
+                        )
+                      ) : f.key === "target" ? (
+                        // Bind the action to a real destination — a graph company for a
+                        // note/CRM update, a channel for an email/route.
+                        (() => {
+                          const at = String((selNode.data.config ?? {}).action_type ?? "note");
+                          const toCompany = at === "note" || at === "crm_update";
+                          const opts = toCompany ? companies : ["email", "whatsapp", "sms", "slack"];
+                          if (toCompany && companies.length === 0) {
+                            return (
+                              <a href="/panel/graph" className="block rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground">
+                                No companies in the graph yet — import data first ↗
+                              </a>
+                            );
+                          }
+                          return (
+                            <>
+                              <select className={cls} value={String(val)}
+                                onChange={(e) => updateNodeConfig(selNode.id, f.key, e.target.value)} data-test="cfg-target">
+                                <option value="">{toCompany ? "Pick a company…" : "Pick a channel…"}</option>
+                                {opts.map((o) => (<option key={o} value={o}>{o}</option>))}
+                              </select>
+                              {!toCompany && (
+                                <span className="text-[10px] text-muted-foreground">Recorded now; it sends once that channel is connected.</span>
+                              )}
+                            </>
+                          );
+                        })()
                       ) : f.as === "select" ? (
                         <select className={cls} value={String(val)}
                           onChange={(e) => updateNodeConfig(selNode.id, f.key, e.target.value)} data-test={`cfg-${f.key}`}>
