@@ -304,9 +304,12 @@ export default function AuditClient({
             </p>
           ) : (
             <ul className="space-y-2">
-              {filtered.map((e) => (
+              {filtered.map((e, i) => (
                 <li
-                  key={e.id}
+                  // The chain can carry more than one entry per id (the seed and
+                  // some batched writes reuse a sequence), so id alone is not a
+                  // unique React key — compose it with the row index.
+                  key={`${e.id}-${i}`}
                   data-test="audit-row"
                   data-action={e.action}
                   className={cn(
