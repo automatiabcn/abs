@@ -170,6 +170,22 @@ export default function ChatClient() {
   const handlePickPrompt = useCallback(
     (prompt: string) => {
       setInput(prompt);
+      // A template with {blanks} isn't ready to send — dropping it straight
+      // into the model would ask it to write to "{audience} at {company}".
+      // Populate the composer, focus it and select the first blank so the
+      // person fills it in first. A ready-made prompt still sends on click.
+      if (/\{[^}]+\}/.test(prompt)) {
+        requestAnimationFrame(() => {
+          const ta = document.querySelector<HTMLTextAreaElement>(
+            'textarea[data-test="chat-composer"]',
+          );
+          if (!ta) return;
+          ta.focus();
+          const m = prompt.match(/\{[^}]+\}/);
+          if (m && m.index != null) ta.setSelectionRange(m.index, m.index + m[0].length);
+        });
+        return;
+      }
       void send(prompt);
     },
     [setInput, send],

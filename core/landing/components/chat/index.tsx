@@ -458,6 +458,7 @@ export function MessageInput({
         )}
         <textarea
           ref={textareaRef}
+          data-test="chat-composer"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
