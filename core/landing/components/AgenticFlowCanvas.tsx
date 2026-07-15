@@ -15,7 +15,6 @@ import {
   Background,
   Controls,
   Handle,
-  MiniMap,
   Position,
   ReactFlow,
   ReactFlowProvider,
@@ -60,13 +59,15 @@ function AgenticNode({ data, selected }: NodeProps<Node<FlowNodeData>>) {
       className={`w-[150px] rounded-[10px] border bg-[#131920] px-3 py-2.5 ${selected ? "ring-2 ring-primary/70" : ""}`}
       style={{ borderColor: tone.border, boxShadow: selected ? `0 0 16px ${tone.border}40` : undefined }}
     >
-      <Handle type="target" position={Position.Left} style={{ background: tone.border, width: 8, height: 8 }} />
+      <Handle type="target" position={Position.Left} title="Connect a previous step here"
+        style={{ background: tone.border, width: 11, height: 11, border: "2px solid #131920" }} />
       <div className={`font-mono text-[9px] uppercase tracking-wider ${tone.label}`}>
         {isAgent ? "⚡ " : ""}{data.kind.replace("_", "-")}
       </div>
       <div className="mt-0.5 text-[12px] font-semibold leading-tight">{data.name}</div>
       <div className="text-[10px] text-muted-foreground leading-tight">{data.desc}</div>
-      <Handle type="source" position={Position.Right} style={{ background: tone.border, width: 8, height: 8 }} />
+      <Handle type="source" position={Position.Right} title="Drag from here to the next step"
+        style={{ background: tone.border, width: 11, height: 11, border: "2px solid #131920" }} />
     </div>
   );
 }
@@ -103,7 +104,6 @@ function Inner({ nodes, edges, onNodesChange, onEdgesChange, onConnect, onNodeCl
       >
         <Background gap={16} size={1} className="opacity-30" />
         <Controls className="!bg-card/80 !border-border" showInteractive={false} />
-        <MiniMap className="!bg-background/70" nodeColor={(n) => TONE[(n.data as FlowNodeData)?.kind]?.border ?? "#3a4452"} pannable />
       </ReactFlow>
     </div>
   );
