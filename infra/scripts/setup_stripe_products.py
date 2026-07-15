@@ -115,15 +115,27 @@ def main(argv: List[str] | None = None) -> int:
 
     stripe.api_key = api_key
 
+    def _meta(obj, key):
+        # stripe>=15 returns metadata as a StripeObject without a .get()
+        # method: attribute access falls through to key lookup and raises
+        # AttributeError. Read it defensively so a product that already has
+        # metadata does not blow up the idempotency check.
+        md = getattr(obj, "metadata", None)
+        if not md:
+            return None
+        try:
+            return md[key]
+        except (KeyError, TypeError):
+            return None
+
     for spec in products_to_create:
         existing = stripe.Product.list(active=True, limit=100)
         found = next(
             (
                 p
                 for p in existing.data
-                if (getattr(p, "metadata", None) or {}).get("sku")
-                == spec["metadata_sku"]
-                and (getattr(p, "metadata", None) or {}).get("mode") == args.mode
+                if _meta(p, "sku") == spec["metadata_sku"]
+                and _meta(p, "mode") == args.mode
             ),
             None,
         )
