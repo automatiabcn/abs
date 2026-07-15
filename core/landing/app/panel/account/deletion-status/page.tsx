@@ -25,11 +25,13 @@ export default function DeletionStatusPage() {
     <main className="mx-auto max-w-2xl p-6 space-y-4">
       <h1 className="text-2xl font-semibold">Account deletion</h1>
       {error ? (
-        <p className="rounded-md border border-rose-300 bg-rose-50 p-3 text-sm text-rose-800">
+        <p
+          role="alert"
+          className="rounded-md border border-rose-300 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-700 dark:bg-rose-950 dark:text-rose-200"
+        >
           {error}
         </p>
-      ) : null}
-      {data ? (
+      ) : data ? (
         <DeletionStatusBanner data={data} onCancel={onCancel} />
       ) : (
         <p className="text-sm text-muted-foreground">Loading…</p>
