@@ -161,7 +161,7 @@ export function CosmosGraph({
       ref={containerRef}
       data-testid="cosmos-graph"
       data-test="cosmos-graph"
-      className="w-full overflow-hidden rounded-xl border border-border bg-background/60 outline-none focus-visible:ring-2 focus-visible:ring-[#78bdff]"
+      className="w-full overflow-hidden rounded-xl border border-border bg-background/60 outline-none focus-visible:ring-2 focus-visible:ring-[#4ecdc2]"
       style={{ height, background: PALETTE.bg }}
       role="region"
       aria-label="ABS provider cosmos — force-directed system map"

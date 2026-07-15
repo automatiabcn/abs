@@ -14,11 +14,11 @@
 
 export const PALETTE = {
   bg: "#0a0e1a",
-  primary: "#1e57ac",
-  highlight: "#3a9dff",
-  accent: "#78bdff",
-  edge: "rgba(58, 157, 255, 0.28)",
-  edgeActive: "rgba(120, 189, 255, 0.65)",
+  primary: "#0e9a8f",
+  highlight: "#4ecdc2",
+  accent: "#8bede3",
+  edge: "rgba(78, 205, 194, 0.28)",
+  edgeActive: "rgba(139, 237, 227, 0.65)",
   textDim: "rgba(255,255,255,0.55)",
   textBright: "rgba(255,255,255,0.92)",
   errorTint: "#5a6f8d", // desaturated, NOT red — colour-blind safe

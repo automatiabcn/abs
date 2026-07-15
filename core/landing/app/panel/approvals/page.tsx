@@ -206,7 +206,7 @@ export default function ApprovalCenterPage() {
                         <span className="rounded-full border border-border px-2 py-0.5 font-mono text-[10px] text-muted-foreground">policy: {it.policy_result}</span>
                         <span className="ml-auto text-[11px] text-muted-foreground">{trTime(it.created_at)}</span>
                       </div>
-                      <div className="mt-2 text-[13px]"><b>Aksiyon:</b> {it.action}</div>
+                      <div className="mt-2 text-[13px]"><b>Action:</b> {it.action}</div>
                       {it.rationale && <div className="mt-1 text-[12px] text-muted-foreground"><b className="text-foreground">Why:</b> {it.rationale}</div>}
                       {it.proposed_message && (
                         <div className="mt-2">
@@ -242,11 +242,11 @@ export default function ApprovalCenterPage() {
           {/* ── Queue table ─────────────────────────── */}
           {queue.length > 0 && (
             <div className="mt-6 rounded-xl border bg-card/60 p-4">
-              <div className="mb-3 text-sm font-semibold">▦ Kuyruk ({queue.length} daha)</div>
+              <div className="mb-3 text-sm font-semibold">▦ Queue ({queue.length} more)</div>
               <div className="overflow-x-auto">
                 <table className="w-full text-[13px]">
                   <thead><tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-                    <th className="pb-2 pr-3 font-medium">Agent</th><th className="pb-2 pr-3 font-medium">Aksiyon</th>
+                    <th className="pb-2 pr-3 font-medium">Agent</th><th className="pb-2 pr-3 font-medium">Action</th>
                     <th className="pb-2 pr-3 font-medium">Risk</th><th className="pb-2 pr-3 font-medium">Consent</th>
                     <th className="pb-2 pr-3 font-medium">Policy</th><th className="pb-2 font-medium"></th>
                   </tr></thead>
@@ -258,7 +258,7 @@ export default function ApprovalCenterPage() {
                         <td className="py-2.5 pr-3"><span className={`rounded-full border px-2 py-0.5 text-[10px] ${RISK[it.risk] ?? ""}`}>{it.risk}</span></td>
                         <td className="py-2.5 pr-3 text-muted-foreground">{it.consent_status || "—"}</td>
                         <td className="py-2.5 pr-3"><span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">{it.policy_result}</span></td>
-                        <td className="py-2.5"><button onClick={() => confirmApprove(it)} disabled={pendingId === it.id} className="rounded-md border px-3 py-1 text-[11px] disabled:opacity-50">{pendingId === it.id ? "…" : "Onayla"}</button></td>
+                        <td className="py-2.5"><button onClick={() => confirmApprove(it)} disabled={pendingId === it.id} className="rounded-md border px-3 py-1 text-[11px] disabled:opacity-50">{pendingId === it.id ? "…" : "Approve"}</button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -267,7 +267,7 @@ export default function ApprovalCenterPage() {
             </div>
           )}
 
-          {/* ── Outbox: onay → aksiyon izi (consent-gated) ─────────── */}
+          {/* ── Outbox: approval → action trail (consent-gated) ─────────── */}
           {outbox && outbox.total > 0 && (
             <div className="mt-6 rounded-xl border bg-card/60 p-4" data-test="outbox">
               <div className="mb-3 flex flex-wrap items-center gap-2">

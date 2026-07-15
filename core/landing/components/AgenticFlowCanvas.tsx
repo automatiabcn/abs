@@ -40,8 +40,8 @@ export type FlowNodeData = {
 // kind → { box accent border, kind-label colour } — matches the agentic palette.
 const TONE: Record<string, { border: string; label: string }> = {
   trigger: { border: "#38bdf8", label: "text-sky-700 dark:text-sky-300" },
-  agent: { border: "#3a9dff", label: "text-primary" },
-  custom_ai: { border: "#3a9dff", label: "text-primary" },
+  agent: { border: "#4ecdc2", label: "text-primary" },
+  custom_ai: { border: "#4ecdc2", label: "text-primary" },
   consent: { border: "#d29922", label: "text-amber-700 dark:text-amber-300" },
   retrieval: { border: "#a78bfa", label: "text-violet-700 dark:text-violet-300" },
   connector: { border: "#3a4452", label: "text-muted-foreground" },
@@ -99,7 +99,7 @@ function Inner({ nodes, edges, onNodesChange, onEdgesChange, onConnect, onNodeCl
         proOptions={{ hideAttribution: true }}
         minZoom={0.4}
         maxZoom={1.8}
-        defaultEdgeOptions={{ animated: true, style: { stroke: "#3a9dff", strokeWidth: 2 } }}
+        defaultEdgeOptions={{ animated: true, style: { stroke: "#4ecdc2", strokeWidth: 2 } }}
       >
         <Background gap={16} size={1} className="opacity-30" />
         <Controls className="!bg-card/80 !border-border" showInteractive={false} />
