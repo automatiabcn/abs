@@ -5,8 +5,9 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Visual gallery. Renders the OKLCH token palette, ABS-branded icons,
-// and the MetricCard / PricingTierCard components for design review.
+// Internal visual gallery (off-nav, noindex). Renders the colour-token palette,
+// ABS-branded icons, and the MetricCard / PricingTierCard components for design
+// review.
 import type { Metadata } from "next";
 
 import MetricCard from "@/components/showcase/MetricCard";
@@ -19,7 +20,7 @@ import {
 } from "@/components/icons";
 export const metadata: Metadata = {
   title: "Showcase — Automatia ABS",
-  description: "ABS visual system gallery: OKLCH tokens, brand icons, dashboard + pricing components.",
+  description: "ABS visual system gallery: colour tokens, brand icons, dashboard + pricing components.",
   robots: { index: false, follow: false },
 };
 
@@ -56,13 +57,13 @@ export default function ShowcasePage() {
         <header className="mb-12">
           <h1 className="text-4xl font-bold tracking-tight">ABS visual system</h1>
           <p className="mt-2 text-sm opacity-65">
-            Gallery — OKLCH tokens, brand icons, dashboard + pricing components.
+            Gallery — colour tokens, brand icons, dashboard + pricing components.
           </p>
         </header>
 
         {/* Tokens */}
         <section className="mb-12">
-          <h2 className="mb-4 text-xl font-semibold">OKLCH tokens (12)</h2>
+          <h2 className="mb-4 text-xl font-semibold">Colour tokens (12)</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {TOKENS.map(([token, label]) => (
               <div
