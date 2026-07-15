@@ -125,17 +125,24 @@ export function useDeletionStatus(): {
 
   async function refresh() {
     try {
+      // credentials: send the session cookie — without it the endpoint
+      // answers 401 and the page shows a bare "HTTP 401".
       const res = await fetch("/v1/me/account/deletion-status", {
         cache: "no-store",
+        credentials: "include",
       });
       if (!res.ok) {
-        setError(`HTTP ${res.status}`);
+        setError(
+          res.status === 401 || res.status === 403
+            ? "Please sign in again to view your account deletion status."
+            : `Couldn't load your deletion status (HTTP ${res.status}).`,
+        );
         return;
       }
       setData((await res.json()) as DeletionStatus);
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(`Couldn't load your deletion status: ${(e as Error).message}`);
     }
   }
 
