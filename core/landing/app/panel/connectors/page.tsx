@@ -26,6 +26,10 @@ export default function ConnectorMarketplacePage() {
   const [d, setD] = useState<Data | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [modal, setModal] = useState<Connector | null>(null);
+  // A connector with no working adapter used to "connect" on click — a flag flip
+  // that moved no data and left the card reading "connected". This holds the
+  // connector whose honest roadmap sheet is open instead.
+  const [roadmap, setRoadmap] = useState<Connector | null>(null);
   const [creds, setCreds] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -37,18 +41,27 @@ export default function ConnectorMarketplacePage() {
   }, []);
   useEffect(load, [load]);
 
-  function openConnect(c: Connector) {
-    if (!c.has_adapter) { void flagConnect(c); return; }
+  // The one connector that actually authenticates and imports today: the
+  // CSV/JSON file adapter. Every roadmap connector routes here.
+  const csvImport = d?.groups
+    .flatMap((g) => g.connectors)
+    .find((c) => c.has_adapter && c.auth_kind === "file");
+
+  function openCredentialModal(c: Connector) {
     setCreds(c.auth_kind === "file" ? { format: "csv" } : {});
     setResult(null);
     setModal(c);
   }
-  async function flagConnect(c: Connector) {
-    await fetch(`/v1/connectors/${c.id}/connect`, {
-      method: "POST", credentials: "include",
-      headers: { "content-type": "application/json" }, body: JSON.stringify({ credentials: {} }),
-    });
-    load();
+  function openConnect(c: Connector) {
+    // A native adapter opens the real credential form; everything else is
+    // honest about being on the roadmap rather than faking a connection.
+    if (c.has_adapter) { openCredentialModal(c); return; }
+    setRoadmap(c);
+  }
+  function importInstead() {
+    const csv = csvImport;
+    setRoadmap(null);
+    if (csv) openCredentialModal(csv);
   }
   async function disconnect(c: Connector) {
     await fetch(`/v1/connectors/${c.id}/disconnect`, { method: "POST", credentials: "include" });
@@ -135,6 +148,33 @@ export default function ConnectorMarketplacePage() {
             </section>
           ))}
         </>
+      )}
+
+      {/* ── Roadmap sheet: honest path for connectors with no adapter ── */}
+      {roadmap && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setRoadmap(null)}>
+          <div className="w-full max-w-md rounded-xl border bg-card p-5" onClick={(e) => e.stopPropagation()} data-test="connector-roadmap">
+            <div className="mb-1 text-base font-semibold">{roadmap.name} — coming soon</div>
+            <p className="mb-3 text-[12px] leading-relaxed text-muted-foreground">
+              A native {roadmap.name} sync isn&apos;t live yet, so this won&apos;t
+              pull your data on its own. The fastest way to bring your {roadmap.name}{" "}
+              data in today is to export it and import the CSV or JSON here — it
+              lands in the same companies and leads tables a native sync would use.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setRoadmap(null)} className="rounded-md border px-3 py-1.5 text-xs">Close</button>
+              {csvImport && (
+                <button
+                  onClick={importInstead}
+                  className="rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground"
+                  data-test="connector-roadmap-import"
+                >
+                  Import CSV / JSON
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Connect credential modal ──────────────── */}
