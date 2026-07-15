@@ -7,12 +7,13 @@
 
 import type { FC } from "react";
 
+import ProductGallery from "./ProductGallery";
+
 const Demo: FC = () => {
-  // Only render the iframe when NEXT_PUBLIC_DEMO_LOOM_URL
-  // is configured. Previously fell back to a literal "PLACEHOLDER" URL
-  // that Loom rejects with X-Frame-Options:deny — Chromium dropped the
-  // error silently but Firefox + WebKit logged it to the console,
-  // tripping the cross-browser smoke test.
+  // When a screencast exists (NEXT_PUBLIC_DEMO_LOOM_URL), show it. Until then
+  // the fallback is the real panel — captured from a live install — instead of
+  // the "Demo video coming soon." box that used to stand here. A section that
+  // invites you to look now has something to show.
   const loomUrl = process.env.NEXT_PUBLIC_DEMO_LOOM_URL;
   return (
     <section
@@ -25,19 +26,21 @@ const Demo: FC = () => {
           id="demo-title"
           className="text-3xl font-bold tracking-tight sm:text-4xl"
         >
-          A 3-minute tour of ABS
+          {loomUrl ? "A 3-minute tour of ABS" : "See the panel before you install"}
         </h2>
         <p className="mt-4 text-muted-foreground">
-          The setup wizard, an MCP tool call and the panel flow in one video.
+          {loomUrl
+            ? "The setup wizard, an MCP tool call and the panel flow in one video."
+            : "Real screens from a running install — chat, workflows, the context graph and the dashboard. Same panel on web and mobile."}
         </p>
       </div>
 
-      <div className="mx-auto mt-12 max-w-4xl overflow-hidden rounded-lg border border-border bg-card">
-        <div
-          className="relative aspect-video w-full bg-muted"
-          data-testid="demo-iframe-wrapper"
-        >
-          {loomUrl ? (
+      {loomUrl ? (
+        <div className="mx-auto mt-12 max-w-4xl overflow-hidden rounded-lg border border-border bg-card">
+          <div
+            className="relative aspect-video w-full bg-muted"
+            data-testid="demo-iframe-wrapper"
+          >
             <iframe
               title="ABS demo screencast"
               src={loomUrl}
@@ -46,17 +49,11 @@ const Demo: FC = () => {
               allowFullScreen
               className="absolute inset-0 h-full w-full"
             />
-          ) : (
-            <div
-              role="img"
-              aria-label="Demo video coming soon"
-              className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground"
-            >
-              Demo video coming soon.
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <ProductGallery />
+      )}
     </section>
   );
 };
