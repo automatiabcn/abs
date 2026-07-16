@@ -354,7 +354,7 @@ export default function WorkflowDesignerPage() {
                       ) : f.key === "connector_id" ? (
                         // Bind the box to a real connector, not a hand-typed id.
                         connectors.length === 0 ? (
-                          <a href="/panel/connectors" className="block rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground">
+                          <a href="/admin/connectors" className="block rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground">
                             No connectors yet — set one up first ↗
                           </a>
                         ) : (
@@ -374,7 +374,7 @@ export default function WorkflowDesignerPage() {
                       ) : f.key === "scope_company" ? (
                         // Narrow retrieval to one real company from the graph.
                         companies.length === 0 ? (
-                          <a href="/panel/graph" className="block rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground">
+                          <a href="/admin/graph" className="block rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground">
                             No companies in the graph yet — import data first ↗
                           </a>
                         ) : (
@@ -393,7 +393,7 @@ export default function WorkflowDesignerPage() {
                           const opts = toCompany ? companies : ["email", "whatsapp", "sms", "slack"];
                           if (toCompany && companies.length === 0) {
                             return (
-                              <a href="/panel/graph" className="block rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground">
+                              <a href="/admin/graph" className="block rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground">
                                 No companies in the graph yet — import data first ↗
                               </a>
                             );

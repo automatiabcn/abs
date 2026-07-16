@@ -75,7 +75,7 @@ export const DOMAINS: ShellDomain[] = [
     icon: TrendingUp,
     status: "approvals",
     pages: [
-      { href: "/admin/growth", label: "Copilot" },
+      { href: "/admin/growth", label: "Growth" },
       { href: "/admin/approvals", label: "Approvals" },
       { href: "/admin/leads", label: "Opportunities" },
       { href: "/admin/inbound", label: "Inbound replies" },

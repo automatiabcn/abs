@@ -288,7 +288,7 @@ export default function QuotaPage() {
             tone: "amber",
           },
           {
-            label: "Free providers",
+            label: "On free path",
             value: `${freePathPct}%`,
             icon: BarChart3,
             tone: "violet",

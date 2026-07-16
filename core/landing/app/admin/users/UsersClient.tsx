@@ -164,6 +164,10 @@ const ROLE_LABELS: Record<string, { label: string; tone: string }> = {
     label: "Viewer",
     tone: "bg-zinc-500/15 text-zinc-700 dark:text-zinc-300 border-zinc-500/30",
   },
+  member: {
+    label: "Member",
+    tone: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30",
+  },
 };
 
 const STATUS_TONE: Record<UserRow["status"], string> = {
