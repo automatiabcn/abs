@@ -327,7 +327,9 @@ export default function ProvidersPage() {
                     : "border-border",
                 )}
               >
-                anthropic_mock_mode = {providers.data.anthropic_mock_mode}
+                {providers.data.anthropic_mock_mode !== "off"
+                  ? "Mock responses: on"
+                  : "Mock responses: off"}
               </Badge>
             </div>
           )}

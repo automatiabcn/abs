@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { FolderKanban, KeyRound, Plus, Trash2, Users } from "lucide-react";
+import { Archive, FolderKanban, KeyRound, Plus, Trash2, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -114,6 +114,11 @@ export default function ProjectsPage() {
   }
 
   async function archiveProject(slug: string) {
+    // It's a soft archive (the row is hidden, not destroyed) — but a trash icon
+    // reads as permanent, so name what actually happens.
+    if (!window.confirm(`Archive "${slug}"? It stops appearing in this list.`)) {
+      return;
+    }
     setError(null);
     try {
       await api(`/v1/admin/projects/${encodeURIComponent(slug)}`, { method: "DELETE" });
@@ -282,9 +287,10 @@ export default function ProjectsPage() {
                     type="button"
                     onClick={() => void archiveProject(p.slug)}
                     aria-label={`Archive ${p.slug}`}
-                    className="rounded p-1 text-muted-foreground hover:text-rose-700 dark:text-rose-300"
+                    title="Archive (hides it from the list)"
+                    className="rounded p-1 text-muted-foreground hover:text-amber-700 dark:hover:text-amber-300"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Archive className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </li>
