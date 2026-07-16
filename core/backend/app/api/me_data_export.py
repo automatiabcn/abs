@@ -21,6 +21,7 @@ from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import Response
 from sqlmodel import Session, select
 
+from app.api.me_auth import panel_session_identity
 from app.customer_audit.data_export import create_export_job, run_export_job
 from app.customer_audit.logger import log_customer_action
 from app.db.models import DataExportJob, License
@@ -35,8 +36,21 @@ logger = logging.getLogger(__name__)
 def _verify_bearer_license(
     authorization: Optional[str], request: Optional[Request] = None
 ) -> tuple[str, str]:
-    """Returns (jti, customer_email) or raises 401."""
+    """Returns (jti, customer_email) or raises 401.
+
+    Falls back to the signed-in panel session on a self-host box (see
+    me_auth.panel_session_identity), which already carries the customer email.
+    """
     if not authorization or not authorization.lower().startswith("bearer "):
+        fallback = panel_session_identity(request)
+        if fallback is not None:
+            emit_event(
+                request,
+                action="me.data_export.auth",
+                outcome="success",
+                reason="panel_session_fallback",
+            )
+            return fallback
         emit_event(
             request,
             action="me.data_export.auth",
