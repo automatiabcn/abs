@@ -13,6 +13,15 @@
 
 import { useEffect, useState } from "react";
 
+// Format attributed revenue adaptively: a €5,000 figure must read "€5.0K", not
+// "€0.01M". Only reach for "M" once the number is genuinely in the millions.
+function formatRevenue(currency: string, amount: number): string {
+  const abs = Math.abs(amount);
+  if (abs >= 1_000_000) return `${currency}${(amount / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `${currency}${(amount / 1_000).toFixed(1)}K`;
+  return `${currency}${Math.round(amount)}`;
+}
+
 type Activity = {
   agent_id: string;
   summary: string;
@@ -103,8 +112,8 @@ export default function GrowthDashboardPage() {
           </p>
         </div>
         {d && (
-          <span className="rounded-full border border-emerald-500/40 px-3 py-1 text-[11px] text-emerald-700 dark:text-emerald-300">
-            ● All systems healthy · {d.scorecards.active_agents} agents running
+          <span className="rounded-full border border-border px-3 py-1 text-[11px] text-muted-foreground">
+            {d.scorecards.active_agents} agents running
           </span>
         )}
       </div>
@@ -215,7 +224,7 @@ export default function GrowthDashboardPage() {
             <Score
               label="Campaign → Revenue"
               value={d.campaign.attributed_revenue != null
-                ? `${d.campaign.currency}${(d.campaign.attributed_revenue / 1_000_000).toFixed(2)}M`
+                ? formatRevenue(d.campaign.currency, d.campaign.attributed_revenue)
                 : "—"}
               hint={d.campaign.top_channel ? `${d.campaign.top_channel} · ${d.campaign.period}` : "revenue attributed to campaigns"}
               accent="text-emerald-700 dark:text-emerald-300"

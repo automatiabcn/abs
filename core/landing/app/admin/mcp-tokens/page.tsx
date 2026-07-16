@@ -194,7 +194,7 @@ export default function McpTokensPage() {
     : "";
 
   return (
-    <main data-page="admin-mcp-tokens" className="mx-auto w-full max-w-4xl px-6 py-8">
+    <div data-page="admin-mcp-tokens" className="mx-auto w-full max-w-4xl px-6 py-8">
       <motion.header
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
@@ -478,7 +478,7 @@ export default function McpTokensPage() {
           <code>/mcp</code> verifies the token on every request.
         </span>
       </div>
-    </main>
+    </div>
   );
 }
 

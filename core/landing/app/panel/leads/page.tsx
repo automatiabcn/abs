@@ -113,7 +113,7 @@ export default function LeadIntelligencePage() {
     <div className="mx-auto w-full max-w-7xl px-6 py-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Lead Intelligence</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Opportunities</h1>
           <p className="mt-1 text-[12px] text-muted-foreground">Every lead scored on 15 criteria, with the evidence behind the score and who to talk to.</p>
         </div>
         <button

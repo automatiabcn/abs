@@ -25,29 +25,36 @@ export default function InboundKnowledgePage() {
   const [q, setQ] = useState("");
   const [ans, setAns] = useState<Answer | null>(null);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   async function runInbound() {
     if (!msg.trim()) return;
-    setBusy(true); setTriage(null);
+    setBusy(true); setTriage(null); setErr(null);
     try {
       const r = await fetch("/v1/inbound", {
         method: "POST", credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ message: msg, channel: "web" }),
       });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setTriage(await r.json());
+    } catch (e) {
+      setErr(`Could not sort this message: ${(e as Error).message}`);
     } finally { setBusy(false); }
   }
   async function ask() {
     if (!q.trim()) return;
-    setBusy(true); setAns(null);
+    setBusy(true); setAns(null); setErr(null);
     try {
       const r = await fetch("/v1/knowledge/ask", {
         method: "POST", credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ question: q }),
       });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setAns(await r.json());
+    } catch (e) {
+      setErr(`Could not answer that: ${(e as Error).message}`);
     } finally { setBusy(false); }
   }
 
@@ -57,6 +64,12 @@ export default function InboundKnowledgePage() {
         <h1 className="text-2xl font-semibold tracking-tight">Inbound Intelligence + Knowledge Base</h1>
         <p className="mt-1 text-sm text-muted-foreground">Sort an incoming message and draft a reply with its sources · ask your knowledge base and get a cited answer</p>
       </div>
+
+      {err && (
+        <div role="alert" className="mb-4 rounded-lg border border-rose-500/40 bg-rose-500/5 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
+          {err}
+        </div>
+      )}
 
       <div className="mb-8 rounded-xl border bg-card/60 p-4">
         <div className="mb-2 text-sm font-semibold">⇄ Inbound Triage</div>

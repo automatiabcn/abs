@@ -79,7 +79,7 @@ export default function MarketplacePage() {
   }, []);
 
   return (
-    <main
+    <div
       data-page="admin-marketplace"
       className="mx-auto w-full max-w-7xl px-6 py-8"
     >
@@ -118,6 +118,6 @@ export default function MarketplacePage() {
       ) : (
         <MarketplacePanel initialPlugins={plugins ?? []} isAdmin={isAdmin} />
       )}
-    </main>
+    </div>
   );
 }

@@ -87,7 +87,7 @@ export default function UsageClient({
   // it failed — it does not answer the question with a shrug shaped like proof.
   if (!data) {
     return (
-      <main className="mx-auto w-full max-w-6xl px-6 py-10" data-test="admin-usage-page">
+      <div className="mx-auto w-full max-w-6xl px-6 py-10" data-test="admin-usage-page">
         <header className="mb-8">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Usage</h1>
         </header>
@@ -98,7 +98,7 @@ export default function UsageClient({
           We could not load your usage. {loadError ?? ""} Nothing here is an estimate —
           reload once the server is reachable.
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -119,7 +119,7 @@ export default function UsageClient({
   );
 
   return (
-    <main
+    <div
       className="mx-auto w-full max-w-6xl px-6 py-10"
       data-test="admin-usage-page"
     >
@@ -231,6 +231,6 @@ export default function UsageClient({
           )}
         </Card>
       </section>
-    </main>
+    </div>
   );
 }

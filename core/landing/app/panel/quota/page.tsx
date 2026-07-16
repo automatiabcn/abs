@@ -21,8 +21,6 @@ import {
   Settings,
   Zap,
 } from "lucide-react";
-import dynamic from "next/dynamic";
-
 import { formatDate, formatNumber } from "@/lib/format";
 
 // Tremor was the panel/quota route's largest
@@ -31,18 +29,6 @@ import { formatDate, formatNumber } from "@/lib/format";
 // only renders a colored width%) and lazy-load DateRangePicker via
 // next/dynamic so Tremor only ships when the date picker actually
 // mounts.
-const QuotaDateRangePicker = dynamic(
-  () => import("@/components/panel/charts/QuotaDateRangePicker"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-9 w-72 animate-pulse rounded-md bg-muted" />
-    ),
-  },
-);
-
-// Mirror Tremor's optional shape so the wrapper component types align.
-type DateRangePickerValue = { from?: Date; to?: Date };
 
 function LightProgressBar({
   value,
@@ -179,31 +165,18 @@ function ProviderRow({ slice, name }: { slice: Slice; name: string }) {
   );
 }
 
-function defaultRange(): DateRangePickerValue {
-  // Last 30 days, both ends inclusive.
-  const to = new Date();
-  const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
-  return { from, to };
-}
-
 export default function QuotaPage() {
   const [data, setData] = useState<QuotaPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // date range filter (presets via Tremor)
-  const [range, setRange] = useState<DateRangePickerValue>(defaultRange());
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
-        const params = new URLSearchParams();
-        if (range.from) params.set("from", range.from.toISOString().slice(0, 10));
-        if (range.to) params.set("to", range.to.toISOString().slice(0, 10));
-        const url =
-          "/v1/system/quota_status" +
-          (params.toString() ? `?${params.toString()}` : "");
-        const res = await fetch(url, {
+        // quota_status always reports the current billing period; there is no
+        // date-range parameter, so the page shows this month, honestly.
+        const res = await fetch("/v1/system/quota_status", {
           credentials: "include",
           cache: "no-store",
         });
@@ -230,7 +203,7 @@ export default function QuotaPage() {
       active = false;
       window.clearInterval(t);
     };
-  }, [range.from, range.to]);
+  }, []);
 
   const allSlices = data
     ? [["claude_plus", data.claude_plus] as const, ...Object.entries(data.free_providers)]
@@ -259,7 +232,7 @@ export default function QuotaPage() {
       : 0;
 
   return (
-    <main
+    <div
       data-page="panel-quota"
       className="mx-auto w-full max-w-7xl px-6 py-8"
     >
@@ -272,22 +245,15 @@ export default function QuotaPage() {
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
             <BarChart3 className="h-5 w-5 text-primary" />
-            Usage
+            Limits
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {data
-              ? `${fmtDate(data.period_start)} – ${fmtDate(data.period_end)}`
+              ? `Rate-limit usage this period · ${fmtDate(data.period_start)} – ${fmtDate(data.period_end)}`
               : "How much of each provider you have used, and what is running low."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <QuotaDateRangePicker
-            value={range}
-            onValueChange={setRange}
-            data-test="quota-date-range"
-            enableSelect
-            className="w-[22rem] max-w-full"
-          />
           <Link href="/admin/settings" passHref>
             <Button variant="outline" size="sm">
               <Settings className="mr-2 h-3.5 w-3.5" />
@@ -393,6 +359,6 @@ export default function QuotaPage() {
           ) : null}
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }
