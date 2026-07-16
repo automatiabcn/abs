@@ -29,7 +29,8 @@ from app.api.auth import current_admin
 from app.config import settings
 from app.db.models import Meeting, MeetingSegment
 from app.db.session import get_engine
-from app.meeting.quality import audio_fingerprint, speech_verdict
+from app.meeting.ingest import finalize_meeting
+from app.meeting.quality import audio_fingerprint
 from app.observability.audit import emit_event
 from app.services import feature_usage as feature_usage_service
 from app.services.transcribe import (
@@ -413,83 +414,28 @@ async def upload_meeting(
         except OSError:
             pass
 
-    # Two hours of audio that yielded four sentences was not a quiet meeting —
-    # it was a dead microphone, and what came back is the model hallucinating
-    # over room tone. It transcribed without erroring, so nothing else in this
-    # pipeline would have caught it.
-    verdict = speech_verdict(
-        float(result.get("duration_sec", 0.0)), result.get("segments", [])
-    )
-    if not verdict.has_speech:
-        logger.warning(
-            "meeting_no_speech meeting=%s duration=%.0fs chars=%d cpm=%.1f",
-            meeting_id,
-            verdict.duration_sec,
-            verdict.chars,
-            verdict.chars_per_minute,
+    # Persist segments, finalize the meeting, and index the transcript — the
+    # shared ingestion tail, one writer for both upload and live capture. The
+    # dead-microphone guard (two hours of audio, four hallucinated sentences)
+    # and the never-index-speechless-audio rule live inside it.
+    try:
+        _verdict, meeting_row, segments = finalize_meeting(
+            meeting_id=meeting_id,
+            result=result,
+            filename=filename,
+            uploader_email=uploader_email,
         )
-
-    # Persist segments + finalize meeting.
-    with Session(get_engine()) as db:
-        row = db.get(Meeting, meeting_id)
-        if row is None:
-            raise HTTPException(500, "meeting_disappeared")
-        row.duration_sec = float(result.get("duration_sec", 0.0))
-        row.speaker_count = len(result.get("speakers", []))
-        row.summary = result.get("summary", "")[:4096]
-        row.status = "done"
-        row.quality_note = verdict.reason[:512]
-        row.completed_at = datetime.now(timezone.utc)
-        db.add(row)
-        for seg in result.get("segments", []):
-            db.add(
-                MeetingSegment(
-                    meeting_id=meeting_id,
-                    speaker_id=seg["speaker_id"],
-                    start_sec=float(seg.get("start", 0.0)),
-                    end_sec=float(seg.get("end", 0.0)),
-                    text=seg.get("text", ""),
-                )
-            )
-        db.commit()
-
-        segments = list(
-            db.execute(
-                select(MeetingSegment)
-                .where(MeetingSegment.meeting_id == meeting_id)
-                .order_by(MeetingSegment.start_sec)
-            ).scalars()
-        )
-        meeting_row = db.get(Meeting, meeting_id)
-        if meeting_row is None:
-            raise HTTPException(500, "meeting_disappeared")
+    except RuntimeError as exc:
+        raise HTTPException(500, "meeting_disappeared") from exc
 
     try:
         feature_usage_service.increment("audio_upload", actor_email=uploader_email)
     except Exception:
         pass
 
-    # A recording with no speech in it is kept — the operator can see for
-    # themselves what came back — but it is not indexed. Hallucinated text in
-    # the vector store is worse than a missing meeting: it answers questions.
-    if settings.meeting_rag_autoindex and verdict.has_speech:
-        try:
-            n = _autoindex_meeting_rag(
-                doc_id=_doc_id(meeting_row),
-                title=filename,
-                uploader_email=uploader_email,
-                result=result,
-            )
-            logger.info("meeting_rag_autoindex meeting=%s chunks=%d", meeting_id, n)
-        except Exception as exc:  # noqa: BLE001 — best-effort, never fail upload
-            logger.warning(
-                "meeting_rag_autoindex_failed meeting=%s err=%s", meeting_id, exc
-            )
-
-    # Serialised last, on purpose: `indexed` is now read back from the vector
-    # store, and the indexing happens above. Building the response before the
-    # write would have reported `indexed: false` on every successful upload —
-    # the mirror image of the bug this replaced.
+    # Serialised last, on purpose: `indexed` is read back from the vector store,
+    # and the indexing happened inside finalize_meeting. Building the response
+    # before the write would report `indexed: false` on every successful upload.
     return _serialize(meeting_row, segments)
 
 

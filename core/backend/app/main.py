@@ -80,6 +80,7 @@ from app.api import chat as chat_router  # /v1/chat/*
 from app.api import mcp_tokens as mcp_tokens_router  # /v1/mcp/tokens
 from app.api import claude_code_hooks as cc_hooks_router  # /v1/hooks/*
 from app.api import marketplace as marketplace_router  # /v1/marketplace/*
+from app.api import capture as capture_router  # Phase 2 — /v1/capture (live capture)
 from app.api import meetings as meetings_router  # S20.4 — /v1/meetings
 from app.api import workflows as workflows_router  # P1 S19 — /v1/workflows
 from app.api import graph as graph_router  # /v1/graph
@@ -531,6 +532,7 @@ app.include_router(system_quota_router.router)
 app.include_router(system_feature_usage_router.router)  # S20.3
 app.include_router(marketplace_router.router)
 app.include_router(meetings_router.router)  # S20.4
+app.include_router(capture_router.router)  # Phase 2 — /v1/capture live capture
 app.include_router(workflows_router.router)  # P1 S19 close
 app.include_router(cascade_router.router)  # /v1/cascade/*
 app.include_router(chat_router.router)  # /v1/chat/*

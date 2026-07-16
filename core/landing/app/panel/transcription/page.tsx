@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Waveform } from "@/components/panel/Waveform";
+import { CaptureJobs } from "@/components/panel/CaptureJobs";
 import { DEFAULT_VOICE_ID } from "@/lib/tts";
 
 interface Segment {
@@ -252,12 +253,24 @@ export default function TranscriptionPanel() {
       className="mx-auto max-w-3xl px-6 py-12 text-foreground"
     >
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold">Live Transcription</h1>
+        <h1 className="text-2xl font-semibold">Live capture</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Capture your microphone or a meeting tab and the transcript builds live,
-          with each speaker labelled. Play any line back in the voice you choose.
+          Send a bot to a meeting link, or capture your own mic or a meeting tab.
+          Either way the transcript builds with each speaker labelled and lands in
+          your company memory.
         </p>
       </header>
+
+      {/* Manual-link bridge: paste a meeting URL → a bot records it → Meetings. */}
+      <CaptureJobs />
+
+      <div className="mb-4">
+        <h2 className="text-sm font-semibold">Transcribe here, live</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Or capture audio from this device right now — your mic, or a meeting
+          tab open in this browser.
+        </p>
+      </div>
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
         {recording ? (
