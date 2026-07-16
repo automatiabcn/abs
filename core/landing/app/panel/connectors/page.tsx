@@ -41,6 +41,20 @@ export default function ConnectorMarketplacePage() {
   }, []);
   useEffect(load, [load]);
 
+  // Escape closes whichever overlay is open — the roadmap sheet and the connect
+  // modal were dismissable only by the backdrop or their Close button, which a
+  // keyboard user has no way to reach the same way.
+  useEffect(() => {
+    if (!roadmap && !modal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (roadmap) setRoadmap(null);
+      else if (modal && !busy) setModal(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [roadmap, modal, busy]);
+
   // The one connector that actually authenticates and imports today: the
   // CSV/JSON file adapter. Every roadmap connector routes here.
   const csvImport = d?.groups
@@ -153,7 +167,7 @@ export default function ConnectorMarketplacePage() {
       {/* ── Roadmap sheet: honest path for connectors with no adapter ── */}
       {roadmap && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setRoadmap(null)}>
-          <div className="w-full max-w-md rounded-xl border bg-card p-5" onClick={(e) => e.stopPropagation()} data-test="connector-roadmap">
+          <div className="w-full max-w-md rounded-xl border bg-card p-5" onClick={(e) => e.stopPropagation()} data-test="connector-roadmap" role="dialog" aria-modal="true" aria-label={`${roadmap.name} — coming soon`}>
             <div className="mb-1 text-base font-semibold">{roadmap.name} — coming soon</div>
             <p className="mb-3 text-[12px] leading-relaxed text-muted-foreground">
               A native {roadmap.name} sync isn&apos;t live yet, so this won&apos;t
@@ -180,7 +194,7 @@ export default function ConnectorMarketplacePage() {
       {/* ── Connect credential modal ──────────────── */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !busy && setModal(null)}>
-          <div className="w-full max-w-md rounded-xl border bg-card p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md rounded-xl border bg-card p-5" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={`Connect ${modal.name}`}>
             <div className="mb-1 text-base font-semibold">Connect {modal.name}</div>
             <div className="mb-4 text-[11px] text-muted-foreground">
               {modal.auth_kind === "file" ? "Upload a CSV or JSON file (columns: company · sector · domain · email · score · intent)" : "Enter your credentials"}
