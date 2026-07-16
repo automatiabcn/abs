@@ -117,7 +117,7 @@ export default function ConnectorMarketplacePage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Connector Marketplace</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Data sources</h1>
         <p className="mt-1 text-sm text-muted-foreground">Bring your data in. Read-only first, official APIs only.</p>
       </div>
       {err && <div className="rounded-lg border border-red-500/40 bg-red-500/5 px-4 py-3 text-sm text-red-400">Couldn&apos;t load the connectors: {err}</div>}
@@ -147,9 +147,11 @@ export default function ConnectorMarketplacePage() {
                     <div className="flex shrink-0 flex-col items-end gap-1">
                       {c.status === "connected" ? (
                         <>
-                          {c.has_adapter && c.auth_kind !== "file" && (
+                          {c.has_adapter && c.auth_kind === "file" ? (
+                            <button onClick={() => openConnect(c)} disabled={busy} className="rounded-full border px-2.5 py-0.5 text-[10px] text-sky-700 dark:text-sky-300">Re-import</button>
+                          ) : c.has_adapter ? (
                             <button onClick={() => syncNow(c)} disabled={busy} className="rounded-full border px-2.5 py-0.5 text-[10px] text-sky-700 dark:text-sky-300">Sync</button>
-                          )}
+                          ) : null}
                           <button onClick={() => disconnect(c)} className="rounded-full border border-emerald-500/40 px-2.5 py-0.5 text-[10px] text-emerald-400">Disconnect</button>
                         </>
                       ) : (

@@ -775,7 +775,7 @@ export default function SettingsPage() {
   const Active = TAB_CONTENT[active];
 
   return (
-    <main
+    <div
       data-page="admin-settings"
       className="mx-auto w-full max-w-7xl px-6 py-8"
     >
@@ -835,6 +835,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
-    </main>
+    </div>
   );
 }

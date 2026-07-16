@@ -22,7 +22,6 @@ import {
   CreditCard,
   Lock,
   ShieldCheck,
-  Users,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
@@ -103,7 +102,6 @@ export default function AdminDashboardPage() {
   //   vault.secrets_count     → vault audit stats() emits total_entries
   // Each card now reads a key the producer actually returns.
   const billing = data?.billing ?? {};
-  const beta = (data?.beta ?? {}) as { pending?: number; approved?: number };
   const compliance = (data?.compliance ?? {}) as {
     overall_status?: "ok" | "warn" | "gap";
   };
@@ -121,7 +119,6 @@ export default function AdminDashboardPage() {
     audit_chain_integrity?: "ok" | "tampered";
   };
 
-  const betaCount = (beta.pending ?? 0) + (beta.approved ?? 0);
   const complianceState = compliance.overall_status
     ? COMPLIANCE[compliance.overall_status]
     : undefined;
@@ -135,13 +132,13 @@ export default function AdminDashboardPage() {
   );
 
   return (
-    <main
+    <div
       data-page="admin-dashboard"
       className="mx-auto w-full max-w-7xl px-6 py-8"
     >
       <PageHeader
         title="Overview"
-        description="Licenses, beta accounts, compliance, security and the secret vault — five sources, one screen."
+        description="Licenses, compliance, security and the secret vault — one screen."
       />
 
       {error && (
@@ -168,12 +165,6 @@ export default function AdminDashboardPage() {
               value={billing.licenses_active ?? 0}
               hint={`${billing.licenses_total ?? 0} on record`}
               icon={CreditCard}
-            />
-            <StatCard
-              label="Beta accounts"
-              value={betaCount}
-              hint="Pending plus approved"
-              icon={Users}
             />
             <StatCard
               label="Compliance"
@@ -222,6 +213,6 @@ export default function AdminDashboardPage() {
           {data.cached ? " · cached" : " · live"}
         </p>
       ) : null}
-    </main>
+    </div>
   );
 }

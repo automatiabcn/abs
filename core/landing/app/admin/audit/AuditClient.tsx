@@ -157,7 +157,7 @@ export default function AuditClient({
   }
 
   return (
-    <main
+    <div
       data-page="admin-audit"
       className="mx-auto w-full max-w-7xl px-6 py-8"
     >
@@ -356,6 +356,6 @@ export default function AuditClient({
           )}
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

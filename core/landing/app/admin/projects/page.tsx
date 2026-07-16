@@ -208,7 +208,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl space-y-4 p-4">
+    <div className="mx-auto max-w-5xl space-y-4 p-4">
       <div className="flex items-center gap-2">
         <FolderKanban className="h-5 w-5 text-primary" />
         <h1 className="text-lg font-semibold">Projects &amp; keys</h1>
@@ -419,6 +419,6 @@ export default function ProjectsPage() {
           </ul>
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

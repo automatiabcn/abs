@@ -213,7 +213,7 @@ export default function MeetingsPanel() {
   };
 
   return (
-    <main
+    <div
       data-page="panel-meetings"
       className="mx-auto w-full max-w-6xl px-6 py-10 text-foreground"
     >
@@ -445,7 +445,7 @@ export default function MeetingsPanel() {
                         <div className="flex items-center justify-end gap-3">
                           <a
                             className="text-xs text-primary hover:underline"
-                            href={`/panel/meetings/${m.id}`}
+                            href={`/admin/meetings/${m.id}`}
                           >
                             Open
                           </a>
@@ -467,6 +467,6 @@ export default function MeetingsPanel() {
           </div>
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }
