@@ -108,13 +108,22 @@ export default function McpTokensPage() {
 
   async function revokeByDigest(digest: string) {
     setRevokingDigest(digest);
+    setRevokeMsg(null);
     try {
-      await fetch("/v1/mcp/tokens/revoke", {
+      const res = await fetch("/v1/mcp/tokens/revoke", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token_digest: digest }),
       });
+      if (res.status === 204 || res.ok) {
+        setRevokeMsg("✓ Token revoked. /mcp will refuse it from now on.");
+      } else {
+        // Without this the row silently stayed "active" after reload.
+        setRevokeMsg(`Could not revoke the token: HTTP ${res.status}`);
+      }
       await loadTokens();
+    } catch (exc) {
+      setRevokeMsg(exc instanceof Error ? exc.message : "unknown error");
     } finally {
       setRevokingDigest(null);
     }
@@ -264,7 +273,7 @@ export default function McpTokensPage() {
           {mintError && (
             <div
               data-test="mcp-token-error"
-              className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200"
+              className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300"
             >
               {mintError}
             </div>
@@ -275,7 +284,7 @@ export default function McpTokensPage() {
               data-test="mcp-token-result"
               className="space-y-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm"
             >
-              <div className="text-emerald-200">
+              <div className="text-emerald-700 dark:text-emerald-300">
                 Token issued — <strong>{minted.label}</strong> · scope{" "}
                 {minted.scope} · expires{" "}
                 <span suppressHydrationWarning>
@@ -305,8 +314,8 @@ export default function McpTokensPage() {
                 testid="mcp-token-codex"
               />
 
-              <div className="rounded-md border border-emerald-500/20 bg-background/40 p-2 text-[11px] text-emerald-200/80">
-                <div className="mb-1 font-medium text-emerald-200">
+              <div className="rounded-md border border-emerald-500/20 bg-background/40 p-2 text-[11px] text-emerald-700/80 dark:text-emerald-300/80">
+                <div className="mb-1 font-medium text-emerald-700 dark:text-emerald-300">
                   Check it works
                 </div>
                 <CopyRow
@@ -470,7 +479,7 @@ export default function McpTokensPage() {
         </CardContent>
       </Card>
 
-      <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+      <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
           Tokens are signed, not stored — the raw value never touches the
@@ -497,7 +506,7 @@ function CopyRow({
 }) {
   return (
     <div className="space-y-1">
-      <div className="text-xs font-medium text-emerald-200/80">{label}</div>
+      <div className="text-xs font-medium text-emerald-700/80 dark:text-emerald-300/80">{label}</div>
       <div className="flex items-start gap-2">
         <textarea
           readOnly

@@ -748,7 +748,7 @@ function SecurityTab() {
                onChange={(e) => setField("session_ttl_hours", num(e.target.value))} />
       </FormRow>
       <FormRow label="Two-factor sign-in" hint="Authenticator app">
-        <Badge variant="outline">not yet</Badge>
+        <Badge variant="outline" className="text-muted-foreground">Roadmap</Badge>
       </FormRow>
       <FormRow label="Token audience check" hint="A token issued for another server is refused">
         <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-300">

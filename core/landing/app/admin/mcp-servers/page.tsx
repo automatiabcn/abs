@@ -77,6 +77,11 @@ export default function McpServersPage() {
   const [headerName, setHeaderName] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  // Errors + busy state for the per-row enable/disable + remove actions, which
+  // used to be fire-and-forget: a failed PATCH/DELETE left the row unchanged
+  // with no word to the operator.
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busySlug, setBusySlug] = useState<string | null>(null);
 
   // per-server test state
   const [testing, setTesting] = useState<string | null>(null);
@@ -169,26 +174,49 @@ export default function McpServersPage() {
   }
 
   async function toggle(row: ServerRow) {
-    await fetch(`/v1/admin/external-mcp/${row.slug}`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled: !row.enabled }),
-    });
-    await load();
+    setActionError(null);
+    setBusySlug(row.slug);
+    try {
+      const res = await fetch(`/v1/admin/external-mcp/${row.slug}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !row.enabled }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await load();
+    } catch (exc) {
+      setActionError(
+        `Could not ${row.enabled ? "disable" : "enable"} ${row.name}: ${(exc as Error).message}`,
+      );
+    } finally {
+      setBusySlug(null);
+    }
   }
 
-  async function remove(slug: string) {
-    await fetch(`/v1/admin/external-mcp/${slug}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    setTestResults((prev) => {
-      const next = { ...prev };
-      delete next[slug];
-      return next;
-    });
-    await load();
+  async function remove(slug: string, name: string) {
+    if (!window.confirm(`Remove ${name}? Its tools stop being available to agents.`)) {
+      return;
+    }
+    setActionError(null);
+    setBusySlug(slug);
+    try {
+      const res = await fetch(`/v1/admin/external-mcp/${slug}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setTestResults((prev) => {
+        const next = { ...prev };
+        delete next[slug];
+        return next;
+      });
+      await load();
+    } catch (exc) {
+      setActionError(`Could not remove ${name}: ${(exc as Error).message}`);
+    } finally {
+      setBusySlug(null);
+    }
   }
 
   return (
@@ -214,7 +242,7 @@ export default function McpServersPage() {
       {disabled && (
         <div
           data-test="mcp-servers-disabled"
-          className="mb-6 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200"
+          className="mb-6 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300"
         >
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
@@ -300,7 +328,7 @@ export default function McpServersPage() {
           {addError && (
             <div
               data-test="mcp-server-add-error"
-              className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200"
+              className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300"
             >
               {addError}
             </div>
@@ -319,6 +347,14 @@ export default function McpServersPage() {
         </p>
       ) : (
         <div className="space-y-3" data-test="mcp-server-list">
+          {actionError && (
+            <div
+              role="alert"
+              className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300"
+            >
+              {actionError}
+            </div>
+          )}
           {servers.map((s) => {
             const tr = testResults[s.slug];
             return (
@@ -368,6 +404,7 @@ export default function McpServersPage() {
                       <Button
                         size="sm"
                         variant="outline"
+                        disabled={busySlug === s.slug}
                         onClick={() => void toggle(s)}
                         data-test={`mcp-server-toggle-${s.slug}`}
                       >
@@ -376,8 +413,9 @@ export default function McpServersPage() {
                       <Button
                         size="sm"
                         variant="outline"
+                        disabled={busySlug === s.slug}
                         className="text-rose-700 dark:text-rose-300"
-                        onClick={() => void remove(s.slug)}
+                        onClick={() => void remove(s.slug, s.name)}
                         data-test={`mcp-server-remove-${s.slug}`}
                       >
                         <Trash2 className="h-3 w-3" />
@@ -386,7 +424,7 @@ export default function McpServersPage() {
                   </div>
 
                   {s.last_error && s.status === "error" && (
-                    <div className="rounded-md border border-rose-500/30 bg-rose-500/10 p-2 text-[11px] text-rose-200">
+                    <div className="rounded-md border border-rose-500/30 bg-rose-500/10 p-2 text-[11px] text-rose-700 dark:text-rose-300">
                       {s.last_error}
                     </div>
                   )}
@@ -396,8 +434,8 @@ export default function McpServersPage() {
                       data-test={`mcp-server-testresult-${s.slug}`}
                       className={`rounded-md border p-2 text-xs ${
                         tr.ok
-                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
-                          : "border-rose-500/30 bg-rose-500/10 text-rose-200"
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                          : "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300"
                       }`}
                     >
                       {tr.ok ? (

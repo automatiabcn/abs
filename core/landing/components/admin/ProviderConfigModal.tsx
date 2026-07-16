@@ -260,7 +260,7 @@ export default function ProviderConfigModal({
             )}
             {saveErr && (
               <div
-                className="rounded-md border border-rose-500/30 bg-rose-500/10 p-2 text-xs text-rose-200"
+                className="rounded-md border border-rose-500/30 bg-rose-500/10 p-2 text-xs text-rose-700 dark:text-rose-300"
                 data-testid="provider-key-save-error"
               >
                 Not saved: {saveErr}
@@ -271,7 +271,7 @@ export default function ProviderConfigModal({
 
         {saved && (
           <div
-            className="mt-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 text-sm text-emerald-200"
+            className="mt-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 text-sm text-emerald-700 dark:text-emerald-300"
             data-testid="provider-key-saved"
           >
             ✓ Key saved, tested, and stored encrypted.
@@ -284,8 +284,8 @@ export default function ProviderConfigModal({
             className={
               "mt-4 rounded-md border p-3 text-sm " +
               (result.ok
-                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
-                : "border-rose-500/30 bg-rose-500/10 text-rose-200")
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                : "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300")
             }
           >
             {result.ok ? (
@@ -311,7 +311,7 @@ export default function ProviderConfigModal({
         {error && (
           <div
             data-testid="provider-test-transport-error"
-            className="mt-4 rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200"
+            className="mt-4 rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-700 dark:text-rose-300"
           >
             Could not reach the server: {error}
           </div>

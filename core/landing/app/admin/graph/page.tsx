@@ -277,7 +277,9 @@ export default function GraphPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Cypher editor</CardTitle>
               <CardDescription>
-                Neo4j 5 syntax. Read-only users can run MATCH/RETURN only.
+                Neo4j 5 syntax, read-only (MATCH/RETURN). Available on
+                single-tenant self-host; raw queries are disabled on shared
+                multi-tenant servers.
               </CardDescription>
             </CardHeader>
             <CardContent>
