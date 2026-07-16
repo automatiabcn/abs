@@ -85,7 +85,7 @@ const CASCADE_ORDER = [
 ] as const;
 
 const PROVIDER_LABELS: Record<string, { label: string; tone: string }> = {
-  "anthropic-mock": { label: "Anthropic Mock", tone: "amber" },
+  "anthropic-mock": { label: "Built-in demo", tone: "amber" },
   groq: { label: "Groq", tone: "indigo" },
   cerebras: { label: "Cerebras", tone: "violet" },
   cloudflare: { label: "Cloudflare", tone: "orange" },
@@ -228,8 +228,16 @@ export default function ProvidersPage() {
   const cards = useMemo(() => {
     const active = new Set(providers.data?.active ?? []);
     const mockMode = providers.data?.anthropic_mock_mode ?? "off";
-    return CASCADE_ORDER.map((name) => ({
+    // The built-in demo responder is a test/offline stub controlled by
+    // config, not a provider anyone configures. Hide it entirely on a normal
+    // install (mock off) so the customer sees only the real cascade; surface
+    // it — honestly labelled — only when someone has turned mock mode on.
+    const order = CASCADE_ORDER.filter(
+      (name) => name !== "anthropic-mock" || mockMode !== "off",
+    );
+    return order.map((name, i) => ({
       name,
+      position: i + 1,
       configured:
         name === "anthropic-mock" ? mockMode !== "off" : active.has(name),
       mock: name === "anthropic-mock",
@@ -373,38 +381,45 @@ export default function ProvidersPage() {
                     <div className="flex items-center justify-between text-muted-foreground">
                       <span>Position</span>
                       <span className={cn("rounded px-1.5 py-0.5 text-[10px]", tone)}>
-                        {CASCADE_ORDER.indexOf(c.name as (typeof CASCADE_ORDER)[number]) + 1}
+                        {c.position}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-muted-foreground">
                       <span>Mode</span>
                       <span>{c.mock ? "deterministic" : "live"}</span>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 w-full"
-                      data-test="provider-configure"
-                      onClick={() => {
-                        // Anthropic-mock has no real
-                        // key to test against; clicking it just opens the
-                        // settings link path inside the modal.
-                        const fromStatus =
-                          status.data?.providers.find(
-                            (p) => p.id === c.name,
-                          ) ?? null;
-                        setActiveConfig(
-                          fromStatus ?? {
-                            id: c.name,
-                            label: meta?.label ?? c.name,
-                            configured: c.configured,
-                          },
-                        );
-                      }}
-                    >
-                      <Settings2 className="mr-2 h-3 w-3" />
-                      Configure
-                    </Button>
+                    {c.mock ? (
+                      // Nothing to configure — the demo responder returns
+                      // canned answers and is switched on via config, not a key.
+                      <p className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-2 py-1.5 text-[11px] text-muted-foreground">
+                        Built-in fallback that returns fixed demo answers when no
+                        real provider is set. Turned on in config — nothing to
+                        configure here.
+                      </p>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 w-full"
+                        data-test="provider-configure"
+                        onClick={() => {
+                          const fromStatus =
+                            status.data?.providers.find(
+                              (p) => p.id === c.name,
+                            ) ?? null;
+                          setActiveConfig(
+                            fromStatus ?? {
+                              id: c.name,
+                              label: meta?.label ?? c.name,
+                              configured: c.configured,
+                            },
+                          );
+                        }}
+                      >
+                        <Settings2 className="mr-2 h-3 w-3" />
+                        Configure
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               );

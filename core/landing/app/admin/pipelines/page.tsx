@@ -46,10 +46,14 @@ interface PipelineDef {
   tone: string;
 }
 
+// `label` is the human name the customer reads; `id` stays visible as the
+// technical code so power users can map a card to the backend pipeline. The
+// writing pipelines run multilingual models (qwen32b/gemini), so they are
+// framed as "any language" rather than the historical "Turkish" internal name.
 const PIPELINES: PipelineDef[] = [
   {
     id: "qual_code",
-    label: "qual_code",
+    label: "Code",
     family: "quality",
     description: "Write code → verify → fix",
     chain: ["kimi+gpt20b", "codellama", "gptoss"],
@@ -58,25 +62,25 @@ const PIPELINES: PipelineDef[] = [
   },
   {
     id: "qual_tr",
-    label: "qual_tr",
+    label: "Writing",
     family: "quality",
-    description: "Write Turkish prose → check → polish",
+    description: "Draft prose → check → polish (any language)",
     chain: ["qwen32b+gemini", "llama", "kimi2"],
     icon: Sparkles,
     tone: "amber",
   },
   {
     id: "qual_analysis",
-    label: "qual_analysis",
+    label: "Deep analysis",
     family: "quality",
-    description: "Three viewpoints → one synthesis (deep analysis)",
+    description: "Three viewpoints → one synthesis",
     chain: ["gptoss+kimi2+gemini-pro", "synthesise"],
     icon: Sparkles,
     tone: "violet",
   },
   {
     id: "qual_translate",
-    label: "qual_translate",
+    label: "Translation",
     family: "quality",
     description: "Translate → translate back → verify → fix",
     chain: ["qwen32b", "kimi", "gptoss"],
@@ -85,25 +89,25 @@ const PIPELINES: PipelineDef[] = [
   },
   {
     id: "qual_code_human",
-    label: "qual_code_human",
+    label: "Code, humanised",
     family: "quality",
-    description: "qual_code + humanize layer fingerprint",
+    description: "qual_code plus a pass that softens the machine fingerprint",
     chain: ["qual_code", "humanize_score"],
     icon: Sparkles,
     tone: "pink",
   },
   {
     id: "qual_human",
-    label: "qual_human",
+    label: "Natural writing",
     family: "quality",
-    description: "General humanize layer — output reads closer to your own style",
+    description: "Rewrite so the output reads closer to your own style",
     chain: ["qwen32b", "humanize"],
     icon: Sparkles,
     tone: "rose",
   },
   {
     id: "race",
-    label: "race",
+    label: "Fastest wins",
     family: "race",
     description: "Three models in parallel — the fastest answer wins",
     chain: ["gptoss", "kimi", "kimi2"],
@@ -112,18 +116,18 @@ const PIPELINES: PipelineDef[] = [
   },
   {
     id: "race_code",
-    label: "race_code",
+    label: "Code race",
     family: "race",
-    description: "Code race: kimi vs gptoss20 vs cf-coder",
+    description: "Three coding models in parallel — the fastest answer wins",
     chain: ["kimi", "gptoss20", "cf-coder"],
     icon: Trophy,
     tone: "emerald",
   },
   {
     id: "race_tr",
-    label: "race_tr",
+    label: "Writing race",
     family: "race",
-    description: "Turkish prose race: qwen32b vs gemini vs kimi",
+    description: "Three writing models in parallel — fastest wins (any language)",
     chain: ["qwen32b", "gemini", "kimi"],
     icon: Trophy,
     tone: "amber",
@@ -303,7 +307,7 @@ export default function PipelinesPage() {
                   {p.id}
                 </code>
               </div>
-              <h3 className="font-mono text-sm font-semibold text-foreground">
+              <h3 className="text-sm font-semibold text-foreground">
                 {p.label}
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">
