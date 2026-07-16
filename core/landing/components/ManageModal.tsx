@@ -38,6 +38,20 @@ const ManageModal: React.FC<ManageModalProps> = ({ linkLabel = "Manage" }) => {
     reset();
   };
 
+  // Escape closes the modal (unless a request is in flight), matching the
+  // backdrop-click and Cancel paths a keyboard user can't otherwise reach.
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !loading) {
+        setOpen(false);
+        reset();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, loading]);
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
