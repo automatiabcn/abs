@@ -24,6 +24,7 @@ from app.customer_audit.consent import (
     list_consents,
     withdraw_consent,
 )
+from app.api.me_auth import panel_session_identity
 from app.customer_audit.logger import log_customer_action
 from app.licensing import verify_license
 from app.observability.audit import emit_event
@@ -36,6 +37,17 @@ def _verify_bearer_license(
     authorization: Optional[str], request: Optional[Request] = None
 ) -> str:
     if not authorization or not authorization.lower().startswith("bearer "):
+        # Self-host panel session stands in for the Bearer license (see
+        # me_auth.panel_session_identity).
+        fallback = panel_session_identity(request)
+        if fallback is not None:
+            emit_event(
+                request,
+                action="me.consent.auth",
+                outcome="success",
+                reason="panel_session_fallback",
+            )
+            return fallback[0]
         emit_event(
             request,
             action="me.consent.auth",

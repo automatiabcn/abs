@@ -30,6 +30,7 @@ from app.customer_audit.logger import log_customer_action
 from app.db.models import License
 from app.db.session import get_engine
 from app.email.sender import send_account_delete_email
+from app.api.me_auth import panel_session_identity
 from app.licensing import verify_license
 from app.observability.audit import emit_event
 
@@ -49,6 +50,19 @@ def _verify_bearer_license(
     authorization: Optional[str], request: Optional[Request] = None
 ) -> str:
     if not authorization or not authorization.lower().startswith("bearer "):
+        # Self-host: the signed-in operator is the account holder. Resolve their
+        # identity from the server's own license before denying. Destructive
+        # deletes still need the separate email-confirm token, so a session
+        # alone can't erase anything.
+        fallback = panel_session_identity(request)
+        if fallback is not None:
+            emit_event(
+                request,
+                action="me.account.auth",
+                outcome="success",
+                reason="panel_session_fallback",
+            )
+            return fallback[0]
         emit_event(
             request,
             action="me.account.auth",
