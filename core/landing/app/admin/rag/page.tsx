@@ -355,7 +355,7 @@ export default function RagPage() {
   const totalBytes = docs.reduce((sum, d) => sum + d.size_bytes, 0);
 
   return (
-    <main
+    <div
       data-page="admin-rag"
       className="mx-auto w-full max-w-7xl px-6 py-8"
     >
@@ -367,7 +367,7 @@ export default function RagPage() {
       >
         <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
           <Database className="h-5 w-5 text-primary" />
-          Knowledge Base
+          Company memory
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Upload your documents, then ask questions of them. Each organization
@@ -500,9 +500,14 @@ export default function RagPage() {
                           <td className="py-2 pr-3">
                             <Badge
                               variant="outline"
-                              className="border-emerald-500/40 text-[10px] text-emerald-700 dark:text-emerald-300"
+                              className={cn(
+                                "text-[10px]",
+                                d.stale
+                                  ? "border-amber-500/40 text-amber-700 dark:text-amber-300"
+                                  : "border-emerald-500/40 text-emerald-700 dark:text-emerald-300",
+                              )}
                             >
-                              indexed
+                              {d.stale ? "re-upload" : "indexed"}
                             </Badge>
                           </td>
                           <td className="py-2 pr-3 text-right font-mono">{d.chunks}</td>
@@ -878,12 +883,19 @@ export default function RagPage() {
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="bg-card/60">
           <CardHeader className="pb-2"><CardTitle className="text-base">↓ Where documents can come from</CardTitle></CardHeader>
-          <CardContent className="space-y-1.5 text-[12px] text-muted-foreground">
-            {[
-              "Manual upload · Drive · SharePoint", "Website crawler (respects robots + ToS)",
-              "CRM notes · Support tickets", "Call transcripts · Meeting notes",
-              "Email threads · Notion · Confluence", "ERP product catalog · Proposal archive",
-            ].map((s) => (<div key={s} className="flex items-start gap-2"><span className="text-emerald-400">✓</span><span>{s}</span></div>))}
+          <CardContent className="space-y-2 text-[12px] text-muted-foreground">
+            <div>
+              <p className="mb-1 font-medium text-foreground">Available now</p>
+              {["Manual upload (PDF, Word, Excel, HTML)", "Images (screenshots, scans)", "Meeting transcripts (upload + live capture)"].map((s) => (
+                <div key={s} className="flex items-start gap-2"><span className="text-emerald-500">✓</span><span>{s}</span></div>
+              ))}
+            </div>
+            <div>
+              <p className="mb-1 font-medium text-foreground">On the roadmap</p>
+              {["Drive · SharePoint", "Website crawler", "CRM notes · Support tickets", "Email · Notion · Confluence", "ERP catalog · Proposal archive"].map((s) => (
+                <div key={s} className="flex items-start gap-2"><span className="text-muted-foreground/60">◦</span><span>{s}</span></div>
+              ))}
+            </div>
           </CardContent>
         </Card>
         <Card className="bg-card/60">
@@ -907,6 +919,6 @@ export default function RagPage() {
           </CardContent>
         </Card>
       </div>
-    </main>
+    </div>
   );
 }

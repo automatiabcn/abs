@@ -53,9 +53,16 @@ export default function ContextGraphPage() {
 
   async function resolve() {
     setBusy(true);
+    setErr(null);
     try {
-      await fetch("/v1/context-graph/resolve", { method: "POST", credentials: "include" });
+      const r = await fetch("/v1/context-graph/resolve", { method: "POST", credentials: "include" });
+      if (!r.ok) {
+        setErr(`Could not merge duplicates: HTTP ${r.status}`);
+        return;
+      }
       load();
+    } catch (e) {
+      setErr(`Could not merge duplicates: ${(e as Error).message}`);
     } finally { setBusy(false); }
   }
 
@@ -148,10 +155,7 @@ export default function ContextGraphPage() {
                   <div className="mb-3 text-sm font-semibold">⬡ {layout.center.label}</div>
                   <div className="space-y-0 text-[12px]">
                     {[
-                      ["Match confidence", (d.stats.match_accuracy).toFixed(2)],
-                      ["Sources", "ERP + CRM + web"],
                       ["Merged from", `${layout.center.merged_count ?? 1} records`],
-                      ["Tax ID", "exact match ✓"],
                       ["Stage", layout.center.lifecycle ?? "lead"],
                       ["People involved", `${layout.placed.filter((p) => p.node.type === "contact").length || 1}`],
                     ].map(([k, v]) => (

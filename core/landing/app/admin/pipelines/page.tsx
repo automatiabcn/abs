@@ -242,7 +242,7 @@ export default function PipelinesPage() {
   );
 
   return (
-    <main
+    <div
       data-page="admin-pipelines"
       className="mx-auto w-full max-w-7xl px-6 py-8"
     >
@@ -515,6 +515,6 @@ export default function PipelinesPage() {
           )}
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

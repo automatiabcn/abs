@@ -278,7 +278,7 @@ export default function UsersClient({
   }
 
   return (
-    <main
+    <div
       data-page="admin-users"
       className="mx-auto w-full max-w-7xl px-6 py-8"
     >
@@ -599,6 +599,6 @@ export default function UsersClient({
           )}
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

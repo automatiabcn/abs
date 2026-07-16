@@ -237,7 +237,7 @@ export default function ProvidersPage() {
   }, [providers.data]);
 
   return (
-    <main
+    <div
       data-page="admin-providers"
       className="mx-auto w-full max-w-7xl px-6 py-8"
     >
@@ -501,6 +501,6 @@ export default function ProvidersPage() {
           });
         }}
       />
-    </main>
+    </div>
   );
 }

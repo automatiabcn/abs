@@ -126,7 +126,9 @@ export default function MarketplacePanel({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ plugin_id: selected.id, tenant: "default" }),
+        // Tenant is resolved server-side from the session, matching the
+        // installed-list read — don't pin it to "default" from the client.
+        body: JSON.stringify({ plugin_id: selected.id }),
       });
       if (!res.ok && typeof console !== "undefined") {
         console.warn("install_failed", selected.id, res.status);
@@ -263,9 +265,6 @@ export default function MarketplacePanel({
                   fs-write · {plugin.permissions.filesystem_write.length}
                 </span>
               )}
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800">
-                cosign · signed
-              </span>
             </div>
             {installedIds.has(plugin.id) ? (
               <div

@@ -94,7 +94,7 @@ export default function MeetingDetailPage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-12 text-foreground">
       <Link
-        href="/panel/meetings"
+        href="/admin/meetings"
         className="text-xs text-muted-foreground hover:text-foreground"
       >
         ← Meetings

@@ -217,16 +217,20 @@ function ToolDetailSheet({
 
             <section className="mt-6">
               <h4 className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <span>Try it</span>
+                <span>Ask a model about this tool</span>
                 <Badge variant="outline" className="text-[10px]">
                   auto-picks a provider
                 </Badge>
               </h4>
+              <p className="mb-2 text-[11px] text-muted-foreground">
+                Sends your prompt to the model cascade for a sample answer — it
+                does not execute the tool. Agents call the tool for real during a run.
+              </p>
               <textarea
                 rows={3}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={`Write a prompt to try ${tool.name}`}
+                placeholder={`Ask about ${tool.name} — what it does, or how to call it`}
                 className="w-full rounded-md border border-border bg-background p-2 text-sm outline-none focus:border-primary/50"
                 data-test="tool-tryit-input"
               />
@@ -368,7 +372,7 @@ export default function ToolsPage() {
   );
 
   return (
-    <main
+    <div
       data-page="panel-tools"
       className="mx-auto flex h-[calc(100vh-3.5rem)] w-full max-w-7xl gap-6 px-6 py-6"
     >
@@ -554,6 +558,6 @@ export default function ToolsPage() {
         open={openTool !== null}
         onClose={() => setOpenTool(null)}
       />
-    </main>
+    </div>
   );
 }

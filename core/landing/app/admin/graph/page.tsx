@@ -167,7 +167,7 @@ export default function GraphPage() {
       : [];
 
   return (
-    <main
+    <div
       data-page="admin-graph"
       className="mx-auto w-full max-w-7xl px-6 py-8"
     >
@@ -409,6 +409,6 @@ export default function GraphPage() {
           </Card>
         </section>
       </div>
-    </main>
+    </div>
   );
 }

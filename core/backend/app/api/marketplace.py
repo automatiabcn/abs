@@ -254,8 +254,12 @@ class InstallBody(BaseModel):
     plugin_id: str = Field(
         ..., min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9._-]+$"
     )
-    tenant: str = Field(
-        default="default",
+    # Optional: when omitted, the tenant is resolved from the admin's identity
+    # (same source the installed-list read uses) so a write and its read can't
+    # land under different tenants. An explicit value is still honoured for
+    # multi-tenant admin tooling and validated against the caller's identity.
+    tenant: Optional[str] = Field(
+        default=None,
         min_length=1,
         max_length=64,
         pattern=r"^[a-zA-Z0-9._-]+$",
@@ -381,6 +385,10 @@ async def install(
     response: Response,
     _admin: dict = Depends(current_admin),
 ) -> Dict[str, Any]:
+    # Resolve the tenant from identity unless the caller explicitly overrode it.
+    # The installed-list read resolves the same way, so an install and its badge
+    # can never land under different tenants.
+    tenant = body.tenant or _resolve_admin_tenant(_admin)
     plugin = _by_id(body.plugin_id)
     if not plugin:
         emit_event(
@@ -389,12 +397,12 @@ async def install(
             outcome="denied",
             reason="plugin_not_found",
             plugin_id=body.plugin_id,
-            tenant=body.tenant,
+            tenant=tenant,
             status_code=404,
         )
         raise HTTPException(status_code=404, detail="plugin_not_found")
 
-    _enforce_tenant_match(_admin, body.tenant, request)
+    _enforce_tenant_match(_admin, tenant, request)
 
     # Cosign signature gate (skip-mode by default in dev).
     from app.marketplace.cosign_verify import verify_signature
@@ -408,7 +416,7 @@ async def install(
         logger.warning(
             "marketplace_install_signature_invalid plugin=%s tenant=%s",
             body.plugin_id,
-            body.tenant,
+            tenant,
         )
         emit_event(
             request,
@@ -416,20 +424,20 @@ async def install(
             outcome="denied",
             reason="signature_invalid",
             plugin_id=body.plugin_id,
-            tenant=body.tenant,
+            tenant=tenant,
             status_code=403,
         )
         raise HTTPException(status_code=403, detail="signature_invalid")
 
     state = _read_installs()
-    bucket = state.setdefault(body.tenant, [])
+    bucket = state.setdefault(tenant, [])
     if any(item.get("plugin_id") == body.plugin_id for item in bucket):
         # Idempotent path: 200 OK (no resource created).
         response.status_code = 200
         return {
             "status": "already_installed",
             "plugin_id": body.plugin_id,
-            "tenant": body.tenant,
+            "tenant": tenant,
         }
 
     install_record: Dict[str, Any] = {
@@ -450,7 +458,7 @@ async def install(
         sandbox = PluginSandbox()
         result = sandbox.launch(
             body.plugin_id,
-            body.tenant,
+            tenant,
             plugin.get("sandbox", {}),
             image_ref=plugin.get("entry_point"),
         )
@@ -485,7 +493,7 @@ async def install(
     # Durable SQL persistence so the marketplace UI
     # can reliably distinguish installed plugins after a backend restart.
     _persist_install_row(
-        tenant=body.tenant,
+        tenant=tenant,
         plugin_id=body.plugin_id,
         version=plugin["version"],
         container_id=install_record.get("container_id"),
@@ -495,18 +503,18 @@ async def install(
         action="marketplace.install",
         outcome="success",
         plugin_id=body.plugin_id,
-        tenant=body.tenant,
+        tenant=tenant,
     )
     logger.info(
         "marketplace_install plugin=%s tenant=%s container=%s",
         body.plugin_id,
-        body.tenant,
+        tenant,
         install_record.get("container_id"),
     )
     return {
         "status": "installed",
         "plugin_id": body.plugin_id,
-        "tenant": body.tenant,
+        "tenant": tenant,
         "version": plugin["version"],
         "permissions": plugin["permissions"],
         "container_id": install_record.get("container_id"),
@@ -518,11 +526,13 @@ async def install(
 async def uninstall(
     plugin_id: str,
     request: Request,
-    tenant: str = "default",
+    tenant: Optional[str] = None,
     _admin: dict = Depends(current_admin),
 ) -> Dict[str, Any]:
     """Tenant-scoped uninstall. Removes the install record and
     best-effort stops the sandbox container."""
+    # Resolve from identity unless overridden — matches the install + read paths.
+    tenant = tenant or _resolve_admin_tenant(_admin)
     _enforce_tenant_match(_admin, tenant, request)
 
     state = _read_installs()

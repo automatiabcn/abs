@@ -75,6 +75,8 @@ export default function ApprovalCenterPage() {
   // Id whose decision is in flight — disables that row's buttons so a
   // double-click can't fire the (often irreversible, outbound) action twice.
   const [pendingId, setPendingId] = useState<number | null>(null);
+  // Which approval is open in the inline editor, and the edited draft text.
+  const [editing, setEditing] = useState<{ id: number; text: string } | null>(null);
   // Outbox row currently being sent again.
   const [retryId, setRetryId] = useState<number | null>(null);
 
@@ -88,20 +90,31 @@ export default function ApprovalCenterPage() {
   }, []);
   useEffect(load, [load]);
 
-  async function decide(id: number, decision: "approve" | "reject" | "edit") {
+  async function decide(
+    id: number,
+    decision: "approve" | "reject" | "edit",
+    editedMessage?: string,
+  ) {
     if (pendingId !== null) return; // a decision is already in flight
     setPendingId(id);
     setErr(null);
     try {
+      const body: Record<string, unknown> = { decision };
+      // "edit" means send a revised message — carry it, or the backend would
+      // send the original draft unchanged.
+      if (decision === "edit" && editedMessage != null) {
+        body.edited_message = editedMessage;
+      }
       const r = await fetch(`/v1/approvals/${id}/decide`, {
         method: "POST", credentials: "include",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ decision }),
+        body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const j = await r.json().catch(() => null);
       if (j?.action) setResult({ status: j.action.status, reason: j.action.reason });
       else if (decision === "reject") setResult({ status: "rejected", reason: "nothing was done" });
+      setEditing(null);
       load();
     } catch (e) {
       setErr(`Could not send your decision: ${String(e)}`);
@@ -228,12 +241,44 @@ export default function ApprovalCenterPage() {
                       </div>
                     </div>
                     <div className="flex w-[150px] shrink-0 flex-col gap-2">
-                      <button onClick={() => decide(it.id, "approve")} disabled={pendingId === it.id} className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">✓ {pendingId === it.id ? "Working…" : it.channel === "email" ? "Approve & send" : "Approve"}</button>
-                      <button onClick={() => decide(it.id, "edit")} disabled={pendingId === it.id} className="rounded-md border px-3 py-1.5 text-xs disabled:opacity-50">✎ Edit</button>
+                      <button onClick={() => confirmApprove(it)} disabled={pendingId === it.id} className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">✓ {pendingId === it.id ? "Working…" : it.channel === "email" ? "Approve & send" : "Approve"}</button>
+                      <button onClick={() => setEditing({ id: it.id, text: it.proposed_message ?? "" })} disabled={pendingId === it.id} className="rounded-md border px-3 py-1.5 text-xs disabled:opacity-50">✎ Edit</button>
                       <button onClick={() => decide(it.id, "reject")} disabled={pendingId === it.id} className="rounded-md border px-3 py-1.5 text-xs text-rose-700 dark:text-rose-300 disabled:opacity-50">✕ Reject</button>
                       {it.risk === "high" && <div className="text-center text-[10px] text-muted-foreground">⏱ escalates in 4 h</div>}
                     </div>
                   </div>
+
+                  {/* Inline editor — revise the draft before it is sent. Without
+                      this, "Edit" would send the original message unchanged. */}
+                  {editing?.id === it.id && (
+                    <div className="mt-3 rounded-lg border border-primary/30 bg-background/60 p-3">
+                      <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
+                        Edit the message before sending{it.channel && it.channel !== "agent_tool" ? ` over ${it.channel}` : ""}
+                      </label>
+                      <textarea
+                        value={editing.text}
+                        onChange={(e) => setEditing({ id: it.id, text: e.target.value })}
+                        rows={4}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs"
+                      />
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          onClick={() => decide(it.id, "edit", editing.text)}
+                          disabled={pendingId === it.id || !editing.text.trim()}
+                          className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+                        >
+                          {pendingId === it.id ? "Sending…" : "Save & send"}
+                        </button>
+                        <button
+                          onClick={() => setEditing(null)}
+                          disabled={pendingId === it.id}
+                          className="rounded-md border px-3 py-1.5 text-xs disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
