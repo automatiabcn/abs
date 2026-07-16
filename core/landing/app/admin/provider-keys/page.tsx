@@ -221,7 +221,7 @@ export default function ProviderKeysPage() {
       </Card>
 
       {err && (
-        <div className="mb-4 rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-200">
+        <div className="mb-4 rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300">
           {err}
         </div>
       )}
