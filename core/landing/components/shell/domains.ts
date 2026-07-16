@@ -118,6 +118,7 @@ export const DOMAINS: ShellDomain[] = [
       { href: "/admin/users", label: "Users" },
       { href: "/admin/projects", label: "Projects" },
       { href: "/admin/audit", label: "Audit log" },
+      { href: "/admin/account", label: "Account & privacy" },
     ],
   },
 ];

@@ -17,6 +17,7 @@ from typing import Optional
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from sqlmodel import Session, select
 
+from app.api.me_auth import panel_session_identity
 from app.db.models import CustomerAuditEntry
 from app.db.session import get_engine
 from app.licensing import verify_license
@@ -29,8 +30,21 @@ logger = logging.getLogger(__name__)
 def _verify_bearer_license(
     authorization: Optional[str], request: Optional[Request] = None
 ) -> str:
-    """Bearer = license JWT. Returns jti or raises 401."""
+    """Bearer = license JWT. Returns jti or raises 401.
+
+    Falls back to the signed-in panel session on a self-host box (see
+    me_auth.panel_session_identity) so the operator can read their own log.
+    """
     if not authorization or not authorization.lower().startswith("bearer "):
+        fallback = panel_session_identity(request)
+        if fallback is not None:
+            emit_event(
+                request,
+                action="me.audit.auth",
+                outcome="success",
+                reason="panel_session_fallback",
+            )
+            return fallback[0]
         emit_event(
             request,
             action="me.audit.auth",
