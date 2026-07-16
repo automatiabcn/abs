@@ -21,7 +21,6 @@ import {
   CheckCircle2,
   CreditCard,
   Lock,
-  ShieldCheck,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
@@ -126,10 +125,6 @@ export default function AdminDashboardPage() {
     ? SECURITY[security.overall_score]
     : undefined;
   const chainTampered = vault.audit_chain_integrity === "tampered";
-  const tierTotal = Object.values(billing.tier_breakdown ?? {}).reduce(
-    (a, b) => a + b,
-    0,
-  );
 
   return (
     <div
@@ -190,18 +185,6 @@ export default function AdminDashboardPage() {
                   : "Entries in the audit chain"
               }
               icon={Lock}
-            />
-            <StatCard
-              label="License tiers"
-              value={tierTotal}
-              hint={
-                Object.keys(billing.tier_breakdown ?? {}).length
-                  ? Object.entries(billing.tier_breakdown ?? {})
-                      .map(([tier, n]) => `${tier}: ${n}`)
-                      .join(" · ")
-                  : "No tier breakdown yet"
-              }
-              icon={ShieldCheck}
             />
           </>
         )}
