@@ -578,3 +578,46 @@ class SavedWorkflow(SQLModel, table=True):
     created_by: str = Field(max_length=254, default="")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class CaptureJob(SQLModel, table=True):
+    """Scheduled meeting-capture job — the record behind Live capture's
+    'auto-capture' surface.
+
+    A person pastes a meeting link (or, later, it comes from a connected
+    calendar); a bot (app/meeting/bot_recall) joins and records server-side;
+    the recording flows into the same transcribe→Meeting→RAG pipeline an
+    upload uses, and `meeting_id` links to the resulting Meeting.
+
+    `status` is the honest lifecycle, driven by the real bot backend — never a
+    fabricated 'done'. On the mock backend (no recorder configured) a job stays
+    'scheduled' and the UI says so, rather than inventing a recording.
+    """
+
+    __tablename__ = "capture_jobs"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    job_id: str = Field(unique=True, index=True, max_length=48)
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
+    created_by: str = Field(max_length=254, default="")
+    meeting_url: str = Field(max_length=1024)
+    # meet | zoom | teams | other — derived from the URL host.
+    platform: str = Field(max_length=16, default="other")
+    title: str = Field(max_length=256, default="")
+    # null = capture now; otherwise the scheduled join time.
+    scheduled_start: Optional[datetime] = Field(default=None, index=True)
+    # queued|scheduled|joining|recording|transcribing|done|failed|cancelled
+    status: str = Field(max_length=16, default="queued", index=True)
+    # The bot backend that handled this job (mock|local|recall) — surfaced so
+    # the UI never implies a real recording when only the mock ran.
+    bot_backend: str = Field(max_length=16, default="")
+    bot_id: Optional[str] = Field(default=None, max_length=64, index=True)
+    # FK to the Meeting produced once the recording is ingested.
+    meeting_id: Optional[int] = Field(default=None, index=True)
+    estimated_cost_usd: float = Field(default=0.0)
+    error_message: Optional[str] = Field(default=None, max_length=512)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    completed_at: Optional[datetime] = Field(default=None)
