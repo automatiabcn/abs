@@ -106,6 +106,36 @@ def _meter(resp: ProviderResponse, *, provider: str, tenant_id: str) -> None:
         logger.debug("usage metering skipped", exc_info=True)
 
 
+def _record_quota(
+    provider: str,
+    *,
+    tenant_id: str,
+    tokens: int = 0,
+    status_code: int = 200,
+    exc: Optional[Exception] = None,
+) -> None:
+    """Feed the per-tenant quota meter (Cost HUD + 429 cooldown). Never raises.
+
+    Records only; it does not change provider selection. A rate-limit-shaped
+    ProviderError is recorded as a 429 so the meter can show a cooldown.
+    """
+    try:
+        from app.cascade import quota_meter
+
+        sc = status_code
+        if (
+            exc is not None
+            and getattr(exc, "transient", False)
+            and quota_meter.looks_like_rate_limit(str(exc))
+        ):
+            sc = 429
+        quota_meter.record_usage(
+            provider, tenant_id=tenant_id, tokens=tokens, status_code=sc
+        )
+    except Exception:  # noqa: BLE001 — metering is never worth an outage
+        logger.debug("quota meter skipped", exc_info=True)
+
+
 async def call_with_cascade(
     prompt: str,
     *,
@@ -155,7 +185,10 @@ async def call_with_cascade(
     if use_cache:
         cached = await default_cache.get(cache_key)
         if cached is not None:
-            cached_copy = cached.model_copy(update={"cached": True})
+            # A cache hit tried no providers this time — say so honestly.
+            cached_copy = cached.model_copy(
+                update={"cached": True, "providers_tried": []}
+            )
             return cached_copy
 
     last_err: Optional[Exception] = None
@@ -187,15 +220,26 @@ async def call_with_cascade(
             call_kwargs = {**kwargs, "api_key": owner_key}
         try:
             resp = await provider.call(prompt, model=model, **call_kwargs)
+            # Expose the failover trail (attempts so far, winner last) on the
+            # success path too — chat/Cost-HUD can show "tried A → B → C". It was
+            # only surfaced on total failure via CascadeUnavailable before.
+            resp.providers_tried = list(tried)
             await default_breaker.record_success(breaker_id)
             if use_cache:
                 await default_cache.set(cache_key, resp)
             _meter(resp, provider=name, tenant_id=tenant_id)
+            _record_quota(
+                name,
+                tenant_id=tenant_id,
+                tokens=int(resp.tokens_in or 0) + int(resp.tokens_out or 0),
+                status_code=200,
+            )
             return resp
         except ProviderError as exc:
             last_err = exc
             saw_transient = saw_transient or exc.transient
             await default_breaker.record_failure(breaker_id)
+            _record_quota(name, tenant_id=tenant_id, status_code=500, exc=exc)
             # A permanent error means *this provider* cannot serve the request —
             # a bad key, a model it doesn't have, an account id that routes
             # nowhere. It does not mean nobody can. Raising here made one

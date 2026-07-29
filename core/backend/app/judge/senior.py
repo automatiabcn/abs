@@ -120,3 +120,27 @@ async def judge_diff(diff_text: str, file_path: Optional[str] = None) -> Dict[st
         logger.info("judge_log skipped: %s", exc)
 
     return result
+
+
+async def judge_file(file_path: str) -> Dict[str, Any]:
+    """Grade a whole file as if every line were newly added.
+
+    A convenience over :func:`judge_diff` for the editor's "grade this file"
+    action: the file content is wrapped as an all-added pseudo-diff and run
+    through the same AST + LLM pipeline.
+    """
+    try:
+        with open(file_path, "r", encoding="utf-8") as fh:
+            content = fh.read()
+    except OSError as exc:
+        return {
+            "combined_score": 0.0,
+            "ast_score": None,
+            "llm_score": 0.0,
+            "added_lines": 0,
+            "fingerprint_details": [],
+            "teaching": [f"read error: {exc}"],
+        }
+
+    pseudo_diff = "\n".join("+" + line for line in content.splitlines())
+    return await judge_diff(pseudo_diff, file_path)
