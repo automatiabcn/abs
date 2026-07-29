@@ -29,6 +29,7 @@ import os
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -317,3 +318,74 @@ def test_a_tool_can_actually_be_called_over_the_transport(mcp_session):
     result = payload["result"]
     assert result.get("isError") is not True, result
     assert result["content"], "the tool returned an empty body"
+
+
+# --- The editor's own tools, over the same wire the editor client uses --------
+# These exercise the Faz B engine (codegraph, composer, notes) end-to-end through
+# the JSON-RPC transport an ABS editor connects to — the server half of M1.
+
+
+def _call(session, name, args, rid) -> str:
+    """tools/call over the wire; returns the tool's text content (or fails loudly)."""
+    base, token, session_id = session
+    status, raw, _ = _rpc(
+        base,
+        {
+            "jsonrpc": "2.0",
+            "id": rid,
+            "method": "tools/call",
+            "params": {"name": name, "arguments": args},
+        },
+        token=token,
+        session_id=session_id,
+    )
+    assert status == 200, raw
+    payload = _result(raw)
+    assert "error" not in payload, payload
+    result = payload["result"]
+    assert result.get("isError") is not True, result
+    return str(result["content"][0]["text"])
+
+
+def test_editor_code_graph_over_the_wire(mcp_session):
+    """code_graph_build + code_blast_radius — the editor's blast-radius, over /mcp."""
+    ws = tempfile.mkdtemp(prefix="abs_cg_")
+    with open(os.path.join(ws, "util.py"), "w") as fh:
+        fh.write("def helper():\n    return 1\n")
+    with open(os.path.join(ws, "app.py"), "w") as fh:
+        fh.write("def handler():\n    return helper()\n")
+
+    build = json.loads(_call(mcp_session, "code_graph_build", {"root": ws}, 20))
+    assert build["symbols"] >= 2 and build["edges"] >= 1
+
+    blast = json.loads(_call(mcp_session, "code_blast_radius", {"target": "helper"}, 21))
+    assert blast["found"] is True
+    affected = {s["symbol"] for layer in blast["layers"] for s in layer["symbols"]}
+    assert "handler" in affected  # helper's caller, resolved deterministically over the wire
+
+
+def test_editor_composer_propose_over_the_wire(mcp_session):
+    """composer_propose returns a well-formed ComposerRun over the wire.
+
+    Whether the model produced any edits depends on what the live env has
+    configured; the contract the editor relies on is the *shape*, not the count.
+    """
+    ws = tempfile.mkdtemp(prefix="abs_cmp_")
+    run = json.loads(
+        _call(mcp_session, "composer_propose", {"task": "noop", "workspace_root": ws}, 22)
+    )
+    assert run["run_id"].startswith("cmp-")
+    assert isinstance(run["edits"], list)
+    assert run["risk"] in ("low", "medium", "high")
+    assert "requires_approval" in run
+    assert isinstance(run["providers_tried"], list)
+
+
+def test_editor_notes_over_the_wire(mcp_session):
+    """note_save + note_search — the Notion-like companion, over /mcp."""
+    saved = json.loads(
+        _call(mcp_session, "note_save", {"title": "Cascade", "body": "provider failover notes"}, 23)
+    )
+    nid = saved["id"]
+    hits = json.loads(_call(mcp_session, "note_search", {"query": "failover"}, 24))
+    assert any(h["id"] == nid for h in hits)
