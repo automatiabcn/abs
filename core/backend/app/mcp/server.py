@@ -184,6 +184,9 @@ def register_all_tools() -> int:
     from app.mcp.tools import fullstack as fullstack_mod  # noqa: F401
     from app.mcp.tools import gemini_extras as gemini_mod  # noqa: F401
     from app.mcp.tools import hook_companions  # noqa: F401
+    from app.mcp.tools import codegraph_tools  # noqa: F401
+    from app.mcp.tools import composer_tools  # noqa: F401
+    from app.mcp.tools import notes_tools  # noqa: F401
     from app.mcp.tools import innovation_tools  # noqa: F401
     from app.mcp.tools import judge_extras  # noqa: F401
     from app.mcp.tools import judge_persona  # noqa: F401
@@ -236,6 +239,9 @@ def register_all_tools() -> int:
         + len(admin_tools.REGISTERED_TOOLS)
         + len(demo_tools.REGISTERED_TOOLS)
         + len(innovation_tools.REGISTERED_TOOLS)
+        + len(codegraph_tools.REGISTERED_TOOLS)
+        + len(notes_tools.REGISTERED_TOOLS)
+        + len(composer_tools.REGISTERED_TOOLS)
         + 1  # system_status registers itself, it has no REGISTERED_TOOLS list
     )
 

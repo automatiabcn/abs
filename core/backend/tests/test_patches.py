@@ -1,8 +1,14 @@
-"""Patch engine — parse, score, preview, apply."""
+"""Patch engine — parse, score, preview, apply, sandbox, rollback."""
 
 from __future__ import annotations
 
-from app.patches.engine import parse_diff, score_patch
+from app.patches.engine import (
+    apply,
+    dry_run,
+    parse_diff,
+    score_patch,
+    validate,
+)
 
 
 def test_parse_diff_extracts_hunks():
@@ -36,3 +42,75 @@ def test_score_patch_invalid_returns_zero():
     r = score_patch("this is not a diff")
     assert r["score"] == 0.0
     assert r["hunk_count"] == 0
+
+
+# --- apply / dry-run --------------------------------------------------------
+
+_ONE_LINE_DIFF = "@@ -1,3 +1,3 @@\n line1\n-line2\n+line2-changed\n line3\n"
+
+
+def _write(tmp_path, name, body):
+    p = tmp_path / name
+    p.write_text(body, encoding="utf-8")
+    return p
+
+
+def test_apply_changes_file_and_backs_up(tmp_path):
+    f = _write(tmp_path, "x.txt", "line1\nline2\nline3\n")
+    r = apply(str(f), _ONE_LINE_DIFF, workspace_root=str(tmp_path))
+    assert r.success, r.reason
+    assert f.read_text() == "line1\nline2-changed\nline3\n"
+    assert r.lines_added == 1 and r.lines_deleted == 1
+    assert r.backup_path is not None
+
+
+def test_dry_run_does_not_touch_file(tmp_path):
+    f = _write(tmp_path, "x.txt", "line1\nline2\nline3\n")
+    before = f.read_text()
+    r = dry_run(str(f), _ONE_LINE_DIFF, workspace_root=str(tmp_path))
+    assert r.success
+    assert f.read_text() == before  # untouched
+
+
+def test_apply_rolls_back_on_broken_python_ast(tmp_path):
+    f = _write(tmp_path, "m.py", "def f():\n    return 1\n")
+    broken = "@@ -1,2 +1,2 @@\n def f():\n-    return 1\n+    return (1\n"
+    r = apply(str(f), broken, workspace_root=str(tmp_path))
+    assert not r.success
+    assert "rolled back" in r.reason.lower()
+    assert f.read_text() == "def f():\n    return 1\n"  # restored
+
+
+# --- workspace sandbox (the security boundary) ------------------------------
+
+def test_sandbox_rejects_path_outside_workspace(tmp_path):
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    outside = _write(tmp_path, "outside.txt", "secret\n")
+    v = validate(str(outside), _ONE_LINE_DIFF, workspace_root=str(ws))
+    assert not v.valid
+    assert v.stage == "sandbox"
+
+
+def test_sandbox_rejects_dotdot_traversal(tmp_path):
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    _write(tmp_path, "outside.txt", "secret\n")
+    escape = str(ws / ".." / "outside.txt")
+    v = validate(escape, _ONE_LINE_DIFF, workspace_root=str(ws))
+    assert not v.valid
+    assert v.stage == "sandbox"
+
+
+def test_sandbox_allows_path_inside_workspace(tmp_path):
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    inside = _write(ws, "in.txt", "line1\nline2\nline3\n")
+    v = validate(str(inside), _ONE_LINE_DIFF, workspace_root=str(ws))
+    assert v.valid, f"{v.stage}: {v.reason}"
+
+
+def test_validate_requires_absolute_without_workspace():
+    v = validate("relative/path.txt", _ONE_LINE_DIFF)
+    assert not v.valid
+    assert v.stage == "path"

@@ -41,6 +41,17 @@ def test_fingerprint_distance_zero_when_match():
     assert fingerprint_distance(m, persona) == 0.0
 
 
+def test_fingerprint_distance_func_length_adds_small_signal():
+    persona = {"docstring_ratio": 0.6, "type_hints_ratio": 0.7, "avg_func_lines": 20.0}
+    match = {"docstring_ratio": 0.6, "type_hints_ratio": 0.7, "avg_func_lines": 20.0}
+    far = {"docstring_ratio": 0.6, "type_hints_ratio": 0.7, "avg_func_lines": 120.0}
+    assert fingerprint_distance(match, persona) == 0.0
+    # A large function-length gap contributes signal...
+    assert fingerprint_distance(far, persona) > 0.0
+    # ...but never dominates (stays a small fraction of the total distance).
+    assert fingerprint_distance(far, persona) < 0.2
+
+
 @pytest.mark.asyncio
 async def test_judge_diff_llm_mocked(monkeypatch):
     from app.judge import senior as sj
@@ -63,3 +74,33 @@ async def test_judge_diff_llm_mocked(monkeypatch):
     assert 0 <= result["combined_score"] <= 10
     assert result["ast_score"] is not None
     assert result["llm_score"] == 8.0
+
+
+@pytest.mark.asyncio
+async def test_judge_file_grades_whole_file(monkeypatch, tmp_path):
+    from app.judge import senior as sj
+
+    fake = AsyncMock()
+    fake.call = AsyncMock(
+        return_value=type("R", (), {"text": '{"score": 7.0, "teaching": "ok"}'})()
+    )
+    monkeypatch.setattr(sj, "get_provider", lambda _: fake)
+
+    f = tmp_path / "m.py"
+    f.write_text(
+        'def fib(n: int) -> int:\n    """Fibonacci."""\n'
+        "    return n if n < 2 else fib(n - 1) + fib(n - 2)\n"
+    )
+    result = await sj.judge_file(str(f))
+    assert 0 <= result["combined_score"] <= 10
+    assert result["ast_score"] is not None
+    assert result["llm_score"] == 7.0
+
+
+@pytest.mark.asyncio
+async def test_judge_file_missing_file_is_graceful():
+    from app.judge import senior as sj
+
+    result = await sj.judge_file("/nonexistent/nope.py")
+    assert result["combined_score"] == 0.0
+    assert result["ast_score"] is None

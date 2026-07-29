@@ -26,6 +26,11 @@ class ProviderResponse(BaseModel):
     cached: bool = Field(
         default=False, description="True if this came from the cache, not the provider"
     )
+    providers_tried: list[str] = Field(
+        default_factory=list,
+        description="The failover trail — every provider attempted, winner last "
+        "(empty on a cache hit, which tried nothing)",
+    )
     error: Optional[str] = Field(default=None, description="Why it failed, if it did")
 
 

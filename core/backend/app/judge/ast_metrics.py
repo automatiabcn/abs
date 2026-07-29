@@ -53,15 +53,30 @@ def ast_metrics(code: str) -> Dict[str, float]:
 
 
 def fingerprint_distance(metrics: Dict[str, float], persona: Dict[str, float]) -> float:
-    """Mean absolute distance from the persona targets, in 0..1."""
+    """Weighted mean absolute distance from the persona targets, in 0..1.
+
+    The two ratio metrics (docstring, type-hints) are already 0..1 and carry
+    equal weight. Function length (``avg_func_lines``) is a real senior-style
+    dimension but lives on a much larger scale, so it is normalised against the
+    target and folded in with a small weight — enough to reward short, focused
+    functions without letting its magnitude dominate. It only contributes when
+    present on both sides, so older callers that pass only the two ratios are
+    unaffected.
+    """
     if not metrics or not persona:
         return 0.0
-    keys = ("docstring_ratio", "type_hints_ratio")
-    deltas = []
-    for k in keys:
-        target = persona.get(k, 0.0)
-        actual = metrics.get(k, 0.0)
-        deltas.append(abs(actual - target))
-    if not deltas:
+
+    parts: list[tuple[float, float]] = []  # (delta, weight)
+    for k in ("docstring_ratio", "type_hints_ratio"):
+        parts.append((abs(metrics.get(k, 0.0) - persona.get(k, 0.0)), 1.0))
+
+    if "avg_func_lines" in metrics and "avg_func_lines" in persona:
+        target = persona.get("avg_func_lines", 0.0)
+        delta = abs(metrics.get("avg_func_lines", 0.0) - target)
+        norm = min(1.0, delta / target) if target > 0 else 0.0
+        parts.append((norm, 0.15))
+
+    total_w = sum(w for _, w in parts)
+    if not total_w:
         return 0.0
-    return sum(deltas) / len(deltas)
+    return sum(d * w for d, w in parts) / total_w

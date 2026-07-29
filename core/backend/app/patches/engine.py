@@ -3,223 +3,727 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Patch engine — parse, preview, apply and score unified diffs.
+"""Patch engine — Diff-First core: parse, validate, dry-run, apply and score.
 
-- parse_diff():    list the @@-headed hunks
-- preview_patch(): `patch --dry-run`, so nothing is written to check a patch
-- apply_patch():   atomic write, with a backup by default
-- score_patch():   0-10 on minimalism and how concentrated the hunks are
+An LLM returns a unified diff instead of a whole file. This module turns that
+diff into a safe, deterministic edit:
+
+  1. parse_diff():  strict-ish, pure-Python unified-diff reader (lenient on the
+                    header line counts so slightly-off diffs still parse).
+  2. validate():    multi-stage, fail-fast guard
+                    (syntax -> path -> WORKSPACE SANDBOX -> exists -> binary ->
+                     size -> policy). The sandbox stage is the multi-tenant
+                     safety boundary the old subprocess-`patch` engine lacked.
+  3. dry_run():     in-memory apply (falls back to `git apply --check`) — the
+                    file is never touched.
+  4. apply():       context-verified in-memory apply -> atomic write -> AST
+                    re-parse -> automatic rollback from backup on syntax error.
+  5. score():       0-10 deterministic quality (minimalism, concentration).
+
+Rich API (used by the Composer):
+  parse_diff(text)               -> list[Hunk]
+  validate(path, diff, *, ...)   -> ValidationResult
+  dry_run(path, diff, *, ...)    -> DryRunResult
+  apply(path, diff, *, ...)      -> ApplyResult
+  score(diff)                    -> ScoreResult
+
+Back-compat dict API (used by the MCP tools, kept identical):
+  preview_patch(path, diff)      -> dict{success, reason, ...}
+  apply_patch(path, diff, backup)-> dict{success, reason, backup_path, ...}
+  score_patch(diff)              -> dict{score, hunk_count, minimal_ratio,
+                                         max_hunk_size, teaching}
+
+Workspace sandbox: pass `workspace_root=` (or set env ABS_WORKSPACE_ROOT). When
+set, any target outside the real path of that root is rejected at the `sandbox`
+stage — this defeats `..` traversal and symlink escape. When unset, no sandbox
+is enforced (the raw preview_patch/apply_patch MCP tools stay gated off by
+`settings.mcp_expose_patch_tools`; the Composer always passes a workspace_root).
 """
 
 from __future__ import annotations
 
+import ast
 import logging
+import os
 import re
 import shutil
 import subprocess
 import tempfile
+import time
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Data classes
+# ---------------------------------------------------------------------------
+
 @dataclass
 class HunkLine:
-    op: str  # " " / "+" / "-"
+    """One diff line — op in {' ', '+', '-'}. ' ' is context."""
+
+    op: str
     text: str
+
+    @property
+    def is_add(self) -> bool:
+        return self.op == "+"
+
+    @property
+    def is_del(self) -> bool:
+        return self.op == "-"
+
+    @property
+    def is_ctx(self) -> bool:
+        return self.op == " "
 
 
 @dataclass
 class Hunk:
+    """An `@@ -old_start,old_count +new_start,new_count @@` block."""
+
     old_start: int
     new_start: int
+    old_count: int = 1
+    new_count: int = 1
     section: str = ""
     lines: List[HunkLine] = field(default_factory=list)
 
     @property
     def adds(self) -> int:
-        return sum(1 for line in self.lines if line.op == "+")
+        return sum(1 for line in self.lines if line.is_add)
 
     @property
     def dels(self) -> int:
-        return sum(1 for line in self.lines if line.op == "-")
+        return sum(1 for line in self.lines if line.is_del)
+
+    @property
+    def ctx(self) -> int:
+        return sum(1 for line in self.lines if line.is_ctx)
+
+
+@dataclass
+class ValidationResult:
+    valid: bool
+    reason: str = ""
+    stage: str = ""  # which stage rejected it
+    meta: dict = field(default_factory=dict)
+
+
+@dataclass
+class DryRunResult:
+    success: bool
+    method: str  # "inmemory", "git", "validate", "all-failed"
+    preview: str = ""  # patched content (truncated)
+    reason: str = ""
+
+
+@dataclass
+class ApplyResult:
+    success: bool
+    file_path: str
+    backup_path: Optional[str] = None
+    hunks_applied: int = 0
+    lines_added: int = 0
+    lines_deleted: int = 0
+    reason: str = ""
+    elapsed: float = 0.0
+
+
+@dataclass
+class ScoreResult:
+    score: float  # 0-10
+    minimal_ratio: float  # ctx / (ctx+adds+dels) — higher means less changed
+    hunk_count: int
+    max_hunk_size: int  # line count of the largest hunk
+    teaching: str = ""
+
+
+# ---------------------------------------------------------------------------
+# Parser — unified diff reader (lenient: never raises, no-hunk -> [])
+# ---------------------------------------------------------------------------
+
+_HUNK_HEADER_RE = re.compile(r"^@@\s+-(\d+)(?:,(\d+))?\s+\+(\d+)(?:,(\d+))?\s+@@(.*)$")
 
 
 def parse_diff(text: str) -> List[Hunk]:
-    """Unified diff → hunks. Unparseable input yields an empty list, not an error."""
+    """Unified diff text -> list of Hunk.
+
+    Lenient by design (preserves the historical contract): unparseable input or
+    a diff with no `@@` header yields an empty list rather than raising, and a
+    header whose declared line counts disagree with the body is still accepted
+    (the counts are informational; correctness is enforced by context matching
+    at apply time). Optional `---`/`+++`/`diff`/`index` file headers are skipped.
+    """
+    if not text or not text.strip():
+        return []
+
     hunks: List[Hunk] = []
     current: Optional[Hunk] = None
-    header_re = re.compile(r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)$")
-    for raw in text.splitlines():
-        m = header_re.match(raw)
+    lines = text.splitlines()
+    i = 0
+
+    # Skip leading file headers if present.
+    while i < len(lines) and (
+        lines[i].startswith("--- ")
+        or lines[i].startswith("+++ ")
+        or lines[i].startswith("diff ")
+        or lines[i].startswith("index ")
+    ):
+        i += 1
+
+    while i < len(lines):
+        line = lines[i]
+
+        m = _HUNK_HEADER_RE.match(line)
         if m:
-            if current:
+            if current is not None:
                 hunks.append(current)
             current = Hunk(
                 old_start=int(m.group(1)),
-                new_start=int(m.group(2)),
-                section=m.group(3).strip(),
+                old_count=int(m.group(2)) if m.group(2) else 1,
+                new_start=int(m.group(3)),
+                new_count=int(m.group(4)) if m.group(4) else 1,
+                section=m.group(5).strip(),
             )
+            i += 1
             continue
+
         if current is None:
+            # Stray line before the first @@ — skip.
+            i += 1
             continue
-        if raw.startswith("+++") or raw.startswith("---"):
+
+        if line == "":
+            # Blank line = context line some tools trim of trailing whitespace.
+            current.lines.append(HunkLine(" ", ""))
+            i += 1
             continue
-        if raw.startswith(" "):
-            current.lines.append(HunkLine(" ", raw[1:]))
-        elif raw.startswith("+"):
-            current.lines.append(HunkLine("+", raw[1:]))
-        elif raw.startswith("-"):
-            current.lines.append(HunkLine("-", raw[1:]))
-    if current:
+
+        op = line[0]
+        body = line[1:]
+        if op in (" ", "+", "-"):
+            current.lines.append(HunkLine(op, body))
+        elif op == "\\":
+            # "\ No newline at end of file" — meta, ignore.
+            pass
+        else:
+            # Unexpected line — the hunk is over.
+            break
+        i += 1
+
+    if current is not None:
         hunks.append(current)
+
     return hunks
 
 
-def preview_patch(file_path: str, diff_text: str) -> dict:
-    """Dry-run the patch without touching the file. Returns {success, reason}."""
-    target = Path(file_path)
-    if not target.is_file():
-        return {"success": False, "reason": f"no such file: {file_path}"}
+# ---------------------------------------------------------------------------
+# Validator — multi-stage, fail-fast (with the workspace sandbox)
+# ---------------------------------------------------------------------------
 
+# First-bytes signatures for common binary formats.
+_BINARY_SIGNATURES = (
+    b"\x89PNG",
+    b"\xff\xd8\xff",
+    b"GIF8",
+    b"PK\x03\x04",
+    b"\x7fELF",
+    b"%PDF",
+    b"\x1f\x8b",
+    b"MZ",
+)
+_MAX_PATCH_LINES = 10000
+_MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+_BACKUP_KEEP = 5  # keep the newest N backups per file
+
+
+def _resolve_workspace_root(explicit: Optional[str]) -> Optional[str]:
+    """Workspace sandbox root: explicit arg > env ABS_WORKSPACE_ROOT > none."""
+    if explicit:
+        return explicit
+    env = os.environ.get("ABS_WORKSPACE_ROOT")
+    if env:
+        return env
+    return None
+
+
+def _within_workspace(file_path: str, workspace_root: str) -> bool:
+    """True iff `file_path` resolves to inside `workspace_root` (real paths).
+
+    Uses realpath on both sides so `..` segments and symlinks cannot escape.
+    """
+    ws_real = os.path.realpath(workspace_root)
+    fp_real = os.path.realpath(file_path)
+    return fp_real == ws_real or fp_real.startswith(ws_real + os.sep)
+
+
+def _is_binary(path: str) -> bool:
     try:
-        with tempfile.NamedTemporaryFile("w", suffix=".patch", delete=False) as tmp:
+        with open(path, "rb") as fh:
+            head = fh.read(4)
+        return any(head.startswith(sig) for sig in _BINARY_SIGNATURES)
+    except Exception:
+        return False
+
+
+def _prune_old_backups(file_path: str, keep: int = _BACKUP_KEEP) -> int:
+    """Keep the newest `keep` `<file>.patch-backup.<ts>` files, delete the rest.
+
+    Failures are swallowed — backup cleanup must never block an edit.
+    """
+    try:
+        directory = os.path.dirname(file_path) or "."
+        base = os.path.basename(file_path) + ".patch-backup."
+        candidates = []
+        for fn in os.listdir(directory):
+            if fn.startswith(base):
+                full = os.path.join(directory, fn)
+                try:
+                    candidates.append((os.path.getmtime(full), full))
+                except OSError:
+                    pass
+        candidates.sort(reverse=True)  # newest first
+        removed = 0
+        for _, path in candidates[keep:]:
+            try:
+                os.unlink(path)
+                removed += 1
+            except OSError:
+                pass
+        return removed
+    except OSError:
+        return 0
+
+
+def _check_policy(file_path: str, hunks: List[Hunk]):
+    """Optional patch-policy hook. Returns (allowed, reason, violations, severity).
+
+    ABS ships no policy module today, so this degrades to a permissive pass.
+    """
+    try:
+        from app.patches.policy import check_patch_policy  # type: ignore
+    except ImportError:
+        try:
+            from patch_policy import check_patch_policy  # type: ignore
+        except ImportError:
+            return True, "", [], "ok"
+    try:
+        with open(file_path) as fh:
+            file_line_count = sum(1 for _ in fh)
+    except OSError:
+        file_line_count = 0
+    pol = check_patch_policy(file_path, hunks, file_line_count=file_line_count)
+    return pol.allowed, pol.reason, pol.violations, pol.severity
+
+
+def validate(
+    file_path: str,
+    diff_text: str,
+    *,
+    workspace_root: Optional[str] = None,
+) -> ValidationResult:
+    """Multi-stage patch validator — returns on the first failure.
+
+    Stages: syntax -> size -> path -> WORKSPACE SANDBOX -> exists/readable ->
+    binary -> file-size -> policy.
+    """
+    t0 = time.time()
+
+    # 1. Diff syntax.
+    hunks = parse_diff(diff_text)
+    if not hunks:
+        return ValidationResult(False, "no @@ hunk header found", "syntax")
+
+    total_lines = sum(len(h.lines) for h in hunks)
+    if total_lines > _MAX_PATCH_LINES:
+        return ValidationResult(
+            False,
+            f"patch too large: {total_lines} lines (limit {_MAX_PATCH_LINES})",
+            "size",
+            {"lines": total_lines},
+        )
+
+    # 2. Path.
+    if not file_path:
+        return ValidationResult(False, "file_path is empty", "path")
+
+    ws_root = _resolve_workspace_root(workspace_root)
+    if not os.path.isabs(file_path):
+        if ws_root:
+            file_path = os.path.join(ws_root, file_path)
+        else:
+            return ValidationResult(
+                False, f"file_path must be absolute: {file_path}", "path"
+            )
+    file_path = os.path.normpath(file_path)
+
+    # 3. Workspace sandbox — the multi-tenant / desktop-workspace boundary.
+    if ws_root and not _within_workspace(file_path, ws_root):
+        return ValidationResult(
+            False,
+            f"path is outside the workspace sandbox: {file_path}",
+            "sandbox",
+            {"workspace_root": os.path.realpath(ws_root)},
+        )
+
+    # 4. Exists + readable (new-file creation is a later feature).
+    if not os.path.exists(file_path):
+        return ValidationResult(False, f"no such file: {file_path}", "path")
+    if not os.access(file_path, os.R_OK):
+        return ValidationResult(False, f"file not readable: {file_path}", "permission")
+
+    # 5. Binary guard.
+    if _is_binary(file_path):
+        return ValidationResult(False, "refusing to patch a binary file", "binary")
+
+    # 6. File size sanity.
+    try:
+        sz = os.path.getsize(file_path)
+        if sz > _MAX_FILE_SIZE:
+            return ValidationResult(
+                False,
+                f"file too large: {sz / 1024 / 1024:.1f} MB (limit 10 MB)",
+                "size",
+            )
+    except OSError as exc:
+        return ValidationResult(False, f"stat failed: {exc}", "permission")
+
+    # 7. Policy — mass-deletion / dangerous-pattern / critical-file guard.
+    allowed, reason, violations, severity = _check_policy(file_path, hunks)
+    if not allowed:
+        return ValidationResult(
+            False, reason, "policy", {"violations": violations, "severity": severity}
+        )
+
+    ok_msg = "OK" + (" (warn)" if severity == "warn" else "")
+    return ValidationResult(
+        True,
+        ok_msg,
+        "",
+        {
+            "hunks": len(hunks),
+            "lines": total_lines,
+            "file_path": file_path,
+            "policy_violations": violations,
+            "policy_severity": severity,
+            "elapsed": round(time.time() - t0, 3),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# In-memory applier — hunk-by-hunk, context-verified
+# ---------------------------------------------------------------------------
+
+def _apply_hunks_inmem(source_lines: List[str], hunks: List[Hunk]) -> List[str]:
+    """Apply hunks to source lines in order. Context mismatch -> ValueError.
+
+    Unified-diff semantics: `old_start` is 1-indexed; context and '-' lines must
+    match the source, '+' lines are inserted, '-' lines are dropped.
+    """
+    result: List[str] = []
+    src_idx = 0  # 0-indexed cursor into source
+
+    for h in hunks:
+        target = h.old_start - 1  # 0-indexed
+        if target < src_idx:
+            raise ValueError(
+                f"hunk overlap: old_start={h.old_start} but cursor is at {src_idx + 1}"
+            )
+        while src_idx < target:
+            if src_idx >= len(source_lines):
+                raise ValueError(f"source too short: hunk @@ -{h.old_start} unreachable")
+            result.append(source_lines[src_idx])
+            src_idx += 1
+
+        for hl in h.lines:
+            if hl.is_ctx:
+                if src_idx >= len(source_lines):
+                    raise ValueError(
+                        f"extra context: at line {src_idx + 1} past end of file"
+                    )
+                if source_lines[src_idx].rstrip("\n") != hl.text:
+                    raise ValueError(
+                        f"context mismatch at line {src_idx + 1}: "
+                        f"expected {hl.text!r}, found {source_lines[src_idx].rstrip()!r}"
+                    )
+                result.append(source_lines[src_idx])
+                src_idx += 1
+            elif hl.is_del:
+                if src_idx >= len(source_lines):
+                    raise ValueError(f"extra delete: at line {src_idx + 1} past end")
+                if source_lines[src_idx].rstrip("\n") != hl.text:
+                    raise ValueError(
+                        f"delete mismatch at line {src_idx + 1}: "
+                        f"expected {hl.text!r}, found {source_lines[src_idx].rstrip()!r}"
+                    )
+                src_idx += 1  # drop the old line
+            elif hl.is_add:
+                result.append(hl.text + "\n")
+
+    while src_idx < len(source_lines):
+        result.append(source_lines[src_idx])
+        src_idx += 1
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Dry-run — in-memory apply, `git apply --check` fallback
+# ---------------------------------------------------------------------------
+
+def dry_run(
+    file_path: str,
+    diff_text: str,
+    *,
+    workspace_root: Optional[str] = None,
+) -> DryRunResult:
+    """Can the patch apply? The file is never touched."""
+    v = validate(file_path, diff_text, workspace_root=workspace_root)
+    if not v.valid:
+        return DryRunResult(False, "validate", "", v.reason)
+
+    file_path = v.meta.get("file_path", file_path)
+    hunks = parse_diff(diff_text)
+
+    # Method 1: in-memory apply (no external tool needed).
+    try:
+        with open(file_path, "r", encoding="utf-8") as fh:
+            source_lines = fh.readlines()
+        patched = _apply_hunks_inmem(source_lines, hunks)
+        preview = "".join(patched[:50])
+        if len(patched) > 50:
+            preview += f"\n... ({len(patched) - 50} more lines)"
+        return DryRunResult(True, "inmemory", preview, "")
+    except ValueError:
+        pass  # fall through to git
+    except Exception as exc:
+        return DryRunResult(False, "inmemory", "", f"unexpected: {exc}")
+
+    # Method 2: git apply --check (if git is present).
+    patch_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".patch", delete=False, encoding="utf-8"
+        ) as tmp:
+            tmp.write(f"--- a/{os.path.basename(file_path)}\n")
+            tmp.write(f"+++ b/{os.path.basename(file_path)}\n")
             tmp.write(diff_text)
             patch_path = tmp.name
-        result = subprocess.run(
-            ["patch", "--dry-run", "-p1", "-i", patch_path, str(target)],
+        r = subprocess.run(
+            ["git", "apply", "--check", "-p1", patch_path],
             capture_output=True,
             text=True,
             timeout=10,
+            cwd=os.path.dirname(file_path),
         )
-        ok = result.returncode == 0
-        return {
-            "success": ok,
-            "reason": "" if ok else result.stderr[:200] or result.stdout[:200],
-            "stdout": result.stdout[:500],
-        }
-    except FileNotFoundError:
-        # Slim images ship without `patch` — report it instead of crashing.
-        return {
-            "success": False,
-            "reason": "`patch` binary not available (apt-get install patch)",
-        }
+        if r.returncode == 0:
+            return DryRunResult(True, "git", "", "")
+        return DryRunResult(False, "git", "", r.stderr.strip() or r.stdout.strip())
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
     except Exception as exc:
-        return {"success": False, "reason": str(exc)[:200]}
+        return DryRunResult(False, "git", "", f"git apply error: {exc}")
     finally:
-        try:
-            Path(patch_path).unlink(missing_ok=True)
-        except Exception:
-            pass
+        if patch_path:
+            try:
+                os.unlink(patch_path)
+            except OSError:
+                pass
+
+    return DryRunResult(
+        False, "all-failed", "", "no method (inmemory/git) could apply the patch"
+    )
 
 
-def apply_patch(file_path: str, diff_text: str, backup: bool = True) -> dict:
-    """Apply the patch with an atomic write. Returns {success, reason, backup_path}."""
-    target = Path(file_path)
-    if not target.is_file():
-        return {"success": False, "reason": f"no such file: {file_path}"}
+# ---------------------------------------------------------------------------
+# Apply — atomic write + backup + AST validation with rollback
+# ---------------------------------------------------------------------------
+
+def apply(
+    file_path: str,
+    diff_text: str,
+    backup: bool = True,
+    *,
+    workspace_root: Optional[str] = None,
+) -> ApplyResult:
+    """Apply the patch: validate -> apply -> atomic write -> AST check.
+
+    A `.py` file that fails to re-parse is rolled back from its backup.
+    """
+    t0 = time.time()
+
+    v = validate(file_path, diff_text, workspace_root=workspace_root)
+    if not v.valid:
+        return ApplyResult(False, file_path, reason=f"{v.stage}: {v.reason}")
+
+    file_path = v.meta.get("file_path", file_path)
+    hunks = parse_diff(diff_text)
 
     backup_path: Optional[str] = None
     if backup:
-        bp = target.with_suffix(target.suffix + ".bak")
+        backup_path = f"{file_path}.patch-backup.{int(t0)}"
         try:
-            shutil.copy2(target, bp)
-            backup_path = str(bp)
+            shutil.copy2(file_path, backup_path)
         except Exception as exc:
-            return {"success": False, "reason": f"backup fail: {exc}"}
+            return ApplyResult(False, file_path, reason=f"backup failed: {exc}")
 
+    # In-memory apply (context-verified).
     try:
-        with tempfile.NamedTemporaryFile("w", suffix=".patch", delete=False) as tmp:
-            tmp.write(diff_text)
-            patch_path = tmp.name
-
-        result = subprocess.run(
-            ["patch", "-p1", "-i", patch_path, str(target)],
-            capture_output=True,
-            text=True,
-            timeout=15,
+        with open(file_path, "r", encoding="utf-8") as fh:
+            source_lines = fh.readlines()
+        patched_lines = _apply_hunks_inmem(source_lines, hunks)
+    except ValueError as exc:
+        return ApplyResult(
+            False, file_path, backup_path=backup_path, reason=f"apply failed: {exc}"
         )
-        if result.returncode != 0:
-            # rollback
-            if backup_path:
-                shutil.copy2(backup_path, target)
-            return {
-                "success": False,
-                "reason": result.stderr[:200] or result.stdout[:200],
-                "backup_path": backup_path,
-            }
-        return {
-            "success": True,
-            "backup_path": backup_path,
-            "stdout": result.stdout[:300],
-        }
-    except FileNotFoundError:
-        return {"success": False, "reason": "`patch` binary yok"}
+
+    # Atomic write (temp + rename).
+    tmp_path = f"{file_path}.patch-tmp.{int(t0)}"
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as fh:
+            fh.writelines(patched_lines)
+        os.replace(tmp_path, file_path)
     except Exception as exc:
-        if backup_path:
-            try:
-                shutil.copy2(backup_path, target)
-            except Exception:
-                pass
-        return {"success": False, "reason": str(exc)[:200]}
-    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        return ApplyResult(
+            False, file_path, backup_path=backup_path, reason=f"write failed: {exc}"
+        )
+
+    # AST validation for Python (JS/TS via tree-sitter is a later phase).
+    if os.path.splitext(file_path)[1].lower() == ".py":
         try:
-            Path(patch_path).unlink(missing_ok=True)
-        except Exception:
-            pass
+            with open(file_path, "r", encoding="utf-8") as fh:
+                ast.parse(fh.read())
+        except SyntaxError as exc:
+            if backup_path and os.path.exists(backup_path):
+                shutil.copy2(backup_path, file_path)
+            return ApplyResult(
+                False,
+                file_path,
+                backup_path=backup_path,
+                reason=f"AST parse failed, rolled back: {exc}",
+            )
+
+    if backup:
+        _prune_old_backups(file_path)
+
+    return ApplyResult(
+        success=True,
+        file_path=file_path,
+        backup_path=backup_path,
+        hunks_applied=len(hunks),
+        lines_added=sum(h.adds for h in hunks),
+        lines_deleted=sum(h.dels for h in hunks),
+        elapsed=round(time.time() - t0, 3),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Score — deterministic quality metrics (LLM judge is a separate module)
+# ---------------------------------------------------------------------------
+
+def score(diff_text: str) -> ScoreResult:
+    """Score a patch 0-10 with human-readable teaching feedback.
+
+    Metrics: minimal_ratio (context share — higher is more minimal), hunk_count
+    (fewer is more concentrated), max_hunk_size (a huge hunk smells like a
+    rewrite).
+    """
+    hunks = parse_diff(diff_text)
+    if not hunks:
+        return ScoreResult(0.0, 0.0, 0, 0, "no valid hunk — check the unified diff format")
+
+    total_adds = sum(h.adds for h in hunks)
+    total_dels = sum(h.dels for h in hunks)
+    total_ctx = sum(h.ctx for h in hunks)
+    total = total_ctx + total_adds + total_dels
+    minimal_ratio = total_ctx / total if total else 1.0
+
+    max_hunk_size = max((len(h.lines) for h in hunks), default=0)
+    hunk_count = len(hunks)
+
+    s = 10.0
+    if hunk_count > 5:
+        s -= min(2.0, (hunk_count - 5) * 0.3)
+    if max_hunk_size > 50:
+        s -= min(2.0, (max_hunk_size - 50) * 0.05)
+    if minimal_ratio < 0.3:
+        s -= 2.0
+    elif minimal_ratio < 0.5:
+        s -= 1.0
+    s = max(0.0, round(s, 1))
+
+    teaching_bits = []
+    if hunk_count > 5:
+        teaching_bits.append(f"{hunk_count} hunks — scattered change, keep it concentrated")
+    if max_hunk_size > 50:
+        teaching_bits.append(f"largest hunk is {max_hunk_size} lines — smells like a rewrite")
+    if minimal_ratio < 0.3:
+        teaching_bits.append(
+            f"context is {minimal_ratio:.0%} — too many lines changed, not a minimal patch"
+        )
+    if not teaching_bits:
+        teaching_bits.append(
+            f"minimal patch ({hunk_count} hunk, {total_adds}+ / {total_dels}-)"
+        )
+
+    return ScoreResult(
+        score=s,
+        minimal_ratio=round(minimal_ratio, 3),
+        hunk_count=hunk_count,
+        max_hunk_size=max_hunk_size,
+        teaching=" | ".join(teaching_bits),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Back-compat dict wrappers (stable public API for the MCP tools)
+# ---------------------------------------------------------------------------
+
+def preview_patch(
+    file_path: str, diff_text: str, *, workspace_root: Optional[str] = None
+) -> dict:
+    """Dry-run the patch without touching the file. Returns {success, reason, ...}."""
+    r = dry_run(file_path, diff_text, workspace_root=workspace_root)
+    return {
+        "success": r.success,
+        "reason": r.reason,
+        "method": r.method,
+        "preview": r.preview,
+    }
+
+
+def apply_patch(
+    file_path: str,
+    diff_text: str,
+    backup: bool = True,
+    *,
+    workspace_root: Optional[str] = None,
+) -> dict:
+    """Apply the patch with an atomic write. Returns {success, reason, backup_path, ...}."""
+    r = apply(file_path, diff_text, backup=backup, workspace_root=workspace_root)
+    return {
+        "success": r.success,
+        "reason": r.reason,
+        "backup_path": r.backup_path,
+        "hunks_applied": r.hunks_applied,
+        "lines_added": r.lines_added,
+        "lines_deleted": r.lines_deleted,
+    }
 
 
 def score_patch(diff_text: str) -> dict:
     """Score a diff 0-10 on minimalism, hunk concentration and size."""
-    hunks = parse_diff(diff_text)
-    if not hunks:
-        return {
-            "score": 0.0,
-            "hunk_count": 0,
-            "minimal_ratio": 0.0,
-            "max_hunk_size": 0,
-            "teaching": "No valid hunk found — check unified diff format.",
-        }
-
-    hunk_count = len(hunks)
-    max_hunk_size = max(h.adds + h.dels for h in hunks)
-    total_changes = sum(h.adds + h.dels for h in hunks)
-    total_context = sum(len(h.lines) - (h.adds + h.dels) for h in hunks)
-    minimal_ratio = total_changes / max(1, total_changes + total_context)
-
-    # A good patch is small and concentrated: few hunks, little surrounding
-    # context, no single sprawling hunk. Each of those failings costs points.
-    score = 10.0
-    if hunk_count > 3:
-        score -= 1.5
-    if hunk_count > 6:
-        score -= 1.5
-    if max_hunk_size > 40:
-        score -= 1.0
-    if max_hunk_size > 80:
-        score -= 1.5
-    if minimal_ratio < 0.2:
-        score -= 1.0
-    score = max(0.0, min(10.0, score))
-
-    teaching = []
-    if hunk_count > 6:
-        teaching.append(
-            f"{hunk_count} hunks — scattered patch; split it into smaller ones."
-        )
-    if max_hunk_size > 80:
-        teaching.append(f"Largest hunk is {max_hunk_size} lines — extract a function.")
-    if minimal_ratio < 0.2:
-        teaching.append("Lots of context per change — the hunks can be tightened.")
-    if not teaching:
-        teaching.append("Narrow, concentrated patch.")
-
+    r = score(diff_text)
     return {
-        "score": round(score, 1),
-        "hunk_count": hunk_count,
-        "minimal_ratio": round(minimal_ratio, 2),
-        "max_hunk_size": max_hunk_size,
-        "teaching": " ".join(teaching),
+        "score": r.score,
+        "hunk_count": r.hunk_count,
+        "minimal_ratio": r.minimal_ratio,
+        "max_hunk_size": r.max_hunk_size,
+        "teaching": r.teaching,
     }
