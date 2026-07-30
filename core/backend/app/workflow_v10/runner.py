@@ -275,12 +275,42 @@ async def _run_node(
         )
         if not prompt.strip():
             return {"skipped": kind, "note": "empty prompt_template"}
-        provider = str(config.get("provider") or node.get("provider") or "groq")
+        from app.providers.cascade import PAID_PROVIDERS, get_active_providers
+
+        # Workflows run on the free tier. They execute unattended — on a
+        # schedule, from a trigger, while nobody is watching — so a fallback
+        # into a paid provider would spend the customer's money without anyone
+        # present to approve it. A paid provider named in the node is honoured
+        # only to the extent of being reported as skipped.
+        requested = str(config.get("provider") or node.get("provider") or "groq")
+        free_chain = get_active_providers(skip_paid=True)
+        if not free_chain:
+            return {
+                "skipped": kind,
+                "note": "no free provider is configured; workflows do not use paid providers",
+            }
+        skipped_paid = requested if requested in PAID_PROVIDERS else ""
+        provider = requested if requested in free_chain else free_chain[0]
+        fallbacks = tuple(p for p in free_chain if p != provider)
         model = config.get("model") or node.get("model")
         resp = await call_with_cascade(
-            prompt, primary=provider, model=model, tenant_id=tenant or "default"
+            prompt,
+            primary=provider,
+            model=model,
+            fallbacks=fallbacks,
+            tenant_id=tenant or "default",
         )
-        return {"text": getattr(resp, "text", None) or str(resp), "provider": provider}
+        out: Dict[str, Any] = {
+            "text": getattr(resp, "text", None) or str(resp),
+            "provider": getattr(resp, "provider", "") or provider,
+            "tier": "free",
+        }
+        if skipped_paid:
+            out["note"] = (
+                f"{skipped_paid} is a paid provider and workflows run on the "
+                "free tier — this step used the free chain instead"
+            )
+        return out
     if kind == "trigger":
         # Trigger carries the workflow's initial input so downstream
         # {{trigger-id}} references resolve to something.
