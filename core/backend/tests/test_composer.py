@@ -127,3 +127,31 @@ def test_composer_mcp_tool_registered():
 
     names = {t.name for t in asyncio.run(mcp_server.list_tools())}
     assert "composer_propose" in names
+
+
+def test_composer_indexes_the_workspace_itself(tmp_path, monkeypatch):
+    """Live tour: the blast-radius badge never appeared because the graph is
+    only ever QUERIED here — on a workspace nobody ran code_graph_build on it
+    stayed empty, silently dropping the signal that makes a proposal
+    trustworthy. run_composer must index before it asks."""
+    monkeypatch.setattr(codegraph.settings, "data_dir", str(tmp_path / "data"))
+    ws = tmp_path / "fresh"
+    ws.mkdir()
+    (ws / "util.py").write_text("def helper():\n    return 1\n", encoding="utf-8")
+    (ws / "app.py").write_text("def a():\n    return helper()\n", encoding="utf-8")
+    # NOTE: no codegraph.build() here — that is the whole point.
+
+    _stub_judge(monkeypatch, score=8.0)
+    diff = "@@ -1,2 +1,2 @@\n def helper():\n-    return 1\n+    return 2\n"
+    _stub_generation(
+        monkeypatch,
+        {"summary": "s", "edits": [{"path": "util.py", "unified_diff": diff}]},
+    )
+    run = asyncio.run(
+        composer.run_composer(
+            "x", workspace_root=str(ws), tenant_id="fresh", graph_key="freshkey"
+        )
+    )
+    blast = run.edits[0].blast_radius
+    assert blast.get("found") is True, "blast-radius empty on an unindexed workspace"
+    assert blast.get("total_affected", 0) >= 1
