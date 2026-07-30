@@ -202,6 +202,17 @@ async def run_composer(
     raw_edits = parsed.get("edits") if isinstance(parsed.get("edits"), list) else []
     key = graph_key or codegraph.workspace_key(workspace_root)
 
+    # Index the workspace before asking what a change would break. The graph is
+    # only ever QUERIED here, so without this the blast-radius is empty on any
+    # workspace nobody happened to run code_graph_build on — the badge that
+    # makes the proposal worth trusting silently disappears. Deterministic,
+    # local, no model call; a failure degrades the badge, never the run.
+    if raw_edits:
+        try:
+            codegraph.build(workspace_root, key=key)
+        except Exception as exc:  # noqa: BLE001 — blast-radius is an annotation
+            logger.info("composer codegraph build skipped: %s", exc)
+
     edits: List[ProposedEdit] = []
     for raw in raw_edits:
         if not isinstance(raw, dict):
