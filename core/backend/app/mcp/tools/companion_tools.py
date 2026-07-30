@@ -262,3 +262,66 @@ __all__ = [
     "meeting_get",
     "REGISTERED_TOOLS",
 ]
+
+
+# --- Workflows --------------------------------------------------------------
+
+
+@mcp_server.tool()
+@with_hooks("workflow_list")
+async def workflow_list(limit: int = 50) -> str:
+    """The workflows this tenant has saved: name, how many steps, when it was
+    last touched. Reading only — running one is not exposed here, because a
+    workflow can call out to the network and spend money, and that decision
+    belongs behind the approval path rather than a panel button."""
+    await tracker.bump("workflow_list")
+    import json as _json
+
+    from sqlmodel import Session, select
+
+    from app.db.models import SavedWorkflow
+    from app.db.session import get_engine
+
+    tenant, _user = _caller()
+    try:
+        with Session(get_engine()) as db:
+            rows = list(
+                db.exec(
+                    select(SavedWorkflow)
+                    .where(SavedWorkflow.tenant_slug == tenant)
+                    .order_by(SavedWorkflow.updated_at.desc())  # type: ignore[attr-defined]
+                    .limit(max(1, min(int(limit), 200)))
+                )
+            )
+    except Exception as exc:  # noqa: BLE001
+        return json.dumps(
+            {"ok": False, "error": "workflows_unavailable", "detail": str(exc)[:300]},
+            ensure_ascii=False,
+        )
+
+    items: List[Dict[str, Any]] = []
+    for row in rows:
+        try:
+            definition = _json.loads(row.definition_json)
+        except (ValueError, TypeError):
+            definition = {}
+        nodes = definition.get("nodes") if isinstance(definition, dict) else None
+        items.append(
+            {
+                "id": row.id,
+                "name": row.name,
+                # None, not 0: a definition we could not read has an unknown
+                # step count, and 0 would read as an empty workflow.
+                "steps": len(nodes) if isinstance(nodes, list) else None,
+                "created_by": row.created_by,
+                "updated_at": row.updated_at,
+            }
+        )
+    return json.dumps(
+        {"ok": True, "count": len(items), "workflows": items},
+        ensure_ascii=False,
+        default=str,
+    )
+
+
+REGISTERED_TOOLS.append("workflow_list")

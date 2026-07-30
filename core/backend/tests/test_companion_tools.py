@@ -162,3 +162,48 @@ def test_tools_are_registered(name):
 
     names = {t.name for t in asyncio.run(srv.list_tools())}
     assert name in names
+
+
+def test_workflow_list_is_scoped_and_counts_steps(as_tenant):
+    import json as _json
+
+    from sqlmodel import Session
+
+    from app.db.models import SavedWorkflow
+    from app.db.session import get_engine
+
+    with Session(get_engine()) as db:
+        db.add(
+            SavedWorkflow(
+                tenant_slug="wf-corp",
+                name="nightly digest",
+                definition_json=_json.dumps({"nodes": [{"id": "a"}, {"id": "b"}]}),
+                created_by="alice",
+            )
+        )
+        db.add(
+            SavedWorkflow(
+                tenant_slug="other-corp",
+                name="theirs",
+                definition_json=_json.dumps({"nodes": []}),
+                created_by="bob",
+            )
+        )
+        # A definition we cannot read has an UNKNOWN step count, not zero.
+        db.add(
+            SavedWorkflow(
+                tenant_slug="wf-corp",
+                name="corrupt",
+                definition_json="{not json",
+                created_by="alice",
+            )
+        )
+        db.commit()
+
+    as_tenant("wf-corp")
+    out = _call(ct.workflow_list())
+    assert out["ok"] is True
+    names = {w["name"]: w for w in out["workflows"]}
+    assert "theirs" not in names, "another tenant's workflow leaked into the panel"
+    assert names["nightly digest"]["steps"] == 2
+    assert names["corrupt"]["steps"] is None, "unreadable ≠ empty"
