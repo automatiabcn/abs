@@ -145,7 +145,14 @@ class ScoreResult:
 # Parser — unified diff reader (lenient: never raises, no-hunk -> [])
 # ---------------------------------------------------------------------------
 
-_HUNK_HEADER_RE = re.compile(r"^@@\s+-(\d+)(?:,(\d+))?\s+\+(\d+)(?:,(\d+))?\s+@@(.*)$")
+# A leading space is tolerated on the header itself. A model told "every line
+# starts with exactly one marker character" applies that rule to the @@ line
+# too and emits " @@ -1,4 +1,4 @@" — measured on a live run, where the whole
+# patch was then refused as having no header at all. The full header shape is
+# still required, so a context line matches only if it is itself an @@ header.
+_HUNK_HEADER_RE = re.compile(
+    r"^ ?@@\s+-(\d+)(?:,(\d+))?\s+\+(\d+)(?:,(\d+))?\s+@@(.*)$"
+)
 
 
 def parse_diff(text: str) -> List[Hunk]:
@@ -217,7 +224,65 @@ def parse_diff(text: str) -> List[Hunk]:
     if current is not None:
         hunks.append(current)
 
-    return hunks
+    return [_unshift(h) for h in hunks]
+
+
+def normalize_diff(text: str) -> str:
+    """Re-emit a diff in the exact shape the engine read it in.
+
+    The parser repairs what models actually write (a shifted hunk, a header
+    with a leading space). Everything downstream — the Judge that scores the
+    change, the panel that shows it, the editor that applies it — must see the
+    SAME diff the engine would apply, or the score on screen belongs to a
+    different change than the one being approved. Measured: the repaired patch
+    applied cleanly while the Judge, handed the raw text, could not read a
+    single added line and scored it 0.
+
+    Returns the input unchanged when there is nothing to parse, so a caller can
+    always use the result.
+    """
+    hunks = parse_diff(text)
+    if not hunks:
+        return text
+    out: List[str] = []
+    for h in hunks:
+        section = f" {h.section}" if h.section else ""
+        out.append(
+            f"@@ -{h.old_start},{h.old_count} +{h.new_start},{h.new_count} @@{section}"
+        )
+        out.extend(f"{line.op}{line.text}" for line in h.lines)
+    return "\n".join(out) + "\n"
+
+
+def _unshift(hunk: Hunk) -> Hunk:
+    """Undo a uniform one-column shift of the whole hunk.
+
+    Shown a worked example, models line the markers up under each other and
+    emit " -    return 1" / " +    return 2" — every line pushed one column
+    right, so each reads as context whose content happens to start with a
+    marker. Measured on a live run.
+
+    The correction only applies when the hunk contains NO real '+'/'-' line at
+    all (a hunk with no additions and no removals is not a change) and at least
+    one shifted one. That combination cannot occur in a well-formed diff, so a
+    YAML list or a Markdown bullet — context lines that legitimately begin with
+    '-' — is never dedented, because such a hunk still has its own real marker
+    lines.
+    """
+    if not hunk.lines:
+        return hunk
+    if any(line.op in ("+", "-") for line in hunk.lines):
+        return hunk
+    shifted = [line for line in hunk.lines if line.text[:1] in ("+", "-")]
+    if not shifted:
+        return hunk
+    hunk.lines = [
+        HunkLine(line.text[0], line.text[1:])
+        if line.text[:1] in ("+", "-", " ")
+        else line
+        for line in hunk.lines
+    ]
+    return hunk
 
 
 # ---------------------------------------------------------------------------
