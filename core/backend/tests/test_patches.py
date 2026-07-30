@@ -144,3 +144,27 @@ def test_dry_run_refuses_when_content_matches_nowhere(tmp_path):
     diff = "@@ -1,2 +1,2 @@\n line1\n-NOT-IN-FILE\n+new\n"
     d = dry_run(str(f), diff, workspace_root=str(tmp_path))
     assert not d.success
+
+
+def test_dry_run_tolerates_trailing_blank_context_at_eof(tmp_path):
+    """Live tour: groq ended the hunk with a blank context line past EOF —
+    a trailing-newline artifact, not a real line. A byte-exact patch must not
+    be rejected over it (and the editor's applier already tolerates it)."""
+    f = _write(tmp_path, "util.py", "def helper():\n    return 1\n")
+    diff = (
+        "--- util.py\t2024-01-01 00:00:00.00\n"
+        "+++ util.py\t2024-01-01 00:00:00.00\n"
+        "@@ -1,5 +1,5 @@\n def helper():\n-    return 1\n+    return 2\n \n"
+    )
+    d = dry_run(str(f), diff, workspace_root=str(tmp_path))
+    assert d.success, d.reason
+    assert d.method == "inmemory"  # not the fuzzy git fallback
+    r = apply(str(f), diff, workspace_root=str(tmp_path))
+    assert r.success, r.reason
+    assert f.read_text(encoding="utf-8") == "def helper():\n    return 2\n"
+
+
+def test_blank_context_inside_a_hunk_is_still_required(tmp_path):
+    f = _write(tmp_path, "mid.txt", "a\nb\nc\n")
+    diff = "@@ -1,3 +1,3 @@\n a\n \n-b\n+B\n"
+    assert not dry_run(str(f), diff, workspace_root=str(tmp_path)).success
