@@ -305,3 +305,74 @@ def test_a_tenant_namespaced_breaker_lands_on_the_right_provider(monkeypatch):
     )
     out = _call(ep.providers_chain())
     assert out["chain"][0]["breaker"] == "open"
+
+
+# --- title bar ---------------------------------------------------------------
+
+
+def _title(monkeypatch, *, chain, configured, breakers=None, throttled=(), quota=None,
+           byok=frozenset()):
+    monkeypatch.setattr("app.providers.cascade.get_active_providers", lambda **_: list(chain))
+    monkeypatch.setattr("app.providers.cascade.is_configured", lambda n: n in configured)
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.tenant_configured_providers", lambda **_: set(byok)
+    )
+    monkeypatch.setattr("app.cascade.breaker.default_breaker.snapshot", lambda: breakers or {})
+    monkeypatch.setattr(
+        "app.cascade.quota_meter.is_throttled",
+        lambda name, tenant_id=None: (name in throttled, "rpd" if name in throttled else ""),
+    )
+    if quota is not None:
+        monkeypatch.setattr(
+            "app.cascade.quota_meter.get_all_status", lambda **_: {"providers": quota}
+        )
+    return _call(ep.title_status())
+
+
+def test_the_title_counts_only_providers_that_could_answer_now(monkeypatch):
+    """The count is the point: it moves as providers are added, run out, or
+    trip. A provider with no key, an open breaker or a throttle cannot answer."""
+    out = _title(
+        monkeypatch,
+        chain=["groq", "cerebras", "cohere", "openrouter"],
+        configured={"groq", "cerebras", "cohere"},   # openrouter has no key
+        breakers={"acme|cerebras": {"state": "open"}},
+        throttled={"cohere"},
+    )
+    assert out["providers"]["ready"] == 1
+    assert out["providers"]["names"] == ["groq"]
+    assert out["providers"]["total"] == 4
+
+
+def test_nothing_run_yet_is_not_zero_percent_delegated(monkeypatch):
+    """"0% delegated" and "nothing has run yet" are different statements."""
+    out = _title(
+        monkeypatch, chain=["groq"], configured={"groq"},
+        quota={"groq": {"total_requests": 0}},
+    )
+    assert out["free_share"] is None
+    assert out["requests_today"] == 0
+
+
+def test_the_free_share_is_counted_from_real_requests(monkeypatch):
+    out = _title(
+        monkeypatch,
+        chain=["groq", "anthropic"],
+        configured={"groq", "anthropic"},
+        quota={"groq": {"total_requests": 7}, "anthropic": {"total_requests": 3}},
+    )
+    assert out["free_share"] == 70.0
+    assert out["requests_today"] == 10
+
+
+def test_a_broken_provider_lookup_leaves_the_bar_honest(monkeypatch):
+    def _boom(**_):
+        raise RuntimeError("registry down")
+
+    monkeypatch.setattr("app.providers.cascade.get_active_providers", _boom)
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.tenant_configured_providers", lambda **_: set()
+    )
+    out = _call(ep.title_status())
+    assert out["ok"] is False
+    assert out["providers"] is None, "unknown must not render as a count"
