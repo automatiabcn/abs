@@ -104,3 +104,28 @@ async def test_judge_file_missing_file_is_graceful():
     result = await sj.judge_file("/nonexistent/nope.py")
     assert result["combined_score"] == 0.0
     assert result["ast_score"] is None
+
+
+@pytest.mark.asyncio
+async def test_llm_judge_sees_the_diff_not_just_added_lines(monkeypatch):
+    """Live tour: a correct one-line edit scored 2/10 because the judge only saw
+    `return 2` with no idea what it replaced. The prompt must carry the diff and
+    the file, or the moat feature grades fragments instead of changes."""
+    from app.judge import senior as sj
+
+    seen = {}
+
+    async def _capture(prompt, **kwargs):
+        seen["prompt"] = prompt
+        return type("R", (), {"text": '{"score": 9.0, "teaching": "ok"}'})()
+
+    fake = AsyncMock()
+    fake.call = _capture
+    monkeypatch.setattr(sj, "get_provider", lambda _: fake)
+
+    diff = "--- util.py\n+++ util.py\n@@ -1,2 +1,2 @@\n def helper():\n-    return 1\n+    return 2\n"
+    result = await judge_diff(diff, "util.py")
+
+    assert "-    return 1" in seen["prompt"], "the judge never saw what was replaced"
+    assert "util.py" in seen["prompt"], "the judge never saw which file it lands in"
+    assert result["llm_score"] == 9.0

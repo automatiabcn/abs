@@ -427,9 +427,24 @@ class AmbiguousHunkError(ValueError):
     """
 
 
-def _hunk_old_block(h: Hunk) -> List[str]:
+def _trim_trailing_blank_context(lines: List[HunkLine]) -> List[HunkLine]:
+    """Drop a trailing run of blank context lines from a hunk.
+
+    Models habitually end a hunk with a blank context line — an artifact of the
+    trailing newline, not a real line of the file. At end-of-file that phantom
+    line has nothing to match, and a strict engine rejects an otherwise
+    byte-exact patch. Only ever used as a RETRY after the untrimmed hunk failed
+    to place, so a genuine blank line in the middle is still required.
+    """
+    out = list(lines)
+    while out and out[-1].is_ctx and out[-1].text == "":
+        out.pop()
+    return out
+
+
+def _hunk_old_block(h: Hunk, lines: Optional[List[HunkLine]] = None) -> List[str]:
     """The lines a hunk expects to find in the source (context + deletions)."""
-    return [hl.text for hl in h.lines if not hl.is_add]
+    return [hl.text for hl in (lines if lines is not None else h.lines) if not hl.is_add]
 
 
 def _block_matches_at(source_lines: List[str], block: List[str], at: int) -> bool:
@@ -440,7 +455,9 @@ def _block_matches_at(source_lines: List[str], block: List[str], at: int) -> boo
     )
 
 
-def _locate_hunk(source_lines: List[str], h: Hunk, src_idx: int) -> int:
+def _locate_hunk(
+    source_lines: List[str], h: Hunk, src_idx: int, block: Optional[List[str]] = None
+) -> int:
     """Where the hunk's old block actually sits.
 
     The declared position wins when it matches. Otherwise the block is searched
@@ -449,7 +466,7 @@ def _locate_hunk(source_lines: List[str], h: Hunk, src_idx: int) -> int:
     local applier already relocates; the server must agree with it). The match
     must be UNIQUE: zero or two-plus candidates raise instead of guessing.
     """
-    block = _hunk_old_block(h)
+    block = block if block is not None else _hunk_old_block(h)
     declared = h.old_start - 1  # 0-indexed
     if not block:
         # pure-insertion hunk: trust the declared spot, clamped into range
@@ -485,14 +502,27 @@ def _apply_hunks_inmem(source_lines: List[str], hunks: List[Hunk]) -> List[str]:
     src_idx = 0  # 0-indexed cursor into source
 
     for h in hunks:
-        target = _locate_hunk(source_lines, h, src_idx)
+        hunk_lines = list(h.lines)
+        try:
+            target = _locate_hunk(source_lines, h, src_idx)
+        except AmbiguousHunkError:
+            raise
+        except ValueError:
+            # Retry without the trailing blank context a model tacked on; if
+            # that is not the problem, the original failure stands.
+            hunk_lines = _trim_trailing_blank_context(h.lines)
+            if len(hunk_lines) == len(h.lines):
+                raise
+            target = _locate_hunk(
+                source_lines, h, src_idx, _hunk_old_block(h, hunk_lines)
+            )
         while src_idx < target:
             if src_idx >= len(source_lines):
                 raise ValueError(f"source too short: hunk @@ -{h.old_start} unreachable")
             result.append(source_lines[src_idx])
             src_idx += 1
 
-        for hl in h.lines:
+        for hl in hunk_lines:
             if hl.is_ctx:
                 if src_idx >= len(source_lines):
                     raise ValueError(
