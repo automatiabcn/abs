@@ -27,6 +27,17 @@ class ProposedEdit(BaseModel):
     judge_score: Optional[float] = Field(
         default=None, description="Senior-Judge combined score 0-10 (None if not graded)"
     )
+    judge_correctness: Optional[float] = Field(
+        default=None,
+        description="The model leg: is this a good CHANGE (None if the model did not answer)",
+    )
+    judge_style: Optional[float] = Field(
+        default=None,
+        description="The AST fingerprint leg: how well it matches the house style",
+    )
+    judge_notes: List[str] = Field(
+        default_factory=list, description="Teaching notes behind the score"
+    )
     blast_radius: Dict[str, Any] = Field(
         default_factory=dict, description="code_graph blast-radius: what this change may affect"
     )

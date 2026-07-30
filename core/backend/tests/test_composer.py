@@ -35,9 +35,14 @@ def _stub_generation(monkeypatch, parsed, tried=("groq",), meta=None):
     monkeypatch.setattr(composer, "_generate_edits", _fake)
 
 
-def _stub_judge(monkeypatch, score=8.0):
+def _stub_judge(monkeypatch, score=8.0, llm=None, ast=None, teaching=None):
     async def _fake_judge(diff, path=None):
-        return {"combined_score": score}
+        return {
+            "combined_score": score,
+            "llm_score": llm if llm is not None else score,
+            "ast_score": ast,
+            "teaching": teaching or [],
+        }
 
     monkeypatch.setattr(composer, "judge_diff", _fake_judge)
 
@@ -155,3 +160,63 @@ def test_composer_indexes_the_workspace_itself(tmp_path, monkeypatch):
     blast = run.edits[0].blast_radius
     assert blast.get("found") is True, "blast-radius empty on an unindexed workspace"
     assert blast.get("total_affected", 0) >= 1
+
+
+def test_a_style_gap_does_not_gate_a_correct_edit(workspace, monkeypatch):
+    """The gate exists to stop DANGEROUS changes reaching the developer
+    unreviewed. Measured live: a correct minimal edit scored 8.0 from the model
+    and 0.0 from the style fingerprint, blending to 3.2 — and the run was gated
+    as high risk for having no docstring."""
+    _stub_judge(monkeypatch, score=3.2, llm=8.0, ast=0.0,
+                teaching=["docstring_ratio: 0.00 vs target 0.60"])
+    diff = "@@ -1,2 +1,2 @@\n def helper():\n-    return 1\n+    return 2\n"
+    _stub_generation(
+        monkeypatch,
+        {"summary": "x", "edits": [{"path": "util.py", "unified_diff": diff, "confidence": 0.9}]},
+    )
+    run = asyncio.run(
+        composer.run_composer(
+            "x", workspace_root=str(workspace), tenant_id="wtest", graph_key="wtest"
+        )
+    )
+    assert run.risk == "low", "style is advice, not danger"
+    assert run.requires_approval is False
+    e = run.edits[0]
+    assert e.judge_score == 3.2 and e.judge_correctness == 8.0 and e.judge_style == 0.0
+    assert e.judge_notes, "the style note must still travel with the edit"
+
+
+def test_a_real_correctness_problem_still_gates(workspace, monkeypatch):
+    _stub_judge(monkeypatch, score=2.0, llm=2.0, ast=2.0)
+    diff = "@@ -1,2 +1,2 @@\n def helper():\n-    return 1\n+    return 2\n"
+    _stub_generation(
+        monkeypatch,
+        {"summary": "x", "edits": [{"path": "util.py", "unified_diff": diff, "confidence": 0.9}]},
+    )
+    run = asyncio.run(
+        composer.run_composer(
+            "x", workspace_root=str(workspace), tenant_id="wtest", graph_key="wtest"
+        )
+    )
+    assert run.risk == "high" and run.requires_approval is True
+
+
+def test_without_a_model_leg_the_blend_still_gates(workspace, monkeypatch):
+    """No correctness signal is not permission to wave an edit through."""
+    _stub_judge(monkeypatch, score=3.0, llm=None, ast=3.0)
+
+    async def _judge_no_llm(diff, path=None):
+        return {"combined_score": 3.0, "llm_score": None, "ast_score": 3.0, "teaching": []}
+
+    monkeypatch.setattr(composer, "judge_diff", _judge_no_llm)
+    diff = "@@ -1,2 +1,2 @@\n def helper():\n-    return 1\n+    return 2\n"
+    _stub_generation(
+        monkeypatch,
+        {"summary": "x", "edits": [{"path": "util.py", "unified_diff": diff}]},
+    )
+    run = asyncio.run(
+        composer.run_composer(
+            "x", workspace_root=str(workspace), tenant_id="wtest", graph_key="wtest"
+        )
+    )
+    assert run.risk == "high"
