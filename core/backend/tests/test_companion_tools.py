@@ -207,3 +207,38 @@ def test_workflow_list_is_scoped_and_counts_steps(as_tenant):
     assert "theirs" not in names, "another tenant's workflow leaked into the panel"
     assert names["nightly digest"]["steps"] == 2
     assert names["corrupt"]["steps"] is None, "unreadable ≠ empty"
+
+
+def test_a_cron_workflow_is_reported_as_unscheduled(as_tenant):
+    """The ontology validates a cron trigger and a template even ships one, but
+    nothing in this product runs a scheduler. Listing the expression without
+    that fact would promise an automation that never happens."""
+    import json as _json
+
+    from sqlmodel import Session
+
+    from app.db.models import SavedWorkflow
+    from app.db.session import get_engine
+
+    with Session(get_engine()) as db:
+        db.add(
+            SavedWorkflow(
+                tenant_slug="cron-corp",
+                name="monday digest",
+                definition_json=_json.dumps(
+                    {
+                        "nodes": [{"id": "a"}],
+                        "triggers": [{"kind": "cron", "id": "t1", "cron_expr": "0 9 * * 1"}],
+                    }
+                ),
+                created_by="alice",
+            )
+        )
+        db.commit()
+
+    as_tenant("cron-corp")
+    out = _call(ct.workflow_list())
+    wf = out["workflows"][0]
+    assert wf["cron_expr"] == "0 9 * * 1"
+    assert wf["scheduler_runs_it"] is False
+    assert "nothing fires it" in out["note"]
