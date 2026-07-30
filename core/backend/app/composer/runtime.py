@@ -166,11 +166,25 @@ def _clamp01(value: Any) -> float:
 
 
 def _derive_risk(edits: List[ProposedEdit]) -> Tuple[str, bool]:
-    """Deterministic risk from blast-radius, judge score and dry-run validity."""
+    """Deterministic risk from blast-radius, CORRECTNESS and dry-run validity.
+
+    The gate exists so a dangerous change cannot reach the developer unreviewed.
+    House style is not danger. The Senior Judge blends 60% AST fingerprint
+    (docstrings, type hints) with 40% model opinion, so gating on the blend
+    stopped correct, minimal edits for having no docstring — the exact edits the
+    judge is prompted to score highly. Measured: model 8.0, fingerprint 0.0,
+    blend 3.2, run gated as high risk.
+
+    So the quality half of the gate reads the CORRECTNESS leg, and style travels
+    with the edit as teaching notes instead. When the model leg is missing the
+    blend is the only signal there is, and it is used rather than waving the
+    edit through.
+    """
     risk = "low"
     for e in edits:
         affected = int((e.blast_radius or {}).get("total_affected", 0) or 0)
-        low_quality = e.judge_score is not None and e.judge_score < _JUDGE_LOW
+        quality = e.judge_correctness if e.judge_correctness is not None else e.judge_score
+        low_quality = quality is not None and quality < _JUDGE_LOW
         if affected >= _BLAST_HIGH or low_quality or not e.dry_run_ok:
             return "high", True  # a single dangerous edit gates the whole run
         if affected >= _BLAST_MEDIUM:
@@ -228,9 +242,16 @@ async def run_composer(
             dry_ok = dr.success
 
         judge_score: Optional[float] = None
+        judge_correctness: Optional[float] = None
+        judge_style: Optional[float] = None
+        judge_notes: List[str] = []
         try:
             jd = await judge_diff(diff, path)
             judge_score = jd.get("combined_score")
+            judge_correctness = jd.get("llm_score")
+            judge_style = jd.get("ast_score")
+            notes = jd.get("teaching")
+            judge_notes = list(notes) if isinstance(notes, list) else []
         except Exception as exc:  # noqa: BLE001 — grading is best-effort
             logger.debug("composer judge skipped for %s: %s", path, exc)
 
@@ -242,6 +263,9 @@ async def run_composer(
                 unified_diff=diff,
                 rationale=str(raw.get("rationale") or ""),
                 judge_score=judge_score,
+                judge_correctness=judge_correctness,
+                judge_style=judge_style,
+                judge_notes=judge_notes,
                 blast_radius=blast,
                 confidence=_clamp01(raw.get("confidence")),
                 validation={"valid": v.valid, "stage": v.stage, "reason": v.reason},
