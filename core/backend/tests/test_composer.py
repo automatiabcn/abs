@@ -28,9 +28,9 @@ def workspace(tmp_path, monkeypatch):
     return ws
 
 
-def _stub_generation(monkeypatch, parsed, tried=("groq",)):
+def _stub_generation(monkeypatch, parsed, tried=("groq",), meta=None):
     async def _fake(task, *, tenant_id, project_slug, user_subject):
-        return parsed, list(tried)
+        return parsed, list(tried), dict(meta or {})
 
     monkeypatch.setattr(composer, "_generate_edits", _fake)
 
@@ -51,6 +51,7 @@ def test_proposal_carries_grade_blast_and_validation(workspace, monkeypatch):
         {"summary": "bump helper", "edits": [
             {"path": "util.py", "unified_diff": diff, "rationale": "why", "confidence": 0.9},
         ]},
+        meta={"provider": "cerebras", "cost_usd": 0.0004},
     )
     run = asyncio.run(
         composer.run_composer(
@@ -60,6 +61,9 @@ def test_proposal_carries_grade_blast_and_validation(workspace, monkeypatch):
     )
     assert run.run_id.startswith("cmp-")
     assert run.providers_tried == ["groq"]
+    # Cost-HUD signals pass straight through to the editor.
+    assert run.provider == "cerebras"
+    assert run.cost_usd == 0.0004
     assert len(run.edits) == 1
     e = run.edits[0]
     assert e.judge_score == 8.5
