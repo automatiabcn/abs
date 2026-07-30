@@ -30,6 +30,7 @@ from app.api.v1.agentic_workflows import (
 )  # Workflow Designer
 from app.api.v1.consent import router as v1_consent_router  # Consent Ledger
 from app.auth.oauth.routes import router as oauth_router
+from app.auth.device import router as device_auth_router
 from app.api import beta_admin as beta_admin_router
 from app.api import beta_portal as beta_portal_router
 from app.api import billing_portal as billing_portal_router
@@ -474,6 +475,7 @@ app.include_router(
     auth_router.claim_v1_router
 )  # /v1/auth/magic-claim (SPA /activate page)
 app.include_router(oauth_router)  # OAuth 2.1 + PKCE + JWKS
+app.include_router(device_auth_router)  # device-grant sign-in (ABS editor)
 app.include_router(v1_projects_router)  # MCP gateway v1
 app.include_router(v1_rag_router)  # RAG ingest/query
 app.include_router(v1_agents_router)  # Agentic Growth — Agent Registry + Runtime

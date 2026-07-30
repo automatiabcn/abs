@@ -45,6 +45,10 @@ class ComposerRun(BaseModel):
     risk: str = "low"  # low | medium | high
     requires_approval: bool = False
     providers_tried: List[str] = Field(default_factory=list)
+    provider: str = Field(default="", description="Provider that answered (winner)")
+    cost_usd: Optional[float] = Field(
+        default=None, description="Estimated generation cost in USD (None if unknown)"
+    )
     degraded: bool = False  # the model produced no usable edits
     tenant_slug: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

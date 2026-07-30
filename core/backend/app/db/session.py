@@ -159,6 +159,7 @@ def init_db() -> None:
     from app.db import tenant_models  # noqa: F401
     from app.db import growth_models  # noqa: F401  # Agentic Growth domain
     from app.auth.oauth import models as _oauth_models  # noqa: F401
+    from app.auth import device_models as _device_models  # noqa: F401
 
     engine = get_engine()
     SQLModel.metadata.create_all(engine)
