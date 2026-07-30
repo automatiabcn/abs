@@ -28,8 +28,11 @@ def workspace(tmp_path, monkeypatch):
     return ws
 
 
-def _stub_generation(monkeypatch, parsed, tried=("groq",), meta=None):
-    async def _fake(task, *, tenant_id, project_slug, user_subject):
+def _stub_generation(monkeypatch, parsed, tried=("groq",), meta=None, seen=None):
+    async def _fake(task, *, tenant_id, project_slug, user_subject, files=None, contents=None):
+        if seen is not None:
+            seen["files"] = files
+            seen["contents"] = contents
         return parsed, list(tried), dict(meta or {})
 
     monkeypatch.setattr(composer, "_generate_edits", _fake)
@@ -220,3 +223,128 @@ def test_without_a_model_leg_the_blend_still_gates(workspace, monkeypatch):
         )
     )
     assert run.risk == "high"
+
+
+def test_the_model_is_told_which_files_exist(workspace, monkeypatch):
+    """A model asked for a "workspace-relative path" and never shown the
+    workspace invents plausible ones — a live run proposed src/utils.js in a
+    workspace whose only files were util.py and app.py."""
+    _stub_judge(monkeypatch, score=8.0)
+    seen: dict = {}
+    diff = "@@ -1,2 +1,2 @@\n def helper():\n-    return 1\n+    return 2\n"
+    _stub_generation(
+        monkeypatch,
+        {"summary": "x", "edits": [{"path": "util.py", "unified_diff": diff}]},
+        seen=seen,
+    )
+    asyncio.run(
+        composer.run_composer(
+            "x", workspace_root=str(workspace), tenant_id="wtest", graph_key="wtest"
+        )
+    )
+    assert sorted(seen["files"]) == ["app.py", "util.py"]
+
+
+def test_workspace_listing_skips_the_directories_nobody_edits(tmp_path):
+    import os
+
+    ws = tmp_path / "ws"
+    (ws / "node_modules" / "left-pad").mkdir(parents=True)
+    (ws / "node_modules" / "left-pad" / "index.js").write_text("x", encoding="utf-8")
+    (ws / ".git").mkdir()
+    (ws / ".git" / "config").write_text("x", encoding="utf-8")
+    (ws / "src").mkdir()
+    (ws / "src" / "main.py").write_text("x", encoding="utf-8")
+    (ws / "logo.png").write_bytes(b"\x89PNG")
+
+    assert composer.workspace_files(str(ws)) == [os.path.join("src", "main.py")]
+
+
+def test_the_prompt_names_the_files_and_forbids_inventing_one():
+    prompt = composer._prompt("do something", ["util.py", "app.py"])
+    assert "util.py" in prompt and "app.py" in prompt
+    assert "do not invent a path" in prompt
+
+
+def test_a_truncated_listing_says_so():
+    """Telling a model "these are the files" when the list was cut off is a
+    false statement about the workspace."""
+    many = [f"f{i}.py" for i in range(composer._MAX_LISTED_FILES)]
+    assert "stops at" in composer._prompt("t", many)
+    assert "stops at" not in composer._prompt("t", ["only.py"])
+
+
+def test_a_missing_file_is_refused_with_the_reason_named(workspace, monkeypatch):
+    """The editor renders validation.reason; the engine must keep saying which
+    stage refused, so the badge can read "not in this workspace" instead of the
+    outcome ("dry-run failed")."""
+    _stub_judge(monkeypatch, score=8.0)
+    diff = "@@ -1,2 +1,2 @@\n def helper():\n-    return 1\n+    return 2\n"
+    _stub_generation(
+        monkeypatch,
+        {"summary": "x", "edits": [{"path": "src/utils.js", "unified_diff": diff}]},
+    )
+    run = asyncio.run(
+        composer.run_composer(
+            "x", workspace_root=str(workspace), tenant_id="wtest", graph_key="wtest"
+        )
+    )
+    edit = run.edits[0]
+    assert edit.dry_run_ok is False
+    assert edit.validation["valid"] is False
+    assert "no such file" in edit.validation["reason"]
+
+
+def test_the_model_is_shown_the_lines_it_must_match(workspace, monkeypatch):
+    """Knowing a file's name is not knowing its lines: given only a listing the
+    model wrote a diff against the file it imagined — right path, invented
+    context, patch refused (measured live: valid=True, dry_run_ok=False)."""
+    _stub_judge(monkeypatch, score=8.0)
+    seen: dict = {}
+    diff = "@@ -1,2 +1,2 @@\n def helper():\n-    return 1\n+    return 2\n"
+    _stub_generation(
+        monkeypatch,
+        {"summary": "x", "edits": [{"path": "util.py", "unified_diff": diff}]},
+        seen=seen,
+    )
+    asyncio.run(
+        composer.run_composer(
+            "make helper return 2",
+            workspace_root=str(workspace),
+            tenant_id="wtest",
+            graph_key="wtest",
+        )
+    )
+    sent = dict(seen["contents"])
+    assert "util.py" in sent
+    assert "def helper():" in sent["util.py"], "the real lines, not just the name"
+
+
+def test_the_file_the_task_names_is_ranked_first(tmp_path):
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    (ws / "billing.py").write_text("def charge():\n    pass\n", encoding="utf-8")
+    (ws / "unrelated.py").write_text("def other():\n    pass\n", encoding="utf-8")
+    ranked = composer.relevant_files(
+        str(ws), "fix the charge in billing", ["unrelated.py", "billing.py"]
+    )
+    assert ranked[0][0] == "billing.py"
+
+
+def test_context_stays_inside_its_budget(tmp_path):
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    names = []
+    for i in range(30):
+        name = f"f{i:02d}.py"
+        (ws / name).write_text("x = 1\n" * 400, encoding="utf-8")
+        names.append(name)
+    picked = composer.relevant_files(str(ws), "touch f00", names)
+    assert len(picked) <= composer._MAX_CONTEXT_FILES
+    assert sum(len(b) for _, b in picked) <= composer._MAX_CONTEXT_CHARS
+
+
+def test_the_prompt_carries_the_current_lines():
+    prompt = composer._prompt("t", ["util.py"], [("util.py", "def helper():\n    return 1\n")])
+    assert "def helper():" in prompt
+    assert "character for character" in prompt
