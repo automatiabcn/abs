@@ -33,16 +33,36 @@ def _ast_score(metrics: Dict[str, float], persona: Dict[str, float]) -> float:
     return max(0.0, min(10.0, 10.0 * (1.0 - 2.0 * distance)))
 
 
-async def _llm_judge(added_code: str) -> Dict[str, Any]:
-    """Ask the LLM to grade code quality."""
+async def _llm_judge(
+    added_code: str,
+    diff_text: Optional[str] = None,
+    file_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Ask the LLM to grade the CHANGE — the diff, not an orphan fragment.
+
+    Grading added lines alone systematically under-scores correct edits: a
+    one-line ``return 2`` shown without what it replaced has no naming to judge
+    and no error handling to check, so it reads as a snippet with everything
+    missing (the live editor tour scored exactly such a change 2/10). Given the
+    unified diff and the file it lands in, the score answers the question the
+    editor actually puts on every proposal: is this a good change?
+    """
     if not added_code.strip():
         return {"score": 0.0, "teaching": ""}
 
+    where = f" to `{file_path}`" if file_path else ""
+    if diff_text and diff_text.strip():
+        subject = f"UNIFIED DIFF{where}:\n{diff_text[:4000]}"
+    else:
+        subject = f"ADDED CODE{where}:\n{added_code[:4000]}"
     prompt = (
-        "Rate this code change from 0 to 10. Criteria: naming, error handling, "
-        "readability, minimalism. Answer with short JSON only:\n"
+        "You are reviewing one code change. Rate the CHANGE from 0 to 10 — not "
+        "how complete the snippet looks on its own. A small, correct, minimal "
+        "edit deserves a high score; judge naming, error handling, readability "
+        "and minimalism only where the change actually touches them. Answer "
+        "with short JSON only:\n"
         '{"score": 7.5, "teaching": "1-2 brief suggestions"}\n\n'
-        f"CODE:\n{added_code[:4000]}"
+        f"{subject}"
     )
     try:
         provider = get_provider("groq")
@@ -77,7 +97,7 @@ async def judge_diff(diff_text: str, file_path: Optional[str] = None) -> Dict[st
     persona = load_persona()
     ast_s = _ast_score(metrics, persona) if metrics else 0.0
 
-    llm = await _llm_judge(added_code)
+    llm = await _llm_judge(added_code, diff_text=diff_text, file_path=file_path)
     llm_s = float(llm.get("score", 0.0))
 
     if metrics:
