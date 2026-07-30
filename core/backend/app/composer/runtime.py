@@ -39,7 +39,165 @@ _BLAST_MEDIUM = 3
 _JUDGE_LOW = 5.0
 
 
-def _prompt(task: str) -> str:
+_SKIP_DIRS = frozenset(
+    {
+        "node_modules",
+        ".git",
+        ".venv",
+        "venv",
+        "__pycache__",
+        "dist",
+        "build",
+        ".next",
+        ".pytest_cache",
+        ".cache",
+        "out",
+        "target",
+        ".idea",
+        ".vscode",
+    }
+)
+_CODE_SUFFIXES = frozenset(
+    {
+        ".py", ".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs", ".go", ".rs", ".rb",
+        ".java", ".kt", ".swift", ".c", ".h", ".cc", ".cpp", ".hpp", ".cs", ".php",
+        ".sh", ".sql", ".css", ".scss", ".html", ".vue", ".svelte", ".md",
+        ".json", ".yaml", ".yml", ".toml",
+    }
+)
+_MAX_LISTED_FILES = 200
+
+
+def workspace_files(root: str, *, limit: int = _MAX_LISTED_FILES) -> List[str]:
+    """Workspace-relative paths of the code files a proposal may touch.
+
+    The model was asked for a "workspace-relative path" without ever being told
+    which paths exist, so it invented plausible ones (a proposal for
+    ``src/utils.js`` in a workspace whose only file is ``util.py``). The engine
+    caught it, but a proposal against a file that is not there is wasted work
+    and reads as a product that does not know your repository.
+
+    Deterministic, local, no model call. Sorted so the same workspace always
+    produces the same prompt (a prompt that shuffles defeats caching and makes
+    runs unreproducible).
+    """
+    out: List[str] = []
+    try:
+        base = os.path.realpath(root)
+    except OSError:
+        return out
+    if not os.path.isdir(base):
+        return out
+    for dirpath, dirnames, filenames in os.walk(base):
+        dirnames[:] = sorted(
+            d for d in dirnames if d not in _SKIP_DIRS and not d.startswith(".")
+        )
+        for name in sorted(filenames):
+            if os.path.splitext(name)[1].lower() not in _CODE_SUFFIXES:
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, name), base)
+            out.append(rel)
+            if len(out) >= limit:
+                return out
+    return out
+
+
+_MAX_CONTEXT_CHARS = 14000
+_MAX_CONTEXT_FILES = 8
+_MAX_FILE_CHARS = 6000
+_STOPWORDS = frozenset(
+    {
+        "the", "a", "an", "to", "of", "in", "on", "for", "and", "or", "is", "be",
+        "make", "change", "add", "remove", "fix", "update", "instead", "please",
+        "should", "with", "that", "this", "it", "so", "from", "into", "return",
+    }
+)
+
+
+def _task_terms(task: str) -> List[str]:
+    words = re.findall(r"[A-Za-z_][A-Za-z0-9_]{2,}", task.lower())
+    return [w for w in dict.fromkeys(words) if w not in _STOPWORDS]
+
+
+def relevant_files(root: str, task: str, files: List[str]) -> List[Tuple[str, str]]:
+    """The files most likely to be edited, with their current contents.
+
+    Knowing a file's NAME is not knowing its lines. Given only a listing, the
+    model wrote a diff against the file it imagined — the path was right, the
+    context lines were invented, and the patch could not be applied byte-for-
+    byte (measured live: valid=True, dry_run_ok=False).
+
+    Ranking is deterministic and local — no model call, no embedding: a term
+    from the task matching the file's name counts for more than one matching
+    its body, because that is how developers name things. Ties break on path
+    so the same task against the same workspace builds the same prompt.
+    """
+    terms = _task_terms(task)
+    base = os.path.realpath(root)
+    scored: List[Tuple[int, str, str]] = []
+    for rel in files:
+        try:
+            with open(os.path.join(base, rel), "r", encoding="utf-8") as fh:
+                body = fh.read(_MAX_FILE_CHARS)
+        except (OSError, UnicodeDecodeError):
+            continue
+        low = body.lower()
+        name = rel.lower()
+        score = 0
+        for term in terms:
+            if term in name:
+                score += 5
+            if term in low:
+                score += 1
+        scored.append((score, rel, body))
+    # A small workspace is worth sending whole; in a large one, only what
+    # matched the task earns a place in the budget.
+    scored.sort(key=lambda t: (-t[0], t[1]))
+    out: List[Tuple[str, str]] = []
+    spent = 0
+    for score, rel, body in scored:
+        if out and score == 0 and len(scored) > _MAX_CONTEXT_FILES:
+            break
+        if spent + len(body) > _MAX_CONTEXT_CHARS or len(out) >= _MAX_CONTEXT_FILES:
+            break
+        out.append((rel, body))
+        spent += len(body)
+    return out
+
+
+def _prompt(
+    task: str,
+    files: Optional[List[str]] = None,
+    contents: Optional[List[Tuple[str, str]]] = None,
+) -> str:
+    listing = ""
+    if files:
+        shown = "\n".join(files)
+        # Say when the list is cut off: a model told "these are the files" will
+        # not look for a file it cannot see, and silently truncating turns a
+        # partial list into a false statement about the workspace.
+        more = (
+            f"\n(this listing stops at {len(files)} files; others may exist)"
+            if len(files) >= _MAX_LISTED_FILES
+            else ""
+        )
+        listing = (
+            "\nThese are the files in the workspace. Every path you propose MUST "
+            "be one of them, copied exactly — do not invent a path, and do not "
+            "propose creating a new file:\n" + shown + more + "\n"
+        )
+    body = ""
+    if contents:
+        parts = [
+            f"\n----- {rel} -----\n{text}" for rel, text in contents
+        ]
+        body = (
+            "\nCurrent contents of the files most likely to change. Your context "
+            "and removed lines must match these EXACTLY, character for "
+            "character — copy them, do not retype them from memory:\n"
+            + "".join(parts)
+            + "\n"
+        )
     return (
         "You are a senior engineer proposing a precise, minimal multi-file code "
         "change. Reply with exactly one JSON object and nothing else — first "
@@ -48,13 +206,31 @@ def _prompt(task: str) -> str:
         '"edits": [{"path": "workspace-relative path", '
         '"unified_diff": "a valid unified diff with @@ hunks", '
         '"rationale": "why", "confidence": 0.0-1.0}]}\n'
-        "Diff format is strict: each line starts with exactly ONE marker "
-        "character — '-', '+' or a single space for context — immediately "
-        "followed by the line's real content. Do NOT put a space after the "
-        "marker, and reproduce the file's own indentation exactly; a patch "
-        "whose content does not match the file byte-for-byte cannot be "
-        "applied.\n"
-        "Keep diffs minimal and context-accurate.\n\nTASK: " + task
+        "Diff format is strict: EVERY line inside a hunk starts with exactly "
+        "ONE marker character — '-', '+' or a single space for context — "
+        "immediately followed by the line's real content. Do NOT put a space "
+        "after the marker, do not leave any line unmarked, and reproduce the "
+        "file's own indentation exactly; a patch whose content does not match "
+        "the file byte-for-byte cannot be applied.\n"
+        # An instruction describes the format; an example shows it. Live runs
+        # kept marking only the first line and leaving the rest bare, or
+        # writing "- def f():" with a courtesy space, until the prompt carried
+        # a diff to copy the shape from.
+        "This is exactly the shape required — for a file containing\n"
+        "def helper():\n    return 1\n"
+        "a correct edit is:\n"
+        "@@ -1,2 +1,2 @@\n"
+        " def helper():\n"
+        "-    return 1\n"
+        "+    return 2\n"
+        "Note: the header has no leading space; the context line begins with "
+        "one space then 'def'; the changed lines begin with '-' or '+' then "
+        "the four spaces of the original indentation.\n"
+        "Keep diffs minimal and context-accurate.\n"
+        + listing
+        + body
+        + "\nTASK: "
+        + task
     )
 
 
@@ -94,6 +270,8 @@ async def _generate_edits(
     tenant_id: str,
     project_slug: Optional[str],
     user_subject: Optional[str],
+    files: Optional[List[str]] = None,
+    contents: Optional[List[Tuple[str, str]]] = None,
 ) -> Tuple[dict, List[str], dict]:
     """Ask the cascade for {summary, edits[]}.
 
@@ -124,7 +302,7 @@ async def _generate_edits(
             return {}, [], {}
         primary, *rest = active
         resp = await call_with_cascade(
-            _prompt(task),
+            _prompt(task, files, contents),
             primary=primary,
             fallbacks=tuple(rest),
             max_tokens=1500,
@@ -207,11 +385,27 @@ async def run_composer(
     Applies nothing. The editor renders each edit (diff + judge chip + "N files
     affected") and applies approved ones via patch_engine.
     """
+    # What the workspace actually contains, before asking for a change to it.
+    # Reading the tree is local and deterministic; a failure here costs the
+    # model its file list, never the run.
+    try:
+        files = workspace_files(workspace_root)
+    except Exception as exc:  # noqa: BLE001
+        logger.info("composer workspace listing skipped: %s", exc)
+        files = []
+    try:
+        contents = relevant_files(workspace_root, task, files) if files else []
+    except Exception as exc:  # noqa: BLE001
+        logger.info("composer context read skipped: %s", exc)
+        contents = []
+
     parsed, tried, gen_meta = await _generate_edits(
         task,
         tenant_id=tenant_id,
         project_slug=project_slug,
         user_subject=user_subject,
+        files=files,
+        contents=contents,
     )
     raw_edits = parsed.get("edits") if isinstance(parsed.get("edits"), list) else []
     key = graph_key or codegraph.workspace_key(workspace_root)
@@ -232,7 +426,11 @@ async def run_composer(
         if not isinstance(raw, dict):
             continue
         path = str(raw.get("path") or "").strip()
-        diff = str(raw.get("unified_diff") or "")
+        # One diff from here on: the shape the engine read, which is the shape
+        # it would apply. Grading, rendering and applying a different text than
+        # the one that lands is how a score ends up describing a change nobody
+        # is making.
+        diff = patch_engine.normalize_diff(str(raw.get("unified_diff") or ""))
         abs_path = path if os.path.isabs(path) else os.path.join(workspace_root, path)
 
         v = patch_engine.validate(abs_path, diff, workspace_root=workspace_root)

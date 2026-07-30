@@ -200,3 +200,70 @@ def test_genuinely_indented_hunk_is_not_dedented(tmp_path):
     assert f.read_text(encoding="utf-8") == (
         "class C:\n    def m(self):\n        return 2\n"
     )
+
+
+def test_a_header_with_a_leading_space_is_still_a_header():
+    """Models told "every line starts with exactly one marker character" apply
+    that to the @@ line too. Measured live: " @@ -1,4 +1,4 @@" made the whole
+    patch read as having no header, so nothing could be applied."""
+    from app.patches.engine import parse_diff
+
+    hunks = parse_diff(" @@ -1,2 +1,2 @@\n def helper():\n-    return 1\n+    return 2\n")
+    assert len(hunks) == 1
+    assert hunks[0].old_start == 1
+
+
+def test_a_context_line_is_not_mistaken_for_a_header():
+    from app.patches.engine import parse_diff
+
+    # A context line whose content merely mentions @@ must stay a context line.
+    hunks = parse_diff("@@ -1,2 +1,2 @@\n print('@@ not a header')\n-a\n+b\n")
+    assert len(hunks) == 1
+    assert any("not a header" in line.text for line in hunks[0].lines)
+
+
+def test_a_uniformly_shifted_hunk_is_read_back(tmp_path):
+    """Shown a worked example, models line the markers up and push every line
+    one column right: " -    return 1". Measured live — the hunk then read as
+    context whose content merely began with a marker, and nothing applied."""
+    from app.patches.engine import apply_patch, parse_diff
+
+    shifted = "@@ -1,2 +1,2 @@\n def helper():\n -    return 1\n +    return 2\n"
+    hunks = parse_diff(shifted)
+    assert [line.op for line in hunks[0].lines] == [" ", "-", "+"]
+
+    f = tmp_path / "util.py"
+    f.write_text("def helper():\n    return 1\n", encoding="utf-8")
+    apply_patch(str(f), shifted, workspace_root=str(tmp_path))
+    assert "return 2" in f.read_text(encoding="utf-8")
+
+
+def test_a_markdown_bullet_is_not_dedented():
+    """Context lines that legitimately start with '-' must survive: such a hunk
+    still carries its own real marker lines, which is what tells them apart."""
+    from app.patches.engine import parse_diff
+
+    diff = "@@ -1,3 +1,3 @@\n - first bullet\n-- old bullet\n+- new bullet\n"
+    hunks = parse_diff(diff)
+    ops = [line.op for line in hunks[0].lines]
+    assert ops == [" ", "-", "+"]
+    assert hunks[0].lines[0].text == "- first bullet"
+
+
+def test_normalize_returns_the_diff_the_engine_would_apply():
+    """Whatever the model wrote, one text goes to the judge, the panel and the
+    applier. Handed the raw shifted diff, the judge could not read a single
+    added line and scored a correct edit 0."""
+    from app.patches.engine import normalize_diff
+
+    shifted = " @@ -1,2 +1,2 @@\n def helper():\n -    return 1\n +    return 2\n"
+    out = normalize_diff(shifted)
+    assert out.startswith("@@ -1,2 +1,2 @@")
+    assert "\n-    return 1" in out
+    assert "\n+    return 2" in out
+
+
+def test_normalize_leaves_unparseable_text_alone():
+    from app.patches.engine import normalize_diff
+
+    assert normalize_diff("not a diff") == "not a diff"
