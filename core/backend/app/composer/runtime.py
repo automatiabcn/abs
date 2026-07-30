@@ -88,10 +88,12 @@ async def _generate_edits(
     tenant_id: str,
     project_slug: Optional[str],
     user_subject: Optional[str],
-) -> Tuple[dict, List[str]]:
-    """Ask the cascade for {summary, edits[]}. Returns (parsed, providers_tried).
+) -> Tuple[dict, List[str], dict]:
+    """Ask the cascade for {summary, edits[]}.
 
-    Degrades to ({}, []) when no provider is usable. Isolated for testability.
+    Returns (parsed, providers_tried, meta) where meta carries the Cost-HUD
+    signals: ``{"provider": winner, "cost_usd": float|None}``. Degrades to
+    ({}, [], {}) when no provider is usable. Isolated for testability.
     """
     try:
         from app.cascade.orchestrator import call_with_cascade
@@ -113,7 +115,7 @@ async def _generate_edits(
 
         active = get_active_providers(extra_configured=extra)
         if not active:
-            return {}, []
+            return {}, [], {}
         primary, *rest = active
         resp = await call_with_cascade(
             _prompt(task),
@@ -126,12 +128,28 @@ async def _generate_edits(
             project_slug=project_slug,
             user_subject=user_subject,
         )
-        return _parse(getattr(resp, "text", "") or ""), list(
-            getattr(resp, "providers_tried", []) or []
+        meta: dict = {"provider": getattr(resp, "provider", "") or ""}
+        try:
+            from app.chat.cost import estimate_call_cost_usd
+
+            est = estimate_call_cost_usd(
+                provider=meta["provider"] or None,
+                tokens_in=int(getattr(resp, "tokens_in", 0) or 0),
+                tokens_out=int(getattr(resp, "tokens_out", 0) or 0),
+                model=getattr(resp, "model", None),
+            )
+            meta["cost_usd"] = est.get("usd")
+        except Exception as exc:  # noqa: BLE001 — cost estimate is best-effort
+            logger.debug("composer cost estimate skipped: %s", exc)
+            meta["cost_usd"] = None
+        return (
+            _parse(getattr(resp, "text", "") or ""),
+            list(getattr(resp, "providers_tried", []) or []),
+            meta,
         )
     except Exception as exc:  # noqa: BLE001 — degrade, never 500
         logger.info("composer generation degraded: %s", exc)
-        return {}, []
+        return {}, [], {}
 
 
 def _clamp01(value: Any) -> float:
@@ -169,7 +187,7 @@ async def run_composer(
     Applies nothing. The editor renders each edit (diff + judge chip + "N files
     affected") and applies approved ones via patch_engine.
     """
-    parsed, tried = await _generate_edits(
+    parsed, tried, gen_meta = await _generate_edits(
         task,
         tenant_id=tenant_id,
         project_slug=project_slug,
@@ -223,6 +241,8 @@ async def run_composer(
         risk=risk,
         requires_approval=requires_approval,
         providers_tried=tried,
+        provider=str(gen_meta.get("provider") or ""),
+        cost_usd=gen_meta.get("cost_usd"),
         degraded=not raw_edits,
         tenant_slug=tenant_id,
         created_at=created_at or datetime.now(timezone.utc),
