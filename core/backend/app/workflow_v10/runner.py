@@ -492,20 +492,45 @@ async def _run_abs_tool(
         )
         if not prompt.strip():
             return {"skipped": "abs_tool", "note": f"{raw_name}: empty prompt"}
-        # ask_<provider> → primary provider; bare "ask" → default groq.
-        provider = str(
+        from app.providers.cascade import PAID_PROVIDERS, get_active_providers
+
+        # Same rule as llm_call: workflows run unattended, so an ask_* node —
+        # whether it names a paid provider in tool_name (ask_anthropic) or in
+        # tool_args.provider — is pinned to the free chain. Without this the
+        # abs_tool node was a bypass around the free-tier rule.
+        requested = str(
             args.get("provider")
             or (short[4:] if short.startswith("ask_") else "")
             or "groq"
         )
+        free_chain = get_active_providers(skip_paid=True)
+        if not free_chain:
+            return {
+                "skipped": "abs_tool",
+                "note": "no free provider is configured; workflows do not use paid providers",
+            }
+        skipped_paid = requested if requested in PAID_PROVIDERS else ""
+        provider = requested if requested in free_chain else free_chain[0]
+        fallbacks = tuple(p for p in free_chain if p != provider)
         resp = await call_with_cascade(
-            prompt, primary=provider, tenant_id=tenant or "default"
+            prompt,
+            primary=provider,
+            fallbacks=fallbacks,
+            tenant_id=tenant or "default",
         )
-        return {
+        out = {
             "text": getattr(resp, "text", None) or str(resp),
             "tool": raw_name,
             "kind": "abs_tool",
+            "provider": getattr(resp, "provider", "") or provider,
+            "tier": "free",
         }
+        if skipped_paid:
+            out["note"] = (
+                f"{skipped_paid} is a paid provider and workflows run on the "
+                "free tier — this step used the free chain instead"
+            )
+        return out
 
     return {
         "error": (

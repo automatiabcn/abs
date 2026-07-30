@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import update as sa_update
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.db.models import SavedWorkflow, WorkflowSchedule
@@ -98,7 +99,27 @@ def set_schedule(
             row.next_run_at = upcoming
             row.last_error = None
         db.add(row)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            # Two concurrent set_schedule calls both saw no row; the unique
+            # index let exactly one insert win. Update the winner instead of
+            # surfacing a 500 for what the caller asked for.
+            db.rollback()
+            row = db.exec(
+                select(WorkflowSchedule).where(
+                    WorkflowSchedule.tenant_slug == tenant_slug,
+                    WorkflowSchedule.workflow_id == workflow_id,
+                )
+            ).first()
+            if row is None:  # pragma: no cover - delete raced the insert
+                raise
+            row.cron_expr = spec.expression
+            row.enabled = True
+            row.next_run_at = upcoming
+            row.last_error = None
+            db.add(row)
+            db.commit()
         db.refresh(row)
         return _serialize(row, workflow.name)
 
@@ -176,6 +197,21 @@ def _claim_due(now: datetime) -> List[Dict[str, Any]]:
                 )
                 db.commit()
                 continue
+            if upcoming is None:
+                # No next occurrence within the search horizon (e.g. a Feb-29
+                # expression right after it fired). Writing next_run_at=NULL
+                # while leaving enabled=True would read as "active" in the
+                # panel yet never fire again — disable it and say why.
+                db.execute(
+                    sa_update(WorkflowSchedule)
+                    .where(WorkflowSchedule.id == row.id)
+                    .values(
+                        enabled=False,
+                        last_error="cron: no next occurrence within a year",
+                    )
+                )
+                db.commit()
+                continue
             result = db.execute(
                 sa_update(WorkflowSchedule)
                 .where(WorkflowSchedule.id == row.id)
@@ -203,6 +239,11 @@ async def tick(now: Optional[datetime] = None) -> List[Dict[str, Any]]:
     for row in _claim_due(moment):
         with Session(get_engine()) as db:
             workflow = db.get(SavedWorkflow, row["workflow_id"])
+        # A schedule must only ever run its own tenant's workflow. Workflows
+        # cannot change tenant today, so the mismatch arm is pure defense —
+        # but the line is cheap and the failure it prevents is cross-tenant.
+        if workflow is not None and workflow.tenant_slug != row["tenant_slug"]:
+            workflow = None
         if workflow is None:
             with Session(get_engine()) as db:
                 db.execute(

@@ -48,7 +48,9 @@ async def _llm_judge(
     editor actually puts on every proposal: is this a good change?
     """
     if not added_code.strip():
-        return {"score": 0.0, "teaching": ""}
+        # Nothing to judge is UNKNOWN, not a zero — a 0.0 here flows into
+        # judgment logs and stats as "worst possible code" for an empty diff.
+        return {"score": None, "teaching": "no added lines to judge"}
 
     where = f" to `{file_path}`" if file_path else ""
     if diff_text and diff_text.strip():
@@ -194,13 +196,16 @@ async def judge_file(file_path: str) -> Dict[str, Any]:
         with open(file_path, "r", encoding="utf-8") as fh:
             content = fh.read()
     except OSError as exc:
+        # A file the judge could not read is ungraded, not the worst file in
+        # the repo. 0.0 here would sort it to the top of the review panel and
+        # count as a low score in every consumer downstream.
         return {
-            "combined_score": 0.0,
+            "combined_score": None,
             "ast_score": None,
-            "llm_score": 0.0,
+            "llm_score": None,
             "added_lines": 0,
             "fingerprint_details": [],
-            "teaching": [f"read error: {exc}"],
+            "teaching": [f"read error: {exc} — not graded"],
         }
 
     pseudo_diff = "\n".join("+" + line for line in content.splitlines())
