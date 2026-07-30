@@ -306,6 +306,17 @@ async def workflow_list(limit: int = 50) -> str:
         except (ValueError, TypeError):
             definition = {}
         nodes = definition.get("nodes") if isinstance(definition, dict) else None
+        # A workflow may DESCRIBE a cron trigger — the ontology validates one —
+        # but nothing in this product runs a scheduler, so such a workflow never
+        # fires. Reporting the expression without that fact would let the panel
+        # imply an automation that does not happen.
+        cron = ""
+        triggers = definition.get("triggers") if isinstance(definition, dict) else None
+        if isinstance(triggers, list):
+            for trg in triggers:
+                if isinstance(trg, dict) and trg.get("cron_expr"):
+                    cron = str(trg["cron_expr"])
+                    break
         items.append(
             {
                 "id": row.id,
@@ -313,12 +324,22 @@ async def workflow_list(limit: int = 50) -> str:
                 # None, not 0: a definition we could not read has an unknown
                 # step count, and 0 would read as an empty workflow.
                 "steps": len(nodes) if isinstance(nodes, list) else None,
+                "cron_expr": cron,
+                "scheduler_runs_it": False,
                 "created_by": row.created_by,
                 "updated_at": row.updated_at,
             }
         )
     return json.dumps(
-        {"ok": True, "count": len(items), "workflows": items},
+        {
+            "ok": True,
+            "count": len(items),
+            "workflows": items,
+            "note": (
+                "No scheduler runs on this server: a workflow with a cron "
+                "trigger is stored and validated, but nothing fires it."
+            ),
+        },
         ensure_ascii=False,
         default=str,
     )
