@@ -98,12 +98,17 @@ async def test_judge_file_grades_whole_file(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_judge_file_missing_file_is_graceful():
+async def test_judge_file_missing_file_is_ungraded_not_zero():
+    """A file the judge could not read must come back ungraded (None), never
+    0.0 — a zero accuses the file of being the worst in the repo and sorts it
+    to the top of the review panel."""
     from app.judge import senior as sj
 
     result = await sj.judge_file("/nonexistent/nope.py")
-    assert result["combined_score"] == 0.0
+    assert result["combined_score"] is None
+    assert result["llm_score"] is None
     assert result["ast_score"] is None
+    assert any("not graded" in t for t in result["teaching"])
 
 
 @pytest.mark.asyncio

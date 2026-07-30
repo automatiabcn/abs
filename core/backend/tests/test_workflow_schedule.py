@@ -167,6 +167,54 @@ def test_scheduled_workflow_ids_tells_a_real_schedule_from_a_cron_trigger():
     assert schedule.scheduled_workflow_ids(tenant_slug="sched-e") == {wf}
 
 
+def test_a_schedule_with_no_next_occurrence_disables_itself_with_the_reason(monkeypatch):
+    """When next_after finds nothing within its horizon (a Feb-29 cron right
+    after it fired), the schedule must not stay enabled with next_run_at=NULL —
+    that reads as "active" in the panel and never fires again."""
+    wf = _saved_workflow("sched-f")
+    schedule.set_schedule(
+        tenant_slug="sched-f", workflow_id=wf, cron_expr="* * * * *", created_by="alice"
+    )
+
+    async def _fake_enqueue(definition, tenant_slug="default"):
+        return "job-x"
+
+    monkeypatch.setattr("app.workflow_v10.runner.enqueue", _fake_enqueue)
+    monkeypatch.setattr("app.workflow_v10.cron.next_after", lambda spec, now: None)
+
+    asyncio.run(schedule.tick(datetime.utcnow() + timedelta(minutes=5)))
+    rows = schedule.list_schedules(tenant_slug="sched-f")
+    assert rows[0]["enabled"] is False
+    assert "no next occurrence" in (rows[0]["last_error"] or "")
+
+
+def test_the_database_refuses_a_second_schedule_for_the_same_workflow():
+    """set_schedule reads-then-writes; a race could insert two rows and the
+    tick would run the workflow twice at every due time. The unique index is
+    the arbiter the atomic claim cannot be."""
+    from sqlalchemy.exc import IntegrityError
+    from sqlmodel import Session
+
+    from app.db.models import WorkflowSchedule
+    from app.db.session import get_engine
+
+    wf = _saved_workflow("sched-g")
+    schedule.set_schedule(
+        tenant_slug="sched-g", workflow_id=wf, cron_expr="0 9 * * *", created_by="a"
+    )
+    with Session(get_engine()) as db:
+        db.add(
+            WorkflowSchedule(
+                tenant_slug="sched-g",
+                workflow_id=wf,
+                cron_expr="0 9 * * *",
+                created_by="b",
+            )
+        )
+        with pytest.raises(IntegrityError):
+            db.commit()
+
+
 def test_a_scheduled_job_is_visible_to_the_operator(monkeypatch):
     """The scheduler stamps a job with the tenant; the panel used to ask with an
     email and got job_not_found — the operator could not see what their own

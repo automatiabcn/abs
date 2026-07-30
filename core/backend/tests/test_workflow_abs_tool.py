@@ -48,6 +48,7 @@ def test_ask_routes_to_cascade(monkeypatch):
 
     class _Resp:
         text = "CASCADE-OUT"
+        provider = "gptoss"
 
     async def fake_cascade(prompt, *, primary, tenant_id="_global", **kw):  # noqa: ANN001
         captured["prompt"] = prompt
@@ -57,6 +58,13 @@ def test_ask_routes_to_cascade(monkeypatch):
     import app.cascade.orchestrator as orch
 
     monkeypatch.setattr(orch, "call_with_cascade", fake_cascade)
+    # abs_tool ask* is pinned to the free chain (same rule as llm_call) —
+    # a free provider named by the node is honoured only when it is IN the
+    # chain, so the test states the chain it expects.
+    monkeypatch.setattr(
+        "app.providers.cascade.get_active_providers",
+        lambda **kw: ["gptoss", "groq"],
+    )
 
     node = {
         "id": "t1",
@@ -70,6 +78,7 @@ def test_ask_routes_to_cascade(monkeypatch):
     assert out["text"] == "CASCADE-OUT"
     assert captured["prompt"] == "summarize the doc"
     assert captured["primary"] == "gptoss"  # ask_<provider> → provider
+    assert out["tier"] == "free"
 
 
 def test_unknown_external_tool_is_honest_error():
