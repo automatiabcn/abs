@@ -48,6 +48,12 @@ def _prompt(task: str) -> str:
         '"edits": [{"path": "workspace-relative path", '
         '"unified_diff": "a valid unified diff with @@ hunks", '
         '"rationale": "why", "confidence": 0.0-1.0}]}\n'
+        "Diff format is strict: each line starts with exactly ONE marker "
+        "character — '-', '+' or a single space for context — immediately "
+        "followed by the line's real content. Do NOT put a space after the "
+        "marker, and reproduce the file's own indentation exactly; a patch "
+        "whose content does not match the file byte-for-byte cannot be "
+        "applied.\n"
         "Keep diffs minimal and context-accurate.\n\nTASK: " + task
     )
 

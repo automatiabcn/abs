@@ -168,3 +168,35 @@ def test_blank_context_inside_a_hunk_is_still_required(tmp_path):
     f = _write(tmp_path, "mid.txt", "a\nb\nc\n")
     diff = "@@ -1,3 +1,3 @@\n a\n \n-b\n+B\n"
     assert not dry_run(str(f), diff, workspace_root=str(tmp_path)).success
+
+
+def test_applies_the_shape_the_live_model_emits(tmp_path):
+    """Live tour, verbatim: groq wrote `- def helper():` — marker, courtesy
+    space, then code — so every line carried a phantom indent and the strict
+    pass matched nothing. The content is right; the engine must read it."""
+    f = _write(tmp_path, "util.py", "def helper():\n    return 1\n")
+    live = (
+        "@@ -1,5 +1,5 @@\n- def helper():\n-     return 1\n"
+        "+ def helper():\n+     return 2\n"
+    )
+    d = dry_run(str(f), live, workspace_root=str(tmp_path))
+    assert d.success, d.reason
+    assert d.method == "inmemory"
+    r = apply(str(f), live, workspace_root=str(tmp_path))
+    assert r.success, r.reason
+    assert f.read_text(encoding="utf-8") == "def helper():\n    return 2\n"
+
+
+def test_genuinely_indented_hunk_is_not_dedented(tmp_path):
+    """The space repair must never fire on a correct diff: a hunk whose lines
+    really are indented has to apply at its real indentation."""
+    f = _write(tmp_path, "c.py", "class C:\n    def m(self):\n        return 1\n")
+    good = (
+        "@@ -1,3 +1,3 @@\n class C:\n     def m(self):\n"
+        "-        return 1\n+        return 2\n"
+    )
+    assert dry_run(str(f), good, workspace_root=str(tmp_path)).success
+    assert apply(str(f), good, workspace_root=str(tmp_path)).success
+    assert f.read_text(encoding="utf-8") == (
+        "class C:\n    def m(self):\n        return 2\n"
+    )
