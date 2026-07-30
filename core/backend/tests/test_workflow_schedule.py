@@ -165,3 +165,18 @@ def test_scheduled_workflow_ids_tells_a_real_schedule_from_a_cron_trigger():
         tenant_slug="sched-e", workflow_id=wf, cron_expr="0 9 * * *", created_by="a"
     )
     assert schedule.scheduled_workflow_ids(tenant_slug="sched-e") == {wf}
+
+
+def test_a_scheduled_job_is_visible_to_the_operator(monkeypatch):
+    """The scheduler stamps a job with the tenant; the panel used to ask with an
+    email and got job_not_found — the operator could not see what their own
+    schedule did. One notion of owner across definitions, schedules and jobs."""
+    from app.api.workflows import _job_owner_matches
+
+    admin = {"sub": "admin@local"}
+    # A job the scheduler enqueued, keyed by the tenant.
+    assert _job_owner_matches({"tenant_slug": "default"}, admin) is True
+    # A job enqueued before the change, keyed by the email, still readable.
+    assert _job_owner_matches({"tenant_slug": "admin@local"}, admin) is True
+    # Another tenant's job stays invisible.
+    assert _job_owner_matches({"tenant_slug": "other-corp"}, admin) is False

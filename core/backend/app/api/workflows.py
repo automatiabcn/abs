@@ -280,9 +280,9 @@ async def execute(
             "estimate_s": runner.estimate(plan_steps),
             "estimated_cost_usd": estimated_cost_usd,
         }
-    job_id = await runner.enqueue(
-        body.workflow, tenant_slug=admin.get("sub", "default")
-    )
+    # The tenant, not the email: the same owner the definition and any schedule
+    # for this workflow already use.
+    job_id = await runner.enqueue(body.workflow, tenant_slug=_wf_tenant(admin))
     return {
         "status": "queued",
         "job_id": job_id,
@@ -320,14 +320,20 @@ def _resolve_admin_role(admin: dict) -> str:
 
 
 def _job_owner_matches(state: Dict[str, Any], admin: dict) -> bool:
-    """A job is owned by the admin identity that enqueued it (execute keys the
-    job by ``admin.sub``). Cross-tenant callers must not read or resume it.
+    """A job belongs to the TENANT that owns the workflow.
 
-    Backwards-compatible: in single-tenant/dev every admin resolves to the same
-    key ("default" when no sub), so existing single-tenant flows are unaffected;
-    isolation engages once admins carry distinct subjects.
+    Ownership used to be keyed by ``admin.sub`` — an email — while saved
+    definitions and schedules are keyed by the tenant slug. Same human, two
+    identities, and the consequence showed up the moment the scheduler ran: a
+    scheduled job was stamped with the tenant and the panel, asking as an email,
+    got job_not_found. The operator could not see what their own schedule did.
+
+    One notion of owner across definitions, schedules and jobs. Cross-tenant
+    reads stay refused, and a job enqueued before this change (keyed by email)
+    is still readable by that same admin.
     """
-    return state.get("tenant_slug") == admin.get("sub", "default")
+    owner = state.get("tenant_slug")
+    return owner in {_wf_tenant(admin), admin.get("sub", "default")}
 
 
 @router.get("/jobs/{job_id}")
