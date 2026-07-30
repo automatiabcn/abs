@@ -129,3 +129,60 @@ async def test_llm_judge_sees_the_diff_not_just_added_lines(monkeypatch):
     assert "-    return 1" in seen["prompt"], "the judge never saw what was replaced"
     assert "util.py" in seen["prompt"], "the judge never saw which file it lands in"
     assert result["llm_score"] == 9.0
+
+
+def test_truncated_reply_keeps_the_score_it_carried():
+    """A long answer cut off before its closing brace still holds the number we
+    asked for. The review panel showed a real 6 as 'scored below 5' because the
+    parser threw the whole judgement away over a missing character."""
+    from app.judge.senior import _parse_judgement
+
+    score, teaching = _parse_judgement(
+        '{"score": 6, "teaching": "Rename extra to something descriptive and'
+    )
+    assert score == 6.0
+    assert "Rename extra" in teaching
+
+
+def test_unusable_reply_is_unknown_not_zero():
+    from app.judge.senior import _parse_judgement
+
+    assert _parse_judgement("the model rambled without answering") == (None, "")
+    assert _parse_judgement("") == (None, "")
+
+
+@pytest.mark.asyncio
+async def test_an_unavailable_model_leg_does_not_score_the_code_zero(monkeypatch):
+    """A judgement that could not be made must never read as the worst possible
+    score — that accuses code the judge never read, and in the review panel it
+    surfaces as a file 'scored below 5'."""
+    from app.judge import senior as sj
+
+    fake = AsyncMock()
+    fake.call = AsyncMock(return_value=type("R", (), {"text": ""})())
+    monkeypatch.setattr(sj, "get_provider", lambda _: fake)
+
+    # No AST metrics either (not a .py file) → nothing was measured at all.
+    result = await judge_diff("@@ -1 +1 @@\n-a\n+b\n", "notes.txt")
+    assert result["llm_score"] is None
+    assert result["combined_score"] is None, "unknown must not collapse to 0.0"
+
+
+@pytest.mark.asyncio
+async def test_ast_leg_alone_still_scores_when_the_model_is_silent(monkeypatch):
+    from app.judge import senior as sj
+
+    fake = AsyncMock()
+    fake.call = AsyncMock(return_value=type("R", (), {"text": ""})())
+    monkeypatch.setattr(sj, "get_provider", lambda _: fake)
+
+    diff = (
+        "@@ -1 +1,3 @@\n"
+        "+def fib(n: int) -> int:\n"
+        '+    """Fibonacci."""\n'
+        "+    return n if n < 2 else fib(n-1)+fib(n-2)\n"
+    )
+    result = await judge_diff(diff, "x.py")
+    assert result["ast_score"] is not None
+    assert result["combined_score"] == result["ast_score"]
+    assert any("model leg did not answer" in t for t in result["teaching"])
