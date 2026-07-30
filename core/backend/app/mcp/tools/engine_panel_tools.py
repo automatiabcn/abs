@@ -387,3 +387,93 @@ async def provider_key_delete(provider: str) -> str:
 REGISTERED_TOOLS.extend(
     ["provider_keys_list", "provider_key_set", "provider_key_delete"]
 )
+
+
+# --- The delegation chain ----------------------------------------------------
+
+
+@mcp_server.tool()
+@with_hooks("providers_chain")
+async def providers_chain(skip_paid: bool = False) -> str:
+    """The cascade in the order it will actually be tried for THIS caller:
+    position, free or paid, whose key answers, breaker and throttle state.
+
+    This is the delegation chain the product is sold on — 'the agent never
+    stops' means nothing if you cannot see who is next. `skip_paid` shows the
+    chain a workflow would run on, since workflows never use paid providers.
+    """
+    await tracker.bump("providers_chain")
+    from app.providers.cascade import (
+        PAID_PROVIDERS,
+        get_active_providers,
+        is_configured,
+    )
+
+    tenant = _caller_tenant()
+    user = _caller_user()
+
+    byok: set = set()
+    try:
+        from app.multitenant.provider_keys import tenant_configured_providers
+
+        byok = set(tenant_configured_providers(tenant_slug=tenant, user_subject=user))
+    except Exception:  # noqa: BLE001 — a chain without BYOK is still a chain
+        byok = set()
+
+    try:
+        chain = get_active_providers(
+            skip_paid=skip_paid, extra_configured=frozenset(byok)
+        )
+    except Exception as exc:  # noqa: BLE001
+        return json.dumps(
+            {"ok": False, "error": "chain_unavailable", "detail": str(exc)[:300]},
+            ensure_ascii=False,
+        )
+
+    from app.cascade.breaker import default_breaker
+
+    raw_breakers = default_breaker.snapshot() or {}
+    breakers: Dict[str, Any] = {}
+    for key, value in raw_breakers.items():
+        # Breaker keys are tenant-namespaced once a call has been made.
+        breakers[str(key).split("|")[-1]] = value
+
+    steps: List[Dict[str, Any]] = []
+    for position, name in enumerate(chain, start=1):
+        throttled = False
+        reason = ""
+        try:
+            throttled, reason = quota_meter.is_throttled(name, tenant_id=tenant)
+        except Exception:  # noqa: BLE001
+            throttled, reason = False, ""
+        steps.append(
+            {
+                "position": position,
+                "provider": name,
+                "paid": name in PAID_PROVIDERS,
+                # An account key both activates and PROMOTES a provider: pasting
+                # a key is a statement of preference, so say whose key it is.
+                "key_source": "account" if name in byok else ("server" if is_configured(name) else ""),
+                "breaker": (breakers.get(name) or {}).get("state", "closed"),
+                "throttled": bool(throttled),
+                "throttle_reason": reason if throttled else "",
+            }
+        )
+
+    return json.dumps(
+        {
+            "ok": True,
+            "tenant": tenant,
+            "skip_paid": skip_paid,
+            "chain": steps,
+            "note": (
+                "Tried in this order; the first that answers wins. Providers you "
+                "supplied a key for come first — a key is a statement of "
+                "preference. Workflows always run the skip_paid chain."
+            ),
+        },
+        ensure_ascii=False,
+    )
+
+
+REGISTERED_TOOLS.append("providers_chain")

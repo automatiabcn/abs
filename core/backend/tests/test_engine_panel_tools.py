@@ -246,3 +246,62 @@ def test_a_broken_byok_lookup_does_not_break_the_gauge(monkeypatch):
     )
     out = _call(ep.quota_meter_status())
     assert "providers" in out, "the quota gauge must survive a BYOK lookup failure"
+
+
+# --- the delegation chain ----------------------------------------------------
+
+
+def test_the_chain_says_who_is_next_and_whose_key_answers(monkeypatch):
+    monkeypatch.setattr(ep, "_caller_tenant", lambda: "acme")
+    monkeypatch.setattr(ep, "_caller_user", lambda: "alice@acme")
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.tenant_configured_providers",
+        lambda **_: {"cohere"},
+    )
+    monkeypatch.setattr(
+        "app.providers.cascade.get_active_providers",
+        lambda **_: ["cohere", "groq", "anthropic"],
+    )
+    monkeypatch.setattr("app.providers.cascade.is_configured", lambda p: p == "groq")
+
+    out = _call(ep.providers_chain())
+    assert out["ok"] is True
+    chain = out["chain"]
+    assert [s["provider"] for s in chain] == ["cohere", "groq", "anthropic"]
+    assert [s["position"] for s in chain] == [1, 2, 3]
+    # The account's own key comes first and is labelled as theirs.
+    assert chain[0]["key_source"] == "account"
+    assert chain[1]["key_source"] == "server"
+    # Paid providers are named as paid — that is a bill, not a detail.
+    assert chain[2]["paid"] is True
+    assert chain[0]["paid"] is False
+
+
+def test_the_workflow_chain_has_no_paid_provider_in_it(monkeypatch):
+    seen = {}
+
+    def _chain(**kw):
+        seen.update(kw)
+        return ["groq", "cerebras"]
+
+    monkeypatch.setattr("app.providers.cascade.get_active_providers", _chain)
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.tenant_configured_providers", lambda **_: set()
+    )
+    out = _call(ep.providers_chain(skip_paid=True))
+    assert seen["skip_paid"] is True
+    assert all(not s["paid"] for s in out["chain"])
+    assert out["skip_paid"] is True
+
+
+def test_a_tenant_namespaced_breaker_lands_on_the_right_provider(monkeypatch):
+    monkeypatch.setattr("app.providers.cascade.get_active_providers", lambda **_: ["groq"])
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.tenant_configured_providers", lambda **_: set()
+    )
+    monkeypatch.setattr(
+        "app.cascade.breaker.default_breaker.snapshot",
+        lambda: {"acme|groq": {"state": "open"}},
+    )
+    out = _call(ep.providers_chain())
+    assert out["chain"][0]["breaker"] == "open"
