@@ -114,3 +114,33 @@ def test_validate_requires_absolute_without_workspace():
     v = validate("relative/path.txt", _ONE_LINE_DIFF)
     assert not v.valid
     assert v.stage == "path"
+
+
+# --- unique-match relocation (models mis-number @@ headers) ------------------
+
+
+def test_dry_run_relocates_misnumbered_hunk(tmp_path):
+    """The live Composer tour showed groq declaring `@@ -5` for a 2-line file;
+    content-exact diffs must apply anyway (the editor's applier already does)."""
+    f = _write(tmp_path, "util.py", "def helper():\n    return 1\n")
+    bad_position = "@@ -5,2 +5,2 @@\n def helper():\n-    return 1\n+    return 2\n"
+    d = dry_run(str(f), bad_position, workspace_root=str(tmp_path))
+    assert d.success, d.reason
+    r = apply(str(f), bad_position, workspace_root=str(tmp_path))
+    assert r.success, r.reason
+    assert "return 2" in f.read_text(encoding="utf-8")
+
+
+def test_dry_run_refuses_ambiguous_relocation(tmp_path):
+    f = _write(tmp_path, "twice.txt", "x = 1\ny = 2\nx = 1\ny = 2\n")
+    diff = "@@ -9,2 +9,2 @@\n x = 1\n-y = 2\n+y = 3\n"
+    d = dry_run(str(f), diff, workspace_root=str(tmp_path))
+    assert not d.success
+    assert "ambiguous" in (d.reason or "")
+
+
+def test_dry_run_refuses_when_content_matches_nowhere(tmp_path):
+    f = _write(tmp_path, "x.txt", "line1\nline2\nline3\n")
+    diff = "@@ -1,2 +1,2 @@\n line1\n-NOT-IN-FILE\n+new\n"
+    d = dry_run(str(f), diff, workspace_root=str(tmp_path))
+    assert not d.success
