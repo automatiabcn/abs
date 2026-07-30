@@ -240,3 +240,128 @@ __all__ = ["quota_meter_status", "cascade_ask", "pipeline_run", "REGISTERED_TOOL
 
 def _unused() -> Optional[str]:  # pragma: no cover — keeps Optional imported
     return None
+
+
+# --- BYOK provider keys ------------------------------------------------------
+#
+# The Engine panel can say "cohere: no key — nothing is routed here" and, until
+# now, offer no way to fix it: BYOK lived behind an admin-only HTTP route. These
+# two close that loop from the editor, with a deliberately narrow boundary:
+# a key set here belongs to the CALLING USER, never the tenant or the org. A
+# delegated MCP token must not be able to rewrite an organisation's credentials.
+
+
+def _caller_user() -> Optional[str]:
+    try:
+        from app.mcp.context import get_mcp_caller
+
+        _tenant, user = get_mcp_caller()
+        return str(user) if user else None
+    except Exception:  # pragma: no cover — defensive
+        return None
+
+
+@mcp_server.tool()
+@with_hooks("provider_keys_list")
+async def provider_keys_list() -> str:
+    """Which providers this account has its own key for. Metadata only —
+    plaintext keys are never returned, by this tool or any other."""
+    await tracker.bump("provider_keys_list")
+    from app.multitenant import provider_keys as _pk
+
+    tenant = _caller_tenant()
+    try:
+        rows = _pk.list_provider_keys(tenant_slug=tenant)
+    except Exception as exc:  # noqa: BLE001
+        return json.dumps(
+            {"ok": False, "error": "keys_unavailable", "detail": str(exc)[:300]},
+            ensure_ascii=False,
+        )
+    return json.dumps(
+        {"ok": True, "tenant": tenant, "keys": rows}, ensure_ascii=False, default=str
+    )
+
+
+@mcp_server.tool()
+@with_hooks("provider_key_set")
+async def provider_key_set(provider: str, value: str) -> str:
+    """Store this account's own key for a provider (BYOK), encrypted at rest.
+    The key is scoped to the CALLING USER — organisation-wide keys stay in the
+    panel, so a delegated editor token cannot rewrite an org's credentials.
+    The value is never echoed back."""
+    await tracker.bump("provider_key_set")
+    from app.multitenant import provider_keys as _pk
+
+    tenant = _caller_tenant()
+    user = _caller_user()
+    if not user:
+        # Without a user identity there is no safe owner to attach the key to;
+        # falling back to the tenant would silently widen its scope.
+        return json.dumps(
+            {
+                "ok": False,
+                "error": "no_user_identity",
+                "detail": "Sign in to ABS so the key can be stored against your account.",
+            },
+            ensure_ascii=False,
+        )
+    if not (value or "").strip():
+        return json.dumps(
+            {"ok": False, "error": "empty_value"}, ensure_ascii=False
+        )
+    try:
+        _pk.set_provider_key(
+            tenant_slug=tenant,
+            owner_type=_pk.OWNER_USER,
+            owner_id=user,
+            provider=provider,
+            value=value,
+        )
+    except ValueError as exc:
+        return json.dumps(
+            {"ok": False, "error": "invalid_request", "detail": str(exc)},
+            ensure_ascii=False,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return json.dumps(
+            {"ok": False, "error": "store_failed", "detail": str(exc)[:300]},
+            ensure_ascii=False,
+        )
+    return json.dumps(
+        {"ok": True, "provider": provider, "owner": "user", "stored": True},
+        ensure_ascii=False,
+    )
+
+
+@mcp_server.tool()
+@with_hooks("provider_key_delete")
+async def provider_key_delete(provider: str) -> str:
+    """Remove this account's own key for a provider. Only the caller's own key
+    is removable here — the org's key is not this token's to delete."""
+    await tracker.bump("provider_key_delete")
+    from app.multitenant import provider_keys as _pk
+
+    tenant = _caller_tenant()
+    user = _caller_user()
+    if not user:
+        return json.dumps(
+            {"ok": False, "error": "no_user_identity"}, ensure_ascii=False
+        )
+    try:
+        removed = _pk.delete_provider_key(
+            tenant_slug=tenant,
+            owner_type=_pk.OWNER_USER,
+            owner_id=user,
+            provider=provider,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return json.dumps(
+            {"ok": False, "error": "delete_failed", "detail": str(exc)[:300]},
+            ensure_ascii=False,
+        )
+    return json.dumps({"ok": True, "provider": provider, "removed": bool(removed)})
+
+
+REGISTERED_TOOLS.extend(
+    ["provider_keys_list", "provider_key_set", "provider_key_delete"]
+)
