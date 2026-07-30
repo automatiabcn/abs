@@ -141,3 +141,70 @@ def test_tools_are_registered(name):
 
     names = {t.name for t in asyncio.run(mcp_server.list_tools())}
     assert name in names
+
+
+# --- BYOK provider keys -----------------------------------------------------
+
+
+def test_provider_key_set_is_scoped_to_the_calling_user(monkeypatch):
+    """A delegated editor token must not be able to rewrite the organisation's
+    credentials: a key set from the editor belongs to that user alone."""
+    seen = {}
+
+    def _fake_set(*, tenant_slug, owner_type, owner_id, provider, value):
+        seen.update(
+            tenant=tenant_slug, owner_type=owner_type, owner=owner_id,
+            provider=provider, value=value,
+        )
+        return object()
+
+    monkeypatch.setattr("app.multitenant.provider_keys.set_provider_key", _fake_set)
+    monkeypatch.setattr(ep, "_caller_tenant", lambda: "acme")
+    monkeypatch.setattr(ep, "_caller_user", lambda: "alice@acme")
+
+    out = _call(ep.provider_key_set("cohere", "sk-secret"))
+    assert out["ok"] is True
+    assert seen["owner_type"] == "user", "an editor token must not set an org key"
+    assert seen["owner"] == "alice@acme"
+    assert seen["tenant"] == "acme"
+    # The value must never come back out.
+    assert "sk-secret" not in json.dumps(out)
+
+
+def test_provider_key_set_refuses_without_a_user_identity(monkeypatch):
+    monkeypatch.setattr(ep, "_caller_user", lambda: None)
+    out = _call(ep.provider_key_set("cohere", "sk-secret"))
+    assert out["ok"] is False
+    assert out["error"] == "no_user_identity"
+
+
+def test_provider_key_set_refuses_an_empty_value(monkeypatch):
+    monkeypatch.setattr(ep, "_caller_user", lambda: "alice@acme")
+    out = _call(ep.provider_key_set("cohere", "   "))
+    assert out["ok"] is False
+    assert out["error"] == "empty_value"
+
+
+def test_provider_keys_list_returns_metadata_without_plaintext(monkeypatch):
+    monkeypatch.setattr(ep, "_caller_tenant", lambda: "acme")
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.list_provider_keys",
+        lambda *, tenant_slug: [
+            {"provider": "cohere", "owner_type": "user", "owner_id": "alice@acme",
+             "last_validated_ok": True}
+        ],
+    )
+    out = _call(ep.provider_keys_list())
+    assert out["ok"] is True
+    assert out["keys"][0]["provider"] == "cohere"
+    assert "value" not in out["keys"][0]
+
+
+@pytest.mark.parametrize(
+    "name", ["provider_keys_list", "provider_key_set", "provider_key_delete"]
+)
+def test_byok_tools_are_registered(name):
+    from app.mcp.server import mcp_server as srv
+
+    names = {t.name for t in asyncio.run(srv.list_tools())}
+    assert name in names
