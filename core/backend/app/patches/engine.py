@@ -418,21 +418,74 @@ def validate(
 # In-memory applier — hunk-by-hunk, context-verified
 # ---------------------------------------------------------------------------
 
+class AmbiguousHunkError(ValueError):
+    """A hunk's context matches at two-plus places — refusing is the answer.
+
+    Kept distinct from plain ValueError so dry_run does NOT fall through to
+    `git apply --check`, whose fuzzy matcher would happily pick one of the
+    candidates and report success — the exact guess this engine refuses to make.
+    """
+
+
+def _hunk_old_block(h: Hunk) -> List[str]:
+    """The lines a hunk expects to find in the source (context + deletions)."""
+    return [hl.text for hl in h.lines if not hl.is_add]
+
+
+def _block_matches_at(source_lines: List[str], block: List[str], at: int) -> bool:
+    if at < 0 or at + len(block) > len(source_lines):
+        return False
+    return all(
+        source_lines[at + i].rstrip("\n") == block[i] for i in range(len(block))
+    )
+
+
+def _locate_hunk(source_lines: List[str], h: Hunk, src_idx: int) -> int:
+    """Where the hunk's old block actually sits.
+
+    The declared position wins when it matches. Otherwise the block is searched
+    from the cursor forward — models routinely mis-number `@@ -N` headers, and a
+    positionally-strict engine rejects diffs whose content is exact (the editor's
+    local applier already relocates; the server must agree with it). The match
+    must be UNIQUE: zero or two-plus candidates raise instead of guessing.
+    """
+    block = _hunk_old_block(h)
+    declared = h.old_start - 1  # 0-indexed
+    if not block:
+        # pure-insertion hunk: trust the declared spot, clamped into range
+        return min(max(declared, src_idx), len(source_lines))
+    if declared >= src_idx and _block_matches_at(source_lines, block, declared):
+        return declared
+    found = -1
+    for i in range(src_idx, len(source_lines) - len(block) + 1):
+        if _block_matches_at(source_lines, block, i):
+            if found != -1:
+                raise AmbiguousHunkError(
+                    f"hunk @@ -{h.old_start} is ambiguous: its context matches "
+                    f"at lines {found + 1} and {i + 1}; refusing to guess"
+                )
+            found = i
+    if found == -1:
+        raise ValueError(
+            f"hunk @@ -{h.old_start} does not match the file content "
+            "(declared position wrong and no unique relocation target)"
+        )
+    return found
+
+
 def _apply_hunks_inmem(source_lines: List[str], hunks: List[Hunk]) -> List[str]:
     """Apply hunks to source lines in order. Context mismatch -> ValueError.
 
     Unified-diff semantics: `old_start` is 1-indexed; context and '-' lines must
-    match the source, '+' lines are inserted, '-' lines are dropped.
+    match the source, '+' lines are inserted, '-' lines are dropped. Hunks whose
+    declared position is wrong are relocated to their unique content match
+    (see _locate_hunk); ambiguity is an error, never a guess.
     """
     result: List[str] = []
     src_idx = 0  # 0-indexed cursor into source
 
     for h in hunks:
-        target = h.old_start - 1  # 0-indexed
-        if target < src_idx:
-            raise ValueError(
-                f"hunk overlap: old_start={h.old_start} but cursor is at {src_idx + 1}"
-            )
+        target = _locate_hunk(source_lines, h, src_idx)
         while src_idx < target:
             if src_idx >= len(source_lines):
                 raise ValueError(f"source too short: hunk @@ -{h.old_start} unreachable")
@@ -498,6 +551,9 @@ def dry_run(
         if len(patched) > 50:
             preview += f"\n... ({len(patched) - 50} more lines)"
         return DryRunResult(True, "inmemory", preview, "")
+    except AmbiguousHunkError as exc:
+        # Deliberate refusal — git's fuzzy matcher would guess; we don't.
+        return DryRunResult(False, "inmemory", "", str(exc))
     except ValueError:
         pass  # fall through to git
     except Exception as exc:
