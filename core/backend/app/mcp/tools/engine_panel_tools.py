@@ -477,3 +477,127 @@ async def providers_chain(skip_paid: bool = False) -> str:
 
 
 REGISTERED_TOOLS.append("providers_chain")
+
+
+# --- The title bar's one reading ---------------------------------------------
+
+
+@mcp_server.tool()
+@with_hooks("title_status")
+async def title_status() -> str:
+    """Everything the editor's title bar shows, in one call.
+
+    The title bar is read at a glance, dozens of times an hour, so it must not
+    cost four round trips. Every number here is counted from live state; a
+    reading that cannot be taken comes back as null, never as zero — an empty
+    title bar is honest, a confident wrong number is not.
+
+    - `providers.ready` is how many providers could answer RIGHT NOW: a key,
+      a closed breaker, and not throttled. It moves as providers are added,
+      run out of quota, or trip — which is the point of showing it.
+    - `free_share` is the share of today's requests that free providers
+      served. It is null until something has actually run: "0% delegated" and
+      "nothing has run yet" are different statements.
+    """
+    await tracker.bump("title_status")
+    from app.cascade.breaker import default_breaker
+    from app.providers.cascade import PAID_PROVIDERS, get_active_providers, is_configured
+
+    tenant = _caller_tenant()
+    user = _caller_user()
+
+    byok: set = set()
+    try:
+        from app.multitenant.provider_keys import tenant_configured_providers
+
+        byok = set(tenant_configured_providers(tenant_slug=tenant, user_subject=user))
+    except Exception:  # noqa: BLE001 — BYOK is a bonus, never a blocker
+        byok = set()
+
+    providers_ready: List[str] = []
+    providers_total = 0
+    models: List[str] = []
+    try:
+        chain = get_active_providers(extra_configured=frozenset(byok))
+        providers_total = len(chain)
+        raw_breakers = default_breaker.snapshot() or {}
+        breakers = {
+            str(k).split("|")[-1]: v for k, v in raw_breakers.items()
+        }
+        for name in chain:
+            if not (name in byok or is_configured(name)):
+                continue
+            if (breakers.get(name) or {}).get("state", "closed") != "closed":
+                continue
+            try:
+                throttled, _reason = quota_meter.is_throttled(name, tenant_id=tenant)
+            except Exception:  # noqa: BLE001
+                throttled = False
+            if throttled:
+                continue
+            providers_ready.append(name)
+            # Each provider answers with one model; there is no separate model
+            # inventory to count, so the names are listed rather than invented.
+            try:
+                from app.providers.registry import get_provider
+
+                model = getattr(get_provider(name), "default_model", "")
+            except Exception:  # noqa: BLE001
+                model = ""
+            if model:
+                models.append(model)
+    except Exception as exc:  # noqa: BLE001 — the bar degrades, it does not fail
+        return json.dumps(
+            {
+                "ok": False,
+                "error": "providers_unavailable",
+                "detail": str(exc)[:200],
+                "account": user or "",
+                "providers": None,
+                "free_share": None,
+            },
+            ensure_ascii=False,
+        )
+
+    free_share: Optional[float] = None
+    requests_today: Optional[int] = None
+    try:
+        snapshot = quota_meter.get_all_status(tenant_id=tenant)
+        total = 0
+        free = 0
+        for name, row in (snapshot.get("providers") or {}).items():
+            used = int(row.get("total_requests") or 0)
+            total += used
+            if name not in PAID_PROVIDERS:
+                free += used
+        requests_today = total
+        # Null until something ran: "0% delegated" and "nothing has run yet"
+        # are different statements, and only one of them is true here.
+        if total > 0:
+            free_share = round(free / total * 100, 1)
+    except Exception:  # noqa: BLE001
+        requests_today = None
+
+    return json.dumps(
+        {
+            "ok": True,
+            "account": user or "",
+            "tenant": tenant,
+            "providers": {
+                "ready": len(providers_ready),
+                "total": providers_total,
+                "names": providers_ready,
+            },
+            "models": models,
+            "free_share": free_share,
+            "requests_today": requests_today,
+            "note": (
+                "ready = has a key, breaker closed, not throttled. free_share "
+                "is null until a request has been made."
+            ),
+        },
+        ensure_ascii=False,
+    )
+
+
+REGISTERED_TOOLS.append("title_status")
