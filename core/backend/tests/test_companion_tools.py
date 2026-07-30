@@ -209,10 +209,10 @@ def test_workflow_list_is_scoped_and_counts_steps(as_tenant):
     assert names["corrupt"]["steps"] is None, "unreadable ≠ empty"
 
 
-def test_a_cron_workflow_is_reported_as_unscheduled(as_tenant):
-    """The ontology validates a cron trigger and a template even ships one, but
-    nothing in this product runs a scheduler. Listing the expression without
-    that fact would promise an automation that never happens."""
+def test_a_cron_trigger_alone_is_not_a_schedule(as_tenant):
+    """A cron trigger written into a definition is a wish; a schedule row is the
+    fact. Reporting the expression as if it fired would promise an automation
+    that does not happen — so the flag follows the schedule, not the text."""
     import json as _json
 
     from sqlmodel import Session
@@ -240,5 +240,43 @@ def test_a_cron_workflow_is_reported_as_unscheduled(as_tenant):
     out = _call(ct.workflow_list())
     wf = out["workflows"][0]
     assert wf["cron_expr"] == "0 9 * * 1"
-    assert wf["scheduler_runs_it"] is False
-    assert "nothing fires it" in out["note"]
+    assert wf["scheduler_runs_it"] is False, "a trigger in the text is not a schedule"
+
+    # Schedule it for real: the same workflow now reports that it fires.
+    scheduled = _call(ct.workflow_schedule_set(wf["id"], "0 9 * * 1"))
+    assert scheduled["ok"] is True
+    assert scheduled["schedule"]["next_run_at"]
+    again = _call(ct.workflow_list())["workflows"][0]
+    assert again["scheduler_runs_it"] is True
+
+    listed = _call(ct.workflow_schedule_list())
+    assert listed["count"] == 1
+    assert "free provider chain" in listed["note"]
+    assert _call(ct.workflow_schedule_delete(scheduled["schedule"]["id"]))["removed"] is True
+
+
+def test_an_unrunnable_cron_is_refused_with_its_reason(as_tenant, monkeypatch):
+    import json as _json
+
+    from sqlmodel import Session
+
+    from app.db.models import SavedWorkflow
+    from app.db.session import get_engine
+
+    with Session(get_engine()) as db:
+        row = SavedWorkflow(
+            tenant_slug="bad-cron",
+            name="x",
+            definition_json=_json.dumps({"nodes": []}),
+            created_by="a",
+        )
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+        wf_id = row.id
+
+    as_tenant("bad-cron")
+    out = _call(ct.workflow_schedule_set(wf_id, "every monday please"))
+    assert out["ok"] is False
+    assert out["error"] == "bad_cron"
+    assert "5 fields" in out["detail"]

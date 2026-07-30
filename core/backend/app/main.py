@@ -299,6 +299,40 @@ async def lifespan(_app: FastAPI):
             )
         except Exception as exc:
             _lf_logger.warning("phone_home_skipped: %s", exc)
+    import os
+
+    # The workflow scheduler. Until this existed a saved cron trigger was
+    # decoration: validated, stored, never fired. Runs are enqueued through the
+    # normal runner, whose LLM steps are pinned to the free tier — so a
+    # schedule firing at 3am cannot spend money with nobody watching.
+    _schedule_task = None
+    if os.environ.get("ABS_TEST_MODE") != "1" and getattr(
+        _settings, "workflow_scheduler_enabled", True
+    ):
+        import asyncio as _asyncio
+
+        async def _schedule_loop() -> None:
+            from app.workflow_v10 import schedule as _schedule
+
+            while True:
+                try:
+                    await _asyncio.sleep(30)
+                    ran = await _schedule.tick()
+                    for entry in ran:
+                        _lf_logger.info(
+                            "scheduled workflow ran: %s job=%s%s",
+                            entry.get("workflow"),
+                            entry.get("job_id"),
+                            f" error={entry['error']}" if entry.get("error") else "",
+                        )
+                except _asyncio.CancelledError:
+                    raise
+                except Exception as exc:  # noqa: BLE001 — a bad tick must not kill the loop
+                    _lf_logger.warning("workflow scheduler tick failed: %s", exc)
+
+        _schedule_task = _asyncio.create_task(_schedule_loop())
+        _lf_logger.info("workflow scheduler started (30s tick, free tier only)")
+
     # Load the provider config YAMLs once at boot (idempotent).
     try:
         from app.providers.configs import load_all
@@ -385,6 +419,16 @@ async def lifespan(_app: FastAPI):
             _heartbeat_task.cancel()
             try:
                 await _heartbeat_task
+            except (asyncio.CancelledError, Exception):
+                pass
+
+        # Same for the workflow scheduler: a tick in flight must not hold
+        # shutdown open, and a cancelled tick has already claimed its schedules
+        # atomically, so nothing is lost or double-run.
+        if _schedule_task is not None:
+            _schedule_task.cancel()
+            try:
+                await _schedule_task
             except (asyncio.CancelledError, Exception):
                 pass
 

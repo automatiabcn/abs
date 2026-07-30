@@ -299,6 +299,15 @@ async def workflow_list(limit: int = 50) -> str:
             ensure_ascii=False,
         )
 
+    # A cron trigger in the definition is a wish; a schedule row is the fact.
+    scheduled: set = set()
+    try:
+        from app.workflow_v10.schedule import scheduled_workflow_ids
+
+        scheduled = scheduled_workflow_ids(tenant_slug=tenant)
+    except Exception:  # noqa: BLE001 — listing must survive a schedule lookup
+        scheduled = set()
+
     items: List[Dict[str, Any]] = []
     for row in rows:
         try:
@@ -325,7 +334,7 @@ async def workflow_list(limit: int = 50) -> str:
                 # step count, and 0 would read as an empty workflow.
                 "steps": len(nodes) if isinstance(nodes, list) else None,
                 "cron_expr": cron,
-                "scheduler_runs_it": False,
+                "scheduler_runs_it": row.id in scheduled,
                 "created_by": row.created_by,
                 "updated_at": row.updated_at,
             }
@@ -336,8 +345,9 @@ async def workflow_list(limit: int = 50) -> str:
             "count": len(items),
             "workflows": items,
             "note": (
-                "No scheduler runs on this server: a workflow with a cron "
-                "trigger is stored and validated, but nothing fires it."
+                "A cron trigger written into a definition is not a schedule — "
+                "schedule one with workflow_schedule_set and it fires on the "
+                "free provider chain."
             ),
         },
         ensure_ascii=False,
@@ -346,3 +356,91 @@ async def workflow_list(limit: int = 50) -> str:
 
 
 REGISTERED_TOOLS.append("workflow_list")
+
+
+# --- Schedules --------------------------------------------------------------
+
+
+@mcp_server.tool()
+@with_hooks("workflow_schedule_list")
+async def workflow_schedule_list() -> str:
+    """The schedules that actually fire for this account: when each next runs,
+    when it last ran, and the reason it stopped if it did."""
+    await tracker.bump("workflow_schedule_list")
+    from app.workflow_v10 import schedule as _schedule
+
+    tenant, _user = _caller()
+    try:
+        rows = _schedule.list_schedules(tenant_slug=tenant)
+    except Exception as exc:  # noqa: BLE001
+        return json.dumps(
+            {"ok": False, "error": "schedules_unavailable", "detail": str(exc)[:300]},
+            ensure_ascii=False,
+        )
+    return json.dumps(
+        {
+            "ok": True,
+            "count": len(rows),
+            "schedules": rows,
+            "note": (
+                "Times are UTC. A scheduled run uses the free provider chain — "
+                "it executes with nobody watching, so it cannot spend money."
+            ),
+        },
+        ensure_ascii=False,
+        default=str,
+    )
+
+
+@mcp_server.tool()
+@with_hooks("workflow_schedule_set")
+async def workflow_schedule_set(workflow_id: int, cron_expr: str) -> str:
+    """Schedule a saved workflow: 5-field cron, UTC (e.g. '0 9 * * 1' = Mondays
+    at 09:00). Scheduled runs use the free provider chain only. An expression
+    this scheduler cannot run is refused with the reason, rather than stored as
+    a schedule that silently never fires."""
+    await tracker.bump("workflow_schedule_set")
+    from app.workflow_v10 import cron as _cron
+    from app.workflow_v10 import schedule as _schedule
+
+    tenant, user = _caller()
+    try:
+        row = _schedule.set_schedule(
+            tenant_slug=tenant,
+            workflow_id=int(workflow_id),
+            cron_expr=cron_expr,
+            created_by=user,
+        )
+    except _cron.CronError as exc:
+        return json.dumps(
+            {"ok": False, "error": "bad_cron", "detail": str(exc)}, ensure_ascii=False
+        )
+    except LookupError:
+        return json.dumps(
+            {"ok": False, "error": "workflow_not_found"}, ensure_ascii=False
+        )
+    except Exception as exc:  # noqa: BLE001
+        return json.dumps(
+            {"ok": False, "error": "schedule_failed", "detail": str(exc)[:300]},
+            ensure_ascii=False,
+        )
+    return json.dumps({"ok": True, "schedule": row}, ensure_ascii=False, default=str)
+
+
+@mcp_server.tool()
+@with_hooks("workflow_schedule_delete")
+async def workflow_schedule_delete(schedule_id: int) -> str:
+    """Stop a schedule. Only this account's own schedules are removable here."""
+    await tracker.bump("workflow_schedule_delete")
+    from app.workflow_v10 import schedule as _schedule
+
+    tenant, _user = _caller()
+    removed = _schedule.delete_schedule(
+        tenant_slug=tenant, schedule_id=int(schedule_id)
+    )
+    return json.dumps({"ok": True, "removed": bool(removed)}, ensure_ascii=False)
+
+
+REGISTERED_TOOLS.extend(
+    ["workflow_schedule_list", "workflow_schedule_set", "workflow_schedule_delete"]
+)
