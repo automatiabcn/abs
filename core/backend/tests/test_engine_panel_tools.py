@@ -208,3 +208,41 @@ def test_byok_tools_are_registered(name):
 
     names = {t.name for t in asyncio.run(srv.list_tools())}
     assert name in names
+
+
+def test_a_byok_key_makes_the_provider_count_as_configured(monkeypatch):
+    """Live check found this: the panel told a user to add a key, they added it,
+    and the gauge still said 'no key' — because only the SERVER's env was read.
+    A key the account supplied is a key."""
+    monkeypatch.setattr(ep, "_caller_tenant", lambda: "acme")
+    monkeypatch.setattr(ep, "_caller_user", lambda: "alice@acme")
+    monkeypatch.setattr(ep.settings, "cohere_api_key", "", raising=False)
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.tenant_configured_providers",
+        lambda **_: {"cohere"},
+    )
+    out = _call(ep.quota_meter_status())
+    cohere = out["providers"]["cohere"]
+    assert cohere["configured"] is True
+    assert cohere["key_source"] == "account", "whose key it is must be visible"
+
+
+def test_a_server_key_is_labelled_as_the_servers(monkeypatch):
+    monkeypatch.setattr(ep, "_caller_tenant", lambda: "acme")
+    monkeypatch.setattr(ep.settings, "groq_api_key", "sk-server", raising=False)
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.tenant_configured_providers", lambda **_: set()
+    )
+    out = _call(ep.quota_meter_status())
+    assert out["providers"]["groq"]["key_source"] == "server"
+
+
+def test_a_broken_byok_lookup_does_not_break_the_gauge(monkeypatch):
+    def _boom(**_):
+        raise RuntimeError("db down")
+
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.tenant_configured_providers", _boom
+    )
+    out = _call(ep.quota_meter_status())
+    assert "providers" in out, "the quota gauge must survive a BYOK lookup failure"

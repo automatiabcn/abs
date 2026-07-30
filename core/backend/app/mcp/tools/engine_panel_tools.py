@@ -38,6 +38,17 @@ from app.mcp.tracking import tracker
 REGISTERED_TOOLS: List[str] = []
 
 
+def _caller_user() -> Optional[str]:
+    """The user this MCP token was minted for, when the transport carries one."""
+    try:
+        from app.mcp.context import get_mcp_caller
+
+        _tenant, user = get_mcp_caller()
+        return str(user) if user else None
+    except Exception:  # pragma: no cover — defensive
+        return None
+
+
 def _caller_tenant() -> str:
     try:
         from app.mcp.context import get_mcp_caller
@@ -57,10 +68,11 @@ async def quota_meter_status() -> str:
     throttle state and reason. Providers with no known limit are reported as
     unlimited rather than shown as an empty gauge."""
     await tracker.bump("quota_meter_status")
-    snapshot = quota_meter.get_all_status(tenant_id=_caller_tenant())
+    tenant = _caller_tenant()
+    snapshot = quota_meter.get_all_status(tenant_id=tenant)
     # Say which providers actually have a key, so a full gauge on an
     # unconfigured provider cannot read as "ready to serve".
-    configured = {
+    server_keys = {
         "groq": bool(settings.groq_api_key),
         "cerebras": bool(settings.cerebras_api_key),
         "gemini": bool(settings.gemini_api_key),
@@ -68,8 +80,28 @@ async def quota_meter_status() -> str:
         "cohere": bool(settings.cohere_api_key),
         "openrouter": bool(settings.openrouter_api_key),
     }
+    # BYOK counts. Reading only the server's env told a user who had just added
+    # their own key that the provider still had none — the panel asked them to
+    # fix something and then ignored the fix.
+    byok: set = set()
+    try:
+        from app.multitenant.provider_keys import tenant_configured_providers
+
+        byok = set(
+            tenant_configured_providers(
+                tenant_slug=tenant, user_subject=_caller_user()
+            )
+        )
+    except Exception:  # noqa: BLE001 — BYOK lookup must never break the gauge
+        byok = set()
     for name, row in snapshot.get("providers", {}).items():
-        row["configured"] = configured.get(name, False)
+        from_account = name in byok
+        row["configured"] = bool(server_keys.get(name, False) or from_account)
+        # Whose key is answering matters: "mine" and "the server's" are
+        # different bills and different trust.
+        row["key_source"] = (
+            "account" if from_account else ("server" if server_keys.get(name) else "")
+        )
     snapshot["limits"] = quota_meter.QUOTA_LIMITS
     snapshot["note"] = (
         "Counted by this server as calls go out — not fetched from the "
@@ -249,16 +281,6 @@ def _unused() -> Optional[str]:  # pragma: no cover — keeps Optional imported
 # two close that loop from the editor, with a deliberately narrow boundary:
 # a key set here belongs to the CALLING USER, never the tenant or the org. A
 # delegated MCP token must not be able to rewrite an organisation's credentials.
-
-
-def _caller_user() -> Optional[str]:
-    try:
-        from app.mcp.context import get_mcp_caller
-
-        _tenant, user = get_mcp_caller()
-        return str(user) if user else None
-    except Exception:  # pragma: no cover — defensive
-        return None
 
 
 @mcp_server.tool()
