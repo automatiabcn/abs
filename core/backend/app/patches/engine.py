@@ -51,7 +51,7 @@ import subprocess
 import tempfile
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -427,6 +427,30 @@ class AmbiguousHunkError(ValueError):
     """
 
 
+def _dedent_one_space(lines: List[HunkLine]) -> Optional[List[HunkLine]]:
+    """Drop one leading space from every line of a hunk, or None if that is not
+    what is wrong with it.
+
+    Models write ``- def helper():`` — marker, then a courtesy space, then the
+    code — where the format allows exactly one marker character followed by the
+    line's real content. Every line then carries a phantom indent and nothing
+    matches the file. The shift is only undone when it is UNIFORM (every
+    non-empty line starts with a space), and the caller still requires a unique
+    content match afterwards, so a genuinely indented hunk is never silently
+    re-indented.
+    """
+    if not lines:
+        return None
+    if not any(hl.text.strip() for hl in lines):
+        return None
+    if not all(hl.text.startswith(" ") or not hl.text.strip() for hl in lines):
+        return None
+    return [
+        HunkLine(hl.op, hl.text[1:] if hl.text.startswith(" ") else hl.text)
+        for hl in lines
+    ]
+
+
 def _trim_trailing_blank_context(lines: List[HunkLine]) -> List[HunkLine]:
     """Drop a trailing run of blank context lines from a hunk.
 
@@ -490,6 +514,43 @@ def _locate_hunk(
     return found
 
 
+def _place_repaired_hunk(
+    source_lines: List[str], h: Hunk, src_idx: int
+) -> Tuple[int, List[HunkLine]]:
+    """Place a hunk the strict pass could not, by undoing model artifacts.
+
+    Repairs are tried in order and COMBINED (a diff often carries both): drop
+    the trailing blank context, undo a uniform one-space shift, or both. Every
+    candidate is placed through :func:`_locate_hunk`, so it must still match the
+    file uniquely — a repair widens what the engine can read, never what it is
+    willing to assume. Raises the strict failure if nothing places.
+    """
+    candidates: List[List[HunkLine]] = []
+    trimmed = _trim_trailing_blank_context(h.lines)
+    if len(trimmed) != len(h.lines):
+        candidates.append(trimmed)
+    for base in ([h.lines, trimmed] if len(trimmed) != len(h.lines) else [h.lines]):
+        dedented = _dedent_one_space(base)
+        if dedented is not None:
+            candidates.append(dedented)
+
+    for lines in candidates:
+        if not lines:
+            continue
+        try:
+            target = _locate_hunk(source_lines, h, src_idx, _hunk_old_block(h, lines))
+        except AmbiguousHunkError:
+            raise
+        except ValueError:
+            continue
+        return target, lines
+
+    raise ValueError(
+        f"hunk @@ -{h.old_start} does not match the file content "
+        "(no unique placement, with or without diff-format repairs)"
+    )
+
+
 def _apply_hunks_inmem(source_lines: List[str], hunks: List[Hunk]) -> List[str]:
     """Apply hunks to source lines in order. Context mismatch -> ValueError.
 
@@ -508,14 +569,11 @@ def _apply_hunks_inmem(source_lines: List[str], hunks: List[Hunk]) -> List[str]:
         except AmbiguousHunkError:
             raise
         except ValueError:
-            # Retry without the trailing blank context a model tacked on; if
-            # that is not the problem, the original failure stands.
-            hunk_lines = _trim_trailing_blank_context(h.lines)
-            if len(hunk_lines) == len(h.lines):
-                raise
-            target = _locate_hunk(
-                source_lines, h, src_idx, _hunk_old_block(h, hunk_lines)
-            )
+            # The hunk's content is right but its shape carries a model
+            # artifact. Try each known repair; each one still has to land on a
+            # UNIQUE content match, so none of them is a guess. If none places
+            # the hunk, the original failure stands.
+            target, hunk_lines = _place_repaired_hunk(source_lines, h, src_idx)
         while src_idx < target:
             if src_idx >= len(source_lines):
                 raise ValueError(f"source too short: hunk @@ -{h.old_start} unreachable")
