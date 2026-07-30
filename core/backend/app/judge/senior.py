@@ -66,26 +66,52 @@ async def _llm_judge(
     )
     try:
         provider = get_provider("groq")
-        resp = await provider.call(prompt, model="openai/gpt-oss-120b", max_tokens=300)
+        # Room for the diff-aware answer. At 300 the reply was truncated
+        # mid-string, the JSON never closed, and a real 6 was recorded as a 0 —
+        # which then read as "this file scored below 5" in the review panel.
+        resp = await provider.call(prompt, model="openai/gpt-oss-120b", max_tokens=1200)
     except (ProviderError, Exception) as exc:  # noqa: BLE001
         logger.info("LLM judge skipped: %s", exc)
-        return {"score": 0.0, "teaching": f"LLM quota/err: {str(exc)[:100]}"}
+        return {"score": None, "teaching": f"LLM unavailable: {str(exc)[:100]}"}
 
+    text = resp.text or ""
+    score, teaching = _parse_judgement(text)
+    if score is None:
+        # Unusable output is UNKNOWN, never zero. A failed judgement scored as
+        # 0 is worse than no judgement: it accuses code the judge never read.
+        logger.info("LLM judge produced no usable score: %r", text[:200])
+        return {"score": None, "teaching": text[:200]}
+    return {"score": score, "teaching": teaching}
+
+
+def _parse_judgement(text: str) -> tuple[Optional[float], str]:
+    """Pull (score, teaching) out of a model reply.
+
+    Models wrap the object in prose, and a long answer can be cut off before
+    its closing brace. A truncated reply still carries the number we asked for,
+    so the score is salvaged from `"score": N` directly when the object does
+    not parse — otherwise a complete judgement is thrown away over a missing
+    character.
+    """
     import json as _json
     import re
 
-    text = resp.text or ""
-    # First JSON object in the reply wins; models like to wrap it in prose.
-    m = re.search(r"\{[^{}]*\"score\"[^{}]*\}", text, re.DOTALL)
-    if not m:
-        return {"score": 0.0, "teaching": text[:200]}
-    try:
-        parsed = _json.loads(m.group(0))
-        score = float(parsed.get("score", 0.0))
-        teaching = str(parsed.get("teaching", ""))[:400]
-        return {"score": max(0.0, min(10.0, score)), "teaching": teaching}
-    except Exception:
-        return {"score": 0.0, "teaching": text[:200]}
+    if not text.strip():
+        return None, ""
+    match = re.search(r"\{[^{}]*\"score\"[^{}]*\}", text, re.DOTALL)
+    if match:
+        try:
+            parsed = _json.loads(match.group(0))
+            raw = float(parsed.get("score"))
+            return max(0.0, min(10.0, raw)), str(parsed.get("teaching", ""))[:400]
+        except (TypeError, ValueError):
+            pass
+    loose = re.search(r'"score"\s*:\s*(-?\d+(?:\.\d+)?)', text)
+    if not loose:
+        return None, ""
+    salvaged = max(0.0, min(10.0, float(loose.group(1))))
+    note = re.search(r'"teaching"\s*:\s*"([^"]*)', text)
+    return salvaged, (note.group(1)[:400] if note else "")
 
 
 async def judge_diff(diff_text: str, file_path: Optional[str] = None) -> Dict[str, Any]:
@@ -98,12 +124,21 @@ async def judge_diff(diff_text: str, file_path: Optional[str] = None) -> Dict[st
     ast_s = _ast_score(metrics, persona) if metrics else 0.0
 
     llm = await _llm_judge(added_code, diff_text=diff_text, file_path=file_path)
-    llm_s = float(llm.get("score", 0.0))
+    raw_llm = llm.get("score")
+    llm_s: Optional[float] = float(raw_llm) if raw_llm is not None else None
 
-    if metrics:
-        combined = round(0.6 * ast_s + 0.4 * llm_s, 2)
-    else:
+    # An unavailable model leg is not a zero. Grade on what was actually
+    # measured: both legs when both ran, the AST alone when the model did not
+    # answer, and NOTHING (None) when neither could judge — the caller renders
+    # that as ungraded, which is the truth.
+    if metrics and llm_s is not None:
+        combined: Optional[float] = round(0.6 * ast_s + 0.4 * llm_s, 2)
+    elif metrics:
+        combined = round(ast_s, 2)
+    elif llm_s is not None:
         combined = round(llm_s, 2)
+    else:
+        combined = None
 
     teaching_lines: List[str] = []
     if metrics:
@@ -118,10 +153,16 @@ async def judge_diff(diff_text: str, file_path: Optional[str] = None) -> Dict[st
     if llm.get("teaching"):
         teaching_lines.append(f"LLM: {llm['teaching']}")
 
+    if llm_s is None:
+        teaching_lines.append(
+            "the model leg did not answer — this score is the AST fingerprint "
+            "alone" if metrics else "no judgement was possible for this change"
+        )
+
     result = {
         "combined_score": combined,
         "ast_score": round(ast_s, 2) if metrics else None,
-        "llm_score": round(llm_s, 2),
+        "llm_score": round(llm_s, 2) if llm_s is not None else None,
         "added_lines": len(added_code.splitlines()),
         "fingerprint_details": [
             {"metric": k, "actual": metrics.get(k, 0.0), "target": persona.get(k, 0.0)}
