@@ -141,12 +141,16 @@ def test_promise_v6_cost_ledger_flags_anthropic_floor_estimate():
 
 
 def test_promise_v6_cascade_smoke_runs_green():
-    """Run the cascade smoke as a subprocess; require 7/7 rounds.
+    """Run the cascade smoke as a subprocess; every round must pass.
 
     This is a contract smoke for the script itself, on top of the
     dedicated `test_cascade*.py` suites that cover the orchestrator
-    semantics directly.
+    semantics directly. Counts are derived from the chain, not pinned —
+    adding a provider (openrouter, 07-31) must not re-describe a smoke
+    in which every round passed as a failure.
     """
+    from app.providers.cascade import PROVIDER_ORDER_PAID_FIRST
+
     rc = subprocess.call(
         [sys.executable, str(CASCADE_SCRIPT)],
         cwd=str(REPO),
@@ -156,9 +160,9 @@ def test_promise_v6_cascade_smoke_runs_green():
     assert art_json.exists()
     body = json.loads(art_json.read_text(encoding="utf-8"))
     rep = body["report"]
-    assert rep["passed"] == rep["total"] == 7, rep
-    # Six providers in the paid-first chain.
-    assert len(rep["chain"]) == 6
+    assert rep["passed"] == rep["total"], rep
+    assert rep["total"] == len(PROVIDER_ORDER_PAID_FIRST) + 1  # +1 cache round
+    assert len(rep["chain"]) == len(PROVIDER_ORDER_PAID_FIRST)
     assert rep["chain"][0] == "anthropic"
 
 
