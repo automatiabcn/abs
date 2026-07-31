@@ -161,6 +161,12 @@ def test_provider_key_set_is_scoped_to_the_calling_user(monkeypatch):
     monkeypatch.setattr("app.multitenant.provider_keys.set_provider_key", _fake_set)
     monkeypatch.setattr(ep, "_caller_tenant", lambda: "acme")
     monkeypatch.setattr(ep, "_caller_user", lambda: "alice@acme")
+    from app.providers.key_probe import KeyProbeResult
+
+    monkeypatch.setattr(
+        "app.providers.key_probe.probe_provider_key",
+        lambda p, v: KeyProbeResult("valid"),
+    )
 
     out = _call(ep.provider_key_set("cohere", "sk-secret"))
     assert out["ok"] is True
@@ -183,6 +189,72 @@ def test_provider_key_set_refuses_an_empty_value(monkeypatch):
     out = _call(ep.provider_key_set("cohere", "   "))
     assert out["ok"] is False
     assert out["error"] == "empty_value"
+
+
+def test_a_key_the_provider_rejects_is_never_stored(monkeypatch):
+    """Live incident (07-31): a key mangled in the input box sat in the chain
+    as green 'ready' — readiness is breaker state and a never-called breaker
+    is closed. The provider is asked FIRST; a rejected key does not get in."""
+    from app.providers.key_probe import KeyProbeResult
+
+    stored = []
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.set_provider_key",
+        lambda **kw: stored.append(kw),
+    )
+    monkeypatch.setattr(ep, "_caller_tenant", lambda: "acme")
+    monkeypatch.setattr(ep, "_caller_user", lambda: "alice@acme")
+    monkeypatch.setattr(
+        "app.providers.key_probe.probe_provider_key",
+        lambda p, v: KeyProbeResult("rejected", "cohere rejected the key (401)"),
+    )
+
+    out = _call(ep.provider_key_set("cohere", "sk-mangled"))
+    assert out["ok"] is False
+    assert out["error"] == "key_rejected"
+    assert "NOT stored" in out["detail"]
+    assert stored == [], "a rejected key must never reach the vault"
+
+
+def test_an_unreachable_provider_stores_the_key_but_says_unverified(monkeypatch):
+    """A network fault is not a verdict on the key — but a key nobody has seen
+    work must not read the same as one the provider just accepted."""
+    from app.providers.key_probe import KeyProbeResult
+
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.set_provider_key",
+        lambda **kw: object(),
+    )
+    monkeypatch.setattr(ep, "_caller_tenant", lambda: "acme")
+    monkeypatch.setattr(ep, "_caller_user", lambda: "alice@acme")
+    monkeypatch.setattr(
+        "app.providers.key_probe.probe_provider_key",
+        lambda p, v: KeyProbeResult("unreachable", "cohere could not be reached"),
+    )
+
+    out = _call(ep.provider_key_set("cohere", "sk-maybe"))
+    assert out["ok"] is True
+    assert out["verified"] is False
+    assert "could not be reached" in out["note"]
+
+
+def test_a_probe_accepted_key_reports_verified(monkeypatch):
+    from app.providers.key_probe import KeyProbeResult
+
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.set_provider_key",
+        lambda **kw: object(),
+    )
+    monkeypatch.setattr(ep, "_caller_tenant", lambda: "acme")
+    monkeypatch.setattr(ep, "_caller_user", lambda: "alice@acme")
+    monkeypatch.setattr(
+        "app.providers.key_probe.probe_provider_key",
+        lambda p, v: KeyProbeResult("valid"),
+    )
+
+    out = _call(ep.provider_key_set("gemini", "AIza-good"))
+    assert out["ok"] is True
+    assert out["verified"] is True
 
 
 def test_provider_keys_list_returns_metadata_without_plaintext(monkeypatch):
