@@ -70,6 +70,20 @@ def _clean(raw: str, prefix: str, suffix: str) -> str:
     if not text:
         return ""
 
+    # Drop a leading replay of the prefix itself. Fast chat models sometimes
+    # restate the whole snippet from the top despite the instruction, and the
+    # current-line handling below cannot see past one line. Strip the longest
+    # tail of the prefix the answer literally starts with — but only when that
+    # overlap spans a line break; a shorter match is more likely the real
+    # completion than an echo.
+    for k in range(min(len(prefix), len(text)), 0, -1):
+        tail = prefix[-k:]
+        if "\n" not in tail:
+            break
+        if text.startswith(tail):
+            text = text[k:]
+            break
+
     # Drop a leading echo of the current line. Models replay it ("return a + b"
     # when the cursor sits after "    return "), sometimes with the indentation
     # too. Compare against the line's content without its leading indent but
