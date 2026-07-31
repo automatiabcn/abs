@@ -666,7 +666,13 @@ async def fim_complete(prefix: str, suffix: str = "", language: str = "") -> str
     await tracker.bump("fim_complete")
     from app.fim.complete import complete
 
-    result = await complete(prefix, suffix, language=language)
+    result = await complete(
+        prefix,
+        suffix,
+        language=language,
+        tenant_id=_caller_tenant(),
+        user_subject=_caller_user(),
+    )
     return json.dumps(result, ensure_ascii=False)
 
 

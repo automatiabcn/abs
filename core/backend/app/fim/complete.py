@@ -39,9 +39,14 @@ _MAX_TOKENS = 80
 _TIMEOUT_S = 3.0
 # A fast free model. The completion path never falls back to a paid provider —
 # autocomplete cost would balloon, and a missed completion is acceptable.
+# Measured, not guessed (08-01): cerebras' llama3.1-8b was retired upstream —
+# the entry sat here wrong and invisible until BYOK promoted cerebras and Tab
+# went silent. gpt-oss-120b answers in 327ms with an EMPTY completion (it is a
+# reasoning model and spends the 80-token budget thinking); gemma-4-31b answers
+# in 350ms with the right insertion. groq stays first on latency.
 _FAST_MODELS = {
     "groq": "llama-3.1-8b-instant",
-    "cerebras": "llama3.1-8b",
+    "cerebras": "gemma-4-31b",
 }
 
 _FENCE = re.compile(r"^```[a-zA-Z0-9+-]*\n?|\n?```$")
@@ -111,17 +116,39 @@ def _clean(raw: str, prefix: str, suffix: str) -> str:
     return text if text.strip() else ""
 
 
-def _first_free_fast() -> Optional[str]:
-    """The fastest free provider we have a completion model for."""
+def _free_fast_chain(
+    tenant_id: Optional[str] = None, user_subject: Optional[str] = None
+) -> list:
+    """The fastest free provider we have a completion model for.
+
+    BYOK counts here too. The panel promises "the providers you supplied a
+    key for come first", and Tab is the feature a developer touches hundreds
+    of times a day — answering it from the operator's key while the user's
+    own sits unused makes that promise false where it is felt most.
+    """
     try:
         from app.providers.cascade import get_active_providers
 
-        for name in get_active_providers(skip_paid=True):
-            if name in _FAST_MODELS:
-                return name
+        extra: frozenset = frozenset()
+        if tenant_id:
+            try:
+                from app.multitenant.provider_keys import tenant_configured_providers
+
+                extra = frozenset(
+                    tenant_configured_providers(
+                        tenant_slug=tenant_id, user_subject=user_subject
+                    )
+                )
+            except Exception as exc:  # noqa: BLE001 — BYOK is a bonus, never a blocker
+                logger.debug("fim BYOK lookup skipped: %s", exc)
+        return [
+            name
+            for name in get_active_providers(skip_paid=True, extra_configured=extra)
+            if name in _FAST_MODELS
+        ]
     except Exception as exc:  # noqa: BLE001
         logger.debug("fim provider lookup failed: %s", exc)
-    return None
+    return []
 
 
 async def complete(
@@ -129,6 +156,8 @@ async def complete(
     suffix: str = "",
     *,
     language: str = "",
+    tenant_id: Optional[str] = None,
+    user_subject: Optional[str] = None,
 ) -> Dict[str, object]:
     """Return the text to insert at the cursor, or an empty string.
 
@@ -140,43 +169,83 @@ async def complete(
     if not prefix.strip():
         return {"text": "", "provider": "", "ms": 0}
 
-    provider_name = _first_free_fast()
-    if not provider_name:
+    chain = _free_fast_chain(tenant_id, user_subject)
+    if not chain:
         return {"text": "", "provider": "", "ms": 0, "note": "no fast free provider"}
 
-    started = time.monotonic()
-    try:
-        from app.providers.registry import get_provider
+    # Try at most two. One provider was a single point of silence: when
+    # cerebras' pinned model was retired upstream, Tab simply stopped
+    # answering and nothing said why (08-01). A second attempt keeps the
+    # feature alive through a stale pin or a momentary outage; a third would
+    # cost more latency than a completion is worth.
+    from app.providers.registry import get_provider
 
-        provider = get_provider(provider_name)
-        resp = await provider.call(
-            _prompt(prefix, suffix, language),
-            model=_FAST_MODELS[provider_name],
-            max_tokens=_MAX_TOKENS,
-            timeout=_TIMEOUT_S,
-        )
-    except Exception as exc:  # noqa: BLE001 — a missed completion is acceptable
-        logger.debug("fim call failed: %s", exc)
-        return {"text": "", "provider": provider_name, "ms": 0}
+    last_provider = ""
+    for provider_name in chain[:2]:
+        last_provider = provider_name
+        started = time.monotonic()
+        # A provider the caller supplied a key for is only usable if the key
+        # travels with the call. The cascade resolves per-owner keys for its
+        # callers; Tab bypasses the cascade for latency, so it must do the
+        # same lookup itself — without it, BYOK put cerebras first and the
+        # adapter answered "api key is not configured" (found in review,
+        # 08-01: the promotion was real, the credential never followed).
+        call_kwargs: dict = {}
+        if tenant_id and (user_subject or tenant_id):
+            try:
+                from app.multitenant.provider_keys import resolve_provider_key
 
-    ms = int((time.monotonic() - started) * 1000)
-    # FIM bypasses the cascade, so it must feed the meter itself — otherwise
-    # every keystroke completion is invisible to the quota panel and the
-    # per-model usage readout (live finding, 07-31).
-    try:
-        from app.cascade import quota_meter
+                owner_key = resolve_provider_key(
+                    provider_name,
+                    tenant_slug=tenant_id,
+                    user_subject=user_subject,
+                    include_global=False,
+                )
+                if owner_key:
+                    call_kwargs["api_key"] = owner_key
+            except Exception as exc:  # noqa: BLE001 — never block a completion
+                logger.debug("fim owner-key resolve skipped: %s", exc)
+        try:
+            provider = get_provider(provider_name)
+            resp = await provider.call(
+                _prompt(prefix, suffix, language),
+                model=_FAST_MODELS[provider_name],
+                max_tokens=_MAX_TOKENS,
+                timeout=_TIMEOUT_S,
+                **call_kwargs,
+            )
+        except Exception as exc:  # noqa: BLE001 — a missed completion is acceptable
+            logger.debug("fim call failed on %s: %s", provider_name, exc)
+            continue
 
-        quota_meter.record_usage(
-            provider_name,
-            tokens=int(getattr(resp, "tokens_in", 0) or 0)
-            + int(getattr(resp, "tokens_out", 0) or 0),
-            status_code=200,
-            model=getattr(resp, "model", "") or _FAST_MODELS[provider_name],
-        )
-    except Exception:  # noqa: BLE001 — metering is never worth a missed completion
-        logger.debug("fim meter skipped", exc_info=True)
-    text = _clean(getattr(resp, "text", "") or "", prefix, suffix)
-    return {"text": text, "provider": provider_name, "ms": ms, "tier": "free"}
+        ms = int((time.monotonic() - started) * 1000)
+        text = _clean(getattr(resp, "text", "") or "", prefix, suffix)
+        if not text:
+            # An empty answer from a model that spent its budget thinking is
+            # not an outage — but it is also not a completion. Let the next
+            # provider try before giving the editor nothing.
+            logger.debug("fim empty completion from %s", provider_name)
+            continue
+
+        # FIM bypasses the cascade, so it must feed the meter itself — otherwise
+        # every keystroke completion is invisible to the quota panel and the
+        # per-model usage readout (live finding, 07-31).
+        try:
+            from app.cascade import quota_meter
+
+            quota_meter.record_usage(
+                provider_name,
+                tenant_id=tenant_id or "default",
+                tokens=int(getattr(resp, "tokens_in", 0) or 0)
+                + int(getattr(resp, "tokens_out", 0) or 0),
+                status_code=200,
+                model=getattr(resp, "model", "") or _FAST_MODELS[provider_name],
+            )
+        except Exception:  # noqa: BLE001 — metering is never worth a missed completion
+            logger.debug("fim meter skipped", exc_info=True)
+        return {"text": text, "provider": provider_name, "ms": ms, "tier": "free"}
+
+    return {"text": "", "provider": last_provider, "ms": 0}
 
 
 def multiline_ok(prefix: str) -> bool:

@@ -74,6 +74,33 @@ def _spawn_restricted(argv: list[str], cwd: str, timeout: float):
     WRITE_RESTRICTED = 0x08
     DISABLE_MAX_PRIVILEGE = 0x01
 
+    # Declare every signature. Without these, ctypes assumes a 32-bit int
+    # return and truncates HANDLEs on 64-bit Windows — the calls appear to
+    # succeed and then operate on a garbage handle, which is the worst
+    # possible failure for a containment mechanism.
+    kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+    kernel32.GetCurrentProcess.argtypes = []
+    kernel32.WaitForSingleObject.restype = wintypes.DWORD
+    kernel32.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    kernel32.GetExitCodeProcess.restype = wintypes.BOOL
+    kernel32.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+    kernel32.TerminateProcess.restype = wintypes.BOOL
+    kernel32.TerminateProcess.argtypes = [wintypes.HANDLE, wintypes.UINT]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    advapi32.OpenProcessToken.restype = wintypes.BOOL
+    advapi32.OpenProcessToken.argtypes = [
+        wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)
+    ]
+    advapi32.CreateRestrictedToken.restype = wintypes.BOOL
+    advapi32.CreateRestrictedToken.argtypes = [
+        wintypes.HANDLE, wintypes.DWORD,
+        wintypes.DWORD, ctypes.c_void_p,   # SidsToDisable
+        wintypes.DWORD, ctypes.c_void_p,   # PrivilegesToDelete
+        wintypes.DWORD, ctypes.c_void_p,   # RestrictedSids
+        ctypes.POINTER(wintypes.HANDLE),
+    ]
+
     process_token = wintypes.HANDLE()
     if not advapi32.OpenProcessToken(
         kernel32.GetCurrentProcess(), TOKEN_ALL_ACCESS, ctypes.byref(process_token)
@@ -113,11 +140,23 @@ def _spawn_restricted(argv: list[str], cwd: str, timeout: float):
             ]
 
         CREATE_NO_WINDOW = 0x08000000
+        advapi32.CreateProcessAsUserW.restype = wintypes.BOOL
+        advapi32.CreateProcessAsUserW.argtypes = [
+            wintypes.HANDLE, wintypes.LPCWSTR,
+            wintypes.LPWSTR,                  # lpCommandLine — writable buffer
+            ctypes.c_void_p, ctypes.c_void_p, # security attributes
+            wintypes.BOOL, wintypes.DWORD,
+            ctypes.c_void_p, wintypes.LPCWSTR,
+            ctypes.POINTER(STARTUPINFO), ctypes.POINTER(PROCESS_INFORMATION),
+        ]
         si = STARTUPINFO(); si.cb = ctypes.sizeof(si)
         pi = PROCESS_INFORMATION()
+        # CreateProcessAsUserW may modify lpCommandLine in place, so it must be
+        # a mutable buffer — a Python str is read-only and the call can fault.
         cmdline = subprocess.list2cmdline(argv)
+        cmdline_buf = ctypes.create_unicode_buffer(cmdline)
         if not advapi32.CreateProcessAsUserW(
-            restricted, None, cmdline, None, None, False,
+            restricted, None, cmdline_buf, None, None, False,
             CREATE_NO_WINDOW, None, cwd, ctypes.byref(si), ctypes.byref(pi),
         ):
             raise OSError(ctypes.get_last_error(), "CreateProcessAsUserW failed")
