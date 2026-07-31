@@ -438,6 +438,13 @@ async def run_composer(
         if v.valid:
             dr = patch_engine.dry_run(abs_path, diff, workspace_root=workspace_root)
             dry_ok = dr.success
+            # The engine may have repaired a model artifact to place the hunks
+            # (pure-context "diffs", phantom blank lines). What it actually
+            # applied IS the proposal — grade, render and hand the editor that
+            # text, or the judge scores a no-op and Approve applies a diff the
+            # editor's own strict applier cannot read.
+            if dr.success and dr.repaired_diff:
+                diff = dr.repaired_diff
 
         judge_score: Optional[float] = None
         judge_correctness: Optional[float] = None
