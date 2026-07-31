@@ -52,21 +52,49 @@ async def sandbox_status() -> str:
     instead of showing a Run button.
     """
     await tracker.bump("sandbox_status")
+    from app.sandbox import microvm
+
     mechanism = _sandbox.available_mechanism()
+    net_blocked = _sandbox.network_is_blocked(mechanism)
+    mvm = microvm.status()
+    if not mechanism:
+        note = "No OS sandbox here, so ABS will not run commands at all."
+    elif net_blocked:
+        note = (
+            "Commands run confined to the workspace with the network off. "
+            "This contains an agent that goes wrong; it does not contain "
+            "code written to be hostile — that needs the opt-in microVM."
+        )
+    else:
+        # restricted-token: writes are confined, the network is not — say it
+        # here, where the Run button decides what to print.
+        note = (
+            "Commands run write-confined to the workspace; the network is "
+            "NOT blocked by this tier. Hostile code still needs the microVM."
+        )
     return json.dumps(
         {
             "ok": True,
             "mechanism": mechanism,
             "can_run": bool(mechanism),
             "tier": "os-native" if mechanism else "",
+            "network_blocked": net_blocked,
             "installs_required": [],
-            "note": (
-                "Commands run confined to the workspace with the network off. "
-                "This contains an agent that goes wrong; it does not contain "
-                "code written to be hostile — that needs the opt-in microVM."
-                if mechanism
-                else "No OS sandbox here, so ABS will not run commands at all."
-            ),
+            "tiers": [
+                {
+                    "tier": "os-native",
+                    "mechanism": mechanism,
+                    "available": bool(mechanism),
+                    "network_blocked": net_blocked,
+                },
+                {
+                    "tier": mvm.tier,
+                    "available": mvm.available,
+                    "platform_capable": mvm.platform_capable,
+                    "reason": mvm.reason,
+                },
+            ],
+            "note": note,
         },
         ensure_ascii=False,
         indent=2,
@@ -124,7 +152,18 @@ async def sandbox_run(
             "duration_ms": res.duration_ms,
             "refused": res.refused,
             "truncated": res.truncated,
-            "network": "allowed" if allow_network else "blocked",
+            # What the TIER can promise, not what the flag asked for: a
+            # Windows restricted token never blocks the network, and printing
+            # "blocked" over it would be a lie the user acts on.
+            "network": (
+                "allowed"
+                if allow_network
+                else (
+                    "blocked"
+                    if _sandbox.network_is_blocked(res.mechanism or "")
+                    else "not blocked by this tier"
+                )
+            ),
         },
         ensure_ascii=False,
     )
