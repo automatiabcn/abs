@@ -63,6 +63,10 @@ def _empty() -> dict:
         "cooldown_until": 0.0,
         "consecutive_429": 0,
         "total_requests": 0,
+        # model name -> calls served today. One provider serves several models
+        # (a chat default, a completion model, …); a per-provider count alone
+        # cannot say which model the day's traffic actually went to.
+        "models": {},
     }
 
 
@@ -76,6 +80,7 @@ def _get(tenant_id: Optional[str], provider: str) -> dict:
         p["tpd_used"] = 0
         p["neurons_used"] = 0
         p["consecutive_429"] = 0
+        p["models"] = {}
     return p
 
 
@@ -90,6 +95,7 @@ def record_usage(
     tenant_id: Optional[str] = "default",
     tokens: int = 0,
     status_code: int = 200,
+    model: str = "",
 ) -> None:
     """Record one call. A 429 sets an exponential cooldown. Never raises."""
     if provider not in QUOTA_LIMITS:
@@ -100,6 +106,9 @@ def record_usage(
             now = time.time()
             p["total_requests"] += 1
             p["rpd_used"] += 1
+            if model and status_code == 200:
+                models = p.setdefault("models", {})
+                models[model] = int(models.get(model) or 0) + 1
             if provider == "cerebras":
                 p["tpd_used"] += tokens
             elif provider == "cloudflare":
@@ -151,7 +160,13 @@ def get_remaining(provider: str, *, tenant_id: Optional[str] = "default") -> dic
     with _lock:
         p = _get(tenant_id, provider)
         limits = QUOTA_LIMITS[provider]
-        out: dict = {"provider": provider, "day": p.get("day"), "total_requests": p.get("total_requests", 0)}
+        out: dict = {
+            "provider": provider,
+            "day": p.get("day"),
+            "total_requests": p.get("total_requests", 0),
+            # Which models the day's traffic went to — {} until something ran.
+            "models": dict(p.get("models") or {}),
+        }
         rpd = limits.get("rpd", 0)
         if rpd:
             out["rpd_used"] = p.get("rpd_used", 0)

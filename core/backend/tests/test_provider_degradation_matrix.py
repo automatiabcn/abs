@@ -145,8 +145,12 @@ def test_provider_degradation_matrix(
     assert len(body["active"]) == expected_active, (
         f"{scenario}: active={body['active']} != expected count {expected_active}"
     )
-    # `total` always = full PROVIDER_ORDER length.
-    assert body["total"] == 6
+    # `total` always = full PROVIDER_ORDER length — derived, not pinned, so
+    # adding a provider to the chain (openrouter, 07-31) does not silently
+    # re-describe these scenarios.
+    from app.providers.cascade import PROVIDER_ORDER_DEFAULT
+
+    assert body["total"] == len(set(PROVIDER_ORDER_DEFAULT))
     # Missing is the complement.
     assert len(body["missing"]) == body["total"] - body["configured_count"]
 

@@ -128,7 +128,21 @@ async def cascade_ask(
     from app.providers.cascade import get_active_providers
 
     tenant = _caller_tenant()
-    active = get_active_providers()
+    user = _caller_user()
+    # The chain the PANEL shows is BYOK-aware and puts the caller's own keys
+    # first; the chain this tool actually walked was not (live finding, 07-31:
+    # the panel said "1. cerebras · your key" and the answer came from groq).
+    # One chain, both places.
+    byok: frozenset = frozenset()
+    try:
+        from app.multitenant.provider_keys import tenant_configured_providers
+
+        byok = frozenset(
+            tenant_configured_providers(tenant_slug=tenant, user_subject=user)
+        )
+    except Exception:  # noqa: BLE001 — a chain without BYOK is still a chain
+        byok = frozenset()
+    active = get_active_providers(extra_configured=byok)
     if not active:
         return json.dumps(
             {
@@ -151,6 +165,7 @@ async def cascade_ask(
             temperature=temperature,
             use_cache=use_cache,
             tenant_id=tenant,
+            user_subject=user,
         )
     except Exception as exc:  # noqa: BLE001 — report, never raise into MCP
         return json.dumps(
@@ -556,16 +571,27 @@ async def title_status() -> str:
             if throttled:
                 continue
             providers_ready.append(name)
-            # Each provider answers with one model; there is no separate model
-            # inventory to count, so the names are listed rather than invented.
+            # The default chat model is only the model a provider WOULD answer
+            # with; the day's real traffic may have used others (a completion
+            # model on Tab, a fast judge). Both belong in the count — distinct
+            # models bound or exercised, never one-per-provider by fiat.
             try:
                 from app.providers.registry import get_provider
 
                 model = getattr(get_provider(name), "default_model", "")
             except Exception:  # noqa: BLE001
                 model = ""
-            if model:
+            if model and model not in models:
                 models.append(model)
+            try:
+                used = quota_meter.get_remaining(name, tenant_id=tenant).get(
+                    "models"
+                ) or {}
+                for m in used:
+                    if m and m not in models:
+                        models.append(m)
+            except Exception:  # noqa: BLE001
+                pass
     except Exception as exc:  # noqa: BLE001 — the bar degrades, it does not fail
         return json.dumps(
             {

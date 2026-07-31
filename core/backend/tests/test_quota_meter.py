@@ -106,3 +106,17 @@ async def test_orchestrator_records_successful_call(monkeypatch):
     )
     rem = qm.get_remaining("groq", tenant_id="tq")
     assert rem["rpd_used"] >= 1
+    # The winning MODEL is on the meter too: one provider serves several
+    # models, and "N used today" alone cannot say where the traffic went.
+    assert rem["models"].get("m", 0) >= 1
+
+
+def test_the_meter_counts_per_model():
+    qm.reset()
+    qm.record_usage("groq", tenant_id="m1", status_code=200, model="llama-3.3-70b")
+    qm.record_usage("groq", tenant_id="m1", status_code=200, model="llama-3.1-8b-instant")
+    qm.record_usage("groq", tenant_id="m1", status_code=200, model="llama-3.3-70b")
+    # A failed call is not traffic a model served.
+    qm.record_usage("groq", tenant_id="m1", status_code=429, model="llama-3.3-70b")
+    models = qm.get_remaining("groq", tenant_id="m1")["models"]
+    assert models == {"llama-3.3-70b": 2, "llama-3.1-8b-instant": 1}
