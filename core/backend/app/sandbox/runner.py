@@ -68,10 +68,25 @@ def available_mechanism() -> str:
         # binary we do not ship yet.
         return "bubblewrap" if shutil.which("bwrap") else ""
     if system == "Windows":
-        # The restricted-token path is not built yet; saying so is better than
-        # running unconfined and calling it sandboxed.
-        return ""
+        # Only after the machine PROVES the containment (spawn under the
+        # token, write inside the grant, fail to write outside it). An
+        # unproven mechanism reporting available is how "sandboxed" becomes
+        # a label instead of a property.
+        from app.sandbox import windows_token
+
+        return windows_token.MECHANISM if windows_token.self_test() else ""
     return ""
+
+
+def network_is_blocked(mechanism: str) -> bool:
+    """Whether this mechanism actually cuts the network off.
+
+    seatbelt and bubblewrap deny the network in their profiles; a Windows
+    restricted token does not touch it. Callers print the network state to
+    users — they must print what the tier can promise, not what the flag
+    asked for.
+    """
+    return mechanism in ("seatbelt", "bubblewrap")
 
 
 def _seatbelt_profile(workspace: str, allow_network: bool) -> str:
@@ -170,6 +185,40 @@ def run(
                 f"no OS sandbox available on {platform.system()} — refusing to "
                 "run unconfined"
             ),
+        )
+
+    if mechanism == "restricted-token":
+        # Windows: token-confined writes; the network is NOT blocked by this
+        # tier and the result says so via network_is_blocked().
+        from app.sandbox import windows_token
+
+        started = time.monotonic()
+        try:
+            code, out, err = windows_token.run(
+                command, workspace_root=ws, timeout=timeout
+            )
+        except subprocess.TimeoutExpired:
+            return SandboxResult(
+                False, None, "", "",
+                mechanism=mechanism,
+                duration_ms=int((time.monotonic() - started) * 1000),
+                refused=f"timed out after {timeout:.0f}s",
+            )
+        except Exception as exc:  # noqa: BLE001 — refusal beats unconfined
+            return SandboxResult(
+                False, None, "", "",
+                mechanism=mechanism,
+                refused=f"restricted-token run failed: {exc}",
+            )
+        truncated = len(out) > _MAX_OUTPUT or len(err) > _MAX_OUTPUT
+        return SandboxResult(
+            ok=code == 0,
+            exit_code=code,
+            stdout=out[:_MAX_OUTPUT],
+            stderr=err[:_MAX_OUTPUT],
+            mechanism=mechanism,
+            duration_ms=int((time.monotonic() - started) * 1000),
+            truncated=truncated,
         )
 
     profile_path = ""
