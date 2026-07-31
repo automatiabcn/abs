@@ -73,6 +73,58 @@ def test_multiline_only_on_an_empty_line():
     assert fim.multiline_ok("    return ") is False
 
 
+def test_a_dead_first_provider_does_not_silence_tab(monkeypatch):
+    """Live (08-01): cerebras' pinned model was retired upstream, BYOK put
+    cerebras first, and Tab went silent — one provider was a single point of
+    silence. The second one now gets its turn."""
+    monkeypatch.setattr(fim, "_free_fast_chain", lambda *a, **k: ["cerebras", "groq"])
+
+    class _Dead:
+        async def call(self, *a, **k):
+            raise RuntimeError("model_not_found")
+
+    class _Alive:
+        async def call(self, *a, **k):
+            return type("R", (), {"text": "a + b", "model": "m", "tokens_out": 3})()
+
+    monkeypatch.setattr(
+        "app.providers.registry.get_provider",
+        lambda name: _Dead() if name == "cerebras" else _Alive(),
+    )
+    out = asyncio.run(fim.complete("def add(a, b):\n    return ", "\n"))
+    assert out["provider"] == "groq", out
+    assert out["text"] == "a + b"
+
+
+def test_an_empty_answer_also_hands_over(monkeypatch):
+    """A reasoning model that spends its whole budget thinking returns 200 and
+    nothing. That is not an outage, but it is not a completion either."""
+    monkeypatch.setattr(fim, "_free_fast_chain", lambda *a, **k: ["cerebras", "groq"])
+
+    class _Silent:
+        async def call(self, *a, **k):
+            return type("R", (), {"text": "", "model": "m"})()
+
+    class _Alive:
+        async def call(self, *a, **k):
+            return type("R", (), {"text": "a + b", "model": "m"})()
+
+    monkeypatch.setattr(
+        "app.providers.registry.get_provider",
+        lambda name: _Silent() if name == "cerebras" else _Alive(),
+    )
+    out = asyncio.run(fim.complete("def add(a, b):\n    return ", "\n"))
+    assert out["provider"] == "groq"
+    assert out["text"] == "a + b"
+
+
+def test_the_pinned_completion_models_are_named_not_guessed():
+    """A stale model id is invisible until the provider is promoted. Pin the
+    two we measured so a silent edit has to argue with a test."""
+    assert fim._FAST_MODELS["groq"] == "llama-3.1-8b-instant"
+    assert fim._FAST_MODELS["cerebras"] == "gemma-4-31b"
+
+
 def test_no_fast_free_provider_returns_empty_not_error(monkeypatch):
     monkeypatch.setattr("app.providers.cascade.get_active_providers", lambda **_: [])
     out = asyncio.run(fim.complete("def f():\n    return ", "\n"))
