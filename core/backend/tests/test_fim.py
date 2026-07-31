@@ -29,6 +29,27 @@ def test_the_indented_line_start_is_stripped_too():
     assert fim._clean(raw, prefix, "\n") == "a + b"
 
 
+def test_a_multiline_replay_of_the_prefix_is_trimmed_to_the_insertion():
+    # Seen live (07-31): the model restated the WHOLE snippet from the top,
+    # not just the current line — the single-line echo handling never fired
+    # and the ghost text duplicated the entire function at the cursor.
+    prefix = "def fibonacci(n):\n    if n <= 1:\n        return n\n    return "
+    raw = (
+        "def fibonacci(n):\n    if n <= 1:\n        return n\n"
+        "    return fibonacci(n-1) + fibonacci(n-2)"
+    )
+    assert fim._clean(raw, prefix, "\n") == "fibonacci(n-1) + fibonacci(n-2)"
+
+
+def test_a_short_accidental_overlap_is_not_an_echo():
+    # The completion legitimately starts with characters that also end the
+    # prefix; without a line break in the overlap nothing is stripped here,
+    # and the current-line rule below decides.
+    prefix = "x = re"
+    raw = "result + 1"
+    assert fim._clean(raw, prefix, "\n") == "result + 1"
+
+
 def test_a_fence_never_reaches_the_buffer():
     assert fim._clean("```python\na + b\n```", "x = ", "\n") == "a + b"
 
