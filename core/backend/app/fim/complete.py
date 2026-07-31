@@ -160,6 +160,21 @@ async def complete(
         return {"text": "", "provider": provider_name, "ms": 0}
 
     ms = int((time.monotonic() - started) * 1000)
+    # FIM bypasses the cascade, so it must feed the meter itself — otherwise
+    # every keystroke completion is invisible to the quota panel and the
+    # per-model usage readout (live finding, 07-31).
+    try:
+        from app.cascade import quota_meter
+
+        quota_meter.record_usage(
+            provider_name,
+            tokens=int(getattr(resp, "tokens_in", 0) or 0)
+            + int(getattr(resp, "tokens_out", 0) or 0),
+            status_code=200,
+            model=getattr(resp, "model", "") or _FAST_MODELS[provider_name],
+        )
+    except Exception:  # noqa: BLE001 — metering is never worth a missed completion
+        logger.debug("fim meter skipped", exc_info=True)
     text = _clean(getattr(resp, "text", "") or "", prefix, suffix)
     return {"text": text, "provider": provider_name, "ms": ms, "tier": "free"}
 
