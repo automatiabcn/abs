@@ -164,6 +164,78 @@ def test_dry_run_tolerates_trailing_blank_context_at_eof(tmp_path):
     assert f.read_text(encoding="utf-8") == "def helper():\n    return 2\n"
 
 
+def test_appending_past_a_phantom_blank_separator_applies(tmp_path):
+    """Live tour (07-31): asked to append a function, groq wrote the separator
+    blank line as CONTEXT — it pictures the file ending with one — then put its
+    `+` lines after it. The file has no such line, so the old block was one
+    phantom line long and both proposals died with "does not apply". The model
+    meant the blank line to be IN the new file; converting it to an insertion
+    reproduces that intent exactly."""
+    f = _write(tmp_path, "util.py", "def add(a, b):\n    return a + b\n")
+    diff = (
+        "@@ -1,5 +1,7 @@\n def add(a, b):\n     return a + b\n \n"
+        "+def multiply(a, b):\n+    return a * b\n"
+    )
+    d = dry_run(str(f), diff, workspace_root=str(tmp_path))
+    assert d.success, d.reason
+    assert d.method == "inmemory"
+    r = apply(str(f), diff, workspace_root=str(tmp_path))
+    assert r.success, r.reason
+    assert f.read_text(encoding="utf-8") == (
+        "def add(a, b):\n    return a + b\n\ndef multiply(a, b):\n    return a * b\n"
+    )
+
+
+def test_a_pure_context_append_is_read_as_the_insertion_it_means(tmp_path):
+    """Live tour (07-31), verbatim shape: asked to append, groq emitted the
+    file it intends as PURE context — not one `+` in the hunk. The old block
+    then runs two phantom lines past EOF and a strict engine refuses, while
+    the judge, shown a no-op diff, scores the proposal 0. The prefix matches
+    the file ending exactly at EOF, so the leftover context lines have nothing
+    to match — they can only be insertions. The dry-run must also hand back
+    the repaired text, because that is the change actually being approved."""
+    f = _write(tmp_path, "util.py", "def add(a, b):\n    return a + b\n")
+    live = (
+        "@@ -1,5 +1,7 @@\n def add(a, b):\n     return a + b\n \n"
+        " def multiply(a, b):\n     return a * b\n"
+    )
+    d = dry_run(str(f), live, workspace_root=str(tmp_path))
+    assert d.success, d.reason
+    assert d.method == "inmemory"
+    assert "+def multiply(a, b):" in d.repaired_diff
+    assert "+    return a * b" in d.repaired_diff
+    r = apply(str(f), live, workspace_root=str(tmp_path))
+    assert r.success, r.reason
+    assert f.read_text(encoding="utf-8") == (
+        "def add(a, b):\n    return a + b\n\ndef multiply(a, b):\n    return a * b\n"
+    )
+
+
+def test_a_deletion_past_eof_is_still_a_refusal(tmp_path):
+    """The repair reads context past EOF as insertion; a DELETION past EOF is
+    a claim about content that does not exist and must stay a refusal."""
+    f = _write(tmp_path, "util.py", "def add(a, b):\n    return a + b\n")
+    diff = (
+        "@@ -1,3 +1,2 @@\n def add(a, b):\n     return a + b\n-    phantom\n"
+    )
+    assert not dry_run(str(f), diff, workspace_root=str(tmp_path)).success
+
+
+def test_the_repaired_diff_reapplies_strictly(tmp_path):
+    """What dry_run hands back must round-trip through a strict pass — the
+    editor's own applier never saw the engine's repairs."""
+    f = _write(tmp_path, "util.py", "def add(a, b):\n    return a + b\n")
+    live = (
+        "@@ -1,5 +1,7 @@\n def add(a, b):\n     return a + b\n \n"
+        " def multiply(a, b):\n     return a * b\n"
+    )
+    d = dry_run(str(f), live, workspace_root=str(tmp_path))
+    assert d.success and d.repaired_diff
+    d2 = dry_run(str(f), d.repaired_diff, workspace_root=str(tmp_path))
+    assert d2.success, d2.reason
+    assert d2.preview == d.preview
+
+
 def test_blank_context_inside_a_hunk_is_still_required(tmp_path):
     f = _write(tmp_path, "mid.txt", "a\nb\nc\n")
     diff = "@@ -1,3 +1,3 @@\n a\n \n-b\n+B\n"

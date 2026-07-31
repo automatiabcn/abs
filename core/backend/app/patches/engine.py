@@ -118,6 +118,11 @@ class DryRunResult:
     method: str  # "inmemory", "git", "validate", "all-failed"
     preview: str = ""  # patched content (truncated)
     reason: str = ""
+    # The diff as the engine ACTUALLY applied it — placements resolved and
+    # model artifacts repaired. Empty when the run failed or used the git
+    # fallback. Downstream (judge, panel, editor applier) should prefer this
+    # text: the score on screen must belong to the change being approved.
+    repaired_diff: str = ""
 
 
 @dataclass
@@ -531,6 +536,33 @@ def _trim_trailing_blank_context(lines: List[HunkLine]) -> List[HunkLine]:
     return out
 
 
+def _blank_context_before_adds_to_adds(
+    lines: List[HunkLine],
+) -> Optional[List[HunkLine]]:
+    """Turn blank context lines just before the trailing insertions into
+    insertions themselves.
+
+    The sibling artifact to a *trailing* blank context: a model appending to a
+    file writes the separator blank line as context (` `) because it pictures
+    the file ending with one, then puts its `+` lines after it. The file has no
+    such line, so the old block is one phantom line too long and a strict
+    engine rejects a patch whose intended NEW content is perfectly clear.
+    Converting ` ` to `+` for those blanks reproduces that intent exactly —
+    the blank line ends up in the file, where the model meant it to be. Only
+    ever used as a RETRY after the literal hunk failed to place.
+    """
+    out = list(lines)
+    i = len(out) - 1
+    while i >= 0 and out[i].is_add:
+        i -= 1
+    changed = False
+    while i >= 0 and out[i].is_ctx and out[i].text == "":
+        out[i] = HunkLine(op="+", text="")
+        changed = True
+        i -= 1
+    return out if changed else None
+
+
 def _hunk_old_block(h: Hunk, lines: Optional[List[HunkLine]] = None) -> List[str]:
     """The lines a hunk expects to find in the source (context + deletions)."""
     return [hl.text for hl in (lines if lines is not None else h.lines) if not hl.is_add]
@@ -594,7 +626,12 @@ def _place_repaired_hunk(
     trimmed = _trim_trailing_blank_context(h.lines)
     if len(trimmed) != len(h.lines):
         candidates.append(trimmed)
-    for base in ([h.lines, trimmed] if len(trimmed) != len(h.lines) else [h.lines]):
+    bases = [h.lines, trimmed] if len(trimmed) != len(h.lines) else [h.lines]
+    for base in bases:
+        converted = _blank_context_before_adds_to_adds(base)
+        if converted is not None:
+            candidates.append(converted)
+    for base in list(bases) + [c for c in candidates if c is not None]:
         dedented = _dedent_one_space(base)
         if dedented is not None:
             candidates.append(dedented)
@@ -610,19 +647,60 @@ def _place_repaired_hunk(
             continue
         return target, lines
 
+    # Source-aware last resort — the "content as context" artifact. Asked to
+    # append, small models emit the file they intend as PURE context (no +/-
+    # at all), or let their context run past the end of the file. If a prefix
+    # of the old block matches the file ending exactly at end-of-file, the
+    # leftover context lines have nothing left to match — they can only be
+    # insertions. The placement is pinned by the file end, so nothing is
+    # guessed; a deletion past EOF is a real mismatch and stays a refusal.
+    block = _hunk_old_block(h)
+    for k in range(len(block) - 1, 0, -1):
+        pos = len(source_lines) - k
+        if pos < max(src_idx, 0):
+            continue
+        if not _block_matches_at(source_lines, block[:k], pos):
+            continue
+        repaired: List[HunkLine] = []
+        seen = 0
+        ok = True
+        for hl in h.lines:
+            if hl.is_add:
+                repaired.append(hl)
+                continue
+            seen += 1
+            if seen <= k:
+                repaired.append(hl)
+            elif hl.is_ctx:
+                repaired.append(HunkLine(op="+", text=hl.text))
+            else:
+                ok = False
+                break
+        if ok:
+            return pos, repaired
+        break
+
     raise ValueError(
         f"hunk @@ -{h.old_start} does not match the file content "
         "(no unique placement, with or without diff-format repairs)"
     )
 
 
-def _apply_hunks_inmem(source_lines: List[str], hunks: List[Hunk]) -> List[str]:
+def _apply_hunks_inmem(
+    source_lines: List[str],
+    hunks: List[Hunk],
+    placed: Optional[List[Tuple[int, List[HunkLine]]]] = None,
+) -> List[str]:
     """Apply hunks to source lines in order. Context mismatch -> ValueError.
 
     Unified-diff semantics: `old_start` is 1-indexed; context and '-' lines must
     match the source, '+' lines are inserted, '-' lines are dropped. Hunks whose
     declared position is wrong are relocated to their unique content match
     (see _locate_hunk); ambiguity is an error, never a guess.
+
+    When `placed` is given, each hunk's final placement — its 0-indexed target
+    and the (possibly repaired) lines that actually applied — is appended to
+    it, so a caller can re-emit the diff the engine really used.
     """
     result: List[str] = []
     src_idx = 0  # 0-indexed cursor into source
@@ -639,6 +717,8 @@ def _apply_hunks_inmem(source_lines: List[str], hunks: List[Hunk]) -> List[str]:
             # UNIQUE content match, so none of them is a guess. If none places
             # the hunk, the original failure stands.
             target, hunk_lines = _place_repaired_hunk(source_lines, h, src_idx)
+        if placed is not None:
+            placed.append((target, list(hunk_lines)))
         while src_idx < target:
             if src_idx >= len(source_lines):
                 raise ValueError(f"source too short: hunk @@ -{h.old_start} unreachable")
@@ -681,6 +761,26 @@ def _apply_hunks_inmem(source_lines: List[str], hunks: List[Hunk]) -> List[str]:
 # Dry-run — in-memory apply, `git apply --check` fallback
 # ---------------------------------------------------------------------------
 
+def _emit_placed_diff(placed: List[Tuple[int, List[HunkLine]]]) -> str:
+    """Re-emit a diff from resolved placements, with honest headers.
+
+    Counts are recomputed from the lines that actually applied and starts from
+    where they applied, so the text round-trips through a strict applier —
+    including the editor's own, which never saw the engine's repairs.
+    """
+    out: List[str] = []
+    delta = 0  # running new-file offset from earlier hunks
+    for target, lines in placed:
+        old_count = sum(1 for l in lines if not l.is_add)
+        new_count = sum(1 for l in lines if not l.is_del)
+        old_start = target + 1 if old_count else target
+        new_start = old_start + delta if new_count else old_start + delta
+        out.append(f"@@ -{old_start},{old_count} +{new_start},{new_count} @@")
+        out.extend(f"{l.op}{l.text}" for l in lines)
+        delta += new_count - old_count
+    return "\n".join(out) + "\n" if out else ""
+
+
 def dry_run(
     file_path: str,
     diff_text: str,
@@ -699,11 +799,14 @@ def dry_run(
     try:
         with open(file_path, "r", encoding="utf-8") as fh:
             source_lines = fh.readlines()
-        patched = _apply_hunks_inmem(source_lines, hunks)
+        placed: List[Tuple[int, List[HunkLine]]] = []
+        patched = _apply_hunks_inmem(source_lines, hunks, placed)
         preview = "".join(patched[:50])
         if len(patched) > 50:
             preview += f"\n... ({len(patched) - 50} more lines)"
-        return DryRunResult(True, "inmemory", preview, "")
+        return DryRunResult(
+            True, "inmemory", preview, "", repaired_diff=_emit_placed_diff(placed)
+        )
     except AmbiguousHunkError as exc:
         # Deliberate refusal — git's fuzzy matcher would guess; we don't.
         return DryRunResult(False, "inmemory", "", str(exc))
