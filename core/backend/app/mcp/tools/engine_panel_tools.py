@@ -601,3 +601,27 @@ async def title_status() -> str:
 
 
 REGISTERED_TOOLS.append("title_status")
+
+
+# --- Tab / fill-in-the-middle -------------------------------------------------
+
+
+@mcp_server.tool()
+@with_hooks("fim_complete")
+async def fim_complete(prefix: str, suffix: str = "", language: str = "") -> str:
+    """Text to insert at the cursor — the Tab / ghost-text completion.
+
+    Fast, free-tier, and silent on doubt: an empty ``text`` is a normal answer,
+    not an error. The editor calls this on a typing pause with a window of code
+    around the cursor, not the whole file; the reply is one provider, capped
+    tokens, tight timeout. Latency is reported so the client can back off when
+    the network is slow.
+    """
+    await tracker.bump("fim_complete")
+    from app.fim.complete import complete
+
+    result = await complete(prefix, suffix, language=language)
+    return json.dumps(result, ensure_ascii=False)
+
+
+REGISTERED_TOOLS.append("fim_complete")
