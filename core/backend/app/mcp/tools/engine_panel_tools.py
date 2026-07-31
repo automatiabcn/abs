@@ -331,6 +331,22 @@ async def provider_key_set(provider: str, value: str) -> str:
         return json.dumps(
             {"ok": False, "error": "empty_value"}, ensure_ascii=False
         )
+    # Ask the provider before storing (07-31: a key mangled in the input box
+    # sat in the chain as green "ready" — readiness is breaker state, and a
+    # never-called breaker is closed). A rejected key is NOT stored; a probe
+    # that cannot reach the provider stores the key but says so honestly.
+    from app.providers.key_probe import probe_provider_key
+
+    probe = probe_provider_key(provider, value.strip())
+    if probe.status == "rejected":
+        return json.dumps(
+            {
+                "ok": False,
+                "error": "key_rejected",
+                "detail": f"{probe.detail} — the key was NOT stored.",
+            },
+            ensure_ascii=False,
+        )
     try:
         _pk.set_provider_key(
             tenant_slug=tenant,
@@ -349,10 +365,14 @@ async def provider_key_set(provider: str, value: str) -> str:
             {"ok": False, "error": "store_failed", "detail": str(exc)[:300]},
             ensure_ascii=False,
         )
-    return json.dumps(
-        {"ok": True, "provider": provider, "owner": "user", "stored": True},
-        ensure_ascii=False,
-    )
+    out: dict = {"ok": True, "provider": provider, "owner": "user", "stored": True}
+    if probe.status == "valid":
+        out["verified"] = True
+    else:
+        # unvalidated / unreachable — stored, but nobody has seen it work.
+        out["verified"] = False
+        out["note"] = probe.detail
+    return json.dumps(out, ensure_ascii=False)
 
 
 @mcp_server.tool()
