@@ -113,6 +113,7 @@ def _record_quota(
     tokens: int = 0,
     status_code: int = 200,
     exc: Optional[Exception] = None,
+    model: str = "",
 ) -> None:
     """Feed the per-tenant quota meter (Cost HUD + 429 cooldown). Never raises.
 
@@ -130,7 +131,7 @@ def _record_quota(
         ):
             sc = 429
         quota_meter.record_usage(
-            provider, tenant_id=tenant_id, tokens=tokens, status_code=sc
+            provider, tenant_id=tenant_id, tokens=tokens, status_code=sc, model=model
         )
     except Exception:  # noqa: BLE001 — metering is never worth an outage
         logger.debug("quota meter skipped", exc_info=True)
@@ -233,6 +234,7 @@ async def call_with_cascade(
                 tenant_id=tenant_id,
                 tokens=int(resp.tokens_in or 0) + int(resp.tokens_out or 0),
                 status_code=200,
+                model=resp.model or (model or ""),
             )
             return resp
         except ProviderError as exc:

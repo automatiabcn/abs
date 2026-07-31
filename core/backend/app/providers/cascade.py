@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 # aligns with the names used in `quota_monitor.QUOTAS` and `usage_log.append`.
 PROVIDER_ORDER_PAID_FIRST: tuple[str, ...] = (
     "anthropic",
+    "openrouter",
     "groq",
     "cerebras",
     "gemini",
@@ -64,6 +65,11 @@ PROVIDER_ORDER_FREE_FIRST: tuple[str, ...] = (
 # Claude per-request via `prefer="anthropic"`, explicit model, or a pipeline.
 PROVIDER_ORDER_DEFAULT: tuple[str, ...] = (
     *PROVIDER_ORDER_FREE_FIRST,
+    # Paid lanes, cheapest first. OpenRouter bills per token, so it sits with
+    # Anthropic behind the skip_paid gate — but ahead of it, because a BYOK
+    # OpenRouter key that the panel accepted and the chain then never used is
+    # a dead key (live finding, 07-31).
+    "openrouter",
     "anthropic",
 )
 
@@ -75,7 +81,7 @@ PROVIDER_ORDER: tuple[str, ...] = PROVIDER_ORDER_PAID_FIRST
 # Providers that cost money per token. `skip_paid_providers=true` filters
 # these out of the active chain. Future paid providers (OpenAI etc.)
 # get added here, not to the public chain.
-PAID_PROVIDERS: frozenset[str] = frozenset({"anthropic"})
+PAID_PROVIDERS: frozenset[str] = frozenset({"anthropic", "openrouter"})
 
 
 # Settings attribute name per provider — Cloudflare uses `cf_api_token` not
