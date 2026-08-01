@@ -22,10 +22,15 @@ command would be the exact dishonesty the sandbox exists to prevent.
 
 from __future__ import annotations
 
+import json
+import logging
 import os
 import platform
 import shutil
+import subprocess
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 TIER = "microvm"
 
@@ -40,6 +45,27 @@ class MicroVMStatus:
     available: bool
     platform_capable: bool
     reason: str
+    # What the helper measured, when there is a helper to ask. None means the
+    # capability was inferred from the platform rather than observed.
+    measured: dict | None = None
+
+
+def _ask_helper(helper: str) -> dict | None:
+    """Ask abs-vmhost whether THIS machine can host a microVM.
+
+    The helper builds a real VZ configuration and validates it, so the answer
+    comes from Virtualization.framework rather than from us. Any failure to
+    ask is None — an unanswered question, never a yes.
+    """
+    try:
+        proc = subprocess.run(
+            [helper, "--probe"], capture_output=True, text=True, timeout=15
+        )
+        line = (proc.stdout or "").strip().splitlines()
+        return json.loads(line[-1]) if line else None
+    except Exception as exc:  # noqa: BLE001 — a probe that cannot run says nothing
+        logger.debug("vmhost probe failed: %s", exc)
+        return None
 
 
 def status() -> MicroVMStatus:
@@ -48,6 +74,11 @@ def status() -> MicroVMStatus:
     helper = shutil.which(_HELPER_NAME) or ""
 
     if system == "Darwin":
+        # The framework ships with macOS, so its presence proves nothing about
+        # this process: without the com.apple.security.virtualization
+        # entitlement the framework refuses every configuration (measured
+        # 08-01). Only the helper can tell the difference, so "capable" here
+        # means "worth asking the helper", not "able".
         capable = os.path.exists(
             "/System/Library/Frameworks/Virtualization.framework"
         )
@@ -72,10 +103,24 @@ def status() -> MicroVMStatus:
         return MicroVMStatus(TIER, False, False,
                              f"no microVM path planned for {system} yet")
 
-    # A helper on PATH is still only a claim — the tier stays unavailable
-    # until a self-test proves a command runs inside the VM. That test ships
-    # with the helper; its absence here is deliberate fail-closed.
+    # A helper on PATH is a claim; its probe is a measurement. Even a probe
+    # that says "yes" leaves the tier unavailable until a command has actually
+    # RUN inside a VM — the framework accepting a configuration is not the
+    # same as a guest that executes anything.
+    probe = _ask_helper(helper)
+    if probe is None:
+        return MicroVMStatus(
+            TIER, False, True,
+            f"{_HELPER_NAME} is on PATH but did not answer its probe",
+        )
+    if not probe.get("ok"):
+        return MicroVMStatus(
+            TIER, False, True,
+            str(probe.get("reason") or "the helper reported it cannot host a VM"),
+            measured=probe,
+        )
     return MicroVMStatus(
         TIER, False, True,
-        f"{_HELPER_NAME} found but unproven — self-test not implemented yet",
+        "the helper can host a VM; no command has been run inside one yet",
+        measured=probe,
     )

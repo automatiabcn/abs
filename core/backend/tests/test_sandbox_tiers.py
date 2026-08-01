@@ -18,6 +18,12 @@ import platform
 
 import pytest
 
+# app.mcp.tools.sandbox_tools registers itself with app.mcp.server, so being
+# the first module to import it walks straight into a circular import. Loading
+# the server first is what every other consumer does; doing it here keeps this
+# file runnable on its own instead of only inside the full suite.
+import app.mcp.server  # noqa: F401  (import for its side effect)
+from app.mcp.tools import sandbox_tools as st
 from app.sandbox import microvm, runner, windows_token
 
 
@@ -68,8 +74,6 @@ def test_only_profile_sandboxes_promise_a_blocked_network():
 
 
 def test_sandbox_run_reports_what_the_tier_can_promise(monkeypatch):
-    from app.mcp.tools import sandbox_tools as st
-
     monkeypatch.setattr(
         st._sandbox, "run",
         lambda *a, **k: runner.SandboxResult(
@@ -102,17 +106,17 @@ def test_a_capable_mac_says_what_is_missing(monkeypatch):
 
 
 def test_a_helper_on_path_is_still_only_a_claim(monkeypatch):
+    """Found is not proven — and now the difference is measured rather than
+    assumed: the helper is asked, and a helper that cannot answer is a no."""
     monkeypatch.setattr(microvm.platform, "system", lambda: "Darwin")
     monkeypatch.setattr(microvm.os.path, "exists", lambda p: True)
     monkeypatch.setattr(microvm.shutil, "which", lambda n: "/usr/local/bin/abs-vmhost")
     s = microvm.status()
     assert s.available is False, "found is not proven"
-    assert "unproven" in s.reason
+    assert s.reason, "an unavailable tier owes the operator its reason"
 
 
 def test_sandbox_status_lists_both_tiers(monkeypatch):
-    from app.mcp.tools import sandbox_tools as st
-
     monkeypatch.setattr(st._sandbox, "available_mechanism", lambda: "seatbelt")
     out = json.loads(asyncio.run(st.sandbox_status()))
     tiers = {t["tier"]: t for t in out["tiers"]}
@@ -123,11 +127,57 @@ def test_sandbox_status_lists_both_tiers(monkeypatch):
 
 
 def test_sandbox_status_says_when_the_network_is_not_blocked(monkeypatch):
-    from app.mcp.tools import sandbox_tools as st
-
     monkeypatch.setattr(
         st._sandbox, "available_mechanism", lambda: windows_token.MECHANISM
     )
     out = json.loads(asyncio.run(st.sandbox_status()))
     assert out["network_blocked"] is False
     assert "NOT blocked" in out["note"]
+
+
+def test_a_helper_that_cannot_answer_is_not_a_yes(monkeypatch):
+    """A probe that fails to run leaves the question unanswered — which is
+    not the same as the machine being able."""
+    monkeypatch.setattr(microvm.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(microvm.os.path, "exists", lambda p: True)
+    monkeypatch.setattr(microvm.shutil, "which", lambda n: "/usr/local/bin/abs-vmhost")
+    monkeypatch.setattr(microvm, "_ask_helper", lambda h: None)
+    s = microvm.status()
+    assert s.available is False
+    assert "did not answer" in s.reason
+
+
+def test_the_frameworks_own_refusal_is_reported_verbatim(monkeypatch):
+    """Measured on a real Mac (08-01): unsigned, Virtualization refuses every
+    configuration for want of an entitlement. That sentence is more useful to
+    an operator than any summary we could write."""
+    monkeypatch.setattr(microvm.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(microvm.os.path, "exists", lambda p: True)
+    monkeypatch.setattr(microvm.shutil, "which", lambda n: "/usr/local/bin/abs-vmhost")
+    monkeypatch.setattr(
+        microvm, "_ask_helper",
+        lambda h: {
+            "ok": False,
+            "reason": "Virtualization refused the configuration: The process "
+            "doesn't have the com.apple.security.virtualization entitlement.",
+            "cpu_max": 64,
+        },
+    )
+    s = microvm.status()
+    assert s.available is False
+    assert "entitlement" in s.reason
+    assert s.measured["cpu_max"] == 64, "the measurement travels with the verdict"
+
+
+def test_a_probe_that_says_yes_still_does_not_make_the_tier_available(monkeypatch):
+    """The framework accepting a configuration is not a guest that executes
+    anything. Tier-2 stays unavailable until a command has RUN inside a VM."""
+    monkeypatch.setattr(microvm.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(microvm.os.path, "exists", lambda p: True)
+    monkeypatch.setattr(microvm.shutil, "which", lambda n: "/usr/local/bin/abs-vmhost")
+    monkeypatch.setattr(
+        microvm, "_ask_helper", lambda h: {"ok": True, "cpu_max": 64, "mem_max_mb": 16384}
+    )
+    s = microvm.status()
+    assert s.available is False
+    assert "no command has been run inside one yet" in s.reason
