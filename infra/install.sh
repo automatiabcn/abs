@@ -8,7 +8,7 @@ docker compose version >/dev/null 2>&1 || { echo "HATA: Docker Compose v2 gerekl
 
 if [ ! -f .env ]; then
   cp .env.example .env
-  echo "[.env oluşturuldu — düzenleyip ABS_DOMAIN / ABS_ADMIN_EMAIL ayarlayın]"
+  echo "[.env created — edit it and set ABS_DOMAIN / ABS_ADMIN_EMAIL]"
 fi
 
 # 013 — Backend image build (init_vault.sh needs image)
