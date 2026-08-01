@@ -16,6 +16,25 @@
 // an empty list renders as "not published yet" and a customer sees the truth,
 // where a hard-coded button would render as a working download and 404.
 
+/** Where the files themselves are served from.
+ *
+ * Not this domain: the landing is a Next.js app on a platform that bills
+ * bandwidth and caps deployment size, which is the wrong shape for 150 MB
+ * binaries. They sit on the Hetzner box behind the Caddy gateway that already
+ * runs there — 20 TB/month of traffic that is already paid for, and TLS Caddy
+ * obtains by itself.
+ *
+ * Verified end-to-end on 08-02: a 5 MB file fetched from outside came back
+ * with a matching sha256 over a Let's Encrypt certificate.
+ */
+export const DOWNLOAD_HOST = "https://dl.automatiabcn.com";
+
+/** The one function that builds a download URL, so a release never hand-writes
+ * a host and gets it subtly wrong. */
+export function assetUrl(version: string, filename: string): string {
+  return `${DOWNLOAD_HOST}/${encodeURIComponent(version)}/${encodeURIComponent(filename)}`;
+}
+
 export type Platform = "macos" | "windows" | "linux";
 
 export type Build = {
