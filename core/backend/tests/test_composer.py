@@ -39,7 +39,7 @@ def _stub_generation(monkeypatch, parsed, tried=("groq",), meta=None, seen=None)
 
 
 def _stub_judge(monkeypatch, score=8.0, llm=None, ast=None, teaching=None):
-    async def _fake_judge(diff, path=None):
+    async def _fake_judge(diff, path=None, **_caller):
         return {
             "combined_score": score,
             "llm_score": llm if llm is not None else score,
@@ -208,7 +208,7 @@ def test_without_a_model_leg_the_blend_still_gates(workspace, monkeypatch):
     """No correctness signal is not permission to wave an edit through."""
     _stub_judge(monkeypatch, score=3.0, llm=None, ast=3.0)
 
-    async def _judge_no_llm(diff, path=None):
+    async def _judge_no_llm(diff, path=None, **_caller):
         return {"combined_score": 3.0, "llm_score": None, "ast_score": 3.0, "teaching": []}
 
     monkeypatch.setattr(composer, "judge_diff", _judge_no_llm)

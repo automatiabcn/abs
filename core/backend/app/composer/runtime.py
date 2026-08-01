@@ -451,7 +451,9 @@ async def run_composer(
         judge_style: Optional[float] = None
         judge_notes: List[str] = []
         try:
-            jd = await judge_diff(diff, path)
+            jd = await judge_diff(
+                diff, path, tenant_id=tenant_id, user_subject=user_subject
+            )
             judge_score = jd.get("combined_score")
             judge_correctness = jd.get("llm_score")
             judge_style = jd.get("ast_score")
