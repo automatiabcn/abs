@@ -84,8 +84,16 @@ setup("install the server, then sign in", async ({ page, request }) => {
     await expect(page.locator('section[data-step="2"]')).toBeVisible();
     await expect(page.locator("#setup-skip-license")).toBeChecked();
 
+    // Read the licence from the state the RUNNING backend owns. Hard-coding
+    // .e2e-state meant this suite could only ever run against the default
+    // state dir — so re-running the scenarios required wiping whatever
+    // install was there, which is exactly why they were not re-run often
+    // (found 08-01). ABS_E2E_STATE_DIR points at the isolated one.
+    const stateDir =
+      process.env.ABS_E2E_STATE_DIR ??
+      path.resolve(__dirname, "../../../backend/.e2e-state");
     const licenseKey = readFileSync(
-      path.resolve(__dirname, "../../../backend/.e2e-state/license_key.txt"),
+      path.join(stateDir, "license_key.txt"),
       "utf-8",
     ).trim();
     await page.locator("#setup-skip-license").uncheck();
