@@ -84,7 +84,13 @@ async def build(
     from app.rag import qdrant_client as qc
 
     tenant = rag.tenant_id
-    if not get_active_providers():
+    # The caller's own key counts. Without this, an install whose providers
+    # are all BYOK answered "no providers configured" to the person whose
+    # key was sitting right there (found auditing the FIM fix, 08-01).
+    from app.providers.byok import byok_providers
+
+    caller = getattr(getattr(rag, "auth", None), "subject", None)
+    if not get_active_providers(extra_configured=byok_providers(tenant, caller)):
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
@@ -137,7 +143,9 @@ async def build(
             skipped += 1
             continue
         try:
-            result = await extract_graph(text, tenant_id=tenant)
+            result = await extract_graph(
+                text, tenant_id=tenant, user_subject=caller
+            )
             counts = await store_chunk_graph(
                 client,
                 tenant_id=tenant,

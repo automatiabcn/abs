@@ -31,7 +31,21 @@ REGISTERED_TOOLS: List[str] = []
 async def judge_patch(unified_diff: str, file_path: str = "") -> str:
     """SENIOR JUDGE — score a diff: 60% AST fingerprint, 40% model judgement."""
     await tracker.bump("judge_patch")
-    result = await _judge_diff(unified_diff, file_path or None)
+    # The judge runs on whoever asked. Without the caller, a BYOK-only install
+    # has no judge at all — every file comes back "not graded" (08-01 audit).
+    tenant = user = None
+    try:
+        from app.mcp.context import get_mcp_caller
+
+        tenant, user = get_mcp_caller()
+    except Exception:  # noqa: BLE001 — an unknown caller still gets a judgement
+        pass
+    result = await _judge_diff(
+        unified_diff,
+        file_path or None,
+        tenant_id=str(tenant) if tenant else None,
+        user_subject=str(user) if user else None,
+    )
     return json.dumps(result, ensure_ascii=False, indent=2)
 
 
