@@ -346,7 +346,13 @@ async def nl_query(
                 "hint": "Provide an LLM-translated cypher via POST /v1/graph/cypher.",
             },
         )
-    active = get_active_providers()
+    # BYOK counts here too — see app/providers/byok.py. An install whose
+    # providers are all brought by the user must not be told it has none.
+    from app.providers.byok import byok_providers
+
+    active = get_active_providers(
+        extra_configured=byok_providers(tenant, getattr(auth, "subject", None))
+    )
     if not active:
         raise HTTPException(
             status_code=422,
@@ -384,6 +390,7 @@ async def nl_query(
                 primary=primary,
                 fallbacks=tuple(rest),
                 tenant_id=tenant,
+                user_subject=getattr(auth, "subject", None),
                 use_cache=cache,
             )
         except CascadeUnavailable:

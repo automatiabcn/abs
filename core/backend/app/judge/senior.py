@@ -18,8 +18,28 @@ from typing import Any, Dict, List, Optional
 from app.providers.registry import get_provider
 from app.providers.schemas import ProviderError
 
+from app.providers.byok import owner_key_for
+
 from .ast_metrics import ast_metrics, extract_added_lines, fingerprint_distance
 from .persona import load_persona
+
+# ONE model, several providers. Scores are only comparable across runs if the
+# same model produced them, so the fallback changes the server, never the
+# judge. Spellings differ per provider; both are gpt-oss-120b.
+_JUDGE_ROUTES: tuple[tuple[str, str], ...] = (
+    ("groq", "openai/gpt-oss-120b"),
+    ("cerebras", "gpt-oss-120b"),
+)
+
+
+def _server_has_key(provider: str) -> bool:
+    """Whether the operator configured this provider globally."""
+    try:
+        from app.providers.cascade import is_configured
+
+        return bool(is_configured(provider))
+    except Exception:  # noqa: BLE001 — an unknown answer is "do not try it"
+        return False
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +57,9 @@ async def _llm_judge(
     added_code: str,
     diff_text: Optional[str] = None,
     file_path: Optional[str] = None,
+    *,
+    tenant_id: Optional[str] = None,
+    user_subject: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Ask the LLM to grade the CHANGE — the diff, not an orphan fragment.
 
@@ -66,15 +89,38 @@ async def _llm_judge(
         '{"score": 7.5, "teaching": "1-2 brief suggestions"}\n\n'
         f"{subject}"
     )
-    try:
-        provider = get_provider("groq")
-        # Room for the diff-aware answer. At 300 the reply was truncated
-        # mid-string, the JSON never closed, and a real 6 was recorded as a 0 —
-        # which then read as "this file scored below 5" in the review panel.
-        resp = await provider.call(prompt, model="openai/gpt-oss-120b", max_tokens=1200)
-    except (ProviderError, Exception) as exc:  # noqa: BLE001
-        logger.info("LLM judge skipped: %s", exc)
-        return {"score": None, "teaching": f"LLM unavailable: {str(exc)[:100]}"}
+    # The judge was pinned to one provider's groq key. Two ways that ends in
+    # "not graded" on a working install: the operator's groq quota runs out,
+    # or the install is BYOK-only and has no server groq key at all — and the
+    # Review panel then reports every file as unjudged (08-01 audit).
+    #
+    # The MODEL, though, is not interchangeable: scores are only comparable
+    # across runs if the same model produces them (v5/v6 judge work). So the
+    # fallback keeps gpt-oss-120b and only changes WHO serves it — measured
+    # live on cerebras, which returns the same JSON shape.
+    resp = None
+    last_error = ""
+    for provider_name, model_id in _JUDGE_ROUTES:
+        api_key = owner_key_for(
+            provider_name, tenant_slug=tenant_id, user_subject=user_subject
+        )
+        if not (api_key or _server_has_key(provider_name)):
+            continue
+        try:
+            provider = get_provider(provider_name)
+            call_kwargs = {"api_key": api_key} if api_key else {}
+            # Room for the diff-aware answer. At 300 the reply was truncated
+            # mid-string, the JSON never closed, and a real 6 was recorded as a
+            # 0 — which read as "this file scored below 5" in the review panel.
+            resp = await provider.call(
+                prompt, model=model_id, max_tokens=1200, **call_kwargs
+            )
+            break
+        except (ProviderError, Exception) as exc:  # noqa: BLE001
+            last_error = str(exc)[:100]
+            logger.info("LLM judge on %s skipped: %s", provider_name, exc)
+    if resp is None:
+        return {"score": None, "teaching": f"LLM unavailable: {last_error or 'no judge provider'}"}
 
     text = resp.text or ""
     score, teaching = _parse_judgement(text)
@@ -116,7 +162,13 @@ def _parse_judgement(text: str) -> tuple[Optional[float], str]:
     return salvaged, (note.group(1)[:400] if note else "")
 
 
-async def judge_diff(diff_text: str, file_path: Optional[str] = None) -> Dict[str, Any]:
+async def judge_diff(
+    diff_text: str,
+    file_path: Optional[str] = None,
+    *,
+    tenant_id: Optional[str] = None,
+    user_subject: Optional[str] = None,
+) -> Dict[str, Any]:
     """Score a diff (60% AST + 40% LLM) and return the teaching notes."""
     added_code = extract_added_lines(diff_text)
     is_python = bool(file_path and file_path.endswith(".py"))
@@ -125,7 +177,13 @@ async def judge_diff(diff_text: str, file_path: Optional[str] = None) -> Dict[st
     persona = load_persona()
     ast_s = _ast_score(metrics, persona) if metrics else 0.0
 
-    llm = await _llm_judge(added_code, diff_text=diff_text, file_path=file_path)
+    llm = await _llm_judge(
+        added_code,
+        diff_text=diff_text,
+        file_path=file_path,
+        tenant_id=tenant_id,
+        user_subject=user_subject,
+    )
     raw_llm = llm.get("score")
     llm_s: Optional[float] = float(raw_llm) if raw_llm is not None else None
 
