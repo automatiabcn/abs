@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Virtualization.framework refuses every configuration from a process
+         without this, which is why the probe reported "framework present" and
+         the framework itself reported "not entitled". Ad-hoc signing carries
+         it for local development; a shipped build is signed properly. -->
+    <key>com.apple.security.virtualization</key>
+    <true/>
+</dict>
+</plist>

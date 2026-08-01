@@ -1,0 +1,3 @@
+# The built helper is a local artifact: it must be compiled and signed on the
+# machine that will run it, or the entitlement belongs to somebody else's build.
+abs-vmhost
