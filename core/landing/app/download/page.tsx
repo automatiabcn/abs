@@ -15,7 +15,7 @@ import Link from "next/link";
 import { RELEASE, fileSize, platformLabel } from "@/lib/downloads";
 
 export const metadata: Metadata = {
-  title: "Download ABS Studio",
+  title: { absolute: "Download ABS Studio · ABS Studio" },
   description:
     "Download ABS Studio — the editor for macOS, Windows and Linux, and the self-hosted server archive that ships with it.",
 };

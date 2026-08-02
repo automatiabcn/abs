@@ -28,6 +28,16 @@ const NAV_LINKS = [
   { href: "/beta", label: "Beta" },
 ] as const;
 
+// On the editor's own pages the menu offers the next step a visitor there
+// actually wants — the build and how to install it — rather than the way back
+// out to the platform.
+const PRODUCT_NAV_LINKS = [
+  { href: "/studio", label: "Overview" },
+  { href: "/download", label: "Download" },
+  { href: "/docs/install", label: "Install" },
+  { href: "/pricing", label: "Pricing" },
+] as const;
+
 function useScrolled(threshold = 8): boolean {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -114,6 +124,9 @@ function ThemeToggle() {
 // carries its own chrome; the site header stays on the site.
 const APP_ROUTE_PREFIXES = ["/panel", "/admin"] as const;
 
+// Pages that belong to ABS Studio rather than to the platform around it.
+const PRODUCT_ROUTE_PREFIXES = ["/studio", "/download", "/docs"] as const;
+
 export default function Header() {
   const pathname = usePathname();
   const scrolled = useScrolled();
@@ -122,6 +135,16 @@ export default function Header() {
     (prefix) => pathname === prefix || pathname?.startsWith(`${prefix}/`),
   );
   if (isAppRoute) return null;
+
+  // The editor's own pages carry the product's name, not the platform's. A
+  // buyer who reads two names on the way to one purchase cannot tell what
+  // they are buying, and the page they landed on is about the editor.
+  const isProductRoute = PRODUCT_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname?.startsWith(`${prefix}/`),
+  );
+  const brand = isProductRoute ? "ABS Studio" : "Automatia ABS";
+  const brandHref = isProductRoute ? "/studio" : "/";
+  const navLinks = isProductRoute ? PRODUCT_NAV_LINKS : NAV_LINKS;
 
   return (
     <header
@@ -139,16 +162,16 @@ export default function Header() {
     >
       <div className="container mx-auto flex h-14 items-center justify-between px-4">
         <Link
-          href="/"
+          href={brandHref}
           className="flex min-h-[44px] items-center gap-2 py-2 font-semibold tracking-tight"
           style={{ color: "var(--abs-foreground)" }}
         >
           <AbsLogo size={22} aria-hidden="true" style={{ color: "var(--abs-brand-base)" }} />
-          <span className="text-sm">Automatia ABS</span>
+          <span className="text-sm">{brand}</span>
         </Link>
 
         <nav aria-label="Main menu" className="flex items-center gap-1 text-sm">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
