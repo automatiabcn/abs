@@ -35,14 +35,14 @@ describe("PricingPage — Pilot/PoC outreach", () => {
     const cta = screen.getByTestId("pricing-page-cta");
     expect(cta.tagName.toLowerCase()).toBe("a");
     expect(cta.getAttribute("href")).toBe(
-      "mailto:support@automatiabcn.com",
+      "mailto:info@automatiabcn.com",
     );
   });
 
   it("shows the Barcelona footer line", () => {
     render(<PricingPage lang="en" />);
     expect(
-      screen.getByText(/support@automatiabcn\.com · Barcelona/),
+      screen.getByText(/info@automatiabcn\.com · Barcelona/),
     ).toBeInTheDocument();
   });
 

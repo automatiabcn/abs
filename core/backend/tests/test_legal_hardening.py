@@ -126,7 +126,7 @@ def test_item4_trademarks_md_exists_and_has_fossmarks_sections():
         "nominative fair use",
         "permission",
         "reporting",
-        "support@automatiabcn.com",
+        "info@automatiabcn.com",
     ]
     for topic in required_topics:
         assert topic in lower, f"TRADEMARKS.md missing topic: {topic}"

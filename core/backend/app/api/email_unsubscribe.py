@@ -29,7 +29,7 @@ _HTML_OK = """<!DOCTYPE html>
 <h1 style="color:#1e57ac;">You have been unsubscribed</h1>
 <p>You are off the onboarding email series and will receive no further automated onboarding email from ABS.</p>
 <p>Transactional email, such as license and refund notices, will still be delivered.</p>
-<p>If you think this is a mistake: <a href="mailto:support@automatiabcn.com">support@automatiabcn.com</a></p>
+<p>If you think this is a mistake: <a href="mailto:info@automatiabcn.com">info@automatiabcn.com</a></p>
 </body></html>
 """
 
@@ -38,7 +38,7 @@ _HTML_FAIL = """<!DOCTYPE html>
 <body style="font-family:system-ui,Arial,sans-serif;max-width:560px;margin:80px auto;padding:24px;color:#991b1b;">
 <h1>Could not unsubscribe you</h1>
 <p>{reason}</p>
-<p>If the problem persists, contact <a href="mailto:support@automatiabcn.com">support@automatiabcn.com</a>.</p>
+<p>If the problem persists, contact <a href="mailto:info@automatiabcn.com">info@automatiabcn.com</a>.</p>
 </body></html>
 """
 

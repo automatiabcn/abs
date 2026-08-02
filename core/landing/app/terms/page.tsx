@@ -160,8 +160,8 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold">12. Contact</h2>
           <p>
             For questions about this agreement, write to{" "}
-            <a href="mailto:legal@automatiabcn.com" className="underline">
-              legal@automatiabcn.com
+            <a href="mailto:info@automatiabcn.com" className="underline">
+              info@automatiabcn.com
             </a>
             .
           </p>

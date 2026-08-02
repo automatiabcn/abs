@@ -14,7 +14,7 @@ import type { Metadata } from "next";
 import PricingTiers from "@/components/PricingTiers";
 
 export const metadata: Metadata = {
-  title: "Pricing — ABS Server",
+  title: "Pricing — ABS Studio",
   description:
     "Self-host ABS for life. Pick a tier (Lifetime, Maintenance add-on, or Team Pack) and start in minutes.",
 };

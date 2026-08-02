@@ -60,6 +60,12 @@ class KeyProbeResult:
 
 def probe_provider_key(provider: str, value: str) -> KeyProbeResult:
     """Ask the provider whether this key authenticates. Never logs the key."""
+    if not (value or "").strip():
+        # Measured 08-01: an empty key reached the wire and came back
+        # "could not be reached" — a network story about a key that was never
+        # there. Callers read `unreachable` as "keep it, the fault was ours",
+        # which is how a blank field would have been stored.
+        return KeyProbeResult("rejected", "no key was given")
     check = _CHECKS.get((provider or "").strip().lower())
     if not check:
         return KeyProbeResult(

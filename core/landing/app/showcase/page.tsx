@@ -173,7 +173,7 @@ export default function ShowcasePage() {
               ]}
               cta={
                 <a
-                  href="mailto:support@automatiabcn.com"
+                  href="mailto:info@automatiabcn.com"
                   className="flex h-10 w-full items-center justify-center rounded-md text-sm font-semibold"
                   style={{
                     background: "var(--abs-brand-base)",
@@ -196,7 +196,7 @@ export default function ShowcasePage() {
               ]}
               cta={
                 <a
-                  href="mailto:support@automatiabcn.com"
+                  href="mailto:info@automatiabcn.com"
                   className="flex h-10 w-full items-center justify-center rounded-md border text-sm font-semibold"
                   style={{
                     borderColor: "var(--abs-brand-base)",
@@ -219,7 +219,7 @@ export default function ShowcasePage() {
               ]}
               cta={
                 <a
-                  href="mailto:support@automatiabcn.com"
+                  href="mailto:info@automatiabcn.com"
                   className="flex h-10 w-full items-center justify-center rounded-md border text-sm font-semibold"
                   style={{
                     borderColor: "color-mix(in oklch, var(--abs-foreground) 25%, transparent)",

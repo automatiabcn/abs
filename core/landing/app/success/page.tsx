@@ -71,10 +71,10 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         <p className="mt-8 text-sm text-muted-foreground">
           Running into trouble?{" "}
           <a
-            href="mailto:support@automatiabcn.com"
+            href="mailto:info@automatiabcn.com"
             className="underline"
           >
-            support@automatiabcn.com
+            info@automatiabcn.com
           </a>
         </p>
       </div>

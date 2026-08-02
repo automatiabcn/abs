@@ -59,3 +59,18 @@ def test_an_unknown_provider_is_unvalidated_not_guessed(monkeypatch):
     out = key_probe.probe_provider_key("ollama", "anything")
     assert out.status == "unvalidated"
     assert called == [], "no probe known means no call made"
+
+
+def test_a_blank_key_is_refused_without_a_network_story(monkeypatch):
+    """Measured 08-01: an empty value went to the wire and came back
+    "could not be reached" — callers read `unreachable` as "our fault, keep
+    it", so a blank field could have been stored as a credential."""
+    called = []
+    monkeypatch.setattr(
+        httpx, "get", lambda *a, **k: called.append(a) or _Resp(200)
+    )
+    for blank in ("", "   ", "\n\t"):
+        out = key_probe.probe_provider_key("groq", blank)
+        assert out.status == "rejected", blank
+        assert "no key" in out.detail
+    assert not called, "a key that is not there needs no round trip"
