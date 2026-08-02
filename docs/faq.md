@@ -15,9 +15,9 @@ Yes. ABS uses Anthropic's pay-per-use API (not Pro-subscription OAuth). You
 connect with your own API key, your prompts go to Anthropic, and no data is sent
 to any ABS server.
 
-### 3. Why ABS when Cursor / Cline / Aider exist?
-ABS is not an IDE plugin — it is a self-hosted network. You use it alongside those
-IDEs. The 6-provider chain, circuit breaker, token tracking, hybrid RAG and the
+### 3. Why ABS when other AI coding tools exist?
+ABS is not a hosted IDE plugin — it is a self-hosted network. You can use it
+alongside the editor you already have. The 6-provider chain, circuit breaker, token tracking, hybrid RAG and the
 Turkish quality pipeline come in one product.
 
 ## Technical
