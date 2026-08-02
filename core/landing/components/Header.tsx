@@ -35,6 +35,7 @@ const PRODUCT_NAV_LINKS = [
   { href: "/studio", label: "Overview" },
   { href: "/download", label: "Download" },
   { href: "/docs/install", label: "Install" },
+  { href: "/docs/guide", label: "Guide" },
   { href: "/pricing", label: "Pricing" },
 ] as const;
 
