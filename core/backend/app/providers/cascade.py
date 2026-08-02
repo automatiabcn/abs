@@ -53,7 +53,18 @@ PROVIDER_ORDER_FREE_FIRST: tuple[str, ...] = (
     "gemini",
     "cohere",
     "cloudflare",
+    # Local runtimes are the cheapest thing in the product — `skip_paid` is a
+    # cost decision, so dropping them from it would be backwards.
+    "ollama",
+    "mlx",
 )
+
+# Local runtimes the operator hosts themselves. They have no API key — the URL
+# is the whole configuration, and setting it is the operator saying the runtime
+# exists. Sovereignty (differentiator #5) is only real if these can actually be
+# reached: until 08-02 they were in no chain at all, so a box with a running
+# Ollama and no internet was told it had no provider and returned 503.
+LOCAL_PROVIDERS_ORDER: tuple[str, ...] = ("ollama", "mlx")
 
 # Default cascade chain — free providers first, paid Anthropic appended as the
 # last-resort premium fallback. This is the authoritative behaviour from
@@ -65,6 +76,7 @@ PROVIDER_ORDER_FREE_FIRST: tuple[str, ...] = (
 # Claude per-request via `prefer="anthropic"`, explicit model, or a pipeline.
 PROVIDER_ORDER_DEFAULT: tuple[str, ...] = (
     *PROVIDER_ORDER_FREE_FIRST,
+    # (the free chain already ends with the local runtimes)
     # Paid lanes, cheapest first. OpenRouter bills per token, so it sits with
     # Anthropic behind the skip_paid gate — but ahead of it, because a BYOK
     # OpenRouter key that the panel accepted and the chain then never used is
@@ -93,6 +105,14 @@ SETTINGS_KEY_ATTR: dict[str, str] = {
     "gemini": "gemini_api_key",
     "cloudflare": "cf_api_token",
     "cohere": "cohere_api_key",
+}
+
+# Local runtimes are configured by URL, not by key. Putting them in the map
+# above would run them through the key-plausibility check, which they would
+# fail for ever — which is exactly what used to happen.
+LOCAL_URL_ATTR: dict[str, str] = {
+    "ollama": "ollama_url",
+    "mlx": "mlx_url",
 }
 
 
@@ -140,6 +160,12 @@ def is_configured(provider: str) -> bool:
     the orchestrator learned to keep going) aborted the whole cascade, so an
     install with a perfectly good Groq key had no working assistant at all.
     """
+    # A self-hosted runtime has no key to check. Its URL being set is the
+    # operator stating that it exists, and that is the whole configuration.
+    local_attr = LOCAL_URL_ATTR.get(provider)
+    if local_attr is not None:
+        return bool(str(getattr(settings, local_attr, "") or "").strip())
+
     attr = SETTINGS_KEY_ATTR.get(provider)
     if attr is None:
         return False
@@ -193,15 +219,40 @@ def get_active_providers(
     if owned:
         active = owned + [p for p in active if p not in extra_configured]
 
+    # An install that asked for local-first means it: privacy, or no internet.
+    # This sits after the BYOK promotion because the operator setting a flag on
+    # the server is a stronger statement than a key pasted in the panel — the
+    # flag is the whole reason the deployment exists.
+    if bool(getattr(settings, "ollama_first_enabled", False)):
+        local = [p for p in active if p in LOCAL_PROVIDERS_ORDER]
+        if local:
+            active = local + [p for p in active if p not in local]
+
     if prefer and prefer in active:
         active.remove(prefer)
         active.insert(0, prefer)
     return active
 
 
+def all_providers() -> tuple[str, ...]:
+    """Every provider the product knows, once each, in a stable order.
+
+    `PROVIDER_ORDER` is the paid-first *chain*, and reading a chain as if it
+    were the catalogue is how the status endpoint came to report seven
+    providers while the cascade was routing to nine: local runtimes are in the
+    default chain and not in that alias, so an install answered by Ollama saw
+    it in `active` and nowhere in the totals.
+    """
+    seen: list[str] = []
+    for name in (*PROVIDER_ORDER_PAID_FIRST, *PROVIDER_ORDER_DEFAULT):
+        if name not in seen:
+            seen.append(name)
+    return tuple(seen)
+
+
 def configured_map() -> dict[str, bool]:
     """`{provider: bool}` — used by /v1/system/quota_status to mark slices."""
-    return {p: is_configured(p) for p in PROVIDER_ORDER}
+    return {p: is_configured(p) for p in all_providers()}
 
 
 def order_by_preference(providers: Iterable[str], prefer: Optional[str]) -> List[str]:

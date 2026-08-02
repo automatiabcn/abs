@@ -5,6 +5,15 @@
 
 """Ollama-first cascade chain.
 
+**Nothing in the product calls this.** It was written for the local-first chain
+and then never wired, which is part of how an air-gapped install ended up with
+no assistant at all: `ollama` was missing from the real chains in
+`app/providers/cascade.py`, and this module — the one place that knew better —
+was never reached. Since 08-02 `get_active_providers` honours
+`ollama_first_enabled` itself, so the ordinary path already does what this was
+for. It is kept because it is tested and harmless; if anything ever does call
+it, the two orderings have to be reconciled rather than left to drift apart.
+
 Priority order: local Ollama (cost = $0) → Groq (cloud fast, $0 free quota)
 → Anthropic (cloud quality, paid). The standard `call_with_cascade` already
 fails-through on `ProviderError(transient=True)`; OllamaProvider raises that
