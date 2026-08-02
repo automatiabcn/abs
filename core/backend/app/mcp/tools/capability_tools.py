@@ -67,6 +67,56 @@ def _resolved_embedding_backend() -> str:
         return str(requested or "").lower()
 
 
+def _unusable_now() -> dict[str, str]:
+    """Providers that have a key and still cannot answer this minute.
+
+    Rate limits and open breakers are temporary, and the difference matters:
+    a throttled provider must not be counted as working, and must not be
+    mistaken for a missing key either — telling somebody to buy what they
+    already own is worse advice than saying nothing.
+    """
+    from datetime import datetime, timezone
+
+    from app.capabilities import minutes_to_utc_midnight, rest_reason
+
+    down: dict[str, str] = {}
+    tenant = None
+    try:
+        from app.mcp.context import get_mcp_caller
+
+        tenant, _user = get_mcp_caller()
+    except Exception:  # noqa: BLE001
+        tenant = None
+
+    to_midnight = minutes_to_utc_midnight(datetime.now(timezone.utc))
+
+    try:
+        from app.cascade.breaker import default_breaker
+
+        for raw, value in (default_breaker.snapshot() or {}).items():
+            # Breaker keys are tenant-namespaced once a call has been made.
+            name = str(raw).split("|")[-1].lower()
+            if str((value or {}).get("state", "")).lower() == "open":
+                down[name] = rest_reason("breaker_open", minutes_to_utc_midnight=to_midnight)
+    except Exception:  # noqa: BLE001 — an unreadable breaker is not an open one
+        pass
+
+    try:
+        from app.cascade import quota_meter
+
+        for name in list(getattr(quota_meter, "QUOTA_LIMITS", {})):
+            throttled, code = quota_meter.is_throttled(name, tenant_id=tenant or "default")
+            if throttled:
+                down.setdefault(
+                    str(name).lower(),
+                    rest_reason(code, minutes_to_utc_midnight=to_midnight),
+                )
+    except Exception:  # noqa: BLE001
+        pass
+
+    return down
+
+
 @mcp_server.tool()
 @with_hooks("capability_status")
 async def capability_status() -> str:
@@ -80,11 +130,13 @@ async def capability_status() -> str:
     await tracker.bump("capability_status")
     providers = _configured_providers()
     backend = _resolved_embedding_backend()
-    states = assess(providers, embedding_backend=backend)
+    down = _unusable_now()
+    states = assess(providers, embedding_backend=backend, unusable_now=down)
     return json.dumps(
         {
             "ok": True,
             "providers": sorted(providers),
+            "resting": down,
             "embedding_backend": backend,
             "capabilities": [
                 {

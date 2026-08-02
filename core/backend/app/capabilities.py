@@ -163,6 +163,7 @@ def assess(
     configured_providers: Iterable[str],
     *,
     embedding_backend: Optional[str] = None,
+    unusable_now: Optional[dict[str, str]] = None,
 ) -> list[CapabilityState]:
     """What works, what does not, and what one more key would change.
 
@@ -172,7 +173,14 @@ def assess(
     unrelated chunks.
     """
     configured = {p.strip().lower() for p in configured_providers if p}
-    chat = _chat_providers(configured)
+    # A provider that is rate-limited or whose breaker is open has a key and
+    # cannot answer. Counting it would promise a failover that will not happen
+    # this minute; forgetting it had a key would tell the reader to go and buy
+    # one they already own. It is excluded from the count AND remembered, so
+    # the reason given is the true one.
+    down = {k.strip().lower(): v for k, v in (unusable_now or {}).items() if k}
+    usable = configured - set(down)
+    chat = _chat_providers(usable)
     backend = (embedding_backend or "").strip().lower()
     has_embeddings = backend in EMBEDDING_SOURCES or "cohere" in configured or "ollama" in configured
 
@@ -193,6 +201,23 @@ def assess(
             )
             continue
         if len(chat) < cap.needs_chat_providers:
+            # Would this be working if nothing were throttled? Then the answer
+            # is "wait", not "buy" — and saying "buy" would be advice to spend
+            # money on a problem that fixes itself.
+            resting = _chat_providers(configured)
+            if len(resting) >= cap.needs_chat_providers:
+                asleep = sorted(p for p in down if p in CHAT_PROVIDERS)
+                why = "; ".join(f"{p} {down[p]}" for p in asleep) or "a provider is resting"
+                states.append(
+                    CapabilityState(
+                        capability=cap,
+                        available=False,
+                        blocked_by=f"Not right now — {why}. The key is fine; this passes.",
+                        unlock_with=[],
+                        unlock_is_free=False,
+                    )
+                )
+                continue
             need = cap.needs_chat_providers - len(chat)
             suggestions = _suggest(configured, need)
             states.append(
@@ -240,3 +265,53 @@ def summarise(states: Iterable[CapabilityState]) -> dict:
             s.capability.key for s in blocked if s.unlock_with[:1] == [next_key]
         ),
     }
+
+
+# --- when a resting provider comes back --------------------------------------
+
+
+def _plural(n: int, word: str) -> str:
+    return f"{n} {word}" if n == 1 else f"{n} {word}s"
+
+
+def rest_reason(code: str, *, minutes_to_utc_midnight: int) -> str:
+    """Turn the meter's machine reason into when the provider comes back.
+
+    A quota that has run out is not a missing key, and the useful sentence is
+    not "buy another one" — it is **when this one renews**. Daily allowances
+    reset at UTC midnight; a per-minute limit clears while you read this; a 429
+    cooldown says how long it has left. Telling somebody to spend money on a
+    limit that lifts tonight is the wrong advice twice over.
+    """
+    c = (code or "").strip().lower()
+    if c.startswith("cooldown_"):
+        secs = "".join(ch for ch in c[len("cooldown_"):] if ch.isdigit())
+        if secs and int(secs) > 0:
+            n = int(secs)
+            return (
+                f"is backing off after a rate limit; about {_plural(n, 'second')} left"
+                if n < 90
+                else f"is backing off after a rate limit; about {_plural(round(n / 60), 'minute')} left"
+            )
+        return "is backing off after a rate limit"
+    if c.startswith("rpm_full"):
+        return "hit its per-minute limit; it clears within a minute"
+    if c.startswith(("rpd_exhausted", "tpd_exhausted", "neurons_exhausted")):
+        m = max(0, int(minutes_to_utc_midnight))
+        hours, mins = divmod(m, 60)
+        when = (
+            f"in {_plural(hours, 'hour')}"
+            if hours and not mins
+            else f"in {_plural(hours, 'hour')} {_plural(mins, 'minute')}"
+            if hours
+            else f"in {_plural(mins, 'minute')}"
+        )
+        return f"has used today's allowance; it renews at midnight UTC, {when}"
+    if c.startswith("breaker"):
+        return "has tripped its breaker after repeated failures; it retries by itself"
+    return "cannot answer right now"
+
+
+def minutes_to_utc_midnight(now) -> int:
+    """Whole minutes until the daily counters reset."""
+    return int(((24 - now.hour) * 60) - now.minute) % (24 * 60) or 24 * 60
