@@ -13,6 +13,14 @@ that promise breaks, both found by auditing our own fixes (07-31 / 08-01):
 
 These tests pin the contract of the shared helper and the one non-obvious
 consumer (Tab), so a future path can be checked against something.
+
+The filename overpromised. On 08-02 `ask_disagree` turned out to be a third
+path doing exactly the second thing — hard-coded providers, adapter called with
+no key — and nothing here noticed, because "every path" only ever meant the
+paths somebody had thought to list. Its coverage lives in
+`test_second_opinion_uses_your_keys.py`. When a new path talks to an adapter
+directly, add it to one of these two files rather than trusting the name of
+this one.
 """
 
 from __future__ import annotations
