@@ -129,3 +129,59 @@ def test_capabilities_describe_what_the_reader_gets():
         # A promise that repeats the title teaches nothing.
         assert cap.promise.lower() != cap.title.lower()
         assert len(cap.promise) > len(cap.title)
+
+
+# --- a key that exists but cannot answer right now ---------------------------
+#
+# Rate limits and open breakers are temporary. Counting a throttled provider
+# would promise a failover that will not happen this minute; forgetting it had
+# a key would send somebody to buy one they already own. Both are wrong, and
+# they are wrong in opposite directions — which is why this distinction is
+# tested rather than assumed.
+
+
+def test_a_throttled_provider_does_not_count_toward_what_works():
+    states = by_key(
+        assess(["groq", "cerebras"], unusable_now={"cerebras": "is rate-limited"})
+    )
+    # Two keys, but only one can answer — so the two-provider capabilities are
+    # honestly off.
+    assert states["failover"].available is False
+    assert states["second_opinion"].available is False
+    # The one-provider capabilities still work, because one still answers.
+    assert states["ask"].available is True
+    assert states["edit"].available is True
+
+
+def test_a_resting_provider_is_told_to_wait_not_to_buy():
+    state = by_key(
+        assess(["groq", "cerebras"], unusable_now={"cerebras": "is rate-limited"})
+    )["failover"]
+    assert "Not right now" in state.blocked_by
+    assert "cerebras is rate-limited" in state.blocked_by
+    assert "passes" in state.blocked_by, "the reader should know this fixes itself"
+    # And crucially: no shopping list. Advising a purchase here would be
+    # advising money spent on a problem that resolves on its own.
+    assert state.unlock_with == []
+    assert state.how_to == ""
+
+
+def test_a_genuinely_missing_key_is_still_a_missing_key():
+    # One provider, and it is resting: there is no second key to wait for, so
+    # the honest answer really is "bring one".
+    state = by_key(assess(["groq"], unusable_now={"groq": "is rate-limited"}))["failover"]
+    assert "Needs 2 providers" in state.blocked_by
+    assert state.unlock_with, "with nothing to wait for, say what to get"
+
+
+def test_everything_throttled_still_leaves_the_local_work_alone():
+    states = by_key(
+        assess(["groq"], unusable_now={"groq": "breaker is open"}, embedding_backend="ollama")
+    )
+    # These never needed a provider and are unaffected by anyone's rate limit.
+    assert states["blast_radius"].available is True
+    assert states["checks"].available is True
+    assert states["knowledge"].available is True
+    # But asking a question needs somebody to ask.
+    assert states["ask"].available is False
+    assert "breaker is open" in states["ask"].blocked_by or states["ask"].unlock_with
