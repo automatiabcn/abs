@@ -88,6 +88,11 @@ async def test_the_cascade_is_asked_for_the_pinned_model(monkeypatch):
     await runtime._generate_edits(
         "task", tenant_id="t", project_slug=None, user_subject=None
     )
-    assert seen.get("model") == "openai/gpt-oss-120b", (
+    models = seen.get("models") or {}
+    assert models.get("groq") == "openai/gpt-oss-120b", (
         "the cascade was left to pick, which means the adapter default"
+    )
+    assert seen.get("model") is None, (
+        "one model name was forced on the whole chain — every fallback leg "
+        "would 404 on a model it does not serve"
     )
