@@ -21,16 +21,30 @@ from app.mcp.tracking import tracker
 REGISTERED_TOOLS: List[str] = []
 
 
-def _caller_key() -> str:
+def _caller() -> tuple[str, str | None]:
+    """(tenant, user) for this call. BOTH halves matter, for different reasons.
+
+    The tenant keys the symbol graph — per workspace, so two developers in one
+    tenant do not each re-index the same repository.
+
+    The user is where the customer's provider keys are filed (`owner_type =
+    'user'`). Dropping it — which this function used to do, with a variable
+    named `_user` — meant `tenant_configured_providers` found nothing and the
+    Composer built its chain from the OPERATOR's keys alone. Measured on
+    08-02: an account with five keys ran eight tasks and exactly one provider
+    was attempted, the operator's, while `capability_status` on the same token
+    reported five. The customer's keys were invisible to the feature they
+    bought.
+    """
     try:
         from app.mcp.context import get_mcp_caller
 
-        tenant, _user = get_mcp_caller()
+        tenant, user = get_mcp_caller()
         if tenant:
-            return str(tenant)
-    except Exception:
+            return str(tenant), (str(user) if user else None)
+    except Exception:  # noqa: BLE001 — an unknown caller is the operator's own
         pass
-    return getattr(settings, "mcp_rag_tenant", None) or "default"
+    return (getattr(settings, "mcp_rag_tenant", None) or "default"), None
 
 
 @mcp_server.tool()
@@ -45,12 +59,14 @@ async def composer_propose(task: str, workspace_root: str) -> str:
     await tracker.bump("composer_propose")
     from app.composer import run_composer
 
-    key = _caller_key()
+    tenant, user = _caller()
     run = await run_composer(
         task,
         workspace_root=workspace_root,
-        tenant_id=key,
-        graph_key=key,
+        tenant_id=tenant,
+        user_subject=user,
+        # Deliberately the tenant, not the caller: the graph is per workspace.
+        graph_key=tenant,
     )
     return run.model_dump_json(indent=2)
 
