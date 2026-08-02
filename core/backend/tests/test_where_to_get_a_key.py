@@ -64,6 +64,47 @@ def test_the_readout_carries_the_map(monkeypatch):
         assert entry["free"] is (provider in FREE_TO_START)
 
 
+def test_a_runtime_with_no_key_says_so(monkeypatch):
+    """Seen live 2026-08-02: `ollama` and `mlx` led a picker headed "which
+    provider is this key for?", and choosing one asked for a key that does not
+    exist. They are configured by URL on the server; there is nothing to paste.
+    """
+    monkeypatch.setattr(capability_tools, "_configured_providers", lambda: {"groq"})
+    monkeypatch.setattr(capability_tools, "_resolved_embedding_backend", lambda: "ollama")
+
+    how = _status()["how_to_get"]
+    assert how["ollama"]["takes_key"] is False
+    assert how["mlx"]["takes_key"] is False
+    assert how["groq"]["takes_key"] is True
+    assert how["anthropic"]["takes_key"] is True
+
+
+def test_the_keyless_set_is_read_from_the_cascade_not_relisted(monkeypatch):
+    """A second list is a second thing to forget when a runtime is added."""
+    from app.providers import cascade
+
+    monkeypatch.setattr(
+        cascade, "LOCAL_URL_ATTR", {"ollama": "ollama_url", "vllm": "vllm_url"}
+    )
+    assert capability_tools._local_providers() == {"ollama", "vllm"}
+
+
+def test_an_unreadable_cascade_assumes_a_key_is_needed(monkeypatch):
+    """Offering a key box for something that does not need one is a smaller
+    failure than hiding a provider that does."""
+    import builtins
+
+    real = builtins.__import__
+
+    def _boom(name, *a, **k):
+        if name == "app.providers.cascade":
+            raise RuntimeError("no")
+        return real(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", _boom)
+    assert capability_tools._local_providers() == set()
+
+
 def test_a_provider_already_configured_is_marked_as_held(monkeypatch):
     """Telling somebody to go and get what they already have is worse advice
     than saying nothing — the same rule the quota work landed on (08-02)."""

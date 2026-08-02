@@ -36,6 +36,22 @@ from app.mcp.tracking import tracker
 REGISTERED_TOOLS: List[str] = []
 
 
+def _local_providers() -> set[str]:
+    """Providers configured by URL rather than by key — no key to paste.
+
+    Read from the cascade rather than listed again here: a second list is a
+    second thing to forget when a local runtime is added.
+    """
+    try:
+        from app.providers.cascade import LOCAL_URL_ATTR
+
+        return {str(p).lower() for p in LOCAL_URL_ATTR}
+    except Exception:  # noqa: BLE001
+        # Unknown is "takes a key": offering a key box for something that does
+        # not need one is a smaller failure than hiding a provider that does.
+        return set()
+
+
 def _configured_providers() -> set[str]:
     """Every provider this caller can actually use: theirs, then the server's."""
     names: set[str] = set()
@@ -156,6 +172,11 @@ async def capability_status() -> str:
                     # have is worse advice than saying nothing — the same rule
                     # the quota work landed on.
                     "configured": p in providers,
+                    # A local runtime is configured by URL on the server; there
+                    # is no key to paste. Seen live (08-02): ollama and mlx led
+                    # a picker headed "which provider is this key for?", and
+                    # choosing one asked for a key that does not exist.
+                    "takes_key": p not in _local_providers(),
                 }
                 for p in sorted(CHAT_PROVIDERS)
             },
