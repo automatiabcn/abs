@@ -36,6 +36,22 @@ from app.mcp.tracking import tracker
 REGISTERED_TOOLS: List[str] = []
 
 
+def _subscriptions() -> list:
+    """What the customer may already be paying for, detected — never probed.
+
+    Detection is a file-system check. The probe costs a real call against the
+    customer's own subscription, so it never runs as part of a readout: a page
+    that quietly spends somebody's allowance every time it loads is a page
+    they will learn to avoid.
+    """
+    try:
+        from app.providers.subscription import detect_all
+
+        return detect_all()
+    except Exception:  # noqa: BLE001 — a readout must not fail the panel
+        return []
+
+
 def _local_providers() -> set[str]:
     """Providers configured by URL rather than by key — no key to paste.
 
@@ -160,6 +176,25 @@ async def capability_status() -> str:
             "providers": sorted(providers),
             "resting": down,
             "embedding_backend": backend,
+            # Subscriptions the customer may already pay for. Not keys — a
+            # binary they install and sign into once. Reported separately
+            # because the answer to "how do I connect this?" is a different
+            # sentence, and putting them in the key list would ask somebody to
+            # paste a credential that does not exist.
+            "subscriptions": [
+                {
+                    "key": st.key,
+                    "label": st.label,
+                    "installed": st.installed,
+                    "signed_in": st.signed_in,
+                    "ready": st.ready,
+                    "detail": st.detail,
+                    "install": st.install,
+                    "sign_in": st.sign_in,
+                    "next_step": st.next_step(),
+                }
+                for st in _subscriptions()
+            ],
             # Where each key actually comes from, so the editor's "add a key"
             # picker reads this instead of keeping its own weaker copy. Two
             # sources for one fact drift, and the copy that drifts is the one
@@ -199,4 +234,36 @@ async def capability_status() -> str:
     )
 
 
-REGISTERED_TOOLS.extend(["capability_status"])
+@mcp_server.tool()
+@with_hooks("subscription_check")
+async def subscription_check(name: str) -> str:
+    """Ask a subscription CLI whether it can actually answer.
+
+    Separate from `capability_status` on purpose: this one COSTS a call
+    against the customer's own allowance, so it runs when somebody asks, not
+    when a page loads. A readout that quietly spends your subscription every
+    time you open it is one you learn to avoid.
+    """
+    await tracker.bump("subscription_check")
+    try:
+        from app.providers.subscription import probe
+
+        st = probe(str(name or "").strip())
+    except Exception as exc:  # noqa: BLE001
+        return json.dumps({"ok": False, "error": str(exc)[:200]}, ensure_ascii=False)
+    return json.dumps(
+        {
+            "ok": True,
+            "key": st.key,
+            "label": st.label,
+            "installed": st.installed,
+            "signed_in": st.signed_in,
+            "ready": st.ready,
+            "detail": st.detail,
+            "next_step": st.next_step(),
+        },
+        ensure_ascii=False,
+    )
+
+
+REGISTERED_TOOLS.extend(["capability_status", "subscription_check"])
