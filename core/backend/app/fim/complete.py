@@ -141,11 +141,18 @@ def _free_fast_chain(
                 )
             except Exception as exc:  # noqa: BLE001 — BYOK is a bonus, never a blocker
                 logger.debug("fim BYOK lookup skipped: %s", exc)
-        return [
+        # Two different questions, kept apart. `_FAST_MODELS` answers "can we
+        # even prompt this one for a fill-in-the-middle?" — a capability, local
+        # to FIM. The ORDER is a routing opinion, and it belongs in one place
+        # rather than being re-derived from the cost-first default here.
+        from app.cascade.routing import INSTANT, chain_for
+
+        usable = [
             name
             for name in get_active_providers(skip_paid=True, extra_configured=extra)
             if name in _FAST_MODELS
         ]
+        return chain_for(INSTANT, usable) or usable
     except Exception as exc:  # noqa: BLE001
         logger.debug("fim provider lookup failed: %s", exc)
     return []
