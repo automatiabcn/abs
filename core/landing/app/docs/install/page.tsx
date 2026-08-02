@@ -23,8 +23,8 @@ export const metadata: Metadata = {
 };
 
 // The source repository is private and stays that way, so downloads come
-// from this domain rather than GitHub Releases — the same shape Cursor
-// uses. /download is the one page that knows where the files are.
+// from this domain rather than GitHub Releases. /download is the one page
+// that knows where the files are.
 const DOWNLOADS = "/download";
 
 export default function InstallPage() {

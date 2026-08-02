@@ -38,8 +38,8 @@ const QUESTIONS: QA[] = [
     a: "Nothing reaches an Automatia server. ABS runs on your server and talks directly to your own Anthropic API key. On a Claude API call the request content goes to Anthropic — that is an inherent part of any Claude usage.",
   },
   {
-    q: "Why ABS when Cursor / Cline / Aider exist?",
-    a: "ABS is not an IDE plugin, it is a self-hosted AI network. It ships with 100+ MCP tools (120 measured), a 6-provider cascade (Anthropic, Groq, Cerebras, Gemini, CloudFlare, Cohere), quality pipelines and RAG. The founder has been building it while using it daily for 6 months.",
+    q: "Why ABS when other AI coding tools exist?",
+    a: "ABS is not a hosted IDE plugin, it is a self-hosted AI network. It ships with 100+ MCP tools (120 measured), a 6-provider cascade (Anthropic, Groq, Cerebras, Gemini, CloudFlare, Cohere), quality pipelines and RAG. The founder has been building it while using it daily for 6 months.",
   },
   {
     q: "How do updates arrive?",

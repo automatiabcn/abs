@@ -17,7 +17,7 @@ from app.fim import complete as fim
 
 
 def test_a_whole_line_echo_is_trimmed_to_the_insertion():
-    # Cursor after "return "; the model replays the whole line.
+    # The caret sits after "return "; the model replays the whole line.
     prefix = "def add(a, b):\n    return "
     raw = "return a + b"
     assert fim._clean(raw, prefix, "\n") == "a + b"
