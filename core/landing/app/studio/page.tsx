@@ -55,18 +55,6 @@ const FEATURES: {
   shot: Shot;
 }[] = [
   {
-    kicker: "Composer",
-    title: "Every proposal arrives already graded",
-    body:
-      "Ask for a change and what comes back is not a diff to accept on faith. A senior judge scores it — part static analysis of the patch itself, part model review — and the score travels with the change, so you know how much of your attention it deserves before you spend it.",
-    shot: {
-      src: "/product/detail-composer.webp",
-      alt: "The Composer section of the ABS panel, labelled Graded Proposal, with a task box and a Run button",
-      width: 579,
-      height: 256,
-    },
-  },
-  {
     kicker: "Review",
     title: "Grade the work, then prove it",
     body:
@@ -194,6 +182,55 @@ export default function StudioPage() {
             has cost so far. Free-tier routing is the default, so on most days
             that last number stays where it is.
           </p>
+        </section>
+
+        {/* --- one real proposal, start to finish ------------------------ */}
+        <section className="mt-20">
+          <p
+            className="font-mono text-xs uppercase tracking-[0.18em]"
+            style={{ color: TEAL }}
+          >
+            Composer
+          </p>
+          <h2
+            className="mt-3 max-w-3xl text-2xl font-semibold tracking-tight sm:text-3xl"
+            style={{ color: "#eaf2ff" }}
+          >
+            Two independent checks, and the second one is the one that saves you
+          </h2>
+          <p className="mt-4 max-w-3xl text-sm leading-relaxed" style={{ color: MUTED }}>
+            Below is one real proposal, exactly as it arrived. A senior judge
+            scored it <strong style={{ color: TEXT }}>9.0</strong> and left a
+            note worth reading. Then the patch engine tried it against the file
+            on disk and found the model had invented a line of context that is
+            not there — so <strong style={{ color: TEXT }}>Approve is greyed
+            out</strong> and the diff never touched anything.
+          </p>
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed" style={{ color: MUTED }}>
+            A good score is not permission. That is the whole design: the grade
+            tells you how much attention a change deserves, and a separate,
+            unarguable check decides whether it may land at all.
+          </p>
+
+          <figure className="mt-8 lg:-mx-16 xl:-mx-28">
+            <div
+              className="overflow-hidden rounded-lg border"
+              style={{ borderColor: LINE, background: INK_SOFT }}
+            >
+              <Image
+                src="/product/proposal-graded.webp"
+                alt="A graded proposal in ABS Studio: the task, a green Judge 9.0 badge, a high blast-radius badge, a unified diff adding a zero check to a divide function, the judge's note suggesting ZeroDivisionError instead of ValueError, a greyed-out Approve button beside an active Reject, and the line answered by groq free."
+                width={1400}
+                height={860}
+                sizes="(max-width: 1024px) 100vw, 1400px"
+                style={{ width: "100%", height: "auto" }}
+              />
+            </div>
+            <figcaption className="mt-3 text-xs" style={{ color: MUTED }}>
+              Unretouched. The free provider that answered is named at the
+              bottom of the card, next to what it cost.
+            </figcaption>
+          </figure>
         </section>
 
         {/* --- features -------------------------------------------------- */}
