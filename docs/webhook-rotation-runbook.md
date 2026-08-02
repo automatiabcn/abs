@@ -145,7 +145,7 @@ keychain access, leaked .env in screenshot), execute in this order:
 5. **Customer notification** (if data exfiltration is plausible — required by
    GDPR Article 33 within 72 hours).
 6. **Re-enable traffic** at the reverse proxy.
-7. **Post-mortem:** file with `security@automatiabcn.com`, attach audit log
+7. **Post-mortem:** file with `info@automatiabcn.com`, attach audit log
    excerpts and timeline.
 
 ### Compromise checklist
@@ -193,5 +193,5 @@ docker compose exec backend python -c \
      print('last rotate:', last)"
 ```
 
-For incidents not covered above, contact `security@automatiabcn.com` and file
+For incidents not covered above, contact `info@automatiabcn.com` and file
 a private GitHub security advisory.

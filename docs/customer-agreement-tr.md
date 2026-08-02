@@ -91,7 +91,7 @@ Lisans ücretleri, Müşteri'ye satın alma sırasında sağlanan Sipariş Formu
 Müşteri şunlara hak kazanır:
 
 - Lisans süresi boyunca yayınlanan Yazılım güncellemeleri ve hata düzeltmeleri
-- support@automatiabcn.com adresinden e-posta desteği (48 saat yanıt süresi)
+- info@automatiabcn.com adresinden e-posta desteği (48 saat yanıt süresi)
 - İsteğe bağlı Bakım Paketi ($49/yıl) — 24 saat öncelikli yanıt süresi
 
 Güncellemeleri yüklemek Müşteri'nin sorumluluğundadır. Güncellemeler lisans doğrulama, denetim günlüğü veya diğer uyum mekanizmalarında değişiklikler içerebilir.
@@ -106,6 +106,6 @@ Aşağıda imzalayarak veya kurulum sürecinde "Kabul Ediyorum" seçeneğini tı
 |-------------|------------------|
 | Ad: _________________ | Ad: Automatia BCN |
 | Unvan: _________________ | Unvan: Şahıs Şirketi Sahibi |
-| E-posta: _________________ | E-posta: support@automatiabcn.com |
+| E-posta: _________________ | E-posta: info@automatiabcn.com |
 | İmza: _________________ | İmza: _________________ |
 | Tarih: _________________ | Tarih: _________________ |

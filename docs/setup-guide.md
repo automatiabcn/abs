@@ -179,4 +179,4 @@ Rules:
 - [Troubleshooting](troubleshooting.md) — common errors
 - [FAQ](faq.md) — short answers
 
-If you need help with the install, write to `support@automatiabcn.com` — 24h SLA for Maintenance customers.
+If you need help with the install, write to `info@automatiabcn.com` — 24h SLA for Maintenance customers.
