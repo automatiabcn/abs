@@ -31,7 +31,7 @@ const QUESTIONS: QA[] = [
   },
   {
     q: "How does support work?",
-    a: "Email support is standard on the base plan (support@automatiabcn.com). Customers on the maintenance package get a 48-hour response SLA.",
+    a: "Email support is standard on the base plan (info@automatiabcn.com). Customers on the maintenance package get a 48-hour response SLA.",
   },
   {
     q: "Is my code sent to Anthropic or to Automatia?",

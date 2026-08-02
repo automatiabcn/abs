@@ -61,7 +61,10 @@ def owner_key_for(
     that talks to an adapter directly (latency-sensitive paths) must ask here,
     or the promotion is a promise the credential never keeps.
     """
-    if not (tenant_slug and (user_subject or tenant_slug)):
+    # A tenant is the whole requirement. `user_subject` narrows the lookup to
+    # one person's key when there is one, and its absence is a personal key
+    # that does not exist rather than a reason to refuse the tenant's.
+    if not tenant_slug:
         return None
     try:
         from app.multitenant.provider_keys import resolve_provider_key

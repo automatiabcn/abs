@@ -50,8 +50,8 @@ export default function InstallPage() {
             The steps below are the real ones and will not change — but until
             the first release is out there is nothing on the download page to
             fetch. If you are installing ABS Studio now, write to{" "}
-            <a href="mailto:support@automatiabcn.com" className="underline">
-              support@automatiabcn.com
+            <a href="mailto:info@automatiabcn.com" className="underline">
+              info@automatiabcn.com
             </a>{" "}
             and we will send you the build.
           </p>
@@ -182,8 +182,8 @@ export default function InstallPage() {
         <section>
           <h2 className="text-lg font-semibold">Still stuck</h2>
           <p>
-            <a href="mailto:support@automatiabcn.com" className="underline">
-              support@automatiabcn.com
+            <a href="mailto:info@automatiabcn.com" className="underline">
+              info@automatiabcn.com
             </a>
             . Refunds are unconditional for 14 days — see the{" "}
             <Link href="/refund" className="underline">

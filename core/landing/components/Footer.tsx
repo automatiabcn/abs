@@ -64,10 +64,10 @@ const Footer: FC = () => (
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
               <a
-                href="mailto:support@automatiabcn.com"
+                href="mailto:info@automatiabcn.com"
                 className="hover:text-foreground"
               >
-                support@automatiabcn.com
+                info@automatiabcn.com
               </a>
             </li>
             <li>
