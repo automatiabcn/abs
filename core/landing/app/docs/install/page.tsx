@@ -15,7 +15,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Install ABS Studio",
+  title: { absolute: "Install ABS Studio · ABS Studio" },
   description:
     "Download ABS Studio, install the self-hosted server, and enter your licence key. Requirements, step-by-step setup, and what to do when something does not start.",
 };
