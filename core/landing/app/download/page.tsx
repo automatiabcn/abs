@@ -39,8 +39,8 @@ export default function DownloadPage() {
             ABS Studio is not downloadable from this page today. If you have
             already bought a licence, your key stays valid and nothing expires
             while you wait — write to{" "}
-            <a href="mailto:support@automatiabcn.com" className="underline">
-              support@automatiabcn.com
+            <a href="mailto:info@automatiabcn.com" className="underline">
+              info@automatiabcn.com
             </a>{" "}
             and we will send you the build directly.
           </p>

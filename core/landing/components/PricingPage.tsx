@@ -35,14 +35,14 @@ const PricingPage: FC<PricingPageProps> = () => {
           Get in touch to try the system in your own environment.
         </p>
         <a
-          href="mailto:support@automatiabcn.com"
+          href="mailto:info@automatiabcn.com"
           data-testid="pricing-page-cta"
           className="inline-flex h-11 items-center justify-center rounded-md bg-blue-600 px-6 text-sm font-semibold text-white hover:bg-blue-700"
         >
           Get in touch
         </a>
         <p className="mt-6 text-xs text-muted-foreground">
-          support@automatiabcn.com · Barcelona
+          info@automatiabcn.com · Barcelona
         </p>
       </div>
     </section>

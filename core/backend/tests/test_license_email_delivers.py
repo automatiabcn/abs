@@ -64,7 +64,7 @@ def test_the_guide_the_email_promises_exists(path: Path):
 def test_the_key_and_a_way_back_to_us_are_both_in_the_email(path: Path):
     body = path.read_text(encoding="utf-8")
     assert "{{ license_key }}" in body, "the thing they paid for"
-    assert "support@automatiabcn.com" in body, "a person to write to"
+    assert "info@automatiabcn.com" in body, "a person to write to"
 
 
 @pytest.mark.parametrize("path", LICENCE_TEMPLATES, ids=lambda p: p.name)

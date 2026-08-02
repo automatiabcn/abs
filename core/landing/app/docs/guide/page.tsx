@@ -356,8 +356,8 @@ export default function GuidePage() {
             has a section for it — the panel not loading, the editor not
             reaching the server, a provider that looks configured but does
             nothing, a licence key that is refused. Anything it does not cover:{" "}
-            <a href="mailto:support@automatiabcn.com" className="underline">
-              support@automatiabcn.com
+            <a href="mailto:info@automatiabcn.com" className="underline">
+              info@automatiabcn.com
             </a>
             .
           </p>
