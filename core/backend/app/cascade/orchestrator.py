@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import List, Optional, Sequence
+from typing import List, Mapping, Optional, Sequence
 
 import httpx
 
@@ -142,6 +142,13 @@ async def call_with_cascade(
     *,
     primary: str,
     model: Optional[str] = None,
+    # A model per provider, for callers that pin one. `model` alone goes to
+    # EVERY leg — harmless while it is None (each adapter uses its own
+    # default) and a trap the moment somebody pins one, because the primary's
+    # model then reaches providers that do not serve it and every fallback
+    # 404s. That would break the thing the product leads with, the agent that
+    # does not stop when a provider does, while fixing something smaller.
+    models: Optional[Mapping[str, str]] = None,
     fallbacks: Sequence[str] = (),
     use_cache: bool = True,
     tenant_id: str = "_global",
@@ -220,7 +227,11 @@ async def call_with_cascade(
         if owner_key:
             call_kwargs = {**kwargs, "api_key": owner_key}
         try:
-            resp = await provider.call(prompt, model=model, **call_kwargs)
+            # Each leg gets a model it actually serves; a provider we have no
+            # pin for keeps its own default rather than inheriting somebody
+            # else's model name.
+            leg_model = (models or {}).get(name) or model
+            resp = await provider.call(prompt, model=leg_model, **call_kwargs)
             # Expose the failover trail (attempts so far, winner last) on the
             # success path too — chat/Cost-HUD can show "tried A → B → C". It was
             # only surfaced on total failure via CascadeUnavailable before.
