@@ -1,7 +1,7 @@
 # License Heartbeat Phone-Home — Privacy Notice
 
 *Last updated: 2026-05-11*
-Contact: **support@automatiabcn.com**
+Contact: **info@automatiabcn.com**
 
 This document discloses exactly what data the customer-side Automatia ABS
 backend transmits to Automatia BCN's license activation server, why it is

@@ -44,7 +44,7 @@ Self-host AI orchestration for Claude Code — 100+ MCP tools, a 6-provider chai
 
 ## Community and support
 
-- **Email** — `support@automatiabcn.com` (48h response, Maintenance: 24h)
+- **Email** — `info@automatiabcn.com` (48h response, Maintenance: 24h)
 - **GitHub** — [github.com/automatiabcn/abs](https://github.com/automatiabcn/abs) (Apache 2.0 core)
 - **Discord beta** — `discord.gg/abs-beta` (beta testers only)
 - **Status** — `status.abs.automatiabcn.com` (Cloudflare uptime monitor)

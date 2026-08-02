@@ -185,6 +185,7 @@ def register_all_tools() -> int:
     from app.mcp.tools import gemini_extras as gemini_mod  # noqa: F401
     from app.mcp.tools import hook_companions  # noqa: F401
     from app.mcp.tools import codegraph_tools  # noqa: F401
+    from app.mcp.tools import capability_tools  # noqa: F401
     from app.mcp.tools import composer_tools  # noqa: F401
     from app.mcp.tools import notes_tools  # noqa: F401
     from app.mcp.tools import tasks_tools  # noqa: F401
@@ -247,6 +248,7 @@ def register_all_tools() -> int:
         + len(notes_tools.REGISTERED_TOOLS)
         + len(tasks_tools.REGISTERED_TOOLS)
         + len(sandbox_tools.REGISTERED_TOOLS)
+        + len(capability_tools.REGISTERED_TOOLS)
         + len(composer_tools.REGISTERED_TOOLS)
         + len(engine_panel_tools.REGISTERED_TOOLS)
         + len(companion_tools.REGISTERED_TOOLS)
