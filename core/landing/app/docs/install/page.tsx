@@ -154,6 +154,37 @@ export default function InstallPage() {
             </li>
           </ul>
           <p>
+            <strong>Already paying for ChatGPT Plus, Claude Pro or Google AI
+            Pro?</strong> Those are subscriptions to the chat apps, not API
+            credit, so there is no key to paste — but each vendor ships a CLI
+            the subscription covers, and ABS can drive it. Install the CLI on
+            the machine your server runs on, sign in once in the browser it
+            opens, and ABS picks it up:
+          </p>
+          <ul className="ml-5 list-disc space-y-2">
+            <li>
+              <strong>ChatGPT Plus / Pro</strong> —{" "}
+              <code>npm install -g @openai/codex</code>, then{" "}
+              <code>codex login</code>.
+            </li>
+            <li>
+              <strong>Claude Pro / Max</strong> —{" "}
+              <code>npm install -g @anthropic-ai/claude-code</code>, then run{" "}
+              <code>claude</code> once.
+            </li>
+            <li>
+              <strong>Google AI Pro</strong> — the Antigravity CLI, then run{" "}
+              <code>agy</code> once.
+            </li>
+          </ul>
+          <p>
+            Nothing is stored on our side and nothing is stored by ABS: the
+            session belongs to your account, on your machine. These start in
+            seconds rather than milliseconds, so ABS uses them for the deep
+            work — proposals and reviews — and keeps the fast paths on the
+            free tiers.
+          </p>
+          <p>
             One key is enough to start. ABS runs at whatever level the keys you
             brought allow, and the editor says which capability the next key
             would unlock — a second provider from a different vendor is what
