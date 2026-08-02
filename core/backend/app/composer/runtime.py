@@ -365,17 +365,40 @@ async def _generate_edits(
         if not active:
             return {}, [], {}
         primary, *rest = active
-        resp = await call_with_cascade(
-            _prompt(task, files, contents),
-            primary=primary,
-            fallbacks=tuple(rest),
-            max_tokens=1500,
-            temperature=0.1,
-            response_format={"type": "json_object"},
-            tenant_id=tenant_id,
-            project_slug=project_slug,
-            user_subject=user_subject,
-        )
+
+        async def _ask(structured: bool):
+            return await call_with_cascade(
+                _prompt(task, files, contents),
+                primary=primary,
+                fallbacks=tuple(rest),
+                # Named, not left to the adapter — see `_COMPOSER_MODELS`.
+                model=model_for(primary),
+                max_tokens=1500,
+                temperature=0.1,
+                **({"response_format": {"type": "json_object"}} if structured else {}),
+                tenant_id=tenant_id,
+                project_slug=project_slug,
+                user_subject=user_subject,
+            )
+
+        try:
+            resp = await _ask(True)
+        except Exception as exc:  # noqa: BLE001
+            if not _is_json_mode_refusal(exc):
+                raise
+            # The provider's validator rejected the answer, not the request.
+            # That is a 400 — permanent — so the cascade gives up, and on a
+            # free-tier install with one provider there is nowhere to give up
+            # to: the developer got an empty proposal and no reason (found by
+            # the effectiveness harness on its first real task, 08-02).
+            #
+            # Strictness was never the point. `_parse` already strips fences
+            # and pulls the first balanced object out of prose, because models
+            # wrap JSON in explanation. So the same prompt goes once more
+            # without the flag it failed on, and the answer is read the
+            # defensive way.
+            logger.info("composer retrying without JSON mode: %s", str(exc)[:120])
+            resp = await _ask(False)
         meta: dict = {"provider": getattr(resp, "provider", "") or ""}
         try:
             from app.chat.cost import estimate_call_cost_usd
@@ -398,6 +421,40 @@ async def _generate_edits(
     except Exception as exc:  # noqa: BLE001 — degrade, never 500
         logger.info("composer generation degraded: %s", exc)
         return {}, [], {}
+
+
+# A capable model per provider, by name. Without this every adapter falls back
+# to its own `default_model`, and Groq's is an 8B instant model that leads the
+# default free-first chain — so the product's flagship feature was running on
+# the weakest model the account owns, against a prompt carrying up to 14k
+# characters of workspace. It answered 413 (found by the effectiveness harness,
+# 08-02). The judge pins models for comparability; the Composer pins them
+# because a multi-file edit is the hardest thing we ask a model to do.
+#
+# A provider missing from this map keeps its own default on purpose: inventing
+# a model name is how a perfectly good key starts returning 404.
+_COMPOSER_MODELS: dict[str, str] = {
+    "groq": "openai/gpt-oss-120b",
+    "cerebras": "gpt-oss-120b",
+}
+
+
+def model_for(provider: str) -> Optional[str]:
+    """The model to ask this provider for, or None to accept its default."""
+    return _COMPOSER_MODELS.get(str(provider or "").strip().lower())
+
+
+def _is_json_mode_refusal(exc: BaseException) -> bool:
+    """Did the provider reject the ANSWER's shape rather than the request?
+
+    Narrow on purpose. A quota error, a bad key or a timeout mean something
+    else entirely, and retrying those would double every real outage — and
+    spend twice the allowance of a provider that just said it has none left.
+    """
+    text = str(exc).lower()
+    return "json_validate_failed" in text or (
+        "failed to generate json" in text and "400" in text
+    )
 
 
 def _clamp01(value: Any) -> Optional[float]:
