@@ -29,8 +29,11 @@ that path applies while Composer's did not.
 from __future__ import annotations
 
 import difflib
+import logging
 import os
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 def read_text(path: str) -> Optional[str]:
@@ -44,6 +47,22 @@ def read_text(path: str) -> Optional[str]:
             return fh.read()
     except (OSError, UnicodeDecodeError):
         return None
+
+
+# Below this many lines a ratio means nothing: losing 4 of 6 lines is an
+# ordinary edit, and a ratio test would refuse it.
+_MIN_LINES_FOR_RATIO = 20
+# How much of a file an answer may drop before it stops being believable. A
+# refactor that removes 30% is normal; one that removes 70% in a single
+# proposal is the shape of a reply that stopped early.
+_MAX_SHRINK = 0.5
+
+
+def _looks_truncated(old_text: str, new_text: str) -> bool:
+    old_n = len(old_text.splitlines())
+    if old_n < _MIN_LINES_FOR_RATIO:
+        return False
+    return len(new_text.splitlines()) < old_n * _MAX_SHRINK
 
 
 def diff_from_new_content(
@@ -65,6 +84,20 @@ def diff_from_new_content(
     if old_text.endswith("\n") and not new_text.endswith("\n"):
         new_text += "\n"
     if new_text == old_text:
+        return ""
+
+    # An answer that lost most of the file is a truncated reply, not an edit.
+    # Models are asked for the COMPLETE file and routinely return the
+    # interesting part and stop. Believing them turns a cut-off answer into a
+    # clean, applicable, dry-run-approved deletion: measured 08-02 across eight
+    # tasks, +20/-784 among them. Deleting a file's contents is a real thing to
+    # want and it is also exactly what truncation looks like, so where the two
+    # cannot be told apart the product refuses rather than guesses.
+    if _looks_truncated(old_text, new_text):
+        logger.info(
+            "composer refused a suspiciously short %s: %d lines -> %d",
+            rel_path, old_text.count("\n"), new_text.count("\n"),
+        )
         return ""
 
     old_lines = old_text.splitlines(keepends=True)
