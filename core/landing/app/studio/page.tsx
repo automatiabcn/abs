@@ -73,21 +73,21 @@ const FEATURES: {
       "Bring your own keys and ABS routes to free tiers before it reaches for anything billed. The cost of today and the projection for the month sit in the panel where you can see them — not in an invoice at the end of it. Keys are checked with the provider the moment you paste one, so a mistyped key fails immediately instead of quietly later.",
     shot: {
       src: "/product/detail-engine.webp",
-      alt: "The Engine section showing cascade and quota, with today and projected month both reading free",
+      alt: "The Engine section showing cascade and quota: today and projected month both reading free, above the routing order — what will be tried.",
       width: 579,
-      height: 252,
+      height: 288,
     },
   },
   {
     kicker: "Activity",
-    title: "A chain you can watch",
+    title: "It keeps a record of how good its own work has been",
     body:
-      "Multi-model pipelines run in the open: which provider answered, what was tried before it, what it cost. When a provider fails mid-question the next one picks it up, and the panel shows you that happened rather than hiding it behind a spinner.",
+      "Every graded change goes into a running average, so the panel can tell you whether the help you are getting is holding up or drifting. Below is a real reading from a working install — twenty-one changes judged, and honest about having no earlier window to compare against yet. Multi-model pipelines are drawn the same way: which model handled each step, and where one failed and the next took over.",
     shot: {
       src: "/product/detail-chain.webp",
-      alt: "The Activity section showing a delegation chain with the qual_code pipeline selected and a Run chain button",
+      alt: "The Activity section, headed Chain and quality, showing a seven-day reading of 5.4 average across 21 judged changes, marked stable, and noting there is no earlier window to compare against.",
       width: 579,
-      height: 234,
+      height: 262,
     },
   },
 ];
