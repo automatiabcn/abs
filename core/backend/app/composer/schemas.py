@@ -6,7 +6,7 @@
 """Composer schema — a multi-file, pre-reviewed edit proposal.
 
 The single shape the editor renders: every proposed edit carries a unified diff
-*plus* the three signals Cursor's raw diff cannot: a Senior-Judge quality score,
+*plus* the three signals a raw diff cannot carry: a Senior-Judge quality score,
 a deterministic blast-radius ("N files may be affected"), and a dry-run
 validation verdict. Risk and the approval gate are derived from those, not from
 the model's self-report.
@@ -41,7 +41,14 @@ class ProposedEdit(BaseModel):
     blast_radius: Dict[str, Any] = Field(
         default_factory=dict, description="code_graph blast-radius: what this change may affect"
     )
-    confidence: float = Field(default=0.0, description="Model self-report, clamped 0-1")
+    # None means the model did not say. It defaulted to 0.0, and the panel
+    # draws "uncertain" below 0.5 — so silence was rendered as doubt on every
+    # edit that omitted the field, which is a warning nobody reads by the time
+    # a real one arrives.
+    confidence: Optional[float] = Field(
+        default=None,
+        description="The model's own confidence 0-1, or None if it did not say",
+    )
     validation: Dict[str, Any] = Field(
         default_factory=dict, description="patch_engine.validate verdict {valid, stage, reason}"
     )

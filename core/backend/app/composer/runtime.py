@@ -120,7 +120,55 @@ def _task_terms(task: str) -> List[str]:
     return [w for w in dict.fromkeys(words) if w not in _STOPWORDS]
 
 
-def relevant_files(root: str, task: str, files: List[str]) -> List[Tuple[str, str]]:
+def _graph_neighbours(root: str, seeds: List[str], key: str) -> set[str]:
+    """Workspace-relative files that break if any of `seeds` changes.
+
+    `seeds` are the words of the task and the best lexical file matches. Asking
+    by SYMBOL is the important half: when somebody writes "change
+    apply_discount", term matching can only find files containing that string —
+    the definition, the callers, and every comment that mentions it, all tied
+    at one point each. The graph is the only thing here that knows which of
+    them would actually break, and it was already computing that list for the
+    blast-radius badge while the prompt went out without it.
+
+    `blast_radius` answers in absolute paths and the ranking works in relative
+    ones; a comparison across the two never matches, quietly, which is what the
+    first version of this did.
+    """
+    base = os.path.realpath(root)
+    out: set[str] = set()
+    for seed in seeds:
+        try:
+            blast = codegraph.blast_radius(seed, key=key) or {}
+        except Exception as exc:  # noqa: BLE001 — context is an aid, not a gate
+            logger.info("composer graph expansion skipped for %s: %s", seed, exc)
+            continue
+        if not blast.get("found"):
+            continue
+        for path in blast.get("affected_files") or []:
+            if not path:
+                continue
+            real = os.path.realpath(str(path))
+            rel = os.path.relpath(real, base)
+            if not rel.startswith(".."):
+                out.add(rel)
+    return out
+
+
+# How many top-scoring files also get used as graph seeds, and what a graph hit
+# is worth. Below a name match (5) on purpose: a file the task names by hand is
+# a better guess than one inferred from an edge.
+_GRAPH_SEEDS = 3
+_GRAPH_SCORE = 3
+
+
+def relevant_files(
+    root: str,
+    task: str,
+    files: List[str],
+    *,
+    graph_key: Optional[str] = None,
+) -> List[Tuple[str, str]]:
     """The files most likely to be edited, with their current contents.
 
     Knowing a file's NAME is not knowing its lines. Given only a listing, the
@@ -132,6 +180,11 @@ def relevant_files(root: str, task: str, files: List[str]) -> List[Tuple[str, st
     from the task matching the file's name counts for more than one matching
     its body, because that is how developers name things. Ties break on path
     so the same task against the same workspace builds the same prompt.
+
+    With `graph_key`, the top lexical matches are then expanded with the files
+    that depend on them. Neighbours compete for the same slots rather than
+    adding new ones — a context window does not grow because a feature was
+    added, and on a monorepo that difference is the whole game.
     """
     terms = _task_terms(task)
     base = os.path.realpath(root)
@@ -154,6 +207,20 @@ def relevant_files(root: str, task: str, files: List[str]) -> List[Tuple[str, st
     # A small workspace is worth sending whole; in a large one, only what
     # matched the task earns a place in the budget.
     scored.sort(key=lambda t: (-t[0], t[1]))
+
+    if graph_key:
+        # Symbols named in the task first — that is the query the graph is for.
+        # The best lexical files follow, for tasks phrased without a symbol
+        # ("make invoicing handle percentages").
+        seeds = terms + [rel for score, rel, _b in scored[:_GRAPH_SEEDS] if score > 0]
+        if seeds:
+            related = _graph_neighbours(base, seeds, graph_key)
+            if related:
+                scored = [
+                    (s + _GRAPH_SCORE if rel in related else s, rel, b)
+                    for s, rel, b in scored
+                ]
+                scored.sort(key=lambda t: (-t[0], t[1]))
     out: List[Tuple[str, str]] = []
     spent = 0
     for score, rel, body in scored:
@@ -333,11 +400,20 @@ async def _generate_edits(
         return {}, [], {}
 
 
-def _clamp01(value: Any) -> float:
+def _clamp01(value: Any) -> Optional[float]:
+    """The model's self-reported confidence, or None when it did not say.
+
+    This returned 0.0 for a missing field, and the panel draws "uncertain" below
+    0.5 — so every edit where the model simply omitted the number was shown as
+    an edit the model doubted. A warning that fires on the ordinary case is a
+    warning nobody reads by the time it matters.
+    """
+    if value is None or value == "":
+        return None
     try:
         return max(0.0, min(1.0, float(value)))
     except (TypeError, ValueError):
-        return 0.0
+        return None
 
 
 def _derive_risk(edits: List[ProposedEdit]) -> Tuple[str, bool]:
@@ -390,8 +466,28 @@ async def run_composer(
     except Exception as exc:  # noqa: BLE001
         logger.info("composer workspace listing skipped: %s", exc)
         files = []
+    key = graph_key or codegraph.workspace_key(workspace_root)
+
+    # Index BEFORE the model is asked, not after. The graph used to be built
+    # only in time to draw the blast-radius badge, which meant the badge could
+    # name three files the prompt had never shown — the product knew which
+    # files an edit would break and did not tell the model. Deterministic,
+    # local, no model call; a failure costs context, never the run.
     try:
-        contents = relevant_files(workspace_root, task, files) if files else []
+        codegraph.build(workspace_root, key=key)
+        graph_ready = True
+    except Exception as exc:  # noqa: BLE001
+        logger.info("composer codegraph build skipped: %s", exc)
+        graph_ready = False
+
+    try:
+        contents = (
+            relevant_files(
+                workspace_root, task, files, graph_key=key if graph_ready else None
+            )
+            if files
+            else []
+        )
     except Exception as exc:  # noqa: BLE001
         logger.info("composer context read skipped: %s", exc)
         contents = []
@@ -405,18 +501,17 @@ async def run_composer(
         contents=contents,
     )
     raw_edits = parsed.get("edits") if isinstance(parsed.get("edits"), list) else []
-    key = graph_key or codegraph.workspace_key(workspace_root)
 
-    # Index the workspace before asking what a change would break. The graph is
-    # only ever QUERIED here, so without this the blast-radius is empty on any
-    # workspace nobody happened to run code_graph_build on — the badge that
-    # makes the proposal worth trusting silently disappears. Deterministic,
-    # local, no model call; a failure degrades the badge, never the run.
-    if raw_edits:
+    # The graph was built above, before the prompt went out, so the blast-radius
+    # badge and the context the model saw are drawn from the same index. One
+    # retry here for the case where the earlier build failed but the query path
+    # might still work — without it a workspace nobody ran code_graph_build on
+    # loses the badge that makes a proposal worth trusting.
+    if raw_edits and not graph_ready:
         try:
             codegraph.build(workspace_root, key=key)
         except Exception as exc:  # noqa: BLE001 — blast-radius is an annotation
-            logger.info("composer codegraph build skipped: %s", exc)
+            logger.info("composer codegraph rebuild skipped: %s", exc)
 
     edits: List[ProposedEdit] = []
     for raw in raw_edits:
