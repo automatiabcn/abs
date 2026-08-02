@@ -372,6 +372,13 @@ async def _generate_edits(
             logger.debug("composer BYOK lookup skipped: %s", exc)
 
         active = get_active_providers(extra_configured=extra)
+        # A multi-file edit is the hardest thing we ask a model to do, so the
+        # order is reconsidered for THIS kind of work rather than inherited
+        # from the cost-first default. A preference, never a requirement: with
+        # one free key the chain is that key, and the proposal still runs.
+        from app.cascade.routing import DEEP, chain_for
+
+        active = chain_for(DEEP, active) or active
         if not active:
             return {}, [], {}
         primary, *rest = active
