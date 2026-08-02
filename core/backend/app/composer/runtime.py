@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 from typing import Any, List, Optional, Tuple
 
 from app.codegraph import graph as codegraph
+from app.composer import from_content
 from app.composer.schemas import ComposerRun, ProposedEdit
 from app.judge.senior import judge_diff
 from app.patches import engine as patch_engine
@@ -204,29 +205,25 @@ def _prompt(
         "character '{'. Schema:\n"
         '{"summary": "one or two sentences", '
         '"edits": [{"path": "workspace-relative path", '
-        '"unified_diff": "a valid unified diff with @@ hunks", '
+        '"new_content": "the COMPLETE file exactly as it should be afterwards", '
         '"rationale": "why", "confidence": 0.0-1.0}]}\n'
-        "Diff format is strict: EVERY line inside a hunk starts with exactly "
-        "ONE marker character — '-', '+' or a single space for context — "
-        "immediately followed by the line's real content. Do NOT put a space "
-        "after the marker, do not leave any line unmarked, and reproduce the "
-        "file's own indentation exactly; a patch whose content does not match "
-        "the file byte-for-byte cannot be applied.\n"
-        # An instruction describes the format; an example shows it. Live runs
-        # kept marking only the first line and leaving the rest bare, or
-        # writing "- def f():" with a courtesy space, until the prompt carried
-        # a diff to copy the shape from.
-        "This is exactly the shape required — for a file containing\n"
+        # We used to ask for a unified diff here, with a strict format spec and
+        # a worked example. Measured 08-02 on the free tiers: three proposals
+        # in a row were unapplicable — invented context lines, indentation off
+        # by four spaces, hunk counts that did not match their bodies. The
+        # prompt was not the problem; a unified diff is a machine format with
+        # byte-exact obligations, and that is the wrong thing to ask a model
+        # for. It returns the finished file; ABS computes the diff from the
+        # bytes on disk, so the result applies by construction.
+        "Return the WHOLE file in new_content, from its first line to its "
+        "last, with your change made — not a fragment, not a diff, not an "
+        "ellipsis. Copy every line you are not changing exactly as it is, "
+        "including blank lines and indentation. Change as little as the task "
+        "requires.\n"
+        "For a file containing\n"
         "def helper():\n    return 1\n"
-        "a correct edit is:\n"
-        "@@ -1,2 +1,2 @@\n"
-        " def helper():\n"
-        "-    return 1\n"
-        "+    return 2\n"
-        "Note: the header has no leading space; the context line begins with "
-        "one space then 'def'; the changed lines begin with '-' or '+' then "
-        "the four spaces of the original indentation.\n"
-        "Keep diffs minimal and context-accurate.\n"
+        "asked to return 2, new_content is exactly:\n"
+        "def helper():\n    return 2\n"
         + listing
         + body
         + "\nTASK: "
@@ -430,8 +427,18 @@ async def run_composer(
         # it would apply. Grading, rendering and applying a different text than
         # the one that lands is how a score ends up describing a change nobody
         # is making.
-        diff = patch_engine.normalize_diff(str(raw.get("unified_diff") or ""))
         abs_path = path if os.path.isabs(path) else os.path.join(workspace_root, path)
+        # Prefer a diff we computed from the file on disk over one the model
+        # wrote. See app/composer/from_content.py for why.
+        raw_diff, built_here = from_content.edit_diff(
+            raw,
+            rel_path=from_content.relative_to(workspace_root, path),
+            abs_path=abs_path,
+        )
+        diff = patch_engine.normalize_diff(raw_diff)
+        if built_here and not diff:
+            # The model returned the file unchanged: nothing to propose.
+            continue
 
         v = patch_engine.validate(abs_path, diff, workspace_root=workspace_root)
         dry_ok = False
