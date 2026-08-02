@@ -68,6 +68,16 @@ _CODE_SUFFIXES = frozenset(
 )
 _MAX_LISTED_FILES = 200
 
+# Room for the answer. The prompt asks for `new_content` — the COMPLETE file —
+# and the ceiling was still the one the old diff-sized answers had left behind:
+# 1500. A 200-line source file is already past that, so the reply arrived cut
+# off mid-JSON, `_parse` found no balanced object, and the run came back with
+# zero edits and an empty summary while the call had been made and billed
+# (measured 08-02: eight tasks, eight providers answered, eight empty
+# proposals). If the prompt ever goes back to asking for a diff, this comes
+# down with it — the two have to move together.
+_MAX_OUTPUT_TOKENS = 8000
+
 
 def workspace_files(root: str, *, limit: int = _MAX_LISTED_FILES) -> List[str]:
     """Workspace-relative paths of the code files a proposal may touch.
@@ -374,7 +384,7 @@ async def _generate_edits(
                 # Named per provider, not left to the adapter and not one name
                 # forced on the whole chain — see `_COMPOSER_MODELS`.
                 models=_COMPOSER_MODELS,
-                max_tokens=1500,
+                max_tokens=_MAX_OUTPUT_TOKENS,
                 temperature=0.1,
                 **({"response_format": {"type": "json_object"}} if structured else {}),
                 tenant_id=tenant_id,
@@ -414,8 +424,19 @@ async def _generate_edits(
         except Exception as exc:  # noqa: BLE001 — cost estimate is best-effort
             logger.debug("composer cost estimate skipped: %s", exc)
             meta["cost_usd"] = None
+        text = getattr(resp, "text", "") or ""
+        parsed = _parse(text)
+        if text.strip() and not parsed:
+            # The answer arrived and could not be read — truncation, usually.
+            # Reporting that the same way as "no answer" tells the reader the
+            # model had nothing to suggest, which is not what happened.
+            meta["parse_failed"] = True
+            logger.info(
+                "composer answer unparseable (%d chars from %s) — likely truncated",
+                len(text), meta.get("provider") or "?",
+            )
         return (
-            _parse(getattr(resp, "text", "") or ""),
+            parsed,
             list(getattr(resp, "providers_tried", []) or []),
             meta,
         )
