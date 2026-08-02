@@ -14,6 +14,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { RELEASE } from "@/lib/downloads";
+
 export const metadata: Metadata = {
   title: { absolute: "Install ABS Studio · ABS Studio" },
   description:
@@ -35,6 +37,26 @@ export default function InstallPage() {
         Two pieces: the editor you write in, and the server that runs on your
         own machine. Both are yours — nothing you index or edit leaves it.
       </p>
+
+      {/* Read from the same source the download page reads, so the two pages
+          cannot contradict each other — and so this note disappears by itself
+          when the first release lands, rather than being a second edit
+          somebody has to remember. Caught on the live site (08-02): step 1
+          said builds "are published" while /download said they were not. */}
+      {RELEASE === null ? (
+        <div className="mt-8 rounded border border-dashed p-4 text-sm leading-relaxed">
+          <p className="font-medium">Builds are not published yet.</p>
+          <p className="mt-2 text-muted-foreground">
+            The steps below are the real ones and will not change — but until
+            the first release is out there is nothing on the download page to
+            fetch. If you are installing ABS Studio now, write to{" "}
+            <a href="mailto:support@automatiabcn.com" className="underline">
+              support@automatiabcn.com
+            </a>{" "}
+            and we will send you the build.
+          </p>
+        </div>
+      ) : null}
 
       <div className="prose prose-neutral mt-8 space-y-8 text-sm leading-relaxed">
         <section>
@@ -59,7 +81,8 @@ export default function InstallPage() {
         <section>
           <h2 className="text-lg font-semibold">1. Download</h2>
           <p>
-            Builds for macOS, Linux and Windows are published on the{" "}
+            Builds for macOS, Linux and Windows {RELEASE === null ? "will be" : "are"}{" "}
+            published on the{" "}
             <a href={DOWNLOADS} className="underline">
               download page
             </a>
