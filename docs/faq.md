@@ -71,7 +71,7 @@ Automatia BCN servers.
 ### 13. Is it GDPR compliant?
 Yes. The data controller is Automatia BCN (Barcelona). User data stays on the
 server of whoever runs ABS; only payment data sits with Stripe (PCI-DSS). For your
-rights under EU Articles 15-22, write to `privacy@automatiabcn.com`.
+rights under EU Articles 15-22, write to `info@automatiabcn.com`.
 
 ### 14. Is it open source?
 The core (`core/backend`, `core/landing`) is Apache 2.0. The premium add-ons
@@ -87,5 +87,5 @@ After that it is Maintenance at $49/year.
 
 ---
 
-More questions? `support@automatiabcn.com` or GitHub Discussions.
+More questions? `info@automatiabcn.com` or GitHub Discussions.
 Full details: [Setup Guide](setup-guide.md), [API Reference](api-reference.md).

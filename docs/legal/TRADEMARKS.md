@@ -1,7 +1,7 @@
 # Automatia Trademarks Policy  
 
 *Last updated: 2026‑05‑11*  
-Contact: **support@automatiabcn.com**  
+Contact: **info@automatiabcn.com**  
 **This policy is provided for informational purposes only and does not constitute legal advice.**  
 
 ---  
@@ -35,7 +35,7 @@ In all cases the mark must be presented in its **unchanged, unaltered form** (e.
 
 ## 3. Uses That Require Written Permission  
 
-The following categories of use **require prior written consent** from Automatia BCN. Requests should be sent to **support@automatiabcn.com** and must include a description of the intended use, sample artwork or copy, and the distribution channel.  
+The following categories of use **require prior written consent** from Automatia BCN. Requests should be sent to **info@automatiabcn.com** and must include a description of the intended use, sample artwork or copy, and the distribution channel.  
 
 | Category | Example Scenarios |
 |----------|-------------------|
@@ -78,7 +78,7 @@ In short, the code license governs **what you may do with the software**, while 
 
 ## 6. Reporting Misuse  
 
-If you encounter a suspected breach of this policy, please email **support@automatiabcn.com** with the following information:  
+If you encounter a suspected breach of this policy, please email **info@automatiabcn.com** with the following information:  
 
 * URL(s) or location of the alleged misuse.  
 * Screenshots or archived copies that demonstrate the issue.  
@@ -98,4 +98,4 @@ Automatia BCN may amend the policy from time to time. The "last updated" date at
 
 ---  
 
-*This policy is inspired by the FOSSmarks guidelines and is intended as a practical reference, not a contractual agreement. For any questions not covered herein, please contact **legal@automatiabcn.com** or **support@automatiabcn.com**.*
+*This policy is inspired by the FOSSmarks guidelines and is intended as a practical reference, not a contractual agreement. For any questions not covered herein, please contact **info@automatiabcn.com** or **info@automatiabcn.com**.*

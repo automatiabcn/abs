@@ -228,7 +228,7 @@ Bu senaryo, saatler süren manuel toplantı deşifre ve özetleme işini saniyel
 | **Pilot** | Custom quote | 2 hafta boyunca sizin sistemlerinizle özel entegrasyon ve yerinde destek. | Müzakere edilir. |
 | **Beta** | $0 (30 gün) | Tam sürüm erişimi, feedback ortağı olma karşılığında. | — |
 
-İletişim ve sorularınız için: **support@automatiabcn.com**
+İletişim ve sorularınız için: **info@automatiabcn.com**
 
 ---
 

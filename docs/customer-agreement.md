@@ -91,7 +91,7 @@ Fees are non-refundable except under the 14-day money-back guarantee, which appl
 Customer is entitled to:
 
 - Software updates and bug fixes released during the License term
-- Email support at support@automatiabcn.com (48-hour response SLA)
+- Email support at info@automatiabcn.com (48-hour response SLA)
 - Optional Maintenance Pack ($49/year) — 24-hour priority response time
 
 Customer is responsible for installing updates. Updates may include changes to license verification, audit logging, or other compliance mechanisms.
@@ -106,6 +106,6 @@ By signing below or by clicking "I Accept" during the onboarding flow, Customer 
 |--------------|--------------|
 | Name: _________________ | Name: Automatia BCN |
 | Title: _________________ | Title: Sole Proprietor |
-| Email: _________________ | Email: support@automatiabcn.com |
+| Email: _________________ | Email: info@automatiabcn.com |
 | Signature: _________________ | Signature: _________________ |
 | Date: _________________ | Date: _________________ |

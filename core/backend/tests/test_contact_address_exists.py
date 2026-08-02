@@ -30,10 +30,15 @@ LIVE_MAILBOXES = {"info@automatiabcn.com"}
 BACKEND = Path(__file__).resolve().parents[1]
 LANDING = BACKEND.parent / "landing"
 
+# Everywhere a customer's eyes can land. `docs/` is in the list because the
+# first sweep missed it and the trademarks policy went on naming three
+# mailboxes that may not exist — a legal document is exactly the page somebody
+# reads when they most need a reply.
 SURFACES = [
     BACKEND / "app" / "email" / "templates",
     LANDING / "app",
     LANDING / "components",
+    BACKEND.parent.parent / "docs",
 ]
 
 ADDRESS = re.compile(r"[A-Za-z0-9._%+-]+@automatiabcn\.com")

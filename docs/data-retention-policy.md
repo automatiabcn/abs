@@ -117,7 +117,7 @@ If you have any questions, concerns, or requests regarding the processing of you
 
 **Data Protection Officer**  
 Automatia ABS BCN  
-Email: **privacy@automatiabcn.com**  
+Email: **info@automatiabcn.com**  
 Phone: +34 93 123 4567  
 Postal address: Carrer de Balmes, 12, 08007 Barcelona, Spain  
 

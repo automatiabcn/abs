@@ -42,13 +42,13 @@ All sub-processors are bound by written contracts that impose the same level of 
    - Legal basis for the transfer (e.g., SCCs, adequacy decision)
    - A link to this register (which will be updated)
 
-3. **Feedback Period:** Customers will have **10 calendar days** from the date of notification to review the change and submit any concerns to privacy@automatiabcn.com.
+3. **Feedback Period:** Customers will have **10 calendar days** from the date of notification to review the change and submit any concerns to info@automatiabcn.com.
 
 ---
 
 ## Right to Object
 
-1. **Objection Mechanism:** If a customer objects to the engagement of a new sub-processor or a material change to an existing sub-processor, the customer must notify ABS BCN in writing (email to privacy@automatiabcn.com) **within 14 calendar days** of the notification date.
+1. **Objection Mechanism:** If a customer objects to the engagement of a new sub-processor or a material change to an existing sub-processor, the customer must notify ABS BCN in writing (email to info@automatiabcn.com) **within 14 calendar days** of the notification date.
 
 2. **Objection Content:** The objection should specify:
    - The name of the sub-processor
