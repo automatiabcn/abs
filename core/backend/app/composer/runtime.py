@@ -371,8 +371,9 @@ async def _generate_edits(
                 _prompt(task, files, contents),
                 primary=primary,
                 fallbacks=tuple(rest),
-                # Named, not left to the adapter — see `_COMPOSER_MODELS`.
-                model=model_for(primary),
+                # Named per provider, not left to the adapter and not one name
+                # forced on the whole chain — see `_COMPOSER_MODELS`.
+                models=_COMPOSER_MODELS,
                 max_tokens=1500,
                 temperature=0.1,
                 **({"response_format": {"type": "json_object"}} if structured else {}),
