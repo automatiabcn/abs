@@ -135,6 +135,30 @@ export default function InstallPage() {
             whether the key authenticates before it stores it, so a key that
             was mistyped tells you immediately instead of failing later.
           </p>
+          <p>Where to get one — none of these need a card:</p>
+          <ul className="ml-5 list-disc space-y-2">
+            <li>
+              <strong>Groq</strong> — <code>console.groq.com/keys</code>. A good
+              first key: it leads the free chain by default.
+            </li>
+            <li>
+              <strong>Cerebras</strong> — <code>cloud.cerebras.ai</code>.
+            </li>
+            <li>
+              <strong>Gemini</strong> — <code>aistudio.google.com/apikey</code>.
+            </li>
+            <li>
+              <strong>Ollama</strong> — <code>ollama.com</code>, if you would
+              rather nothing left the machine at all. Point the server at it and
+              ABS puts it ahead of anything paid.
+            </li>
+          </ul>
+          <p>
+            One key is enough to start. ABS runs at whatever level the keys you
+            brought allow, and the editor says which capability the next key
+            would unlock — a second provider from a different vendor is what
+            turns failover and the second opinion on.
+          </p>
         </section>
 
         <section>

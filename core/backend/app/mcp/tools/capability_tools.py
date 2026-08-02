@@ -21,7 +21,13 @@ from __future__ import annotations
 import json
 from typing import List
 
-from app.capabilities import assess, summarise
+from app.capabilities import (
+    CHAT_PROVIDERS,
+    FREE_TO_START,
+    HOW_TO_GET,
+    assess,
+    summarise,
+)
 from app.config import settings
 from app.mcp.middleware import with_hooks
 from app.mcp.server import mcp_server
@@ -138,6 +144,21 @@ async def capability_status() -> str:
             "providers": sorted(providers),
             "resting": down,
             "embedding_backend": backend,
+            # Where each key actually comes from, so the editor's "add a key"
+            # picker reads this instead of keeping its own weaker copy. Two
+            # sources for one fact drift, and the copy that drifts is the one
+            # nobody remembers exists.
+            "how_to_get": {
+                p: {
+                    "how": HOW_TO_GET.get(p, ""),
+                    "free": p in FREE_TO_START,
+                    # Already held. Telling somebody to go and get what they
+                    # have is worse advice than saying nothing — the same rule
+                    # the quota work landed on.
+                    "configured": p in providers,
+                }
+                for p in sorted(CHAT_PROVIDERS)
+            },
             "capabilities": [
                 {
                     "key": s.capability.key,
