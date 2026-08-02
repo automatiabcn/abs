@@ -144,6 +144,19 @@ export default function InstallPage() {
         </section>
 
         <section>
+          <h2 className="text-lg font-semibold">Next: actually using it</h2>
+          <p>
+            The{" "}
+            <Link href="/docs/guide" className="underline">
+              usage guide
+            </Link>{" "}
+            walks through what you do day to day — asking about code, reading a
+            graded proposal, running your checks in a sandbox, committing with
+            evidence — with a real screenshot at every step.
+          </p>
+        </section>
+
+        <section>
           <h2 className="text-lg font-semibold">Still stuck</h2>
           <p>
             <a href="mailto:support@automatiabcn.com" className="underline">

@@ -130,6 +130,13 @@ export default function StudioPage() {
           >
             Install guide
           </Link>
+          <Link
+            href="/docs/guide"
+            className="rounded-md border px-5 py-2.5 text-sm font-medium"
+            style={{ borderColor: LINE, color: TEXT }}
+          >
+            Usage guide
+          </Link>
           <span className="text-sm" style={{ color: MUTED }}>
             Seven-day trial. No key, no card.
           </span>
