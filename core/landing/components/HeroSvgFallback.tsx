@@ -6,7 +6,7 @@
  */
 
 // What a phone, a reduced-motion setting or a slow connection gets instead of
-// the WebGL scene: the same subject, standing still. Six providers on a ring,
+// the WebGL scene: the same subject, standing still. Seven providers on a ring,
 // the vault in the middle, the spokes they answer along.
 //
 // The illustration it replaces was an isometric cube stack in #1e57ac/#3b82f6 —
@@ -16,7 +16,7 @@
 // colour from the brand token instead of hardcoding a palette we no longer ship.
 import type { FC } from "react";
 
-const PROVIDERS = 6;
+const PROVIDERS = 7;
 const RADIUS = 128;
 const CENTER = 160;
 
@@ -30,7 +30,7 @@ const nodes = Array.from({ length: PROVIDERS }, (_, i) => {
 
 // The mark's hexagon, drawn at two scales — the shell and the core it holds.
 function hexPoints(r: number): string {
-  return Array.from({ length: 6 }, (_, i) => {
+  return Array.from({ length: PROVIDERS }, (_, i) => {
     const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
     return `${CENTER + Math.cos(a) * r},${CENTER + Math.sin(a) * r}`;
   }).join(" ");
@@ -46,7 +46,7 @@ const HeroSvgFallback: FC = () => (
       viewBox="0 0 320 320"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="Six providers cascading into a self-hosted vault"
+      aria-label="Seven providers cascading into a self-hosted vault"
       className="h-full w-full"
       fill="none"
     >

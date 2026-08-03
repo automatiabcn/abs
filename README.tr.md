@@ -20,8 +20,11 @@ Bu üçüncü cevap: editör, sahibi sen olan bir sunucuyla konuşur.
   elinde varsa yerel modellere (Ollama, MLX) de düşer.
 - **157 MCP aracı**: RAG hibrit erişim, judge persona ML, fullstack geliştirici modu,
   Türkçe kalite hattı.
-- Tamamen **senin makinende**. Automatia sunucularına hiçbir şey ulaşmaz; dışarı çıkan
-  tek şey, kendi anahtarınla kendi yaptığın sağlayıcı çağrılarıdır.
+- Tamamen **senin makinende**. Verinin hiçbiri Automatia sunucularına ulaşmaz;
+  içerik taşıyan çağrılar kendi anahtarınla seçtiğin sağlayıcıya gider. Abonelik
+  etkinken sunucu ayrıca açılışta ve günde bir kez lisansını bizimle doğrular —
+  lisans kimliği, hash'lenmiş makine parmak izi, imaj hash'i, örnek adresi ve
+  sürüm; içerik yok. `ABS_PHONE_HOME_DISABLED=1` ile kapatılır.
 
 ## Hızlı kurulum
 

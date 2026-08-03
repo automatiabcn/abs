@@ -64,9 +64,12 @@ def _surfaces():
         p = ROOT / name
         if p.exists():
             yield p
-    tiers = LANDING / "components" / "PricingTiers.tsx"
-    if tiers.exists():
-        yield tiers
+    # Every component, not a hand-picked list. The first version of this named
+    # PricingTiers.tsx alone and passed while FAQ.tsx — on the front page, under
+    # the question a buyer asks when comparing — still said six.
+    components = LANDING / "components"
+    if components.exists():
+        yield from sorted(components.rglob("*.tsx"))
     locales = LANDING / "locales"
     if locales.exists():
         yield from sorted(locales.glob("*.json"))
