@@ -35,13 +35,29 @@ async def symbol_search(q: str, kind: Optional[str] = None, limit: int = 20) -> 
         tenant, user = "default", ""
     root = current_workspace(str(tenant or "default"), str(user or ""))
 
+    results = search(q, limit=limit, kind=kind, under=root)
+
+    # An empty list reads as "this project has no such symbol". It means that
+    # only if the project was read. Same distinction the call graph needed:
+    # not-indexed and not-there are different answers and looked identical.
+    payload = {
+        "query": q,
+        "kind": kind,
+        "scope": root or "everything indexed (no project open)",
+        "results": results,
+    }
+    if not results and root:
+        from app.symbols.store import count_under
+
+        if not count_under(root):
+            payload["indexed"] = False
+            payload["note"] = (
+                "This project has not been indexed, so nothing is known about "
+                "its symbols — this is not the same as having none. Index it "
+                "first (ABS: Index project)."
+            )
     return json.dumps(
-        {
-            "query": q,
-            "kind": kind,
-            "scope": root or "everything indexed (no project open)",
-            "results": search(q, limit=limit, kind=kind, under=root),
-        },
+        payload,
         ensure_ascii=False,
         indent=2,
     )

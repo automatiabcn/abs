@@ -175,3 +175,21 @@ def stats() -> Dict[str, Any]:
             for r in conn.execute("SELECT kind, COUNT(*) c FROM symbols GROUP BY kind")
         }
     return {"total_symbols": total, "total_edges": edges, "by_kind": by_kind}
+
+
+def count_under(root: str) -> int:
+    """How many symbols are recorded under a directory.
+
+    Used to tell "this project has not been indexed" apart from "this project
+    has no such symbol". The two returned identical empty results until
+    2026-08-03, and only one of them is an answer about the code.
+    """
+    try:
+        base = os.path.realpath(root).rstrip("/") + "/"
+    except OSError:
+        base = root.rstrip("/") + "/"
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM symbols WHERE file LIKE ?", (f"{base}%",)
+        ).fetchone()
+    return int(row[0] if row else 0)
