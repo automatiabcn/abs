@@ -227,3 +227,58 @@ def test_scoping_survives_a_symlinked_path(tmp_path: Path, monkeypatch):
 
     bulk_insert(parse_directory(str(other_link)))
     assert len(search("indexed_via_link", limit=50, under=str(other))) == 1
+
+
+def test_an_unindexed_project_is_not_reported_as_having_no_callers(tmp_path: Path, monkeypatch):
+    """"Nothing breaks" is a claim about the code. It has to have read it.
+
+    blast_radius returned {"found": false, "total_affected": 0} for a project
+    the graph had never seen — identical to the answer for a function that
+    genuinely has no callers. A developer asking what breaks if they change
+    something, and being told nothing, could delete a live function on the
+    strength of it.
+    """
+    from app.codegraph import graph
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "data_dir", str(tmp_path / "data"), raising=False)
+
+    project = tmp_path / "proj"
+    (project / "src").mkdir(parents=True)
+    (project / "src" / "a.py").write_text(
+        "def leaf():\n    pass\n\n\ndef caller():\n    leaf()\n", encoding="utf-8"
+    )
+
+    never_indexed = graph.blast_radius("leaf", key="never")
+    assert never_indexed["indexed"] is False
+    assert "not been indexed" in never_indexed["note"]
+
+    graph.build(str(project), key="built")
+    real = graph.blast_radius("leaf", key="built")
+    assert real["indexed"] is True
+    assert real["found"] is True
+
+    # A symbol that truly is not there, in a project that truly was read.
+    absent = graph.blast_radius("no_such_symbol_anywhere", key="built")
+    assert absent["indexed"] is True, "a read project must not look unindexed"
+    assert absent["found"] is False
+
+
+def test_symbol_search_says_when_the_project_was_never_read(tmp_path: Path, monkeypatch):
+    """Same distinction, same reason: empty is not an answer unless it read."""
+    from app.config import settings
+    from app.symbols.store import count_under
+
+    monkeypatch.setattr(settings, "data_dir", str(tmp_path / "data"), raising=False)
+
+    project = tmp_path / "proj"
+    project.mkdir()
+    (project / "m.py").write_text("def thing():\n    pass\n", encoding="utf-8")
+
+    assert count_under(str(project)) == 0, "a project nothing indexed counts as zero"
+
+    from app.symbols.parser import parse_directory
+    from app.symbols.store import bulk_insert
+
+    bulk_insert(parse_directory(str(project)))
+    assert count_under(str(project)) > 0, "indexing did not register under the project"

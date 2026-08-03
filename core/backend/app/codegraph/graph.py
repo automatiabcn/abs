@@ -169,9 +169,31 @@ def blast_radius(target: str, *, key: str = "default", max_hops: int = 3) -> Dic
             )]
 
         if not seeds:
+            # "No callers" and "never indexed" are different answers, and this
+            # returned the first for both. A developer asking what breaks if
+            # they change a function, on a project the graph has never read,
+            # was told nothing breaks — a factual claim about their code, made
+            # without reading it. Somebody could delete a live function on the
+            # strength of it. Found 2026-08-03 while walking the project rule.
+            total = c.execute("SELECT COUNT(*) FROM symbols").fetchone()[0]
+            if not total:
+                return {
+                    "target": target,
+                    "found": False,
+                    "indexed": False,
+                    "total_affected": 0,
+                    "affected_files": [],
+                    "layers": [],
+                    "note": (
+                        "This project has not been indexed, so nothing is known "
+                        "about its callers — this is not the same as having none. "
+                        "Run code_graph_build on the project first."
+                    ),
+                }
             return {
                 "target": target,
                 "found": False,
+                "indexed": True,
                 "total_affected": 0,
                 "affected_files": [],
                 "layers": [],
@@ -206,6 +228,10 @@ def blast_radius(target: str, *, key: str = "default", max_hops: int = 3) -> Dic
         return {
             "target": target,
             "found": True,
+            # Reported on every path, so a caller can test the field instead of
+            # treating "absent" as "true" — an implicit contract like that
+            # breaks the first time a branch forgets to set it.
+            "indexed": True,
             "seed_symbols": len(seeds),
             "total_affected": sum(L["count"] for L in layers),
             "affected_files": affected_files,
