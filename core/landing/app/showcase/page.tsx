@@ -19,7 +19,7 @@ import {
   AbsTenant,
 } from "@/components/icons";
 export const metadata: Metadata = {
-  title: "Showcase — Automatia ABS",
+  title: "Showcase — ABS Studio",
   description: "ABS visual system gallery: colour tokens, brand icons, dashboard + pricing components.",
   robots: { index: false, follow: false },
 };

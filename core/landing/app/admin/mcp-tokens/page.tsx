@@ -56,7 +56,7 @@ function mcpUrl(): string {
 // these instructions over the MCP `initialize` response, but a local CLAUDE.md
 // makes the "delegate to ABS" behaviour stronger and explicit. English by
 // default — the product ships globally.
-const CLAUDE_MD_BLOCK = `# Automatia ABS — delegation
+const CLAUDE_MD_BLOCK = `# ABS Studio — delegation
 
 ABS is connected as an MCP server with 100+ free AI tools (running on your own
 provider keys, no extra Anthropic cost). Delegate substantial subtasks to ABS

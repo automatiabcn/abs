@@ -16,7 +16,7 @@ const Footer: FC = () => (
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
         <div>
           <h2 id="footer-title" className="text-base font-semibold">
-            Automatia ABS
+            ABS Studio
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             <strong>Automatia BCN</strong> · Barcelona, Spain

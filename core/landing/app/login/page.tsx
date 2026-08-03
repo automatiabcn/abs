@@ -102,7 +102,7 @@ export default function LoginPage() {
       className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-6 py-12"
     >
       <h1 className="text-2xl font-semibold tracking-tight">
-        Automatia ABS · Sign in
+        ABS Studio · Sign in
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Sign in with the email and password you set up in the setup wizard or

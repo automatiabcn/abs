@@ -20,7 +20,7 @@ def test_render_lang_en_picks_english_template():
         unsubscribe_url="https://x/u",
     )
     assert "Welcome" in html
-    assert "Welcome to Automatia ABS" in subject
+    assert "Welcome to ABS Studio" in subject
 
 
 def test_render_lang_es_picks_spanish_template():
@@ -31,7 +31,7 @@ def test_render_lang_es_picks_spanish_template():
         unsubscribe_url="https://x/u",
     )
     assert "Bienvenido" in html
-    assert "Bienvenido a Automatia ABS" in subject
+    assert "Bienvenido a ABS Studio" in subject
 
 
 def test_render_unknown_lang_falls_back_to_english():
