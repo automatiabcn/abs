@@ -143,7 +143,22 @@ async def workspace_set(root: str = "") -> str:
             },
             ensure_ascii=False,
         )
-    return json.dumps({"ok": True, "workspace": stored}, ensure_ascii=False)
+    # Say whether this project has been read, in the same round trip. The
+    # editor uses it to offer indexing once, rather than leaving a developer to
+    # discover — from an honest but unhelpful "not indexed yet" — that a
+    # command exists and where.
+    indexed = False
+    if stored:
+        try:
+            from app.symbols.store import count_under
+
+            indexed = count_under(stored) > 0
+        except Exception:  # noqa: BLE001 — not knowing is reported as not indexed
+            indexed = False
+
+    return json.dumps(
+        {"ok": True, "workspace": stored, "indexed": indexed}, ensure_ascii=False
+    )
 
 
 @mcp_server.tool()
