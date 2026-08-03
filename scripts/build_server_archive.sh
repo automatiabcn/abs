@@ -208,9 +208,17 @@ if [ "${2:-}" = "--publish" ]; then
         ref="ghcr.io/automatiabcn/$image:$VERSION"
         created="$(docker image inspect "$ref" --format '{{.Created}}' 2>/dev/null || true)"
         [ -n "$created" ] || continue   # not pulled locally; nothing to compare
+        # BSD date first (macOS), GNU second (Linux CI). If neither parses it,
+        # stop — silently passing is the one outcome this check exists to
+        # prevent, and "I could not tell" is not "it is fine".
         img_epoch="$(date -j -f "%Y-%m-%dT%H:%M:%S" "${created%%.*}" +%s 2>/dev/null \
                      || date -d "$created" +%s 2>/dev/null || echo 0)"
-        if [ "$img_epoch" -gt 0 ] && [ "$img_epoch" -lt "$HEAD_EPOCH" ]; then
+        if [ "$img_epoch" -eq 0 ]; then
+            echo "could not read the build date of $ref ($created)." >&2
+            echo "Refusing to publish rather than assume it is current." >&2
+            exit 1
+        fi
+        if [ "$img_epoch" -lt "$HEAD_EPOCH" ]; then
             echo "$ref was built $(echo "$created" | cut -c1-10), and this tree is at" >&2
             echo "$(git log -1 --format=%cd --date=short). Publishing would ship an" >&2
             echo "archive whose product is older than the code describing it." >&2
