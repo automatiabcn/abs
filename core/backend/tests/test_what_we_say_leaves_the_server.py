@@ -117,3 +117,37 @@ def test_no_surface_claims_that_nothing_leaves():
         + "\n  ".join(offenders)
         + "\n\nSay 'none of your data' instead — that one is true."
     )
+
+
+def test_no_surface_claims_we_supply_provider_keys():
+    """"Your keys or ours" was on the pricing page until 2026-08-03.
+
+    Every provider slot in `infra/.env.example` is empty and the image ships
+    none, so "or ours" promised something the customer would discover was
+    missing on their first prompt — the worst possible moment, ninety seconds
+    into a product they have just installed.
+
+    The honest version sells better: the providers worth starting on (Groq,
+    Gemini, Cerebras and four more) cost nothing to start on, which is what
+    `FREE_TO_START` records.
+    """
+    env = ROOT / "infra" / ".env.example"
+    if env.is_file():
+        for line in env.read_text(encoding="utf-8").splitlines():
+            if "_API_KEY=" in line and not line.strip().startswith("#"):
+                _name, _, value = line.partition("=")
+                assert value.strip() == "", (
+                    f"{line.split('=')[0]} ships with a value — if we really do "
+                    f"supply a key now, this guard and the copy both need to change"
+                )
+
+    for path in _surfaces():
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for i, line in enumerate(text.splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith(("//", "*", "{/*", "<!--", "#")):
+                continue
+            assert not re.search(r"keys? or ours", line, re.I), (
+                f"{path.relative_to(ROOT)}:{i} offers our keys, and we have none "
+                f"to offer"
+            )
