@@ -41,6 +41,22 @@ def _customer_files():
         if d.exists():
             for p in d.rglob("*.tsx"):
                 yield p
+    # The READMEs were missing from this list until 2026-08-03, and that is
+    # exactly where the retired name survived: "Automatia ABS" was still the
+    # first line of all three, in the repository the product ships from, while
+    # this test stayed green. A guard only covers the surfaces it was pointed
+    # at, and it had been pointed at the ones already fixed.
+    for name in ("README.md", "README.tr.md", "README.es.md"):
+        p = ROOT / name
+        if p.exists():
+            yield p
+    # And the translated strings. The live privacy policy — a legal page, in
+    # three languages — still said "the Automatia ABS product" on 2026-08-03,
+    # because its text comes from locales/*.json and this guard only read .tsx.
+    # The page was checked; the sentence it renders was not.
+    locales = LANDING / "locales"
+    if locales.exists():
+        yield from locales.glob("*.json")
 
 
 @pytest.mark.skipif(not EMAILS.exists(), reason="backend emails not checked out")

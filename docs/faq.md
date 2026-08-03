@@ -58,9 +58,8 @@ the demo. When it expires, the tools are blocked if `mcp_require_license=true`.
 soon as the refund is approved, the license is deactivated with `revoked_at`.
 
 ### 11. Monthly or one-off?
-Monthly. $29 a month for one person, or $19 per seat per month for a team of
-three or more. Every install starts with a seven-day trial that needs no card
-and no licence key, and you can cancel any month.
+Monthly. One plan, $5 a month. Every install starts with a seven-day trial
+that needs no card and no licence key, and you can cancel any month.
 
 ## Data and security
 

@@ -42,7 +42,9 @@ def test_status_html_renders(client):
     r = client.get("/status")
     assert r.status_code == 200
     text = r.text
-    assert "Automatia ABS" in text
+    # The status page is served to customers; it says the current product
+    # name. This asserted the retired one until 2026-08-03.
+    assert "ABS Studio" in text
     assert "auto-refresh 30s" in text
     assert "/v1/status" in text
     assert "<title>" in text

@@ -44,12 +44,13 @@ from typing import Dict, List
 # one-time price, and a customer who believes they subscribed is charged once and
 # never again — which nobody notices until the month they expect a renewal and it
 # does not come.
+# One plan since 2026-08-03. The Solo/Team split is gone: both sold the same
+# product, so the page was asking a buyer to make a decision that changed
+# nothing but the bill. The old "ABS Team" price is archived in Stripe rather
+# than deleted — Stripe keeps prices for the subscriptions already on them, and
+# there is no way to remove one that has ever been used.
 PRODUCTS: List[Dict] = [
-    {"name": "ABS Solo", "amount": 2900, "metadata_sku": "solo",
-     "recurring": {"interval": "month"}},
-    # Per seat. Checkout multiplies by the seat count (the line item quantity),
-    # so this amount is what one person costs for one month.
-    {"name": "ABS Team", "amount": 1900, "metadata_sku": "team",
+    {"name": "ABS Studio", "amount": 500, "metadata_sku": "solo",
      "recurring": {"interval": "month"}},
 ]
 
@@ -140,6 +141,18 @@ def main(argv: List[str] | None = None) -> int:
             None,
         )
         recurring = spec.get("recurring")
+        # Reconcile the name first. Matching is by sku, so a rename never
+        # reached Stripe: on 2026-08-03 the product was still called "ABS Solo"
+        # after the page had become "ABS Studio" at $5 — and the product name is
+        # what a buyer reads on the Stripe checkout page and on the receipt.
+        #
+        # This has to happen before the price check below, because that check
+        # `continue`s when the price already exists. Put the rename after it and
+        # the only run that would ever fix the name is the one that also changes
+        # the price — which is exactly the run that had just happened.
+        if found is not None and getattr(found, "name", None) != spec["name"]:
+            print(f"# renaming {found.id}: {found.name!r} -> {spec['name']!r}")
+            found = stripe.Product.modify(found.id, name=spec["name"])
         if found is not None:
             prices = stripe.Price.list(product=found.id, active=True, limit=10)
             # An existing price only counts as this SKU's price if it bills the
@@ -158,6 +171,12 @@ def main(argv: List[str] | None = None) -> int:
             if active_price is not None:
                 print(f"# {spec['metadata_sku']} ({args.mode}) exists: {active_price.id}")
                 continue
+        # Reconcile the name, do not just reuse the product. Matching is by
+        # sku, so a rename never reached Stripe: on 2026-08-03 the product was
+        # still called "ABS Solo" after the page had become "ABS Studio" at $5 —
+        # and the product name is what a buyer reads on the Stripe checkout page
+        # and on the receipt. The script was idempotent about the price and
+        # silent about everything else.
         product = found or stripe.Product.create(
             name=spec["name"],
             metadata={"sku": spec["metadata_sku"], "mode": args.mode},
