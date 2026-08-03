@@ -21,7 +21,11 @@ const BULLETS: readonly string[] = [
   "Chat, the agent, and 100+ tools",
   "Retrieval over your own documents and meetings",
   "Seven providers, so one outage is not your outage",
-  "Your keys or ours — the free defaults are the good ones",
+  // Was "Your keys or ours". We ship no keys — every slot in .env.example is
+  // empty — so "or ours" promised something a customer would discover was
+  // missing on their first prompt. What is true is better anyway: the
+  // providers worth starting on cost nothing to start on.
+  "Your own keys — and the good ones (Groq, Gemini, Cerebras) are free",
   "Runs on your own server — no data of yours ever reaches us",
   "Cancel any month",
 ];
