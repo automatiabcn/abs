@@ -20,7 +20,7 @@ import { PRICE, TRIAL_LABEL, priceLabel } from "@/lib/pricing";
 const BULLETS: readonly string[] = [
   "Chat, the agent, and 100+ tools",
   "Retrieval over your own documents and meetings",
-  "Six providers, so one outage is not your outage",
+  "Seven providers, so one outage is not your outage",
   "Your keys or ours — the free defaults are the good ones",
   "Runs on your own server; nothing reaches us",
   "Cancel any month",

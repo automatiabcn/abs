@@ -30,8 +30,10 @@ the vendor your code.
 
 This is the third answer: the editor talks to a server you own.
 
-- Routes calls across **6 providers** (Anthropic + Groq + Cerebras + Gemini +
-  Cloudflare + Cohere) with a circuit breaker, so one outage is not your outage.
+- Routes calls across **7 providers** (Anthropic + OpenRouter + Groq + Cerebras
+  + Gemini + Cloudflare + Cohere) with a circuit breaker, so one outage is not
+  your outage — and falls through to local models (Ollama, MLX) when you have
+  them.
 - Ships **157 MCP tools** (RAG hybrid retrieval, judge persona ML, fullstack
   developer mode, Türkçe quality pipeline).
 - Runs entirely on **your machine**. Nothing reaches an Automatia server —
@@ -41,7 +43,7 @@ This is the third answer: the editor talks to a server you own.
 
 ## Features at a glance
 
-- ⚡ **6-provider cascade** with circuit breaker + cost dashboard.
+- ⚡ **7-provider cascade** (+ local) with circuit breaker + cost dashboard.
 - 🛠️ **157 MCP tools**: code review, test generation, RAG hybrid, judge ML, fullstack mode, billing.
 - 🌍 **i18n out of the box** — English default, Türkçe + Español alternatives (24 email templates × 3 languages).
 - 🔐 **sops + age vault** — Stripe / Anthropic / SMTP secrets stay encrypted at rest.
