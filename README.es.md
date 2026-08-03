@@ -3,7 +3,7 @@
 🇬🇧 [English](README.md) · 🇹🇷 [Türkçe](README.tr.md) · 🇪🇸 **Español**
 
 > Ejecuta 100+ MCP tools y cascade de 6 proveedores en tu servidor. Tu plan Claude Pro
-> de $20 + ABS en tu propio servidor = combinación de herramientas enterprise de $1000+/mes. Precio actual: automatiabcn.com
+> de $20 + ABS Studio por $29 al mes. Siete días de prueba sin tarjeta; cancela cuando quieras.
 
 Este archivo es un esqueleto para traducción — los textos finales se completarán
 después de la 026. Por ahora consulta el [README principal (EN)](README.md).

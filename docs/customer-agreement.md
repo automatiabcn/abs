@@ -78,21 +78,22 @@ This Agreement is governed by the laws of Spain, specifically the Comunidad Aut�
 
 License fees are specified in the Order Form provided to Customer at the time of purchase. Standard tiers:
 
-| Tier | Annual Fee | Seats | Instances |
-|------|-----------|-------|-----------|
-| Self-Host | $299 (one-time) | 1 | 1 |
-| Team | $1,196 (5 seats × $239) | 5 | 1 |
+| Plan | Fee | Seats | Instances |
+|------|-----|-------|-----------|
+| Solo | $29 per month | 1 | 1 |
+| Team | $19 per seat per month, from 3 seats | 3 or more | 1 |
 | Enterprise | Custom quote | Custom | Custom |
 
-Fees are non-refundable except under the 14-day money-back guarantee, which applies only to first-time purchases of the Self-Host tier.
+Every installation begins with a seven-day trial that requires no payment card and no licence key. Subscriptions renew monthly until cancelled. Cancelling stops the next renewal; the period already paid for runs to its end.
+
+Fees are refundable under the 14-day money-back guarantee, which applies to a Customer's first payment.
 
 ## 8. Updates and Support
 
 Customer is entitled to:
 
-- Software updates and bug fixes released during the License term
+- Software updates and bug fixes released while the subscription is active
 - Email support at info@automatiabcn.com (48-hour response SLA)
-- Optional Maintenance Pack ($49/year) — 24-hour priority response time
 
 Customer is responsible for installing updates. Updates may include changes to license verification, audit logging, or other compliance mechanisms.
 

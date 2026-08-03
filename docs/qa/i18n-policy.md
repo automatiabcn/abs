@@ -31,7 +31,7 @@ The following stay English in every locale:
 
 - Product names: `RAG`, `Cerbos`, `Qdrant`, `OAuth 2.1`, `BGE-M3`, `MCP`, `Stripe`, `LangFuse`, `Recall.ai`, `ElevenLabs`.
 - File formats: `PDF`, `Markdown`, `URL`.
-- Brand: `ABS`, `Automatia`, `Self-Host`, `Maintenance`, `Managed Cloud`.
+- Brand: `ABS Studio`, `Automatia BCN`, `Self-Host`, `Solo`, `Team`.
 
 Translators: do **not** localise these — they're product-identifying tokens.
 

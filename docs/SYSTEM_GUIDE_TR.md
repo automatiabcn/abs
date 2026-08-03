@@ -224,7 +224,7 @@ Bu senaryo, saatler süren manuel toplantı deşifre ve özetleme işini saniyel
 
 | Seçenek | Fiyat | İçerik | İade |
 | :--- | :--- | :--- | :--- |
-| **PoC (Proof of Concept)** | $299 lifetime | Helm chart + dokümantasyon + temel e-posta desteği. | 14 gün koşulsuz iade. |
+| **PoC (Proof of Concept)** | Ayda $29 (Solo planı) | Helm chart + dokümantasyon + temel e-posta desteği. | 7 gün kartsız deneme, ilk ödemede 14 gün koşulsuz iade. |
 | **Pilot** | Custom quote | 2 hafta boyunca sizin sistemlerinizle özel entegrasyon ve yerinde destek. | Müzakere edilir. |
 | **Beta** | $0 (30 gün) | Tam sürüm erişimi, feedback ortağı olma karşılığında. | — |
 
