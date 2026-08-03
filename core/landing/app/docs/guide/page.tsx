@@ -19,7 +19,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: { absolute: "Using ABS Studio — a guide · ABS Studio" },
+  title: "The usage guide",
   description:
     "What you actually do with ABS Studio, step by step: ask about code, get a graded proposal, run your checks in a sandbox, commit with evidence, and search what the engine knows.",
 };
