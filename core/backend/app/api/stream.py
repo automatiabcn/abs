@@ -217,7 +217,7 @@ def _build_license_status() -> dict:
         "demo_expires_at": d.get("expires_at"),
         "require_license": settings.mcp_require_license,
         "allowed": g["allowed"],
-        "purchase_url": "https://abs.automatiabcn.com/",
+        "purchase_url": f"{settings.public_site_url}/",
     }
 
 

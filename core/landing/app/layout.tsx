@@ -15,7 +15,10 @@ import Header from "@/components/Header";
 
 import "./globals.css";
 
-const SITE_URL = "https://abs.automatiabcn.com";
+// Where the site actually is. It said `abs.` — a host that has never had a
+// DNS record — so the canonical URL, the sitemap, robots.txt and every link
+// preview pointed at nothing (found 08-03 walking the money path).
+const SITE_URL = "https://app.automatiabcn.com";
 
 // Modern font stack: Geist Variable display + JetBrains Mono
 // for tabular metric numbers + code. Both loaded via next/font/google so
