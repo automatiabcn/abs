@@ -22,7 +22,7 @@ const BULLETS: readonly string[] = [
   "Retrieval over your own documents and meetings",
   "Seven providers, so one outage is not your outage",
   "Your keys or ours — the free defaults are the good ones",
-  "Runs on your own server; nothing reaches us",
+  "Runs on your own server — no data of yours ever reaches us",
   "Cancel any month",
 ];
 

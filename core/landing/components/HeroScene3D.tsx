@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// The hero scene: six providers on a ring, the vault in the middle, traffic
+// The hero scene: seven providers on a ring, the vault in the middle, traffic
 // falling inward through the cascade.
 //
 // What it replaces was a generic AI orb with 600 particles streaming into it —
@@ -38,9 +38,9 @@ function brandColor(): THREE.Color {
   return new THREE.Color("#0b7c74");
 }
 
-const PROVIDER_COUNT = 6;
+const PROVIDER_COUNT = 7;
 // The frame is ~2.7 units half-width at this camera, so a 3.1 ring put two of
-// the six providers outside it — a cascade with two of its sources cropped off.
+// the seven providers outside it — a cascade with two of its sources cropped off.
 const RING_RADIUS = 2.35;
 
 // ─── The vault: the logo's hexagon, holding the core ──────────────────────

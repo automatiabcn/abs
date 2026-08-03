@@ -24,7 +24,7 @@ const FEATURES: Feature[] = [
       "qual-code, qual-tr, qual-analysis, judge — production flows that chain several models together.",
   },
   {
-    title: "6-provider cascade",
+    title: "7-provider cascade",
     description:
       "Anthropic, Groq, Cerebras, Gemini, CloudFlare, Cohere — if one goes down, the next takes over.",
   },
