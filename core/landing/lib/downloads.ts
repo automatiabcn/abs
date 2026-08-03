@@ -67,6 +67,25 @@ export type Release = {
 
 /** The published release, or null when there is not one yet.
  *
+ * Set back to null on 2026-08-03, hours after it was first filled in.
+ *
+ * The archive itself is fine — built, installed from scratch, checksum
+ * verified. What it installs is not: `abs-backend:1.0.4` was built on 16 May
+ * and `latest` on 5 June, while the source is at today. Installing the
+ * published archive and reading the setup wizard is how it surfaced — the
+ * wizard was in Turkish and offered a "14-day demo", both of which the source
+ * stopped saying weeks ago.
+ *
+ * So everything verified in source this month — the seven-day trial, the
+ * licence gate, the BYOK fixes, the product name — is absent from the thing a
+ * customer would download. Offering it would be shipping a May product behind
+ * an August page.
+ *
+ * The archive builder now refuses to publish when the image predates HEAD, so
+ * this cannot happen quietly again. Restoring the block below is one rebuild
+ * away: push current images, re-run `build_server_archive.sh <v> --publish`,
+ * and put the release back.
+ *
  * `editor` is empty on purpose. The server archive is finished — built,
  * installed from scratch on 2026-08-03, and served from the download host with
  * a checksum that matches the file on this machine byte for byte. The editor
@@ -75,7 +94,11 @@ export type Release = {
  *
  * Half a release is still a release when the page says which half.
  */
-export const RELEASE: Release | null = {
+export const RELEASE: Release | null = null;
+
+/** Ready to go back into RELEASE the moment current images are pushed.
+ * Exported so it stays type-checked rather than rotting as a comment. */
+export const PENDING_REBUILD: Release = {
   version: "1.0.4",
   published: "2026-08-03",
   editor: [],
