@@ -1,15 +1,23 @@
 {
 	# Customer-facing reverse proxy. The site address is sourced from the
-	# customer's .env via $ABS_PUBLIC_HOSTNAME (e.g. abs.acme.com).
+	# customer's .env via $ABS_DOMAIN (e.g. abs.acme.com).
+	#
+	# It used to read $ABS_PUBLIC_HOSTNAME, a name nothing sets: not
+	# .env.example, not the compose file — it survived only here and in compose
+	# comments. An unset variable leaves the site block below without a key,
+	# and a keyless block is how Caddy spells "global options", so it rejected
+	# the entire config and crash-looped. Found 2026-08-03 by installing the
+	# archive the way a customer would: every service healthy, front door dead,
+	# installer printing "server is up". The names have to match .env.example.
 	# Caddy auto-provisions a Let's Encrypt certificate via the HTTP-01
 	# challenge as long as port 80 + 443 are reachable from the public
 	# internet. Override with `tls internal` for pre-DNS smoke tests.
 	admin off
 	# email is required for ACME contact + revocation notices.
-	email {$ABS_ACME_EMAIL:admin@example.com}
+	email {$ABS_ADMIN_EMAIL:admin@example.com}
 }
 
-{$ABS_PUBLIC_HOSTNAME} {
+{$ABS_DOMAIN} {
 	# Pre-DNS smoke toggle.
 	# UNCOMMENT the next line to force self-signed certs (lets you hit
 	# https://abs.local with `curl -k` before DNS points at the host).
