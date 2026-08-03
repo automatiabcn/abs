@@ -143,7 +143,21 @@ port_busy() {
 
 LOCAL_PORT="$(grep '^ABS_LOCAL_PORT=' .env | cut -d= -f2- || true)"
 LOCAL_PORT="${LOCAL_PORT:-8000}"
-if port_busy "$LOCAL_PORT"; then
+
+# Our own container counts as free. Re-running the installer on a live install
+# would otherwise see the port this stack is already published on, decide it
+# was taken by a stranger, and move — so every re-run walked to the next port
+# and the address the customer had put in their editor stopped being the right
+# one. Found on the second run of a working install, 2026-08-03.
+ours_already() {
+    # {{.Ports}}, not {{.Publishers}}: the latter prints
+    # "[{127.0.0.1 8000 8020 tcp}]" with no arrow and the ports the other way
+    # round, so a match on ":$1->" could never fire — the first version of this
+    # check was silently always false.
+    docker compose ps --format '{{.Ports}}' 2>/dev/null | grep -q ":$1->"
+}
+
+if port_busy "$LOCAL_PORT" && ! ours_already "$LOCAL_PORT"; then
     # Move rather than ask. 8000 is a popular port, and telling somebody to go
     # and edit a config file so the install can proceed is a chore the
     # installer can do itself — compose's own message for this is "ports are
