@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Automatia ABS, please report it
+If you discover a security vulnerability in ABS Studio, please report it
 **privately** before disclosing publicly:
 
 - **Email:** [security@automatiabcn.com](mailto:security@automatiabcn.com)

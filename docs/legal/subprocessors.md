@@ -3,14 +3,19 @@
 
 # Sub-processors Register
 
-**Automatia ABS, S.L.**  
+**Automatia BCN**
+
+<!-- Was "Automatia ABS, S.L." — an entity that does not exist, and a company
+     form (S.L., a Spanish limited company) that contradicts the customer
+     agreement, which is signed "Sole Proprietor". Which one is correct is the
+     founder's to decide; the name is corrected here either way. -->  
 *Version 1.0 – Effective 27 April 2026*
 
 ---
 
 ## Overview
 
-Automatia ABS, S.L. (the "Processor") uses the following sub-processors to deliver the ABS platform and related services to customers (the "Controller"). This register lists each sub-processor's name, purpose, the categories of personal data processed, the location where data is stored or processed, and the legal basis for the transfer.
+Automatia BCN (the "Processor") uses the following sub-processors to deliver the ABS platform and related services to customers (the "Controller"). This register lists each sub-processor's name, purpose, the categories of personal data processed, the location where data is stored or processed, and the legal basis for the transfer.
 
 All sub-processors are bound by written contracts that impose the same level of data-protection safeguards as ABS itself applies under GDPR Article 28.
 

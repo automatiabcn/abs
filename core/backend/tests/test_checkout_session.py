@@ -68,8 +68,8 @@ def test_create_session_returns_url(client, configured_settings, monkeypatch):
     r = client.post(
         "/v1/checkout/create-session",
         json={
-            "sku": "team",
-            "seats": 5,
+            "sku": "solo",
+            "seats": 1,
             "customer_email": "buyer@example.com",
             "success_url": "https://x.example/ok",
             "cancel_url": "https://x.example/cancel",
@@ -81,20 +81,23 @@ def test_create_session_returns_url(client, configured_settings, monkeypatch):
     assert body["session_id"] == "cs_test_xyz"
     # captured args sanity
     assert captured["customer_email"] == "buyer@example.com"
-    # Seats are the quantity. A five-person team billed as quantity 1 is a team
-    # of five paying for one.
-    assert captured["line_items"] == [{"price": "price_test_team", "quantity": 5}]
-    assert captured["metadata"]["seat_count"] == "5"
-    assert captured["metadata"]["sku"] == "team"
+    assert captured["line_items"] == [{"price": "price_test_solo", "quantity": 1}]
+    assert captured["metadata"]["seat_count"] == "1"
+    assert captured["metadata"]["sku"] == "solo"
 
 
-def test_a_team_cannot_be_bought_for_one_seat(client, configured_settings, monkeypatch):
-    """The per-seat price is only cheaper than Solo below three people — which is
-    exactly why a "team" of one must not be sellable at it."""
-    captured = {}
+def test_the_retired_team_sku_cannot_be_bought(client, configured_settings, monkeypatch):
+    """One plan since 2026-08-03, and "team" has to be gone from the API too.
+
+    This used to assert that a one-seat team was silently promoted to three.
+    That rule belonged to a plan that no longer exists; what matters now is
+    that a SKU the pricing page does not offer cannot still be purchased by
+    anyone who kept the old request shape.
+    """
+    called = {"n": 0}
 
     def fake_create(**kwargs):
-        captured.update(kwargs)
+        called["n"] += 1
         return SimpleNamespace(url="https://checkout.stripe.com/c/x", id="cs_x")
 
     import stripe
@@ -103,9 +106,8 @@ def test_a_team_cannot_be_bought_for_one_seat(client, configured_settings, monke
 
     r = client.post(
         "/v1/checkout/create-session",
-        json={"sku": "team", "seats": 1, "customer_email": "sneaky@example.com"},
+        json={"sku": "team", "seats": 3, "customer_email": "sneaky@example.com"},
     )
 
-    assert r.status_code == 200, r.text
-    assert captured["line_items"][0]["quantity"] == 3
-    assert captured["metadata"]["seat_count"] == "3"
+    assert r.status_code == 422, r.text
+    assert called["n"] == 0, "a retired SKU reached Stripe"

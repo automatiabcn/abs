@@ -3,7 +3,7 @@
 *Last updated: 2026-05-11*
 Contact: **info@automatiabcn.com**
 
-This document discloses exactly what data the customer-side Automatia ABS
+This document discloses exactly what data the customer-side ABS Studio
 backend transmits to Automatia BCN's license activation server, why it is
 transmitted, where it is stored, and how to disable it.
 

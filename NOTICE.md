@@ -1,4 +1,4 @@
-Automatia ABS — NOTICE
+ABS Studio — NOTICE
 
 Copyright (c) 2026 Automatia BCN. All Rights Reserved.
 
@@ -12,7 +12,7 @@ The Licensed Work automatically converts to Apache License 2.0 on
 TRADEMARKS
 ═══════════════════════════════════════════════════════════════════
 
-"Automatia BCN" and "Automatia ABS" are trademarks of Automatia BCN,
+"Automatia BCN" and "ABS Studio" are trademarks of Automatia BCN,
 Barcelona, Spain. The trademarks are NOT licensed under BUSL-1.1 or
 Apache 2.0. Customer self-host installations may reference the
 trademarks only to identify the source software (nominative fair use).

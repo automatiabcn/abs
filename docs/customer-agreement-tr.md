@@ -1,4 +1,4 @@
-# Automatia ABS — Ticari Lisans Sözleşmesi
+# ABS Studio — Ticari Lisans Sözleşmesi
 
 **Versiyon:** 1.0
 **Yürürlük Tarihi:** _________________
@@ -7,7 +7,7 @@
 
 ---
 
-Bu Ticari Lisans Sözleşmesi ("Sözleşme"), Müşteri'nin Automatia BCN ("Lisans Veren") tarafından sağlanan Automatia ABS yazılımını ("Yazılım") kullanımını düzenler. Bu Sözleşme'yi kabul ederek (aşağıda imzalayarak veya kurulum sürecinde "Kabul Ediyorum" seçeneğini tıklayarak) Müşteri, aşağıdaki tüm şartları kabul etmiş olur.
+Bu Ticari Lisans Sözleşmesi ("Sözleşme"), Müşteri'nin Automatia BCN ("Lisans Veren") tarafından sağlanan ABS Studio yazılımını ("Yazılım") kullanımını düzenler. Bu Sözleşme'yi kabul ederek (aşağıda imzalayarak veya kurulum sürecinde "Kabul Ediyorum" seçeneğini tıklayarak) Müşteri, aşağıdaki tüm şartları kabul etmiş olur.
 
 ## 1. Lisans Hakkının Verilmesi
 
@@ -80,8 +80,7 @@ Lisans ücretleri, Müşteri'ye satın alma sırasında sağlanan Sipariş Formu
 
 | Plan | Ücret | Kullanıcı | Dağıtım |
 |------|-------|-----------|---------|
-| Solo | Ayda $29 | 1 | 1 |
-| Team | Kullanıcı başına ayda $19, en az 3 kullanıcı | 3 ve üzeri | 1 |
+| ABS Studio | Ayda $5 | 1 | 1 |
 | Enterprise | Özel teklif | Özel | Özel |
 
 Her kurulum, ödeme kartı ve lisans anahtarı gerektirmeyen yedi günlük deneme süresiyle başlar. Abonelikler iptal edilene kadar aylık yenilenir. İptal bir sonraki yenilemeyi durdurur; ücreti ödenmiş dönem sonuna kadar işler.

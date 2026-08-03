@@ -1,4 +1,9 @@
-// The pricing surface: a monthly subscription, sold two ways.
+// The pricing surface: one plan, $5 a month.
+//
+// This tested two cards and a seat multiplier until 2026-08-03. The split is
+// gone, and the price comes from lib/pricing.ts — asserting the literal "$29"
+// here is what let a page and a Stripe product drift apart in the first place,
+// so the expected number is derived rather than typed.
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -9,6 +14,7 @@ vi.mock("@/lib/billing-flag", () => ({
 }));
 
 import PricingTiers from "@/components/PricingTiers";
+import { PRICE } from "@/lib/pricing";
 
 describe("PricingTiers", () => {
   beforeEach(() => {
@@ -18,13 +24,19 @@ describe("PricingTiers", () => {
     });
   });
 
-  it("renders the two plans and what they cost", () => {
+  it("renders one plan and what it costs", () => {
     render(<PricingTiers />);
     expect(screen.getByTestId("pricing-tier-solo")).toBeInTheDocument();
-    expect(screen.getByTestId("pricing-tier-team")).toBeInTheDocument();
-    expect(screen.getByText("$29")).toBeInTheDocument();
-    expect(screen.getByText("$19")).toBeInTheDocument();
-    expect(screen.getByText("/seat/month")).toBeInTheDocument();
+    expect(screen.getByText(`$${PRICE}`)).toBeInTheDocument();
+    expect(screen.getByText("/month")).toBeInTheDocument();
+  });
+
+  it("offers no second tier and no seat picker", () => {
+    // A leftover seat control would post a seat count to a checkout that no
+    // longer prices by seat.
+    render(<PricingTiers />);
+    expect(screen.queryByTestId("pricing-tier-team")).toBeNull();
+    expect(screen.queryByRole("spinbutton")).toBeNull();
   });
 
   it("says the trial is free and needs no card", () => {
@@ -41,16 +53,6 @@ describe("PricingTiers", () => {
     ).toBeInTheDocument();
   });
 
-  it("multiplies the team price by the seats chosen", async () => {
-    render(<PricingTiers />);
-    const input = screen.getByRole("spinbutton");
-    expect(screen.getByText("$57/month")).toBeInTheDocument(); // 3 × 19
-
-    await userEvent.clear(input);
-    await userEvent.type(input, "5");
-    expect(screen.getByText("$95/month")).toBeInTheDocument(); // 5 × 19
-  });
-
   it("posts the plan and the seat count to checkout", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
@@ -62,8 +64,7 @@ describe("PricingTiers", () => {
       );
 
     render(<PricingTiers />);
-    const [soloCta] = screen.getAllByRole("button", { name: /Subscribe/i });
-    await userEvent.click(soloCta);
+    await userEvent.click(screen.getByRole("button", { name: /Subscribe/i }));
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/checkout",
@@ -74,9 +75,9 @@ describe("PricingTiers", () => {
     );
   });
 
-  it("highlights the team plan", () => {
+  it("highlights the plan", () => {
     render(<PricingTiers />);
-    expect(screen.getByTestId("pricing-tier-team").className).toContain(
+    expect(screen.getByTestId("pricing-tier-solo").className).toContain(
       "ring-primary",
     );
   });

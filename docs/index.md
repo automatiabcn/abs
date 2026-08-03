@@ -1,6 +1,6 @@
-# Automatia ABS Documentation
+# ABS Studio Documentation
 
-Self-host AI orchestration for Claude Code — 100+ MCP tools, a 6-provider chain, hybrid RAG and a Turkish quality pipeline, all on your own server.
+The server half of ABS Studio: 157 MCP tools, a 6-provider chain, hybrid RAG and a Turkish quality pipeline, all on your own machine. The editor talks to it, and so does any other MCP client.
 
 ---
 
@@ -33,8 +33,7 @@ Self-host AI orchestration for Claude Code — 100+ MCP tools, a 6-provider chai
 
 | Plan | Price | Term |
 |---|:-:|---|
-| **Solo** | $29 / month | One person, one server |
-| **Team** | $19 / seat / month | From 3 seats, one server |
+| **ABS Studio** | $5 / month | The editor and the server |
 
 Every install starts with a seven-day trial — no card, no licence key. Cancel
 any month. 14-day no-questions-asked refund on a first payment. GDPR compliant. Self-service through the Stripe Customer Portal.

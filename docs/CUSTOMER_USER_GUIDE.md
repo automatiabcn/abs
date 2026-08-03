@@ -1,4 +1,4 @@
-# Automatia ABS — Customer User Guide
+# ABS Studio — Customer User Guide
 
 > **Self-hosted AI orchestrator. Automate the chaos on your own server.**
 >
@@ -41,12 +41,11 @@ ABS (Automation Backbone System) is an AI orchestrator that runs on your own ser
 
 ### 1.1 Product page
 
-[app.automatiabcn.com/pricing](https://app.automatiabcn.com/pricing) — two plans:
+[app.automatiabcn.com/pricing](https://app.automatiabcn.com/pricing) — one plan:
 
 | Plan | Price | Includes |
 |------|-------|----------|
-| Solo | $29 / month | 1 seat · 1 deployment · email support (48h) |
-| Team | $19 / seat / month, from 3 seats | Named seats · shared workspace · admin panel |
+| ABS Studio | $5 / month | The editor and the server, every feature, email support (48h) |
 
 > Every install starts with a seven-day trial: no card, no licence key. Cancel
 > any month. A first payment carries a 14-day no-questions-asked refund. See [Section 13](#13-license-and-refunds).
@@ -430,7 +429,7 @@ Hardware fingerprint binding is **optional** (CJ-005). If no fingerprint was ass
 
 ## Legal notices and trademarks
 
-- **Automatia ABS™** is a trademark of Automatia BCN.
+- **ABS Studio™** is a trademark of Automatia BCN.
 - **Anthropic®, Claude®, Cohere®, Cerebras®, Groq®, Gemini™, Cloudflare®, Stripe®, Hetzner®, DigitalOcean®, Linode®, Vultr®, Slack®, Gmail™, Linear®, Notion®, PostgreSQL®, Neo4j®, Docker®, Caddy®, Let's Encrypt®** are trademarks of their respective companies. The references in this guide are customer-side integration information only; they do not imply an official partnership or endorsement.
 - Provider API usage is billed **to the customer's own account**. Automatia BCN takes no share of those charges and does not invoice them.
 - ABS is distributed under the BSL 1.1 license (see the `LICENSE` file). It converts to the Apache License 2.0 automatically on 2030-05-07.

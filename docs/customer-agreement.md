@@ -1,4 +1,4 @@
-# Automatia ABS — Commercial License Agreement
+# ABS Studio — Commercial License Agreement
 
 **Version:** 1.0
 **Effective Date:** _________________
@@ -7,7 +7,7 @@
 
 ---
 
-This Commercial License Agreement ("Agreement") governs the Customer's use of the Automatia ABS software ("Software") provided by Automatia BCN ("Licensor"). By accepting this Agreement (signing below or clicking "I Accept" during onboarding), the Customer agrees to the terms below.
+This Commercial License Agreement ("Agreement") governs the Customer's use of the ABS Studio software ("Software") provided by Automatia BCN ("Licensor"). By accepting this Agreement (signing below or clicking "I Accept" during onboarding), the Customer agrees to the terms below.
 
 ## 1. Grant of License
 
@@ -80,8 +80,7 @@ License fees are specified in the Order Form provided to Customer at the time of
 
 | Plan | Fee | Seats | Instances |
 |------|-----|-------|-----------|
-| Solo | $29 per month | 1 | 1 |
-| Team | $19 per seat per month, from 3 seats | 3 or more | 1 |
+| ABS Studio | $5 per month | 1 | 1 |
 | Enterprise | Custom quote | Custom | Custom |
 
 Every installation begins with a seven-day trial that requires no payment card and no licence key. Subscriptions renew monthly until cancelled. Cancelling stops the next renewal; the period already paid for runs to its end.

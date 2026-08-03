@@ -1,6 +1,6 @@
-# Claude Code / Codex ↔ ABS Server Integration
+# MCP client integration — Claude Code, Codex and others
 
-ABS Server talks to Claude Code, Codex (or any other MCP client) over two
+The ABS Studio server talks to Claude Code, Codex (or any other MCP client) over two
 separate channels:
 
 1. **MCP HTTP transport** — the `/mcp` endpoint, JSON-RPC 2.0. Once a client

@@ -30,12 +30,43 @@ from app.mcp.tracking import tracker  # noqa: E402
 _PRODUCT_CACHE: dict = {"data": None, "ts": 0.0}
 _PRODUCT_CACHE_TTL = 300  # seconds
 
-# SKU pricing — (tier, seat_count) → USD
-_PRICE_MAP = {
-    ("self-host", 1): 299,
-    ("team", 5): 1196,
-    ("team", 10): 2093,
+# What a licence is worth per month, by the tier it was sold on.
+#
+# Two problems lived here until 2026-08-03. The table still held the retired
+# one-off model — $299 self-host, the $1196/$2093 Team Packs — none of it
+# purchasable for months; it survived the sweep of the customer-facing surfaces
+# because the guard read .md and .tsx and this is a .py, so the price was wrong
+# in the layer nobody thinks of as marketing.
+#
+# The second is worse and outlived the first fix: the lookup was by exact
+# (tier, seat_count) pair, so a team of six matched nothing and contributed
+# **zero** to the revenue figure. Narrowing the table to the one plan we now
+# sell would have widened that from "teams of six" to "every licence sold under
+# any earlier model" — the numbers would simply have got quieter, not wronger
+# in any way anyone would notice.
+#
+# So: price by tier and multiply by seats. Tiers we no longer sell still have a
+# value, because the licences on them still exist and were still paid for.
+# status_page.py already worked this way; this copy had not been brought along.
+_MONTHLY_PRICE_BY_TIER: dict[str, float] = {
+    "solo": 5.0,
 }
+
+# Retired, but historical records still reference them and still had money
+# behind them. Kept separate so nobody mistakes them for something on sale.
+_RETIRED_MONTHLY_PRICE_BY_TIER: dict[str, float] = {
+    "team": 19.0,       # per seat, per month
+    "self-host": 299.0,  # one-off; counted once, in the month it was issued
+}
+
+
+def _license_value_usd(tier: str, seat_count: int) -> float:
+    """What this licence contributed, whatever model it was sold under."""
+    per_seat = _RETIRED_MONTHLY_PRICE_BY_TIER.get(tier)
+    if per_seat is not None:
+        # self-host was never per seat; team always was.
+        return per_seat * max(1, seat_count) if tier == "team" else per_seat
+    return _MONTHLY_PRICE_BY_TIER.get(tier, 0.0) * max(1, seat_count)
 
 
 def _get_products_cached() -> list[dict]:
@@ -97,7 +128,7 @@ def _compute_revenue(db) -> dict:
     refunds_usd = 0.0
     fees_usd = 0.0
     for lic in licenses:
-        amount = _PRICE_MAP.get((lic.tier, lic.seat_count), 0)
+        amount = _license_value_usd(lic.tier, lic.seat_count)
         total_usd += amount
         issued_at = lic.issued_at
         if issued_at.tzinfo is None:

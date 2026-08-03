@@ -36,9 +36,11 @@ logger = logging.getLogger(__name__)
 
 
 # SKU → price resolver. Single source of truth for the mapping.
+# One plan since 2026-08-03. "team" is gone from here rather than merely
+# hidden on the page: a SKU the pricing page does not offer must not remain
+# purchasable through the API, or the split survives where nobody looks.
 _SKU_TO_PRICE: dict[str, object] = {
     "solo": lambda: settings.abs_price_solo,
-    "team": lambda: settings.abs_price_team,
 }
 
 # Team is priced per seat, and starts here. A team of one or two is a Solo
@@ -47,7 +49,7 @@ MIN_TEAM_SEATS = 3
 
 
 class CreateSessionRequest(BaseModel):
-    sku: Literal["solo", "team"] = "solo"
+    sku: Literal["solo"] = "solo"
     customer_email: EmailStr
     seats: int = Field(default=1, ge=1, le=500)
     # Defaults only: the web checkout builds these from the request origin, so

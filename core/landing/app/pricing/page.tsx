@@ -15,19 +15,13 @@
 import type { Metadata } from "next";
 
 import PricingTiers from "@/components/PricingTiers";
-import {
-  MIN_TEAM_SEATS,
-  SOLO_PRICE,
-  TEAM_SEAT_PRICE,
-  TRIAL_LABEL,
-} from "@/lib/pricing";
+import { PRICE, TRIAL_LABEL } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    `${TRIAL_LABEL} free, no card. Then $${SOLO_PRICE} a month for one ` +
-    `person, or $${TEAM_SEAT_PRICE} per seat for a team of ${MIN_TEAM_SEATS} ` +
-    `or more. Runs on your own server; cancel any month.`,
+    `${TRIAL_LABEL} free, no card. Then $${PRICE} a month — one plan, every ` +
+    `feature. Runs on your own server; cancel any month.`,
 };
 
 export default function PricingPageRoute() {

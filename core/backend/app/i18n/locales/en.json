@@ -19,7 +19,7 @@
   "errors.token_expired": "Token expired",
   "errors.token_invalid": "Invalid token: {detail}",
   "errors.unsubscribe_no_jti": "Token does not contain license_jti",
-  "setup.welcome": "Welcome to Automatia ABS Setup",
+  "setup.welcome": "Welcome to ABS Studio Setup",
   "setup.step_lang_title": "Select your language",
   "setup.step_admin_title": "Admin account",
   "setup.step_license_title": "License key",

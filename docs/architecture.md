@@ -1,4 +1,4 @@
-# Automatia ABS — Architecture
+# ABS Studio — Architecture
 
 This document defines the technical architecture of ABS: components, data flow, security, the customer workflow, technology choices and the scaling plan.
 

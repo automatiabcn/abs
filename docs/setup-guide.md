@@ -1,6 +1,6 @@
 # Setup Guide — install ABS in 15 minutes
 
-This guide takes Automatia ABS from nothing to a production-ready self-hosted install.
+This guide takes the ABS Studio server from nothing to a production-ready self-hosted install.
 To finish in 15 minutes we use **Docker Compose**; for the manual route
 (`pip install`) see the last section.
 

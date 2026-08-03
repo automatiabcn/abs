@@ -9,7 +9,13 @@
 
 ### 1. Who we are  
 
-ABS (Automatia Barcelona, S.L.) is a software‑as‑a‑service provider based in Barcelona, Spain. Our registered office is at **C/ Gran Via, 123, 08008 Barcelona, Spain**. You can reach us by e‑mail at **info@automatiabcn.com** or by post at the address above.  
+ABS Studio is a product of Automatia BCN, based in Barcelona, Spain. The software runs on the customer's own infrastructure; we are not a hosting provider. Our registered office is at **[registered office — to be completed by counsel]**
+
+<!-- Was "C/ Gran Via, 123, 08008 Barcelona". That address is a
+     placeholder that reads as real, in a document a customer signs.
+     Left explicitly blank rather than corrected: inventing a
+     registered office is worse than admitting there is not one
+     here yet. Founder / counsel to fill in. -->. You can reach us by e‑mail at **info@automatiabcn.com** or by post at the address above.  
 
 We operate the ABS platform (the "Service") that lets developers and small teams create, test and run web‑applications. This privacy notice explains how we collect, use, store and protect any personal data that you (or your users) provide to us, in accordance with the EU General Data Protection Regulation (GDPR) (Regulation (EU) 2016/679).  
 
@@ -148,7 +154,7 @@ If you continue to use the Service after the effective date, you are deemed to h
 If you have any questions about this privacy notice, want to exercise a data‑subject right, or need clarification on any of the points above, please contact our Data Protection Officer (DPO) at:  
 
 **E‑mail:** info@automatiabcn.com  
-**Postal address:** DPO, Automatia Barcelona, S.L., C/ Gran Via 123, 08008 Barcelona, Spain  
+**Postal address:** DPO, Automatia BCN, Barcelona, Spain — full registered address to be completed by counsel before this document is given to a customer.  
 
 We aim to acknowledge all inquiries within **five (5) business days**.  
 
