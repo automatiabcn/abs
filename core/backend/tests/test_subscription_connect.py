@@ -83,6 +83,32 @@ def test_a_signed_out_cli_is_told_to_sign_in(monkeypatch):
     assert "codex login" in st.next_step()
 
 
+def test_a_spent_allowance_is_not_reported_as_signed_out(monkeypatch):
+    """⭐ The loop the customer cannot win: told to sign in, they sign in, it
+    still refuses, and the product still says the same thing. A subscription
+    that answered "you have used this up" is SIGNED IN — it had to be, to say
+    so — and there is nothing for them to do."""
+    _installed(monkeypatch)
+    for message in (
+        "Error: rate limit reached for your plan, try again later",
+        "429 Too Many Requests",
+        "You've hit your usage limit. Come back in a few hours.",
+    ):
+        st = sub.probe("codex", run=lambda cmd, t, m=message: (1, "", m))
+        assert st.signed_in is True, f"{message!r} was read as a login problem"
+        assert "used up" in st.detail
+        assert "sign in" not in st.next_step().lower()
+        assert "other providers" in st.next_step(), (
+            "the customer should be told the work is still getting done"
+        )
+
+
+def test_a_spent_allowance_is_not_a_reason_to_reinstall(monkeypatch):
+    _installed(monkeypatch)
+    st = sub.probe("codex", run=lambda cmd, t: (1, "", "quota exceeded"))
+    assert "npm install" not in st.next_step()
+
+
 def test_a_timeout_is_not_reported_as_signed_out(monkeypatch):
     """Sending somebody to re-authenticate a working session is a loop with no
     exit — they log in, it times out again, and the product still says no."""
