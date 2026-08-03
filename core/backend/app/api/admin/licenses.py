@@ -24,6 +24,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
+from app.config import settings
 from app.api.admin.auth import admin_required
 from app.db.models import License
 from app.db.session import get_engine
@@ -53,7 +54,7 @@ async def resend_license(jti: str, admin: dict = Depends(admin_required)) -> dic
         send_license_email(
             to=email,
             license_key=token,
-            refund_url="https://abs.automatiabcn.com/refund",
+            refund_url=f"{settings.public_site_url}/refund",
             lang=getattr(lic, "preferred_lang", "en") or "en",
         )
     except Exception as exc:  # noqa: BLE001 — a failed send is the answer, not a 500

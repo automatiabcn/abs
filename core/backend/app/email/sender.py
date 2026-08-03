@@ -46,6 +46,14 @@ def _render(template_name: str, lang: str = "en", **context) -> tuple[str, str]:
     if template is None:
         # Last fallback: raise the original error so caller gets a clear msg
         template = _env.get_template(candidates[-1])
+    # Every template gets the public address without its caller remembering to
+    # pass it. The alternative was what we had: the host written into each
+    # template by hand, which drifted to a domain with no DNS and took the
+    # download and install links of every licence email with it (08-03).
+    site = str(getattr(settings, "public_site_url", "") or "").rstrip("/")
+    context.setdefault("site_url", site)
+    context.setdefault("download_url", f"{site}/download")
+    context.setdefault("install_url", f"{site}/docs/install")
     html = template.render(**context)
 
     subject = "ABS Studio"

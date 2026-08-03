@@ -32,13 +32,29 @@ def test_there_are_licence_templates_to_check():
 
 @pytest.mark.parametrize("path", LICENCE_TEMPLATES, ids=lambda p: p.name)
 def test_a_licence_email_says_where_to_download(path: Path):
-    """Telling somebody to run a file is only instructions if they have it."""
-    body = path.read_text(encoding="utf-8")
+    """Telling somebody to run a file is only instructions if they have it.
+
+    Read from the RENDERED mail rather than the template. The addresses moved
+    into a setting on 08-03 — the templates ask for `{{ download_url }}` now —
+    and checking the source would pass while a variable nobody populated
+    reached the customer as literal braces.
+    """
+    from app.email.sender import _render
+
+    lang = path.stem.rsplit("_", 1)[-1]
+    _subject, body = _render(
+        "license_delivery.html",
+        lang=lang if lang in ("en", "tr", "es") else "en",
+        license_key="ABS-TEST",
+        refund_url="https://example.invalid/refund",
+        customer_email="buyer@example.invalid",
+    )
     assert "install.sh" in body, "this template no longer describes the install"
     assert "/download" in body, (
         f"{path.name} tells the buyer to run install.sh but never says where "
         "the package comes from"
     )
+    assert "{{" not in body, f"{path.name}: an unrendered variable reached the mail"
     # The repository is private and stays private, so a GitHub Releases link
     # would 404 for every customer — the same defect this file exists to stop.
     assert "github.com" not in body, (

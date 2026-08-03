@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, timezone
 
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlmodel import Session, select
 
 from app.config import settings
@@ -38,7 +38,11 @@ logger = logging.getLogger(__name__)
 
 class PortalRequest(BaseModel):
     customer_email: EmailStr
-    return_url: str = "https://abs.automatiabcn.com/"
+    # Where Stripe sends them back to. The old default was a host that does
+    # not resolve, so a customer who managed their billing landed on nothing.
+    return_url: str = Field(
+        default_factory=lambda: f"{settings.public_site_url}/panel/account"
+    )
 
 
 class PortalResponse(BaseModel):

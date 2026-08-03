@@ -7,7 +7,7 @@
 
 import type { MetadataRoute } from "next";
 
-const BASE_URL = "https://abs.automatiabcn.com";
+const BASE_URL = "https://app.automatiabcn.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

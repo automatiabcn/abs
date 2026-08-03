@@ -136,7 +136,7 @@ Contact: support@automatiabcn.com.
 - **Email** — [support@automatiabcn.com](mailto:support@automatiabcn.com) (48h SLA, 24h for Maintenance).
 - **GitHub Discussions** — feature requests, ideas.
 - **Discord beta** — invite-only for beta testers.
-- **Status** — [automatiabcn.com](https://automatiabcn.com).
+- **Status** — write to info@automatiabcn.com. (A status page is not published yet; the host that used to be linked here never existed.)
 
 ## Contributing
 

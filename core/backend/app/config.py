@@ -279,7 +279,17 @@ class Settings(BaseSettings):
     vault_min_sops_version: str = "3.7.0"
 
     # Update channel + health monitor
-    update_manifest_url: str = "https://abs.automatiabcn.com/releases/manifest.json"
+    # Where the product actually lives, and the ONE place that decides it.
+    #
+    # Seventy-two files carried `abs.automatiabcn.com` as a literal — a host
+    # that has never had a DNS record. The licence-delivery email sent paying
+    # customers to it for the download and the install guide; the only link in
+    # that mail that worked was the refund link, because it happened to use the
+    # real host. The footer had been repaired months earlier with a comment
+    # saying the host does not resolve, and the other seventy-one were left,
+    # because a literal teaches nothing to its copies.
+    public_site_url: str = "https://app.automatiabcn.com"
+    update_manifest_url: str = "https://app.automatiabcn.com/releases/manifest.json"
     health_interval_seconds: int = 60
 
     # Manifest RS256 signature (production: True / dev/test: False)
