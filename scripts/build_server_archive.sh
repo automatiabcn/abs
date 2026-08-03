@@ -188,6 +188,40 @@ cat "$OUT/abs-server-$VERSION.tar.gz.sha256"
 # the 08-03 release, and each time the live page kept advertising the old one —
 # a customer running `shasum -c` would have been told the file was tampered
 # with. Publishing by hand is how those two drift apart, so it happens here.
+# Refuse to publish an archive that installs a product older than this tree.
+#
+# Found 2026-08-03 by installing the published archive and reading the setup
+# wizard: it was in Turkish and offered a "14-day demo". The source has been in
+# English and offered a seven-day trial for weeks. The images explain it —
+# `latest` was built on 5 June and the `1.0.4` backend on 16 May, while the
+# repository is at today. Everything verified in source this month was absent
+# from the artefact a customer downloads, and the download page went live
+# pointing at exactly those images.
+#
+# Nothing warned. The archive builder pins a version, the compose pulls it, and
+# no step compares what is inside with what is here. So this one does: publish
+# stops when the image predates HEAD, because an archive is a promise that the
+# product inside it is the product described outside it.
+if [ "${2:-}" = "--publish" ]; then
+    HEAD_EPOCH="$(git log -1 --format=%ct 2>/dev/null || echo 0)"
+    for image in abs-backend abs-landing; do
+        ref="ghcr.io/automatiabcn/$image:$VERSION"
+        created="$(docker image inspect "$ref" --format '{{.Created}}' 2>/dev/null || true)"
+        [ -n "$created" ] || continue   # not pulled locally; nothing to compare
+        img_epoch="$(date -j -f "%Y-%m-%dT%H:%M:%S" "${created%%.*}" +%s 2>/dev/null \
+                     || date -d "$created" +%s 2>/dev/null || echo 0)"
+        if [ "$img_epoch" -gt 0 ] && [ "$img_epoch" -lt "$HEAD_EPOCH" ]; then
+            echo "$ref was built $(echo "$created" | cut -c1-10), and this tree is at" >&2
+            echo "$(git log -1 --format=%cd --date=short). Publishing would ship an" >&2
+            echo "archive whose product is older than the code describing it." >&2
+            echo >&2
+            echo "Rebuild and push the images first, or pass a version whose images" >&2
+            echo "are current." >&2
+            exit 1
+        fi
+    done
+fi
+
 [ "${2:-}" = "--publish" ] || exit 0
 
 HOST=root@168.119.104.24
