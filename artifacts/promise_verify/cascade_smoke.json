@@ -1,7 +1,7 @@
 {
-  "started_at": "2026-08-03T16:45:56+00:00",
-  "finished_at": "2026-08-03T16:45:56+00:00",
-  "duration_s": 0.284,
+  "started_at": "2026-08-03T17:51:17+00:00",
+  "finished_at": "2026-08-03T17:51:17+00:00",
+  "duration_s": 0.259,
   "report": {
     "chain": [
       "anthropic",
@@ -28,7 +28,7 @@
         "actual_answerer": "anthropic",
         "pass": true,
         "error": null,
-        "elapsed_ms": 158.25
+        "elapsed_ms": 144.76
       },
       {
         "killed": "anthropic",
@@ -45,7 +45,7 @@
         "actual_answerer": "openrouter",
         "pass": true,
         "error": null,
-        "elapsed_ms": 1.05
+        "elapsed_ms": 1.15
       },
       {
         "killed": "openrouter",
@@ -62,7 +62,7 @@
         "actual_answerer": "anthropic",
         "pass": true,
         "error": null,
-        "elapsed_ms": 0.59
+        "elapsed_ms": 0.72
       },
       {
         "killed": "groq",
@@ -79,7 +79,7 @@
         "actual_answerer": "anthropic",
         "pass": true,
         "error": null,
-        "elapsed_ms": 0.55
+        "elapsed_ms": 0.73
       },
       {
         "killed": "cerebras",
@@ -96,7 +96,7 @@
         "actual_answerer": "anthropic",
         "pass": true,
         "error": null,
-        "elapsed_ms": 0.53
+        "elapsed_ms": 0.61
       },
       {
         "killed": "gemini",
@@ -113,7 +113,7 @@
         "actual_answerer": "anthropic",
         "pass": true,
         "error": null,
-        "elapsed_ms": 0.51
+        "elapsed_ms": 0.71
       },
       {
         "killed": "cloudflare",
@@ -130,7 +130,7 @@
         "actual_answerer": "anthropic",
         "pass": true,
         "error": null,
-        "elapsed_ms": 0.5
+        "elapsed_ms": 0.59
       },
       {
         "killed": "cohere",
@@ -147,7 +147,7 @@
         "actual_answerer": "anthropic",
         "pass": true,
         "error": null,
-        "elapsed_ms": 0.5
+        "elapsed_ms": 0.55
       }
     ],
     "passed": 8,

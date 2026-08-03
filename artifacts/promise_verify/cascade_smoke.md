@@ -1,6 +1,6 @@
 # Cascade redundancy smoke
 
-> Generated: 2026-08-03T16:45:56+00:00 · duration: 0.28s · `8/8` rounds green
+> Generated: 2026-08-03T17:51:17+00:00 · duration: 0.26s · `8/8` rounds green
 
 Each round monkey-patches the provider registry: every provider in the chain is a stub that either returns `ok:<provider>` or raises a transient `ProviderError`. **No real API calls** — this is a contract smoke for the cascade orchestrator's fallthrough logic, executed against the production `app.cascade.orchestrator.call_with_cascade` code path.
 
@@ -10,14 +10,14 @@ Chain under test (paid-first): `anthropic → openrouter → groq → cerebras �
 
 | Killed | Chain | Expected answerer | Actual answerer | Elapsed (ms) | Pass |
 |---|---|---|---|---|---|
-| `—` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 158.25 | ✅ |
-| `anthropic` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `openrouter` | `openrouter` | 1.05 | ✅ |
-| `openrouter` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.59 | ✅ |
-| `groq` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.55 | ✅ |
-| `cerebras` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.53 | ✅ |
-| `gemini` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.51 | ✅ |
-| `cloudflare` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.5 | ✅ |
-| `cohere` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.5 | ✅ |
+| `—` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 144.76 | ✅ |
+| `anthropic` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `openrouter` | `openrouter` | 1.15 | ✅ |
+| `openrouter` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.72 | ✅ |
+| `groq` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.73 | ✅ |
+| `cerebras` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.61 | ✅ |
+| `gemini` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.71 | ✅ |
+| `cloudflare` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.59 | ✅ |
+| `cohere` | anthropic → openrouter → groq → cerebras → gemini → cloudflare → cohere | `anthropic` | `anthropic` | 0.55 | ✅ |
 
 ## Customer interpretation
 
