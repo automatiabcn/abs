@@ -126,7 +126,13 @@ function ThemeToggle() {
 const APP_ROUTE_PREFIXES = ["/panel", "/admin"] as const;
 
 // Pages that belong to ABS Studio rather than to the platform around it.
-const PRODUCT_ROUTE_PREFIXES = ["/studio", "/download", "/docs"] as const;
+//
+// /pricing joined them on 2026-08-03. It is where a visitor decides to buy,
+// and it was showing the platform menu — Home, Pricing, Beta — so the one page
+// with a Subscribe button had no link to the download, the install guide or
+// the overview. Someone convinced by the price had nowhere to go next, and the
+// site they saw there did not look like the site they had just been reading.
+const PRODUCT_ROUTE_PREFIXES = ["/studio", "/download", "/docs", "/pricing"] as const;
 
 export default function Header() {
   const pathname = usePathname();

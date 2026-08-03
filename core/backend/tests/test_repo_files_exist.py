@@ -62,9 +62,21 @@ def test_readme_min_word_count_and_sections():
 
 def test_readme_lists_pricing_and_license_and_languages():
     text = (_repo() / "README.md").read_text(encoding="utf-8")
-    # Pricing SKUs
-    for sku in ("Self-Host Lifetime", "Maintenance", "Team Pack 5", "Team Pack 10"):
-        assert sku in text
+    # Pricing plans.
+    #
+    # This used to require "Self-Host Lifetime", "Maintenance", "Team Pack 5"
+    # and "Team Pack 10" — the one-off model retired months before 2026-08-03.
+    # So a test was not merely tolerating the stale pricing, it was *enforcing*
+    # it: correcting the README to say what Stripe actually charges turned the
+    # suite red, and the quickest way back to green was to put the wrong prices
+    # back. A guard aimed at the past defends the past.
+    for plan in ("Solo", "Team"):
+        assert plan in text, f"README does not mention the {plan} plan"
+    for amount in ("$29", "$19"):
+        assert amount in text, f"README does not state {amount}"
+    # And the retired model must not creep back.
+    for gone in ("Self-Host Lifetime", "Team Pack", "$299"):
+        assert gone not in text, f"README still advertises {gone}"
     # License badge / link (BSL 1.1 since legal switch 2026-05-07; Change Date
     # 2030-05-07 reverts to Apache 2.0)
     assert "BSL 1.1" in text or "Business Source License" in text

@@ -11,8 +11,9 @@
 [![Made in Barcelona](https://img.shields.io/badge/Made%20in-Barcelona%20%F0%9F%87%AA%F0%9F%87%B8-blue.svg)](https://automatiabcn.com)
 
 > **Automate the chaos — on your own server.** Pair your Anthropic API key (or Claude
-> Pro plan) with ABS to get 100+ MCP tools, a 6-provider cascade, RAG hybrid retrieval,
-> and quality pipelines that normally cost $1,000+/month — on your own server.
+> Pro plan) with ABS Studio to get 100+ MCP tools, a 6-provider cascade, RAG hybrid
+> retrieval, and quality pipelines — for **$29 a month**, with a seven-day trial that
+> asks for no card.
 
 🇬🇧 **English (default)** · 🇹🇷 [Türkçe](README.tr.md) · 🇪🇸 [Español](README.es.md)
 
@@ -60,7 +61,13 @@ fronts everything with Caddy (auto Let's Encrypt). Detailed setup:
 
 ## Pricing
 
-Current plans, downloads and the 14-day refund policy live at [automatiabcn.com](https://automatiabcn.com/products/abs).
+| Plan | Price | Includes |
+|---|---|---|
+| **Solo** | $29 / month | One person, one server, every feature |
+| **Team** | $19 / seat / month, from 3 seats | Named seats, shared workspace, admin panel |
+
+**Seven-day trial — no card, no licence key. Cancel any month. 14-day
+no-questions refund on a first payment.** Buy at [app.automatiabcn.com](https://app.automatiabcn.com/).
 
 ## How it works
 

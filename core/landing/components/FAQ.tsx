@@ -31,7 +31,11 @@ const QUESTIONS: QA[] = [
   },
   {
     q: "How does support work?",
-    a: "Email support is standard on the base plan (info@automatiabcn.com). Customers on the maintenance package get a 48-hour response SLA.",
+    // Was: "Customers on the maintenance package get a 48-hour response SLA."
+    // That package belonged to a retired one-off licence and cannot be bought,
+    // so the answer described a tier of support nobody could reach. A 48-hour
+    // response is what the terms promise on an active subscription.
+    a: "Email support is included (info@automatiabcn.com). While your subscription is active we answer within 48 hours.",
   },
   {
     q: "Is my code sent to Anthropic or to Automatia?",

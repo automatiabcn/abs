@@ -154,14 +154,14 @@ Detail: `docs/operations.md` § 2-5.
 - Customers: 5-20
 - Ceiling: one server per user
 
-### Growth (Months 3-6): Managed Cloud Beta
-- 3-5 beta customers on our servers
-- PostgreSQL, one schema per organisation
-- A simple admin dashboard (on our side)
-- Automatic backup + monitoring
-- $79/month (beta pricing)
+### Growth (Months 3-6): more self-hosted customers
+_The managed-cloud plan recorded here was dropped: hosting other people's data
+is a different business with a different risk profile._
+- 20-50 customers, each on their own server
+- PostgreSQL, one schema per organisation, on the customer's machine
+- Automatic backup + monitoring, documented rather than operated by us
 
-### Scale (Months 6-12): Managed Cloud, Full Launch
+### Scale (Months 6-12)
 - 20+ customers
 - PostgreSQL RLS (row-level security)
 - Authentik with multi-organisation support

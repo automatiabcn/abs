@@ -3,7 +3,7 @@
 🇬🇧 [English](README.md) · 🇹🇷 **Türkçe** · 🇪🇸 [Español](README.es.md)
 
 > Kendi sunucunda 100+ MCP tool ve 6 sağlayıcı cascade çalıştır. $20'lık Claude Pro
-> aboneliğin + kendi sunucunda ABS = ayda $1000+ enterprise araç kombinasyonu. Güncel fiyat: automatiabcn.com
+> aboneliğin + ayda $29 ABS Studio. Yedi gün kartsız deneme, istediğin ay iptal.
 
 Bu dosya çeviri için iskelet — son metinler 026 sonrası dolacak. Şimdilik
 [ana README'ye (EN)](README.md) bakabilirsin.

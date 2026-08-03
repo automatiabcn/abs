@@ -101,9 +101,17 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-lg font-semibold">6. Service Level (SLA)</h2>
+          {/*
+            This used to condition support on "the Maintenance package", a
+            $49/year add-on to a retired one-off licence. Nobody has been able
+            to buy it for months, so the terms promised support under a
+            condition no customer could satisfy — in the document that governs
+            the sale. Corrected 2026-08-03 to describe the subscription we sell.
+          */}
           <p>
-            In Self-Host installations, uptime is the User&apos;s responsibility.
-            Under the Maintenance package, the Provider announces critical
+            In Self-Host installations, uptime is the User&apos;s
+            responsibility: the software runs on the User&apos;s own server.
+            While a subscription is active, the Provider announces critical
             security patches within 7 days and answers email support within 48
             hours.
           </p>

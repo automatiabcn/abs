@@ -78,21 +78,22 @@ Bu Sözleşme İspanya yasalarına ve özellikle Comunidad Autónoma de Cataluñ
 
 Lisans ücretleri, Müşteri'ye satın alma sırasında sağlanan Sipariş Formu'nda belirtilir. Standart seviyeler:
 
-| Seviye | Yıllık Ücret | Kullanıcı | Dağıtım |
-|--------|-------------|-----------|---------|
-| Self-Host | $299 (tek seferlik) | 1 | 1 |
-| Team | $1.196 (5 kullanıcı × $239) | 5 | 1 |
+| Plan | Ücret | Kullanıcı | Dağıtım |
+|------|-------|-----------|---------|
+| Solo | Ayda $29 | 1 | 1 |
+| Team | Kullanıcı başına ayda $19, en az 3 kullanıcı | 3 ve üzeri | 1 |
 | Enterprise | Özel teklif | Özel | Özel |
 
-Ücretler iade edilmez; istisna olarak yalnızca Self-Host seviyesinin ilk satın alımları için geçerli olan 14 günlük para iade garantisi uygulanır.
+Her kurulum, ödeme kartı ve lisans anahtarı gerektirmeyen yedi günlük deneme süresiyle başlar. Abonelikler iptal edilene kadar aylık yenilenir. İptal bir sonraki yenilemeyi durdurur; ücreti ödenmiş dönem sonuna kadar işler.
+
+Ücretler, Müşteri'nin ilk ödemesi için geçerli olan 14 günlük para iade garantisi kapsamında iade edilir.
 
 ## 8. Güncellemeler ve Destek
 
 Müşteri şunlara hak kazanır:
 
-- Lisans süresi boyunca yayınlanan Yazılım güncellemeleri ve hata düzeltmeleri
+- Abonelik etkin olduğu sürece yayınlanan Yazılım güncellemeleri ve hata düzeltmeleri
 - info@automatiabcn.com adresinden e-posta desteği (48 saat yanıt süresi)
-- İsteğe bağlı Bakım Paketi ($49/yıl) — 24 saat öncelikli yanıt süresi
 
 Güncellemeleri yüklemek Müşteri'nin sorumluluğundadır. Güncellemeler lisans doğrulama, denetim günlüğü veya diğer uyum mekanizmalarında değişiklikler içerebilir.
 

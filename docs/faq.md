@@ -57,9 +57,10 @@ the demo. When it expires, the tools are blocked if `mcp_require_license=true`.
 14 days, no questions asked. Self-service through the Stripe Customer Portal. As
 soon as the refund is approved, the license is deactivated with `revoked_at`.
 
-### 11. Annual or one-off?
-Self-Host Lifetime $299 — ONE-OFF. Maintenance $49/year is optional.
-The annual subscription tier is deferred to 022+.
+### 11. Monthly or one-off?
+Monthly. $29 a month for one person, or $19 per seat per month for a team of
+three or more. Every install starts with a seven-day trial that needs no card
+and no licence key, and you can cancel any month.
 
 ## Data and security
 
@@ -75,15 +76,15 @@ rights under EU Articles 15-22, write to `info@automatiabcn.com`.
 
 ### 14. Is it open source?
 The core (`core/backend`, `core/landing`) is Apache 2.0. The premium add-ons
-(advanced RAG, team panel, the future SaaS mode) are closed source. Self-Host
-Lifetime owners get the premium add-ons too.
+(advanced RAG, team panel) are closed source, and every subscription includes
+them — there is no tier that withholds features.
 
 ## Operations
 
 ### 15. How do updates arrive?
 `docker compose pull && docker compose up -d`. ABS verifies the update channel
-signature (014). Self-Host Lifetime includes 1 year of free updates.
-After that it is Maintenance at $49/year.
+signature (014). Updates are included for as long as the subscription is
+active.
 
 ---
 

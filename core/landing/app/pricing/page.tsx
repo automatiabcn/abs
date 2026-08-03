@@ -5,18 +5,29 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// /pricing renders the 4-tier purchase surface.
-// Previously this route 308-redirected to /#contact, severing the
-// checkout flow. The component lives at PricingTiers.tsx so legacy
-// PricingPage.test.tsx (Pilot/PoC contact stub) keeps passing.
+// /pricing is where someone decides to pay us. Two plans, both monthly.
+//
+// The description below used to advertise "Lifetime, Maintenance add-on, or
+// Team Pack" — a model retired months ago and not purchasable. That string is
+// what a search engine prints under the page's title, so the first thing a
+// buyer read about our pricing was a product that does not exist, on the page
+// whose whole job is to sell the one that does. Found 2026-08-03.
 import type { Metadata } from "next";
 
 import PricingTiers from "@/components/PricingTiers";
+import {
+  MIN_TEAM_SEATS,
+  SOLO_PRICE,
+  TEAM_SEAT_PRICE,
+  TRIAL_LABEL,
+} from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Self-host ABS for life. Pick a tier (Lifetime, Maintenance add-on, or Team Pack) and start in minutes.",
+    `${TRIAL_LABEL} free, no card. Then $${SOLO_PRICE} a month for one ` +
+    `person, or $${TEAM_SEAT_PRICE} per seat for a team of ${MIN_TEAM_SEATS} ` +
+    `or more. Runs on your own server; cancel any month.`,
 };
 
 export default function PricingPageRoute() {
