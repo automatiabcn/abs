@@ -27,7 +27,7 @@ export default function DownloadPage() {
         Download ABS Studio
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Two files: the editor for your platform, and the server that runs
+        Two pieces: the editor for your platform, and the server that runs
         alongside it. Take them from the same release — a mismatched pair is
         the most common reason an install will not connect.
       </p>
@@ -54,6 +54,18 @@ export default function DownloadPage() {
 
           <section>
             <h2 className="text-lg font-semibold">Editor</h2>
+            {RELEASE.editor.length === 0 ? (
+              // The server shipped before the editor did. An empty list under a
+              // heading reads as a broken page, so say what is actually true —
+              // a customer who knows why nothing is there will wait; one who
+              // thinks the page is broken will leave.
+              <p className="mt-2 text-sm text-muted-foreground">
+                Not published yet. The server below is ready and you can install
+                it today; the editor builds follow once they are signed, so that
+                your operating system opens them without a warning. Buying now
+                is safe — a licence does not start counting down while you wait.
+              </p>
+            ) : (
             <ul className="mt-3 space-y-2">
               {RELEASE.editor.map((b) => (
                 <li key={b.href} className="text-sm">
@@ -73,6 +85,7 @@ export default function DownloadPage() {
                 </li>
               ))}
             </ul>
+            )}
           </section>
 
           <section>
@@ -95,6 +108,17 @@ export default function DownloadPage() {
                 sha256 {RELEASE.server.sha256}
               </div>
             ) : null}
+            <pre className="mt-4 overflow-x-auto rounded bg-muted p-3 font-mono text-xs">
+              {`tar -xzf ${RELEASE.server.label}
+cd ${RELEASE.server.label.replace(/\.tar\.gz$/, "")}
+./install.sh`}
+            </pre>
+            <p className="mt-2 text-sm text-muted-foreground">
+              The first run writes a <code className="font-mono">.env</code> for
+              you to fill in — your domain and an admin address — and the second
+              starts everything. Docker is the only requirement. The first seven
+              days need no licence key.
+            </p>
           </section>
         </div>
       )}
