@@ -49,9 +49,12 @@ def test_readme_min_word_count_and_sections():
     text = (_repo() / "README.md").read_text(encoding="utf-8")
     word_count = len(text.split())
     assert word_count >= 500, f"README too short: {word_count} words"
-    # Required sections
+    # Required sections. Pinned by what they have to answer, not by their exact
+    # wording — "Why ABS" became "Why a server at all" when the README stopped
+    # describing a standalone orchestrator and started describing the server
+    # half of an editor, and a heading string is the wrong thing to freeze.
     for section in (
-        "Why ABS",
+        "## Why",
         "Quick install",
         "Pricing",
         "License",
@@ -70,12 +73,10 @@ def test_readme_lists_pricing_and_license_and_languages():
     # it: correcting the README to say what Stripe actually charges turned the
     # suite red, and the quickest way back to green was to put the wrong prices
     # back. A guard aimed at the past defends the past.
-    for plan in ("Solo", "Team"):
-        assert plan in text, f"README does not mention the {plan} plan"
-    for amount in ("$29", "$19"):
-        assert amount in text, f"README does not state {amount}"
-    # And the retired model must not creep back.
-    for gone in ("Self-Host Lifetime", "Team Pack", "$299"):
+    assert "$5" in text, "README does not state the price"
+    # And no retired model creeps back — one-off packs, or the Solo/Team split
+    # that briefly replaced them.
+    for gone in ("Self-Host Lifetime", "Team Pack", "$299", "$29", "$19"):
         assert gone not in text, f"README still advertises {gone}"
     # License badge / link (BSL 1.1 since legal switch 2026-05-07; Change Date
     # 2030-05-07 reverts to Apache 2.0)

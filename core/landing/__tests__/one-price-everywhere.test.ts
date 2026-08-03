@@ -21,13 +21,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { globSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import {
-  MIN_TEAM_SEATS,
-  SOLO_PRICE,
-  TEAM_SEAT_PRICE,
-  TRIAL_DAYS,
-  TRIAL_LABEL,
-} from "../lib/pricing";
+import { PRICE, TRIAL_DAYS, TRIAL_LABEL } from "../lib/pricing";
 
 const LANDING = join(__dirname, "..");
 const REPO = join(LANDING, "..", "..");
@@ -67,6 +61,11 @@ const RETIRED = [
   /bakım paketi/i,
   /lifetime licen[cs]e/i,
   /managed cloud/i,
+  // The two-tier subscription that replaced the one-off model and was itself
+  // replaced on the same day. Listed so a stale doc saying "$29 a month" is
+  // caught the same way "$299 one-time" is.
+  /\$29\s*(a|per|\/)\s*month/i,
+  /\$19\s*(per|\/)\s*seat/i,
 ];
 
 describe("one price, everywhere", () => {
@@ -105,49 +104,51 @@ describe("one price, everywhere", () => {
   });
 
   it("the page charges what Stripe charges", () => {
-    // The Stripe setup script is what creates the prices, so it is the closest
-    // thing to an authority that lives in this repo. If someone changes one
-    // side, this fails rather than letting the page advertise $29 while the
-    // card is billed something else.
+    // The Stripe setup script is what creates the price, so it is the closest
+    // thing to an authority living in this repo. If someone changes one side,
+    // this fails rather than letting the page advertise $5 while the card is
+    // billed something else.
     const script = join(REPO, "infra", "scripts", "setup_stripe_products.py");
     if (!existsSync(script)) return;
     const text = readFileSync(script, "utf8");
 
-    const solo = /"name":\s*"ABS Solo",\s*"amount":\s*(\d+)/.exec(text);
-    const team = /"name":\s*"ABS Team",\s*"amount":\s*(\d+)/.exec(text);
-    expect(solo, "no ABS Solo price in the Stripe setup").not.toBeNull();
-    expect(team, "no ABS Team price in the Stripe setup").not.toBeNull();
-
+    const plan = /"name":\s*"ABS Studio",\s*"amount":\s*(\d+)/.exec(text);
+    expect(plan, "no ABS Studio price in the Stripe setup").not.toBeNull();
     // Stripe amounts are in cents.
-    expect(Number(solo![1])).toBe(SOLO_PRICE * 100);
-    expect(Number(team![1])).toBe(TEAM_SEAT_PRICE * 100);
+    expect(Number(plan![1])).toBe(PRICE * 100);
   });
 
-  it("the pricing page reads the numbers rather than repeating them", () => {
+  it("there is one plan, not a tier list", () => {
+    // The Solo/Team split was retired on 2026-08-03. A second sellable SKU
+    // left behind in the Stripe setup would be purchasable through the API
+    // even though the page stopped offering it.
+    const script = join(REPO, "infra", "scripts", "setup_stripe_products.py");
+    if (!existsSync(script)) return;
+    const body = readFileSync(script, "utf8");
+    const products = body.slice(body.indexOf("PRODUCTS"), body.indexOf("There is no annual"));
+    expect((products.match(/"metadata_sku"/g) ?? []).length).toBe(1);
+  });
+
+  it("the pricing page reads the number rather than repeating it", () => {
     const tiers = readFileSync(join(LANDING, "components", "PricingTiers.tsx"), "utf8");
     const body = tiers
       .split("\n")
       .filter((l) => !l.trim().startsWith("//"))
       .join("\n");
     // A literal price in the markup is a price that can drift from Stripe.
-    expect(body).not.toMatch(/\$29\b/);
-    expect(body).not.toMatch(/\$19\b/);
-    expect(body).toContain("SOLO_PRICE");
-    expect(body).toContain("TEAM_SEAT_PRICE");
+    expect(body).not.toMatch(/\$\d+\b/);
+    expect(body).toContain("PRICE");
   });
 
   it("the search description says the plan we actually sell", () => {
     const page = readFileSync(join(LANDING, "app", "pricing", "page.tsx"), "utf8");
     const meta = page.slice(page.indexOf("export const metadata"));
-    expect(meta).toContain("SOLO_PRICE");
+    expect(meta).toContain("PRICE");
     expect(meta).not.toMatch(/lifetime/i);
   });
 
   it("the numbers themselves are sane", () => {
-    expect(SOLO_PRICE).toBeGreaterThan(TEAM_SEAT_PRICE);
-    // Below this, a team costs less than one Solo seat and the plan is
-    // arithmetic nonsense.
-    expect(MIN_TEAM_SEATS * TEAM_SEAT_PRICE).toBeGreaterThan(SOLO_PRICE);
+    expect(PRICE).toBeGreaterThan(0);
     expect(TRIAL_DAYS).toBeGreaterThan(0);
     // The prose form and the number are two ways of saying one thing; if they
     // disagree the page contradicts itself in the same paragraph.

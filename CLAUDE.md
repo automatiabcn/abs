@@ -1,4 +1,4 @@
-# ABS Server — Repository Guide
+# ABS Studio server — Repository Guide
 
 ABS (Automatia BCN Self-host) is a self-hostable AI orchestration product:
 a unified gateway over multiple LLM providers with RAG, a knowledge graph,

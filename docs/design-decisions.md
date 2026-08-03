@@ -10,7 +10,10 @@ _Last updated: 2026-04-23_
 
 **Why:** it removes a lot of engineering (no multi-organisation database, auth or RBAC), cutting the MVP from 6 weeks to 2-3 weeks.
 
-### 2. Brand: **Automatia ABS**
+### 2. Brand: **ABS Studio**
+
+_The product is ABS Studio; Automatia BCN is the company that signs the terms
+and takes the money. Founder's decision, 2026-08-03._
 
 - Domain: `abs.automatiabcn.com` (subdomain — marketing and technical independence)
 - Main site: `automatiabcn.com` → "Our Products" → link to ABS
@@ -38,8 +41,7 @@ Everything the orchestration system already has (75 MCP tools + 5 hooks + 13 pip
 _Superseded the one-off model. Recorded here because the reasoning changed, not
 because the old entry was wrong at the time._
 
-- **$29/month** for one person
-- **$19/seat/month** for a team, from 3 seats
+- **$5/month**, one plan — no tiers
 - **Seven-day trial**, no card and no licence key
 - Cancel any month; the period already paid for runs to its end
 
@@ -58,7 +60,8 @@ updates, support — to the period it is incurred in.
 
 ### 8. Teams
 
-- Priced per seat, from 3 — below that Solo is cheaper and the plan is nonsense
+- No team tier. Both plans shipped the same product, so the split asked a buyer
+  to make a decision that changed nothing except the bill.
 - 25+ seats: custom quote
 
 ### 9. Free Tier: **None**

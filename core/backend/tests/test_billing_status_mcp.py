@@ -32,7 +32,14 @@ def test_billing_status_no_stripe_returns_empty_products(monkeypatch):
 
 
 def test_billing_status_revenue_aggregation(monkeypatch):
-    """3 lisans (self-host + team-5 + team-10) → total_usd = 299 + 1196 + 2093."""
+    """Three licences on three different tiers, all counted.
+
+    The point is no longer the arithmetic of a retired price list: it is that a
+    licence sold under a model we have stopped selling still has a value. The
+    lookup used to be by exact (tier, seat_count), so a team of six matched
+    nothing and contributed zero — and narrowing that table to the single plan
+    we now sell would have silently zeroed every historical licence instead.
+    """
     monkeypatch.setattr(settings, "stripe_secret_key", "")
     from app.mcp.tools import billing_tools as bt
 
@@ -77,11 +84,20 @@ def test_billing_status_revenue_aggregation(monkeypatch):
     raw = asyncio.run(bt.billing_status())
     out = json.loads(raw)
     rev = out["revenue"]
-    # In this test seeded 3 licenses + some from previous tests may exist, but
-    # 299+1196+2093 = 3588 minimum
-    assert rev["total_usd"] >= 3588
-    assert rev["mtd_usd"] >= 3588
-    assert rev["today_usd"] >= 3588
+    # Derived, not typed: the expected figure follows the same valuation the
+    # code uses, so this cannot go stale the next time a price moves. What it
+    # actually asserts is that none of the three seeds was dropped.
+    from app.mcp.tools.billing_tools import _license_value_usd
+
+    expected = (
+        _license_value_usd("self-host", 1)
+        + _license_value_usd("team", 5)
+        + _license_value_usd("team", 10)
+    )
+    assert expected > 0, "the seeded tiers are valued at nothing"
+    assert rev["total_usd"] >= expected
+    assert rev["mtd_usd"] >= expected
+    assert rev["today_usd"] >= expected
     # Lisans counts
     assert out["licenses"]["active"] >= 3
 

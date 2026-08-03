@@ -10,8 +10,8 @@ Contact: **info@automatiabcn.com**
 
 | Mark | Description | Typical Use |
 |------|-------------|-------------|
-| **Automatia BCN** | Corporate name of the organization that develops and distributes Automatia ABS. | Appears on corporate communications, press releases, and legal documents. |
-| **Automatia ABS** | Brand name of the source‑available commercial AI orchestration product. | Used on product websites, documentation, marketing material, and packaging. |
+| **Automatia BCN** | Corporate name of the organization that develops and distributes ABS Studio. | Appears on corporate communications, press releases, and legal documents. |
+| **ABS Studio** | Brand name of the commercial AI code editor and its self-hosted server. | Used on product websites, documentation, marketing material, and packaging. |
 | **ABS** | Short form of the product name, commonly used in technical contexts. | Appears in console output, configuration files, and informal discussion. |
 
 These three marks are the only trademarks owned by Automatia BCN that are covered by this policy. Any other word, phrase, or logo not listed above is not governed by this document unless expressly incorporated in a future amendment.
@@ -22,12 +22,12 @@ These three marks are the only trademarks owned by Automatia BCN that are covere
 
 You may use the marks listed in Section 1 **without prior written permission** when the use is purely descriptive, does not suggest endorsement, and is necessary to identify the product or the company. Acceptable examples include:  
 
-1. **Self‑hosted installations** – Displaying "Automatia ABS version 3.2.1" in an "About" dialog or in log files.  
-2. **Technical documentation** – Referring to configuration options such as "`abs.max_threads`" or "Enable the `Automatia ABS` scheduler".  
-3. **Blog posts, conference talks, or tutorials** – Writing sentences such as "In this tutorial we will deploy Automatia ABS on Kubernetes" or "The ABS engine can be extended with custom plugins."  
-4. **Linking** – Using a hyperlink with anchor text "Automatia ABS" that points to the official site https://automatiabcn.com.  
-5. **Attribution statements** – Adding a line "Powered by Automatia ABS" to a user interface or a README file.  
-6. **Fork disclosures** – Publishing a fork on GitHub with a description such as "Fork of Automatia ABS – adds experimental data‑pipeline features."  
+1. **Self‑hosted installations** – Displaying "ABS Studio version 3.2.1" in an "About" dialog or in log files.  
+2. **Technical documentation** – Referring to configuration options such as "`abs.max_threads`" or "Enable the `ABS Studio` scheduler".  
+3. **Blog posts, conference talks, or tutorials** – Writing sentences such as "In this tutorial we will deploy ABS Studio on Kubernetes" or "The ABS engine can be extended with custom plugins."  
+4. **Linking** – Using a hyperlink with anchor text "ABS Studio" that points to the official site https://automatiabcn.com.  
+5. **Attribution statements** – Adding a line "Powered by ABS Studio" to a user interface or a README file.  
+6. **Fork disclosures** – Publishing a fork on GitHub with a description such as "Fork of ABS Studio – adds experimental data‑pipeline features."  
 
 In all cases the mark must be presented in its **unchanged, unaltered form** (e.g., correct spelling, original capitalization, and without any additional graphics). The surrounding text should make clear that the user is not claiming any official relationship with Automatia BCN.
 
@@ -54,7 +54,7 @@ Permission is granted at Automatia BCN's sole discretion and may be subject to a
 
 The following practices are **strictly prohibited**, regardless of context or intent:  
 
-1. **Implied endorsement** – Statements like "Official Automatia ABS partner" or "Endorsed by Automatia BCN" without a signed agreement.  
+1. **Implied endorsement** – Statements like "Official ABS Studio partner" or "Endorsed by Automatia BCN" without a signed agreement.  
 2. **Confusingly similar marks** – Creating names such as "Automation BCN", "AutomatiaAB", or "ABS‑Automation" that could cause confusion with the official marks.  
 3. **Typo‑squat domains** – Registering domains that misspell the marks (e.g., `automatiabcn.com`, `abs-automatia.com`) with the purpose of diverting traffic.  
 4. **Logo alteration** – Cropping, recoloring, adding effects, or otherwise modifying the official Automatia logo.  
@@ -66,7 +66,7 @@ Violations may result in a cease‑and‑desist request, removal of infringing m
 
 ## 5. Trademark vs. Code License Distinction  
 
-The **source code** for Automatia ABS is distributed under the **Business Source License 1.1 (BUSL‑1.1)**. On **2030‑05‑07** the code will automatically relicense to **Apache License 2.0**. This change **does not affect the trademark rights** described in this policy.  
+The **source code** for ABS Studio is distributed under the **Business Source License 1.1 (BUSL‑1.1)**. On **2030‑05‑07** the code will automatically relicense to **Apache License 2.0**. This change **does not affect the trademark rights** described in this policy.  
 
 * **Trademarks remain the exclusive property of Automatia BCN** regardless of the underlying code license.  
 * Forks that are publicly distributed under a different brand must **rename the product** and **remove all trademarked elements** (name, logo, colors) unless a separate permission is obtained.  

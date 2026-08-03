@@ -19,7 +19,7 @@
   "errors.token_expired": "Token expirado",
   "errors.token_invalid": "Token inválido: {detail}",
   "errors.unsubscribe_no_jti": "El token no contiene license_jti",
-  "setup.welcome": "Bienvenido a la instalación de Automatia ABS",
+  "setup.welcome": "Bienvenido a la instalación de ABS Studio",
   "setup.step_lang_title": "Selecciona tu idioma",
   "setup.step_admin_title": "Cuenta de administrador",
   "setup.step_license_title": "Clave de licencia",

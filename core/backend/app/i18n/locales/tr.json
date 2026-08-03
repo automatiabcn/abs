@@ -19,7 +19,7 @@
   "errors.token_expired": "Token süresi doldu",
   "errors.token_invalid": "Geçersiz token: {detail}",
   "errors.unsubscribe_no_jti": "Token license_jti içermiyor",
-  "setup.welcome": "Automatia ABS Kurulumuna Hoş Geldiniz",
+  "setup.welcome": "ABS Studio Kurulumuna Hoş Geldiniz",
   "setup.step_lang_title": "Dil seçin",
   "setup.step_admin_title": "Yönetici hesabı",
   "setup.step_license_title": "Lisans anahtarı",

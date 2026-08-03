@@ -5,7 +5,13 @@
 
 **Between**  
 
-**Automatia ABS, S.L.** (hereinafter **"Processor"**), a company incorporated under the laws of Spain, with registered office at **C/ Gran Via, 123, 08008 Barcelona, Spain**, and  
+**Automatia BCN** (hereinafter **"Processor"**), established in Barcelona, Spain, with registered office at **[registered office — to be completed by counsel]**
+
+<!-- Was "C/ Gran Via, 123, 08008 Barcelona". That address is a
+     placeholder that reads as real, in a document a customer signs.
+     Left explicitly blank rather than corrected: inventing a
+     registered office is worse than admitting there is not one
+     here yet. Founder / counsel to fill in. -->, and  
 
 **[Customer Name]** (hereinafter **"Controller"**), a legal entity organized under the laws of **[Country]**, with registered office at **[Address]**.  
 
@@ -229,7 +235,7 @@ The Processor shall keep this list up‑to‑date and shall notify the Controlle
 
 ## 11. Signature Block  
 
-| Processor (Automatia ABS, S.L.) | Controller |
+| Processor (Automatia BCN) | Controller |
 |--------------------------------|------------|
 | **Name:** _______________________ | **Name:** _______________________ |
 | **Title:** ______________________ | **Title:** ______________________ |

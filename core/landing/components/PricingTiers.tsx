@@ -5,83 +5,28 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// The product is a monthly subscription: Solo, or a team priced per seat.
-// Every install starts with a seven-day trial and no card.
+// One plan, $5 a month. Every install starts with a seven-day trial and no card.
+//
+// This was two cards — Solo at $29 and Team at $19 a seat, with a seat counter
+// and a minimum of three. The split is gone (founder's decision, 2026-08-03):
+// both plans shipped the same product, so the page was asking a buyer to make
+// a decision that changed nothing except the bill.
 "use client";
 
-import * as React from "react";
-
-import CheckoutButton, { type CheckoutTier } from "@/components/CheckoutButton";
+import CheckoutButton from "@/components/CheckoutButton";
 import { BILLING_DISABLED_TITLE, BILLING_ENABLED } from "@/lib/billing-flag";
-import {
-  MIN_TEAM_SEATS,
-  SOLO_PRICE,
-  TEAM_SEAT_PRICE,
-  TRIAL_LABEL,
-  priceLabel,
-} from "@/lib/pricing";
+import { PRICE, TRIAL_LABEL, priceLabel } from "@/lib/pricing";
 
-// Re-exported because tests and other surfaces already import them from here.
-// The numbers live in lib/pricing.ts; this file only draws them.
-export { MIN_TEAM_SEATS, TEAM_SEAT_PRICE };
-
-type Tier = {
-  id: CheckoutTier;
-  name: string;
-  price: string;
-  cadence: string;
-  blurb: string;
-  bullets: readonly string[];
-  cta: string;
-  highlight?: boolean;
-};
-
-const TIERS: readonly Tier[] = [
-  {
-    id: "solo",
-    name: "Solo",
-    price: priceLabel(SOLO_PRICE),
-    cadence: "/month",
-    blurb: "One person, one server, everything switched on.",
-    bullets: [
-      "Chat, the agent, and 100+ tools",
-      "Retrieval over your own documents and meetings",
-      "Six providers, so one outage is not your outage",
-      "Your keys or ours — the free defaults are the good ones",
-      "Cancel any month",
-    ],
-    cta: "Subscribe",
-  },
-  {
-    id: "team",
-    name: "Team",
-    price: priceLabel(TEAM_SEAT_PRICE),
-    cadence: "/seat/month",
-    blurb: `Everything in Solo, for each person. From ${MIN_TEAM_SEATS} seats.`,
-    bullets: [
-      "Named seats — add or remove them any month",
-      "Shared workspace with roles and permissions",
-      "Admin panel: who did what, and when",
-      "One server, one bill, one set of documents",
-      "Cancel any month",
-    ],
-    cta: "Subscribe",
-    highlight: true,
-  },
+const BULLETS: readonly string[] = [
+  "Chat, the agent, and 100+ tools",
+  "Retrieval over your own documents and meetings",
+  "Six providers, so one outage is not your outage",
+  "Your keys or ours — the free defaults are the good ones",
+  "Runs on your own server; nothing reaches us",
+  "Cancel any month",
 ];
 
-function clampSeats(n: number): number {
-  if (!Number.isFinite(n)) return MIN_TEAM_SEATS;
-  return Math.max(MIN_TEAM_SEATS, Math.min(500, Math.floor(n)));
-}
-
 export default function PricingTiers() {
-  // The typed text and the number are kept apart on purpose. Clamping on every
-  // keystroke means someone who selects "3" and types "5" ends up with 35 — the
-  // field fights them as they type. It settles when they leave it.
-  const [draft, setDraft] = React.useState(String(MIN_TEAM_SEATS));
-  const seats = clampSeats(Number(draft));
-
   return (
     <main
       id="pricing-tiers"
@@ -94,9 +39,8 @@ export default function PricingTiers() {
             Pricing
           </h1>
           <p className="text-muted-foreground">
-            {TRIAL_LABEL} free, no card. After that it is{" "}
-            {priceLabel(SOLO_PRICE)} a month for one person, or{" "}
-            {priceLabel(TEAM_SEAT_PRICE)} per seat for a team.
+            {TRIAL_LABEL} free, no card. After that it is {priceLabel(PRICE)} a
+            month.
           </p>
         </header>
 
@@ -110,72 +54,39 @@ export default function PricingTiers() {
           </div>
         ) : null}
 
-        <div
-          className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2"
-          data-testid="pricing-tier-grid"
-        >
-          {TIERS.map((tier) => (
-            <article
-              key={tier.id}
-              data-testid={`pricing-tier-${tier.id}`}
-              className={
-                "flex flex-col rounded-2xl border p-6 shadow-sm " +
-                (tier.highlight
-                  ? "border-primary ring-1 ring-primary"
-                  : "border-border/60")
-              }
-            >
-              <h2 className="text-lg font-semibold">{tier.name}</h2>
-              <p className="mt-2 flex items-baseline gap-1">
-                <span className="text-3xl font-bold">{tier.price}</span>
-                <span className="text-sm text-muted-foreground">
-                  {tier.cadence}
-                </span>
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">{tier.blurb}</p>
+        <div className="mx-auto max-w-md" data-testid="pricing-tier-grid">
+          <article
+            data-testid="pricing-tier-solo"
+            className="flex flex-col rounded-2xl border border-primary p-6 shadow-sm ring-1 ring-primary"
+          >
+            <h2 className="text-lg font-semibold">ABS Studio</h2>
+            <p className="mt-2 flex items-baseline gap-1">
+              <span className="text-3xl font-bold">{priceLabel(PRICE)}</span>
+              <span className="text-sm text-muted-foreground">/month</span>
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              The editor and the server. Everything switched on.
+            </p>
 
-              {tier.id === "team" ? (
-                <label className="mt-4 flex items-center gap-3 text-sm">
-                  <span className="text-muted-foreground">Seats</span>
-                  <input
-                    type="number"
-                    min={MIN_TEAM_SEATS}
-                    max={500}
-                    value={draft}
-                    data-test="team-seats"
-                    onChange={(e) => setDraft(e.target.value)}
-                    onBlur={() => setDraft(String(clampSeats(Number(draft))))}
-                    className="h-9 w-20 rounded-md border border-input bg-transparent px-2"
-                  />
-                  <span
-                    data-test="team-total"
-                    className="text-muted-foreground"
-                  >
-                    ${seats * TEAM_SEAT_PRICE}/month
-                  </span>
-                </label>
-              ) : null}
-
-              <ul className="mt-4 flex-1 space-y-2 text-sm">
-                {tier.bullets.map((b) => (
-                  <li key={b} className="flex gap-2">
-                    <span aria-hidden>•</span>
-                    <span>{b}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-6">
-                <CheckoutButton
-                  tier={tier.id}
-                  seats={tier.id === "team" ? seats : 1}
-                  variant={tier.highlight ? "primary" : "secondary"}
-                  className="w-full"
-                >
-                  {tier.cta}
-                </CheckoutButton>
-              </div>
-            </article>
-          ))}
+            <ul className="mt-4 flex-1 space-y-2 text-sm">
+              {BULLETS.map((b) => (
+                <li key={b} className="flex gap-2">
+                  <span aria-hidden>•</span>
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6">
+              <CheckoutButton
+                tier="solo"
+                seats={1}
+                variant="primary"
+                className="w-full"
+              >
+                Subscribe
+              </CheckoutButton>
+            </div>
+          </article>
         </div>
 
         <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-muted-foreground">
