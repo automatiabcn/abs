@@ -13,9 +13,17 @@ import * as React from "react";
 
 import CheckoutButton, { type CheckoutTier } from "@/components/CheckoutButton";
 import { BILLING_DISABLED_TITLE, BILLING_ENABLED } from "@/lib/billing-flag";
+import {
+  MIN_TEAM_SEATS,
+  SOLO_PRICE,
+  TEAM_SEAT_PRICE,
+  TRIAL_LABEL,
+  priceLabel,
+} from "@/lib/pricing";
 
-export const MIN_TEAM_SEATS = 3;
-export const TEAM_SEAT_PRICE = 19;
+// Re-exported because tests and other surfaces already import them from here.
+// The numbers live in lib/pricing.ts; this file only draws them.
+export { MIN_TEAM_SEATS, TEAM_SEAT_PRICE };
 
 type Tier = {
   id: CheckoutTier;
@@ -32,7 +40,7 @@ const TIERS: readonly Tier[] = [
   {
     id: "solo",
     name: "Solo",
-    price: "$29",
+    price: priceLabel(SOLO_PRICE),
     cadence: "/month",
     blurb: "One person, one server, everything switched on.",
     bullets: [
@@ -47,7 +55,7 @@ const TIERS: readonly Tier[] = [
   {
     id: "team",
     name: "Team",
-    price: `$${TEAM_SEAT_PRICE}`,
+    price: priceLabel(TEAM_SEAT_PRICE),
     cadence: "/seat/month",
     blurb: `Everything in Solo, for each person. From ${MIN_TEAM_SEATS} seats.`,
     bullets: [
@@ -86,8 +94,9 @@ export default function PricingTiers() {
             Pricing
           </h1>
           <p className="text-muted-foreground">
-            Seven days free, no card. After that it is $29 a month for one
-            person, or ${TEAM_SEAT_PRICE} per seat for a team.
+            {TRIAL_LABEL} free, no card. After that it is{" "}
+            {priceLabel(SOLO_PRICE)} a month for one person, or{" "}
+            {priceLabel(TEAM_SEAT_PRICE)} per seat for a team.
           </p>
         </header>
 

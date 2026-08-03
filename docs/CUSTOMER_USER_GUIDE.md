@@ -41,15 +41,15 @@ ABS (Automation Backbone System) is an AI orchestrator that runs on your own ser
 
 ### 1.1 Product page
 
-[automatiabcn.com/products/abs](https://automatiabcn.com/products/abs) — three tiers:
+[app.automatiabcn.com/pricing](https://app.automatiabcn.com/pricing) — two plans:
 
-| Tier | Price | Includes |
+| Plan | Price | Includes |
 |------|-------|----------|
-| Self-Host | $299 (one-off) | 1 seat · 1 deployment · email support (48h) |
-| Team 5 | $1,196/year | 5 seats · priority email (24h) · onboarding call |
-| Team 10 | $2,093/year | 10 seats · 24h SLA · priority support line |
+| Solo | $29 / month | 1 seat · 1 deployment · email support (48h) |
+| Team | $19 / seat / month, from 3 seats | Named seats · shared workspace · admin panel |
 
-> Every tier comes with a 14-day no-questions-asked refund. See [Section 13](#13-license-and-refunds).
+> Every install starts with a seven-day trial: no card, no licence key. Cancel
+> any month. A first payment carries a 14-day no-questions-asked refund. See [Section 13](#13-license-and-refunds).
 
 ### 1.2 Payment
 
@@ -398,9 +398,12 @@ Self-Host: if you ask for a refund within 14 days you get the full amount back, 
 3. Your license token is revoked; the backend moves to `license_state.valid = False`.
 4. New chat calls are rejected with 403. Your local configuration (admin password, RAG index) is left intact.
 
-### 13.2 Renewal (Maintenance Pack)
+### 13.2 Renewal
 
-After 12 months, the **optional** $49/year Maintenance Pack keeps updates and email support running. If you skip it, ABS keeps running on its current version indefinitely, but you lose access to new image updates.
+The subscription renews monthly until you cancel. While it is active you get
+image updates and email support. If you cancel, chat and the agent pause at the
+end of the period you have paid for — your documents, meetings and keys stay on
+your own server, readable and exportable, for as long as you want them there.
 
 ### 13.3 Moving your license
 
