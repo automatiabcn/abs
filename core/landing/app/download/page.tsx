@@ -36,13 +36,16 @@ export default function DownloadPage() {
         <div className="mt-10 rounded border border-dashed p-6 text-sm leading-relaxed">
           <p className="font-medium">No build has been published yet.</p>
           <p className="mt-2 text-muted-foreground">
-            ABS Studio is not downloadable from this page today. If you have
-            already bought a licence, your key stays valid and nothing expires
-            while you wait — write to{" "}
+            The server archive is built and the editor is close, but the
+            published container images are behind the code — installing today
+            would give you a version from May rather than the product this site
+            describes. We would rather you waited a few days than started on the
+            wrong one. If you have already bought a licence, your key stays
+            valid and nothing expires while you wait — write to{" "}
             <a href="mailto:info@automatiabcn.com" className="underline">
               info@automatiabcn.com
             </a>{" "}
-            and we will send you the build directly.
+            and we will tell you the moment it is ready.
           </p>
         </div>
       ) : (
