@@ -16,6 +16,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/success"],
       },
     ],
-    sitemap: "https://abs.automatiabcn.com/sitemap.xml",
+    sitemap: "https://app.automatiabcn.com/sitemap.xml",
   };
 }

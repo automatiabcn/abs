@@ -143,13 +143,13 @@ def verify_webhook_signature_typed(
 
 DEFAULT_MANIFEST = {
     "name": "Automatia ABS",
-    "url": "https://abs.automatiabcn.com",
+    "url": "https://app.automatiabcn.com",
     "hook_attributes": {
-        "url": "https://abs.automatiabcn.com/v1/integrations/github/webhook",
+        "url": "https://app.automatiabcn.com/v1/integrations/github/webhook",
         "active": True,
     },
-    "redirect_url": "https://abs.automatiabcn.com/connect",
-    "callback_urls": ["https://abs.automatiabcn.com/v1/smart-link/github/callback"],
+    "redirect_url": "https://app.automatiabcn.com/connect",
+    "callback_urls": ["https://app.automatiabcn.com/v1/smart-link/github/callback"],
     "public": False,
     "default_events": ["push", "pull_request", "installation"],
     "default_permissions": {

@@ -40,7 +40,7 @@ class OpenRouterProvider(BaseProvider):
             temperature=kwargs.get("temperature", 0.3),
             timeout=kwargs.get("timeout", 60.0),
             extra_headers={
-                "HTTP-Referer": "https://abs.automatiabcn.com",
+                "HTTP-Referer": "https://app.automatiabcn.com",
                 "X-Title": "Automatia ABS",
             },
         )

@@ -50,8 +50,14 @@ class CreateSessionRequest(BaseModel):
     sku: Literal["solo", "team"] = "solo"
     customer_email: EmailStr
     seats: int = Field(default=1, ge=1, le=500)
-    success_url: str = Field(default="https://abs.automatiabcn.com/thanks")
-    cancel_url: str = Field(default="https://abs.automatiabcn.com/")
+    # Defaults only: the web checkout builds these from the request origin, so
+    # the live path is unaffected. They were still wrong twice over — a host
+    # with no DNS and a `/thanks` page that does not exist — which is what any
+    # caller that trusted the default would have got.
+    success_url: str = Field(
+        default_factory=lambda: f"{settings.public_site_url}/success"
+    )
+    cancel_url: str = Field(default_factory=lambda: f"{settings.public_site_url}/pricing")
 
 
 class CreateSessionResponse(BaseModel):

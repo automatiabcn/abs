@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 _GATE_ERROR_MESSAGE = (
     "[LICENSE REQUIRED] License/demo status could not be verified right now, so "
     "the request was refused for safety. Retry shortly, or check your license/"
-    "demo at https://abs.automatiabcn.com/"
+    "demo at https://app.automatiabcn.com/"
 )
 
 

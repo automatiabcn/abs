@@ -33,7 +33,7 @@ async def license_status() -> str:
             "demo": d,
             "require_license": settings.mcp_require_license,
             "allowed": g["allowed"],
-            "purchase_url": "https://abs.automatiabcn.com/",
+            "purchase_url": f"{settings.public_site_url}/",
         },
         ensure_ascii=False,
         indent=2,
