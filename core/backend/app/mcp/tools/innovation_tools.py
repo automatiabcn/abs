@@ -23,9 +23,25 @@ async def symbol_search(q: str, kind: Optional[str] = None, limit: int = 20) -> 
     """Symbol DB substring search — name LIKE %q%, opsiyonel kind=function|class|import."""
     await tracker.bump("symbol_search")
     from app.symbols.store import search
+    from app.workspace.current import current_workspace
+
+    # Only this project's symbols. Without it the panel answered from every
+    # repository the server had ever seen, and a hit gave no clue which.
+    from app.mcp.context import get_mcp_caller
+
+    try:
+        tenant, user = get_mcp_caller()
+    except Exception:  # noqa: BLE001 — no caller context is a usable state
+        tenant, user = "default", ""
+    root = current_workspace(str(tenant or "default"), str(user or ""))
 
     return json.dumps(
-        {"query": q, "kind": kind, "results": search(q, limit=limit, kind=kind)},
+        {
+            "query": q,
+            "kind": kind,
+            "scope": root or "everything indexed (no project open)",
+            "results": search(q, limit=limit, kind=kind, under=root),
+        },
         ensure_ascii=False,
         indent=2,
     )
