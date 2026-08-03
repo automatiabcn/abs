@@ -142,3 +142,88 @@ def test_the_chat_says_which_files_it_sent():
 
     src = inspect.getsource(engine_panel_tools.cascade_ask)
     assert '"used_files"' in src, "the answer does not say which files went with it"
+
+
+def test_symbol_search_can_be_scoped_to_one_project(tmp_path: Path, monkeypatch):
+    """Two projects, the same symbol name, and only one of them is open.
+
+    This searched everything the server had ever indexed. A developer with two
+    repositories got the other one's hits with nothing to say which was which.
+    """
+    from app.config import settings
+    from app.symbols.parser import parse_directory
+    from app.symbols.store import bulk_insert, search
+
+    monkeypatch.setattr(settings, "data_dir", str(tmp_path / "data"), raising=False)
+
+    a = tmp_path / "alpha"
+    b = tmp_path / "beta"
+    for d in (a, b):
+        d.mkdir()
+        (d / "mod.py").write_text("def shared_name():\n    pass\n", encoding="utf-8")
+
+    bulk_insert(parse_directory(str(a)))
+    bulk_insert(parse_directory(str(b)))
+
+    assert len(search("shared_name", limit=50)) == 2, "the fixture indexed nothing"
+    assert len(search("shared_name", limit=50, under=str(a))) == 1
+    assert len(search("shared_name", limit=50, under=str(b))) == 1
+
+
+def test_scoping_does_not_match_a_sibling_with_a_longer_name(tmp_path: Path, monkeypatch):
+    """/srv/app must not also scope /srv/application."""
+    from app.config import settings
+    from app.symbols.parser import parse_directory
+    from app.symbols.store import bulk_insert, search
+
+    monkeypatch.setattr(settings, "data_dir", str(tmp_path / "data"), raising=False)
+
+    short = tmp_path / "app"
+    longer = tmp_path / "application"
+    for d in (short, longer):
+        d.mkdir()
+        (d / "m.py").write_text("def prefix_probe():\n    pass\n", encoding="utf-8")
+
+    bulk_insert(parse_directory(str(short)))
+    bulk_insert(parse_directory(str(longer)))
+
+    assert len(search("prefix_probe", limit=50, under=str(short))) == 1
+
+
+def test_scoping_survives_a_symlinked_path(tmp_path: Path, monkeypatch):
+    """The two halves have to agree on how a path is spelled.
+
+    The workspace is stored with realpath(); the indexer recorded whatever it
+    was handed. On macOS /var is a symlink to /private/var, so a scope of
+    /var/... against symbols recorded as /private/var/... matched nothing —
+    no error, no results, and no hint that the filter was at fault.
+    """
+    from app.config import settings
+    from app.symbols.parser import parse_directory
+    from app.symbols.store import bulk_insert, search
+
+    monkeypatch.setattr(settings, "data_dir", str(tmp_path / "data"), raising=False)
+
+    real = tmp_path / "real"
+    real.mkdir()
+    (real / "m.py").write_text("def via_link():\n    pass\n", encoding="utf-8")
+    link = tmp_path / "link"
+    link.symlink_to(real)
+
+    bulk_insert(parse_directory(str(real)))
+    # Scoped by the symlinked spelling, which is what an editor may report.
+    assert len(search("via_link", limit=50, under=str(link))) == 1
+
+    # And the other direction, which is the one that actually exercises the
+    # indexer: indexed through the symlink, scoped by the real path. Without
+    # realpath() in the parser this stores /link/... and the scope never
+    # matches — the first version of this test only checked the query side and
+    # passed happily with the indexer's resolution removed.
+    other = tmp_path / "other"
+    other.mkdir()
+    (other / "m.py").write_text("def indexed_via_link():\n    pass\n", encoding="utf-8")
+    other_link = tmp_path / "other-link"
+    other_link.symlink_to(other)
+
+    bulk_insert(parse_directory(str(other_link)))
+    assert len(search("indexed_via_link", limit=50, under=str(other))) == 1

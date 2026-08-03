@@ -26,16 +26,45 @@ REGISTERED_TOOLS: List[str] = []
 
 
 def _caller_key() -> str:
-    """Storage key for the current caller (tenant), falling back to default."""
+    """Storage key for the current caller AND the project they have open.
+
+    Keyed by tenant alone until 2026-08-03, so one developer's two projects
+    shared a graph: index A, open B, and blast-radius answered about A with no
+    sign that it had. The founder's rule after the first tester's feedback is
+    that a capability works against the project in front of you — which means
+    it also has to stop working against the one you closed.
+
+    Adding the project to the key means an existing index is not found under
+    the new key, so the first query after this ships reports nothing until the
+    project is indexed again. That is the honest failure: an empty answer about
+    the right project beats a full one about the wrong project.
+    """
+    tenant = "default"
     try:
         from app.mcp.context import get_mcp_caller
 
-        tenant, _user = get_mcp_caller()
-        if tenant:
-            return str(tenant)
+        caller_tenant, _user = get_mcp_caller()
+        if caller_tenant:
+            tenant = str(caller_tenant)
     except Exception:
+        tenant = getattr(settings, "mcp_rag_tenant", None) or "default"
+
+    try:
+        import hashlib
+
+        from app.mcp.context import get_mcp_caller
+        from app.workspace.current import current_workspace
+
+        _t, user = get_mcp_caller()
+        root = current_workspace(tenant, user or "")
+        if root:
+            # Hashed, not appended: a storage key made of a customer's
+            # directory layout ends up in logs and on disk.
+            digest = hashlib.sha256(root.encode("utf-8")).hexdigest()[:12]
+            return f"{tenant}:{digest}"
+    except Exception:  # noqa: BLE001 — no workspace is a usable state
         pass
-    return getattr(settings, "mcp_rag_tenant", None) or "default"
+    return tenant
 
 
 @mcp_server.tool()

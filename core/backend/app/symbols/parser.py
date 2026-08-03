@@ -48,6 +48,9 @@ def parse_python_file(path: Path) -> List[Symbol]:
         return []
 
     symbols: List[Symbol] = []
+    # Already resolved: safe_resolve() ran on the way in, so indexing through
+    # a symlinked root still records the real path. Verified rather than
+    # assumed — an os.path.realpath() added here changed nothing.
     file_str = str(path)
 
     class _V(ast.NodeVisitor):
