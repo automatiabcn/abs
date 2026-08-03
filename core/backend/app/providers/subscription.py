@@ -132,6 +132,13 @@ class Status:
             return "Installed. Check the sign-in to confirm it can answer."
         if not self.signed_in:
             return f"Installed, but signed out. Run: {self.sign_in}"
+        if "used up" in self.detail:
+            # Nothing to do — and saying so is the point. The alternative was
+            # sending somebody to re-authenticate a session that is fine.
+            return (
+                "Connected. Its allowance is spent for the moment; ABS is using "
+                "your other providers until it frees up."
+            )
         return ""
 
 
@@ -172,6 +179,25 @@ def _probe_command(sub: Subscription, path: str) -> list[str]:
     return [path, "-p", _PROBE_PROMPT]
 
 
+# Spent for now, not signed out. These are different problems with different
+# answers, and getting them the wrong way round is a loop the customer cannot
+# win: told to sign in, they sign in, it still refuses, and the product still
+# says the same thing. Subscription CLIs are limited by a rolling window rather
+# than a daily count, so the honest sentence is "not right now" — a countdown
+# would be arithmetic we cannot do and do not need.
+_RATE_LIMITED_MARKERS = (
+    "rate limit",
+    "rate_limit",
+    "usage limit",
+    "quota",
+    "too many requests",
+    "429",
+    "try again later",
+    "limit reached",
+    "you've hit",
+    "come back",
+)
+
 _SIGNED_OUT_MARKERS = (
     "not logged in",
     "not signed in",
@@ -208,6 +234,9 @@ def probe(key: str, *, run: Optional[Callable] = None) -> Status:
     blob = f"{out}\n{err}".lower()
     if code == 0 and out.strip():
         return _with(base, True, "answered")
+    if any(m in blob for m in _RATE_LIMITED_MARKERS):
+        # Signed in — it said so by telling us we had used it up.
+        return _with(base, True, "connected, but used up for now")
     if any(m in blob for m in _SIGNED_OUT_MARKERS):
         return _with(base, False, "signed out")
     if code == 0:
