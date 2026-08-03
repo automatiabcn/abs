@@ -18,7 +18,8 @@ entrega tu código.
 
 Esta es la tercera respuesta: el editor habla con un servidor que es tuyo.
 
-- Enrutado entre **6 proveedores** con cortacircuitos: la caída de uno no es la tuya.
+- Enrutado entre **7 proveedores** con cortacircuitos: la caída de uno no es la tuya;
+  y recurre a modelos locales (Ollama, MLX) si los tienes.
 - **157 herramientas MCP**: recuperación híbrida RAG, judge persona ML, modo
   desarrollador fullstack, canal de calidad en turco.
 - Todo en **tu máquina**. Nada llega a servidores de Automatia; lo único que sale son
