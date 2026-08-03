@@ -282,3 +282,89 @@ def test_symbol_search_says_when_the_project_was_never_read(tmp_path: Path, monk
 
     bulk_insert(parse_directory(str(project)))
     assert count_under(str(project)) > 0, "indexing did not register under the project"
+
+
+@pytest.mark.asyncio
+async def test_announcing_a_project_says_whether_it_was_ever_read(tmp_path: Path, monkeypatch):
+    """The editor needs this in the same round trip to offer indexing once.
+
+    Without it a developer meets an honest but unhelpful "not indexed yet" the
+    first time they search, and has to discover that a command exists and where
+    it lives. The server already knows the answer when it is told the project.
+    """
+    import app.mcp.server  # noqa: F401 — circular import guard, see above.
+    from app.config import settings
+    from app.mcp.tools.engine_panel_tools import workspace_set
+    from app.symbols.parser import parse_directory
+    from app.symbols.store import bulk_insert
+
+    monkeypatch.setattr(settings, "data_dir", str(tmp_path / "data"), raising=False)
+
+    project = tmp_path / "proj"
+    project.mkdir()
+    (project / "m.py").write_text("def thing():\n    pass\n", encoding="utf-8")
+
+    before = json.loads(await workspace_set(str(project)))
+    assert before["ok"] is True
+    assert before["indexed"] is False, "a project nothing has read cannot be indexed"
+
+    bulk_insert(parse_directory(str(project)))
+
+    after = json.loads(await workspace_set(str(project)))
+    assert after["indexed"] is True, "an indexed project is still reported unread"
+
+
+@pytest.mark.asyncio
+async def test_indexing_and_querying_agree_on_the_key(tmp_path: Path, monkeypatch):
+    """A graph built for a project has to be the graph the query reads.
+
+    The key gained the project on 2026-08-03, and the build derived it from
+    whichever workspace had been announced. Those are the same in the normal
+    flow and silently different when `workspace_set` never landed — an older
+    server, or a path the container cannot see. The graph would go under the
+    tenant-only key while every query looked under tenant+project, so the
+    project stayed "not indexed" no matter how often somebody indexed it.
+
+    Both orders are checked because both happen: the editor announces then
+    offers indexing, and somebody running the command from the palette may
+    have neither.
+    """
+    import app.mcp.server  # noqa: F401 — circular import guard.
+    from app.config import settings
+    from app.mcp.context import get_mcp_caller
+    from app.mcp.tools.codegraph_tools import code_blast_radius, code_graph_build
+    from app.workspace.current import forget, set_workspace
+
+    monkeypatch.setattr(settings, "data_dir", str(tmp_path / "data"), raising=False)
+
+    try:
+        t, u = get_mcp_caller()
+    except Exception:  # noqa: BLE001
+        t, u = None, None
+    tenant, user = str(t or "default"), str(u or "")
+
+    def make(name: str) -> Path:
+        d = tmp_path / name
+        (d / "src").mkdir(parents=True)
+        (d / "src" / "m.py").write_text(
+            "def leaf():\n    pass\n\n\ndef caller():\n    leaf()\n", encoding="utf-8"
+        )
+        return d
+
+    # Announce, then index, then ask — the editor's order.
+    first = make("announced-first")
+    set_workspace(tenant, user, str(first))
+    await code_graph_build(str(first))
+    out = json.loads(await code_blast_radius("leaf"))
+    assert out["indexed"] is True
+    assert out["found"] is True, "the graph just built is not the one being read"
+
+    # Index, then announce — the palette's order, and the one that used to
+    # write the graph somewhere the query never looked.
+    second = make("indexed-first")
+    forget(tenant, user)
+    await code_graph_build(str(second))
+    set_workspace(tenant, user, str(second))
+    out2 = json.loads(await code_blast_radius("leaf"))
+    assert out2["indexed"] is True
+    assert out2["found"] is True, "indexing before announcing lost the graph"
