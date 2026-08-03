@@ -25,6 +25,23 @@ from app.mcp.tracking import tracker
 REGISTERED_TOOLS: List[str] = []
 
 
+def _key_for(tenant: str, root: str) -> str:
+    """The storage key for one tenant's one project.
+
+    Hashed rather than appended: a storage key made of a customer's directory
+    layout ends up in logs and on disk.
+    """
+    import hashlib
+    import os
+
+    try:
+        resolved = os.path.realpath(root)
+    except OSError:
+        resolved = root
+    digest = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:12]
+    return f"{tenant}:{digest}"
+
+
 def _caller_key() -> str:
     """Storage key for the current caller AND the project they have open.
 
@@ -50,8 +67,6 @@ def _caller_key() -> str:
         tenant = getattr(settings, "mcp_rag_tenant", None) or "default"
 
     try:
-        import hashlib
-
         from app.mcp.context import get_mcp_caller
         from app.workspace.current import current_workspace
 
@@ -60,8 +75,7 @@ def _caller_key() -> str:
         if root:
             # Hashed, not appended: a storage key made of a customer's
             # directory layout ends up in logs and on disk.
-            digest = hashlib.sha256(root.encode("utf-8")).hexdigest()[:12]
-            return f"{tenant}:{digest}"
+            return _key_for(tenant, root)
     except Exception:  # noqa: BLE001 — no workspace is a usable state
         pass
     return tenant
@@ -72,7 +86,33 @@ def _caller_key() -> str:
 async def code_graph_build(root: str) -> str:
     """Index a workspace root into the call-graph (run before querying it)."""
     await tracker.bump("code_graph_build")
-    res = _graph.build(root, key=_caller_key())
+    # Keyed by the root being built, not by whichever workspace was announced.
+    #
+    # Those are the same in the normal flow, and silently different when
+    # `workspace_set` failed — an older server, a path the container cannot
+    # see. The graph would then be written under the tenant-only key while
+    # every later query looked under tenant+project, so the project stayed
+    # "not indexed" no matter how many times somebody indexed it.
+    tenant = _caller_key().split(":", 1)[0]
+    res = _graph.build(root, key=_key_for(tenant, root))
+
+    # Building a graph for a root is a statement that you are working on it.
+    #
+    # Without this, a client that indexes and then queries — an older editor,
+    # or any other MCP client that has never heard of `workspace_set` — wrote
+    # the graph under the project key and read back under the tenant key, and
+    # got nothing. The live transport test caught exactly that. An announced
+    # workspace still wins: this only fills the gap, it never overrides.
+    try:
+        from app.mcp.context import get_mcp_caller
+        from app.workspace.current import current_workspace, set_workspace
+
+        _t, user = get_mcp_caller()
+        if not current_workspace(tenant, str(user or "")):
+            set_workspace(tenant, str(user or ""), root)
+    except Exception:  # noqa: BLE001 — the graph is built either way
+        pass
+
     return json.dumps(res, ensure_ascii=False, indent=2)
 
 
