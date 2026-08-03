@@ -16,7 +16,8 @@ toplantıyı hatırlayamaz ve tek bir sağlayıcının kötü bir günü olduğu
 
 Bu üçüncü cevap: editör, sahibi sen olan bir sunucuyla konuşur.
 
-- **6 sağlayıcı** arasında devre kesicili yönlendirme — birinin kesintisi seninki olmaz.
+- **7 sağlayıcı** arasında devre kesicili yönlendirme — birinin kesintisi seninki olmaz;
+  elinde varsa yerel modellere (Ollama, MLX) de düşer.
 - **157 MCP aracı**: RAG hibrit erişim, judge persona ML, fullstack geliştirici modu,
   Türkçe kalite hattı.
 - Tamamen **senin makinende**. Automatia sunucularına hiçbir şey ulaşmaz; dışarı çıkan
