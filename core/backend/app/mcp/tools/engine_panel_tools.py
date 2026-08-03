@@ -26,6 +26,8 @@ open exactly those, nothing more:
 from __future__ import annotations
 
 import json
+import logging
+import os
 import time
 from typing import Any, Dict, List, Optional
 
@@ -34,6 +36,8 @@ from app.config import settings
 from app.mcp.middleware import with_hooks
 from app.mcp.server import mcp_server
 from app.mcp.tracking import tracker
+
+logger = logging.getLogger(__name__)
 
 REGISTERED_TOOLS: List[str] = []
 
@@ -111,6 +115,38 @@ async def quota_meter_status() -> str:
 
 
 @mcp_server.tool()
+@with_hooks("workspace_set")
+async def workspace_set(root: str = "") -> str:
+    """Tell the server which project the caller has open.
+
+    The editor calls this when it starts and whenever the folder changes, so
+    every other tool can answer about the code in front of the developer
+    instead of in general. Pass an empty root to say "no folder open".
+
+    This exists because a tester opened a project on 2026-08-03, asked the chat
+    about it, and got an answer about nothing: of the thirty-three tools the
+    editor calls, only Composer was sending the workspace. Adding the argument
+    to the other thirty-two would have left the thirty-fourth wrong again.
+    """
+    await tracker.bump("workspace_set")
+    from app.workspace.current import set_workspace
+
+    stored = set_workspace(_caller_tenant(), _caller_user() or "", root)
+    if root and stored is None:
+        return json.dumps(
+            {
+                "ok": False,
+                "error": "not_a_directory",
+                "detail": f"{root} is not a directory this server can see. If the "
+                          f"server runs in a container, the project has to be "
+                          f"mounted into it at the same path.",
+            },
+            ensure_ascii=False,
+        )
+    return json.dumps({"ok": True, "workspace": stored}, ensure_ascii=False)
+
+
+@mcp_server.tool()
 @with_hooks("cascade_ask")
 async def cascade_ask(
     prompt: str,
@@ -155,10 +191,48 @@ async def cascade_ask(
     primary = prefer.strip() or active[0]
     fallbacks = tuple(p for p in active if p != primary)
 
+    # Answer about the project the developer has open, when there is one.
+    #
+    # Reported by the first tester (2026-08-03): provider connected, project
+    # open, and the chat answered as if the repository did not exist. It did
+    # not, as far as this tool was concerned — it received a question and
+    # nothing else, while Composer next door was reading the workspace.
+    #
+    # Retrieval is the same code Composer uses, so the two cannot drift into
+    # disagreeing about what is relevant. `used_files` goes back in the
+    # response because the panel promises the developer knows what was sent;
+    # context gathered silently would break that promise more quietly than not
+    # gathering it at all.
+    asked = prompt
+    used_files: list = []
+    try:
+        from app.composer.runtime import relevant_files, workspace_files
+        from app.workspace.current import current_workspace
+
+        root = current_workspace(tenant, user or "")
+        if root:
+            picked = relevant_files(
+                root, prompt, workspace_files(root), graph_key=tenant
+            )
+            if picked:
+                blocks = "\n\n".join(
+                    f"--- {rel} ---\n{body}" for rel, body in picked
+                )
+                asked = (
+                    f"{prompt}\n\n"
+                    f"Files from the project the developer has open "
+                    f"({os.path.basename(root)}):\n\n{blocks}"
+                )
+                used_files = [rel for rel, _ in picked]
+    except Exception as exc:  # noqa: BLE001
+        # Retrieval failing must not cost the developer their answer — it costs
+        # them the context, and the response says so rather than pretending.
+        logger.warning("cascade_ask_workspace_context_failed err=%s", exc)
+
     started = time.perf_counter()
     try:
         resp = await call_with_cascade(
-            prompt,
+            asked,
             primary=primary,
             fallbacks=fallbacks,
             max_tokens=max_tokens,
@@ -208,6 +282,10 @@ async def cascade_ask(
             "elapsed_ms": int((time.perf_counter() - started) * 1000),
             "cost_usd": cost.get("usd"),
             "cost_free": cost.get("free"),
+            # Which of the developer's files went with the question. The panel
+            # tells them what it sent; context gathered silently would break
+            # that promise more quietly than not gathering it at all.
+            "used_files": used_files,
         },
         ensure_ascii=False,
     )
