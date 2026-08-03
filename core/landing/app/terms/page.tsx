@@ -10,7 +10,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description:
-    "Terms of service for the Automatia ABS self-host orchestrator. License, payment, liability, termination.",
+    "Terms of service for ABS Studio. License, payment, liability, termination.",
 };
 
 export default function TermsPage() {
@@ -29,7 +29,7 @@ export default function TermsPage() {
           <p>
             This agreement is entered into between <strong>Automatia BCN</strong>{" "}
             (Barcelona, Spain — hereinafter the &ldquo;Provider&rdquo;) and the
-            customer who purchases or uses an Automatia ABS license (the
+            customer who purchases or uses an ABS Studio license (the
             &ldquo;User&rdquo;). You must be over 18 to use the service.
           </p>
         </section>

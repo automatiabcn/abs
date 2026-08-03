@@ -137,13 +137,15 @@ export default function Header() {
   );
   if (isAppRoute) return null;
 
-  // The editor's own pages carry the product's name, not the platform's. A
-  // buyer who reads two names on the way to one purchase cannot tell what
-  // they are buying, and the page they landed on is about the editor.
+  // One name everywhere (founder's decision, 08-03). The split that used to
+  // live here was a stand-in for an unmade choice, and it produced exactly the
+  // problem it was written to describe: a buyer reading two names on the way
+  // to one purchase. The ROUTE distinction stays — the editor's pages have
+  // their own navigation — but the name no longer moves with it.
   const isProductRoute = PRODUCT_ROUTE_PREFIXES.some(
     (prefix) => pathname === prefix || pathname?.startsWith(`${prefix}/`),
   );
-  const brand = isProductRoute ? "ABS Studio" : "Automatia ABS";
+  const brand = "ABS Studio";
   const brandHref = isProductRoute ? "/studio" : "/";
   const navLinks = isProductRoute ? PRODUCT_NAV_LINKS : NAV_LINKS;
 

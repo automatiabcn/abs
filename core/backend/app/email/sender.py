@@ -48,7 +48,7 @@ def _render(template_name: str, lang: str = "en", **context) -> tuple[str, str]:
         template = _env.get_template(candidates[-1])
     html = template.render(**context)
 
-    subject = "Automatia ABS"
+    subject = "ABS Studio"
     for line in html.splitlines():
         stripped = line.strip()
         if stripped.startswith("<!-- subject:") and stripped.endswith("-->"):
