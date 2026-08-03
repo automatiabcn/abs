@@ -110,6 +110,21 @@ if [ -n "$PLATFORM" ] && [ "$VERSION" != "latest" ]; then
 fi
 
 docker compose pull
+
+# The editor's way in is a port on this machine, so check it is free before
+# compose does — it fails with "ports are not available ... address already in
+# use", which says nothing about what to do. A real install hit this on
+# 2026-08-03 because something unrelated was already on 8000.
+LOCAL_PORT="$(grep '^ABS_LOCAL_PORT=' .env | cut -d= -f2- || true)"
+LOCAL_PORT="${LOCAL_PORT:-8000}"
+if command -v lsof >/dev/null 2>&1 && lsof -i ":$LOCAL_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+    echo "Port $LOCAL_PORT is already in use by something else on this machine," >&2
+    echo "and the editor connects to the server through it." >&2
+    echo >&2
+    echo "Set ABS_LOCAL_PORT in .env to a free port (say 8010) and run this again." >&2
+    exit 1
+fi
+
 docker compose up -d
 
 DOMAIN="$(grep '^ABS_DOMAIN=' .env | cut -d= -f2- || echo localhost)"
@@ -127,8 +142,30 @@ for _ in $(seq 1 30); do
         echo "  Panel:  https://$DOMAIN"
         echo "  Logs:   docker compose logs -f"
         echo
-        echo "Your first seven days need no licence key. The editor connects to"
-        echo "this server; the guide is at https://app.automatiabcn.com/docs/install"
+
+        # Tell them the address to give the editor, rather than leaving them to
+        # work it out. A tester on 2026-08-03 reached this line and then had to
+        # be told, over several messages, which URL to type and where — the
+        # installer knew the answer the whole time and did not say it.
+        #
+        # localhost is deliberately http://…:PORT and not https://localhost:
+        # Caddy's certificate for a local install comes from its own CA, which
+        # the machine does not trust, and the editor has no way to be told to
+        # accept it. Straight to the backend is the one address that works.
+        if [ "$DOMAIN" = "localhost" ] || [ "$DOMAIN" = "127.0.0.1" ]; then
+            EDITOR_URL="http://localhost:$LOCAL_PORT"
+        else
+            EDITOR_URL="https://$DOMAIN"
+        fi
+        echo "In ABS Studio, set:"
+        echo "  abs.serverUrl   $EDITOR_URL"
+        echo
+        echo "Sign in from the editor's status bar. If that server is older than"
+        echo "the editor and the sign-in fails, mint an integration token in the"
+        echo "panel and put it in abs.token instead."
+        echo
+        echo "Your first seven days need no licence key."
+        echo "Guide: https://app.automatiabcn.com/docs/install"
         exit 0
     fi
     printf '.'
