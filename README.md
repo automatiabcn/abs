@@ -36,8 +36,12 @@ This is the third answer: the editor talks to a server you own.
   them.
 - Ships **157 MCP tools** (RAG hybrid retrieval, judge persona ML, fullstack
   developer mode, Türkçe quality pipeline).
-- Runs entirely on **your machine**. Nothing reaches an Automatia server —
-  the only calls that leave are the ones you make to a provider, with your key.
+- Runs entirely on **your machine**. None of your data reaches an Automatia
+  server: the calls that carry content go to the provider you chose, with your
+  key. While a subscription is active the server also checks its licence with
+  us on start-up and once a day — licence id, hashed machine fingerprint, build
+  hash, instance URL, version, no content — and `ABS_PHONE_HOME_DISABLED=1`
+  turns that off.
 - Carries the commercial parts too: licence JWT (RS256), Stripe checkout,
   customer portal, refunds.
 

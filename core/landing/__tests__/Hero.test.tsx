@@ -39,7 +39,7 @@ describe("Hero (premium 018)", () => {
     // the retired brand blue, mounted `absolute inset-0` — i.e. behind the
     // headline, on exactly the devices it exists to serve.
     const svg = screen.getByRole("img", {
-      name: /six providers cascading into a self-hosted vault/i,
+      name: /seven providers cascading into a self-hosted vault/i,
     });
     expect(svg.tagName.toLowerCase()).toBe("svg");
 

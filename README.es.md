@@ -22,8 +22,12 @@ Esta es la tercera respuesta: el editor habla con un servidor que es tuyo.
   y recurre a modelos locales (Ollama, MLX) si los tienes.
 - **157 herramientas MCP**: recuperación híbrida RAG, judge persona ML, modo
   desarrollador fullstack, canal de calidad en turco.
-- Todo en **tu máquina**. Nada llega a servidores de Automatia; lo único que sale son
-  las llamadas que tú haces a un proveedor, con tu clave.
+- Todo en **tu máquina**. Ninguno de tus datos llega a servidores de Automatia;
+  las llamadas con contenido van al proveedor que elijas, con tu clave. Mientras
+  la suscripción está activa el servidor también verifica su licencia con
+  nosotros al arrancar y una vez al día — id de licencia, huella de máquina
+  hasheada, hash de build, URL de la instancia y versión; sin contenido. Se
+  desactiva con `ABS_PHONE_HOME_DISABLED=1`.
 
 ## Instalación rápida
 
