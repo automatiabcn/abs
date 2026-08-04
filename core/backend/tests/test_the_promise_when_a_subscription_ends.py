@@ -193,3 +193,41 @@ def test_only_chat_is_gated(expired_trial):
         f"{enforcing}. Either that is wrong, or the pricing page needs to stop "
         f"saying 'and that is all'."
     )
+
+
+def test_no_email_promises_the_retired_demo():
+    """The emails have to say what the gate actually does.
+
+    Until 2026-08-04 the refund email told a customer their server would "run
+    in demo mode for 14 days" — the demo the seven-day trial replaced. It is
+    not what happens: the trial is dated from install, so a refund after the
+    first week leaves the gate closed immediately, and there is no fresh
+    fortnight to be had. Verified by evaluating the gate on a thirty-day-old
+    install: TRIAL_EXPIRED, allowed False.
+
+    Checked across every template because the claim was in four of them, in
+    three languages, and one was the base file that the others were copied from.
+    """
+    import re
+
+    templates = (
+        Path(__file__).resolve().parents[1] / "app" / "email" / "templates"
+    )
+    if not templates.is_dir():
+        pytest.skip("emails not checked out")
+
+    # "demo mode", "demo moduna", "modo demo" — the phrase in each language,
+    # and any 14-day trial claim. The 14-day *refund window* is real and must
+    # not be caught, so this matches the demo wording rather than the number.
+    banned = re.compile(r"demo\s*mod|modo\s*demo|demo\s*süre", re.IGNORECASE)
+
+    offenders = []
+    for path in sorted(templates.rglob("*.html")):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if banned.search(text):
+            offenders.append(path.name)
+
+    assert offenders == [], (
+        "these emails promise the retired demo, which the licence gate does "
+        "not give: " + ", ".join(offenders)
+    )
