@@ -65,6 +65,72 @@ def _looks_truncated(old_text: str, new_text: str) -> bool:
     return len(new_text.splitlines()) < old_n * _MAX_SHRINK
 
 
+def _diff_guts_the_file(old_text: str, diff: str) -> bool:
+    """The same question, asked of a diff the model wrote itself.
+
+    `_looks_truncated` only sees replies that arrive as complete files. A model
+    that answers with a raw unified diff instead reached validate, dry-run and
+    the editor's Approve button with nothing measuring how much of the file it
+    removed — the other door into exactly the +20/-784 shape the guard above
+    exists to stop, left open because the fix was pointed at the door the
+    current prompt happens to use.
+
+    Removed lines only count when nothing takes their place: a rewrite shows as
+    -160/+160 and is an ordinary refactor, while -160/+0 on a 200-line file is
+    the same vanished answer in a different envelope.
+    """
+    old_n = len(old_text.splitlines())
+    if old_n < _MIN_LINES_FOR_RATIO:
+        return False
+    removed = added = 0
+    for line in diff.splitlines():
+        if line.startswith("---") or line.startswith("+++"):
+            continue
+        if line.startswith("-"):
+            removed += 1
+        elif line.startswith("+"):
+            added += 1
+    return (removed - added) > old_n * (1.0 - _MAX_SHRINK)
+
+
+def refusal(raw: dict, *, rel_path: str, abs_path: str) -> Optional[str]:
+    """Why this edit is not being proposed, in words a customer can read.
+
+    The guard refused into `logger.info` and returned an empty string, so the
+    run came back with an empty edit list under the model's own confident
+    summary. That reads as a product that lost the work rather than one that
+    refused it, and it is indistinguishable from a model that found nothing to
+    change. Silence was the wrong half of the promise: the docstring of the
+    first fix says the product "refuses and says why", and it only refused.
+
+    None when the edit was not refused, so the caller can tell an ordinary
+    empty diff from a protected one.
+    """
+    old_text = read_text(abs_path)
+    if old_text is None:
+        return None
+
+    new_text = raw.get("new_content")
+    if isinstance(new_text, str) and new_text.strip():
+        if _looks_truncated(old_text, new_text):
+            return (
+                f"{rel_path}: the reply came back at "
+                f"{len(new_text.splitlines())} lines against "
+                f"{len(old_text.splitlines())} on disk, which is what a "
+                f"cut-off answer looks like — not proposed."
+            )
+        return None
+
+    diff = str(raw.get("unified_diff") or "")
+    if diff and _diff_guts_the_file(old_text, diff):
+        return (
+            f"{rel_path}: the proposed diff deletes most of a "
+            f"{len(old_text.splitlines())}-line file and puts almost nothing "
+            f"back, which is what a cut-off answer looks like — not proposed."
+        )
+    return None
+
+
 def diff_from_new_content(
     rel_path: str,
     old_text: Optional[str],
@@ -137,7 +203,16 @@ def edit_diff(
         # said the file is already right, and it may be.
         if read_text(abs_path) is not None:
             return "", True
-    return str(raw.get("unified_diff") or ""), False
+    written = str(raw.get("unified_diff") or "")
+    # The other door. Same rule, same reason — see _diff_guts_the_file.
+    old_text = read_text(abs_path)
+    if written and old_text is not None and _diff_guts_the_file(old_text, written):
+        logger.info(
+            "composer refused a model-written diff that guts %s (%d lines on disk)",
+            rel_path, len(old_text.splitlines()),
+        )
+        return "", False
+    return written, False
 
 
 def relative_to(workspace_root: str, path: str) -> str:
