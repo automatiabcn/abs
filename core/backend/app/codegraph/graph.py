@@ -26,7 +26,7 @@ import re
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from app.config import settings
 
@@ -316,3 +316,50 @@ def stats(*, key: str = "default") -> Dict[str, Any]:
         "resolved_pct": round(100 * er / max(e, 1), 1),
         "db": str(p),
     }
+
+
+def count_symbols(*, key: str = "default") -> int:
+    """How many symbols this project's graph holds.
+
+    "Has this project been read?" was answered from the standalone symbols.db
+    until 2026-08-04, and the editor's index command never writes there — it
+    calls code_graph_build, which writes here. So the answer was always "no",
+    the editor offered to index on every launch, and the offer never took
+    effect as far as the check could see. Found by walking the editor's own
+    sequence over the wire.
+    """
+    try:
+        with _connect(_db_path(key)) as c:
+            row = c.execute("SELECT COUNT(*) FROM symbols").fetchone()
+        return int(row[0] if row else 0)
+    except Exception:  # noqa: BLE001 — an unreadable graph is an empty one
+        return 0
+
+
+def search_symbols(
+    name_substr: str,
+    *,
+    key: str = "default",
+    kind: Optional[str] = None,
+    limit: int = 20,
+) -> List[Dict[str, Any]]:
+    """Symbols in this project's graph, matching a substring.
+
+    Served from the graph rather than the global symbols.db because the graph
+    is already keyed per project: scoping comes for free, where the global
+    store needed a path prefix and only worked if something had filled it.
+    """
+    sql = "SELECT name, kind, file, lineno FROM symbols WHERE (name LIKE ? OR leaf LIKE ?)"
+    params: List[Any] = [f"%{name_substr}%", f"%{name_substr}%"]
+    if kind:
+        sql += " AND kind = ?"
+        params.append(kind)
+    sql += " ORDER BY name LIMIT ?"
+    params.append(limit)
+    try:
+        with _connect(_db_path(key)) as c:
+            c.row_factory = sqlite3.Row
+            rows = c.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+    except Exception:  # noqa: BLE001
+        return []

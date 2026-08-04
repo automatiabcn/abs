@@ -35,7 +35,22 @@ async def symbol_search(q: str, kind: Optional[str] = None, limit: int = 20) -> 
         tenant, user = "default", ""
     root = current_workspace(str(tenant or "default"), str(user or ""))
 
-    results = search(q, limit=limit, kind=kind, under=root)
+    # Served from the project's graph when one is open: that is where the
+    # editor's index command writes, and it is already keyed per project, so
+    # scoping is automatic. The standalone symbols.db is the fallback for
+    # callers with no workspace — it is global, and nothing in the editor's
+    # path fills it, which is why a search from the panel always came back
+    # empty however many times somebody indexed.
+    results = []
+    if root:
+        from app.codegraph import graph as _graph
+        from app.mcp.tools.codegraph_tools import _key_for
+
+        results = _graph.search_symbols(
+            q, key=_key_for(str(tenant or "default"), root), kind=kind, limit=limit
+        )
+    if not results:
+        results = search(q, limit=limit, kind=kind, under=root)
 
     # An empty list reads as "this project has no such symbol". It means that
     # only if the project was read. Same distinction the call graph needed:
@@ -47,9 +62,12 @@ async def symbol_search(q: str, kind: Optional[str] = None, limit: int = 20) -> 
         "results": results,
     }
     if not results and root:
+        from app.codegraph import graph as _graph
+        from app.mcp.tools.codegraph_tools import _key_for
         from app.symbols.store import count_under
 
-        if not count_under(root):
+        graph_symbols = _graph.count_symbols(key=_key_for(str(tenant or "default"), root))
+        if not graph_symbols and not count_under(root):
             payload["indexed"] = False
             payload["note"] = (
                 "This project has not been indexed, so nothing is known about "

@@ -295,9 +295,6 @@ async def test_announcing_a_project_says_whether_it_was_ever_read(tmp_path: Path
     import app.mcp.server  # noqa: F401 — circular import guard, see above.
     from app.config import settings
     from app.mcp.tools.engine_panel_tools import workspace_set
-    from app.symbols.parser import parse_directory
-    from app.symbols.store import bulk_insert
-
     monkeypatch.setattr(settings, "data_dir", str(tmp_path / "data"), raising=False)
 
     project = tmp_path / "proj"
@@ -308,7 +305,12 @@ async def test_announcing_a_project_says_whether_it_was_ever_read(tmp_path: Path
     assert before["ok"] is True
     assert before["indexed"] is False, "a project nothing has read cannot be indexed"
 
-    bulk_insert(parse_directory(str(project)))
+    # Indexed the way the editor does it. This used to fill the standalone
+    # symbols store, which is not what the editor's index command writes — so
+    # the test passed while the real sequence left the flag false for ever.
+    from app.mcp.tools.codegraph_tools import code_graph_build
+
+    await code_graph_build(str(project))
 
     after = json.loads(await workspace_set(str(project)))
     assert after["indexed"] is True, "an indexed project is still reported unread"

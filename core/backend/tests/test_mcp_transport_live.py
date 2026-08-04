@@ -389,3 +389,67 @@ def test_editor_notes_over_the_wire(mcp_session):
     nid = saved["id"]
     hits = json.loads(_call(mcp_session, "note_search", {"query": "failover"}, 24))
     assert any(h["id"] == nid for h in hits)
+
+
+def test_editor_opens_a_project_and_the_chat_knows_about_it(mcp_session):
+    """The first thing a real tester reported, walked over the wire.
+
+    They connected a provider, opened a project, asked the chat about it, and
+    got an answer that had nothing to do with their code. Of the thirty-three
+    tools the editor calls, only Composer sent the workspace, so opening a
+    project made one feature project-aware and left the rest guessing.
+
+    This is that sequence exactly as the editor performs it: announce the
+    workspace, then ask. No model call is made — cascade_ask needs a provider
+    and this suite has none — so what is asserted is the part that was broken:
+    the server accepts the project, reports whether it has been read, and the
+    retrieval that feeds the chat finds the file the question is about.
+    """
+    ws = tempfile.mkdtemp(prefix="abs_ws_")
+    src = os.path.join(ws, "src")
+    os.makedirs(src)
+    with open(os.path.join(src, "invoices.py"), "w") as fh:
+        fh.write(
+            "VAT_CATALONIA = 0.21\n\n\n"
+            "def compute_invoice_total(items):\n"
+            "    net = sum(i.price * i.qty for i in items)\n"
+            "    return round(net * (1 + VAT_CATALONIA), 2)\n"
+        )
+    with open(os.path.join(ws, "README.md"), "w") as fh:
+        fh.write("# Ledger\nInvoicing for small studios. VAT lives in src/invoices.py.\n")
+
+    announced = json.loads(_call(mcp_session, "workspace_set", {"root": ws}, 40))
+    assert announced["ok"] is True
+    assert announced["workspace"] == os.path.realpath(ws)
+    # Nothing has indexed it, and the server has to say so rather than let the
+    # editor assume silence means "no results".
+    assert announced["indexed"] is False
+
+    # The retrieval the chat uses, exercised through the tool the panel calls.
+    graph = json.loads(_call(mcp_session, "code_graph_build", {"root": ws}, 41))
+    assert graph["symbols"] >= 1
+
+    reread = json.loads(_call(mcp_session, "workspace_set", {"root": ws}, 42))
+    assert reread["indexed"] is True, "indexing the project did not register"
+
+    hits = json.loads(
+        _call(mcp_session, "symbol_search", {"q": "compute_invoice_total"}, 43)
+    )
+    assert hits["results"], "the project's own symbol is not findable after indexing"
+    assert hits["scope"] == os.path.realpath(ws), (
+        "the search was not scoped to the open project"
+    )
+
+
+def test_a_root_the_server_cannot_see_is_refused_over_the_wire(mcp_session):
+    """The editor runs on a laptop; the server may be in a container.
+
+    Accepting a path that does not resolve would leave every tool that trusts
+    it answering about nothing — silence that reads like an empty repository.
+    """
+    out = json.loads(
+        _call(mcp_session, "workspace_set", {"root": "/definitely/not/here"}, 44)
+    )
+    assert out["ok"] is False
+    assert out["error"] == "not_a_directory"
+    assert "mounted" in out["detail"]
