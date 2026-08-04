@@ -32,7 +32,16 @@ EMAILS = ROOT / "core" / "backend" / "app" / "email"
 
 # Never resolved. Kept here by name so a paste from an old document is caught
 # rather than quietly shipped.
-DEAD_HOSTS = ("abs.automatiabcn.com", "status.abs.automatiabcn.com")
+DEAD_HOSTS = (
+    "abs.automatiabcn.com",
+    "status.abs.automatiabcn.com",
+    "update.automatiabcn.com",
+    # A live host with a dead path, which the eye reads as fine. The editor's
+    # licence, "report issue" and "request feature" links all pointed into this
+    # repository, and it has never been created — so the channel a customer
+    # uses to tell us something is broken was itself broken.
+    "github.com/automatiabcn/abs-editor",
+)
 
 
 LANDING = ROOT / "core" / "landing"
