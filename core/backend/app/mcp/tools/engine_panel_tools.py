@@ -131,7 +131,8 @@ async def workspace_set(root: str = "") -> str:
     await tracker.bump("workspace_set")
     from app.workspace.current import set_workspace
 
-    stored = set_workspace(_caller_tenant(), _caller_user() or "", root)
+    tenant = _caller_tenant()
+    stored = set_workspace(tenant, _caller_user() or "", root)
     if root and stored is None:
         return json.dumps(
             {
@@ -150,10 +151,20 @@ async def workspace_set(root: str = "") -> str:
     indexed = False
     if stored:
         try:
-            from app.symbols.store import count_under
+            # Asked of the graph, which is what the editor's index command
+            # actually writes. This asked the standalone symbols.db, which that
+            # command never touches — so the answer was always "no" and the
+            # editor offered to index on every launch, for ever.
+            from app.codegraph import graph as _graph
+            from app.mcp.tools.codegraph_tools import _key_for
 
-            indexed = count_under(stored) > 0
-        except Exception:  # noqa: BLE001 — not knowing is reported as not indexed
+            indexed = _graph.count_symbols(key=_key_for(tenant, stored)) > 0
+        except Exception as exc:  # noqa: BLE001 — not knowing means not indexed
+            # Logged, because a bare `except: False` hid a NameError here for
+            # an hour: `tenant` was not a local, the lookup raised, and the
+            # answer was a plausible "not indexed yet" that no test could tell
+            # from the truth. Swallowing has to be loud enough to find.
+            logger.warning("workspace_index_check_failed err=%s", exc)
             indexed = False
 
     return json.dumps(
