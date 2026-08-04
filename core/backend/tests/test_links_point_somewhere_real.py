@@ -58,6 +58,16 @@ def _customer_surfaces():
                     continue
                 yield f
 
+    # The editor's own metadata. `abs.automatiabcn.com` survived the 08-03
+    # sweep here — as the editor's releaseNotesUrl, in a repository this test
+    # had never been pointed at. A customer clicking "release notes" would have
+    # been sent to a host that has never existed, and the guard would have gone
+    # on passing. The path is optional: the editor is a sibling checkout, and
+    # its absence is not a failure.
+    editor_branding = ROOT.parent / "abs-editor" / "branding" / "product-overrides.json"
+    if editor_branding.is_file():
+        yield editor_branding
+
 
 def test_no_customer_surface_links_to_a_host_that_does_not_exist():
     offenders = []
@@ -69,7 +79,13 @@ def test_no_customer_surface_links_to_a_host_that_does_not_exist():
                 continue
             for host in DEAD_HOSTS:
                 if host in line:
-                    offenders.append(f"{path.relative_to(ROOT)}:{i}")
+                    # The editor is a sibling checkout, so not every surface
+                    # lives under this repository.
+                    try:
+                        where = path.relative_to(ROOT)
+                    except ValueError:
+                        where = path
+                    offenders.append(f"{where}:{i}")
     assert offenders == [], (
         "these would send a customer nowhere:\n  " + "\n  ".join(sorted(offenders)[:20])
     )

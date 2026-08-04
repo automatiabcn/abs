@@ -377,6 +377,11 @@ REMOTE_SHA="$(shasum -a 256 "$FETCHED" | cut -d' ' -f1)"
 # not actually current. Written next to the archive on the same host for the
 # same reason — a manifest on one host and the artefact on another is two
 # places to be right, and one of them will be wrong.
+#
+# No "how to update" field: the panel already prints the command, and it is a
+# property of how the customer installed rather than of the release, so the
+# manifest is the wrong home for it. A field nothing reads is the same dead
+# weight as a line of code nothing runs.
 RELEASED_AT="$(git log -1 --format=%cI)"
 MANIFEST="$(mktemp)"
 cat > "$MANIFEST" <<MANIFEST_JSON
@@ -386,8 +391,7 @@ cat > "$MANIFEST" <<MANIFEST_JSON
   "changelog_url": "https://app.automatiabcn.com/docs/changelog",
   "changelog_summary": "See the changelog for what is in $VERSION.",
   "critical": false,
-  "breaking": false,
-  "how_to_update": "docker compose pull && docker compose up -d"
+  "breaking": false
 }
 MANIFEST_JSON
 # Signed, or every customer refuses it.
