@@ -9,3 +9,4 @@ out/
 coverage/
 playwright/.auth/
 .vercel
+content/
