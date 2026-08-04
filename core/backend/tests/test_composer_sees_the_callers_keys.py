@@ -31,7 +31,7 @@ from app.mcp.tools import composer_tools
 
 
 @pytest.mark.asyncio
-async def test_the_tool_passes_the_user_not_only_the_tenant(monkeypatch):
+async def test_the_tool_passes_the_user_not_only_the_tenant(monkeypatch, tmp_path):
     seen: dict = {}
 
     async def _fake_run(task, **kwargs):  # noqa: ANN001
@@ -48,7 +48,7 @@ async def test_the_tool_passes_the_user_not_only_the_tenant(monkeypatch):
         "app.mcp.context.get_mcp_caller", lambda: ("acme", "dev@acme.com"), raising=False
     )
 
-    await composer_tools.composer_propose("do the thing", "/ws")
+    await composer_tools.composer_propose("do the thing", str(tmp_path))
 
     assert seen.get("tenant_id") == "acme"
     assert seen.get("user_subject") == "dev@acme.com", (
@@ -58,7 +58,7 @@ async def test_the_tool_passes_the_user_not_only_the_tenant(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_an_unknown_caller_still_gets_a_run(monkeypatch):
+async def test_an_unknown_caller_still_gets_a_run(monkeypatch, tmp_path):
     """No caller is the operator's own install, not an error."""
     seen: dict = {}
 
@@ -77,19 +77,31 @@ async def test_an_unknown_caller_still_gets_a_run(monkeypatch):
     monkeypatch.setattr("app.composer.run_composer", _fake_run, raising=False)
     monkeypatch.setattr("app.mcp.context.get_mcp_caller", _boom, raising=False)
 
-    await composer_tools.composer_propose("task", "/ws")
+    await composer_tools.composer_propose("task", str(tmp_path))
     assert seen.get("tenant_id"), "the run lost its tenant entirely"
     assert seen.get("user_subject") is None
 
 
 @pytest.mark.asyncio
-async def test_the_graph_key_stays_tenant_wide(monkeypatch):
+async def test_the_graph_key_is_the_project_not_the_person(monkeypatch, tmp_path):
     """The symbol graph is per WORKSPACE, not per person: two developers in one
-    tenant looking at the same repo must not each rebuild it."""
+    tenant looking at the same repo must not each rebuild it.
+
+    This asserted `graph_key == "acme"` — the tenant, spelled out. That was the
+    same thing as "the workspace" only for as long as a tenant had one project.
+    From 2026-08-03 the graph is keyed per project, because two projects under
+    one tenant were answering about each other, and the literal value outlived
+    the reasoning it stood for.
+
+    So the property is checked rather than the spelling: the key must not vary
+    with the person, and it must vary with the project.
+    """
     seen: dict = {}
+    keys: list = []
 
     async def _fake_run(task, **kwargs):  # noqa: ANN001
         seen.update(kwargs)
+        keys.append(kwargs.get("graph_key"))
 
         class _Run:
             def model_dump_json(self, **_k):
@@ -98,12 +110,30 @@ async def test_the_graph_key_stays_tenant_wide(monkeypatch):
         return _Run()
 
     monkeypatch.setattr("app.composer.run_composer", _fake_run, raising=False)
+
     monkeypatch.setattr(
         "app.mcp.context.get_mcp_caller", lambda: ("acme", "dev@acme.com"), raising=False
     )
+    await composer_tools.composer_propose("task", str(tmp_path))
 
-    await composer_tools.composer_propose("task", "/ws")
-    assert seen.get("graph_key") == "acme", (
+    # Same tenant, same project, different person.
+    monkeypatch.setattr(
+        "app.mcp.context.get_mcp_caller",
+        lambda: ("acme", "someone-else@acme.com"),
+        raising=False,
+    )
+    await composer_tools.composer_propose("task", str(tmp_path))
+
+    assert keys[0] == keys[1], (
         "the graph key picked up the user, so every person re-indexes the "
         "same workspace"
+    )
+
+    # Same tenant, same person, a different project.
+    other = tmp_path.parent / (tmp_path.name + "-other")
+    other.mkdir()
+    await composer_tools.composer_propose("task", str(other))
+    assert keys[2] != keys[0], (
+        "two projects in one tenant share a graph key, so blast-radius answers "
+        "about whichever was indexed last"
     )

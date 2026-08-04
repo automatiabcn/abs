@@ -74,6 +74,36 @@ def current_workspace(tenant: str, user: str) -> Optional[str]:
     return None
 
 
+def problem_with_root(root: str) -> Optional[str]:
+    """Why `root` cannot be used as a project, in a sentence, or None if it can.
+
+    The rule in `current_workspace` above — an absent project is not the
+    server's own directory — was written for the tools that *ask* for the open
+    workspace. The tools that are *handed* one never applied it.
+
+    The editor sends `workspaceFolders?.[0]?.uri.fsPath ?? ""`, and that `??`
+    is reached every time somebody opens the window without a folder: a fresh
+    install, a single file, the state the first run is in. Python resolves ""
+    to the process's working directory, so `composer_propose` and
+    `code_graph_build` were reading the server's own source — 200 files of it,
+    measured 2026-08-05 — and would have sent it to the customer's provider as
+    the context for a request, then proposed edits against paths inside it.
+
+    Absolute is required rather than merely "is a directory", because "." and
+    "relative/path" are directories too, just not the customer's.
+    """
+    if not root or not root.strip():
+        return "no folder is open — open the project folder you want to work on"
+    if not os.path.isabs(root):
+        return (
+            f"a project has to be an absolute path; {root!r} is relative and "
+            f"would be read against the server's own directory"
+        )
+    if not os.path.isdir(root):
+        return f"the server cannot see a directory at {root!r}"
+    return None
+
+
 def forget(tenant: str, user: str) -> None:
     with _LOCK:
         _OPEN.pop(_key(tenant, user), None)

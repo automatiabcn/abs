@@ -233,12 +233,18 @@ async def cascade_ask(
     used_files: list = []
     try:
         from app.composer.runtime import relevant_files, workspace_files
+        from app.mcp.tools.codegraph_tools import _key_for
         from app.workspace.current import current_workspace
 
         root = current_workspace(tenant, user or "")
         if root:
+            # Keyed by the project, not the tenant. Ranking the files to send
+            # is the whole of "the chat knows the project you have open", and
+            # with the tenant key it consulted a graph the editor's index
+            # command never writes to — so the ranking fell back to filenames
+            # for exactly the customer who had bothered to index.
             picked = relevant_files(
-                root, prompt, workspace_files(root), graph_key=tenant
+                root, prompt, workspace_files(root), graph_key=_key_for(tenant, root)
             )
             if picked:
                 blocks = "\n\n".join(

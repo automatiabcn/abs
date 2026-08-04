@@ -57,16 +57,31 @@ async def composer_propose(task: str, workspace_root: str) -> str:
     approved edits with the patch tools.
     """
     await tracker.bump("composer_propose")
+    import json as _json
+
     from app.composer import run_composer
+    from app.workspace.current import problem_with_root
+
+    bad = problem_with_root(workspace_root)
+    if bad:
+        return _json.dumps({"error": bad}, ensure_ascii=False)
 
     tenant, user = _caller()
+    # The project's key, not the tenant's. This read `graph_key=tenant` under a
+    # comment saying "the graph is per workspace" — true when it was written,
+    # and false from 2026-08-03, when the graph moved to a per-project key
+    # because one developer's two projects were answering about each other.
+    # That fix reached codegraph_tools and stopped there, so Composer's
+    # blast-radius badge — what a developer reads before approving a deletion —
+    # was still looking in a bucket the editor's index command never fills.
+    from app.mcp.tools.codegraph_tools import _key_for
+
     run = await run_composer(
         task,
         workspace_root=workspace_root,
         tenant_id=tenant,
         user_subject=user,
-        # Deliberately the tenant, not the caller: the graph is per workspace.
-        graph_key=tenant,
+        graph_key=_key_for(tenant, workspace_root),
     )
     return run.model_dump_json(indent=2)
 

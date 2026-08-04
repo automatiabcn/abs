@@ -68,5 +68,14 @@ class ComposerRun(BaseModel):
         default=None, description="Estimated generation cost in USD (None if unknown)"
     )
     degraded: bool = False  # the model produced no usable edits
+    # Edits the product threw away on the customer's behalf, one sentence each.
+    # Until 2026-08-05 a refused truncation left no trace anywhere a customer
+    # could see it: the edit vanished, `degraded` stayed False because the
+    # model *had* produced edits, and the run arrived carrying the model's own
+    # summary of changes that were not in it.
+    refused: List[str] = Field(
+        default_factory=list,
+        description="Proposals refused before grading, and why, in customer-readable words",
+    )
     tenant_slug: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
