@@ -47,6 +47,17 @@ function customerSurfaces(): string[] {
     const p = join(REPO, name);
     if (existsSync(p)) files.push(p);
   }
+  // The emails. This guard read the site and the docs and never the templates,
+  // so the expiry warning — the one that arrives three days before a licence
+  // lapses, when somebody is deciding whether to keep paying — was still
+  // offering the retired Maintenance add-on, in four languages, at $0/year
+  // because the price setting defaults to zero and Jinja reads "0" as present.
+  const emails = join(REPO, "core", "backend", "app", "email", "templates");
+  if (existsSync(emails)) {
+    for (const p of globSync("**/*.{html,txt}", { cwd: emails })) {
+      files.push(join(emails, p));
+    }
+  }
   return files;
 }
 
