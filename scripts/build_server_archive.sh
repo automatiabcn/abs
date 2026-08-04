@@ -367,8 +367,63 @@ REMOTE_SHA="$(shasum -a 256 "$FETCHED" | cut -d' ' -f1)"
     exit 1
 }
 
+# The update manifest, generated from the release rather than written beside
+# it. A customer's server fetches this every six hours to decide whether it is
+# out of date — the machinery for that has existed all along and the file it
+# reads has never existed, so the check has always failed open and silent.
+#
+# Generated here, after the publish gate: the gate refuses a version whose
+# images predate the code, so the manifest cannot advertise a release that is
+# not actually current. Written next to the archive on the same host for the
+# same reason — a manifest on one host and the artefact on another is two
+# places to be right, and one of them will be wrong.
+RELEASED_AT="$(git log -1 --format=%cI)"
+MANIFEST="$(mktemp)"
+cat > "$MANIFEST" <<MANIFEST_JSON
+{
+  "current_version": "$VERSION",
+  "released_at": "$RELEASED_AT",
+  "changelog_url": "https://app.automatiabcn.com/docs/changelog",
+  "changelog_summary": "See the changelog for what is in $VERSION.",
+  "critical": false,
+  "breaking": false,
+  "how_to_update": "docker compose pull && docker compose up -d"
+}
+MANIFEST_JSON
+# Signed, or every customer refuses it.
+#
+# The update check is fail-closed by design: an unsigned manifest is treated as
+# hostile, because a manifest is a machine telling a customer's server what to
+# install. The first version of this step published an unsigned file and the
+# verifier rejected it with "signature missing" — the update would have looked
+# broken for every install, which is exactly what fail-closed is supposed to
+# achieve when somebody skips the signature.
+#
+# Signed on ai-pc, where the private key lives at mode 600 and is meant to
+# stay: the bytes travel to the key, not the other way round.
+SIG="$(mktemp)"
+if ! ssh ai-pc "openssl dgst -sha256 -sign ~/keys/abs-manifest-signing-private.pem | openssl base64 -A" \
+     < "$MANIFEST" > "$SIG" 2>/dev/null || ! [ -s "$SIG" ]; then
+    echo "could not sign the update manifest on ai-pc." >&2
+    echo "Publishing it unsigned would leave every customer's update check" >&2
+    echo "refusing it, so nothing is published." >&2
+    rm -f "$MANIFEST" "$SIG"
+    exit 1
+fi
+
+scp -q "$MANIFEST" "$HOST:/srv/abs-downloads/manifest.json"
+scp -q "$SIG" "$HOST:/srv/abs-downloads/manifest.json.sig"
+rm -f "$MANIFEST" "$SIG"
+
+MANIFEST_URL="https://dl.168-119-104-24.nip.io/manifest.json"
+for u in "$MANIFEST_URL" "$MANIFEST_URL.sig"; do
+    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$u")"
+    [ "$code" = "200" ] || { echo "did not publish: $u (HTTP $code)" >&2; exit 1; }
+done
+
 echo
 echo "published and verified: $URL"
+echo "update manifest:        $MANIFEST_URL"
 echo
 echo "core/landing/lib/downloads.ts must say:"
 echo "    size: $(wc -c < "$OUT/abs-server-$VERSION.tar.gz" | tr -d ' '),"
