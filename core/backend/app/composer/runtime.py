@@ -600,6 +600,7 @@ async def run_composer(
             logger.info("composer codegraph rebuild skipped: %s", exc)
 
     edits: List[ProposedEdit] = []
+    refused: List[str] = []
     for raw in raw_edits:
         if not isinstance(raw, dict):
             continue
@@ -617,6 +618,20 @@ async def run_composer(
             abs_path=abs_path,
         )
         diff = patch_engine.normalize_diff(raw_diff)
+        if not diff:
+            # An empty diff has two very different causes and the customer is
+            # owed the difference: the model said the file is already right, or
+            # we threw its answer away for looking truncated. Only the second
+            # gets reported — a note on the ordinary case is a note nobody
+            # reads by the time a real one arrives.
+            why = from_content.refusal(
+                raw,
+                rel_path=from_content.relative_to(workspace_root, path),
+                abs_path=abs_path,
+            )
+            if why:
+                refused.append(why)
+                continue
         if built_here and not diff:
             # The model returned the file unchanged: nothing to propose.
             continue
@@ -669,17 +684,31 @@ async def run_composer(
         )
 
     risk, requires_approval = _derive_risk(edits)
+    summary = str(parsed.get("summary") or "")
+    if refused and not edits:
+        # The model's paragraph describes the edits we just threw away.
+        # "Rewrote the parser and dropped the dead branch" above an empty list
+        # reads as a product that lost the work, not one that refused it.
+        summary = (
+            "Nothing proposed. "
+            + " ".join(refused)
+            + " The model's own summary is not shown, because it describes "
+            "changes that are not in this response."
+        )
+    elif refused:
+        summary = (summary + " " if summary else "") + " ".join(refused)
     return ComposerRun(
         run_id="cmp-" + uuid.uuid4().hex[:12],
         task=task,
         edits=edits,
-        summary=str(parsed.get("summary") or ""),
+        summary=summary,
         risk=risk,
         requires_approval=requires_approval,
         providers_tried=tried,
         provider=str(gen_meta.get("provider") or ""),
         cost_usd=gen_meta.get("cost_usd"),
         degraded=not raw_edits,
+        refused=refused,
         tenant_slug=tenant_id,
         created_at=created_at or datetime.now(timezone.utc),
     )

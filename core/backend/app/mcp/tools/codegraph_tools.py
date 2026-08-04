@@ -86,6 +86,15 @@ def _caller_key() -> str:
 async def code_graph_build(root: str) -> str:
     """Index a workspace root into the call-graph (run before querying it)."""
     await tracker.bump("code_graph_build")
+    from app.workspace.current import problem_with_root
+
+    bad = problem_with_root(root)
+    if bad:
+        # Indexing the server's own directory is worse than not indexing at
+        # all: every later blast-radius answer would be drawn from it, and
+        # drawn confidently.
+        return json.dumps({"error": bad}, ensure_ascii=False)
+
     # Keyed by the root being built, not by whichever workspace was announced.
     #
     # Those are the same in the normal flow, and silently different when
