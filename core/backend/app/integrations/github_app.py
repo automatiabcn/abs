@@ -142,7 +142,7 @@ def verify_webhook_signature_typed(
 # ---- App manifest ---------------------------------------------------------------
 
 DEFAULT_MANIFEST = {
-    "name": "Automatia ABS",
+    "name": "ABS Studio",
     "url": "https://app.automatiabcn.com",
     "hook_attributes": {
         "url": "https://app.automatiabcn.com/v1/integrations/github/webhook",

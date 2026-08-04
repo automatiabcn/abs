@@ -57,6 +57,15 @@ def _customer_files():
     locales = LANDING / "locales"
     if locales.exists():
         yield from locales.glob("*.json")
+    # The backend's own strings. The guard read .md, .tsx and .json, and the
+    # retired name was still in seven Python literals a customer meets: the
+    # OpenAPI title, the MCP server's name and description — which every MCP
+    # client prints on connect — the X-Title sent to OpenRouter with each call,
+    # the GitHub App's name, system_status, and the header of the GDPR data
+    # export, which is the file a customer downloads with their own data in it.
+    backend_app = ROOT / "core" / "backend" / "app"
+    if backend_app.exists():
+        yield from sorted(backend_app.rglob("*.py"))
 
 
 @pytest.mark.skipif(not EMAILS.exists(), reason="backend emails not checked out")

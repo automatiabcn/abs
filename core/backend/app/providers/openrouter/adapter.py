@@ -41,6 +41,6 @@ class OpenRouterProvider(BaseProvider):
             timeout=kwargs.get("timeout", 60.0),
             extra_headers={
                 "HTTP-Referer": "https://app.automatiabcn.com",
-                "X-Title": "Automatia ABS",
+                "X-Title": "ABS Studio",
             },
         )

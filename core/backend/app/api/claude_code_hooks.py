@@ -247,7 +247,7 @@ def session_start(
     auth = _auth_from_header(authorization)
     tenant = auth["tenant"]
     ctx = (
-        f"You are now connected to ABS Server tenant '{tenant}'. "
+        f"You are now connected to the ABS Studio server, tenant '{tenant}'. "
         "ABS exposes 122+ MCP tools at /mcp (cascade router will pick "
         "the cheapest provider). Slash commands available via the "
         "browser chat at /panel/chat: /rag /code /translate /analyze "

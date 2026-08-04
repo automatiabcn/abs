@@ -123,7 +123,7 @@ def _build_security() -> TransportSecuritySettings | None:
 # the basics. English by default (the product ships globally); operators can
 # still add a richer local CLAUDE.md. Keep it short — clients inline it.
 MCP_INSTRUCTIONS = (
-    "Automatia ABS exposes 100+ free / low-cost AI tools across many models, "
+    "ABS Studio exposes 150+ free / low-cost AI tools across many models, "
     "running on the operator's own provider keys (no extra Anthropic cost). "
     "PREFER delegating substantial subtasks to these tools instead of doing "
     "them yourself — it saves your tokens and often improves quality. Reach "
@@ -142,7 +142,7 @@ MCP_INSTRUCTIONS = (
 # what mounts this under /mcp. host="0.0.0.0" so FastMCP does NOT apply its
 # automatic localhost-only allowlist — we install our own via transport_security.
 mcp_server = FastMCP(
-    "Automatia ABS",
+    "ABS Studio",
     instructions=MCP_INSTRUCTIONS,
     streamable_http_path="/",
     host="0.0.0.0",

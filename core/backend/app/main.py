@@ -456,7 +456,7 @@ async def lifespan(_app: FastAPI):
 
 from app.config import settings as _app_settings  # noqa: E402
 
-app = FastAPI(title="Automatia ABS", version=_app_settings.version, lifespan=lifespan)
+app = FastAPI(title="ABS Studio", version=_app_settings.version, lifespan=lifespan)
 install_rate_limit(app)  # must run before include_router so decorators work
 
 # Convert RLS write-side violations (Postgres SQLSTATE 42501)

@@ -138,7 +138,7 @@ def _build_zip(license_jti: str, customer_email: str) -> bytes:
     ]
 
     readme = (
-        "Automatia ABS — GDPR Data Export\n"
+        "ABS Studio — GDPR Data Export\n"
         "=================================\n\n"
         f"License JTI: {license_jti}\n"
         f"Customer Email: {customer_email}\n"
