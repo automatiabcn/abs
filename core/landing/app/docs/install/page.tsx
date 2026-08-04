@@ -98,15 +98,39 @@ export default function InstallPage() {
           <p>
             Unpack the server archive and run the installer from inside it:
           </p>
+          {/*
+            Kept in step with what install.sh does, because it stopped being in
+            step the moment the installer changed. This said `cd abs-server`,
+            and the archive extracts to a versioned directory, so the second
+            line of the first instruction failed. It also called the panel
+            http://localhost:8000 — that is the address the *editor* uses; the
+            panel is behind Caddy on https. Two wrong facts in four lines, both
+            introduced by improving the installer without rereading the page
+            that describes it.
+          */}
           <pre className="overflow-x-auto rounded bg-muted p-3">
-            <code>{`tar xzf abs-server-*.tar.gz\ncd abs-server\n./install.sh`}</code>
+            <code>{`tar xzf abs-server-*.tar.gz\ncd abs-server-*\n./install.sh`}</code>
           </pre>
           <p>
-            It checks Docker is running, generates the signing secret for your
-            install, brings up the services, and prints the panel URL — by
-            default <code>http://localhost:8000</code>. The secret it writes is
-            what every licence and session on this machine is signed with, so
-            keep the directory it created.
+            It checks Docker, fills in the settings it can work out for itself —
+            the address, a database password, the image build for your
+            processor — pulls the images and starts everything. There is nothing
+            to edit first.
+          </p>
+          <p>
+            When it finishes it prints two addresses: the <strong>panel</strong>{" "}
+            at <code>https://localhost</code>, and the address to give the{" "}
+            <strong>editor</strong>, usually <code>http://localhost:8000</code>.
+            They differ on purpose — the panel is served through a reverse proxy
+            with its own certificate, which your machine has no reason to trust,
+            and the editor cannot be told to ignore that. If something else on
+            your machine already uses port 8000 the installer moves to the next
+            free one and tells you which.
+          </p>
+          <p>
+            Keep the directory it created. The <code>.env</code> inside it holds
+            your database password and the secret every licence and session on
+            this machine is signed with.
           </p>
         </section>
 
@@ -125,9 +149,16 @@ export default function InstallPage() {
           <p>
             Install the editor build the way your platform expects (drag to
             Applications on macOS, the <code>.deb</code>/<code>.tar.gz</code> on
-            Linux, the installer on Windows). On first launch it looks for the
-            server on <code>localhost:8000</code>. If yours runs elsewhere, set
-            the address in <em>Settings → ABS → Server URL</em>.
+            Linux, the installer on Windows).
+          </p>
+          <p>
+            The server installer already pointed the editor at itself, so there
+            is usually nothing to configure. It only does that when the editor
+            has no settings file yet — an existing one is yours, and it says so
+            rather than rewriting it. If you need to set the address by hand it
+            is <code>abs.serverUrl</code>, under{" "}
+            <em>Settings → Extensions → ABS</em>, and the value is the one the
+            installer printed.
           </p>
           <p>
             Then add a provider key from the Command Palette:{" "}
