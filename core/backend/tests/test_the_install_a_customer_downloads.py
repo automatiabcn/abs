@@ -202,3 +202,50 @@ def test_an_unsignable_manifest_stops_the_publish():
     end = publish.index("scp -q", start)
     sign_block = publish[start:end]
     assert "exit 1" in sign_block, "a failed signature does not stop the publish"
+
+
+@pytest.mark.skipif(not BUILDER.exists(), reason="archive builder not present")
+def test_the_install_guide_describes_the_installer_we_ship():
+    """The page the licence email sends people to has to match the script.
+
+    Nothing connected them, so improving the installer silently made the guide
+    wrong. On 2026-08-04 it told a customer to `cd abs-server` — the archive
+    extracts to a versioned directory, so the second line of the first
+    instruction failed — and called the panel http://localhost:8000, which is
+    the address the *editor* uses. Two wrong facts in four lines, both
+    introduced by me the same day, in a different file.
+    """
+    guide = ROOT / "core" / "landing" / "app" / "docs" / "install" / "page.tsx"
+    if not guide.is_file():
+        pytest.skip("landing not checked out")
+
+    text = guide.read_text(encoding="utf-8")
+    builder = BUILDER.read_text(encoding="utf-8")
+
+    # The archive is named with its version, so the directory is too.
+    assert "cd abs-server\\n" not in text, (
+        "the guide tells the customer to cd into a directory the archive does "
+        "not create — it unpacks to abs-server-<version>"
+    )
+
+    # The setting the guide names has to be the one the extension contributes.
+    manifest = ROOT.parent / "abs-editor" / "extensions" / "abs-ai" / "package.json"
+    if manifest.is_file():
+        import json
+
+        contributed = json.loads(manifest.read_text(encoding="utf-8"))
+        props = (
+            contributed.get("contributes", {}).get("configuration", {}).get("properties", {})
+        )
+        assert "abs.serverUrl" in props, "the editor no longer contributes abs.serverUrl"
+        assert "abs.serverUrl" in text, (
+            "the guide does not name the setting a customer actually has to set"
+        )
+
+    # The installer writes the editor's settings; a guide that omits it sends
+    # people to do work that was already done for them.
+    if "settings.json" in builder:
+        lowered = text.lower()
+        assert "already pointed the editor" in lowered or "settings" in lowered, (
+            "the installer configures the editor and the guide does not say so"
+        )
