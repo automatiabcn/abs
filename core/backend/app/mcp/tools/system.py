@@ -33,7 +33,7 @@ async def system_status() -> dict:
     }
 
     return {
-        "product": "Automatia ABS",
+        "product": "ABS Studio",
         "version": "0.1.0",
         "license": {
             "configured": bool(settings.license_key),
