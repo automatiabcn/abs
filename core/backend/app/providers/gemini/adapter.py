@@ -100,6 +100,11 @@ class GeminiProvider(BaseProvider):
             ) from exc
 
         usage = data.get("usageMetadata") or {}
+        # Gemini spells it `finishReason: "MAX_TOKENS"` — camel case and
+        # shouted, where OpenAI says `finish_reason: "length"`. Read through
+        # the same helper so a third spelling only has to be learned once.
+        from app.providers.base import was_cut_off
+
         return ProviderResponse(
             text=text,
             model=model,
@@ -107,4 +112,5 @@ class GeminiProvider(BaseProvider):
             elapsed_ms=elapsed_ms,
             tokens_in=usage.get("promptTokenCount"),
             tokens_out=usage.get("candidatesTokenCount"),
+            truncated=was_cut_off(candidates[0].get("finishReason")),
         )

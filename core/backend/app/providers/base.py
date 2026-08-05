@@ -16,6 +16,60 @@ import httpx
 from .schemas import ProviderError, ProviderResponse
 
 
+# The spellings vendors use to say "I ran out of room". OpenAI-compatible APIs
+# say `length`; Anthropic says `max_tokens`; Gemini shouts `MAX_TOKENS`. Same
+# fact, three dialects — and a guard that knows only one of them is a guard
+# switched off for two thirds of the chain.
+_CUT_OFF = {"length", "max_tokens", "max_output_tokens"}
+
+
+def was_cut_off(finish_reason: Any) -> bool:
+    """True when a provider says its answer stopped at the token limit.
+
+    Anything else — "stop", an empty string, a missing field, a provider that
+    reports nothing at all — is False. Silence is not evidence of truncation,
+    and treating it as such would refuse every answer from the quiet providers.
+    """
+    if not isinstance(finish_reason, str):
+        return False
+    return finish_reason.strip().lower() in _CUT_OFF
+
+
+def read_openai_payload(
+    data: Dict[str, Any],
+    *,
+    provider: str,
+    model: str,
+    elapsed_ms: int,
+) -> ProviderResponse:
+    """One OpenAI-compatible response body, normalised.
+
+    Split out of the HTTP call so the parsing can be tested against a payload
+    rather than a live provider — and so every OpenAI-shaped provider picks up
+    `truncated` by construction instead of by being remembered.
+    """
+    try:
+        choice = data["choices"][0]
+        text = choice["message"]["content"] or ""
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ProviderError(
+            f"{provider} unexpected response: {str(data)[:200]}",
+            provider=provider,
+            transient=False,
+        ) from exc
+
+    usage = data.get("usage") or {}
+    return ProviderResponse(
+        text=text,
+        model=model,
+        provider=provider,
+        elapsed_ms=elapsed_ms,
+        tokens_in=usage.get("prompt_tokens"),
+        tokens_out=usage.get("completion_tokens"),
+        truncated=was_cut_off(choice.get("finish_reason")),
+    )
+
+
 class BaseProvider(ABC):
     """Abstract base every provider client derives from."""
 
@@ -124,21 +178,6 @@ async def openai_compatible_chat(
             f"{provider_name} JSON parse error", provider=provider_name, transient=True
         ) from exc
 
-    try:
-        text = data["choices"][0]["message"]["content"] or ""
-    except (KeyError, IndexError, TypeError) as exc:
-        raise ProviderError(
-            f"{provider_name} unexpected response: {str(data)[:200]}",
-            provider=provider_name,
-            transient=False,
-        ) from exc
-
-    usage = data.get("usage") or {}
-    return ProviderResponse(
-        text=text,
-        model=model,
-        provider=provider_name,
-        elapsed_ms=elapsed_ms,
-        tokens_in=usage.get("prompt_tokens"),
-        tokens_out=usage.get("completion_tokens"),
+    return read_openai_payload(
+        data, provider=provider_name, model=model, elapsed_ms=elapsed_ms
     )

@@ -106,6 +106,18 @@ def refusal(raw: dict, *, rel_path: str, abs_path: str) -> Optional[str]:
     None when the edit was not refused, so the caller can tell an ordinary
     empty diff from a protected one.
     """
+    # Evidence before measurement. The ratios below are a guess at whether the
+    # model stopped early; `truncated` is the provider saying so. A reply cut
+    # off at 60% of the file passes every ratio test and is still a reply that
+    # stopped mid-thought, so this is asked first and answered without a
+    # threshold.
+    if raw.get("truncated"):
+        return (
+            f"{rel_path}: the provider said it ran out of room before finishing "
+            f"this answer, so what came back is cut off rather than complete — "
+            f"not proposed."
+        )
+
     old_text = read_text(abs_path)
     if old_text is None:
         return None
