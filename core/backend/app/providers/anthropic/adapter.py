@@ -139,6 +139,11 @@ class AnthropicProvider(BaseProvider):
             except Exception:  # pragma: no cover — never fail the call on ledger error
                 pass
 
+        # Anthropic spells it `stop_reason: "max_tokens"`, not the OpenAI
+        # `finish_reason: "length"`. Same fact, and a guard that knows only the
+        # OpenAI spelling is a guard switched off for this provider.
+        from app.providers.base import was_cut_off
+
         return ProviderResponse(
             text=text,
             model=model,
@@ -146,4 +151,5 @@ class AnthropicProvider(BaseProvider):
             elapsed_ms=elapsed_ms,
             tokens_in=tokens_in,
             tokens_out=tokens_out,
+            truncated=was_cut_off(getattr(msg, "stop_reason", None)),
         )

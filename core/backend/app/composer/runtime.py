@@ -417,7 +417,14 @@ async def _generate_edits(
             # defensive way.
             logger.info("composer retrying without JSON mode: %s", str(exc)[:120])
             resp = await _ask(False)
-        meta: dict = {"provider": getattr(resp, "provider", "") or ""}
+        meta: dict = {
+            "provider": getattr(resp, "provider", "") or "",
+            # The provider's own word on whether it finished. Until 08-05 this
+            # was inferred from a log line further down that says "likely
+            # truncated" — a guess made in the one place that could have
+            # simply asked.
+            "truncated": bool(getattr(resp, "truncated", False)),
+        }
         try:
             from app.chat.cost import estimate_call_cost_usd
 
@@ -601,15 +608,36 @@ async def run_composer(
 
     edits: List[ProposedEdit] = []
     refused: List[str] = []
+    # If the generation stopped at the token limit, every edit it produced is
+    # suspect — including the ones that look whole. The last file in a
+    # truncated answer is the one that was being written when the room ran
+    # out, and there is no way to tell from here which one that was.
+    generation_cut_off = bool(gen_meta.get("truncated"))
     for raw in raw_edits:
         if not isinstance(raw, dict):
             continue
+        if generation_cut_off:
+            raw = {**raw, "truncated": True}
         path = str(raw.get("path") or "").strip()
         # One diff from here on: the shape the engine read, which is the shape
         # it would apply. Grading, rendering and applying a different text than
         # the one that lands is how a score ends up describing a change nobody
         # is making.
         abs_path = path if os.path.isabs(path) else os.path.join(workspace_root, path)
+        rel_path = from_content.relative_to(workspace_root, path)
+
+        # Asked before the diff is built, not after.
+        #
+        # The ratio guards live inside edit_diff and show up as an empty diff,
+        # so the refusal below could be read off that. Evidence cannot: a reply
+        # the provider called cut off still produces a perfectly well-formed
+        # diff, and checking after the fact would never fire on it.
+        if generation_cut_off:
+            why = from_content.refusal(raw, rel_path=rel_path, abs_path=abs_path)
+            if why:
+                refused.append(why)
+                continue
+
         # Prefer a diff we computed from the file on disk over one the model
         # wrote. See app/composer/from_content.py for why.
         raw_diff, built_here = from_content.edit_diff(
