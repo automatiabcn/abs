@@ -314,6 +314,14 @@ async def cascade_ask(
             "elapsed_ms": int((time.perf_counter() - started) * 1000),
             "cost_usd": cost.get("usd"),
             "cost_free": cost.get("free"),
+            # Whether the provider ran out of room mid-answer.
+            #
+            # This matters most to ⌘K, which asks for a whole selection back
+            # inside a 1500-token cap: past roughly a hundred and fifty lines
+            # the reply is cut off by construction, and a caller with no way to
+            # know that would offer the short version as a replacement for the
+            # developer's code.
+            "truncated": bool(getattr(resp, "truncated", False)),
             # Which of the developer's files went with the question. The panel
             # tells them what it sent; context gathered silently would break
             # that promise more quietly than not gathering it at all.
