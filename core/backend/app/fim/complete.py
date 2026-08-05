@@ -174,11 +174,17 @@ async def complete(
     prefix = (prefix or "")[-_MAX_PREFIX:]
     suffix = (suffix or "")[:_MAX_SUFFIX]
     if not prefix.strip():
-        return {"text": "", "provider": "", "ms": 0}
+        return {"text": "", "provider": "", "ms": 0, "ok": False}
 
     chain = _free_fast_chain(tenant_id, user_subject)
     if not chain:
-        return {"text": "", "provider": "", "ms": 0, "note": "no fast free provider"}
+        return {
+            "text": "",
+            "provider": "",
+            "ms": 0,
+            "ok": False,
+            "note": "no fast free provider",
+        }
 
     # Try at most two. One provider was a single point of silence: when
     # cerebras' pinned model was retired upstream, Tab simply stopped
@@ -188,6 +194,12 @@ async def complete(
     from app.providers.registry import get_provider
 
     last_provider = ""
+    # Whether any provider got as far as returning something. An empty
+    # completion from a model that looked is a real answer and the editor
+    # should remember it; an empty completion because every provider threw
+    # is an outage and must not stick. Both leave this loop by the same
+    # door, so the difference has to be carried out with them.
+    answered = False
     for provider_name in chain[:2]:
         last_provider = provider_name
         started = time.monotonic()
@@ -226,6 +238,7 @@ async def complete(
             continue
 
         ms = int((time.monotonic() - started) * 1000)
+        answered = True
         text = _clean(getattr(resp, "text", "") or "", prefix, suffix)
         if not text:
             # An empty answer from a model that spent its budget thinking is
@@ -250,9 +263,24 @@ async def complete(
             )
         except Exception:  # noqa: BLE001 — metering is never worth a missed completion
             logger.debug("fim meter skipped", exc_info=True)
-        return {"text": text, "provider": provider_name, "ms": ms, "tier": "free"}
+        # `ok` is the difference between "the model looked and had nothing to
+        # add" and "nobody answered". Both arrive as an empty string, and the
+        # editor caches what it is told: without this, one rate-limited minute
+        # left Tab permanently silent at every position visited during it.
+        return {
+            "text": text,
+            "provider": provider_name,
+            "ms": ms,
+            "tier": "free",
+            "ok": True,
+        }
 
-    return {"text": "", "provider": last_provider, "ms": 0}
+    # Nothing to insert. `ok` separates the two ways of getting here: a model
+    # that looked and had nothing to add (remember that, Tab is silent here
+    # and asking again on every keystroke pause costs for no reason), and a
+    # chain where nobody answered at all (do not remember that, or one bad
+    # minute becomes a session of silence).
+    return {"text": "", "provider": last_provider, "ms": 0, "ok": answered}
 
 
 def multiline_ok(prefix: str) -> bool:
