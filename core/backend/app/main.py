@@ -333,6 +333,18 @@ async def lifespan(_app: FastAPI):
         _schedule_task = _asyncio.create_task(_schedule_loop())
         _lf_logger.info("workflow scheduler started (30s tick, free tier only)")
 
+    # RAG chunks written before 2026-08-18 carried no owner; stamp them once
+    # so the tenant-scoped tools still see what was indexed before.
+    if os.environ.get("ABS_TEST_MODE") != "1":
+        try:
+            from app.rag.indexer import backfill_tenant as _bf
+
+            _n = _bf()
+            if _n:
+                _lf_logger.info("rag: %d legacy chunks assigned to the default tenant", _n)
+        except Exception as exc:  # noqa: BLE001
+            _lf_logger.info("rag backfill skipped: %s", exc)
+
     # The catalogue watch: are the models we pin still served? Groq retired
     # its Llama 3.x line on 2026-08-16 and the product found out two days
     # later from an audit, not from itself. One listing call at start and one

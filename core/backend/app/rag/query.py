@@ -20,8 +20,10 @@ async def query(
     question: str,
     project_filter: Optional[str] = None,
     top_k: int = 5,
+    tenant: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """Return the nearest ``top_k`` chunks: file, snippet, score, project."""
+    """Return the nearest ``top_k`` chunks: file, snippet, score, project.
+    With `tenant`, only that tenant's chunks are searched."""
     if not question.strip():
         return []
     try:
@@ -30,7 +32,9 @@ async def query(
         return [{"error": f"embed fail: {exc}"}]
 
     coll = _collection()
-    where = {"project": project_filter} if project_filter else None
+    from .indexer import scope_where
+
+    where = scope_where(tenant, project_filter)
     try:
         result = coll.query(
             query_embeddings=[vec],
@@ -57,8 +61,9 @@ async def query(
     return out
 
 
-def status() -> Dict[str, Any]:
-    """Collection health — total_chunks + on-disk size."""
+def status(tenant: Optional[str] = None) -> Dict[str, Any]:
+    """Collection health — total_chunks + on-disk size. With `tenant`, the
+    chunk count is THAT tenant's, not the server's."""
     try:
         client = _client()
         cols = client.list_collections()
@@ -66,7 +71,11 @@ def status() -> Dict[str, Any]:
         total = 0
         for c in cols:
             try:
-                total += c.count()
+                if tenant:
+                    got = c.get(where={"tenant": tenant}, include=[])
+                    total += len(got.get("ids") or [])
+                else:
+                    total += c.count()
             except Exception:
                 continue
     except Exception as exc:
