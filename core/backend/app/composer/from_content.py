@@ -118,6 +118,21 @@ def refusal(raw: dict, *, rel_path: str, abs_path: str) -> Optional[str]:
             f"not proposed."
         )
 
+    # The model saw this file with its secrets replaced by a marker (see
+    # app/context/exclusions). If the marker is in what it wrote back, applying
+    # the edit would write the marker over the real token on disk. Refuse, and
+    # say which file — the developer edits that line by hand.
+    from app.context.exclusions import REDACTED
+
+    for field in ("new_content", "unified_diff"):
+        val = raw.get(field)
+        if isinstance(val, str) and REDACTED in val:
+            return (
+                f"{rel_path}: this file holds a value ABS hid from the model as "
+                f"a secret, and the proposed edit touches that line — not "
+                f"proposed; change that line by hand."
+            )
+
     old_text = read_text(abs_path)
     if old_text is None:
         return None

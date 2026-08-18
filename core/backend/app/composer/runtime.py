@@ -99,14 +99,32 @@ def workspace_files(root: str, *, limit: int = _MAX_LISTED_FILES) -> List[str]:
         return out
     if not os.path.isdir(base):
         return out
+    # What must not become model context: .gitignore/.absignore'd paths and
+    # credential-shaped files. This walk used to know only suffixes, and a
+    # secrets.yaml the developer had told git to forget went to a cloud model
+    # as "project context" (audit, 2026-08-18). One rule set, shared with RAG.
+    from app.context.exclusions import IgnoreMatcher, excluded_reason
+
+    ignore = IgnoreMatcher(base)
     for dirpath, dirnames, filenames in os.walk(base):
-        dirnames[:] = sorted(
-            d for d in dirnames if d not in _SKIP_DIRS and not d.startswith(".")
-        )
+        kept_dirs = []
+        for d in sorted(dirnames):
+            if d in _SKIP_DIRS or d.startswith("."):
+                continue
+            rel_d = os.path.relpath(os.path.join(dirpath, d), base)
+            try:
+                if ignore.is_ignored(rel_d, is_dir=True):
+                    continue
+            except Exception:  # noqa: BLE001 — a broken ignore file widens nothing
+                pass
+            kept_dirs.append(d)
+        dirnames[:] = kept_dirs
         for name in sorted(filenames):
             if os.path.splitext(name)[1].lower() not in _CODE_SUFFIXES:
                 continue
             rel = os.path.relpath(os.path.join(dirpath, name), base)
+            if excluded_reason(rel, ignore) is not None:
+                continue
             out.append(rel)
             if len(out) >= limit:
                 return out
@@ -199,12 +217,21 @@ def relevant_files(
     terms = _task_terms(task)
     base = os.path.realpath(root)
     scored: List[Tuple[int, str, str]] = []
+    # Callers may hand in a listing they built themselves; the exclusions
+    # apply here too, or a caller that skipped workspace_files() would leak.
+    from app.context.exclusions import IgnoreMatcher, excluded_reason, redact_secrets
+
+    ignore = IgnoreMatcher(base)
     for rel in files:
+        if excluded_reason(rel, ignore) is not None:
+            continue
         try:
             with open(os.path.join(base, rel), "r", encoding="utf-8") as fh:
                 body = fh.read(_MAX_FILE_CHARS)
         except (OSError, UnicodeDecodeError):
             continue
+        # A token in line 12 of an otherwise useful file leaves as a marker.
+        body, _redacted = redact_secrets(body)
         low = body.lower()
         name = rel.lower()
         score = 0

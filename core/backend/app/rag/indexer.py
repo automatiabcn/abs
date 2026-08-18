@@ -79,15 +79,40 @@ def _chunk_iter(text: str) -> Iterable[Tuple[int, str]]:
 
 def _walk_files(root: Path, extensions: Iterable[str]) -> Iterable[Path]:
     exts = {e.lower() for e in extensions}
+    # What the developer told git to forget, the index does not learn either —
+    # build outputs are noise, and .gitignore is where credentials hide.
+    try:
+        from app.context.exclusions import IgnoreMatcher
+
+        ignore: Optional[IgnoreMatcher] = IgnoreMatcher(str(root))
+    except Exception:  # noqa: BLE001
+        ignore = None
     for dirpath, dirnames, filenames in os.walk(root):
         # in-place skip
-        dirnames[:] = [
-            d for d in dirnames if d not in _SKIP_DIRS and not d.startswith(".")
-        ]
+        kept = []
+        for d in dirnames:
+            if d in _SKIP_DIRS or d.startswith("."):
+                continue
+            if ignore is not None:
+                rel_d = os.path.relpath(os.path.join(dirpath, d), root)
+                try:
+                    if ignore.is_ignored(rel_d, is_dir=True):
+                        continue
+                except Exception:  # noqa: BLE001
+                    pass
+            kept.append(d)
+        dirnames[:] = kept
         for fn in filenames:
             p = Path(dirpath) / fn
-            if p.suffix.lower() in exts:
-                yield p
+            if p.suffix.lower() not in exts:
+                continue
+            if ignore is not None:
+                try:
+                    if ignore.is_ignored(os.path.relpath(p, root)):
+                        continue
+                except Exception:  # noqa: BLE001
+                    pass
+            yield p
 
 
 async def _embed_one(text: str) -> Optional[List[float]]:
@@ -153,6 +178,15 @@ def _unsafe_index_path(p: Path) -> Optional[str]:
         return f"blocked_file:{names & set(_RAG_BLOCKED_NAMES)}"
     if suffixes & set(_RAG_BLOCKED_SUFFIXES):
         return f"blocked_suffix:{suffixes & set(_RAG_BLOCKED_SUFFIXES)}"
+    # The shared rule set (app/context/exclusions) — one list for RAG, Chat and
+    # Composer, so a name learned here is refused everywhere.
+    try:
+        from app.context.exclusions import is_secret_path
+
+        if is_secret_path(str(p)) or is_secret_path(resolved):
+            return "blocked_secret_shape"
+    except Exception:  # noqa: BLE001 — the local lists above still stand
+        pass
     return None
 
 
