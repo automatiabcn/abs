@@ -161,10 +161,16 @@ def test_the_composer_asks_for_the_deep_order(monkeypatch):
         "app.providers.cascade.get_active_providers",
         lambda **_k: ["groq", "anthropic"],
     )
+    # The caller BROUGHT the anthropic key. A paid provider runs on the key of
+    # the person asking (2026-08-18); the deep order then puts it first.
+    monkeypatch.setattr(
+        "app.multitenant.provider_keys.tenant_configured_providers",
+        lambda **_k: {"anthropic"},
+    )
 
     asyncio.run(
         runtime._generate_edits(
-            "task", tenant_id="t", project_slug=None, user_subject=None
+            "task", tenant_id="t", project_slug=None, user_subject="dev@example.com"
         )
     )
     assert seen.get("primary") == "anthropic", (

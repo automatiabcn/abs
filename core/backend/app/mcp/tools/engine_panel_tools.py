@@ -53,6 +53,24 @@ def _caller_user() -> Optional[str]:
         return None
 
 
+def _breakers_for(raw: Dict[str, Any], tenant: str) -> Dict[str, Any]:
+    """This tenant's breakers, keyed by provider. Breaker keys are
+    tenant-namespaced once a call has been made; collapsing every tenant's key
+    onto the provider name made tenant B's open breaker read as A's outage
+    (2026-08-18). Un-namespaced and `_global` keys belong to everyone."""
+    out: Dict[str, Any] = {}
+    for key, value in (raw or {}).items():
+        k = str(key)
+        if "|" in k:
+            owner, name = k.rsplit("|", 1)
+            if owner not in (str(tenant or ""), "_global", "default"):
+                continue
+        else:
+            name = k
+        out[name] = value
+    return out
+
+
 def _caller_tenant() -> str:
     try:
         from app.mcp.context import get_mcp_caller
@@ -622,10 +640,7 @@ async def providers_chain(skip_paid: bool = False) -> str:
     from app.cascade.breaker import default_breaker
 
     raw_breakers = default_breaker.snapshot() or {}
-    breakers: Dict[str, Any] = {}
-    for key, value in raw_breakers.items():
-        # Breaker keys are tenant-namespaced once a call has been made.
-        breakers[str(key).split("|")[-1]] = value
+    breakers: Dict[str, Any] = _breakers_for(raw_breakers, tenant)
 
     steps: List[Dict[str, Any]] = []
     for position, name in enumerate(chain, start=1):
@@ -635,9 +650,12 @@ async def providers_chain(skip_paid: bool = False) -> str:
             throttled, reason = quota_meter.is_throttled(name, tenant_id=tenant)
         except Exception:  # noqa: BLE001
             throttled, reason = False, ""
+        from app.cascade import provider_health as _health
+
         steps.append(
             {
                 "position": position,
+                "degraded": _health.degraded_reason(name, tenant),
                 "provider": name,
                 "paid": name in PAID_PROVIDERS,
                 # An account key both activates and PROMOTES a provider: pasting
@@ -706,17 +724,25 @@ async def title_status() -> str:
     providers_ready: List[str] = []
     providers_total = 0
     models: List[str] = []
+    degraded: Dict[str, str] = {}
     try:
         chain = get_active_providers(extra_configured=frozenset(byok))
         providers_total = len(chain)
         raw_breakers = default_breaker.snapshot() or {}
-        breakers = {
-            str(k).split("|")[-1]: v for k, v in raw_breakers.items()
-        }
+        breakers = _breakers_for(raw_breakers, tenant)
+        from app.cascade import provider_health as _health
+
         for name in chain:
             if not (name in byok or is_configured(name)):
                 continue
             if (breakers.get(name) or {}).get("state", "closed") != "closed":
+                continue
+            # A provider whose last call failed permanently (payment required,
+            # key rejected, model retired) is configured, unthrottled, breaker
+            # closed — and answers nothing. It is not ready (2026-08-18).
+            why = _health.degraded_reason(name, tenant)
+            if why:
+                degraded[name] = why
                 continue
             try:
                 throttled, _reason = quota_meter.is_throttled(name, tenant_id=tenant)
@@ -802,14 +828,19 @@ async def title_status() -> str:
                 "total": providers_total,
                 "names": providers_ready,
                 "retired_models": retired,
+                # Configured but answering nothing, and why — so the bar can
+                # say "5 configured · 3 ready" instead of a green 5.
+                "degraded": degraded,
             },
             "models": models,
             "free_share": free_share,
             "requests_today": requests_today,
             "note": (
-                "ready = has a key, breaker closed, not throttled. free_share "
-                "is null until a request has been made. retired_models lists "
-                "pinned models the provider no longer serves."
+                "ready = has a key, breaker closed, not throttled, and the last "
+                "call did not fail permanently. free_share is null until a "
+                "request has been made. retired_models lists pinned models the "
+                "provider no longer serves; degraded says why a configured "
+                "provider is not counted ready."
             ),
         },
         ensure_ascii=False,
