@@ -249,10 +249,29 @@ async def complete(
             )
         except Exception as exc:  # noqa: BLE001 — a missed completion is acceptable
             logger.debug("fim call failed on %s: %s", provider_name, exc)
+            # Tab bypasses the cascade, so it must tell the health readout
+            # itself — otherwise a provider dead to every keystroke stays
+            # "ready" on the title bar (2026-08-18).
+            try:
+                from app.cascade import provider_health as _health
+
+                _health.note_failure(
+                    provider_name, tenant=tenant_id,
+                    permanent=not bool(getattr(exc, "transient", True)),
+                    detail=str(exc), model=_FAST_MODELS.get(provider_name, ""),
+                )
+            except Exception:  # noqa: BLE001
+                pass
             continue
 
         ms = int((time.monotonic() - started) * 1000)
         answered = True
+        try:
+            from app.cascade import provider_health as _health
+
+            _health.note_success(provider_name, tenant=tenant_id, model=_FAST_MODELS.get(provider_name, ""))
+        except Exception:  # noqa: BLE001
+            pass
         text = _clean(getattr(resp, "text", "") or "", prefix, suffix)
         if not text:
             # An empty answer from a model that spent its budget thinking is

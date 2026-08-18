@@ -18,6 +18,7 @@ from .gemini import GeminiProvider
 from .groq import GroqProvider
 from .mlx import MLXProvider
 from .ollama import OllamaProvider
+from .openrouter.adapter import OpenRouterProvider
 
 _registry: Dict[str, BaseProvider] = {}
 
@@ -32,6 +33,10 @@ def get_registry() -> Dict[str, BaseProvider]:
         _registry["cohere"] = CohereProvider()
         _registry["ollama"] = OllamaProvider()
         _registry["mlx"] = MLXProvider()  # Apple Silicon Neural Engine
+        # Was never registered: openrouter sat in every PROVIDER_ORDER as the
+        # paid lane and get_provider raised "unknown provider" for it — a
+        # second dead lane behind the missing settings key (2026-08-18).
+        _registry["openrouter"] = OpenRouterProvider()
     return _registry
 
 
