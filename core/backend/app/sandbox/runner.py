@@ -113,6 +113,12 @@ def _seatbelt_profile(workspace: str, allow_network: bool) -> str:
         "(allow file-write-data (literal \"/dev/null\") (literal \"/dev/stdout\")"
         " (literal \"/dev/stderr\"))",
     ]
+    # Reads are broad, not total. Later rules win in SBPL, so the credential
+    # stores a test has no business in — and the server's own state — are
+    # taken back out here. A test that prints ~/.ssh into stdout was possible
+    # until 2026-08-18; it is not a build need.
+    for d in sensitive_read_paths():
+        lines.append(f'(deny file-read* (subpath "{d.replace(chr(34), chr(92) + chr(34))}"))')
     if allow_network:
         lines.append("(allow network*)")
     return "\n".join(lines) + "\n"
@@ -130,9 +136,46 @@ def _bwrap_argv(workspace: str, allow_network: bool) -> List[str]:
         "--die-with-parent",
         "--new-session",
     ]
+    # Same idea as the seatbelt profile: credential stores and the server's
+    # state are hidden behind an empty tmpfs (unless they ARE the workspace).
+    for d in sensitive_read_paths():
+        if os.path.isdir(d) and not (ws == d or ws.startswith(d.rstrip("/") + "/")):
+            argv += ["--tmpfs", d]
     if not allow_network:
         argv.append("--unshare-net")
     return argv
+
+
+def sensitive_read_paths() -> List[str]:
+    """Directories a check never needs to READ: credential stores under the
+    home directory and the server's own state. Only ones that exist."""
+    home = os.path.expanduser("~")
+    cands = [
+        os.path.join(home, d)
+        for d in (
+            ".ssh", ".aws", ".gnupg", ".kube", ".docker", ".azure",
+            os.path.join(".config", "gcloud"), os.path.join(".config", "gh"),
+            ".netrc", ".git-credentials", ".npmrc", ".pypirc",
+            os.path.join("Library", "Keychains"),
+        )
+    ]
+    try:
+        from app.config import settings
+
+        d = str(getattr(settings, "data_dir", "") or "")
+        if d:
+            cands.append(d)
+    except Exception:  # noqa: BLE001
+        pass
+    out: List[str] = []
+    for c in cands:
+        try:
+            r = os.path.realpath(c)
+        except OSError:
+            continue
+        if os.path.exists(r) and r not in out:
+            out.append(r)
+    return out
 
 
 # The variables a build genuinely needs. Everything else — tokens, cloud

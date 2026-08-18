@@ -653,6 +653,19 @@ async def run_composer(
         abs_path = path if os.path.isabs(path) else os.path.join(workspace_root, path)
         rel_path = from_content.relative_to(workspace_root, path)
 
+        # Inside the workspace, or not proposed — decided BEFORE anything is
+        # read. edit_diff reads the file to build the diff, and a model that
+        # named `/etc/passwd` or `../../.env` had that file's lines returned to
+        # the caller as the `-` side of a diff before the patch engine ever
+        # got to say no (audit, 2026-08-18).
+        from app.workspace.roots import within
+
+        if not within(abs_path, workspace_root):
+            refused.append(
+                f"{rel_path}: outside the open project — not read, not proposed."
+            )
+            continue
+
         # Asked before the diff is built, not after.
         #
         # The ratio guards live inside edit_diff and show up as an empty diff,

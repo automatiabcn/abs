@@ -73,7 +73,7 @@ def test_only_profile_sandboxes_promise_a_blocked_network():
     assert runner.network_is_blocked("") is False
 
 
-def test_sandbox_run_reports_what_the_tier_can_promise(monkeypatch):
+def test_sandbox_run_reports_what_the_tier_can_promise(monkeypatch, tmp_path):
     monkeypatch.setattr(
         st._sandbox, "run",
         lambda *a, **k: runner.SandboxResult(
@@ -81,7 +81,9 @@ def test_sandbox_run_reports_what_the_tier_can_promise(monkeypatch):
         ),
     )
     out = json.loads(
-        asyncio.run(st.sandbox_run("pytest -q", workspace_root="/tmp"))
+        # A real project folder: /tmp itself is a system directory and is
+        # refused before the tier is even consulted (2026-08-18).
+        asyncio.run(st.sandbox_run("pytest -q", workspace_root=str(tmp_path)))
     )
     assert out["network"] == "not blocked by this tier", out
 
