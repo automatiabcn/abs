@@ -16,6 +16,7 @@ from typing import List
 
 REGISTERED_TOOLS: List[str] = []
 
+from app.mcp.operator_only import operator_refusal
 from app.mcp.middleware import with_hooks  # noqa: E402
 from app.mcp.server import mcp_server  # noqa: E402
 from app.mcp.tracking import tracker  # noqa: E402
@@ -26,6 +27,9 @@ from app.mcp.tracking import tracker  # noqa: E402
 async def admin_overview() -> str:
     """Aggregated admin snapshot (billing/security/compliance/beta/vault)."""
     await tracker.bump("admin_overview")
+    _why = operator_refusal("admin_overview")
+    if _why:
+        return json.dumps({"error": "operator_only", "detail": _why}, ensure_ascii=False)
     from app.api.admin.dashboard import _build_dashboard
 
     return json.dumps(

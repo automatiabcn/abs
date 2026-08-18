@@ -19,12 +19,26 @@ from app.mcp.tracking import tracker
 REGISTERED_TOOLS: List[str] = []
 
 
+def _tenant() -> str:
+    """The calling token's tenant — the scope of every judge readout here.
+    Until 2026-08-18 these tools read and wrote the whole server's log."""
+    try:
+        from app.mcp.context import get_mcp_caller
+
+        t, _u = get_mcp_caller()
+        return str(t or "_global")
+    except Exception:  # noqa: BLE001
+        return "_global"
+
+
 @mcp_server.tool()
 @with_hooks("judge_stats")
 async def judge_stats(window_days: int = 7) -> str:
     """Judgment averages over the last N days: drift_signal, outcome_counts, top_files."""
     await tracker.bump("judge_stats")
-    return json.dumps(aggregate(window_days=window_days), ensure_ascii=False, indent=2)
+    return json.dumps(
+        aggregate(window_days=window_days, tenant=_tenant()), ensure_ascii=False, indent=2
+    )
 
 
 @mcp_server.tool()
@@ -32,7 +46,7 @@ async def judge_stats(window_days: int = 7) -> str:
 async def judge_recent(limit: int = 20) -> str:
     """The most recent N judgments (id, ts, file, ast/llm/combined, outcome)."""
     await tracker.bump("judge_recent")
-    return json.dumps(read_recent(limit=limit), ensure_ascii=False, indent=2)
+    return json.dumps(read_recent(limit=limit, tenant=_tenant()), ensure_ascii=False, indent=2)
 
 
 @mcp_server.tool()
@@ -40,7 +54,7 @@ async def judge_recent(limit: int = 20) -> str:
 async def judge_outcome(judgment_id: str, outcome: str = "accept") -> str:
     """Record the outcome of a judgment (accept|reject) — this is the training signal."""
     await tracker.bump("judge_outcome")
-    ok = update_outcome(judgment_id, outcome)
+    ok = update_outcome(judgment_id, outcome, tenant=_tenant())
     return json.dumps({"ok": ok, "judgment_id": judgment_id, "outcome": outcome})
 
 
