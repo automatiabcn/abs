@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 GROQ_BASE_URL = os.environ.get("ABS_RAGAS_GROQ_URL", "https://api.groq.com/openai/v1")
-GROQ_MODEL = os.environ.get("ABS_RAGAS_GROQ_MODEL", "qwen/qwen3-32b")
+GROQ_MODEL = os.environ.get("ABS_RAGAS_GROQ_MODEL", "qwen/qwen3.6-27b")
 JUDGE_TIMEOUT = float(os.environ.get("ABS_RAGAS_TIMEOUT_S", "30"))
 
 

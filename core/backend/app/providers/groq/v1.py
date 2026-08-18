@@ -9,9 +9,12 @@ from __future__ import annotations
 
 API_VERSION: str = "v1"
 SUPPORTED_MODELS: tuple[str, ...] = (
-    "llama-3.1-8b-instant",
-    "llama-3.3-70b-versatile",
+    # Live catalogue 2026-08-18. Llama 3.x, Kimi K2 and Qwen3-32B were retired
+    # by Groq on 2026-08-16; `providers/catalog_watch.py` compares this tuple
+    # with /models on every start.
     "openai/gpt-oss-120b",
-    "moonshotai/kimi-k2-instruct",
-    "qwen/qwen3-32b",
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.6-27b",
+    "groq/compound",
+    "groq/compound-mini",
 )

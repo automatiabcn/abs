@@ -55,7 +55,7 @@ DEFAULT_HEALTH_TIMEOUT_S = 1.5
 
 DEFAULT_MODELS: Mapping[str, str] = {
     "ollama": "phi4",
-    "groq": "llama-3.3-70b-versatile",
+    "groq": "openai/gpt-oss-120b",
     "anthropic": "claude-haiku-4-5-20251001",
 }
 

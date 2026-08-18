@@ -76,6 +76,24 @@ async def model_health() -> str:
             "fail_count": fails,
             "health_score": max(0.0, score),
         }
+    # The catalogue watch: pinned models the provider has retired. A provider
+    # with a closed breaker and a retired default is not healthy, and this is
+    # the one place the panel can learn that by name.
+    catalog: dict = {}
+    try:
+        from app.providers.catalog_watch import last_verdicts
+
+        catalog = last_verdicts()
+    except Exception:  # noqa: BLE001
+        catalog = {}
+    for name, verdict in catalog.items():
+        row = results.setdefault(
+            name, {"state": "closed", "fail_count": 0, "health_score": 10.0}
+        )
+        row["catalog"] = verdict.get("status")
+        if verdict.get("status") == "retired":
+            row["retired_models"] = verdict.get("missing") or []
+            row["health_score"] = min(float(row.get("health_score", 10.0)), 2.0)
     # No calls yet is not ill health — report healthy rather than zero.
     if not results:
         return json.dumps({"note": "no provider calls yet", "default_health": 10.0})

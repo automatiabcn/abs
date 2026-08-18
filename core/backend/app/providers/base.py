@@ -104,6 +104,7 @@ async def openai_compatible_chat(
     timeout: float = 30.0,
     extra_headers: Optional[Dict[str, str]] = None,
     response_format: Optional[dict] = None,
+    extra_body: Optional[Dict[str, Any]] = None,
 ) -> ProviderResponse:
     """Shared call for any OpenAI-compatible /chat/completions endpoint.
 
@@ -134,6 +135,12 @@ async def openai_compatible_chat(
     # Default None → body unchanged, so existing chat/qual callers are unaffected.
     if response_format:
         body["response_format"] = response_format
+    # Provider-specific knobs the schema does not standardise (Groq's
+    # `reasoning_effort` is the one that matters today: a reasoning model
+    # given 80 tokens spends all of them thinking and answers with nothing —
+    # measured live on Tab, 08-18). Callers pass exactly what they mean.
+    if extra_body:
+        body.update(extra_body)
 
     start = time.monotonic()
     try:
