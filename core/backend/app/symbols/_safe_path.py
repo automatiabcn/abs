@@ -76,9 +76,11 @@ def safe_read_text(
     *,
     encoding: str = "utf-8",
     errors: str = "strict",
+    roots: Iterable[Path] | None = None,
 ) -> str:
-    """Read text with ALLOWED_ROOTS enforcement. Raises FileNotFoundError if missing."""
-    p = safe_resolve(user_path)
+    """Read text with allowed-root enforcement (ALLOWED_ROOTS unless ``roots``
+    names the boundary). Raises FileNotFoundError if missing."""
+    p = safe_resolve(user_path, roots=roots)
     if not p.is_file():
         raise FileNotFoundError(p)
     return p.read_text(encoding=encoding, errors=errors)
