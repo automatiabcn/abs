@@ -97,7 +97,25 @@ def build(root: str, *, key: str = "default", incremental: bool = True) -> Dict[
     incrementality is a later optimisation).
     """
     root = os.path.realpath(root)
-    syms = [s for s in parse_directory(Path(root)) if s.kind in ("function", "class")]
+    # Confined to the workspace itself. The process-wide allowed roots are the
+    # server's own trees; a customer's project is never among them, and the
+    # walk used to come back empty for every real project — 0 symbols, no
+    # error, blast radius forever "not indexed" (audit, 2026-08-18). The
+    # caller has vetted `root` (problem_with_root / registered roots); here it
+    # is the boundary, and a symlink leading out of it is still refused.
+    try:
+        parsed = parse_directory(Path(root), roots=[Path(root)], strict=True)
+    except PermissionError as exc:
+        # Say so. An empty graph written here would answer every later
+        # blast-radius question with confident nothing.
+        return {
+            "root": root,
+            "symbols": 0,
+            "edges": 0,
+            "new_edges": 0,
+            "error": f"root not readable: {exc}",
+        }
+    syms = [s for s in parsed if s.kind in ("function", "class")]
 
     by_leaf: Dict[str, List[tuple]] = {}
     sym_rows = []

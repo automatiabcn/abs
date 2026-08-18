@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import List
+from typing import Iterable, List, Optional
 
 from app.symbols._safe_path import safe_read_text
 from app.symbols.parser import Symbol
@@ -49,10 +49,12 @@ _RE_IMPORT = re.compile(
 )
 
 
-def parse_typescript_file(path: Path) -> List[Symbol]:
+def parse_typescript_file(
+    path: Path, *, roots: Optional[Iterable[Path]] = None
+) -> List[Symbol]:
     """Parse a TS / JS / TSX / JSX file and return the symbols it declares."""
     try:
-        text = safe_read_text(path, encoding="utf-8", errors="ignore")
+        text = safe_read_text(path, encoding="utf-8", errors="ignore", roots=roots)
     except (PermissionError, FileNotFoundError, OSError):
         return []
     except Exception:
