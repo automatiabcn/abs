@@ -157,3 +157,36 @@ def test_approval_page_renders_and_escapes(client):
     assert evil.status_code == 200
     assert "<script>alert" not in evil.text
     assert 'value=""' in evil.text
+
+
+# --- one address cannot lock everyone out (audit 2026-08-18) ----------------
+
+def test_one_address_is_capped_and_others_still_start(client, monkeypatch):
+    from app.auth import device as dev
+
+    monkeypatch.setattr(dev, "_STARTS_BY_IP", {})
+    for _ in range(dev.MAX_PENDING_PER_IP):
+        assert client.post("/auth/device/start", json={"scopes": ["profile"]}).status_code == 200
+    r = client.post("/auth/device/start", json={"scopes": ["profile"]})
+    assert r.status_code == 429 and r.json()["error"] == "slow_down"
+    # a different address is not affected by the first one's spray
+    r2 = client.post(
+        "/auth/device/start", json={"scopes": ["profile"]},
+        headers={"x-forwarded-for": "203.0.113.9"},
+    )
+    assert r2.status_code == 200
+
+
+def test_the_global_cap_evicts_the_oldest_instead_of_refusing_everyone(client, monkeypatch):
+    from app.auth import device as dev
+
+    monkeypatch.setattr(dev, "_STARTS_BY_IP", {})
+    monkeypatch.setattr(dev, "MAX_PENDING_GRANTS", 3)
+    monkeypatch.setattr(dev, "MAX_PENDING_PER_IP", 100)
+    codes = [client.post("/auth/device/start", json={"scopes": []}).json()["device_code"] for _ in range(3)]
+    # the fourth start still succeeds — the oldest pending grant made room
+    r = client.post("/auth/device/start", json={"scopes": []})
+    assert r.status_code == 200
+    # …and the oldest is gone: polling it is invalid_grant, the newest still pends
+    assert client.post("/auth/device/poll", json={"device_code": codes[0]}).json()["error"] == "invalid_grant"
+    assert client.post("/auth/device/poll", json={"device_code": r.json()["device_code"]}).json()["error"] == "authorization_pending"

@@ -49,6 +49,39 @@ USER_CODE_LENGTH = 8
 # Unauthenticated endpoint — cap outstanding pending grants so a spray
 # cannot grow the table unbounded between TTL sweeps.
 MAX_PENDING_GRANTS = 500
+# …and cap them PER CALLER, because a single global cap is a denial-of-service
+# lever: 500 POSTs from one address blocked every editor sign-in on the server
+# for ten minutes, repeatably (audit 2026-08-18). One person signing in needs
+# a handful of starts; a spray needs hundreds. When the global cap is still
+# reached, the OLDEST pending grants make room rather than every newcomer
+# being turned away.
+MAX_PENDING_PER_IP = 10
+_STARTS_BY_IP: dict = {}  # ip -> [monotonic timestamps within the TTL]
+
+
+def _client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for", "")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return (request.client.host if request.client else "") or "unknown"
+
+
+def _ip_over_limit(ip: str) -> bool:
+    import time as _time
+
+    now = _time.monotonic()
+    window = DEVICE_GRANT_TTL.total_seconds()
+    stamps = [t for t in _STARTS_BY_IP.get(ip, []) if now - t < window]
+    if len(stamps) >= MAX_PENDING_PER_IP:
+        _STARTS_BY_IP[ip] = stamps
+        return True
+    stamps.append(now)
+    _STARTS_BY_IP[ip] = stamps
+    # keep the map small under a spray of distinct addresses
+    if len(_STARTS_BY_IP) > 5000:
+        for k in [k for k, v in _STARTS_BY_IP.items() if not v or now - v[-1] >= window]:
+            _STARTS_BY_IP.pop(k, None)
+    return False
 
 
 def _now() -> datetime:
@@ -88,6 +121,11 @@ def device_start(
     db: Session = Depends(get_session),
 ) -> JSONResponse:
     now = _now()
+    if _ip_over_limit(_client_ip(request)):
+        return JSONResponse(
+            {"error": "slow_down", "detail": "too many sign-in starts from this address; wait a few minutes"},
+            status_code=429,
+        )
     pending = db.exec(
         select(func.count())
         .select_from(DeviceGrant)
@@ -95,7 +133,18 @@ def device_start(
         .where(DeviceGrant.expires_at > now)
     ).one()
     if int(pending or 0) >= MAX_PENDING_GRANTS:
-        return JSONResponse({"error": "temporarily_unavailable"}, status_code=429)
+        # Make room: the oldest pending grants are the least likely to be a
+        # real person mid-sign-in. Refusing everyone was the lever.
+        oldest = db.exec(
+            select(DeviceGrant)
+            .where(DeviceGrant.consumed_at.is_(None))  # type: ignore[union-attr]
+            .where(DeviceGrant.expires_at > now)
+            .order_by(DeviceGrant.issued_at)  # type: ignore[arg-type]
+            .limit(max(1, MAX_PENDING_GRANTS // 10))
+        ).all()
+        for row in oldest:
+            db.delete(row)
+        db.commit()
 
     device_code = secrets.token_urlsafe(32)
     user_code = _new_user_code()
