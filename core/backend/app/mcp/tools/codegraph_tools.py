@@ -42,7 +42,7 @@ def _key_for(tenant: str, root: str) -> str:
     return f"{tenant}:{digest}"
 
 
-def _caller_key() -> str:
+def _caller_key(workspace_root: str = "", client_id: str = "") -> str:
     """Storage key for the current caller AND the project they have open.
 
     Keyed by tenant alone until 2026-08-03, so one developer's two projects
@@ -71,7 +71,9 @@ def _caller_key() -> str:
         from app.workspace.current import current_workspace
 
         _t, user = get_mcp_caller()
-        root = current_workspace(tenant, user or "")
+        root = current_workspace(
+            tenant, user or "", client_id=client_id, explicit_root=workspace_root
+        )
         if root:
             # Hashed, not appended: a storage key made of a customer's
             # directory layout ends up in logs and on disk.
@@ -127,28 +129,36 @@ async def code_graph_build(root: str) -> str:
 
 @mcp_server.tool()
 @with_hooks("code_blast_radius")
-async def code_blast_radius(target: str, max_hops: int = 3) -> str:
+async def code_blast_radius(
+    target: str, max_hops: int = 3, workspace_root: str = "", client_id: str = ""
+) -> str:
     """What breaks if `target` (symbol name or file path) changes — its transitive callers."""
     await tracker.bump("code_blast_radius")
-    res = _graph.blast_radius(target, key=_caller_key(), max_hops=max_hops)
+    res = _graph.blast_radius(
+        target, key=_caller_key(workspace_root, client_id), max_hops=max_hops
+    )
     return json.dumps(res, ensure_ascii=False, indent=2)
 
 
 @mcp_server.tool()
 @with_hooks("code_callers")
-async def code_callers(symbol: str) -> str:
+async def code_callers(symbol: str, workspace_root: str = "", client_id: str = "") -> str:
     """Direct callers of a symbol."""
     await tracker.bump("code_callers")
-    res = _graph.callers(symbol, key=_caller_key())
+    res = _graph.callers(symbol, key=_caller_key(workspace_root, client_id))
     return json.dumps({"symbol": symbol, "callers": res}, ensure_ascii=False, indent=2)
 
 
 @mcp_server.tool()
 @with_hooks("graph_related")
-async def graph_related(symbol: str, depth: int = 1) -> str:
+async def graph_related(
+    symbol: str, depth: int = 1, workspace_root: str = "", client_id: str = ""
+) -> str:
     """Symbols related to `symbol` within N hops (callers + callees, undirected)."""
     await tracker.bump("graph_related")
-    res = _graph.graph_related(symbol, key=_caller_key(), depth=depth)
+    res = _graph.graph_related(
+        symbol, key=_caller_key(workspace_root, client_id), depth=depth
+    )
     return json.dumps(res, ensure_ascii=False, indent=2)
 
 
