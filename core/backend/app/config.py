@@ -493,6 +493,12 @@ class Settings(BaseSettings):
     # it was asking about anyway.
     multi_tenant_strict: bool = True
 
+    # Whether members other than the setup admin may run on the server's PAID
+    # provider keys (anthropic, openrouter). Off: a paid provider runs on the
+    # caller's own key, or the operator's when the operator is the caller.
+    # (2026-08-18: with this implicit, any token spent the operator's key.)
+    paid_server_keys_shared: bool = False
+
     # GraphRAG — knowledge graph over the RAG corpus.
     # When enabled, ingest best-effort extracts entities/relations into Neo4j;
     # the /v1/graph-rag/build endpoint can (re)process the existing corpus.

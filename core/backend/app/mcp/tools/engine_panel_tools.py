@@ -223,6 +223,13 @@ async def cascade_ask(
     except Exception:  # noqa: BLE001 — a chain without BYOK is still a chain
         byok = frozenset()
     active = get_active_providers(extra_configured=byok)
+    # Whose money: paid providers only on the caller's key, or the operator's
+    # when the operator asks (or shared it). `prefer` is checked against the
+    # same list — naming a provider is not a way past it.
+    from app.providers.paid_access import refusal as _paid_refusal
+    from app.providers.paid_access import restrict_chain
+
+    active = restrict_chain(active, byok, user)
     if not active:
         return json.dumps(
             {
@@ -232,7 +239,16 @@ async def cascade_ask(
             },
             ensure_ascii=False,
         )
-    primary = prefer.strip() or active[0]
+    wanted = prefer.strip()
+    if wanted and wanted not in active:
+        why = _paid_refusal(wanted, byok, user) or (
+            f"{wanted} is not a provider this caller can use here."
+        )
+        return json.dumps(
+            {"ok": False, "error": "provider_not_available", "detail": why},
+            ensure_ascii=False,
+        )
+    primary = wanted or active[0]
     fallbacks = tuple(p for p in active if p != primary)
 
     # Answer about the project the developer has open, when there is one.

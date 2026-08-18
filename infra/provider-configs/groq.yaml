@@ -10,13 +10,13 @@ models:
     context: 131072
     pricing_per_mtok_input: 0.0
     pricing_per_mtok_output: 0.0
-    deprecated: false
+    deprecated: true  # retired by Groq 2026-08-16
   - alias: llama-3.1-8b
     id: llama-3.1-8b-instant
     context: 131072
     pricing_per_mtok_input: 0.0
     pricing_per_mtok_output: 0.0
-    deprecated: false
+    deprecated: true  # retired by Groq 2026-08-16
   - alias: gpt-oss-120b
     id: openai/gpt-oss-120b
     context: 131072
@@ -34,15 +34,21 @@ models:
     context: 131072
     pricing_per_mtok_input: 0.0
     pricing_per_mtok_output: 0.0
-    deprecated: false
+    deprecated: true  # retired by Groq 2026-08-16
   - alias: qwen-3-32b
     id: qwen/qwen3-32b
     context: 131072
     pricing_per_mtok_input: 0.0
     pricing_per_mtok_output: 0.0
-    deprecated: false
+    deprecated: true  # retired by Groq 2026-08-16
   - alias: llama-4-scout
     id: meta-llama/llama-4-scout-17b-16e-instruct
+    context: 131072
+    pricing_per_mtok_input: 0.0
+    pricing_per_mtok_output: 0.0
+    deprecated: true  # retired by Groq 2026-08-16
+  - alias: qwen3.6-27b
+    id: qwen/qwen3.6-27b
     context: 131072
     pricing_per_mtok_input: 0.0
     pricing_per_mtok_output: 0.0

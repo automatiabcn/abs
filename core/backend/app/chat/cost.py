@@ -38,6 +38,17 @@ def estimate_call_cost_usd(
 
     pricing_row = _lookup_pricing(provider, model)
     if not pricing_row:
+        # No row is "unknown", and for a paid provider unknown is not free —
+        # a paid call reported as $0.00 free is the one number the cost HUD
+        # must never show (audit, 2026-08-18: openrouter had no config at
+        # all). Free-tier and local providers without a row stay free.
+        try:
+            from app.providers.cascade import PAID_PROVIDERS
+
+            if provider in PAID_PROVIDERS:
+                return {"usd": None, "free": False, "source": f"{provider}:unpriced"}
+        except Exception:  # noqa: BLE001
+            pass
         return {"usd": 0.0, "free": True, "source": f"{provider}:no-config"}
 
     in_per_mtok = float(pricing_row.get("pricing_per_mtok_input", 0))
@@ -81,6 +92,9 @@ def _lookup_pricing(provider: str, model: str | None) -> dict | None:
                 or model in (m.get("aliases") or [])
             ):
                 return m
+        # A named model with no row is unknown, not "the first row" — that
+        # priced every unknown Anthropic model as Haiku.
+        return None
     return models[0]
 
 

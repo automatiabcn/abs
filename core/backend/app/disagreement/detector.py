@@ -82,6 +82,11 @@ def choose_models(
     mine = byok_providers(tenant_id, user_subject)
     try:
         usable = list(get_active_providers(extra_configured=mine))
+        # A second opinion is not worth spending the operator's paid key on
+        # without being asked (app/providers/paid_access).
+        from app.providers.paid_access import restrict_chain
+
+        usable = restrict_chain(usable, mine, user_subject)
     except Exception:  # noqa: BLE001 — a bad readout must not kill the feature
         usable = [p for p, _ in PREFERRED]
 

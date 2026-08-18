@@ -399,6 +399,12 @@ async def _generate_edits(
             logger.debug("composer BYOK lookup skipped: %s", exc)
 
         active = get_active_providers(extra_configured=extra)
+        # A paid provider runs on the key of the person asking. The server's
+        # own paid key is the operator's; a member's Composer does not spend it
+        # unless the operator shared it (app/providers/paid_access).
+        from app.providers.paid_access import restrict_chain
+
+        active = restrict_chain(active, extra, user_subject)
         # A multi-file edit is the hardest thing we ask a model to do, so the
         # order is reconsidered for THIS kind of work rather than inherited
         # from the cost-first default. A preference, never a requirement: with

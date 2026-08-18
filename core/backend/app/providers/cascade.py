@@ -105,6 +105,10 @@ SETTINGS_KEY_ATTR: dict[str, str] = {
     "gemini": "gemini_api_key",
     "cloudflare": "cf_api_token",
     "cohere": "cohere_api_key",
+    # Missing until 2026-08-18: openrouter sat in every PROVIDER_ORDER and in
+    # PAID_PROVIDERS, and `is_configured` could never say yes to it — the
+    # server's key was a dead lane. Now a lane, gated by paid_access.
+    "openrouter": "openrouter_api_key",
 }
 
 # Local runtimes are configured by URL, not by key. Putting them in the map
