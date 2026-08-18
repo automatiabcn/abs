@@ -257,3 +257,9 @@ def register_all_tools() -> int:
 
 
 _REGISTERED_COUNT = register_all_tools()
+
+# Every tool on the surface is behind the licence gate — not only the ones
+# whose author wrote @with_hooks (2026-08-18: 25 were not).
+from app.mcp.middleware import enforce_license_gate_everywhere as _enforce  # noqa: E402
+
+_GATED_LATE = _enforce(mcp_server)
