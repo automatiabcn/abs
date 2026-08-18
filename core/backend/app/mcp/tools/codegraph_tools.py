@@ -90,7 +90,7 @@ async def code_graph_build(root: str) -> str:
     await tracker.bump("code_graph_build")
     from app.workspace.current import problem_with_root
 
-    bad = problem_with_root(root)
+    bad = problem_with_root(root, _caller_key().split(":", 1)[0])
     if bad:
         # Indexing the server's own directory is worse than not indexing at
         # all: every later blast-radius answer would be drawn from it, and

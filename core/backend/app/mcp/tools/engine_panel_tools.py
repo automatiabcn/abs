@@ -139,14 +139,21 @@ async def workspace_set(root: str = "", client_id: str = "") -> str:
     tenant = _caller_tenant()
     stored = set_workspace(tenant, _caller_user() or "", root, client_id=client_id)
     if root and stored is None:
+        from app.workspace.current import problem_with_root
+
+        import os as _os
+
+        why = (
+            problem_with_root(root, tenant)
+            if _os.path.isdir(root)
+            else (
+                f"{root} is not a directory this server can see. If the server "
+                f"runs in a container, the project has to be mounted into it at "
+                f"the same path."
+            )
+        ) or "that folder cannot be used as a project"
         return json.dumps(
-            {
-                "ok": False,
-                "error": "not_a_directory",
-                "detail": f"{root} is not a directory this server can see. If the "
-                          f"server runs in a container, the project has to be "
-                          f"mounted into it at the same path.",
-            },
+            {"ok": False, "error": "not_a_directory", "detail": why},
             ensure_ascii=False,
         )
     # Say whether this project has been read, in the same round trip. The

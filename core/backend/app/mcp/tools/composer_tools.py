@@ -62,11 +62,11 @@ async def composer_propose(task: str, workspace_root: str) -> str:
     from app.composer import run_composer
     from app.workspace.current import problem_with_root
 
-    bad = problem_with_root(workspace_root)
+    tenant, user = _caller()
+    bad = problem_with_root(workspace_root, tenant)
     if bad:
         return _json.dumps({"error": bad}, ensure_ascii=False)
 
-    tenant, user = _caller()
     # The project's key, not the tenant's. This read `graph_key=tenant` under a
     # comment saying "the graph is per workspace" — true when it was written,
     # and false from 2026-08-03, when the graph moved to a per-project key

@@ -47,12 +47,19 @@ def _key(tenant: str, user: str, client: str = "") -> Tuple[str, str, str]:
     return (tenant or "default", user or "", client or "")
 
 
-def _validated(root: str) -> Optional[str]:
+def _validated(root: str, tenant: str = "") -> Optional[str]:
     try:
         resolved = os.path.realpath(root)
     except OSError:
         return None
     if not os.path.isdir(resolved):
+        return None
+    # Where a project may be is one rule for every door (app/workspace/roots):
+    # the server's own state directory, system trees and another tenant's
+    # mount are not projects however real the directory is.
+    from app.workspace.roots import forbidden_reason
+
+    if forbidden_reason(resolved, tenant):
         return None
     return resolved
 
@@ -82,7 +89,7 @@ def set_workspace(
             elif not any(k[:2] == uk for k in _OPEN):
                 _LATEST.pop(uk, None)
             return None
-        resolved = _validated(root)
+        resolved = _validated(root, tenant)
         if resolved is None:
             return None
         _OPEN[_key(tenant, user, client_id)] = resolved
@@ -106,7 +113,7 @@ def current_workspace(
     admitting it does not know.
     """
     if explicit_root:
-        return _validated(explicit_root)
+        return _validated(explicit_root, tenant)
     with _LOCK:
         root = None
         if client_id:
@@ -118,7 +125,7 @@ def current_workspace(
     return None
 
 
-def problem_with_root(root: str) -> Optional[str]:
+def problem_with_root(root: str, tenant: str = "") -> Optional[str]:
     """Why `root` cannot be used as a project, in a sentence, or None if it can.
 
     The rule in `current_workspace` above — an absent project is not the
@@ -145,7 +152,9 @@ def problem_with_root(root: str) -> Optional[str]:
         )
     if not os.path.isdir(root):
         return f"the server cannot see a directory at {root!r}"
-    return None
+    from app.workspace.roots import forbidden_reason
+
+    return forbidden_reason(root, tenant)
 
 
 def forget(tenant: str, user: str) -> None:

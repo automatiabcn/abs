@@ -61,7 +61,7 @@ async def sandbox_status() -> str:
         note = "No OS sandbox here, so ABS will not run commands at all."
     elif net_blocked:
         note = (
-            "Commands run confined to the workspace with the network off. "
+            "Commands may write only inside the workspace and cannot reach the network; reads are broad (a toolchain needs them) except credential stores and the server's own state. "
             "This contains an agent that goes wrong; it does not contain "
             "code written to be hostile — that needs the opt-in microVM."
         )
@@ -109,7 +109,8 @@ async def sandbox_run(
     allow_network: bool = False,
     timeout: float = 120.0,
 ) -> str:
-    """Run a check (tests, lint, build) confined to the workspace.
+    """Run a check (tests, lint, build): writes confined to the workspace,
+    network off, credential stores and server state unreadable.
 
     The program must be one ABS recognises as a check — installing, publishing
     and deploying are not on that list, so the agent cannot reach for them.
@@ -136,11 +137,33 @@ async def sandbox_run(
             ensure_ascii=False,
         )
 
-    res = _sandbox.run(
+    # Where the check may run is the same rule as where a project may be. The
+    # sandbox confines WRITES to the workspace; reads are broad because a
+    # toolchain needs them — so a workspace_root pointing at the server's own
+    # state directory read `.env` straight into stdout (audit, 2026-08-18).
+    from app.workspace.current import problem_with_root
+
+    try:
+        from app.mcp.context import get_mcp_caller
+
+        _tenant, _user = get_mcp_caller()
+    except Exception:  # noqa: BLE001
+        _tenant = ""
+    bad = problem_with_root(workspace_root, str(_tenant or ""))
+    if bad:
+        return json.dumps({"ok": False, "refused": bad}, ensure_ascii=False)
+
+    # Off the event loop: a two-minute test suite must not freeze Tab, the
+    # title bar and every other client of this server while it runs. And a
+    # caller cannot ask for an hour.
+    import asyncio as _asyncio
+
+    res = await _asyncio.to_thread(
+        _sandbox.run,
         argv,
         workspace_root=workspace_root,
         allow_network=allow_network,
-        timeout=float(timeout),
+        timeout=min(max(float(timeout), 1.0), 600.0),
     )
     return json.dumps(
         {

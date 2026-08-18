@@ -77,6 +77,25 @@ async def rag_index(
 ) -> str:
     """Add a file or directory to the RAG index. chunk_strategy: 'semantic' | 'char'."""
     await tracker.bump("rag_index")
+    # A file or a directory may be indexed, but only from where a project may
+    # be (app/workspace/roots): not the server's state, not a system tree,
+    # not another tenant's mount.
+    import os as _os
+
+    from app.workspace.roots import forbidden_reason
+
+    _probe = path if _os.path.isdir(path) else _os.path.dirname(path)
+    try:
+        from app.mcp.context import get_mcp_caller
+
+        _tenant = str(get_mcp_caller()[0] or "")
+    except Exception:  # noqa: BLE001
+        _tenant = ""
+    _bad = forbidden_reason(_probe, _tenant) if _os.path.isabs(path) else (
+        "the path to index has to be absolute"
+    )
+    if _bad:
+        return json.dumps({"error": _bad, "indexed": 0, "skipped": 0}, ensure_ascii=False)
     res = await _index_path(path, project=project, chunk_strategy=chunk_strategy)
     return json.dumps(res, ensure_ascii=False, indent=2)
 
