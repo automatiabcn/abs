@@ -107,6 +107,45 @@ def _meter(resp: ProviderResponse, *, provider: str, tenant_id: str) -> None:
         logger.debug("usage metering skipped", exc_info=True)
 
 
+def record_direct_call(
+    resp: Optional[ProviderResponse],
+    *,
+    provider: str,
+    tenant_id: Optional[str],
+    model: str = "",
+    exc: Optional[Exception] = None,
+) -> None:
+    """Book a provider call that did NOT go through call_with_cascade.
+
+    The judge and the second opinion call adapters directly (they pin models
+    and keys the cascade would not), and until 2026-08-18 those calls were
+    invisible to the usage log, the quota meter and the health readout — a
+    paid second-opinion leg never reached the cost page. One helper, same
+    books as the cascade. Never raises.
+    """
+    tenant = tenant_id or "_global"
+    try:
+        if exc is not None or resp is None:
+            _record_quota(provider, tenant_id=tenant, status_code=500, exc=exc, model=model)
+            _health.note_failure(
+                provider, tenant=tenant,
+                permanent=not bool(getattr(exc, "transient", True)) if exc is not None else False,
+                detail=str(exc) if exc is not None else "", model=model,
+            )
+            return
+        _meter(resp, provider=provider, tenant_id=tenant)
+        _record_quota(
+            provider,
+            tenant_id=tenant,
+            tokens=int(resp.tokens_in or 0) + int(resp.tokens_out or 0),
+            status_code=200,
+            model=str(resp.model or model or ""),
+        )
+        _health.note_success(provider, tenant=tenant, model=str(resp.model or model or ""))
+    except Exception:  # noqa: BLE001 — bookkeeping never costs an answer
+        pass
+
+
 def _record_quota(
     provider: str,
     *,

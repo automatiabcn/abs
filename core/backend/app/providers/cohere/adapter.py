@@ -20,6 +20,20 @@ from ..base import BaseProvider
 from ..schemas import ProviderError, ProviderResponse
 
 
+def _cohere_usage(resp: Any) -> tuple:
+    """(tokens_in, tokens_out) from a Cohere v2 chat response, or (None, None)."""
+    usage = getattr(resp, "usage", None)
+    for attr in ("billed_units", "tokens"):
+        block = getattr(usage, attr, None) if usage is not None else None
+        if block is None:
+            continue
+        i = getattr(block, "input_tokens", None)
+        o = getattr(block, "output_tokens", None)
+        if i is not None or o is not None:
+            return (int(i) if i is not None else None, int(o) if o is not None else None)
+    return (None, None)
+
+
 class CohereProvider(BaseProvider):
     name = "cohere"
     default_model = "command-r-plus-08-2024"
@@ -95,13 +109,20 @@ class CohereProvider(BaseProvider):
         except Exception:
             pass
 
+        # Cohere v2 reports what it billed under usage.billed_units (and the
+        # raw counts under usage.tokens). Left as None, every Cohere answer
+        # cost $0.00 on the HUD with `free: false` — an unpriced paid-looking
+        # call (audit 2026-08-18). Read what is there; None only when the
+        # response really carries nothing.
+        tokens_in, tokens_out = _cohere_usage(resp)
+
         return ProviderResponse(
             text=text,
             model=model,
             provider=self.name,
             elapsed_ms=elapsed_ms,
-            tokens_in=None,
-            tokens_out=None,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
         )
 
     async def embed(self, text: str, model: str = "embed-english-v3.0") -> List[float]:
