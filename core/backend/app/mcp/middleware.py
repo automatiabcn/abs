@@ -152,6 +152,69 @@ def with_hooks(tool_name: str) -> Callable:
                 return f"{result_text}\n\n[HOOK]\n{nudge}"
             return result_text
 
+        # Seen by enforce_license_gate_everywhere(): this tool is already gated.
+        wrapper._abs_gated = True  # type: ignore[attr-defined]
         return wrapper
 
     return decorator
+
+
+# Tools a lapsed or unlicensed install must still be able to call: the ones
+# that say WHY it is refused, and the ones that fix it. Everything else falls
+# under the gate — by name, not by whether its author remembered with_hooks.
+GATE_EXEMPT: frozenset = frozenset(
+    {
+        "license_status", "setup_status", "status_check", "health_status",
+        "update_check", "system_status", "capability_status", "title_status",
+        "subscription_check", "billing_status",
+    }
+)
+
+
+def _license_gate_only(tool_name: str, fn: Callable) -> Callable:
+    """The gate half of with_hooks, for a tool registered without it."""
+
+    @wraps(fn)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        if settings.mcp_require_license:
+            try:
+                from app.mcp.gate import _BLOCK_MESSAGE, _gate_status
+
+                allowed = _gate_status()["allowed"]
+            except Exception as exc:  # noqa: BLE001 — fail closed, as above
+                logger.warning("license gate errored; failing closed: %s", exc)
+                return _GATE_ERROR_MESSAGE
+            if not allowed:
+                return _BLOCK_MESSAGE
+        return await fn(*args, **kwargs)
+
+    wrapper._abs_gated = True  # type: ignore[attr-defined]
+    return wrapper
+
+
+def enforce_license_gate_everywhere(server: Any) -> list:
+    """Wrap every registered tool that is not already gated. Returns the names
+    it wrapped.
+
+    Until 2026-08-18 the licence gate lived only inside with_hooks, which is
+    optional per tool: 25 tools — ask_haiku/sonnet/opus, ask_groq_fast,
+    ask_gemini, the qual_* and race* pipelines, auto_verify_* — served a lapsed
+    subscription because nobody had put the decorator on them. A gate that
+    depends on each author remembering is a gate with 25 holes.
+    """
+    wrapped: list = []
+    try:
+        tools = server._tool_manager._tools  # FastMCP: name -> Tool
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("could not reach the tool registry to enforce the gate: %s", exc)
+        return wrapped
+    for name, tool in list(tools.items()):
+        fn = getattr(tool, "fn", None)
+        if fn is None or getattr(fn, "_abs_gated", False) or name in GATE_EXEMPT:
+            continue
+        try:
+            tool.fn = _license_gate_only(name, fn)
+            wrapped.append(name)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("could not gate %s: %s", name, exc)
+    return wrapped
