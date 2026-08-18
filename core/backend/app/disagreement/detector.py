@@ -174,8 +174,18 @@ async def ask_disagree(
                 continue
             coros[name] = provider.call(prompt, model=mdl, **kwargs)
         raw = await run_parallel_named(coros)
+        models_by_name = {name: mdl for name, _prov, mdl in batch}
         for name, r in raw.items():
             asked.append(name)
+            try:
+                from app.cascade.orchestrator import record_direct_call
+
+                if isinstance(r, BaseException):
+                    record_direct_call(None, provider=name, tenant_id=tenant_id, model=models_by_name.get(name) or "", exc=r if isinstance(r, Exception) else None)
+                else:
+                    record_direct_call(r, provider=name, tenant_id=tenant_id, model=models_by_name.get(name) or "")
+            except Exception:  # noqa: BLE001 — books never cost an opinion
+                pass
             if isinstance(r, BaseException):
                 responses[name] = ""
             else:

@@ -32,6 +32,16 @@ _JUDGE_ROUTES: tuple[tuple[str, str], ...] = (
 )
 
 
+def _book(resp, *, provider: str, tenant_id, model: str, exc=None) -> None:
+    """The judge's calls reach the same books as the cascade's."""
+    try:
+        from app.cascade.orchestrator import record_direct_call
+
+        record_direct_call(resp, provider=provider, tenant_id=tenant_id, model=model, exc=exc)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def _server_has_key(provider: str) -> bool:
     """Whether the operator configured this provider globally."""
     try:
@@ -115,9 +125,11 @@ async def _llm_judge(
             resp = await provider.call(
                 prompt, model=model_id, max_tokens=1200, **call_kwargs
             )
+            _book(resp, provider=provider_name, tenant_id=tenant_id, model=model_id)
             break
         except (ProviderError, Exception) as exc:  # noqa: BLE001
             last_error = str(exc)[:100]
+            _book(None, provider=provider_name, tenant_id=tenant_id, model=model_id, exc=exc)
             logger.info("LLM judge on %s skipped: %s", provider_name, exc)
     if resp is None:
         return {"score": None, "teaching": f"LLM unavailable: {last_error or 'no judge provider'}"}
