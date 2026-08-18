@@ -121,8 +121,10 @@ def test_an_empty_answer_also_hands_over(monkeypatch):
 def test_the_pinned_completion_models_are_named_not_guessed():
     """A stale model id is invisible until the provider is promoted. Pin the
     two we measured so a silent edit has to argue with a test."""
-    assert fim._FAST_MODELS["groq"] == "llama-3.1-8b-instant"
+    assert fim._FAST_MODELS["groq"] == "qwen/qwen3.6-27b"
     assert fim._FAST_MODELS["cerebras"] == "gemma-4-31b"
+    # qwen3.6 thinks unless told not to; with 80 tokens that is an empty Tab.
+    assert fim._FAST_KWARGS["groq"] == {"reasoning_effort": "none"}
 
 
 def test_no_fast_free_provider_returns_empty_not_error(monkeypatch):

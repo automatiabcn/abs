@@ -41,11 +41,12 @@ def test_a_known_provider_gets_a_capable_model():
 
 
 def test_the_weak_default_is_not_what_we_ask_for():
-    """The whole finding in one line: groq's adapter default is the 8B."""
+    """The whole finding in one line: groq's adapter default is the small
+    fast model (was the 8B; since 2026-08-18 gpt-oss-20b, same role)."""
     from app.providers.registry import get_registry
 
-    assert get_registry()["groq"].default_model == "llama-3.1-8b-instant"
-    assert runtime.model_for("groq") != "llama-3.1-8b-instant"
+    assert get_registry()["groq"].default_model == "openai/gpt-oss-20b"
+    assert runtime.model_for("groq") != "openai/gpt-oss-20b"
 
 
 def test_an_unknown_provider_keeps_its_own_default():

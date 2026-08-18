@@ -2,7 +2,7 @@
   "id": "chatcmpl-7f9b8c1d2e3f4g5h6i7j8k9l0m",
   "object": "chat.completion",
   "created": 1735001234,
-  "model": "llama-3.1-8b-instant",
+  "model": "openai/gpt-oss-20b",
   "choices": [
     {
       "index": 0,

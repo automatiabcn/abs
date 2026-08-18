@@ -35,7 +35,7 @@ class QualTrPipeline(BasePipeline):
         parallel_start = time.monotonic()
         drafts = await run_parallel_named(
             {
-                "qwen32b": groq.call(prompt, model="qwen/qwen3-32b"),
+                "qwen32b": groq.call(prompt, model="qwen/qwen3.6-27b"),
                 "gemini": gemini.call(prompt, model="gemini-2.5-flash"),
             }
         )

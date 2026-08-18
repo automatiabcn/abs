@@ -44,9 +44,22 @@ _TIMEOUT_S = 3.0
 # went silent. gpt-oss-120b answers in 327ms with an EMPTY completion (it is a
 # reasoning model and spends the 80-token budget thinking); gemma-4-31b answers
 # in 350ms with the right insertion. groq stays first on latency.
+#
+# Measured again (08-18) after Groq retired llama-3.1-8b-instant on 08-16 and
+# Tab went silent a second time, for two days: qwen3.6-27b with reasoning OFF
+# inserts `n % 2 != 0` in 226ms; with reasoning on it writes 80 tokens of
+# <think> and nothing else; gpt-oss-20b at low effort answers in ~400ms but
+# echoes the prefix. So: qwen3.6 first, reasoning off. The retirement itself
+# is now watched by `providers/catalog_watch.py` — a pinned model that leaves
+# the live catalogue is reported, not discovered by a silent Tab.
 _FAST_MODELS = {
-    "groq": "llama-3.1-8b-instant",
+    "groq": "qwen/qwen3.6-27b",
     "cerebras": "gemma-4-31b",
+}
+# Per-model call knobs; the adapter turns qwen3.6 reasoning off by itself, the
+# entry here is the explicit statement so a future model swap has to decide.
+_FAST_KWARGS = {
+    "groq": {"reasoning_effort": "none"},
 }
 
 _FENCE = re.compile(r"^```[a-zA-Z0-9+-]*\n?|\n?```$")
@@ -231,6 +244,7 @@ async def complete(
                 model=_FAST_MODELS[provider_name],
                 max_tokens=_MAX_TOKENS,
                 timeout=_TIMEOUT_S,
+                **_FAST_KWARGS.get(provider_name, {}),
                 **call_kwargs,
             )
         except Exception as exc:  # noqa: BLE001 — a missed completion is acceptable

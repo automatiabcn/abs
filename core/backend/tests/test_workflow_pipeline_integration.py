@@ -165,7 +165,7 @@ async def test_qual_human_chains_workflow(
 
     monkeypatch.setattr(settings, "workflow_durable", True)
     fake_providers(
-        "groq", {"qwen/qwen3-32b": _make_resp("Türkçe taslak yeterince uzun")}
+        "groq", {"qwen/qwen3.6-27b": _make_resp("Türkçe taslak yeterince uzun")}
     )
     fake_providers("gemini", {"gemini-2.5-flash": _make_resp("Alternatif")})
     fake_providers("ollama", {"aya:8b": _make_resp("TAMAM")})

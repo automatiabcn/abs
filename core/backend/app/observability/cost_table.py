@@ -49,6 +49,20 @@ PRICING: dict[str, PriceEntry] = {
         input_per_million_usd=0.50,
         output_per_million_usd=0.75,
     ),
+    # Added 2026-08-18 with the post-retirement defaults (Groq list prices).
+    "groq:openai/gpt-oss-20b": PriceEntry(
+        provider="groq",
+        model="openai/gpt-oss-20b",
+        input_per_million_usd=0.075,
+        output_per_million_usd=0.30,
+    ),
+    "groq:qwen/qwen3.6-27b": PriceEntry(
+        provider="groq",
+        model="qwen/qwen3.6-27b",
+        input_per_million_usd=0.29,
+        output_per_million_usd=0.59,
+        notes="assumed same as retired qwen3-32b until the price page is re-read",
+    ),
     "groq:moonshotai/kimi-k2-instruct": PriceEntry(
         provider="groq",
         model="moonshotai/kimi-k2-instruct",

@@ -8,7 +8,7 @@ dead primary fails over instead of surfacing as a tool error."""
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, Mapping, Optional
 
 from app.cascade.orchestrator import call_with_cascade
 from app.mcp.middleware import with_hooks
@@ -26,15 +26,21 @@ async def _call(
     primary: str,
     model: str,
     fallbacks: tuple = (),
+    fallback_models: Optional[Mapping[str, str]] = None,
 ) -> str:
     """Shared tool body: usage tracking, cascade call, and a provider failure
-    returned as text rather than raised — an MCP tool must not throw at a client."""
+    returned as text rather than raised — an MCP tool must not throw at a client.
+
+    `model` is the PRIMARY's model. A fallback that does not serve it gets its
+    own from `fallback_models`, or its adapter default — never the primary's
+    (that is how a Groq retirement once surfaced as "cerebras 404")."""
     await tracker.bump(tool_name)
+    models = {primary: model, **(fallback_models or {})}
     try:
         resp = await call_with_cascade(
             prompt,
             primary=primary,
-            model=model,
+            models=models,
             fallbacks=fallbacks,
         )
         return resp.text or ""
@@ -44,26 +50,37 @@ async def _call(
 
 @mcp_server.tool()
 async def ask_groq_fast(prompt: str) -> str:
-    """Llama 3.1 8B (Groq) — ultra fast (<0.3s). Short questions, classification."""
+    """GPT-OSS 20B (Groq) — ultra fast (<0.4s). Short questions, classification.
+
+    Was llama-3.1-8b-instant until Groq retired it (2026-08-16); the same model
+    id was then handed to the cerebras fallback, so the error said "cerebras
+    404" for a groq retirement. Fallback now carries its own model.
+    """
     return await _call(
         tool_name="ask_groq_fast",
         prompt=prompt,
         primary="groq",
-        model="llama-3.1-8b-instant",
+        model="openai/gpt-oss-20b",
         fallbacks=("cerebras",),
+        fallback_models={"cerebras": "gpt-oss-120b"},
     )
 
 
 @mcp_server.tool()
 @with_hooks("ask_scout")
 async def ask_scout(prompt: str) -> str:
-    """Llama 4 Scout 17B (Groq) — instruction following, short tasks."""
+    """Llama 4 Scout 17B (Cloudflare) — instruction following, short tasks.
+
+    Groq retired its Scout deployment; Cloudflare still serves the model, so
+    the tool keeps its name and moves house.
+    """
     return await _call(
         tool_name="ask_scout",
         prompt=prompt,
-        primary="groq",
-        model="meta-llama/llama-4-scout-17b-16e-instruct",
-        fallbacks=("cloudflare",),
+        primary="cloudflare",
+        model="@cf/meta/llama-4-scout-17b-16e-instruct",
+        fallbacks=("groq",),
+        fallback_models={"groq": "openai/gpt-oss-20b"},
     )
 
 

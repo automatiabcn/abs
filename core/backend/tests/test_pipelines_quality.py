@@ -105,7 +105,7 @@ async def test_qual_code_triggers_fix_when_verify_finds_issues(fake_providers):
 
 @pytest.mark.asyncio
 async def test_qual_tr_chain_passes_review(fake_providers):
-    fake_providers("groq", {"qwen/qwen3-32b": _make_resp("Uzun Türkçe metin bu.")})
+    fake_providers("groq", {"qwen/qwen3.6-27b": _make_resp("Uzun Türkçe metin bu.")})
     fake_providers(
         "gemini", {"gemini-2.5-flash": _make_resp("Alternatif metin çok kısa")}
     )
@@ -144,7 +144,7 @@ async def test_qual_analysis_synthesizes_3_perspectives(fake_providers):
 
 @pytest.mark.asyncio
 async def test_qual_translate_roundtrip(fake_providers):
-    fake_providers("groq", {"qwen/qwen3-32b": _make_resp("Merhaba dünya")})
+    fake_providers("groq", {"qwen/qwen3.6-27b": _make_resp("Merhaba dünya")})
     fake_providers(
         "cloudflare", {"@cf/moonshotai/kimi-k2.5": _make_resp("Hello world")}
     )

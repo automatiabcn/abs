@@ -333,6 +333,21 @@ async def lifespan(_app: FastAPI):
         _schedule_task = _asyncio.create_task(_schedule_loop())
         _lf_logger.info("workflow scheduler started (30s tick, free tier only)")
 
+    # The catalogue watch: are the models we pin still served? Groq retired
+    # its Llama 3.x line on 2026-08-16 and the product found out two days
+    # later from an audit, not from itself. One listing call at start and one
+    # a day; the verdict is read by model_health / title_status.
+    _catalog_task = None
+    if os.environ.get("ABS_TEST_MODE") != "1" and getattr(
+        _settings, "catalog_watch_enabled", True
+    ):
+        import asyncio as _asyncio
+
+        from app.providers.catalog_watch import watch_loop as _catalog_watch
+
+        _catalog_task = _asyncio.create_task(_catalog_watch())
+        _lf_logger.info("catalog watch started (start + daily)")
+
     # Load the provider config YAMLs once at boot (idempotent).
     try:
         from app.providers.configs import load_all
@@ -429,6 +444,12 @@ async def lifespan(_app: FastAPI):
             _schedule_task.cancel()
             try:
                 await _schedule_task
+            except (asyncio.CancelledError, Exception):
+                pass
+        if _catalog_task is not None:
+            _catalog_task.cancel()
+            try:
+                await _catalog_task
             except (asyncio.CancelledError, Exception):
                 pass
 
