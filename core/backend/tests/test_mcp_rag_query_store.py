@@ -33,7 +33,7 @@ def test_rag_query_uses_chroma_when_tenant_unset(
     monkeypatch.setattr(settings, "mcp_rag_tenant", "", raising=False)
     called = {}
 
-    async def _fake_query(question, project_filter=None, top_k=5):
+    async def _fake_query(question, project_filter=None, top_k=5, tenant=None):
         called["chroma"] = (question, top_k)
         return {"store": "chroma", "results": []}
 

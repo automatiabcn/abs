@@ -102,11 +102,14 @@ async def rag_hybrid(
     await tracker.bump("rag_hybrid")
     from app.rag.hybrid import query_hybrid
 
+    from app.mcp.tools.rag import _caller_tenant
+
     res = await query_hybrid(
         question,
         project_filter=project_filter,
         top_k=top_k,
         alpha_semantic=alpha_semantic,
+        tenant=_caller_tenant(),
     )
     return json.dumps(res, ensure_ascii=False, indent=2)
 
