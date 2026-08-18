@@ -116,7 +116,9 @@ async def test_one_answer_is_not_a_second_opinion(monkeypatch):
         "gemini": _Provider("", needs_key=False),  # answers, but says nothing
     }
     monkeypatch.setattr(detector, "get_provider", lambda n: only_one[n])
-    monkeypatch.setattr(detector, "byok_providers", lambda *_a, **_k: frozenset())
+    # The caller brought the anthropic key — a paid provider runs on the key
+    # of the person asking (2026-08-18), so it stays in the chain here.
+    monkeypatch.setattr(detector, "byok_providers", lambda *_a, **_k: frozenset({"anthropic"}))
     monkeypatch.setattr(detector, "owner_key_for", lambda p, **_k: "k")
     monkeypatch.setattr(
         detector, "get_active_providers", lambda **_k: ["anthropic", "gemini"]
@@ -167,7 +169,7 @@ async def test_the_footnote_describes_the_run_that_happened(monkeypatch):
         "gemini": _Provider("aaa ccc", needs_key=False),
     }
     monkeypatch.setattr(detector, "get_provider", lambda n: two[n])
-    monkeypatch.setattr(detector, "byok_providers", lambda *_a, **_k: frozenset())
+    monkeypatch.setattr(detector, "byok_providers", lambda *_a, **_k: frozenset({"anthropic"}))
     monkeypatch.setattr(detector, "owner_key_for", lambda p, **_k: None)
     monkeypatch.setattr(
         detector, "get_active_providers", lambda **_k: ["anthropic", "gemini"]

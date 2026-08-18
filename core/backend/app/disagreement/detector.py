@@ -71,7 +71,9 @@ def last_run(tenant_id: Optional[str] = None) -> Optional[Dict]:
 
 
 def choose_models(
-    tenant_id: Optional[str] = None, user_subject: Optional[str] = None
+    tenant_id: Optional[str] = None,
+    user_subject: Optional[str] = None,
+    limit: Optional[int] = WANTED,
 ) -> List[Tuple[str, str, Optional[str]]]:
     """Up to three providers this caller can really reach, best-known first.
 
@@ -90,15 +92,31 @@ def choose_models(
     except Exception:  # noqa: BLE001 — a bad readout must not kill the feature
         usable = [p for p, _ in PREFERRED]
 
+    # A provider known to be answering nothing right now is not a second
+    # opinion, it is a silent chair. On 2026-08-18 the three preferred were
+    # asked, two were dead (payment required; a retired model), and gemini and
+    # cohere — alive, configured — were never asked: status "single". Known-dead
+    # providers go to the END of the order, so the live ones are asked first
+    # and the dead ones only if nothing else is left.
+    try:
+        from app.cascade import provider_health as _health
+
+        dead = {p for p in usable if _health.degraded_reason(p, tenant_id)}
+    except Exception:  # noqa: BLE001
+        dead = set()
+
     ordered: List[str] = []
     for name in [p for p, _ in PREFERRED] + list(usable):
-        if name in usable and name not in ordered:
+        if name in usable and name not in ordered and name not in dead:
+            ordered.append(name)
+    for name in usable:
+        if name in dead and name not in ordered:
             ordered.append(name)
 
     known = dict(PREFERRED)
     # `None` means "that provider's own default model". Asking a provider for a
     # model belonging to a different one is how a perfectly good key returns 404.
-    return [(n, n, known.get(n)) for n in ordered[:WANTED]]
+    return [(n, n, known.get(n)) for n in (ordered if limit is None else ordered[:limit])]
 
 
 def _jaccard(a: str, b: str) -> float:
@@ -127,23 +145,49 @@ async def ask_disagree(
     tenant_id: Optional[str] = None,
     user_subject: Optional[str] = None,
 ) -> Dict:
-    """Ask the caller's providers in parallel and score how much they agree."""
-    chosen = choose_models(tenant_id, user_subject)
-    asked = [name for name, _p, _m in chosen]
+    """Ask the caller's providers in parallel and score how much they agree.
 
-    coros = {}
-    for name, prov, mdl in chosen:
-        key = owner_key_for(prov, tenant_slug=tenant_id, user_subject=user_subject)
-        kwargs = {"api_key": key} if key else {}
-        coros[name] = get_provider(prov).call(prompt, model=mdl, **kwargs)
-    raw = await run_parallel_named(coros)
-
+    Asked in waves: the first WANTED candidates together; if fewer than two
+    answered, the next candidates, until two opinions exist or nobody is
+    left. A comparison needs two voices, and stopping at the first three
+    names when two of them were dead is how "second opinion" became "single".
+    """
+    candidates = choose_models(tenant_id, user_subject, limit=None)
+    asked: List[str] = []
     responses: Dict[str, str] = {}
-    for name, r in raw.items():
-        if isinstance(r, BaseException):
-            responses[name] = ""
-        else:
-            responses[name] = getattr(r, "text", "") or ""
+
+    async def _wave(batch):
+        coros = {}
+        for name, prov, mdl in batch:
+            key = owner_key_for(prov, tenant_slug=tenant_id, user_subject=user_subject)
+            kwargs = {"api_key": key} if key else {}
+            # A reasoning model needs room to think AND answer; the room is
+            # per model, not one number for everyone.
+            kwargs["max_tokens"] = 2048 if (mdl and "kimi" in mdl) else 1024
+            try:
+                provider = get_provider(prov)
+            except KeyError:
+                # A name in the chain the registry does not know is a silent
+                # chair, not a crash of the whole comparison.
+                asked.append(name)
+                responses[name] = ""
+                continue
+            coros[name] = provider.call(prompt, model=mdl, **kwargs)
+        raw = await run_parallel_named(coros)
+        for name, r in raw.items():
+            asked.append(name)
+            if isinstance(r, BaseException):
+                responses[name] = ""
+            else:
+                responses[name] = getattr(r, "text", "") or ""
+
+    pos = 0
+    while pos < len(candidates):
+        batch = candidates[pos : pos + WANTED] if pos == 0 else candidates[pos : pos + 2]
+        pos += len(batch)
+        await _wave(batch)
+        if len([n for n, t in responses.items() if t]) >= 2:
+            break
 
     ok_names = [n for n, t in responses.items() if t]
 

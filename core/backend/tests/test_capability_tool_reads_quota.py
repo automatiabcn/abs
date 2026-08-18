@@ -71,11 +71,13 @@ def test_an_open_breaker_reaches_the_readout(monkeypatch):
     from app.cascade.breaker import default_breaker
 
     # Breaker keys are tenant-namespaced once a call has been made; the tool
-    # has to strip that or it would never match a provider name.
+    # has to strip that or it would never match a provider name — and only
+    # THIS caller's tenant counts (another tenant's open breaker is not our
+    # outage, 2026-08-18), so the key carries the caller's tenant here.
     monkeypatch.setattr(
         default_breaker,
         "snapshot",
-        lambda: {"acme|cerebras": {"state": "open"}, "groq": {"state": "closed"}},
+        lambda: {"default|cerebras": {"state": "open"}, "groq": {"state": "closed"}},
     )
 
     out = _status()

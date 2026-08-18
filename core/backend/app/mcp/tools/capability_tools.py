@@ -132,11 +132,32 @@ def _unusable_now() -> dict[str, str]:
         from app.cascade.breaker import default_breaker
 
         for raw, value in (default_breaker.snapshot() or {}).items():
-            # Breaker keys are tenant-namespaced once a call has been made.
-            name = str(raw).split("|")[-1].lower()
+            # Breaker keys are tenant-namespaced once a call has been made —
+            # and only THIS tenant's breaker says anything about this tenant.
+            # Collapsing every tenant's key onto the provider name made B's
+            # open breaker mark the provider "resting" for A (2026-08-18).
+            raw_s = str(raw)
+            if "|" in raw_s:
+                key_tenant, name = raw_s.rsplit("|", 1)
+                if tenant is not None and key_tenant not in (str(tenant), "_global", "default"):
+                    continue
+            else:
+                name = raw_s
+            name = name.lower()
             if str((value or {}).get("state", "")).lower() == "open":
                 down[name] = rest_reason("breaker_open", minutes_to_utc_midnight=to_midnight)
     except Exception:  # noqa: BLE001 — an unreadable breaker is not an open one
+        pass
+
+    # A provider whose last call failed permanently is not resting, it is
+    # not answering — and unlike a quota it will not clear at midnight.
+    try:
+        from app.cascade import provider_health as _health
+
+        for name, row in _health.snapshot(str(tenant) if tenant else None).items():
+            if row.get("reason"):
+                down.setdefault(str(name).lower(), str(row["reason"]))
+    except Exception:  # noqa: BLE001
         pass
 
     try:

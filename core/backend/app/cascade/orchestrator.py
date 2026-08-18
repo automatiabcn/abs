@@ -20,6 +20,7 @@ from app.providers.schemas import (
     ProviderResponse,
 )
 
+from . import provider_health as _health
 from .breaker import default_breaker
 from .cache import default_cache, prompt_hash
 
@@ -226,17 +227,18 @@ async def call_with_cascade(
         )
         if owner_key:
             call_kwargs = {**kwargs, "api_key": owner_key}
+        # Each leg gets a model it actually serves; a provider we have no
+        # pin for keeps its own default rather than inheriting somebody
+        # else's model name.
+        leg_model = (models or {}).get(name) or model
         try:
-            # Each leg gets a model it actually serves; a provider we have no
-            # pin for keeps its own default rather than inheriting somebody
-            # else's model name.
-            leg_model = (models or {}).get(name) or model
             resp = await provider.call(prompt, model=leg_model, **call_kwargs)
             # Expose the failover trail (attempts so far, winner last) on the
             # success path too — chat/Cost-HUD can show "tried A → B → C". It was
             # only surfaced on total failure via CascadeUnavailable before.
             resp.providers_tried = list(tried)
             await default_breaker.record_success(breaker_id)
+            _health.note_success(name, tenant=tenant_id, model=str(resp.model or leg_model or ""))
             if use_cache:
                 await default_cache.set(cache_key, resp)
             _meter(resp, provider=name, tenant_id=tenant_id)
@@ -252,6 +254,13 @@ async def call_with_cascade(
             last_err = exc
             saw_transient = saw_transient or exc.transient
             await default_breaker.record_failure(breaker_id)
+            # The panels read this: a PERMANENT failure (bad key, payment
+            # required, retired model) is what stops "ready" from being said
+            # about a provider that answers nothing (2026-08-18).
+            _health.note_failure(
+                name, tenant=tenant_id, permanent=not exc.transient,
+                detail=str(exc), model=str(leg_model or ""),
+            )
             _record_quota(name, tenant_id=tenant_id, status_code=500, exc=exc)
             # A permanent error means *this provider* cannot serve the request —
             # a bad key, a model it doesn't have, an account id that routes
@@ -277,6 +286,7 @@ async def call_with_cascade(
             last_err = exc
             saw_transient = True
             await default_breaker.record_failure(breaker_id)
+            _health.note_failure(name, tenant=tenant_id, permanent=False, detail=str(exc))
             logger.info(
                 "provider %s infra transient (%s), moving to the next one: %s",
                 name,

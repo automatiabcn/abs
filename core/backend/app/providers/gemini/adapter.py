@@ -19,6 +19,33 @@ from ..schemas import ProviderError, ProviderResponse
 from ._auth import gemini_headers
 
 
+# What thinking costs here: the model's own reasoning is written INTO the
+# maxOutputTokens budget. gemini-2.5-flash asked for 200 tokens answered with 7
+# ("The `vip_total` function") and finishReason MAX_TOKENS; asked for 20 it
+# answered with nothing, the cascade called that a failure and moved on, and
+# a request of the day's free quota was spent on silence (audit 2026-08-18).
+# So unless a caller asks for reasoning, thinking is turned down where the
+# API allows it — and the knob differs by family (measured 2026-08-16):
+#   2.5 flash / flash-lite      thinkingBudget: 0 (off)
+#   2.5 pro                     cannot be turned off; nothing is sent
+#   3.7                         thinkingBudget: 0
+#   other 3.x                   thinkingLevel: "low" (budget is rejected;
+#                               "minimal" is not accepted everywhere)
+def thinking_config(model: str, reasoning_effort: Optional[str] = None) -> Optional[dict]:
+    m = (model or "").lower()
+    if reasoning_effort in ("default", "high", "medium"):
+        return None  # the caller wants the model to think; leave the API default
+    if m.startswith("gemini-2.5-pro"):
+        return None
+    if m.startswith("gemini-2.5-"):
+        return {"thinkingBudget": 0}
+    if m.startswith("gemini-3.7"):
+        return {"thinkingBudget": 0}
+    if m.startswith("gemini-3."):
+        return {"thinkingLevel": "low"}
+    return None
+
+
 class GeminiProvider(BaseProvider):
     name = "gemini"
     default_model = "gemini-2.5-flash"
@@ -39,12 +66,16 @@ class GeminiProvider(BaseProvider):
             "https://generativelanguage.googleapis.com/v1beta/models/"
             f"{model}:generateContent"
         )
+        gen_cfg: dict = {
+            "temperature": kwargs.get("temperature", 0.3),
+            "maxOutputTokens": kwargs.get("max_tokens", 1024),
+        }
+        thinking = thinking_config(model, kwargs.get("reasoning_effort"))
+        if thinking:
+            gen_cfg["thinkingConfig"] = thinking
         body = {
             "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": kwargs.get("temperature", 0.3),
-                "maxOutputTokens": kwargs.get("max_tokens", 1024),
-            },
+            "generationConfig": gen_cfg,
         }
 
         timeout = kwargs.get("timeout", 60.0)
@@ -105,12 +136,16 @@ class GeminiProvider(BaseProvider):
         # the same helper so a third spelling only has to be learned once.
         from app.providers.base import was_cut_off
 
+        # Thinking tokens are billed and they come out of maxOutputTokens;
+        # counting only the visible answer under-reported both.
+        visible = int(usage.get("candidatesTokenCount") or 0)
+        thoughts = int(usage.get("thoughtsTokenCount") or 0)
         return ProviderResponse(
             text=text,
             model=model,
             provider=self.name,
             elapsed_ms=elapsed_ms,
             tokens_in=usage.get("promptTokenCount"),
-            tokens_out=usage.get("candidatesTokenCount"),
+            tokens_out=(visible + thoughts) if usage else None,
             truncated=was_cut_off(candidates[0].get("finishReason")),
         )

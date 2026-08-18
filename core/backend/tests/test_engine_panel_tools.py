@@ -373,7 +373,7 @@ def test_a_tenant_namespaced_breaker_lands_on_the_right_provider(monkeypatch):
     )
     monkeypatch.setattr(
         "app.cascade.breaker.default_breaker.snapshot",
-        lambda: {"acme|groq": {"state": "open"}},
+        lambda: {"default|groq": {"state": "open"}},
     )
     out = _call(ep.providers_chain())
     assert out["chain"][0]["breaker"] == "open"
@@ -408,7 +408,7 @@ def test_the_title_counts_only_providers_that_could_answer_now(monkeypatch):
         monkeypatch,
         chain=["groq", "cerebras", "cohere", "openrouter"],
         configured={"groq", "cerebras", "cohere"},   # openrouter has no key
-        breakers={"acme|cerebras": {"state": "open"}},
+        breakers={"default|cerebras": {"state": "open"}},
         throttled={"cohere"},
     )
     assert out["providers"]["ready"] == 1

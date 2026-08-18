@@ -564,9 +564,16 @@ def _derive_risk(edits: List[ProposedEdit]) -> Tuple[str, bool]:
         low_quality = quality is not None and quality < _JUDGE_LOW
         if affected >= _BLAST_HIGH or low_quality or not e.dry_run_ok:
             return "high", True  # a single dangerous edit gates the whole run
-        if affected >= _BLAST_MEDIUM:
+        if quality is None:
+            # Nobody graded this edit — judge quota out, no judge provider,
+            # provider down. "Not measured" was read as "not low", and the run
+            # sailed through as low risk with no approval while the panel
+            # painted it green (audit 2026-08-18). Ungraded is a reason to
+            # ask, not a pass.
+            risk = "ungraded"
+        elif affected >= _BLAST_MEDIUM and risk != "ungraded":
             risk = "medium"
-    return risk, risk == "medium"
+    return risk, risk in ("medium", "ungraded")
 
 
 async def run_composer(

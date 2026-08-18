@@ -60,7 +60,7 @@ class ComposerRun(BaseModel):
     task: str
     edits: List[ProposedEdit] = Field(default_factory=list)
     summary: str = ""
-    risk: str = "low"  # low | medium | high
+    risk: str = "low"  # low | medium | high | ungraded (nobody graded it — ask)
     requires_approval: bool = False
     providers_tried: List[str] = Field(default_factory=list)
     provider: str = Field(default="", description="Provider that answered (winner)")
