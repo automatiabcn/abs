@@ -11,6 +11,7 @@ import json
 from typing import List
 
 from app.judge.training import persona_status, reset_persona, train_persona
+from app.mcp.operator_only import operator_refusal
 from app.mcp.middleware import with_hooks
 from app.mcp.server import mcp_server
 from app.mcp.tracking import tracker
@@ -32,6 +33,9 @@ async def judge_persona_train(min_samples: int = 10) -> str:
     """Retune the persona from recorded judge outcomes. Below min_samples it
     refuses with 'insufficient_data' rather than fitting to noise."""
     await tracker.bump("judge_persona_train")
+    _why = operator_refusal("judge_persona_train")
+    if _why:
+        return json.dumps({"error": "operator_only", "detail": _why}, ensure_ascii=False)
     return json.dumps(
         train_persona(min_samples=min_samples), ensure_ascii=False, indent=2
     )
@@ -43,6 +47,9 @@ async def judge_persona_reset() -> str:
     """Reset the persona to its defaults. The outcome history is kept, so a
     later train() can rebuild from the same evidence."""
     await tracker.bump("judge_persona_reset")
+    _why = operator_refusal("judge_persona_reset")
+    if _why:
+        return json.dumps({"error": "operator_only", "detail": _why}, ensure_ascii=False)
     return json.dumps(reset_persona(), ensure_ascii=False, indent=2)
 
 
