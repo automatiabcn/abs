@@ -524,7 +524,11 @@ async def provider_key_set(provider: str, value: str) -> str:
     # that cannot reach the provider stores the key but says so honestly.
     from app.providers.key_probe import probe_provider_key
 
-    probe = probe_provider_key(provider, value.strip())
+    # A key probe is a network round trip of up to 8 s; done inline it held
+    # the event loop and every other client with it.
+    import asyncio as _asyncio
+
+    probe = await _asyncio.to_thread(probe_provider_key, provider, value.strip())
     if probe.status == "rejected":
         return json.dumps(
             {

@@ -594,8 +594,14 @@ async def run_composer(
     # What the workspace actually contains, before asking for a change to it.
     # Reading the tree is local and deterministic; a failure here costs the
     # model its file list, never the run.
+    # Off the event loop: listing, indexing and reading a workspace are
+    # blocking filesystem work; done inline they froze Tab, the title bar and
+    # every other MCP client of this server for the length of a large-repo
+    # index (audit 2026-08-18).
+    import asyncio as _asyncio
+
     try:
-        files = workspace_files(workspace_root)
+        files = await _asyncio.to_thread(workspace_files, workspace_root)
     except Exception as exc:  # noqa: BLE001
         logger.info("composer workspace listing skipped: %s", exc)
         files = []
@@ -607,7 +613,7 @@ async def run_composer(
     # files an edit would break and did not tell the model. Deterministic,
     # local, no model call; a failure costs context, never the run.
     try:
-        codegraph.build(workspace_root, key=key)
+        await _asyncio.to_thread(codegraph.build, workspace_root, key=key)
         graph_ready = True
     except Exception as exc:  # noqa: BLE001
         logger.info("composer codegraph build skipped: %s", exc)
@@ -615,8 +621,9 @@ async def run_composer(
 
     try:
         contents = (
-            relevant_files(
-                workspace_root, task, files, graph_key=key if graph_ready else None
+            await _asyncio.to_thread(
+                relevant_files,
+                workspace_root, task, files, graph_key=key if graph_ready else None,
             )
             if files
             else []
@@ -642,7 +649,7 @@ async def run_composer(
     # loses the badge that makes a proposal worth trusting.
     if raw_edits and not graph_ready:
         try:
-            codegraph.build(workspace_root, key=key)
+            await _asyncio.to_thread(codegraph.build, workspace_root, key=key)
         except Exception as exc:  # noqa: BLE001 — blast-radius is an annotation
             logger.info("composer codegraph rebuild skipped: %s", exc)
 
