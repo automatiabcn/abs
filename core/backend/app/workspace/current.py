@@ -31,44 +31,88 @@ import threading
 from typing import Dict, Optional, Tuple
 
 _LOCK = threading.Lock()
-_OPEN: Dict[Tuple[str, str], str] = {}
+# One slot per (tenant, user, client). The client is the editor window: a
+# developer with two windows open — the ordinary case — has two projects open,
+# and until 2026-08-18 they shared one slot, so the 60-second heartbeat of
+# whichever window spoke last decided which project the OTHER window's chat
+# answered about (audit: a question about ws-audit was answered from
+# RobotMarket's files, `used_files` and all).
+_OPEN: Dict[Tuple[str, str, str], str] = {}
+# The most recent slot per (tenant, user): what an older editor that sends no
+# client id, or a tool call that names no root, falls back to.
+_LATEST: Dict[Tuple[str, str], str] = {}
 
 
-def _key(tenant: str, user: str) -> Tuple[str, str]:
-    return (tenant or "default", user or "")
+def _key(tenant: str, user: str, client: str = "") -> Tuple[str, str, str]:
+    return (tenant or "default", user or "", client or "")
 
 
-def set_workspace(tenant: str, user: str, root: str) -> Optional[str]:
-    """Record the project this caller has open. Returns what was stored.
+def _validated(root: str) -> Optional[str]:
+    try:
+        resolved = os.path.realpath(root)
+    except OSError:
+        return None
+    if not os.path.isdir(resolved):
+        return None
+    return resolved
 
-    An empty root clears it — that is the editor saying "no folder open", and
-    it has to be possible to say. A path that is not a directory is refused
-    rather than stored: a stale or invented root would make every tool that
-    trusts this quietly answer about nothing.
+
+def set_workspace(
+    tenant: str, user: str, root: str, client_id: str = ""
+) -> Optional[str]:
+    """Record the project this caller (this editor window) has open.
+
+    An empty root clears that window's slot — the editor saying "no folder
+    open", and it has to be possible to say. A path that is not a directory
+    is refused rather than stored: a stale or invented root would make every
+    tool that trusts this quietly answer about nothing.
     """
     with _LOCK:
         if not root:
-            _OPEN.pop(_key(tenant, user), None)
+            gone = _OPEN.pop(_key(tenant, user, client_id), None)
+            uk = _key(tenant, user)[:2]
+            if gone is not None and _LATEST.get(uk) == gone:
+                # The latest slot closed; another live window (if any) is now
+                # the fallback — never a closed project.
+                remaining = [v for k, v in _OPEN.items() if k[:2] == uk]
+                if remaining:
+                    _LATEST[uk] = remaining[-1]
+                else:
+                    _LATEST.pop(uk, None)
+            elif not any(k[:2] == uk for k in _OPEN):
+                _LATEST.pop(uk, None)
             return None
-        try:
-            resolved = os.path.realpath(root)
-        except OSError:
+        resolved = _validated(root)
+        if resolved is None:
             return None
-        if not os.path.isdir(resolved):
-            return None
-        _OPEN[_key(tenant, user)] = resolved
+        _OPEN[_key(tenant, user, client_id)] = resolved
+        _LATEST[_key(tenant, user)[:2]] = resolved
         return resolved
 
 
-def current_workspace(tenant: str, user: str) -> Optional[str]:
+def current_workspace(
+    tenant: str,
+    user: str,
+    client_id: str = "",
+    explicit_root: str = "",
+) -> Optional[str]:
     """The project this caller has open, or None.
 
-    None means "no project", not "use the server's own directory" — a tool that
-    fell back to the process's cwd would answer about our container's
-    filesystem, which is worse than admitting it does not know.
+    Precedence: a root the call itself names (the editor knows which window
+    is asking; the server does not) → this client's slot → the most recently
+    announced slot for the user (older editors). None means "no project", not
+    "use the server's own directory" — a tool that fell back to the process's
+    cwd would answer about our container's filesystem, which is worse than
+    admitting it does not know.
     """
+    if explicit_root:
+        return _validated(explicit_root)
     with _LOCK:
-        root = _OPEN.get(_key(tenant, user))
+        root = None
+        if client_id:
+            root = _OPEN.get(_key(tenant, user, client_id))
+        if not root:
+            root = _LATEST.get(_key(tenant, user)[:2])
     if root and os.path.isdir(root):
         return root
     return None
@@ -105,5 +149,9 @@ def problem_with_root(root: str) -> Optional[str]:
 
 
 def forget(tenant: str, user: str) -> None:
+    """Drop every slot this user has — all windows. Test and sign-out helper."""
+    uk = _key(tenant, user)[:2]
     with _LOCK:
-        _OPEN.pop(_key(tenant, user), None)
+        for k in [k for k in _OPEN if k[:2] == uk]:
+            _OPEN.pop(k, None)
+        _LATEST.pop(uk, None)

@@ -116,12 +116,17 @@ async def quota_meter_status() -> str:
 
 @mcp_server.tool()
 @with_hooks("workspace_set")
-async def workspace_set(root: str = "") -> str:
+async def workspace_set(root: str = "", client_id: str = "") -> str:
     """Tell the server which project the caller has open.
 
     The editor calls this when it starts and whenever the folder changes, so
     every other tool can answer about the code in front of the developer
     instead of in general. Pass an empty root to say "no folder open".
+
+    `client_id` names the editor window. Two windows are two projects; with
+    one slot per account the last heartbeat won and the other window's chat
+    answered about the wrong repository (audit, 2026-08-18). Older editors
+    that send none share the account's latest slot, as before.
 
     This exists because a tester opened a project on 2026-08-03, asked the chat
     about it, and got an answer about nothing: of the thirty-three tools the
@@ -132,7 +137,7 @@ async def workspace_set(root: str = "") -> str:
     from app.workspace.current import set_workspace
 
     tenant = _caller_tenant()
-    stored = set_workspace(tenant, _caller_user() or "", root)
+    stored = set_workspace(tenant, _caller_user() or "", root, client_id=client_id)
     if root and stored is None:
         return json.dumps(
             {
@@ -180,11 +185,17 @@ async def cascade_ask(
     max_tokens: int = 1024,
     temperature: float = 0.3,
     use_cache: bool = True,
+    workspace_root: str = "",
+    client_id: str = "",
 ) -> str:
     """Ask the provider cascade and return the answer WITH its provenance:
     which provider answered, the failover trail, tokens, latency and estimated
     cost. Use this instead of ask_* when the caller shows the user where the
-    answer came from."""
+    answer came from.
+
+    `workspace_root` names the project to answer about; the editor knows
+    which window is asking, the server does not. Without it (older editors)
+    the answer is about the window that announced itself last."""
     await tracker.bump("cascade_ask")
     from app.cascade.orchestrator import call_with_cascade
     from app.providers.cascade import get_active_providers
@@ -236,7 +247,9 @@ async def cascade_ask(
         from app.mcp.tools.codegraph_tools import _key_for
         from app.workspace.current import current_workspace
 
-        root = current_workspace(tenant, user or "")
+        root = current_workspace(
+            tenant, user or "", client_id=client_id, explicit_root=workspace_root
+        )
         if root:
             # Keyed by the project, not the tenant. Ranking the files to send
             # is the whole of "the chat knows the project you have open", and

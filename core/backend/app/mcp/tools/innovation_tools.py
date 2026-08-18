@@ -19,7 +19,13 @@ REGISTERED_TOOLS: List[str] = []
 
 @mcp_server.tool()
 @with_hooks("symbol_search")
-async def symbol_search(q: str, kind: Optional[str] = None, limit: int = 20) -> str:
+async def symbol_search(
+    q: str,
+    kind: Optional[str] = None,
+    limit: int = 20,
+    workspace_root: str = "",
+    client_id: str = "",
+) -> str:
     """Symbol DB substring search — name LIKE %q%, opsiyonel kind=function|class|import."""
     await tracker.bump("symbol_search")
     from app.symbols.store import search
@@ -33,7 +39,10 @@ async def symbol_search(q: str, kind: Optional[str] = None, limit: int = 20) -> 
         tenant, user = get_mcp_caller()
     except Exception:  # noqa: BLE001 — no caller context is a usable state
         tenant, user = "default", ""
-    root = current_workspace(str(tenant or "default"), str(user or ""))
+    root = current_workspace(
+        str(tenant or "default"), str(user or ""),
+        client_id=client_id, explicit_root=workspace_root,
+    )
 
     # Served from the project's graph when one is open: that is where the
     # editor's index command writes, and it is already keyed per project, so
