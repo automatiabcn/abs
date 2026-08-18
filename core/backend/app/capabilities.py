@@ -33,12 +33,19 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterable, Optional
 
-# Providers that can answer a chat/completion request. `cohere` is deliberately
-# absent: the product uses it for embeddings and reranking, not as a cascade
-# answerer, so counting it here would promise a failover that never happens.
+# Providers that can answer a chat/completion request. `cohere` IS here: it
+# sits in the cascade order and answers chat (command-r-plus took a live
+# question on 2026-08-18) besides embedding and reranking, so leaving it out
+# under-counted the failovers a Cohere key really buys.
 CHAT_PROVIDERS = frozenset(
-    {"groq", "cerebras", "gemini", "anthropic", "cloudflare", "openrouter", "ollama", "mlx"}
+    {"groq", "cerebras", "gemini", "anthropic", "cloudflare", "openrouter", "cohere", "ollama", "mlx"}
 )
+
+# The Senior Judge is pinned to gpt-oss-120b for comparable scores, and only
+# these providers serve it (app/judge/senior.py _JUDGE_ROUTES). A gemini-only
+# install has "a chat provider" and no judge — the panel said otherwise until
+# 2026-08-18, and every score came back None.
+JUDGE_PROVIDERS = frozenset({"groq", "cerebras"})
 
 # Embedding sources, in the order `embedding_backend="auto"` resolves them.
 # `mock` is not here on purpose — see the module docstring.
@@ -74,6 +81,11 @@ class Capability:
     needs_chat_providers: int = 0
     # True when it needs a real embedding source.
     needs_embeddings: bool = False
+    # When set, at least one of THESE providers must be usable (the judge's
+    # pinned model is served by two providers, not by "any chat provider").
+    needs_any_of: frozenset = frozenset()
+    # True when it needs an OS sandbox mechanism on this machine.
+    needs_sandbox: bool = False
 
 
 CAPABILITIES: tuple[Capability, ...] = (
@@ -94,6 +106,7 @@ CAPABILITIES: tuple[Capability, ...] = (
         title="Senior judge",
         promise="Every proposed change reviewed and scored, with the reasoning shown.",
         needs_chat_providers=1,
+        needs_any_of=JUDGE_PROVIDERS,
     ),
     Capability(
         key="failover",
@@ -124,6 +137,7 @@ CAPABILITIES: tuple[Capability, ...] = (
         key="checks",
         title="Sandboxed checks",
         promise="Your tests run in the OS's own sandbox, and ABS says so when it could not.",
+        needs_sandbox=True,
     ),
 )
 
@@ -164,6 +178,7 @@ def assess(
     *,
     embedding_backend: Optional[str] = None,
     unusable_now: Optional[dict[str, str]] = None,
+    sandbox_available: Optional[bool] = None,
 ) -> list[CapabilityState]:
     """What works, what does not, and what one more key would change.
 
@@ -186,6 +201,53 @@ def assess(
 
     states: list[CapabilityState] = []
     for cap in CAPABILITIES:
+        if cap.needs_sandbox and sandbox_available is False:
+            # "Checks" was always on. On a machine with no seatbelt/bwrap/
+            # restricted token the Run button offered a promise the runner
+            # refuses (fail-closed) — the panel and the runner disagreed.
+            states.append(
+                CapabilityState(
+                    capability=cap,
+                    available=False,
+                    blocked_by=(
+                        "No OS sandbox on this machine (macOS seatbelt, Linux "
+                        "bubblewrap, Windows restricted token), so ABS will not "
+                        "run checks unconfined."
+                    ),
+                    unlock_with=[],
+                    unlock_is_free=False,
+                )
+            )
+            continue
+        if cap.needs_any_of and not (set(chat) & cap.needs_any_of):
+            resting_any = set(_chat_providers(configured)) & cap.needs_any_of
+            if resting_any:
+                asleep = sorted(p for p in down if p in cap.needs_any_of)
+                why = "; ".join(f"{p} {down[p]}" for p in asleep) or "a provider is resting"
+                states.append(
+                    CapabilityState(
+                        capability=cap,
+                        available=False,
+                        blocked_by=f"Not right now — {why}. The key is fine; this passes.",
+                        unlock_with=[],
+                        unlock_is_free=False,
+                    )
+                )
+                continue
+            wanted = sorted(cap.needs_any_of, key=lambda p: (p not in FREE_TO_START, p))
+            states.append(
+                CapabilityState(
+                    capability=cap,
+                    available=False,
+                    blocked_by=(
+                        f"Needs a key for one of {', '.join(wanted)} — the judge's model "
+                        f"(gpt-oss-120b) is served only there, so scores stay comparable."
+                    ),
+                    unlock_with=wanted,
+                    unlock_is_free=any(p in FREE_TO_START for p in wanted),
+                )
+            )
+            continue
         if cap.needs_embeddings and not has_embeddings:
             states.append(
                 CapabilityState(
