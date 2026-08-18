@@ -72,6 +72,7 @@ async def query_hybrid(
     project_filter: Optional[str] = None,
     top_k: int = 5,
     alpha_semantic: float = 0.6,
+    tenant: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """BM25 + cosine fusion. Empty query -> []. Embed/Chroma failure -> [{error: ...}]."""
     if not question or not question.strip():
@@ -81,7 +82,9 @@ async def query_hybrid(
     except Exception as exc:
         return [{"error": f"embed fail: {exc}"}]
     coll = _collection()
-    where = {"project": project_filter} if project_filter else None
+    from .indexer import scope_where
+
+    where = scope_where(tenant, project_filter)
     pool_size = max(top_k * 6, 30)
     try:
         result = coll.query(query_embeddings=[vec], n_results=pool_size, where=where)

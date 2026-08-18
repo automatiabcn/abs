@@ -22,6 +22,27 @@ from app.rag import status as _status
 REGISTERED_TOOLS: List[str] = []
 
 
+def _caller_tenant() -> Optional[str]:
+    """The tenant this token belongs to — the scope of every RAG tool below.
+
+    Until 2026-08-18 these tools scoped by `settings.mcp_rag_tenant` (one
+    value for the whole server) and otherwise not at all: tenant A's
+    `rag_clear` wiped B's knowledge base, A's `rag_query` read B's chunks.
+    An unknown caller (no MCP context — an in-process call) is scoped to the
+    legacy owner rather than to everything."""
+    try:
+        from app.mcp.context import get_mcp_caller
+
+        t, _u = get_mcp_caller()
+        if t:
+            return str(t)
+    except Exception:  # noqa: BLE001
+        pass
+    from app.rag.indexer import LEGACY_TENANT
+
+    return LEGACY_TENANT
+
+
 async def _query_qdrant_tenant(question: str, top_k: int) -> dict:
     """Search the panel-facing Qdrant document store for the configured tenant.
 
@@ -96,7 +117,9 @@ async def rag_index(
     )
     if _bad:
         return json.dumps({"error": _bad, "indexed": 0, "skipped": 0}, ensure_ascii=False)
-    res = await _index_path(path, project=project, chunk_strategy=chunk_strategy)
+    res = await _index_path(
+        path, project=project, chunk_strategy=chunk_strategy, tenant=_caller_tenant()
+    )
     return json.dumps(res, ensure_ascii=False, indent=2)
 
 
@@ -117,7 +140,9 @@ async def rag_query(
     if settings.mcp_rag_tenant:
         res = await _query_qdrant_tenant(question, top_k=top_k)
     else:
-        res = await _query(question, project_filter=project_filter, top_k=top_k)
+        res = await _query(
+            question, project_filter=project_filter, top_k=top_k, tenant=_caller_tenant()
+        )
     return json.dumps(res, ensure_ascii=False, indent=2)
 
 
@@ -126,15 +151,18 @@ async def rag_query(
 async def rag_status() -> str:
     """RAG collection summary and disk usage."""
     await tracker.bump("rag_status")
-    return json.dumps(_status(), ensure_ascii=False, indent=2)
+    return json.dumps(_status(tenant=_caller_tenant()), ensure_ascii=False, indent=2)
 
 
 @mcp_server.tool()
 @with_hooks("rag_clear")
 async def rag_clear(project: Optional[str] = None) -> str:
-    """Delete the whole collection, or only the chunks of one project."""
+    """Delete this caller's indexed chunks — all of them, or one project's.
+    Never the collection: that holds every tenant's."""
     await tracker.bump("rag_clear")
-    return json.dumps(_clear(project=project), ensure_ascii=False)
+    return json.dumps(
+        _clear(project=project, tenant=_caller_tenant()), ensure_ascii=False
+    )
 
 
 REGISTERED_TOOLS.extend(["rag_index", "rag_query", "rag_status", "rag_clear"])

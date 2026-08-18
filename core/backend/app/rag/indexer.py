@@ -68,6 +68,66 @@ def _collection(name: str = "abs_default"):
     return _client().get_or_create_collection(name=name)
 
 
+# The tenant every chunk written before 2026-08-18 belongs to. Chunks carried
+# a `project` and no owner; the MCP tools scoped by a server setting rather
+# than by who was asking, so one tenant could read — or clear — another's
+# knowledge base. Legacy chunks are backfilled to this owner once.
+LEGACY_TENANT = "default"
+
+
+def scope_where(
+    tenant: Optional[str], project: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """The Chroma `where` for this caller: their tenant, optionally one project.
+    A tenant of None means an unscoped (operator/HTTP-panel) caller."""
+    conds: List[Dict[str, Any]] = []
+    if tenant:
+        conds.append({"tenant": tenant})
+    if project:
+        conds.append({"project": project})
+    if not conds:
+        return None
+    return conds[0] if len(conds) == 1 else {"$and": conds}
+
+
+def backfill_tenant(default: str = LEGACY_TENANT, batch: int = 500) -> int:
+    """Stamp `tenant` onto chunks written before it existed. Idempotent; the
+    number of chunks updated is returned so a start-up log can say so."""
+    try:
+        coll = _collection()
+    except Exception:  # noqa: BLE001
+        return 0
+    updated = 0
+    offset = 0
+    while True:
+        try:
+            page = coll.get(limit=batch, offset=offset, include=["metadatas"])
+        except Exception:  # noqa: BLE001
+            break
+        ids = page.get("ids") or []
+        if not ids:
+            break
+        metas = page.get("metadatas") or []
+        fix_ids: List[str] = []
+        fix_metas: List[Dict[str, Any]] = []
+        for i, m in zip(ids, metas):
+            m = dict(m or {})
+            if not m.get("tenant"):
+                m["tenant"] = default
+                fix_ids.append(i)
+                fix_metas.append(m)
+        if fix_ids:
+            try:
+                coll.update(ids=fix_ids, metadatas=fix_metas)
+                updated += len(fix_ids)
+            except Exception:  # noqa: BLE001
+                break
+        if len(ids) < batch:
+            break
+        offset += batch
+    return updated
+
+
 def _hash_chunk(content: str) -> str:
     return hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
 
@@ -195,6 +255,7 @@ async def index_path(
     project: str = "default",
     extensions: Optional[List[str]] = None,
     chunk_strategy: str = "semantic",
+    tenant: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Chunk a file or directory, embed it, and persist to Chroma.
 
@@ -265,6 +326,7 @@ async def index_path(
                     metadatas=[
                         {
                             "project": project,
+                            "tenant": tenant or LEGACY_TENANT,
                             "file": str(fp),
                             "chunk_idx": idx,
                             "hash": doc_hash,
@@ -286,10 +348,12 @@ async def index_path(
     }
 
 
-def clear(project: Optional[str] = None) -> Dict[str, Any]:
-    """Delete the whole collection, or only the chunks of one project."""
+def clear(project: Optional[str] = None, tenant: Optional[str] = None) -> Dict[str, Any]:
+    """Delete chunks: the whole collection (unscoped caller, no project), or
+    only this tenant's, optionally only one project's. A tenant-scoped caller
+    can never drop the collection — that is everyone's."""
     coll = _collection()
-    if project is None:
+    if project is None and not tenant:
         try:
             count = coll.count()
             _client().delete_collection(name=coll.name)
@@ -299,8 +363,8 @@ def clear(project: Optional[str] = None) -> Dict[str, Any]:
     try:
         # Filter by metadata
         before = coll.count()
-        coll.delete(where={"project": project})
+        coll.delete(where=scope_where(tenant, project))
         after = coll.count()
-        return {"deleted": before - after, "project": project}
+        return {"deleted": before - after, "project": project, "tenant": tenant}
     except Exception as exc:
         return {"error": str(exc)[:200], "deleted": 0}
