@@ -19,7 +19,7 @@
     },
     {
       "id": "cerebras-qwen-235b",
-      "model": "qwen-3-235b-a22b-instruct-2507",
+      "model": "gpt-oss-120b",
       "tier": "upper",
       "context": 32768,
       "free_quota": null,

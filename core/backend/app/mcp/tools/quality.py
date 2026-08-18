@@ -79,7 +79,7 @@ async def write_docs(module_info: str) -> str:
     )
     try:
         provider = get_provider("groq")
-        resp = await provider.call(prompt, model="qwen/qwen3-32b", max_tokens=2000)
+        resp = await provider.call(prompt, model="qwen/qwen3.6-27b", max_tokens=2000)
         return resp.text or "[ERROR] write_docs: empty"
     except ProviderError as exc:
         return f"[ERROR] write_docs: {exc.message}"

@@ -742,6 +742,20 @@ async def title_status() -> str:
     except Exception:  # noqa: BLE001
         requests_today = None
 
+    # A pinned model the provider has retired is not "ready" however green the
+    # breaker is (08-16: two days of "groq · ready" over a 404). The watch
+    # answers with the model names, so the bar can say what is wrong.
+    retired: Dict[str, list] = {}
+    try:
+        from app.providers.catalog_watch import retired_models
+
+        for name in list(providers_ready):
+            gone = retired_models(name)
+            if gone:
+                retired[name] = gone
+    except Exception:  # noqa: BLE001 — the watch is an annotation, not the bar
+        retired = {}
+
     return json.dumps(
         {
             "ok": True,
@@ -751,13 +765,15 @@ async def title_status() -> str:
                 "ready": len(providers_ready),
                 "total": providers_total,
                 "names": providers_ready,
+                "retired_models": retired,
             },
             "models": models,
             "free_share": free_share,
             "requests_today": requests_today,
             "note": (
                 "ready = has a key, breaker closed, not throttled. free_share "
-                "is null until a request has been made."
+                "is null until a request has been made. retired_models lists "
+                "pinned models the provider no longer serves."
             ),
         },
         ensure_ascii=False,
