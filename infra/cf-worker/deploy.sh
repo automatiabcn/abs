@@ -24,7 +24,10 @@ node --test licensing.test.mjs >/dev/null || { echo "worker tests red — not de
 echo "== who am I"
 if ! wrangler whoami >/dev/null 2>&1; then
   echo "wrangler is not logged in (or the token lacks Workers permissions)."
-  echo "Run:  wrangler login   — then re-run this script."
+  echo "The shell exports CLOUDFLARE_API_TOKEN (the Workers-AI key, no Workers Scripts:Edit),"
+  echo "so log in via OAuth without it:"
+  echo "   env -u CLOUDFLARE_API_TOKEN wrangler login"
+  echo "then:  env -u CLOUDFLARE_API_TOKEN infra/cf-worker/deploy.sh"
   exit 1
 fi
 
