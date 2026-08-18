@@ -19,7 +19,7 @@ this tool calls available is one that would really run.
 from __future__ import annotations
 
 import json
-from typing import List
+from typing import Optional, List
 
 from app.capabilities import (
     CHAT_PROVIDERS,
@@ -190,7 +190,15 @@ async def capability_status() -> str:
     providers = _configured_providers()
     backend = _resolved_embedding_backend()
     down = _unusable_now()
-    states = assess(providers, embedding_backend=backend, unusable_now=down)
+    try:
+        from app.sandbox import runner as _sandbox
+
+        sandbox_ok: Optional[bool] = bool(_sandbox.available_mechanism())
+    except Exception:  # noqa: BLE001 — unknown is not "no"
+        sandbox_ok = None
+    states = assess(
+        providers, embedding_backend=backend, unusable_now=down, sandbox_available=sandbox_ok
+    )
     return json.dumps(
         {
             "ok": True,

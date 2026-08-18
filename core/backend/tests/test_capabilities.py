@@ -78,13 +78,16 @@ def test_any_real_embedding_source_is_enough(backend):
     assert states["knowledge"].available is True
 
 
-def test_a_cohere_key_alone_does_not_pretend_to_answer_questions():
-    # Cohere is used for embeddings and reranking here, not as a cascade
-    # answerer. Counting it as a chat provider would promise a failover that
-    # never happens.
+def test_a_cohere_key_alone_answers_questions_and_embeds():
+    # Cohere sits in the cascade order and answers chat (command-r-plus took a
+    # live question on 2026-08-18) besides embedding and reranking. The old
+    # premise here — "not a cascade answerer" — under-counted what a Cohere
+    # key buys and hid a real failover.
     states = by_key(assess(["cohere"]))
-    assert states["ask"].available is False
+    assert states["ask"].available is True
     assert states["knowledge"].available is True
+    # …but not the judge: its pinned model is served only by groq/cerebras.
+    assert states["judge"].available is False
 
 
 def test_every_unavailable_capability_can_be_acted_on():
