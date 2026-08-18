@@ -23,6 +23,21 @@ REGISTERED_TOOLS: List[str] = []
 
 async def _anthropic_call(tool_name: str, prompt: str, model: str) -> str:
     await tracker.bump(tool_name)
+    # Anthropic is paid. It runs on the caller's own key, or the operator's
+    # when the operator is asking (or shared it) — never silently on the
+    # server's key for any token that knows the tool's name (2026-08-18).
+    tenant, user = _caller()
+    try:
+        from app.multitenant.provider_keys import tenant_configured_providers
+
+        mine = frozenset(tenant_configured_providers(tenant_slug=tenant, user_subject=user))
+    except Exception:  # noqa: BLE001
+        mine = frozenset()
+    from app.providers.paid_access import refusal
+
+    why = refusal("anthropic", mine, user)
+    if why:
+        return f"[REFUSED] {tool_name}: {why}"
     try:
         resp = await call_with_cascade(
             prompt,
@@ -30,10 +45,22 @@ async def _anthropic_call(tool_name: str, prompt: str, model: str) -> str:
             model=model,
             fallbacks=(),
             use_cache=True,
+            tenant_id=tenant or "_global",
+            user_subject=user,
         )
         return resp.text or ""
     except ProviderError as exc:
         return f"[ERROR] {tool_name}: {exc.message}"
+
+
+def _caller():
+    try:
+        from app.mcp.context import get_mcp_caller
+
+        t, u = get_mcp_caller()
+        return (str(t or "") or None), (str(u or "") or None)
+    except Exception:  # noqa: BLE001
+        return None, None
 
 
 @mcp_server.tool()
