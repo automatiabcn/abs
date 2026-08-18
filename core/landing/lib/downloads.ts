@@ -53,6 +53,14 @@ export type Build = {
   size?: number;
   /** Hex sha256 so a careful customer can verify what they downloaded. */
   sha256?: string;
+  /** The editor's own product version (e.g. "1.126.04524-abs.3") — what the
+   * update check compares by semver against the running build. This is NOT
+   * the server release number; the two are versioned together but named
+   * differently, and the check needs the editor's. */
+  productVersion?: string;
+  /** The build's git commit — the update feed's `version` field, and what
+   * the legacy `/api/update/.../{commit}` route compares against. */
+  commit?: string;
 };
 
 export type Release = {

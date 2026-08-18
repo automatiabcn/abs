@@ -23,11 +23,15 @@
 // It answers 204 today. Auto-update on macOS goes through Squirrel, which
 // checks the signature of what it downloads, and the builds are ad-hoc signed
 // — an update it cannot verify is an update it will refuse, and telling the
-// editor to fetch one would produce a failure the customer cannot act on. The
-// editor also ships with `updateMode: "none"`, so nothing calls this yet. When
-// there are signed builds, RELEASE gains an editor entry and this starts
-// answering with it; until then "you are current" is the true answer, and the
-// download page is where a new version is announced.
+// editor to fetch one would produce a failure the customer cannot act on.
+//
+// Note (2026-08-18): this is the shape Microsoft's VS Code asks for. OUR
+// build carries VSCodium's update patch and asks
+// `{updateUrl}/{quality}/{platform}/{arch}/latest.json` instead — see
+// app/stable/[platform]/[arch]/latest.json/route.ts, which is the route the
+// shipped editor actually calls. This one stays for tools that speak the
+// upstream shape. The editor does NOT ship with updates disabled: it checks
+// on start, and both routes answer 204 until RELEASE names an editor build.
 
 import { NextResponse } from "next/server";
 
@@ -62,16 +66,23 @@ export async function GET(
     return new NextResponse(null, { status: 204 });
   }
 
-  // The running build asks with its own commit. Same commit, nothing to do.
-  if (commit && build.sha256 && commit === build.sha256) {
+  // The running build asks with its own COMMIT. This compared it with the
+  // artefact's file hash — never equal — so once a release existed every
+  // editor would have been told to update, forever (audit 2026-08-18).
+  if (commit && build.commit && commit === build.commit) {
+    return new NextResponse(null, { status: 204 });
+  }
+  if (!build.productVersion || !build.commit) {
+    // Half-described build: better "you are current" than a feed entry the
+    // editor cannot compare or verify.
     return new NextResponse(null, { status: 204 });
   }
 
   return NextResponse.json({
     url: build.href,
     name: RELEASE.version,
-    version: build.sha256 ?? RELEASE.version,
-    productVersion: RELEASE.version,
+    version: build.commit,
+    productVersion: build.productVersion,
     timestamp: Date.parse(RELEASE.published) || Date.now(),
     sha256hash: build.sha256 ?? "",
   });
