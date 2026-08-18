@@ -22,12 +22,36 @@ header is missing or ``verify_token`` rejects it, we return a JSON-RPC-shaped
 
 from __future__ import annotations
 
+import hashlib
+from collections import OrderedDict
+
 import logging
 from typing import Any
 
 from starlette.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
+
+
+# session id -> digest of the token that opened it. Bounded: the oldest
+# bindings fall off; a session that fell off is re-bound to the next token
+# that uses it (a restart has the same effect), which is the pre-existing
+# behaviour and never WORSE than it.
+_SESSION_OWNER: "OrderedDict[str, str]" = OrderedDict()
+_SESSION_OWNER_MAX = 10_000
+
+
+def _digest(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _remember_session(sid: str, digest: str) -> None:
+    if not sid or not digest:
+        return
+    _SESSION_OWNER[sid] = digest
+    _SESSION_OWNER.move_to_end(sid)
+    while len(_SESSION_OWNER) > _SESSION_OWNER_MAX:
+        _SESSION_OWNER.popitem(last=False)
 
 
 class McpTokenAuthASGI:
@@ -65,6 +89,16 @@ class McpTokenAuthASGI:
         ok = False
         reason = "missing_token"
         mcp_tenant: str | None = None
+        # The streamable-HTTP transport is stateful: `initialize` opens a
+        # session (the server hands back an mcp-session-id) and every later
+        # request carries that id. The server task behind the session captured
+        # the FIRST token's tenant/user, and later requests were only checked
+        # for *a* valid token — so any valid token plus a leaked session id
+        # acted as the initializer, BYOK keys included (audit 2026-08-18).
+        # The session id is bound to the token that opened it; a different
+        # token on the same session is refused.
+        sid = headers.get("mcp-session-id", "").strip()
+        token_digest = _digest(token) if token else ""
         if token:
             try:
                 from app.api.mcp_tokens import verify_token
@@ -84,6 +118,16 @@ class McpTokenAuthASGI:
                     set_mcp_caller(payload.get("tenant"), payload.get("actor"))
                     mcp_tenant = str(payload.get("tenant") or "").strip() or None
                     ok = True
+                    if sid:
+                        owner = _SESSION_OWNER.get(sid)
+                        if owner is None:
+                            # A session this process has not seen (a restart, or
+                            # a client that skipped initialize): the first token
+                            # to use it owns it from now on.
+                            _remember_session(sid, token_digest)
+                        elif owner != token_digest:
+                            ok = False
+                            reason = "session_belongs_to_another_token"
             except Exception as exc:  # HTTPException(401) or any decode error
                 reason = getattr(exc, "detail", None) or "invalid_token"
 
@@ -115,8 +159,20 @@ class McpTokenAuthASGI:
         from app.db.session import current_tenant
 
         cv_token = current_tenant.set(mcp_tenant) if mcp_tenant else None
+
+        # Bind a NEW session to the token that opened it: the id is minted by
+        # the server in the response to `initialize`, so it is read off the
+        # response headers on the way out.
+        async def _send(message: Any) -> None:
+            if message.get("type") == "http.response.start" and not sid:
+                for k, v in message.get("headers") or []:
+                    if k.decode("latin-1").lower() == "mcp-session-id":
+                        _remember_session(v.decode("latin-1").strip(), token_digest)
+                        break
+            await send(message)
+
         try:
-            await self.app(scope, receive, send)
+            await self.app(scope, receive, _send)
         finally:
             if cv_token is not None:
                 current_tenant.reset(cv_token)
