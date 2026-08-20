@@ -294,7 +294,7 @@ async def stripe_webhook(
             send_license_email(
                 to=email,
                 license_key=token,
-                refund_url="https://abs.automatiabcn.com/refund",
+                refund_url=f"{settings.public_site_url}/refund",
                 lang=preferred_lang,
             )
         except Exception as exc:

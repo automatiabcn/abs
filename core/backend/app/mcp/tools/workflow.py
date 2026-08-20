@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from typing import List
 
+from app.mcp.operator_only import operator_refusal
 from app.mcp.middleware import with_hooks
 from app.mcp.server import mcp_server
 from app.mcp.tracking import tracker
@@ -23,6 +24,9 @@ REGISTERED_TOOLS: List[str] = []
 async def workflow_status() -> str:
     """Durability snapshot — totals, by_status, running workflows, db_size_kb."""
     await tracker.bump("workflow_status")
+    _why = operator_refusal("workflow_status")
+    if _why:
+        return json.dumps({"error": "operator_only", "detail": _why}, ensure_ascii=False)
     s = stats()
     s["active_workflows"] = list_workflows(limit=10, status="running")
     return json.dumps(s, ensure_ascii=False, indent=2)
@@ -34,6 +38,9 @@ async def workflow_resume(trace_id: str) -> str:
     """Resume state for a workflow: where it can restart from without redoing
     the steps that already succeeded."""
     await tracker.bump("workflow_resume")
+    _why = operator_refusal("workflow_resume")
+    if _why:
+        return json.dumps({"error": "operator_only", "detail": _why}, ensure_ascii=False)
     return json.dumps(resume(trace_id), ensure_ascii=False, indent=2)
 
 

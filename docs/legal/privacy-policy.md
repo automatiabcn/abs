@@ -9,7 +9,13 @@
 
 ### 1. Who we are  
 
-ABS (Automatia Barcelona, S.L.) is a software‑as‑a‑service provider based in Barcelona, Spain. Our registered office is at **C/ Gran Via, 123, 08008 Barcelona, Spain**. You can reach us by e‑mail at **privacy@automatiabcn.com** or by post at the address above.  
+ABS Studio is a product of Automatia BCN, based in Barcelona, Spain. The software runs on the customer's own infrastructure; we are not a hosting provider. Our registered office is at **[registered office — to be completed by counsel]**
+
+<!-- Was "C/ Gran Via, 123, 08008 Barcelona". That address is a
+     placeholder that reads as real, in a document a customer signs.
+     Left explicitly blank rather than corrected: inventing a
+     registered office is worse than admitting there is not one
+     here yet. Founder / counsel to fill in. -->. You can reach us by e‑mail at **info@automatiabcn.com** or by post at the address above.  
 
 We operate the ABS platform (the "Service") that lets developers and small teams create, test and run web‑applications. This privacy notice explains how we collect, use, store and protect any personal data that you (or your users) provide to us, in accordance with the EU General Data Protection Regulation (GDPR) (Regulation (EU) 2016/679).  
 
@@ -86,9 +92,9 @@ You have the following rights under Articles 15‑22 GDPR. We will respond to an
 | **Right of access** (Art. 15) | Obtain a copy of all personal data we hold about you. | Use the **Data‑Export endpoint** (`GET /v1/me/data-export`). |
 | **Right to rectification** (Art. 16) | Request correction of inaccurate or incomplete data. | Update your profile via **PATCH `/v1/me/account`** or contact us. |
 | **Right to erasure ("right to be forgotten")** (Art. 17) | Ask us to delete your personal data, subject to legal limits. | Delete your account via **DELETE `/v1/me/account`**; we will retain only the data required by law (e.g., tax records). |
-| **Right to restriction of processing** (Art. 18) | Temporarily limit how we use your data. | Email **privacy@automatiabcn.com** with the specific restriction you need. |
+| **Right to restriction of processing** (Art. 18) | Temporarily limit how we use your data. | Email **info@automatiabcn.com** with the specific restriction you need. |
 | **Right to data portability** (Art. 20) | Receive your data in a structured, commonly‑used format and move it to another controller. | Same as "right of access"; the export file is provided in **JSON** and **CSV** formats. |
-| **Right to object** (Art. 21) | Object to processing based on legitimate interests or direct marketing. | Email **privacy@automatiabcn.com**; we will cease the relevant processing unless we demonstrate compelling legitimate grounds. |
+| **Right to object** (Art. 21) | Object to processing based on legitimate interests or direct marketing. | Email **info@automatiabcn.com**; we will cease the relevant processing unless we demonstrate compelling legitimate grounds. |
 | **Right not to be subject to automated decision‑making** (Art. 22) | Request human review of any automated profiling that produces legal or similarly significant effects. | Currently we do not use automated decision‑making that produces such effects; if this changes we will inform you. |
 
 If you believe we have not complied with your rights, you may lodge a complaint with the **Spanish Data Protection Agency (AEPD)**.  
@@ -102,7 +108,7 @@ If you believe we have not complied with your rights, you may lodge a complaint 
 | **Export all personal data** | `GET /v1/me/data-export` | Returns a downloadable archive (JSON + CSV) of everything we store about you. | `curl -H "Authorization: Bearer <token>" https://api.abs.com/v1/me/data-export -o my‑abs‑data.zip` |
 | **Update account details** | `PATCH /v1/me/account` | Send a JSON payload with the fields you want to change (e.g., `"email": "new@example.com"`). | `curl -X PATCH -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d '{"email":"new@example.com"}' https://api.abs.com/v1/me/account` |
 | **Delete your account** | `DELETE /v1/me/account` | Permanently removes your account and all non‑retained data. You will receive a confirmation e‑mail. | `curl -X DELETE -H "Authorization: Bearer <token>" https://api.abs.com/v1/me/account` |
-| **Contact us directly** | N/A | Send a request to **privacy@automatiabcn.com** with a clear description of the right you wish to exercise. | `Subject: GDPR – Right of Access` |
+| **Contact us directly** | N/A | Send a request to **info@automatiabcn.com** with a clear description of the right you wish to exercise. | `Subject: GDPR – Right of Access` |
 
 All API calls require a valid **Bearer token** belonging to the requesting user. We verify the token before processing any data‑subject request.  
 
@@ -128,7 +134,7 @@ The Service is intended for **individuals aged 16 years or older** (the age of d
 
 * We **do not knowingly collect** personal data from children under 13 years of age.  
 * If we become aware that a child under 13 has provided personal data, we will delete it promptly.  
-* Parents or guardians may contact us at **privacy@automatiabcn.com** to request removal of a child's data.  
+* Parents or guardians may contact us at **info@automatiabcn.com** to request removal of a child's data.  
 
 ---
 
@@ -147,8 +153,8 @@ If you continue to use the Service after the effective date, you are deemed to h
 
 If you have any questions about this privacy notice, want to exercise a data‑subject right, or need clarification on any of the points above, please contact our Data Protection Officer (DPO) at:  
 
-**E‑mail:** privacy@automatiabcn.com  
-**Postal address:** DPO, Automatia Barcelona, S.L., C/ Gran Via 123, 08008 Barcelona, Spain  
+**E‑mail:** info@automatiabcn.com  
+**Postal address:** DPO, Automatia BCN, Barcelona, Spain — full registered address to be completed by counsel before this document is given to a customer.  
 
 We aim to acknowledge all inquiries within **five (5) business days**.  
 

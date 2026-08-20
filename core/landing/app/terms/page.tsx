@@ -10,7 +10,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description:
-    "Terms of service for the Automatia ABS self-host orchestrator. License, payment, liability, termination.",
+    "Terms of service for ABS Studio. License, payment, liability, termination.",
 };
 
 export default function TermsPage() {
@@ -29,7 +29,7 @@ export default function TermsPage() {
           <p>
             This agreement is entered into between <strong>Automatia BCN</strong>{" "}
             (Barcelona, Spain — hereinafter the &ldquo;Provider&rdquo;) and the
-            customer who purchases or uses an Automatia ABS license (the
+            customer who purchases or uses an ABS Studio license (the
             &ldquo;User&rdquo;). You must be over 18 to use the service.
           </p>
         </section>
@@ -101,9 +101,17 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-lg font-semibold">6. Service Level (SLA)</h2>
+          {/*
+            This used to condition support on "the Maintenance package", a
+            $49/year add-on to a retired one-off licence. Nobody has been able
+            to buy it for months, so the terms promised support under a
+            condition no customer could satisfy — in the document that governs
+            the sale. Corrected 2026-08-03 to describe the subscription we sell.
+          */}
           <p>
-            In Self-Host installations, uptime is the User&apos;s responsibility.
-            Under the Maintenance package, the Provider announces critical
+            In Self-Host installations, uptime is the User&apos;s
+            responsibility: the software runs on the User&apos;s own server.
+            While a subscription is active, the Provider announces critical
             security patches within 7 days and answers email support within 48
             hours.
           </p>
@@ -160,8 +168,8 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold">12. Contact</h2>
           <p>
             For questions about this agreement, write to{" "}
-            <a href="mailto:legal@automatiabcn.com" className="underline">
-              legal@automatiabcn.com
+            <a href="mailto:info@automatiabcn.com" className="underline">
+              info@automatiabcn.com
             </a>
             .
           </p>

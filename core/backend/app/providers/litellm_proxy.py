@@ -36,7 +36,7 @@ class LiteLLMProxyProvider(BaseProvider):
     """Routes calls through a LiteLLM proxy when enabled."""
 
     name = "litellm_proxy"
-    default_model = "groq/llama-3.1-8b-instant"
+    default_model = "groq/openai/gpt-oss-20b"
 
     async def call(
         self,

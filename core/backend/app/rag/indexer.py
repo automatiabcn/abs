@@ -68,6 +68,66 @@ def _collection(name: str = "abs_default"):
     return _client().get_or_create_collection(name=name)
 
 
+# The tenant every chunk written before 2026-08-18 belongs to. Chunks carried
+# a `project` and no owner; the MCP tools scoped by a server setting rather
+# than by who was asking, so one tenant could read — or clear — another's
+# knowledge base. Legacy chunks are backfilled to this owner once.
+LEGACY_TENANT = "default"
+
+
+def scope_where(
+    tenant: Optional[str], project: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """The Chroma `where` for this caller: their tenant, optionally one project.
+    A tenant of None means an unscoped (operator/HTTP-panel) caller."""
+    conds: List[Dict[str, Any]] = []
+    if tenant:
+        conds.append({"tenant": tenant})
+    if project:
+        conds.append({"project": project})
+    if not conds:
+        return None
+    return conds[0] if len(conds) == 1 else {"$and": conds}
+
+
+def backfill_tenant(default: str = LEGACY_TENANT, batch: int = 500) -> int:
+    """Stamp `tenant` onto chunks written before it existed. Idempotent; the
+    number of chunks updated is returned so a start-up log can say so."""
+    try:
+        coll = _collection()
+    except Exception:  # noqa: BLE001
+        return 0
+    updated = 0
+    offset = 0
+    while True:
+        try:
+            page = coll.get(limit=batch, offset=offset, include=["metadatas"])
+        except Exception:  # noqa: BLE001
+            break
+        ids = page.get("ids") or []
+        if not ids:
+            break
+        metas = page.get("metadatas") or []
+        fix_ids: List[str] = []
+        fix_metas: List[Dict[str, Any]] = []
+        for i, m in zip(ids, metas):
+            m = dict(m or {})
+            if not m.get("tenant"):
+                m["tenant"] = default
+                fix_ids.append(i)
+                fix_metas.append(m)
+        if fix_ids:
+            try:
+                coll.update(ids=fix_ids, metadatas=fix_metas)
+                updated += len(fix_ids)
+            except Exception:  # noqa: BLE001
+                break
+        if len(ids) < batch:
+            break
+        offset += batch
+    return updated
+
+
 def _hash_chunk(content: str) -> str:
     return hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
 
@@ -79,15 +139,40 @@ def _chunk_iter(text: str) -> Iterable[Tuple[int, str]]:
 
 def _walk_files(root: Path, extensions: Iterable[str]) -> Iterable[Path]:
     exts = {e.lower() for e in extensions}
+    # What the developer told git to forget, the index does not learn either —
+    # build outputs are noise, and .gitignore is where credentials hide.
+    try:
+        from app.context.exclusions import IgnoreMatcher
+
+        ignore: Optional[IgnoreMatcher] = IgnoreMatcher(str(root))
+    except Exception:  # noqa: BLE001
+        ignore = None
     for dirpath, dirnames, filenames in os.walk(root):
         # in-place skip
-        dirnames[:] = [
-            d for d in dirnames if d not in _SKIP_DIRS and not d.startswith(".")
-        ]
+        kept = []
+        for d in dirnames:
+            if d in _SKIP_DIRS or d.startswith("."):
+                continue
+            if ignore is not None:
+                rel_d = os.path.relpath(os.path.join(dirpath, d), root)
+                try:
+                    if ignore.is_ignored(rel_d, is_dir=True):
+                        continue
+                except Exception:  # noqa: BLE001
+                    pass
+            kept.append(d)
+        dirnames[:] = kept
         for fn in filenames:
             p = Path(dirpath) / fn
-            if p.suffix.lower() in exts:
-                yield p
+            if p.suffix.lower() not in exts:
+                continue
+            if ignore is not None:
+                try:
+                    if ignore.is_ignored(os.path.relpath(p, root)):
+                        continue
+                except Exception:  # noqa: BLE001
+                    pass
+            yield p
 
 
 async def _embed_one(text: str) -> Optional[List[float]]:
@@ -153,6 +238,15 @@ def _unsafe_index_path(p: Path) -> Optional[str]:
         return f"blocked_file:{names & set(_RAG_BLOCKED_NAMES)}"
     if suffixes & set(_RAG_BLOCKED_SUFFIXES):
         return f"blocked_suffix:{suffixes & set(_RAG_BLOCKED_SUFFIXES)}"
+    # The shared rule set (app/context/exclusions) — one list for RAG, Chat and
+    # Composer, so a name learned here is refused everywhere.
+    try:
+        from app.context.exclusions import is_secret_path
+
+        if is_secret_path(str(p)) or is_secret_path(resolved):
+            return "blocked_secret_shape"
+    except Exception:  # noqa: BLE001 — the local lists above still stand
+        pass
     return None
 
 
@@ -161,6 +255,7 @@ async def index_path(
     project: str = "default",
     extensions: Optional[List[str]] = None,
     chunk_strategy: str = "semantic",
+    tenant: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Chunk a file or directory, embed it, and persist to Chroma.
 
@@ -231,6 +326,7 @@ async def index_path(
                     metadatas=[
                         {
                             "project": project,
+                            "tenant": tenant or LEGACY_TENANT,
                             "file": str(fp),
                             "chunk_idx": idx,
                             "hash": doc_hash,
@@ -252,10 +348,12 @@ async def index_path(
     }
 
 
-def clear(project: Optional[str] = None) -> Dict[str, Any]:
-    """Delete the whole collection, or only the chunks of one project."""
+def clear(project: Optional[str] = None, tenant: Optional[str] = None) -> Dict[str, Any]:
+    """Delete chunks: the whole collection (unscoped caller, no project), or
+    only this tenant's, optionally only one project's. A tenant-scoped caller
+    can never drop the collection — that is everyone's."""
     coll = _collection()
-    if project is None:
+    if project is None and not tenant:
         try:
             count = coll.count()
             _client().delete_collection(name=coll.name)
@@ -265,8 +363,8 @@ def clear(project: Optional[str] = None) -> Dict[str, Any]:
     try:
         # Filter by metadata
         before = coll.count()
-        coll.delete(where={"project": project})
+        coll.delete(where=scope_where(tenant, project))
         after = coll.count()
-        return {"deleted": before - after, "project": project}
+        return {"deleted": before - after, "project": project, "tenant": tenant}
     except Exception as exc:
         return {"error": str(exc)[:200], "deleted": 0}

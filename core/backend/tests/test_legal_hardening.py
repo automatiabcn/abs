@@ -65,8 +65,12 @@ def test_item1_readme_license_section_names_busl_spdx():
 def test_item2_notice_md_exists_and_has_required_blocks():
     assert NOTICE.exists(), "NOTICE.md is missing at repo root"
     body = NOTICE.read_text(encoding="utf-8")
+    # "Automatia ABS" was required here until 2026-08-03 — the third test that
+    # day found demanding a retired name, after test_repo_files_exist (retired
+    # pricing) and test_status_page. Renaming the product turned the suite red
+    # and the shortest path back to green was to undo the rename.
     for needle in (
-        "Automatia ABS",
+        "ABS Studio",
         "Copyright",
         "Automatia BCN",
         "BUSL-1.1",
@@ -122,11 +126,11 @@ def test_item4_trademarks_md_exists_and_has_fossmarks_sections():
     # Section anchors / topics required by the FOSSmarks-style policy.
     required_topics = [
         "automatia bcn",
-        "automatia abs",
+        "abs studio",
         "nominative fair use",
         "permission",
         "reporting",
-        "support@automatiabcn.com",
+        "info@automatiabcn.com",
     ]
     for topic in required_topics:
         assert topic in lower, f"TRADEMARKS.md missing topic: {topic}"

@@ -1,9 +1,9 @@
 # License Heartbeat Phone-Home — Privacy Notice
 
 *Last updated: 2026-05-11*
-Contact: **support@automatiabcn.com**
+Contact: **info@automatiabcn.com**
 
-This document discloses exactly what data the customer-side Automatia ABS
+This document discloses exactly what data the customer-side ABS Studio
 backend transmits to Automatia BCN's license activation server, why it is
 transmitted, where it is stored, and how to disable it.
 
@@ -11,9 +11,14 @@ transmitted, where it is stored, and how to disable it.
 
 ## 1. What is sent
 
-On every license heartbeat — by default once every 30 seconds on the
-customer instance, throttled server-side to update the activation record
-**at most once per hour** — the ABS backend sends:
+On every license heartbeat — on start-up and once every 24 hours, and only
+while a licence key is configured, so nothing at all is sent during the
+seven-day trial — the ABS backend sends:
+
+<!-- This said "once every 30 seconds ... throttled server-side to at most once
+     per hour". The code has always done start-up plus 24h (see
+     app/licensing/phone_home.py). A privacy notice that overstates what we
+     collect is still a privacy notice that is wrong. -->
 
 | Field | Type | Purpose |
 |-------|------|---------|

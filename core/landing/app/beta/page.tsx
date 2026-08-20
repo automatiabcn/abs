@@ -12,7 +12,7 @@ import BetaRequestForm from "@/components/BetaRequestForm";
 export const metadata: Metadata = {
   title: "Request Beta Access",
   description:
-    "Get early access to Automatia ABS — 100+ MCP tools and 6-provider cascade on your own server.",
+    "Get early access to ABS Studio — an AI code editor that runs on your own machine, on your own keys.",
 };
 
 export default function BetaPage() {

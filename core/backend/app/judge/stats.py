@@ -21,14 +21,14 @@ def _avg(values: List[float]) -> Optional[float]:
     return round(sum(nums) / len(nums), 2)
 
 
-def aggregate(window_days: int = 7) -> Dict[str, Any]:
+def aggregate(window_days: int = 7, tenant: Optional[str] = None) -> Dict[str, Any]:
     """Summarize the judgments of the last `window_days` days and derive a
     drift signal by comparing them with the window before that."""
     cutoff = time.time() - window_days * 86400
     cutoff_prev = cutoff - window_days * 86400
 
     # Read a slice wide enough to cover both windows.
-    entries = read_recent(limit=1000)
+    entries = read_recent(limit=1000, tenant=tenant)
 
     cur_window = [e for e in entries if (e.get("ts") or 0) >= cutoff]
     prev_window = [e for e in entries if cutoff_prev <= (e.get("ts") or 0) < cutoff]

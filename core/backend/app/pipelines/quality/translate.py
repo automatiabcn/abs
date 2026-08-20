@@ -33,8 +33,8 @@ class QualTranslatePipeline(BasePipeline):
 
         tr_step, tr = await timed_step(
             "translate",
-            groq.call(prompt, model="qwen/qwen3-32b"),
-            model_hint="qwen/qwen3-32b",
+            groq.call(prompt, model="qwen/qwen3.6-27b"),
+            model_hint="qwen/qwen3.6-27b",
         )
         steps.append(tr_step)
         wf.step("translate", "ok" if tr_step.ok else "fail", _step_payload(tr_step))

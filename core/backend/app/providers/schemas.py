@@ -26,6 +26,25 @@ class ProviderResponse(BaseModel):
     cached: bool = Field(
         default=False, description="True if this came from the cache, not the provider"
     )
+    providers_tried: list[str] = Field(
+        default_factory=list,
+        description="The failover trail — every provider attempted, winner last "
+        "(empty on a cache hit, which tried nothing)",
+    )
+    # Whether the provider ran out of room mid-answer.
+    #
+    # Every vendor reports this and nothing read it, so the truncation defects
+    # of 08-02 and 08-05 were both chased with a ruler: refuse an answer that
+    # lost more than half a file. A ratio refuses honest refactors and accepts
+    # replies cut off just above the line. This is the same question, answered
+    # by the only party that actually knows.
+    #
+    # False means "not truncated OR the provider did not say", deliberately: a
+    # default of True would take every quiet provider off the air.
+    truncated: bool = Field(
+        default=False,
+        description="True when the provider said it stopped because it hit the token limit",
+    )
     error: Optional[str] = Field(default=None, description="Why it failed, if it did")
 
 

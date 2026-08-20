@@ -138,7 +138,7 @@ def _build_zip(license_jti: str, customer_email: str) -> bytes:
     ]
 
     readme = (
-        "Automatia ABS — GDPR Data Export\n"
+        "ABS Studio — GDPR Data Export\n"
         "=================================\n\n"
         f"License JTI: {license_jti}\n"
         f"Customer Email: {customer_email}\n"
@@ -151,7 +151,7 @@ def _build_zip(license_jti: str, customer_email: str) -> bytes:
         "  consents.jsonl        — Consent records\n"
         "  connected_secrets.json — Smart-link provider names (no secrets)\n\n"
         "This archive satisfies GDPR Article 15 (right of access).\n"
-        "Contact: privacy@automatiabcn.com\n"
+        "Contact: info@automatiabcn.com\n"
     )
 
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:

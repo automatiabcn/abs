@@ -123,7 +123,7 @@ def _build_security() -> TransportSecuritySettings | None:
 # the basics. English by default (the product ships globally); operators can
 # still add a richer local CLAUDE.md. Keep it short — clients inline it.
 MCP_INSTRUCTIONS = (
-    "Automatia ABS exposes 100+ free / low-cost AI tools across many models, "
+    "ABS Studio exposes 150+ free / low-cost AI tools across many models, "
     "running on the operator's own provider keys (no extra Anthropic cost). "
     "PREFER delegating substantial subtasks to these tools instead of doing "
     "them yourself — it saves your tokens and often improves quality. Reach "
@@ -142,7 +142,7 @@ MCP_INSTRUCTIONS = (
 # what mounts this under /mcp. host="0.0.0.0" so FastMCP does NOT apply its
 # automatic localhost-only allowlist — we install our own via transport_security.
 mcp_server = FastMCP(
-    "Automatia ABS",
+    "ABS Studio",
     instructions=MCP_INSTRUCTIONS,
     streamable_http_path="/",
     host="0.0.0.0",
@@ -184,6 +184,14 @@ def register_all_tools() -> int:
     from app.mcp.tools import fullstack as fullstack_mod  # noqa: F401
     from app.mcp.tools import gemini_extras as gemini_mod  # noqa: F401
     from app.mcp.tools import hook_companions  # noqa: F401
+    from app.mcp.tools import codegraph_tools  # noqa: F401
+    from app.mcp.tools import capability_tools  # noqa: F401
+    from app.mcp.tools import composer_tools  # noqa: F401
+    from app.mcp.tools import notes_tools  # noqa: F401
+    from app.mcp.tools import tasks_tools  # noqa: F401
+    from app.mcp.tools import sandbox_tools  # noqa: F401
+    from app.mcp.tools import engine_panel_tools  # noqa: F401
+    from app.mcp.tools import companion_tools  # noqa: F401
     from app.mcp.tools import innovation_tools  # noqa: F401
     from app.mcp.tools import judge_extras  # noqa: F401
     from app.mcp.tools import judge_persona  # noqa: F401
@@ -236,8 +244,22 @@ def register_all_tools() -> int:
         + len(admin_tools.REGISTERED_TOOLS)
         + len(demo_tools.REGISTERED_TOOLS)
         + len(innovation_tools.REGISTERED_TOOLS)
+        + len(codegraph_tools.REGISTERED_TOOLS)
+        + len(notes_tools.REGISTERED_TOOLS)
+        + len(tasks_tools.REGISTERED_TOOLS)
+        + len(sandbox_tools.REGISTERED_TOOLS)
+        + len(capability_tools.REGISTERED_TOOLS)
+        + len(composer_tools.REGISTERED_TOOLS)
+        + len(engine_panel_tools.REGISTERED_TOOLS)
+        + len(companion_tools.REGISTERED_TOOLS)
         + 1  # system_status registers itself, it has no REGISTERED_TOOLS list
     )
 
 
 _REGISTERED_COUNT = register_all_tools()
+
+# Every tool on the surface is behind the licence gate — not only the ones
+# whose author wrote @with_hooks (2026-08-18: 25 were not).
+from app.mcp.middleware import enforce_license_gate_everywhere as _enforce  # noqa: E402
+
+_GATED_LATE = _enforce(mcp_server)

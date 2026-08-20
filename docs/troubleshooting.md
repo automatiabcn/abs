@@ -204,7 +204,7 @@ helm upgrade --install abs . \
 ## Unknown errors
 
 Send the output of `docker compose logs backend | tail -100` to
-`support@automatiabcn.com`. Maintenance customers get a response within 24h;
+`info@automatiabcn.com`. Maintenance customers get a response within 24h;
 everyone else within 48h.
 
 Other resources you may need:

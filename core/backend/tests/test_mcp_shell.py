@@ -41,7 +41,11 @@ def test_system_status_returns_structured_dict():
 
     # FastMCP 1.x: @tool() decorator orijinal coroutine'i korur
     result = asyncio.run(system_status())
-    assert result["product"] == "Automatia ABS"
+    # The name the panel and the editor print. This asserted the retired one
+    # until 2026-08-04 — the fifth test that week found requiring something the
+    # product had stopped saying, so renaming turned the suite red and the
+    # quickest way back to green was to un-rename.
+    assert result["product"] == "ABS Studio"
     assert "providers" in result
     assert "cache" in result
     assert "license" in result

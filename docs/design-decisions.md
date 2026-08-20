@@ -10,7 +10,10 @@ _Last updated: 2026-04-23_
 
 **Why:** it removes a lot of engineering (no multi-organisation database, auth or RBAC), cutting the MVP from 6 weeks to 2-3 weeks.
 
-### 2. Brand: **Automatia ABS**
+### 2. Brand: **ABS Studio**
+
+_The product is ABS Studio; Automatia BCN is the company that signs the terms
+and takes the money. Founder's decision, 2026-08-03._
 
 - Domain: `abs.automatiabcn.com` (subdomain — marketing and technical independence)
 - Main site: `automatiabcn.com` → "Our Products" → link to ABS
@@ -33,23 +36,32 @@ Anthropic + 5 free providers (Groq, Cerebras, CloudFlare, Gemini, Cohere). Keys 
 
 Everything the orchestration system already has (75 MCP tools + 5 hooks + 13 pipelines + RAG + judge + workflow + panel), plus new additions (optional multi-user auth, audit log).
 
-### 6. Revenue: **One-time $299 + Optional Maintenance**
+### 6. Revenue: **Monthly subscription**
 
-- **$299 one-time** = a lifetime licence + 1 year of updates
-- **$49/year** optional maintenance (updates and support continue)
-- If it lapses: the version you have keeps working forever, but you get no new features
-- **No subscription** (a deliberate choice)
+_Superseded the one-off model. Recorded here because the reasoning changed, not
+because the old entry was wrong at the time._
 
-### 7. Distribution Model: **Phased Dual Distribution**
+- **$5/month**, one plan — no tiers
+- **Seven-day trial**, no card and no licence key
+- Cancel any month; the period already paid for runs to its end
 
-- **Phase 1 (months 1-3):** self-host lifetime sales come first
-- **Phase 2 (months 3-6):** Managed Cloud beta at $79/month (3-5 customers)
-- **Phase 3 (month 6+):** Managed Cloud general availability
+Why the change: a one-off licence with an optional maintenance renewal made
+income arrive once and support obligations arrive forever. It also gave the
+customer a decision to make every year about a thing they had already bought,
+which is the worst moment to ask. A subscription matches the cost — providers,
+updates, support — to the period it is incurred in.
 
-### 8. Team Pack
+### 7. Distribution Model: **Self-hosted first**
 
-- 5 seats: $299 × 5 × 0.8 = **$1196** (20% off)
-- 10 seats: $299 × 10 × 0.7 = **$2093** (30% off)
+- The customer runs the server; we publish the images and the archive
+- We do not host customer deployments today. Running other people's data is a
+  different business with a different risk profile, and it is not the one being
+  built.
+
+### 8. Teams
+
+- No team tier. Both plans shipped the same product, so the split asked a buyer
+  to make a decision that changed nothing except the bill.
 - 25+ seats: custom quote
 
 ### 9. Free Tier: **None**
@@ -88,11 +100,12 @@ Everything the orchestration system already has (75 MCP tools + 5 hooks + 13 pip
 - A countdown banner in the panel
 - When it expires: a "Your licence has expired, please buy" screen — the system stops working
 
-### 14. What Happens When Maintenance Lapses
+### 14. What Happens When a Subscription Ends
 
-- The last version you downloaded keeps working forever
-- New updates are locked ("Maintenance expired, renew for $49/year")
-- Adding a new provider (e.g. Groq v2) will not work, because the config updates no longer arrive
+- Chat and the agent pause — and that is all
+- Documents, meetings, keys and the RAG index stay on the customer's own server,
+  readable, exportable and deletable, for as long as they want them there
+- Nothing is deleted and nothing phones home to ask permission to keep existing
 
 ### 15. Provider Down UI
 

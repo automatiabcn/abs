@@ -80,6 +80,11 @@ class OllamaProvider(BaseProvider):
             ) from exc
         msg = data.get("message") or {}
         text = msg.get("content", "")
+        # Ollama's fourth spelling: `done_reason: "length"` when num_predict is
+        # reached. Local models are the ones customers run with the tightest
+        # caps, so this is the provider most likely to run out of room.
+        from app.providers.base import was_cut_off
+
         return ProviderResponse(
             text=text,
             model=model,
@@ -87,4 +92,5 @@ class OllamaProvider(BaseProvider):
             elapsed_ms=elapsed_ms,
             tokens_in=data.get("prompt_eval_count"),
             tokens_out=data.get("eval_count"),
+            truncated=was_cut_off(data.get("done_reason")),
         )

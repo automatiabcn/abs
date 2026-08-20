@@ -23,7 +23,7 @@ import { QueryProvider } from "@/lib/query-client";
 
 export const metadata: Metadata = {
   description:
-    "ABS Server admin panel — providers, tools, knowledge base and usage limits on one self-hosted surface.",
+    "ABS Studio admin panel — providers, tools, knowledge base and usage limits on one self-hosted surface.",
   robots: { index: false, follow: false },
 };
 

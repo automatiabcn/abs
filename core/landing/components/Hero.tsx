@@ -73,7 +73,7 @@ const Hero: FC<HeroProps> = ({ title, subtitle, primaryCta, secondaryCta }) => (
           {[
             { value: "100+", label: "MCP tools" },
             { value: "6", label: "providers, cascaded" },
-            { value: "0", label: "data leaves your server" },
+            { value: "0", label: "of your data leaves your server" },
           ].map((fact) => (
             <div key={fact.label} className="flex flex-col">
               <dt className="sr-only">{fact.label}</dt>

@@ -35,10 +35,10 @@ const Contact: FC = () => (
 
       <div className="mt-10">
         <a
-          href="mailto:support@automatiabcn.com"
+          href="mailto:info@automatiabcn.com"
           className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-semibold text-primary-foreground"
         >
-          support@automatiabcn.com
+          info@automatiabcn.com
         </a>
         <p className="mt-3 text-xs text-muted-foreground">
           We reply within 24 hours.

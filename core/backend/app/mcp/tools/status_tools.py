@@ -99,18 +99,24 @@ async def status_check() -> str:
         from app.config import settings as _s
 
         today_start = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
-        price_map = {
-            ("self-host", 1): _s.abs_seat_price_self_host,
-            ("team", 5): _s.abs_seat_price_team_5,
-            ("team", 10): _s.abs_seat_price_team_10,
-        }
+        # Priced by multiplying, not by looking up an exact (tier, seats) pair.
+        # The old table keyed ("team", 5) and ("team", 10) only, so a team of
+        # six contributed nothing to the revenue figure — and it was keyed to
+        # the retired one-off SKUs on top of that. status_page.py had already
+        # been fixed this way; this copy had not, which is the usual shape:
+        # one instance repaired, its twin left alone.
+        solo_price = _s.abs_seat_price_solo
+        seat_price = _s.abs_seat_price_team
         revenue_today = 0.0
         for lic in rows:
             issued_at = lic.issued_at
             if issued_at.tzinfo is None:
                 issued_at = issued_at.replace(tzinfo=timezone.utc)
             if issued_at >= today_start:
-                revenue_today += price_map.get((lic.tier, lic.seat_count), 0)
+                if lic.tier == "team":
+                    revenue_today += seat_price * max(1, lic.seat_count)
+                else:
+                    revenue_today += solo_price
         out["revenue_today_usd"] = round(revenue_today, 2)
 
         # Recent webhook errors

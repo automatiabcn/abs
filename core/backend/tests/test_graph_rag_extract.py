@@ -87,7 +87,7 @@ async def test_extract_graph_blank_text_skips_llm(
 
 @pytest.mark.asyncio
 async def test_extract_graph_uses_llm_output(monkeypatch: pytest.MonkeyPatch) -> None:
-    async def _fake(prompt, *, tenant_id, use_cache=True):
+    async def _fake(prompt, *, tenant_id, use_cache=True, user_subject=None):
         return '{"entities":[{"name":"Ayşe","type":"Person"}],"relations":[]}'
 
     monkeypatch.setattr(ex, "_run_llm", _fake)
@@ -101,7 +101,7 @@ async def test_extract_graph_retries_then_gives_up(
 ) -> None:
     calls = {"n": 0}
 
-    async def _prose(prompt, *, tenant_id, use_cache=True):
+    async def _prose(prompt, *, tenant_id, use_cache=True, user_subject=None):
         calls["n"] += 1
         return "Sorry, no JSON here."
 
@@ -109,3 +109,20 @@ async def test_extract_graph_retries_then_gives_up(
     res = await ex.extract_graph("some text", tenant_id="t1")
     assert res.is_empty
     assert calls["n"] == 2  # initial + one stricter retry
+
+
+@pytest.mark.asyncio
+async def test_the_caller_reaches_the_model_call(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Graph extraction runs on somebody's behalf. Without the caller, an
+    install whose providers are all BYOK extracts nothing and says it has no
+    providers (found auditing the FIM fix, 08-01)."""
+    seen: dict = {}
+
+    async def _capture(prompt, *, tenant_id, use_cache=True, user_subject=None):
+        seen["tenant"] = tenant_id
+        seen["user"] = user_subject
+        return '{"entities":[{"name":"Ay\u015fe","type":"Person"}],"relations":[]}'
+
+    monkeypatch.setattr(ex, "_run_llm", _capture)
+    await ex.extract_graph("Ayşe raporu yazdı.", tenant_id="acme", user_subject="alice@acme")
+    assert seen == {"tenant": "acme", "user": "alice@acme"}

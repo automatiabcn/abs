@@ -39,9 +39,13 @@ def test_net_revenue_subtracts_refund_and_fees(monkeypatch):
     bt._PRODUCT_CACHE["data"] = []
     bt._PRODUCT_CACHE["ts"] = 9e9
 
-    _seed("net_self_a", "self-host", 1)
-    _seed("net_team5_a", "team", 5)
-    _seed("net_self_refund_a", "self-host", 1, refunded=True)
+    # Seeded with the SKU that is actually sold. These said "self-host" and
+    # "team" — tiers from two retired models — so the test was measuring
+    # revenue for products nobody could buy, and passed only because the price
+    # map still carried their numbers.
+    _seed("net_self_a", "solo", 1)
+    _seed("net_team5_a", "solo", 1)
+    _seed("net_self_refund_a", "solo", 1, refunded=True)
 
     raw = asyncio.run(bt.billing_status())
     out = json.loads(raw)
@@ -50,8 +54,10 @@ def test_net_revenue_subtracts_refund_and_fees(monkeypatch):
     assert "refunds_usd" in rev
     assert "fees_usd" in rev
     assert "net_usd" in rev
-    # At least one refund added (299)
-    assert rev["refunds_usd"] >= 299
+    # One refunded subscription, so the refund total is at least a month of it.
+    from app.mcp.tools.billing_tools import _license_value_usd
+
+    assert rev["refunds_usd"] >= _license_value_usd("solo", 1)
     # Fees > 0 (her checkout 0.30 + %2.9)
     assert rev["fees_usd"] > 0
     # Net total - refund - fees

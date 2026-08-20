@@ -56,7 +56,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         )}
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Link
-            href="https://abs.automatiabcn.com/docs/install"
+            href="/docs/install"
             className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
             Go to the installation guide
@@ -71,10 +71,10 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         <p className="mt-8 text-sm text-muted-foreground">
           Running into trouble?{" "}
           <a
-            href="mailto:support@automatiabcn.com"
+            href="mailto:info@automatiabcn.com"
             className="underline"
           >
-            support@automatiabcn.com
+            info@automatiabcn.com
           </a>
         </p>
       </div>

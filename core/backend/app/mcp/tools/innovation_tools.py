@@ -19,13 +19,72 @@ REGISTERED_TOOLS: List[str] = []
 
 @mcp_server.tool()
 @with_hooks("symbol_search")
-async def symbol_search(q: str, kind: Optional[str] = None, limit: int = 20) -> str:
+async def symbol_search(
+    q: str,
+    kind: Optional[str] = None,
+    limit: int = 20,
+    workspace_root: str = "",
+    client_id: str = "",
+) -> str:
     """Symbol DB substring search — name LIKE %q%, opsiyonel kind=function|class|import."""
     await tracker.bump("symbol_search")
     from app.symbols.store import search
+    from app.workspace.current import current_workspace
 
+    # Only this project's symbols. Without it the panel answered from every
+    # repository the server had ever seen, and a hit gave no clue which.
+    from app.mcp.context import get_mcp_caller
+
+    try:
+        tenant, user = get_mcp_caller()
+    except Exception:  # noqa: BLE001 — no caller context is a usable state
+        tenant, user = "default", ""
+    root = current_workspace(
+        str(tenant or "default"), str(user or ""),
+        client_id=client_id, explicit_root=workspace_root,
+    )
+
+    # Served from the project's graph when one is open: that is where the
+    # editor's index command writes, and it is already keyed per project, so
+    # scoping is automatic. The standalone symbols.db is the fallback for
+    # callers with no workspace — it is global, and nothing in the editor's
+    # path fills it, which is why a search from the panel always came back
+    # empty however many times somebody indexed.
+    results = []
+    if root:
+        from app.codegraph import graph as _graph
+        from app.mcp.tools.codegraph_tools import _key_for
+
+        results = _graph.search_symbols(
+            q, key=_key_for(str(tenant or "default"), root), kind=kind, limit=limit
+        )
+    if not results:
+        results = search(q, limit=limit, kind=kind, under=root)
+
+    # An empty list reads as "this project has no such symbol". It means that
+    # only if the project was read. Same distinction the call graph needed:
+    # not-indexed and not-there are different answers and looked identical.
+    payload = {
+        "query": q,
+        "kind": kind,
+        "scope": root or "everything indexed (no project open)",
+        "results": results,
+    }
+    if not results and root:
+        from app.codegraph import graph as _graph
+        from app.mcp.tools.codegraph_tools import _key_for
+        from app.symbols.store import count_under
+
+        graph_symbols = _graph.count_symbols(key=_key_for(str(tenant or "default"), root))
+        if not graph_symbols and not count_under(root):
+            payload["indexed"] = False
+            payload["note"] = (
+                "This project has not been indexed, so nothing is known about "
+                "its symbols — this is not the same as having none. Index it "
+                "first (ABS: Index project)."
+            )
     return json.dumps(
-        {"query": q, "kind": kind, "results": search(q, limit=limit, kind=kind)},
+        payload,
         ensure_ascii=False,
         indent=2,
     )
@@ -43,11 +102,14 @@ async def rag_hybrid(
     await tracker.bump("rag_hybrid")
     from app.rag.hybrid import query_hybrid
 
+    from app.mcp.tools.rag import _caller_tenant
+
     res = await query_hybrid(
         question,
         project_filter=project_filter,
         top_k=top_k,
         alpha_semantic=alpha_semantic,
+        tenant=_caller_tenant(),
     )
     return json.dumps(res, ensure_ascii=False, indent=2)
 

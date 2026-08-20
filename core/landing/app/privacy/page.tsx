@@ -145,8 +145,8 @@ export default async function PrivacyPage({
         <section>
           <h2 className="text-lg font-semibold">7. {tr("privacy.contact.title")}</h2>
           <p>
-            <a href="mailto:privacy@automatiabcn.com" className="underline">
-              privacy@automatiabcn.com
+            <a href="mailto:info@automatiabcn.com" className="underline">
+              info@automatiabcn.com
             </a>{" "}
             — {tr("privacy.contact.body")}
           </p>

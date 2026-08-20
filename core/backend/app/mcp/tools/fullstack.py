@@ -25,9 +25,9 @@ _LAYER_MODELS: Dict[str, tuple[str, str]] = {
     "frontend": ("gemini", "gemini-2.5-pro"),
     "backend": ("groq", "openai/gpt-oss-120b"),
     "database": ("groq", "openai/gpt-oss-120b"),
-    "devops": ("groq", "qwen/qwen3-32b"),
+    "devops": ("groq", "qwen/qwen3.6-27b"),
     "testing": ("cloudflare", "@cf/qwen/qwen2.5-coder-32b-instruct"),
-    "docs": ("groq", "qwen/qwen3-32b"),
+    "docs": ("groq", "qwen/qwen3.6-27b"),
     "architecture": ("groq", "openai/gpt-oss-120b"),
 }
 

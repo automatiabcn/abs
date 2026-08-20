@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Automatia ABS, please report it
+If you discover a security vulnerability in ABS Studio, please report it
 **privately** before disclosing publicly:
 
 - **Email:** [security@automatiabcn.com](mailto:security@automatiabcn.com)
@@ -25,8 +25,8 @@ Please include:
 | `< 0.1` | ❌ |
 
 We will patch the latest minor version for at least 12 months after each release.
-Self-Host Lifetime customers receive update channel notifications for critical
-patches.
+Customers with an active subscription receive update channel notifications for
+critical patches.
 
 ## Disclosure Timeline
 

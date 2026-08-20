@@ -29,7 +29,7 @@ export default function AbsLogo({
       viewBox="0 0 48 48"
       fill="none"
       role="img"
-      aria-label="Automatia ABS"
+      aria-label="ABS Studio"
       {...rest}
     >
       <path

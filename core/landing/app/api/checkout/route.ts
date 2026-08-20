@@ -39,7 +39,12 @@ function getStripe(): Stripe {
   return stripeClient;
 }
 
-const VALID_TIERS: ReadonlySet<Tier> = new Set<Tier>(["solo", "team"]);
+// One plan since 2026-08-03, so "team" is no longer sellable. The type and the
+// price map keep it so an old bookmark or a stale client gets a clean 400
+// instead of a Stripe error — but it is not in this set, which is the only
+// thing that decides what can be bought. A tier the page does not offer must
+// not stay purchasable through the API.
+const VALID_TIERS: ReadonlySet<Tier> = new Set<Tier>(["solo"]);
 
 /**
  * Seats are money, so the number is settled here and not taken from the browser.

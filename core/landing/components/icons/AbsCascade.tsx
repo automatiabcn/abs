@@ -5,7 +5,7 @@
  * Change Date: 2030-05-07 -> Apache License, Version 2.0
  */
 
-// Represents the 6-provider AI cascade as a radial fan.
+// Represents the 7-provider AI cascade as a radial fan.
 import type { SVGProps } from "react";
 
 export default function AbsCascade({ size = 32, ...rest }: SVGProps<SVGSVGElement> & { size?: number }) {
@@ -19,7 +19,7 @@ export default function AbsCascade({ size = 32, ...rest }: SVGProps<SVGSVGElemen
       strokeWidth="1.8"
       strokeLinecap="round"
       role="img"
-      aria-label="6-provider AI cascade"
+      aria-label="7-provider AI cascade"
       {...rest}
     >
       <circle cx="16" cy="26" r="2.5" fill="currentColor" stroke="none" />

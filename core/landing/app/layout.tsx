@@ -15,7 +15,10 @@ import Header from "@/components/Header";
 
 import "./globals.css";
 
-const SITE_URL = "https://abs.automatiabcn.com";
+// Where the site actually is. It said `abs.` — a host that has never had a
+// DNS record — so the canonical URL, the sitemap, robots.txt and every link
+// preview pointed at nothing (found 08-03 walking the money path).
+const SITE_URL = "https://app.automatiabcn.com";
 
 // Modern font stack: Geist Variable display + JetBrains Mono
 // for tabular metric numbers + code. Both loaded via next/font/google so
@@ -37,38 +40,37 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Automatia ABS — Self-hosted AI network",
-    template: "%s · Automatia ABS",
+    default: "ABS Studio — an AI code editor that runs on your machine",
+    template: "%s · ABS Studio",
   },
   description:
-    "Turn chaos into automation — on your own server. 100+ MCP tools, a 6-provider cascade and quality pipelines. It runs on your own Anthropic Claude key, and your data stays with you.",
+    "The editor you write in and the engine behind it both run on your own hardware. Your code is not uploaded to be indexed, and the panel tells you which provider answered, what it cost, and what it did not do.",
   keywords: [
-    "ABS",
-    "Automatia",
-    "Claude",
+    "ABS Studio",
+    "AI code editor",
+    "self-hosted",
+    "BYOK",
     "MCP",
-    "self-hosted AI",
-    "Anthropic",
-    "Groq",
-    "RAG",
-    "multilingual AI",
+    "code review",
+    "AI agent",
+    "Automatia",
   ],
   authors: [{ name: "Automatia BCN" }],
   openGraph: {
     type: "website",
     url: SITE_URL,
-    siteName: "Automatia ABS",
-    title: "Automatia ABS — Self-hosted AI network",
+    siteName: "ABS Studio",
+    title: "ABS Studio — an AI code editor that runs on your machine",
     description:
-      "100+ MCP tools and a 6-provider cascade. On your own server in minutes with Docker Compose.",
+      "Graded edits, a visible provider chain, and a workspace it actually reads. Seven-day trial, no card.",
     images: ["/og.png"],
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Automatia ABS",
+    title: "ABS Studio",
     description:
-      "Self-hosted AI network: 100+ MCP tools and a 6-provider cascade. Contact us for a pilot or PoC.",
+      "An AI code editor that runs on your machine. Graded edits, a visible provider chain, your own keys.",
     images: ["/og.png"],
   },
   robots: {

@@ -118,7 +118,7 @@ class SlackPostRequest(BaseModel):
 
 @router.get("/authorize", response_model=_AuthResp)
 async def slack_authorize(
-    redirect_url: str = "https://abs.automatiabcn.com/connect",
+    redirect_url: str = "https://app.automatiabcn.com/connect",
     client_id: Optional[str] = None,
 ) -> _AuthResp:
     state = _new_state("slack", redirect_url)

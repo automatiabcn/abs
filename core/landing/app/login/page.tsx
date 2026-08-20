@@ -15,6 +15,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { safeRedirect } from "./safeRedirect";
+import { networkMessage, signInMessage } from "./signInMessage";
 
 type LoginState = "idle" | "submitting" | "success" | "error";
 
@@ -78,10 +79,14 @@ export default function LoginPage() {
         return;
       }
       const payload = await res.json().catch(() => ({}));
-      setMessage(payload.detail ?? `HTTP ${res.status}`);
+      // A status code is a fact about a protocol, not an answer to "what
+      // happened to me?" — see signInMessage.ts. Live on 08-02 this line
+      // rendered the words "HTTP 404" at somebody who had just typed their
+      // password.
+      setMessage(signInMessage(res.status, payload));
       setState("error");
     } catch (exc) {
-      setMessage(`Network error: ${(exc as Error).message}`);
+      setMessage(networkMessage(exc));
       setState("error");
     }
   };
@@ -97,7 +102,7 @@ export default function LoginPage() {
       className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-6 py-12"
     >
       <h1 className="text-2xl font-semibold tracking-tight">
-        Automatia ABS · Sign in
+        ABS Studio · Sign in
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Sign in with the email and password you set up in the setup wizard or
