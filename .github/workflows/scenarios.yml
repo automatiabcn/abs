@@ -85,11 +85,28 @@ jobs:
 
       # A venv, because the launcher runs uvicorn out of one — the same script a
       # person runs on their own machine, so the two cannot drift apart.
+      # The knowledge / meetings / citation scenarios need an embedder that
+      # understands meaning (the server refuses to search on `mock`, by design),
+      # and the agent-write scenario needs the OS sandbox the product checks for
+      # on Linux. Neither was installed, so five scenarios failed for the
+      # runner's sake, not the product's.
+      - name: Cache the embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-bge-small-en-v1.5
+      - name: Install bubblewrap (the Linux sandbox the product checks for)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq bubblewrap
       - name: Start an empty server
         working-directory: core/backend
+        env:
+          ABS_EMBEDDING_BACKEND: sentence_transformers
+          ABS_EMBEDDING_MODEL: BAAI/bge-small-en-v1.5
         run: |
           python -m venv .venv
           .venv/bin/pip install -e ".[dev]"
+          .venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cpu
+          .venv/bin/pip install sentence-transformers
           nohup ./scripts/run_e2e_backend.sh > e2e-backend.log 2>&1 &
           for i in $(seq 1 60); do
             curl -fsS http://127.0.0.1:8000/healthz >/dev/null 2>&1 && echo "up" && exit 0
