@@ -53,10 +53,25 @@ jobs:
     env:
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       ABS_QDRANT_URL: http://127.0.0.1:6333
+      ABS_CERBOS_HOST: http://127.0.0.1:3592
       ABS_BACKEND_URL: http://127.0.0.1:8000
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:3458
     steps:
       - uses: actions/checkout@v4
+      # The RAG routes ask Cerbos before they answer, and an unreachable PDP is
+      # DENY by design — so the knowledge and citation scenarios (C3, K1) were
+      # refused with forbidden_rag_action on a runner that never started Cerbos.
+      # Same image and policies as the integration job.
+      - name: Start Cerbos with this repo's policies
+        run: |
+          docker run -d --name cerbos -p 3592:3592 \
+            -v "${{ github.workspace }}/infra/cerbos:/etc/cerbos:ro" \
+            ghcr.io/cerbos/cerbos:0.40.0 \
+            server --config=/etc/cerbos/config.yaml
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:3592/_cerbos/health >/dev/null 2>&1 && echo "cerbos up" && break
+            sleep 2
+          done
 
       - name: The key the scenarios ask their questions with
         run: |
@@ -85,11 +100,28 @@ jobs:
 
       # A venv, because the launcher runs uvicorn out of one — the same script a
       # person runs on their own machine, so the two cannot drift apart.
+      # The knowledge / meetings / citation scenarios need an embedder that
+      # understands meaning (the server refuses to search on `mock`, by design),
+      # and the agent-write scenario needs the OS sandbox the product checks for
+      # on Linux. Neither was installed, so five scenarios failed for the
+      # runner's sake, not the product's.
+      - name: Cache the embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-bge-small-en-v1.5
+      - name: Install bubblewrap (the Linux sandbox the product checks for)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq bubblewrap
       - name: Start an empty server
         working-directory: core/backend
+        env:
+          ABS_EMBEDDING_BACKEND: sentence_transformers
+          ABS_EMBEDDING_MODEL: BAAI/bge-small-en-v1.5
         run: |
           python -m venv .venv
           .venv/bin/pip install -e ".[dev]"
+          .venv/bin/pip install torch --index-url https://download.pytorch.org/whl/cpu
+          .venv/bin/pip install sentence-transformers
           nohup ./scripts/run_e2e_backend.sh > e2e-backend.log 2>&1 &
           for i in $(seq 1 60); do
             curl -fsS http://127.0.0.1:8000/healthz >/dev/null 2>&1 && echo "up" && exit 0

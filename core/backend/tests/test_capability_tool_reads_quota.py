@@ -30,7 +30,9 @@ def test_a_throttled_provider_reaches_the_readout(monkeypatch):
     monkeypatch.setattr(
         capability_tools, "_configured_providers", lambda: {"groq", "cerebras"}
     )
-    monkeypatch.setattr(capability_tools, "_resolved_embedding_backend", lambda: "ollama")
+    monkeypatch.setattr(
+        capability_tools, "_resolved_embedding_backend", lambda: "ollama"
+    )
 
     from app.cascade import quota_meter
 
@@ -43,7 +45,9 @@ def test_a_throttled_provider_reaches_the_readout(monkeypatch):
     monkeypatch.setattr(
         quota_meter,
         "is_throttled",
-        lambda name, **_: (True, "rpd_exhausted_1000") if name == "cerebras" else (False, "ok"),
+        lambda name, **_: (
+            (True, "rpd_exhausted_1000") if name == "cerebras" else (False, "ok")
+        ),
     )
 
     out = _status()
@@ -66,7 +70,18 @@ def test_an_open_breaker_reaches_the_readout(monkeypatch):
     monkeypatch.setattr(
         capability_tools, "_configured_providers", lambda: {"groq", "cerebras"}
     )
-    monkeypatch.setattr(capability_tools, "_resolved_embedding_backend", lambda: "ollama")
+    monkeypatch.setattr(
+        capability_tools, "_resolved_embedding_backend", lambda: "ollama"
+    )
+    # This test is about the BREAKER. The quota meter is process-wide state: on a
+    # runner with a real provider key an earlier test can leave groq in a rate-limit
+    # cooldown, and the readout would then honestly — and irrelevantly — list it as
+    # resting. Pin the meter to "nothing throttled" so only the breaker speaks.
+    from app.cascade import quota_meter
+
+    monkeypatch.setattr(
+        quota_meter, "is_throttled", lambda name, tenant_id="default": (False, "")
+    )
 
     from app.cascade.breaker import default_breaker
 
@@ -90,7 +105,9 @@ def test_a_meter_that_cannot_be_read_does_not_invent_rest(monkeypatch):
     """An unreadable meter is unknown, not throttled. Guessing 'resting' would
     switch capabilities off on a healthy install."""
     monkeypatch.setattr(capability_tools, "_configured_providers", lambda: {"groq"})
-    monkeypatch.setattr(capability_tools, "_resolved_embedding_backend", lambda: "ollama")
+    monkeypatch.setattr(
+        capability_tools, "_resolved_embedding_backend", lambda: "ollama"
+    )
 
     from app.cascade import quota_meter
 

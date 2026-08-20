@@ -209,7 +209,11 @@ class _SentenceTransformersBackend:
             ) from exc
 
         self.model = SentenceTransformer(model_name, device=device)
-        self.dim = int(self.model.get_sentence_embedding_dimension())
+        # sentence-transformers 6 renamed the accessor; keep the old one for <6.
+        _dim_fn = getattr(self.model, "get_embedding_dimension", None) or getattr(
+            self.model, "get_sentence_embedding_dimension"
+        )
+        self.dim = int(_dim_fn())
         logger.info(
             "embedding_sentence_transformers_init model=%s device=%s dim=%d",
             model_name,
@@ -401,8 +405,17 @@ class BGEEmbedder:
         elif backend == "ollama":
             self._impl = _OllamaBackend()
         elif backend == "sentence_transformers":
+            # ABS_EMBEDDING_MODEL names the model here too, not only for Ollama.
+            # A bare Ollama-style name ("bge-m3") maps to its Hugging Face id;
+            # anything with a "/" is taken as a Hugging Face id verbatim. The
+            # default is unchanged, so existing deployments keep BAAI/bge-m3.
+            configured = (getattr(settings, "embedding_model", "") or "bge-m3").strip()
+            if "/" in configured:
+                st_model = configured
+            else:
+                st_model = "BAAI/" + configured.split(":", 1)[0]
             self._impl = _SentenceTransformersBackend(
-                model_name="BAAI/bge-m3",
+                model_name=st_model,
                 device=getattr(settings, "embedding_device", "cpu"),
             )
         elif backend == "onnx_cuda":

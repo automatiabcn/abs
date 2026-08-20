@@ -79,7 +79,23 @@ jobs:
           cache-dependency-path: core/backend/pyproject.toml
       - name: Install dependencies
         run: pip install -e ".[dev]" pytest-cov
+      # The RAG tests need an embedder that understands meaning — retrieval
+      # refuses to run on `mock` (sha256 of the text), by design. Without one the
+      # runner fell back to `none` and 36 tests failed with search_unavailable.
+      # A 130 MB CPU model is the cheapest honest fix; it is cached between runs.
+      - name: Cache the embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-bge-small-en-v1.5
+      - name: Install a small real embedder (CPU torch + sentence-transformers)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install sentence-transformers
       - name: Run tests with coverage
+        env:
+          ABS_EMBEDDING_BACKEND: sentence_transformers
+          ABS_EMBEDDING_MODEL: BAAI/bge-small-en-v1.5
         run: pytest -q --ignore=tests/integration --cov=app --cov-report=term-missing --cov-report=xml
       - name: Coverage threshold (warn-only at <70%)
         run: |
@@ -110,7 +126,19 @@ jobs:
           cache-dependency-path: core/backend/pyproject.toml
       - name: Install dependencies
         run: pip install -e ".[dev]"
+      - name: Cache the embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-bge-small-en-v1.5
+      - name: Install a small real embedder (CPU torch + sentence-transformers)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install sentence-transformers
       - name: Run the suite backwards
+        env:
+          ABS_EMBEDDING_BACKEND: sentence_transformers
+          ABS_EMBEDDING_MODEL: BAAI/bge-small-en-v1.5
         run: pytest -q --tb=line $(ls tests/*.py | sort -r | tr '\n' ' ')
 
   # The panel had no CI at all. 231 vitest tests and a clean `tsc` ran only on a
