@@ -35,6 +35,12 @@ jobs:
       # with search_unavailable. A 130 MB CPU model is the honest fix; cached.
       ABS_EMBEDDING_BACKEND: sentence_transformers
       ABS_EMBEDDING_MODEL: BAAI/bge-small-en-v1.5
+      # Seven tests exercise the provider cascade through its real entry point
+      # (judge, workflow llm_call, the caller's-key rule) with the HTTP layer
+      # mocked; the cascade still refuses to start with no free provider
+      # configured ("no_provider_configured"). The same secret the scenarios
+      # workflow already uses. Dependabot PRs get no secrets and skip the job.
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
