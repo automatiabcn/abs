@@ -30,6 +30,11 @@ jobs:
       # Deterministic SQLite test lane (matches how the suite is run locally);
       # the Postgres/RLS-specific cases keep their own `test-postgres` job.
       ABS_TEST_MODE: "1"
+      # Retrieval refuses to run on the sha256 `mock` backend, by design; with no
+      # Ollama on the runner the suite fell back to `none` and 36 RAG tests failed
+      # with search_unavailable. A 130 MB CPU model is the honest fix; cached.
+      ABS_EMBEDDING_BACKEND: sentence_transformers
+      ABS_EMBEDDING_MODEL: BAAI/bge-small-en-v1.5
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -40,5 +45,14 @@ jobs:
           cache-dependency-path: core/backend/pyproject.toml
       - name: Install dependencies
         run: pip install -e ".[dev]"
+      - name: Cache the embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-bge-small-en-v1.5
+      - name: Install a small real embedder (CPU torch + sentence-transformers)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install sentence-transformers
       - name: Run full backend test suite
         run: pytest -q --ignore=tests/integration
