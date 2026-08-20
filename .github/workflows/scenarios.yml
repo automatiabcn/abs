@@ -53,10 +53,25 @@ jobs:
     env:
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       ABS_QDRANT_URL: http://127.0.0.1:6333
+      ABS_CERBOS_HOST: http://127.0.0.1:3592
       ABS_BACKEND_URL: http://127.0.0.1:8000
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:3458
     steps:
       - uses: actions/checkout@v4
+      # The RAG routes ask Cerbos before they answer, and an unreachable PDP is
+      # DENY by design — so the knowledge and citation scenarios (C3, K1) were
+      # refused with forbidden_rag_action on a runner that never started Cerbos.
+      # Same image and policies as the integration job.
+      - name: Start Cerbos with this repo's policies
+        run: |
+          docker run -d --name cerbos -p 3592:3592 \
+            -v "${{ github.workspace }}/infra/cerbos:/etc/cerbos:ro" \
+            ghcr.io/cerbos/cerbos:0.40.0 \
+            server --config=/etc/cerbos/config.yaml
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:3592/_cerbos/health >/dev/null 2>&1 && echo "cerbos up" && break
+            sleep 2
+          done
 
       - name: The key the scenarios ask their questions with
         run: |
