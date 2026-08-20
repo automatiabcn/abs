@@ -67,6 +67,13 @@ def test_an_open_breaker_reaches_the_readout(monkeypatch):
         capability_tools, "_configured_providers", lambda: {"groq", "cerebras"}
     )
     monkeypatch.setattr(capability_tools, "_resolved_embedding_backend", lambda: "ollama")
+    # This test is about the BREAKER. The quota meter is process-wide state: on a
+    # runner with a real provider key an earlier test can leave groq in a rate-limit
+    # cooldown, and the readout would then honestly — and irrelevantly — list it as
+    # resting. Pin the meter to "nothing throttled" so only the breaker speaks.
+    from app.cascade import quota_meter
+
+    monkeypatch.setattr(quota_meter, "is_throttled", lambda name, tenant_id="default": (False, ""))
 
     from app.cascade.breaker import default_breaker
 
