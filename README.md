@@ -12,7 +12,7 @@
 
 > **Automate the chaos — on your own server.** Pair your Anthropic API key (or Claude
 > Pro plan) with ABS to get 100+ MCP tools, a 6-provider cascade, RAG hybrid retrieval,
-> and quality pipelines that normally cost $1,000+/month — for **$299 one-time**.
+> and quality pipelines that normally cost $1,000+/month — on your own server.
 
 🇬🇧 **English (default)** · 🇹🇷 [Türkçe](README.tr.md) · 🇪🇸 [Español](README.es.md)
 
@@ -60,14 +60,7 @@ fronts everything with Caddy (auto Let's Encrypt). Detailed setup:
 
 ## Pricing
 
-| Plan | Price | Includes |
-|---|---|---|
-| **Self-Host Lifetime** | $299 one-time | Lifetime use + 1 year of updates + all features |
-| **+ Maintenance** | +$49/year | Continuous updates + 48h priority email support |
-| **Team Pack 5** | $1,196 | 5 seats, 20% off |
-| **Team Pack 10** | $2,093 | 10 seats, 30% off |
-
-**14-day no-questions refund.** Buy at [abs.automatiabcn.com](https://abs.automatiabcn.com/).
+Current plans, downloads and the 14-day refund policy live at [automatiabcn.com](https://automatiabcn.com/products/abs).
 
 ## How it works
 
@@ -143,7 +136,7 @@ Contact: support@automatiabcn.com.
 - **Email** — [support@automatiabcn.com](mailto:support@automatiabcn.com) (48h SLA, 24h for Maintenance).
 - **GitHub Discussions** — feature requests, ideas.
 - **Discord beta** — invite-only for beta testers.
-- **Status** — [status.abs.automatiabcn.com](https://status.abs.automatiabcn.com/).
+- **Status** — [automatiabcn.com](https://automatiabcn.com).
 
 ## Contributing
 
