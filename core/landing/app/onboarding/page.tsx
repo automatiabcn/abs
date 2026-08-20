@@ -12,7 +12,7 @@ import OnboardingFlow from "@/components/onboarding/OnboardingFlow";
 import { type Lang, isLang } from "@/lib/i18n";
 
 export const metadata: Metadata = {
-  title: "Onboarding — Automatia ABS",
+  title: "Onboarding",
   description:
     "Five-step setup walkthrough: workspace → project → invites → RAG ingest → grounded query.",
   robots: { index: false, follow: false },

@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Automatia ABS Lisansınız</title>
-    <!-- subject: Automatia ABS lisansınız hazır -->
+    <title>ABS Studio Lisansınız</title>
+    <!-- subject: ABS Studio lisansınız hazır -->
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #f9f9f9;">
 
     <div style="max-width: 600px; margin: 20px auto; padding: 24px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.06);">
-        <h2 style="color: #222; margin-top: 0;">Automatia ABS satın alımınız için teşekkürler</h2>
+        <h2 style="color: #222; margin-top: 0;">ABS Studio satın alımınız için teşekkürler</h2>
 
         <p>Merhaba,</p>
         <p>{{ customer_email }} adına yapılan ödeme başarıyla alındı. Lisans anahtarınız ve kurulum adımları aşağıdadır.</p>
@@ -19,18 +19,18 @@
 
         <h3 style="color: #222;">Kurulum</h3>
         <ol style="padding-left: 20px;">
-            <li style="margin-bottom: 8px;">Docker Desktop veya Docker Engine'i çalışır duruma getirin.</li>
+            <li style="margin-bottom: 8px;">ABS Studio'yu platformunuz için <a href="{{ download_url }}" style="color:#2b6cb0;text-decoration:none;">indirme sayfasından</a> indirin — editör paketini ve aynı sürümdeki <code>abs-server</code> arşivini birlikte alın.</li><li style="margin-bottom:8px;">Docker Desktop veya Docker Engine'i çalışır duruma getirin.</li>
             <li style="margin-bottom: 8px;">İndirdiğiniz paketteki <code>install.sh</code> betiğini çalıştırın.</li>
             <li style="margin-bottom: 8px;">Panel açıldığında yukarıdaki lisans anahtarını girin.</li>
         </ol>
 
-        <p>Ayrıntılı rehber: <a href="https://abs.automatiabcn.com/docs/install" style="color: #2b6cb0; text-decoration: none;">abs.automatiabcn.com/docs/install</a></p>
+        <p>Ayrıntılı rehber: <a href="{{ install_url }}" style="color: #2b6cb0; text-decoration: none;">{{ install_url }}</a></p>
 
         <h3 style="color: #222;">İade hakkı</h3>
         <p>Satın alma tarihinden itibaren 14 gün içinde koşulsuz iade alabilirsiniz: <a href="{{ refund_url }}" style="color: #2b6cb0; text-decoration: none;">{{ refund_url }}</a></p>
 
         <h3 style="color: #222;">Destek</h3>
-        <p>Sorularınız için: <a href="mailto:support@automatiabcn.com" style="color: #2b6cb0; text-decoration: none;">support@automatiabcn.com</a></p>
+        <p>Sorularınız için: <a href="mailto:info@automatiabcn.com" style="color: #2b6cb0; text-decoration: none;">info@automatiabcn.com</a></p>
 
         <p style="margin-top: 28px;">Saygılarımızla,<br><strong>Automatia BCN</strong></p>
 

@@ -1,7 +1,7 @@
 > ⚠️ **DRAFT — LEGAL REVIEW REQUIRED**
 > This document is a template provided as-is. Before signing with customers, qualified legal counsel review is mandatory. Automatia BCN takes no liability for unreviewed use. See `docs/legal/README.md` for review checklist.
 
-# Automatia ABS – GDPR Data Retention Policy  
+# ABS Studio – GDPR Data Retention Policy  
 
 *Version 1.0 – Effective 27 April 2026*  
 
@@ -9,9 +9,9 @@
 
 ## 1. Overview  
 
-Automatia ABS (the "Platform") is an AI‑orchestration solution that runs **exclusively on the customer's own infrastructure**. The core runtime, configuration files, and any data processed by the Platform remain under the full control of the customer's environment.  
+ABS Studio (the "Platform") is an AI‑orchestration solution that runs **exclusively on the customer's own infrastructure**. The core runtime, configuration files, and any data processed by the Platform remain under the full control of the customer's environment.  
 
-Automatia ABS BCN (Barcelona, Spain) provides **cloud‑based ancillary services** that are required for the Platform to operate at scale:
+Automatia BCN (Barcelona, Spain) provides **cloud‑based ancillary services** that are required for the Platform to operate at scale:
 
 | Service | Where it is hosted | What data is stored |
 |---------|-------------------|---------------------|
@@ -38,7 +38,7 @@ The policy below details the categories of personal data we hold, the retention 
 | 5 | **Consent records** | • Marketing opt‑in flag (`true/false`) with timestamp <br>• Feature‑flag opt‑in for telemetry (e.g., usage statistics) <br>• Record of data‑subject consent withdrawal | Consent (Art. 6(1)(a)) |
 | 6 | **Encrypted secrets** | • Stripe secret key, webhook signing secret <br>• API keys for Anthropic, Groq, etc. <br>• SMTP credentials for outbound mail | Contract (necessary for service provision) – stored **encrypted at rest** using **SOPS/AGE** and never transmitted to the on‑premise ABS runtime |
 
-> **Note:** All categories are stored in the **EU‑hosted PostgreSQL cluster** managed by Automatia ABS BCN, with backups replicated within the EU. Access is restricted to a minimal set of privileged engineers and is logged.
+> **Note:** All categories are stored in the **EU‑hosted PostgreSQL cluster** managed by Automatia BCN, with backups replicated within the EU. Access is restricted to a minimal set of privileged engineers and is logged.
 
 ---
 
@@ -95,7 +95,7 @@ Each script runs inside a **dedicated Kubernetes Job** with the least‑privileg
 
 ## 5. Customer Data Rights  
 
-Automatia ABS BCN recognises the full spectrum of GDPR data‑subject rights. The Platform provides **self‑service endpoints** that customers (or authorised representatives) can use to exercise those rights for the data that resides in the cloud component of the service.
+Automatia BCN recognises the full spectrum of GDPR data‑subject rights. The Platform provides **self‑service endpoints** that customers (or authorised representatives) can use to exercise those rights for the data that resides in the cloud component of the service.
 
 | Right | How to Exercise | Technical Implementation |
 |------|-----------------|-----------------------------|
@@ -116,8 +116,8 @@ All endpoints enforce **strong authentication** (OAuth 2.0 bearer tokens scoped 
 If you have any questions, concerns, or requests regarding the processing of your personal data, please contact our Data Protection Officer:
 
 **Data Protection Officer**  
-Automatia ABS BCN  
-Email: **privacy@automatiabcn.com**  
+Automatia BCN  
+Email: **info@automatiabcn.com**  
 Phone: +34 93 123 4567  
 Postal address: Carrer de Balmes, 12, 08007 Barcelona, Spain  
 

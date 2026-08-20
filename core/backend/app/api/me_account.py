@@ -42,7 +42,7 @@ GRACE_DAYS = 30
 
 
 def _confirm_url(token: str) -> str:
-    base = getattr(settings, "public_base_url", "") or "https://abs.automatiabcn.com"
+    base = getattr(settings, "public_base_url", "") or settings.public_site_url
     return f"{base.rstrip('/')}/account/delete-confirm?token={token}"
 
 

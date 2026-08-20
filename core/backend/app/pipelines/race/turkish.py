@@ -24,7 +24,7 @@ class RaceTrPipeline(BasePipeline):
 
         winner = await race_first_success(
             {
-                "qwen32b": groq.call(prompt, model="qwen/qwen3-32b"),
+                "qwen32b": groq.call(prompt, model="qwen/qwen3.6-27b"),
                 "gemini": gemini.call(prompt, model="gemini-2.5-flash"),
             }
         )

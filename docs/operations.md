@@ -122,7 +122,7 @@ ABS is a self-hosted product, so backups are the customer's responsibility.
 
 The support channels available to customers:
 
-- **Email**: `support@automatiabcn.com`
+- **Email**: `info@automatiabcn.com`
 - **Paid priority support**: guaranteed response within 48 hours for maintenance subscribers.
 - **Community**: a Discord channel will provide community support from Phase 2 onwards.
 

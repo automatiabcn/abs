@@ -14,7 +14,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Refund Policy",
   description:
-    "Refund policy for the Automatia ABS self-host orchestrator: seven-day trial, 14-day money-back guarantee, and how cancellation works.",
+    "Refund policy for ABS Studio: seven-day trial, 14-day money-back guarantee, and how cancellation works.",
 };
 
 export default function RefundPage() {

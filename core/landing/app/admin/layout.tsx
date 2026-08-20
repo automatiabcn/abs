@@ -23,7 +23,7 @@ import { QueryProvider } from "@/lib/query-client";
 
 export const metadata: Metadata = {
   description:
-    "ABS Server admin console — manage providers, pipelines, RAG, plugins, users and the audit log.",
+    "ABS Studio admin console — manage providers, pipelines, RAG, plugins, users and the audit log.",
   robots: { index: false, follow: false },
 };
 

@@ -31,15 +31,28 @@ const QUESTIONS: QA[] = [
   },
   {
     q: "How does support work?",
-    a: "Email support is standard on the base plan (support@automatiabcn.com). Customers on the maintenance package get a 48-hour response SLA.",
+    // Was: "Customers on the maintenance package get a 48-hour response SLA."
+    // That package belonged to a retired one-off licence and cannot be bought,
+    // so the answer described a tier of support nobody could reach. A 48-hour
+    // response is what the terms promise on an active subscription.
+    a: "Email support is included (info@automatiabcn.com). While your subscription is active we answer within 48 hours.",
   },
   {
     q: "Is my code sent to Anthropic or to Automatia?",
-    a: "Nothing reaches an Automatia server. ABS runs on your server and talks directly to your own Anthropic API key. On a Claude API call the request content goes to Anthropic — that is an inherent part of any Claude usage.",
+    // Was "Nothing reaches an Automatia server." That is true of your data and
+    // false as a blanket statement: once you subscribe, the server checks its
+    // licence with us on boot and once a day. Saying "nothing" and then being
+    // found in someone's outbound firewall log costs more trust than the
+    // sentence ever bought.
+    a: "None of your data does. ABS runs on your server and talks directly to your own provider keys — chat messages, documents, embeddings and keys never leave it. One thing does: while you have a subscription, the server checks its licence with us on start-up and once a day, sending the licence id, a hashed machine fingerprint, the build hash, your instance URL and the version — no content. You can turn that off with ABS_PHONE_HOME_DISABLED=1. On a provider API call the request content goes to that provider, which is inherent to using them at all.",
   },
   {
-    q: "Why ABS when Cursor / Cline / Aider exist?",
-    a: "ABS is not an IDE plugin, it is a self-hosted AI network. It ships with 100+ MCP tools (120 measured), a 6-provider cascade (Anthropic, Groq, Cerebras, Gemini, CloudFlare, Cohere), quality pipelines and RAG. The founder has been building it while using it daily for 6 months.",
+    q: "Why ABS when other AI coding tools exist?",
+    // Was "not a hosted IDE plugin, it is a self-hosted AI network" — the
+    // product before the pivot. ABS Studio *is* an editor now, and the answer
+    // was describing the thing it used to be, on the front page, under the
+    // question a buyer asks when comparing.
+    a: "ABS Studio is an editor that runs on your machine and a server that runs on yours — not a plugin talking to somebody else\u2019s cloud. It ships with 157 MCP tools, a cascade over 7 providers (Anthropic, OpenRouter, Groq, Cerebras, Gemini, Cloudflare, Cohere) that falls through when one is down, quality pipelines and retrieval over your own documents and meetings. The founder has been building it while using it daily for months.",
   },
   {
     q: "How do updates arrive?",
@@ -60,11 +73,13 @@ const QUESTIONS: QA[] = [
   },
   {
     q: "How are GDPR and data residency handled?",
-    a: "Because ABS runs on your server, all customer data stays in your jurisdiction — no user data is ever sent to Automatia BCN servers. Only the Stripe payment data (email + payment details) is processed on Stripe's infrastructure, which is PCI-DSS Level 1 certified. If a user asks, a data deletion request can be carried out from the Stripe Dashboard.",
+    // The blanket "no user data is ever sent" is true; the sentence around it
+    // used to imply nothing at all leaves, which the licence check makes false.
+    a: "Because ABS Studio runs on your server, all customer data stays in your jurisdiction — no user data is ever sent to Automatia BCN. Two things do leave: Stripe processes the payment data (email + card details) on PCI-DSS Level 1 infrastructure, and while a subscription is active the server verifies its licence with us — identifiers and version only, no content, and switchable off. If a user asks, a deletion request can be carried out from the Stripe Dashboard.",
   },
   {
     q: "Is it open source? What is the license model?",
-    a: "The source is public and licensed under the Business Source License 1.1: you can read it, run it, and change it, and on the Change Date each release becomes Apache 2.0. Running it in production is what the subscription is for. A subscription — Solo, or a team by the seat — covers the whole product, updates included, for as long as it is running.",
+    a: "The source is public and licensed under the Business Source License 1.1: you can read it, run it, and change it, and on the Change Date each release becomes Apache 2.0. Running it in production is what the subscription is for. One subscription covers the whole product, updates included, for as long as it is running.",
   },
 ];
 

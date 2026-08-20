@@ -40,11 +40,13 @@ def test_dry_run_no_stripe_call():
     )
     assert result.returncode == 0, result.stderr
     assert "DRY RUN" in result.stdout
-    # WOULD-CREATE line for 3 SKUs
-    assert result.stdout.count("WOULD-CREATE") == 2
+    # One SKU since 2026-08-03. The comment above said "3 SKUs" while the
+    # assertion said 2 and the script shipped 2 — the count had already drifted
+    # from its own description once.
+    assert result.stdout.count("WOULD-CREATE") == 1
     # Stripe live API erismez (real API hata verirdi)
     assert "solo" in result.stdout
-    assert "team" in result.stdout
+    assert "team" not in result.stdout, "the retired SKU is still in the script"
 
 
 def test_mode_live_with_test_key_aborts():

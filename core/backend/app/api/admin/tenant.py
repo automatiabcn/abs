@@ -31,7 +31,7 @@ _HEX_RX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 _BRANDING_MAX = 500
 _LOGO_HOST_ALLOWLIST = (
     "automatiabcn.com",
-    "abs.automatiabcn.com",
+    "app.automatiabcn.com",
     "cdn.automatiabcn.com",
 )
 

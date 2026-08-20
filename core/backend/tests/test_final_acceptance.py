@@ -148,9 +148,14 @@ def test_r91_final_acceptance_combined(client, _fresh_state, monkeypatch):
     assert prov["configured_count"] == 3, (
         f"PHASE 2: expected 3 configured, got {prov['configured_count']}"
     )
-    assert prov["total"] == 6
+    # Derived, not pinned — adding a provider to the chain (openrouter,
+    # 07-31) must not re-describe this scenario.
+    from app.providers.cascade import PROVIDER_ORDER_DEFAULT
+
+    _total = len(set(PROVIDER_ORDER_DEFAULT))
+    assert prov["total"] == _total
     assert len(prov["active"]) == 3
-    assert len(prov["missing"]) == 3
+    assert len(prov["missing"]) == _total - 3
     # Names may be either bare ("cerebras") or attr-style ("cerebras_api_key");
     # accept either by substring.
     for must_be_missing in ("cerebras", "cohere"):

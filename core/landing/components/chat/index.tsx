@@ -723,7 +723,7 @@ const EMPTY_STATE_COPY: Record<
   es: {
     title: "Empieza a hablar con la IA",
     subtitle:
-      "El cascade router conmuta entre 6 proveedores. Los comandos slash invocan herramientas MCP.",
+      "El cascade router conmuta entre 7 proveedores. Los comandos slash invocan herramientas MCP.",
     cta: "Ver los 48 prompts",
     tip: "Sugerencia: abre la paleta de comandos con ⌘K",
   },

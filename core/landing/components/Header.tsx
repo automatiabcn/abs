@@ -28,6 +28,17 @@ const NAV_LINKS = [
   { href: "/beta", label: "Beta" },
 ] as const;
 
+// On the editor's own pages the menu offers the next step a visitor there
+// actually wants — the build and how to install it — rather than the way back
+// out to the platform.
+const PRODUCT_NAV_LINKS = [
+  { href: "/studio", label: "Overview" },
+  { href: "/download", label: "Download" },
+  { href: "/docs/install", label: "Install" },
+  { href: "/docs/guide", label: "Guide" },
+  { href: "/pricing", label: "Pricing" },
+] as const;
+
 function useScrolled(threshold = 8): boolean {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -114,6 +125,15 @@ function ThemeToggle() {
 // carries its own chrome; the site header stays on the site.
 const APP_ROUTE_PREFIXES = ["/panel", "/admin"] as const;
 
+// Pages that belong to ABS Studio rather than to the platform around it.
+//
+// /pricing joined them on 2026-08-03. It is where a visitor decides to buy,
+// and it was showing the platform menu — Home, Pricing, Beta — so the one page
+// with a Subscribe button had no link to the download, the install guide or
+// the overview. Someone convinced by the price had nowhere to go next, and the
+// site they saw there did not look like the site they had just been reading.
+const PRODUCT_ROUTE_PREFIXES = ["/studio", "/download", "/docs", "/pricing"] as const;
+
 export default function Header() {
   const pathname = usePathname();
   const scrolled = useScrolled();
@@ -122,6 +142,18 @@ export default function Header() {
     (prefix) => pathname === prefix || pathname?.startsWith(`${prefix}/`),
   );
   if (isAppRoute) return null;
+
+  // One name everywhere (founder's decision, 08-03). The split that used to
+  // live here was a stand-in for an unmade choice, and it produced exactly the
+  // problem it was written to describe: a buyer reading two names on the way
+  // to one purchase. The ROUTE distinction stays — the editor's pages have
+  // their own navigation — but the name no longer moves with it.
+  const isProductRoute = PRODUCT_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname?.startsWith(`${prefix}/`),
+  );
+  const brand = "ABS Studio";
+  const brandHref = isProductRoute ? "/studio" : "/";
+  const navLinks = isProductRoute ? PRODUCT_NAV_LINKS : NAV_LINKS;
 
   return (
     <header
@@ -139,16 +171,16 @@ export default function Header() {
     >
       <div className="container mx-auto flex h-14 items-center justify-between px-4">
         <Link
-          href="/"
+          href={brandHref}
           className="flex min-h-[44px] items-center gap-2 py-2 font-semibold tracking-tight"
           style={{ color: "var(--abs-foreground)" }}
         >
           <AbsLogo size={22} aria-hidden="true" style={{ color: "var(--abs-brand-base)" }} />
-          <span className="text-sm">Automatia ABS</span>
+          <span className="text-sm">{brand}</span>
         </Link>
 
         <nav aria-label="Main menu" className="flex items-center gap-1 text-sm">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}

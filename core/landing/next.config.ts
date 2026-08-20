@@ -122,6 +122,12 @@ const nextConfig: NextConfig = {
   // so that redirect loops forever (ERR_TOO_MANY_REDIRECTS).
   async redirects() {
     return [
+      // This domain is ABS Studio's front door. Until 08-02 it opened on the
+      // server product's marketing — "Your own AI server" — which is a
+      // different pitch from the one every other page here makes, and the
+      // first thing a visitor saw. 307, not 308: the old home is one line
+      // away if it should come back.
+      { source: "/", destination: "/studio", permanent: false },
       { source: "/admin/cascade", destination: "/admin/providers", permanent: true },
       // The sign-in page is /login, and every other spelling of it is a guess a
       // customer actually makes from the address bar. Without these, /admin/login

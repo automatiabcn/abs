@@ -31,7 +31,21 @@ REGISTERED_TOOLS: List[str] = []
 async def judge_patch(unified_diff: str, file_path: str = "") -> str:
     """SENIOR JUDGE — score a diff: 60% AST fingerprint, 40% model judgement."""
     await tracker.bump("judge_patch")
-    result = await _judge_diff(unified_diff, file_path or None)
+    # The judge runs on whoever asked. Without the caller, a BYOK-only install
+    # has no judge at all — every file comes back "not graded" (08-01 audit).
+    tenant = user = None
+    try:
+        from app.mcp.context import get_mcp_caller
+
+        tenant, user = get_mcp_caller()
+    except Exception:  # noqa: BLE001 — an unknown caller still gets a judgement
+        pass
+    result = await _judge_diff(
+        unified_diff,
+        file_path or None,
+        tenant_id=str(tenant) if tenant else None,
+        user_subject=str(user) if user else None,
+    )
     return json.dumps(result, ensure_ascii=False, indent=2)
 
 
@@ -65,7 +79,7 @@ async def write_docs(module_info: str) -> str:
     )
     try:
         provider = get_provider("groq")
-        resp = await provider.call(prompt, model="qwen/qwen3-32b", max_tokens=2000)
+        resp = await provider.call(prompt, model="qwen/qwen3.6-27b", max_tokens=2000)
         return resp.text or "[ERROR] write_docs: empty"
     except ProviderError as exc:
         return f"[ERROR] write_docs: {exc.message}"
@@ -101,10 +115,24 @@ async def code_review(code: str, tier: str = "auto") -> str:
 @mcp_server.tool()
 @with_hooks("ask_disagree")
 async def ask_disagree(prompt: str) -> str:
-    """Ask three providers in parallel and score how much they agree — a low
+    """Ask several providers in parallel and score how much they agree — a low
     consensus score is the signal that the answer is not safe to trust."""
     await tracker.bump("ask_disagree")
-    result = await _ask_disagree_impl(prompt)
+    # Same reason the judge needs it: the providers are chosen from the keys
+    # this caller brought, and the key has to travel with the call. Without the
+    # caller, a BYOK install is told nobody answered (08-02 audit).
+    tenant = user = None
+    try:
+        from app.mcp.context import get_mcp_caller
+
+        tenant, user = get_mcp_caller()
+    except Exception:  # noqa: BLE001 — an unknown caller still gets the free tier
+        pass
+    result = await _ask_disagree_impl(
+        prompt,
+        tenant_id=str(tenant) if tenant else None,
+        user_subject=str(user) if user else None,
+    )
     return json.dumps(result, ensure_ascii=False, indent=2)
 
 

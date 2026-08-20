@@ -47,16 +47,15 @@ describe("promises the page keeps", () => {
     expect(document.querySelector("#install")).not.toBeNull();
   });
 
-  it("the footer's install link points at a host that resolves", () => {
+  it("the footer's install link points at our own guide", () => {
+    // It pointed at a host with no DNS, was moved to a README anchor while we
+    // had no guide of our own, and now goes to the page that exists. A person
+    // who paid should land on the product's documentation, not a repository.
     render(<Footer />);
     const link = screen.getByRole("link", { name: /installation guide/i });
-    expect(link).toHaveAttribute(
-      "href",
-      expect.stringContaining("github.com/automatiabcn/abs"),
-    );
-    expect(read("components/Footer.tsx")).not.toContain(
-      "abs.automatiabcn.com/docs",
-    );
+    expect(link).toHaveAttribute("href", "/docs/install");
+    const footer = read("components/Footer.tsx");
+    expect(footer).not.toContain("abs.automatiabcn.com/docs");
   });
 
   it("no invented testimonials come back", () => {

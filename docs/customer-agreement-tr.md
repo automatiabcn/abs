@@ -1,4 +1,4 @@
-# Automatia ABS — Ticari Lisans Sözleşmesi
+# ABS Studio — Ticari Lisans Sözleşmesi
 
 **Versiyon:** 1.0
 **Yürürlük Tarihi:** _________________
@@ -7,7 +7,7 @@
 
 ---
 
-Bu Ticari Lisans Sözleşmesi ("Sözleşme"), Müşteri'nin Automatia BCN ("Lisans Veren") tarafından sağlanan Automatia ABS yazılımını ("Yazılım") kullanımını düzenler. Bu Sözleşme'yi kabul ederek (aşağıda imzalayarak veya kurulum sürecinde "Kabul Ediyorum" seçeneğini tıklayarak) Müşteri, aşağıdaki tüm şartları kabul etmiş olur.
+Bu Ticari Lisans Sözleşmesi ("Sözleşme"), Müşteri'nin Automatia BCN ("Lisans Veren") tarafından sağlanan ABS Studio yazılımını ("Yazılım") kullanımını düzenler. Bu Sözleşme'yi kabul ederek (aşağıda imzalayarak veya kurulum sürecinde "Kabul Ediyorum" seçeneğini tıklayarak) Müşteri, aşağıdaki tüm şartları kabul etmiş olur.
 
 ## 1. Lisans Hakkının Verilmesi
 
@@ -78,21 +78,21 @@ Bu Sözleşme İspanya yasalarına ve özellikle Comunidad Autónoma de Cataluñ
 
 Lisans ücretleri, Müşteri'ye satın alma sırasında sağlanan Sipariş Formu'nda belirtilir. Standart seviyeler:
 
-| Seviye | Yıllık Ücret | Kullanıcı | Dağıtım |
-|--------|-------------|-----------|---------|
-| Self-Host | $299 (tek seferlik) | 1 | 1 |
-| Team | $1.196 (5 kullanıcı × $239) | 5 | 1 |
+| Plan | Ücret | Kullanıcı | Dağıtım |
+|------|-------|-----------|---------|
+| ABS Studio | Ayda $5 | 1 | 1 |
 | Enterprise | Özel teklif | Özel | Özel |
 
-Ücretler iade edilmez; istisna olarak yalnızca Self-Host seviyesinin ilk satın alımları için geçerli olan 14 günlük para iade garantisi uygulanır.
+Her kurulum, ödeme kartı ve lisans anahtarı gerektirmeyen yedi günlük deneme süresiyle başlar. Abonelikler iptal edilene kadar aylık yenilenir. İptal bir sonraki yenilemeyi durdurur; ücreti ödenmiş dönem sonuna kadar işler.
+
+Ücretler, Müşteri'nin ilk ödemesi için geçerli olan 14 günlük para iade garantisi kapsamında iade edilir.
 
 ## 8. Güncellemeler ve Destek
 
 Müşteri şunlara hak kazanır:
 
-- Lisans süresi boyunca yayınlanan Yazılım güncellemeleri ve hata düzeltmeleri
-- support@automatiabcn.com adresinden e-posta desteği (48 saat yanıt süresi)
-- İsteğe bağlı Bakım Paketi ($49/yıl) — 24 saat öncelikli yanıt süresi
+- Abonelik etkin olduğu sürece yayınlanan Yazılım güncellemeleri ve hata düzeltmeleri
+- info@automatiabcn.com adresinden e-posta desteği (48 saat yanıt süresi)
 
 Güncellemeleri yüklemek Müşteri'nin sorumluluğundadır. Güncellemeler lisans doğrulama, denetim günlüğü veya diğer uyum mekanizmalarında değişiklikler içerebilir.
 
@@ -106,6 +106,6 @@ Aşağıda imzalayarak veya kurulum sürecinde "Kabul Ediyorum" seçeneğini tı
 |-------------|------------------|
 | Ad: _________________ | Ad: Automatia BCN |
 | Unvan: _________________ | Unvan: Şahıs Şirketi Sahibi |
-| E-posta: _________________ | E-posta: support@automatiabcn.com |
+| E-posta: _________________ | E-posta: info@automatiabcn.com |
 | İmza: _________________ | İmza: _________________ |
 | Tarih: _________________ | Tarih: _________________ |

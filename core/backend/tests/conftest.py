@@ -259,3 +259,19 @@ def client():
 
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture(autouse=True)
+def _reset_provider_health():
+    """Provider health is a process-global 'last outcome per provider'. A test
+    that drives a real cascade failure leaves a provider marked degraded, and
+    the next test's title_status / capability_status then counts it not-ready
+    (added with the 2026-08-18 readiness fix; green alone, red in the suite)."""
+    try:
+        from app.cascade import provider_health as _ph
+
+        _ph.reset_for_tests()
+        yield
+        _ph.reset_for_tests()
+    except Exception:
+        yield

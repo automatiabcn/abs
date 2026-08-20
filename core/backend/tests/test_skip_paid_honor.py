@@ -28,6 +28,7 @@ from __future__ import annotations
 import pytest
 
 from app.providers.cascade import (
+    LOCAL_PROVIDERS_ORDER,
     PAID_PROVIDERS,
     PROVIDER_ORDER_FREE_FIRST,
     PROVIDER_ORDER_PAID_FIRST,
@@ -135,8 +136,15 @@ def test_get_active_providers_default_free_first_anthropic_last(monkeypatch):
     assert default[-1] == "anthropic", default
     assert "anthropic" not in free, free
     assert free[0] == "groq", free
-    # All 5 free providers configured + ordered.
-    assert set(free) == set(PROVIDER_ORDER_FREE_FIRST)
+    # Every free CLOUD provider this fixture gave a key to is in the chain. The
+    # constant also carries the local runtimes (ollama, mlx), which are
+    # configured by URL and absent here — a chain is not a catalogue, and
+    # comparing the two as sets was only ever true by coincidence.
+    cloud_free = [p for p in PROVIDER_ORDER_FREE_FIRST if p not in LOCAL_PROVIDERS_ORDER]
+    assert set(free) == set(cloud_free)
+    assert not (set(free) & set(LOCAL_PROVIDERS_ORDER)), (
+        "a local runtime with no URL must not be in anybody's chain"
+    )
 
 
 # ---------- route-level: HTTP contract --------------------------------

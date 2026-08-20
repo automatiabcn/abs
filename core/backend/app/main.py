@@ -30,6 +30,7 @@ from app.api.v1.agentic_workflows import (
 )  # Workflow Designer
 from app.api.v1.consent import router as v1_consent_router  # Consent Ledger
 from app.auth.oauth.routes import router as oauth_router
+from app.auth.device import router as device_auth_router
 from app.api import beta_admin as beta_admin_router
 from app.api import beta_portal as beta_portal_router
 from app.api import billing_portal as billing_portal_router
@@ -298,6 +299,67 @@ async def lifespan(_app: FastAPI):
             )
         except Exception as exc:
             _lf_logger.warning("phone_home_skipped: %s", exc)
+    import os
+
+    # The workflow scheduler. Until this existed a saved cron trigger was
+    # decoration: validated, stored, never fired. Runs are enqueued through the
+    # normal runner, whose LLM steps are pinned to the free tier — so a
+    # schedule firing at 3am cannot spend money with nobody watching.
+    _schedule_task = None
+    if os.environ.get("ABS_TEST_MODE") != "1" and getattr(
+        _settings, "workflow_scheduler_enabled", True
+    ):
+        import asyncio as _asyncio
+
+        async def _schedule_loop() -> None:
+            from app.workflow_v10 import schedule as _schedule
+
+            while True:
+                try:
+                    await _asyncio.sleep(30)
+                    ran = await _schedule.tick()
+                    for entry in ran:
+                        _lf_logger.info(
+                            "scheduled workflow ran: %s job=%s%s",
+                            entry.get("workflow"),
+                            entry.get("job_id"),
+                            f" error={entry['error']}" if entry.get("error") else "",
+                        )
+                except _asyncio.CancelledError:
+                    raise
+                except Exception as exc:  # noqa: BLE001 — a bad tick must not kill the loop
+                    _lf_logger.warning("workflow scheduler tick failed: %s", exc)
+
+        _schedule_task = _asyncio.create_task(_schedule_loop())
+        _lf_logger.info("workflow scheduler started (30s tick, free tier only)")
+
+    # RAG chunks written before 2026-08-18 carried no owner; stamp them once
+    # so the tenant-scoped tools still see what was indexed before.
+    if os.environ.get("ABS_TEST_MODE") != "1":
+        try:
+            from app.rag.indexer import backfill_tenant as _bf
+
+            _n = _bf()
+            if _n:
+                _lf_logger.info("rag: %d legacy chunks assigned to the default tenant", _n)
+        except Exception as exc:  # noqa: BLE001
+            _lf_logger.info("rag backfill skipped: %s", exc)
+
+    # The catalogue watch: are the models we pin still served? Groq retired
+    # its Llama 3.x line on 2026-08-16 and the product found out two days
+    # later from an audit, not from itself. One listing call at start and one
+    # a day; the verdict is read by model_health / title_status.
+    _catalog_task = None
+    if os.environ.get("ABS_TEST_MODE") != "1" and getattr(
+        _settings, "catalog_watch_enabled", True
+    ):
+        import asyncio as _asyncio
+
+        from app.providers.catalog_watch import watch_loop as _catalog_watch
+
+        _catalog_task = _asyncio.create_task(_catalog_watch())
+        _lf_logger.info("catalog watch started (start + daily)")
+
     # Load the provider config YAMLs once at boot (idempotent).
     try:
         from app.providers.configs import load_all
@@ -387,6 +449,22 @@ async def lifespan(_app: FastAPI):
             except (asyncio.CancelledError, Exception):
                 pass
 
+        # Same for the workflow scheduler: a tick in flight must not hold
+        # shutdown open, and a cancelled tick has already claimed its schedules
+        # atomically, so nothing is lost or double-run.
+        if _schedule_task is not None:
+            _schedule_task.cancel()
+            try:
+                await _schedule_task
+            except (asyncio.CancelledError, Exception):
+                pass
+        if _catalog_task is not None:
+            _catalog_task.cancel()
+            try:
+                await _catalog_task
+            except (asyncio.CancelledError, Exception):
+                pass
+
         # Flush LangFuse + close Cerbos pre-warmed client
         try:
             from app.observability.langfuse_client import close_langfuse
@@ -411,7 +489,7 @@ async def lifespan(_app: FastAPI):
 
 from app.config import settings as _app_settings  # noqa: E402
 
-app = FastAPI(title="Automatia ABS", version=_app_settings.version, lifespan=lifespan)
+app = FastAPI(title="ABS Studio", version=_app_settings.version, lifespan=lifespan)
 install_rate_limit(app)  # must run before include_router so decorators work
 
 # Convert RLS write-side violations (Postgres SQLSTATE 42501)
@@ -474,6 +552,7 @@ app.include_router(
     auth_router.claim_v1_router
 )  # /v1/auth/magic-claim (SPA /activate page)
 app.include_router(oauth_router)  # OAuth 2.1 + PKCE + JWKS
+app.include_router(device_auth_router)  # device-grant sign-in (ABS editor)
 app.include_router(v1_projects_router)  # MCP gateway v1
 app.include_router(v1_rag_router)  # RAG ingest/query
 app.include_router(v1_agents_router)  # Agentic Growth — Agent Registry + Runtime

@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
@@ -87,13 +88,38 @@ def bulk_insert(symbols: List[Symbol]) -> int:
 
 
 def search(
-    name_substr: str, limit: int = 20, kind: Optional[str] = None
+    name_substr: str,
+    limit: int = 20,
+    kind: Optional[str] = None,
+    under: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
+    """Symbols matching a substring, optionally only those under a directory.
+
+    `under` exists because this searched everything the server had ever
+    indexed. A developer with two projects open at different times got the
+    other one's symbols in their results, with nothing to say which repository
+    a hit came from. Paths are stored absolute, so a prefix is enough and no
+    schema change is needed.
+    """
     sql = "SELECT name, kind, file, lineno FROM symbols WHERE name LIKE ?"
     params: List[Any] = [f"%{name_substr}%"]
     if kind:
         sql += " AND kind = ?"
         params.append(kind)
+    if under:
+        # Resolved on both sides, or the filter silently matches nothing.
+        #
+        # The workspace is stored with realpath() and the indexer records the
+        # path it was handed. On macOS /var is a symlink to /private/var, so
+        # scoping a project under /var/... against symbols recorded as
+        # /private/var/... returned zero rows — no error, no results, and
+        # nothing to suggest the filter rather than the repository was empty.
+        try:
+            root = os.path.realpath(under).rstrip("/") + "/"
+        except OSError:
+            root = under.rstrip("/") + "/"
+        sql += " AND file LIKE ?"
+        params.append(f"{root}%")
     sql += " ORDER BY name LIMIT ?"
     params.append(limit)
     with _connect() as conn:
@@ -149,3 +175,21 @@ def stats() -> Dict[str, Any]:
             for r in conn.execute("SELECT kind, COUNT(*) c FROM symbols GROUP BY kind")
         }
     return {"total_symbols": total, "total_edges": edges, "by_kind": by_kind}
+
+
+def count_under(root: str) -> int:
+    """How many symbols are recorded under a directory.
+
+    Used to tell "this project has not been indexed" apart from "this project
+    has no such symbol". The two returned identical empty results until
+    2026-08-03, and only one of them is an answer about the code.
+    """
+    try:
+        base = os.path.realpath(root).rstrip("/") + "/"
+    except OSError:
+        base = root.rstrip("/") + "/"
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM symbols WHERE file LIKE ?", (f"{base}%",)
+        ).fetchone()
+    return int(row[0] if row else 0)

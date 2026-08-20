@@ -1,0 +1,28 @@
+provider: openrouter
+display_name: OpenRouter
+homepage: https://openrouter.ai/
+docs: https://openrouter.ai/docs
+free_tier: false
+rate_limit: per-model
+# OpenRouter routes to many upstreams; a model without a row here is
+# UNPRICED and reported as such — never as free. Prices are OpenRouter list
+# prices per million tokens on the date noted; refresh when a model is added.
+models:
+  - alias: qwen3-coder-free
+    id: qwen/qwen3-coder:free
+    context: 262144
+    pricing_per_mtok_input: 0.0
+    pricing_per_mtok_output: 0.0
+    deprecated: false
+  - alias: minimax-m2-free
+    id: minimax/minimax-m2:free
+    context: 204800
+    pricing_per_mtok_input: 0.0
+    pricing_per_mtok_output: 0.0
+    deprecated: false
+  - alias: deepseek-v4-pro
+    id: deepseek/deepseek-v4-pro
+    context: 1000000
+    pricing_per_mtok_input: 1.74   # list price after the 2026-05-31 promo ended
+    pricing_per_mtok_output: 3.48
+    deprecated: false

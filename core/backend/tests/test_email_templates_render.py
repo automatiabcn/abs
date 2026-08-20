@@ -12,7 +12,7 @@ def test_welcome_template_renders():
         customer_email="user@x.co",
         unsubscribe_url="https://x/unsub?t=abc",
     )
-    assert "Automatia ABS" in subject
+    assert "ABS Studio" in subject
     assert "Welcome" in html
     assert "user@x.co" in html
     assert "abc" in html

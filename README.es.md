@@ -1,19 +1,49 @@
-# Automatia ABS — Orquestación AI self-host para Claude Code
+# ABS Studio — servidor
 
 🇬🇧 [English](README.md) · 🇹🇷 [Türkçe](README.tr.md) · 🇪🇸 **Español**
 
-> Ejecuta 100+ MCP tools y cascade de 6 proveedores en tu servidor. Tu plan Claude Pro
-> de $20 + ABS en tu propio servidor = combinación de herramientas enterprise de $1000+/mes. Precio actual: automatiabcn.com
+> La mitad servidor de ABS Studio: el editor corre en tu máquina, esto corre en tu
+> VPS, y entre medias no hay nada nuestro. Este lado aporta los proveedores, la
+> recuperación, las herramientas y la facturación. **$5 al mes**, siete días de
+> prueba sin tarjeta, cancela cuando quieras.
+>
+> ¿Buscas el editor? [app.automatiabcn.com](https://app.automatiabcn.com/studio).
 
-Este archivo es un esqueleto para traducción — los textos finales se completarán
-después de la 026. Por ahora consulta el [README principal (EN)](README.md).
+## Por qué un servidor aparte
+
+Un editor con IA que lo guarda todo en el portátil no puede buscar en tus documentos,
+no recuerda la reunión de la semana pasada y se detiene en cuanto un proveedor tiene
+un mal día. Un editor que lo envía todo a un proveedor resuelve eso, y a cambio le
+entrega tu código.
+
+Esta es la tercera respuesta: el editor habla con un servidor que es tuyo.
+
+- Enrutado entre **7 proveedores** con cortacircuitos: la caída de uno no es la tuya;
+  y recurre a modelos locales (Ollama, MLX) si los tienes.
+- **157 herramientas MCP**: recuperación híbrida RAG, judge persona ML, modo
+  desarrollador fullstack, canal de calidad en turco.
+- Todo en **tu máquina**. Ninguno de tus datos llega a servidores de Automatia;
+  las llamadas con contenido van al proveedor que elijas, con tu clave. Mientras
+  la suscripción está activa el servidor también verifica su licencia con
+  nosotros al arrancar y una vez al día — id de licencia, huella de máquina
+  hasheada, hash de build, URL de la instancia y versión; sin contenido. Se
+  desactiva con `ABS_PHONE_HOME_DISABLED=1`.
 
 ## Instalación rápida
 
+Necesitas un VPS Linux (un Hetzner CX22 de $5 al mes basta) y Docker.
+
 ```bash
 ssh root@vps-ip
-curl -fsSL https://raw.githubusercontent.com/automatiabcn/abs/main/infra/scripts/deploy_hetzner.sh | \
-    bash -s -- --domain abs.tu-dominio.com --email admin@tu-dominio.com
+curl -fsSLO https://app.automatiabcn.com/download   # el archivo del servidor
+tar -xzf abs-server-*.tar.gz && cd abs-server-*
+./install.sh                                        # escribe .env, vuelve a ejecutarlo
 ```
 
-Detalles: [Setup Guide](docs/setup-guide.md) · [Abrir issue](https://github.com/automatiabcn/abs/issues/new)
+La primera ejecución escribe un `.env` para que lo completes —tu dominio y una
+dirección de administrador— y la segunda descarga las imágenes publicadas y lo
+levanta todo detrás de Caddy, que obtiene su propio certificado. No se compila nada
+desde el código y los primeros siete días no piden clave de licencia.
+
+Detalles: [Guía de instalación](docs/setup-guide.md) ·
+[Precios](https://app.automatiabcn.com/pricing)

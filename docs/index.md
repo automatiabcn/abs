@@ -1,6 +1,6 @@
-# Automatia ABS Documentation
+# ABS Studio Documentation
 
-Self-host AI orchestration for Claude Code — 100+ MCP tools, a 6-provider chain, hybrid RAG and a Turkish quality pipeline, all on your own server.
+The server half of ABS Studio: 157 MCP tools, a 6-provider chain, hybrid RAG and a Turkish quality pipeline, all on your own machine. The editor talks to it, and so does any other MCP client.
 
 ---
 
@@ -33,21 +33,18 @@ Self-host AI orchestration for Claude Code — 100+ MCP tools, a 6-provider chai
 
 | Plan | Price | Term |
 |---|:-:|---|
-| **Self-Host Lifetime** | $299 one-off | Lifetime use + 1 year of updates |
-| **+ Maintenance** | +$49/year | Continuous updates + priority support |
-| **Team Pack 5** | $1196 | 5 seats, 20% off |
-| **Team Pack 10** | $2093 | 10 seats, 30% off |
+| **ABS Studio** | $5 / month | The editor and the server |
 
-14-day no-questions-asked refund. GDPR compliant. Self-service through the Stripe Customer Portal.
+Every install starts with a seven-day trial — no card, no licence key. Cancel
+any month. 14-day no-questions-asked refund on a first payment. GDPR compliant. Self-service through the Stripe Customer Portal.
 
 ---
 
 ## Community and support
 
-- **Email** — `support@automatiabcn.com` (48h response, Maintenance: 24h)
+- **Email** — `info@automatiabcn.com` (48h response while a subscription is active)
 - **GitHub** — [github.com/automatiabcn/abs](https://github.com/automatiabcn/abs) (Apache 2.0 core)
 - **Discord beta** — `discord.gg/abs-beta` (beta testers only)
-- **Status** — `status.abs.automatiabcn.com` (Cloudflare uptime monitor)
 
 ---
 

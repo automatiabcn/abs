@@ -16,7 +16,7 @@ const Footer: FC = () => (
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
         <div>
           <h2 id="footer-title" className="text-base font-semibold">
-            Automatia ABS
+            ABS Studio
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             <strong>Automatia BCN</strong> · Barcelona, Spain
@@ -45,10 +45,12 @@ const Footer: FC = () => (
               </a>
             </li>
             <li>
-              {/* abs.automatiabcn.com does not resolve — this link had been
-                  dead. The install guide that exists is the one in the repo. */}
+              {/* This pointed at a host with no DNS, then at a README anchor
+                  while there was no guide of our own. There is one now, on this
+                  site, and a paying customer should land on it rather than on a
+                  repository. */}
               <a
-                href="https://github.com/automatiabcn/abs#quick-install-15-minutes"
+                href="/docs/install"
                 className="hover:text-foreground"
                 rel="noreferrer"
                 target="_blank"
@@ -64,10 +66,10 @@ const Footer: FC = () => (
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             <li>
               <a
-                href="mailto:support@automatiabcn.com"
+                href="mailto:info@automatiabcn.com"
                 className="hover:text-foreground"
               >
-                support@automatiabcn.com
+                info@automatiabcn.com
               </a>
             </li>
             <li>

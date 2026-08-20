@@ -1,4 +1,4 @@
-# Automatia ABS — Commercial License Agreement
+# ABS Studio — Commercial License Agreement
 
 **Version:** 1.0
 **Effective Date:** _________________
@@ -7,7 +7,7 @@
 
 ---
 
-This Commercial License Agreement ("Agreement") governs the Customer's use of the Automatia ABS software ("Software") provided by Automatia BCN ("Licensor"). By accepting this Agreement (signing below or clicking "I Accept" during onboarding), the Customer agrees to the terms below.
+This Commercial License Agreement ("Agreement") governs the Customer's use of the ABS Studio software ("Software") provided by Automatia BCN ("Licensor"). By accepting this Agreement (signing below or clicking "I Accept" during onboarding), the Customer agrees to the terms below.
 
 ## 1. Grant of License
 
@@ -78,21 +78,21 @@ This Agreement is governed by the laws of Spain, specifically the Comunidad Aut�
 
 License fees are specified in the Order Form provided to Customer at the time of purchase. Standard tiers:
 
-| Tier | Annual Fee | Seats | Instances |
-|------|-----------|-------|-----------|
-| Self-Host | $299 (one-time) | 1 | 1 |
-| Team | $1,196 (5 seats × $239) | 5 | 1 |
+| Plan | Fee | Seats | Instances |
+|------|-----|-------|-----------|
+| ABS Studio | $5 per month | 1 | 1 |
 | Enterprise | Custom quote | Custom | Custom |
 
-Fees are non-refundable except under the 14-day money-back guarantee, which applies only to first-time purchases of the Self-Host tier.
+Every installation begins with a seven-day trial that requires no payment card and no licence key. Subscriptions renew monthly until cancelled. Cancelling stops the next renewal; the period already paid for runs to its end.
+
+Fees are refundable under the 14-day money-back guarantee, which applies to a Customer's first payment.
 
 ## 8. Updates and Support
 
 Customer is entitled to:
 
-- Software updates and bug fixes released during the License term
-- Email support at support@automatiabcn.com (48-hour response SLA)
-- Optional Maintenance Pack ($49/year) — 24-hour priority response time
+- Software updates and bug fixes released while the subscription is active
+- Email support at info@automatiabcn.com (48-hour response SLA)
 
 Customer is responsible for installing updates. Updates may include changes to license verification, audit logging, or other compliance mechanisms.
 
@@ -106,6 +106,6 @@ By signing below or by clicking "I Accept" during the onboarding flow, Customer 
 |--------------|--------------|
 | Name: _________________ | Name: Automatia BCN |
 | Title: _________________ | Title: Sole Proprietor |
-| Email: _________________ | Email: support@automatiabcn.com |
+| Email: _________________ | Email: info@automatiabcn.com |
 | Signature: _________________ | Signature: _________________ |
 | Date: _________________ | Date: _________________ |

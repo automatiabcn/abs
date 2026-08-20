@@ -303,4 +303,4 @@ docker compose exec backend python -c \
 ---
 
 For incidents that do not match any of the four scenarios above, file a private
-issue tagged `incident` and contact `security@automatiabcn.com`.
+issue tagged `incident` and contact `info@automatiabcn.com`.

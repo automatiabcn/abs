@@ -91,6 +91,27 @@ services:
   backend:
     image: ghcr.io/${ABS_GHCR_NAMESPACE:-automatiabcn}/abs-backend:${ABS_VERSION:-latest}
     pull_policy: always
+    # Reachable from this machine, and only from this machine.
+    #
+    # A customer who installs on their own laptop had no way in. The only open
+    # port was Caddy's 443, whose certificate comes from Caddy's internal CA —
+    # which macOS does not trust, and the editor has no setting to relax TLS.
+    # So the editor could not reach the server the customer had just installed,
+    # and the remedy on offer was "edit docker-compose.yml by hand", which is
+    # not something a product should ship needing. Found 2026-08-03 walking a
+    # real install with a tester.
+    #
+    # The 127.0.0.1 prefix is the whole safety story: on a VPS this binds to
+    # loopback and changes nothing, because the editor still arrives over the
+    # domain through Caddy with a real certificate. On a laptop it makes
+    # http://localhost:8000 work with no configuration at all.
+    # The host port is configurable because 8000 is a popular port: on a laptop
+    # that already runs something there, a fixed binding turns a working
+    # install into "ports are not available ... address already in use", which
+    # is a docker sentence, not an explanation. Set ABS_LOCAL_PORT in .env to
+    # move it.
+    ports:
+      - "127.0.0.1:${ABS_LOCAL_PORT:-8000}:8000"
     env_file: .env
     environment:
       # Postgres default for customer
@@ -180,6 +201,17 @@ services:
       interval: 15s
       timeout: 5s
       retries: 6
+      # Cold starts were failing the install. Without a start period docker
+      # counts failures from the first second, so the budget was 15s × 6 = 90s
+      # — and a first boot spends longer than that on migrations, the Cerbos
+      # pre-warm and the licence verifier. Compose gave up, caddy never
+      # started, and the customer saw "dependency failed to start: backend is
+      # unhealthy" for a backend that became healthy moments later and answered
+      # fine. Seen twice on 2026-08-03 installing the published archive.
+      #
+      # A start period only forgives failures while the container is booting;
+      # once it is up the check is as strict as before.
+      start_period: 180s
 
   # ---------------------------------------------------------------------------
   # landing — Next.js standalone build (marketing pages + /panel admin UI).

@@ -21,7 +21,7 @@ import logging
 import re
 import unicodedata
 from dataclasses import dataclass, field
-from typing import Final
+from typing import Final, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -229,7 +229,13 @@ def _parse_extraction(raw_text: str) -> ExtractionResult | None:
     )
 
 
-async def _run_llm(prompt: str, *, tenant_id: str, use_cache: bool = True) -> str:
+async def _run_llm(
+    prompt: str,
+    *,
+    tenant_id: str,
+    use_cache: bool = True,
+    user_subject: Optional[str] = None,
+) -> str:
     """Call the provider cascade and return the raw completion text.
 
     Isolated for testability + graceful degradation. Raises RuntimeError when no
@@ -238,7 +244,11 @@ async def _run_llm(prompt: str, *, tenant_id: str, use_cache: bool = True) -> st
     from app.cascade.orchestrator import call_with_cascade
     from app.providers.cascade import get_active_providers
 
-    active = get_active_providers()
+    from app.providers.byok import byok_providers
+
+    active = get_active_providers(
+        extra_configured=byok_providers(tenant_id, user_subject)
+    )
     if not active:
         raise RuntimeError("no_providers_configured")
     primary, *rest = active
@@ -247,6 +257,9 @@ async def _run_llm(prompt: str, *, tenant_id: str, use_cache: bool = True) -> st
         primary=primary,
         fallbacks=tuple(rest),
         tenant_id=tenant_id,
+        # The chain promotes the caller's providers; user_subject is what makes
+        # the cascade send the caller's KEY with the call.
+        user_subject=user_subject,
         use_cache=use_cache,
         max_tokens=1024,
         temperature=0.1,
@@ -254,7 +267,9 @@ async def _run_llm(prompt: str, *, tenant_id: str, use_cache: bool = True) -> st
     return getattr(resp, "text", "") or ""
 
 
-async def extract_graph(text: str, *, tenant_id: str = "_global") -> ExtractionResult:
+async def extract_graph(
+    text: str, *, tenant_id: str = "_global", user_subject: Optional[str] = None
+) -> ExtractionResult:
     """Extract a normalized entity/relation graph from a chunk of text.
 
     Best-effort: returns an empty result for blank input. Retries once with a
@@ -264,12 +279,15 @@ async def extract_graph(text: str, *, tenant_id: str = "_global") -> ExtractionR
     if not clean:
         return ExtractionResult()
     prompt = build_extraction_prompt(clean)
-    parsed = _parse_extraction(await _run_llm(prompt, tenant_id=tenant_id))
+    parsed = _parse_extraction(
+        await _run_llm(prompt, tenant_id=tenant_id, user_subject=user_subject)
+    )
     if parsed is None:
         parsed = _parse_extraction(
             await _run_llm(
                 prompt + "\n\nIMPORTANT: respond with the raw JSON object ONLY.",
                 tenant_id=tenant_id,
+                user_subject=user_subject,
                 use_cache=False,
             )
         )

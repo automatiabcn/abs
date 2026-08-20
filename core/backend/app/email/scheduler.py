@@ -164,7 +164,10 @@ def _render_for(row: EmailQueue, db: Session) -> Tuple[str, str]:
         else:
             ctx["days_left"] = 0
             ctx["expires_at"] = "?"
-        ctx["portal_url"] = f"{settings.domain or 'abs.automatiabcn.com'}/manage"
+        # The fallback used to be a host with no DNS record, so an install
+        # that had not set `domain` sent its customers to nothing.
+        base = str(settings.domain or settings.public_site_url or "").rstrip("/")
+        ctx["portal_url"] = f"{base}/manage"
 
     elif row.kind == "recovery":
         lic = db.scalars(select(License).where(License.jti == row.license_jti)).first()

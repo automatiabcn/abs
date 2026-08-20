@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import List, Optional, Sequence
+from typing import List, Mapping, Optional, Sequence
 
 import httpx
 
@@ -20,6 +20,7 @@ from app.providers.schemas import (
     ProviderResponse,
 )
 
+from . import provider_health as _health
 from .breaker import default_breaker
 from .cache import default_cache, prompt_hash
 
@@ -106,11 +107,88 @@ def _meter(resp: ProviderResponse, *, provider: str, tenant_id: str) -> None:
         logger.debug("usage metering skipped", exc_info=True)
 
 
+def record_direct_call(
+    resp: Optional[ProviderResponse],
+    *,
+    provider: str,
+    tenant_id: Optional[str],
+    model: str = "",
+    exc: Optional[Exception] = None,
+) -> None:
+    """Book a provider call that did NOT go through call_with_cascade.
+
+    The judge and the second opinion call adapters directly (they pin models
+    and keys the cascade would not), and until 2026-08-18 those calls were
+    invisible to the usage log, the quota meter and the health readout — a
+    paid second-opinion leg never reached the cost page. One helper, same
+    books as the cascade. Never raises.
+    """
+    tenant = tenant_id or "_global"
+    try:
+        if exc is not None or resp is None:
+            _record_quota(provider, tenant_id=tenant, status_code=500, exc=exc, model=model)
+            _health.note_failure(
+                provider, tenant=tenant,
+                permanent=not bool(getattr(exc, "transient", True)) if exc is not None else False,
+                detail=str(exc) if exc is not None else "", model=model,
+            )
+            return
+        _meter(resp, provider=provider, tenant_id=tenant)
+        _record_quota(
+            provider,
+            tenant_id=tenant,
+            tokens=int(resp.tokens_in or 0) + int(resp.tokens_out or 0),
+            status_code=200,
+            model=str(resp.model or model or ""),
+        )
+        _health.note_success(provider, tenant=tenant, model=str(resp.model or model or ""))
+    except Exception:  # noqa: BLE001 — bookkeeping never costs an answer
+        pass
+
+
+def _record_quota(
+    provider: str,
+    *,
+    tenant_id: str,
+    tokens: int = 0,
+    status_code: int = 200,
+    exc: Optional[Exception] = None,
+    model: str = "",
+) -> None:
+    """Feed the per-tenant quota meter (Cost HUD + 429 cooldown). Never raises.
+
+    Records only; it does not change provider selection. A rate-limit-shaped
+    ProviderError is recorded as a 429 so the meter can show a cooldown.
+    """
+    try:
+        from app.cascade import quota_meter
+
+        sc = status_code
+        if (
+            exc is not None
+            and getattr(exc, "transient", False)
+            and quota_meter.looks_like_rate_limit(str(exc))
+        ):
+            sc = 429
+        quota_meter.record_usage(
+            provider, tenant_id=tenant_id, tokens=tokens, status_code=sc, model=model
+        )
+    except Exception:  # noqa: BLE001 — metering is never worth an outage
+        logger.debug("quota meter skipped", exc_info=True)
+
+
 async def call_with_cascade(
     prompt: str,
     *,
     primary: str,
     model: Optional[str] = None,
+    # A model per provider, for callers that pin one. `model` alone goes to
+    # EVERY leg — harmless while it is None (each adapter uses its own
+    # default) and a trap the moment somebody pins one, because the primary's
+    # model then reaches providers that do not serve it and every fallback
+    # 404s. That would break the thing the product leads with, the agent that
+    # does not stop when a provider does, while fixing something smaller.
+    models: Optional[Mapping[str, str]] = None,
     fallbacks: Sequence[str] = (),
     use_cache: bool = True,
     tenant_id: str = "_global",
@@ -155,7 +233,10 @@ async def call_with_cascade(
     if use_cache:
         cached = await default_cache.get(cache_key)
         if cached is not None:
-            cached_copy = cached.model_copy(update={"cached": True})
+            # A cache hit tried no providers this time — say so honestly.
+            cached_copy = cached.model_copy(
+                update={"cached": True, "providers_tried": []}
+            )
             return cached_copy
 
     last_err: Optional[Exception] = None
@@ -185,17 +266,41 @@ async def call_with_cascade(
         )
         if owner_key:
             call_kwargs = {**kwargs, "api_key": owner_key}
+        # Each leg gets a model it actually serves; a provider we have no
+        # pin for keeps its own default rather than inheriting somebody
+        # else's model name.
+        leg_model = (models or {}).get(name) or model
         try:
-            resp = await provider.call(prompt, model=model, **call_kwargs)
+            resp = await provider.call(prompt, model=leg_model, **call_kwargs)
+            # Expose the failover trail (attempts so far, winner last) on the
+            # success path too — chat/Cost-HUD can show "tried A → B → C". It was
+            # only surfaced on total failure via CascadeUnavailable before.
+            resp.providers_tried = list(tried)
             await default_breaker.record_success(breaker_id)
+            _health.note_success(name, tenant=tenant_id, model=str(resp.model or leg_model or ""))
             if use_cache:
                 await default_cache.set(cache_key, resp)
             _meter(resp, provider=name, tenant_id=tenant_id)
+            _record_quota(
+                name,
+                tenant_id=tenant_id,
+                tokens=int(resp.tokens_in or 0) + int(resp.tokens_out or 0),
+                status_code=200,
+                model=resp.model or (model or ""),
+            )
             return resp
         except ProviderError as exc:
             last_err = exc
             saw_transient = saw_transient or exc.transient
             await default_breaker.record_failure(breaker_id)
+            # The panels read this: a PERMANENT failure (bad key, payment
+            # required, retired model) is what stops "ready" from being said
+            # about a provider that answers nothing (2026-08-18).
+            _health.note_failure(
+                name, tenant=tenant_id, permanent=not exc.transient,
+                detail=str(exc), model=str(leg_model or ""),
+            )
+            _record_quota(name, tenant_id=tenant_id, status_code=500, exc=exc)
             # A permanent error means *this provider* cannot serve the request —
             # a bad key, a model it doesn't have, an account id that routes
             # nowhere. It does not mean nobody can. Raising here made one
@@ -220,6 +325,7 @@ async def call_with_cascade(
             last_err = exc
             saw_transient = True
             await default_breaker.record_failure(breaker_id)
+            _health.note_failure(name, tenant=tenant_id, permanent=False, detail=str(exc))
             logger.info(
                 "provider %s infra transient (%s), moving to the next one: %s",
                 name,

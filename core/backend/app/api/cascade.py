@@ -39,6 +39,7 @@ from app.providers.anthropic_mock import (
 )
 from app.providers.cascade import (
     PROVIDER_ORDER,
+    all_providers,
     configured_map,
     get_active_providers,
 )
@@ -103,12 +104,13 @@ async def list_providers(
 
     cfg = configured_map()
     active = get_active_providers(extra_configured=owned)
-    missing = [p for p in PROVIDER_ORDER if not cfg.get(p, False) and p not in owned]
+    catalogue = all_providers()
+    missing = [p for p in catalogue if not cfg.get(p, False) and p not in owned]
     return {
         "active": active,
         "missing": missing,
         "configured_count": len(active),
-        "total": len(PROVIDER_ORDER),
+        "total": len(catalogue),
         # Which of these are the caller's own keys, so the panel can say so
         # rather than leaving them to guess whose bill a question lands on.
         "byok": sorted(owned),

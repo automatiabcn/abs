@@ -1,4 +1,4 @@
-# Contributing to Automatia ABS
+# Contributing to ABS Studio
 
 Thanks for considering a contribution. ABS is a small project; your patches are
 welcome and reviewed quickly.

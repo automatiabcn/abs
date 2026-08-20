@@ -17,7 +17,7 @@ import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import Iterable, List, Optional, Set
 
 from app.symbols._safe_path import safe_read_text, safe_resolve
 
@@ -34,10 +34,10 @@ class Symbol:
     edges_out: List[str] = field(default_factory=list)
 
 
-def parse_python_file(path: Path) -> List[Symbol]:
+def parse_python_file(path: Path, *, roots: Optional[Iterable[Path]] = None) -> List[Symbol]:
     """Symbols from one .py file. An unparseable file yields an empty list, not an error."""
     try:
-        text = safe_read_text(path, encoding="utf-8")
+        text = safe_read_text(path, encoding="utf-8", roots=roots)
     except (PermissionError, FileNotFoundError, OSError):
         return []
     except Exception:
@@ -48,6 +48,9 @@ def parse_python_file(path: Path) -> List[Symbol]:
         return []
 
     symbols: List[Symbol] = []
+    # Already resolved: safe_resolve() ran on the way in, so indexing through
+    # a symlinked root still records the real path. Verified rather than
+    # assumed — an os.path.realpath() added here changed nothing.
     file_str = str(path)
 
     class _V(ast.NodeVisitor):
@@ -134,8 +137,29 @@ def parse_python_file(path: Path) -> List[Symbol]:
     return symbols
 
 
-def parse_directory(root: Path, skip_dirs: Optional[Set[str]] = None) -> List[Symbol]:
-    """Bir dizini recursive tarar, .py dosyalarini parse eder."""
+def parse_directory(
+    root: Path,
+    skip_dirs: Optional[Set[str]] = None,
+    *,
+    roots: Optional[Iterable[Path]] = None,
+    strict: bool = False,
+) -> List[Symbol]:
+    """Bir dizini recursive tarar, .py dosyalarini parse eder.
+
+    ``roots`` is the allowed-root set the walk is confined to. Left as None it
+    is the process-wide ALLOWED_ROOTS (server cwd, /app, /tmp…) — which is the
+    right guard for the server's own trees and the wrong one for a customer's
+    workspace: every real project lives outside the server's cwd, and until
+    2026-08-18 that meant `code_graph_build` returned 0 symbols for every real
+    project, silently, while the blast-radius badge stayed "not indexed"
+    (found by an audit; every earlier tour had used /tmp projects). Callers
+    that already vetted the root pass ``roots=[root]`` so the walk is confined
+    to the workspace itself — and symlinks out of it are still refused.
+
+    ``strict`` turns "root not allowed" into a raised PermissionError instead
+    of an empty list, so a caller can tell "nothing to parse" from "was not
+    allowed to look".
+    """
     skip = skip_dirs or {
         "node_modules",
         ".git",
@@ -152,28 +176,31 @@ def parse_directory(root: Path, skip_dirs: Optional[Set[str]] = None) -> List[Sy
     from app.symbols.typescript_parser import is_ts_or_js, parse_typescript_file
 
     out: List[Symbol] = []
+    root_set = tuple(roots) if roots is not None else None
     try:
-        safe_root = safe_resolve(root)
+        safe_root = safe_resolve(root, roots=root_set)
     except PermissionError:
+        if strict:
+            raise
         return out
     if not safe_root.exists():
         return out
     if safe_root.is_file():
         if safe_root.suffix == ".py":
-            return parse_python_file(safe_root)
+            return parse_python_file(safe_root, roots=root_set)
         if is_ts_or_js(safe_root):
-            return parse_typescript_file(safe_root)
+            return parse_typescript_file(safe_root, roots=root_set)
         return out
     for dirpath, dirnames, filenames in os.walk(safe_root):
         dirnames[:] = [d for d in dirnames if d not in skip and not d.startswith(".")]
         for fn in filenames:
             p = Path(dirpath) / fn
             try:
-                safe_p = safe_resolve(p)
+                safe_p = safe_resolve(p, roots=root_set)
             except PermissionError:
                 continue
             if fn.endswith(".py"):
-                out.extend(parse_python_file(safe_p))
+                out.extend(parse_python_file(safe_p, roots=root_set))
             elif is_ts_or_js(safe_p):
-                out.extend(parse_typescript_file(safe_p))
+                out.extend(parse_typescript_file(safe_p, roots=root_set))
     return out

@@ -29,7 +29,11 @@ test.describe.configure({ mode: "serial" });
 // scenario then reported that the approval gate was broken. It was working.
 const SANDBOX =
   process.env.ABS_AGENT_SANDBOX ??
-  path.resolve(__dirname, "../../../backend/.e2e-state/agent-sandbox");
+  path.join(
+    process.env.ABS_E2E_STATE_DIR ??
+      path.resolve(__dirname, "../../../backend/.e2e-state"),
+    "agent-sandbox",
+  );
 const TARGET = path.join(SANDBOX, "scenario-note.md");
 
 test.beforeEach(async ({ request }) => {

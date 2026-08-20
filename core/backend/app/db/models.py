@@ -8,6 +8,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 
@@ -621,3 +622,34 @@ class CaptureJob(SQLModel, table=True):
     )
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = Field(default=None)
+
+
+class WorkflowSchedule(SQLModel, table=True):
+    """When a saved workflow should run.
+
+    The ontology could always describe a cron trigger; nothing fired it, so a
+    saved schedule was decoration. This row is what a ticker claims and runs.
+    `next_run_at` is the claim token: the tick moves it forward in the same
+    statement that selects it, so two replicas cannot run the same schedule.
+    One row per (tenant, workflow): the claim only protects a single row, so
+    a duplicate pair would run the workflow twice at every due time.
+    """
+
+    __tablename__ = "workflow_schedule"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_slug", "workflow_id", name="uq_workflow_schedule_tenant_wf"
+        ),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_slug: str = Field(max_length=64, index=True, default="default")
+    workflow_id: int = Field(index=True)
+    cron_expr: str = Field(max_length=128)
+    enabled: bool = Field(default=True, index=True)
+    next_run_at: Optional[datetime] = Field(default=None, index=True)
+    last_run_at: Optional[datetime] = Field(default=None)
+    last_job_id: str = Field(default="", max_length=64)
+    last_error: Optional[str] = Field(default=None, max_length=400)
+    created_by: str = Field(default="", max_length=254)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

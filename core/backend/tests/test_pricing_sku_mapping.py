@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 
-def test_the_two_plans_are_the_ones_on_sale():
+def test_the_one_plan_is_the_one_on_sale():
+    """One plan, $5 a month (founder's decision, 2026-08-03).
+
+    This asserted {"solo", "team"} before, and before that it had asserted the
+    one-off packs. Each time the model changed, the test had to be told — which
+    is the point of keeping it: a SKU that stops being sold must also stop
+    being purchasable, and the mapping is what decides that.
+    """
     from app.api.checkout import _SKU_TO_PRICE
 
-    assert set(_SKU_TO_PRICE) == {"solo", "team"}, (
-        "the one-off packs were retired; the product is a monthly subscription"
+    assert set(_SKU_TO_PRICE) == {"solo"}, (
+        "the Solo/Team split was retired; there is one monthly plan"
     )
 
 

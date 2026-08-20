@@ -123,15 +123,33 @@ def _canonical(body: bytes, sig: bytes) -> str:
     return f"abs_mcp_{_b64url(body)}.{_b64url(sig)}"
 
 
+# Revocation is asked on EVERY MCP request, from the ASGI middleware, with a
+# synchronous DB round-trip — on the event loop. Tab alone asks several times
+# a second. A revoked digest never becomes un-revoked, so "yes" is cached for
+# ever; "no" is cached briefly, and revoke_token() overwrites the entry the
+# moment a token is revoked, so the window a revoked token keeps working is
+# zero for the process that revoked it and at most _REVOKE_TTL_S elsewhere.
+_REVOKE_TTL_S = 5.0
+_revoke_cache: Dict[str, tuple[bool, float]] = {}
+
+
 def _is_revoked(token: str) -> bool:
+    import time as _time
+
     digest = _token_digest(token)
+    hit = _revoke_cache.get(digest)
+    now = _time.monotonic()
+    if hit is not None and (hit[0] or now - hit[1] < _REVOKE_TTL_S):
+        return hit[0]
     with get_session_sync() as db:
         row = db.exec(
             select(MintedTokenBlacklist).where(
                 MintedTokenBlacklist.token_digest == digest
             )
         ).first()
-        return row is not None
+        revoked = row is not None
+    _revoke_cache[digest] = (revoked, now)
+    return revoked
 
 
 def verify_token(token: str) -> Dict:
@@ -327,6 +345,11 @@ def revoke_token(
         )
         db.add(entry)
         db.commit()
+    # The middleware's cache must not keep saying "not revoked" for the
+    # token that was just killed.
+    import time as _time
+
+    _revoke_cache[digest] = (True, _time.monotonic())
     logger.info(
         "mcp_token_revoked tenant=%s label=%s by=%s reason=%s",
         tenant,
