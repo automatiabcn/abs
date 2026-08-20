@@ -40,7 +40,8 @@ jobs:
       # mocked; the cascade still refuses to start with no free provider
       # configured ("no_provider_configured"). The same secret the scenarios
       # workflow already uses. Dependabot PRs get no secrets and skip the job.
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      # Settings read with env_prefix ABS_, so the bare name is never seen.
+      ABS_GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
