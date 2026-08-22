@@ -1,122 +1,71 @@
 version: 2
 
-# Public repo supply-chain protection.
+# Public repo supply-chain protection — SECURITY-ONLY mode (2026-08-22).
 #
-# Auto-PR for security + version updates across 5 ecosystems:
-#   - npm (root + 2 sub-projects: landing + backend has no npm)
-#   - pip (Python backend)
-#   - github-actions (workflow file SHA pinning suggestions)
-#   - docker (compose + Dockerfile base images)
+# Dependabot *security* updates stay on (repo setting: automated security
+# fixes enabled) so a vulnerable dependency still gets a patch PR ASAP.
+# Scheduled *version* updates are OFF for every ecosystem
+# (open-pull-requests-limit: 0): the weekly minor/patch bump PRs produced
+# far more notification noise than value and left stale branches behind.
+# Keeping the ecosystem entries (instead of deleting the file) lets the
+# security PRs keep their commit-message prefix and major-bump ignore rules.
 #
-# Strategy:
-#   - security updates: auto-PR ASAP (Dependabot default).
-#   - version updates: weekly on Mondays, batch into one PR per ecosystem
-#     to limit notification noise.
-#   - GitHub Actions: pin to commit SHA (Trivy supply-chain attack lesson —
-#     immutable references prevent tag-hijack class of attacks).
-#   - Major version bumps IGNORED across all ecosystems — they almost always
-#     need manual review (breaking API changes, framework jumps). Only
-#     minor + patch auto-PR. Founder triggers majors via:
-#       gh api -X PATCH "repos/automatiabcn/abs/dependabot/alerts/<id>" ...
-#     or by commenting `@dependabot ignore minor version` etc. per-PR.
+# To re-enable version updates for one ecosystem, raise its limit (> 0).
 
 updates:
-  # ----- npm -----
   - package-ecosystem: "npm"
     directory: "/core/landing"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "Europe/Madrid"
-    open-pull-requests-limit: 5
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-        update-types: ["minor", "patch"]
-      development-dependencies:
-        dependency-type: "development"
-        update-types: ["minor", "patch"]
+    open-pull-requests-limit: 0
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "fix(deps)"
       include: "scope"
 
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "Europe/Madrid"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "fix(deps)"
       include: "scope"
 
-  # ----- pip -----
   - package-ecosystem: "pip"
     directory: "/core/backend"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "Europe/Madrid"
-    open-pull-requests-limit: 5
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-        update-types: ["minor", "patch"]
-      development-dependencies:
-        dependency-type: "development"
-        update-types: ["minor", "patch"]
+    open-pull-requests-limit: 0
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "fix(deps)"
       include: "scope"
 
-  # ----- github-actions (SHA pinning suggestions) -----
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "Europe/Madrid"
-    open-pull-requests-limit: 5
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 0
     commit-message:
-      prefix: "chore(actions)"
+      prefix: "fix(actions)"
       include: "scope"
 
-  # ----- docker (Dockerfile + compose) -----
   - package-ecosystem: "docker"
     directory: "/core/backend"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "Europe/Madrid"
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 0
 
   - package-ecosystem: "docker"
     directory: "/core/landing"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "Europe/Madrid"
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 0
