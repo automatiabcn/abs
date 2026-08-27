@@ -244,7 +244,10 @@ async def run_agent_loop(
             )
             continue
 
-        decision = check(tool.level)
+        # The shell string reaches the gate so a provably read-only command
+        # (ls, git status, cat of a non-secret file) can run without an
+        # approval; check() ignores `command` for every non-shell level.
+        decision = check(tool.level, command=args.get("command"))
         yield AgentEvent(
             "tool-call", {"name": name, "args": args, "level": tool.level.name.lower()}
         )
