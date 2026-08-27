@@ -706,12 +706,20 @@ async def run_composer(
             abs_path=abs_path,
         )
         diff = patch_engine.normalize_diff(raw_diff)
-        if not diff:
+        if not diff or patch_engine.is_noop_diff(diff):
+            # Nothing to propose. Two shapes reach here: an EMPTY diff, and a
+            # diff that removes a line and adds it back unchanged — a model
+            # answering "already correct" with a hunk instead of silence
+            # (measured on a real project 2026-08-27). Left in, the no-op
+            # reached the Judge as a 0-score edit and the panel as a phantom
+            # change with a mangled `-`/`+` line. Neither is an edit.
+            #
             # An empty diff has two very different causes and the customer is
             # owed the difference: the model said the file is already right, or
             # we threw its answer away for looking truncated. Only the second
             # gets reported — a note on the ordinary case is a note nobody
-            # reads by the time a real one arrives.
+            # reads by the time a real one arrives. A no-op is always the
+            # ordinary case, so refusal() stays silent on it.
             why = from_content.refusal(
                 raw,
                 rel_path=from_content.relative_to(workspace_root, path),
@@ -719,9 +727,6 @@ async def run_composer(
             )
             if why:
                 refused.append(why)
-                continue
-        if built_here and not diff:
-            # The model returned the file unchanged: nothing to propose.
             continue
 
         v = patch_engine.validate(abs_path, diff, workspace_root=workspace_root)
