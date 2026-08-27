@@ -53,6 +53,28 @@ def _parse_seat_count(raw) -> int:
     return 1
 
 
+# The checkout page sells SKUs ("solo", "team"); a licence is signed with a
+# *licence tier* (self-host | team | enterprise | beta — see LicensePayload).
+# These vocabularies overlap on "team" but not on "solo": a solo purchase is a
+# single-seat self-host licence. Passing the SKU straight through to
+# `generate_license` made every real solo checkout raise a ValidationError, so
+# the webhook 500'd and the paying customer never got a key (the webhook tests
+# only ever fed "self-host", a value the live checkout never emits). Map at the
+# boundary; an unrecognised SKU floors to self-host rather than failing a sale.
+_SKU_TO_LICENCE_TIER: dict[str, str] = {
+    "solo": "self-host",
+    "self-host": "self-host",
+    "team": "team",
+    "enterprise": "enterprise",
+    "beta": "beta",
+}
+
+
+def _licence_tier_for_sku(sku: str) -> str:
+    """Translate a checkout SKU / metadata tier into a signable licence tier."""
+    return _SKU_TO_LICENCE_TIER.get((sku or "").strip().lower(), "self-host")
+
+
 # What a licence is worth when we cannot see the subscription it belongs to. Long
 # enough that a hand-issued key (a pilot, an air-gapped install, a purchase we
 # processed by hand) is not a monthly chore; the subscription path never uses it.
@@ -238,7 +260,7 @@ async def stripe_webhook(
         ).get("email", "")
         stripe_cust: str = session.get("customer", "") or ""
         meta: dict = session.get("metadata") or {}
-        tier: str = meta.get("tier", "self-host")
+        tier: str = _licence_tier_for_sku(meta.get("tier", "self-host"))
         seat_count: int = _parse_seat_count(meta.get("seat_count"))
         # Stripe customer locale (e.g. 'tr-TR') ilk 2 char → preferred_lang
         cust_locale = (
