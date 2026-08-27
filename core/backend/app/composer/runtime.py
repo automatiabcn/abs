@@ -706,6 +706,11 @@ async def run_composer(
             abs_path=abs_path,
         )
         diff = patch_engine.normalize_diff(raw_diff)
+        # A real edit is often padded with a dead hunk — frequently the mangled
+        # "-X+X" join, which git apply rejects as a corrupt patch, failing the
+        # dry-run of an otherwise-good edit and showing it as high risk to
+        # approve. Drop the no-op hunks; keep the ones that change something.
+        diff = patch_engine.strip_noop_hunks(diff)
         if not diff or patch_engine.is_noop_diff(diff):
             # Nothing to propose. Two shapes reach here: an EMPTY diff, and a
             # diff that removes a line and adds it back unchanged — a model
