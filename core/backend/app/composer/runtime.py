@@ -772,6 +772,18 @@ async def run_composer(
         )
 
     risk, requires_approval = _derive_risk(edits)
+    # A template edit that uses a variable no route provides applies cleanly and
+    # still breaks at render time — the diff cannot show the missing half, so
+    # say it in words rather than hand over a silently-incomplete change.
+    try:
+        from app.composer.coverage import coverage_warnings
+
+        coverage = coverage_warnings(
+            [(e.path, e.unified_diff) for e in edits], workspace_root
+        )
+    except Exception as exc:  # noqa: BLE001 — an annotation, never a failure
+        logger.debug("composer coverage check skipped: %s", exc)
+        coverage = []
     summary = str(parsed.get("summary") or "")
     if refused and not edits:
         # The model's paragraph describes the edits we just threw away.
@@ -797,6 +809,7 @@ async def run_composer(
         cost_usd=gen_meta.get("cost_usd"),
         degraded=not raw_edits,
         refused=refused,
+        coverage_warnings=coverage,
         tenant_slug=tenant_id,
         created_at=created_at or datetime.now(timezone.utc),
     )
