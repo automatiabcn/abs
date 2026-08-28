@@ -113,6 +113,37 @@ def last(provider: str, tenant: Optional[str] = None) -> Optional[Outcome]:
         return _LAST.get(_key(tenant, provider)) or _LAST.get(_key(None, provider))
 
 
+#: How long a provider that failed permanently is left out of the chain before
+#: it is tried once more. Long enough that a dead key does not cost every
+#: question a failed leg; short enough that a topped-up card is noticed.
+PROBE_AFTER_S = 600.0
+
+
+def should_skip(provider: str, tenant: Optional[str] = None) -> bool:
+    """Whether the cascade should not even try this provider right now.
+
+    Live finding 2026-08-28: a Cerebras key that had been 402 for ten days was
+    still the first leg of every chat — the breaker counts transient failures
+    in a window and a permanent verdict never opened it. The verdict is kept
+    here; this is where the chain asks. After `PROBE_AFTER_S` the provider is
+    tried once: success clears the verdict, failure renews it.
+    """
+    o = last(provider, tenant)
+    if o is None or o.ok or not o.permanent:
+        return False
+    return (time.time() - o.at) < PROBE_AFTER_S
+
+
+def forget(provider: str, tenant: Optional[str] = None) -> None:
+    """Drop the verdict — the key changed, so the last outcome says nothing
+    about the next call."""
+    with _LOCK:
+        _LAST.pop(_key(tenant, provider), None)
+        if tenant is not None:
+            _LAST.pop(_key(None, provider), None)
+    _persist()
+
+
 def degraded_reason(provider: str, tenant: Optional[str] = None) -> str:
     """Why this provider is not to be counted ready — or '' when it may be."""
     o = last(provider, tenant)

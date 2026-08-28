@@ -115,7 +115,18 @@ async def stream_chat(body: StreamChatRequest, request: Request) -> StreamingRes
 
         cv_token = current_tenant.set(tenant) if tenant else None
         try:
-            prepared = prepare_chat_ask(
+            # What the developer attached by hand is read like everything else
+            # that reaches a model: a git diff of a .env is still a .env.
+            from app.context.exclusions import redact_secrets
+
+            attachments, _n = redact_secrets(body.attachments or "")
+            # Retrieval reads files and walks the project — blocking work. Off
+            # the event loop, so one developer's big repository does not stall
+            # every other stream on the server.
+            import asyncio
+
+            prepared = await asyncio.to_thread(
+                prepare_chat_ask,
                 body.prompt,
                 prefer=body.prefer,
                 workspace_root=body.workspace_root,
@@ -123,7 +134,7 @@ async def stream_chat(body: StreamChatRequest, request: Request) -> StreamingRes
                 style=body.style,
                 history=body.history,
                 pinned_files=tuple(body.pinned_files),
-                attachments=body.attachments,
+                attachments=attachments,
             )
             if "error" in prepared:
                 err = dict(prepared["error"])

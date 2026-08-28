@@ -646,6 +646,15 @@ async def provider_key_set(provider: str, value: str) -> str:
             {"ok": False, "error": "store_failed", "detail": str(exc)[:300]},
             ensure_ascii=False,
         )
+    # A new key makes the last verdict about the old one meaningless: a
+    # provider left out of the chain for a dead key gets its place back now,
+    # not ten minutes from now.
+    try:
+        from app.cascade import provider_health as _health
+
+        _health.forget(provider, tenant)
+    except Exception:  # noqa: BLE001 — bookkeeping, never the answer
+        pass
     out: dict = {"ok": True, "provider": provider, "owner": "user", "stored": True}
     if probe.status == "valid":
         out["verified"] = True
