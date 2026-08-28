@@ -93,3 +93,18 @@ def test_prepare_puts_pinned_first_and_reports_the_refused(project: Path, monkey
     assert "gsk_secret" not in p
     assert p.index("--- app/routes.py ---") < p.index("--- app/billing.py ---")
     assert "Attached by the developer:\n+ a line" in p
+
+
+def test_the_model_sees_the_project_listing_so_it_can_name_a_real_file(project: Path, monkeypatch):
+    """"I would need app/billing.py" is actionable; "I would need the
+    billing module" is a guess. The listing is names only and cheap."""
+    import app.mcp.server  # noqa: F401
+    from app.mcp.tools import engine_panel_tools as ept
+
+    monkeypatch.setattr(ept, "get_active_providers", lambda **k: ["groq"], raising=False)
+    monkeypatch.setattr("app.providers.cascade.get_active_providers", lambda **k: ["groq"])
+    prepared = ept.prepare_chat_ask("hello", workspace_root=str(project), style="chat")
+    p = prepared["asked"]
+    assert "Files in the project (names only" in p
+    assert "app/billing.py" in p and "app/routes.py" in p
+    assert p.index("Files in the project (names only") < p.index("--- app/")
