@@ -26,6 +26,7 @@ from app.mcp.middleware import with_hooks
 from app.mcp.server import mcp_server
 from app.mcp.tracking import tracker
 from app.sandbox import runner as _sandbox
+from app.sandbox.verdict import environment_failure
 
 REGISTERED_TOOLS: List[str] = []
 
@@ -165,6 +166,11 @@ async def sandbox_run(
         allow_network=allow_network,
         timeout=min(max(float(timeout), 1.0), 600.0),
     )
+    # A check that never reached the code is not a verdict on the code: a
+    # missing module at collection, a runner that is not installed, a stub
+    # interpreter. Named here so the panel can say "unverified — why" instead
+    # of FAILED + "Undo this change" (live, 08-28, G8).
+    environment = environment_failure(res.exit_code, res.stdout, res.stderr)
     return json.dumps(
         {
             "ok": res.ok,
@@ -174,8 +180,10 @@ async def sandbox_run(
             # 08-28: an evicted .venv/bin/python). The panel treats this as
             # "unverified", never as a pass.
             "inconclusive": bool(
-                res.ok and not (res.stdout or "").strip() and not (res.stderr or "").strip()
+                environment is not None
+                or (res.ok and not (res.stdout or "").strip() and not (res.stderr or "").strip())
             ),
+            "environment": environment,
             "exit_code": res.exit_code,
             "stdout": res.stdout,
             "stderr": res.stderr,
