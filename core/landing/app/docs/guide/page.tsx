@@ -171,6 +171,7 @@ export default function GuidePage() {
               "ABS: Ask about the selection…",
               "ABS: Review my changes before commit",
               "ABS: Commit what ABS wrote",
+              "ABS: Show all panel sections at once",
             ].map((c) => (
               <li key={c}><code>{c}</code></li>
             ))}
