@@ -249,3 +249,16 @@ def test_the_install_guide_describes_the_installer_we_ship():
         assert "already pointed the editor" in lowered or "settings" in lowered, (
             "the installer configures the editor and the guide does not say so"
         )
+
+
+def test_installer_does_not_swap_the_image_version_on_arm():
+    """On a machine with no build for the pinned version the installer used to
+    say "using latest instead" and run a different image version with an
+    archive built for another — the mismatch /download names as the most
+    common reason an install does not connect (audit #34, 2026-08-28). It
+    must stop and say which versions have a build, not mix."""
+    src = BUILDER.read_text(encoding="utf-8")
+    assert "using latest instead" not in src
+    branch = src[src.index('have no $PLATFORM build') :]
+    assert "exit 1" in branch[: branch.index("fi\nfi")], "the no-build branch must stop the install"
+    assert "set_env ABS_VERSION latest" not in branch[: branch.index("fi\nfi")]
