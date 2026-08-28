@@ -153,14 +153,15 @@ export default function GuidePage() {
           <p>
             <strong style={{ color: TEXT }}>Tab</strong> accepts the ghost completion.{" "}
             <strong style={{ color: TEXT }}>⌘K</strong> (Ctrl+K on Linux and Windows) with lines selected
-            opens the graded inline edit; with nothing selected it is the editor&apos;s
-            ordinary chord prefix, so select first. Everything else is in the Command
+            opens the graded inline edit; with nothing selected, <strong style={{ color: TEXT }}>⌘K ⌘K</strong>
+            edits the current line. Everything else is in the Command
             Palette under <em>ABS:</em>
           </p>
           <ul style={{ paddingLeft: 18, lineHeight: 1.7 }}>
             {[
               "ABS: Connect a provider — API key or a plan you already pay for",
               "ABS: Edit this selection (graded)",
+              "ABS: Edit this line (graded)",
               "ABS: Blast radius of the symbol under the cursor",
               "ABS: Propose a graded edit for a task",
               "ABS: Engine status — provider quota & health",
