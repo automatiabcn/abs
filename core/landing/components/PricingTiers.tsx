@@ -26,7 +26,10 @@ const BULLETS: readonly string[] = [
   // missing on their first prompt. What is true is better anyway: the
   // providers worth starting on cost nothing to start on.
   "Your own keys — and the good ones (Groq, Gemini, Cerebras) are free",
-  "Runs on your own server — no data of yours ever reaches us",
+  // Was an absolute "nothing ever reaches us". The licence does check in
+  // (activation metadata, at start-up and daily — see Privacy); the promise
+  // that is true is about the code and documents (2026-08-28, #36).
+  "Runs on your own server — your code, documents and prompts never leave it",
   "Cancel any month",
 ];
 
