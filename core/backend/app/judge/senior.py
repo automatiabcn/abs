@@ -206,6 +206,19 @@ def applicable_metrics(added_code: str, file_path: Optional[str]) -> Dict[str, f
     return metrics
 
 
+
+def _teach(metric: str, actual: float, target: float) -> str:
+    """One plain sentence per style metric, with the numbers in brackets."""
+    what = {
+        "docstring_ratio": "have a docstring",
+        "type_hints_ratio": "carry type hints",
+    }.get(metric, metric)
+    pa, pt = round(actual * 100), round(target * 100)
+    if actual < target:
+        return f"Only {pa}% of the new functions {what} (team norm {pt}%) — add them where a reader would want one."
+    return f"{pa}% of the new functions {what} (team norm {pt}%)."
+
+
 async def judge_diff(
     diff_text: str,
     file_path: Optional[str] = None,
@@ -251,9 +264,10 @@ async def judge_diff(
             target = persona.get(k, 0.0)
             delta = abs(actual - target)
             if delta > 0.2:
-                teaching_lines.append(
-                    f"{k}: {actual:.2f} vs target {target:.2f} (delta {delta:.2f})"
-                )
+                # A sentence a developer can act on, not a metric name
+                # (visual audit, 2026-08-28, U7): "docstring_ratio: 0.86 vs
+                # target 0.60 (delta 0.26)" read as noise in the Review card.
+                teaching_lines.append(_teach(k, actual, target))
     if llm.get("teaching"):
         teaching_lines.append(f"LLM: {llm['teaching']}")
 
