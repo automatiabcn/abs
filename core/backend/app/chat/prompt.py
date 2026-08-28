@@ -73,20 +73,25 @@ def chat_prompt(
 ) -> str:
     """Assemble the string the model sees for one chat turn.
 
-    Order: instructions, project rules, conversation so far, project files,
+    Order: instructions, conversation so far, project rules, project files,
     attachments, question. The question is last because the last lines are
     the ones the model answers; the rules are first because they are the
     developer's standing instructions and outrank everything but ours.
     """
     parts = [CHAT_INSTRUCTIONS.strip()]
+    if history.strip():
+        parts.append("Conversation so far:\n" + history.strip())
     if rules.strip():
+        # After the history on purpose: an earlier answer that quoted an old
+        # rule ("my limit is 80 words") kept winning over the file once the
+        # rule had changed (live, 08-28). The current rules are the later,
+        # closer instruction.
         where = f" (from {rules_from})" if rules_from else ""
         parts.append(
             f"Project rules{where} — the developer's standing instructions "
-            f"for this project. Follow them:\n{rules.strip()}"
+            f"for this project, current as of now. They override anything "
+            f"said earlier in the conversation. Follow them:\n{rules.strip()}"
         )
-    if history.strip():
-        parts.append("Conversation so far:\n" + history.strip())
     if files:
         blocks = "\n\n".join(f"--- {rel} ---\n{body}" for rel, body in files)
         where = f" ({project_name})" if project_name else ""

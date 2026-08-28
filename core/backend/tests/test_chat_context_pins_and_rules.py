@@ -54,7 +54,7 @@ def test_rules_file_is_found_and_capped(project: Path):
     assert text.endswith("[... rules file truncated ...]")
 
 
-def test_rules_sit_before_history_and_attachments_before_the_question():
+def test_rules_sit_after_history_and_attachments_before_the_question():
     out = chat_prompt(
         "why?",
         history="Developer: hi",
@@ -62,7 +62,10 @@ def test_rules_sit_before_history_and_attachments_before_the_question():
         rules_from="AGENTS.md",
         attachments="--- git diff ---\n+x",
     )
-    assert out.index("Project rules (from AGENTS.md)") < out.index("Conversation so far")
+    # Rules come AFTER the history: a stale rule quoted in an old answer must
+    # not outrank the file as it is now.
+    assert out.index("Conversation so far") < out.index("Project rules (from AGENTS.md)")
+    assert "override anything said earlier" in out
     assert out.index("Attached by the developer") < out.index("The developer asks")
     assert out.rstrip().endswith("why?")
 
