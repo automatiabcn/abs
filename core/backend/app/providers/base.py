@@ -25,6 +25,12 @@ _CUT_OFF = {"length", "max_tokens", "max_output_tokens"}
 
 
 
+
+def _is_generation_failure(body: str) -> bool:
+    """The provider rejected its own model's output, not our request."""
+    t = (body or "")[:400]
+    return "json_validate_failed" in t or "failed_generation" in t or "could not be parsed" in t
+
 def _retry_after_seconds(r: Any) -> "float | None":
     """The provider's Retry-After, in seconds, when it sent one.
 
@@ -244,7 +250,13 @@ async def openai_compatible_chat(
         raise ProviderError(
             f"{provider_name} {r.status_code}: {r.text[:200]}",
             provider=provider_name,
-            transient=False,
+            # A 400 is usually the key or the request — permanent for this
+            # provider. Not when the provider says the MODEL's output failed
+            # its own JSON validation (Groq `json_validate_failed`): that is
+            # one generation gone wrong, not a dead provider, and marking it
+            # permanent parked Groq for ten minutes and turned a high-risk
+            # agent's approval gate off (scenarios G1/A1/A2, 2026-08-28).
+            transient=_is_generation_failure(r.text),
         )
 
     try:
