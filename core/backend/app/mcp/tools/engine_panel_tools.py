@@ -280,6 +280,7 @@ def prepare_chat_ask(
     picked: list = []
     refused: list = []
     rules, rules_from = "", ""
+    listing: list = []
     root = ""
     try:
         from app.composer.runtime import relevant_files, workspace_files
@@ -295,8 +296,9 @@ def prepare_chat_ask(
             # with the tenant key it consulted a graph the editor's index
             # command never writes to — so the ranking fell back to filenames
             # for exactly the customer who had bothered to index.
+            listing = workspace_files(root)
             picked = relevant_files(
-                root, prompt, workspace_files(root), graph_key=_key_for(tenant, root)
+                root, prompt, listing, graph_key=_key_for(tenant, root)
             )
             if pinned_files or style == "chat":
                 from app.chat.context import pinned_files as _pinned
@@ -339,6 +341,7 @@ def prepare_chat_ask(
             rules=rules,
             rules_from=rules_from,
             attachments=attachments,
+            listing=listing[:200],
         )
     return {
         "asked": asked,

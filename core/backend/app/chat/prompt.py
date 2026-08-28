@@ -70,11 +70,12 @@ def chat_prompt(
     rules: str = "",
     rules_from: str = "",
     attachments: str = "",
+    listing: Sequence[str] = (),
 ) -> str:
     """Assemble the string the model sees for one chat turn.
 
-    Order: instructions, conversation so far, project rules, project files,
-    attachments, question. The question is last because the last lines are
+    Order: instructions, conversation so far, project rules, file listing,
+    project files, attachments, question. The question is last because the last lines are
     the ones the model answers; the rules are first because they are the
     developer's standing instructions and outrank everything but ours.
     """
@@ -91,6 +92,14 @@ def chat_prompt(
             f"Project rules{where} — the developer's standing instructions "
             f"for this project, current as of now. They override anything "
             f"said earlier in the conversation. Follow them:\n{rules.strip()}"
+        )
+    if listing:
+        # Paths only, so the model can name a real file it was not given —
+        # "I would need app/models.py" is a request the developer can act on
+        # with one click; an invented path is not.
+        parts.append(
+            "Files in the project (names only; ask for one by its path if "
+            "you need it and it is not shown below):\n" + "\n".join(listing)
         )
     if files:
         blocks = "\n\n".join(f"--- {rel} ---\n{body}" for rel, body in files)
