@@ -47,10 +47,21 @@ ALLOWED_AGENT_TYPES = frozenset(
 
 
 def cache_path(filename: str) -> Path:
-    """Path under `settings.cache_dir`, with parents created."""
+    """Path under `settings.cache_dir`, with parents created.
+
+    The default cache_dir is the container's `/app/data/cache`. On a
+    developer machine that path is not writable, and every hook logged
+    `Read-only file system: '/app'` on every tool call (live, 2026-08-28,
+    G2). When the configured directory cannot be created, the cache lives
+    under the data directory instead — same lifetime, no noise."""
     p = Path(settings.cache_dir) / filename
-    p.parent.mkdir(parents=True, exist_ok=True)
-    return p
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        return p
+    except OSError:
+        fallback = Path(settings.data_dir) / "cache" / filename
+        fallback.parent.mkdir(parents=True, exist_ok=True)
+        return fallback
 
 
 def load_rate(filename: str) -> Dict[str, float]:
