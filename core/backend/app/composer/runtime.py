@@ -24,7 +24,7 @@ import os
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple
 
 from app.codegraph import graph as codegraph
 from app.composer import from_content
@@ -144,47 +144,25 @@ _STOPWORDS = frozenset(
 
 
 # Developers here write in Turkish and Spanish as often as English, and files
-# are named in English. Without this, "kullanıcı modeli" found nothing that
-# "user model" would have (live 08-28: models.py left out, the answer had to
-# ask for it). Small, deterministic, and only the words a codebase is named by.
-_TERM_GLOSSARY = {
-    # Turkish
-    "kullanıcı": ("user", "users", "auth"), "kullanici": ("user", "users", "auth"),
-    "ürün": ("product", "products", "item"), "urun": ("product", "products", "item"),
-    "sipariş": ("order", "orders"), "siparis": ("order", "orders"),
-    "sepet": ("cart", "basket"), "giriş": ("login", "auth", "signin"), "giris": ("login", "auth"),
-    "kayıt": ("register", "signup", "record"), "kayit": ("register", "signup"),
-    "şablon": ("template", "templates"), "sablon": ("template", "templates"),
-    "rota": ("route", "routes"), "ayar": ("settings", "config"), "ayarlar": ("settings", "config"),
-    "veritabanı": ("db", "database", "models"), "veritabani": ("db", "database", "models"),
-    "model": ("model", "models"), "modeli": ("model", "models"), "modelde": ("model", "models"),
-    "alan": ("field", "fields", "column"), "alanlar": ("field", "fields"), "alanları": ("field", "fields"),
-    "tablo": ("table",), "hata": ("error", "exception"), "ödeme": ("payment", "checkout"), "odeme": ("payment",),
-    "fiyat": ("price",), "arama": ("search", "query"), "liste": ("list",), "listeleme": ("list", "index"),
-    "form": ("form", "forms"), "formu": ("form", "forms"), "resim": ("image", "photo", "upload"),
-    "dosya": ("file", "upload"), "yükleme": ("upload",), "e-posta": ("email", "mail"), "eposta": ("email", "mail"),
-    "şifre": ("password", "auth"), "sifre": ("password",), "yorum": ("comment", "review"),
-    "kategori": ("category", "categories"), "satıcı": ("seller", "vendor"), "satici": ("seller",),
-    "test": ("test", "tests"), "toplam": ("total", "sum"), "indirim": ("discount",),
-    # Spanish
-    "usuario": ("user", "users", "auth"), "usuarios": ("user", "users"), "producto": ("product", "products"),
-    "productos": ("product", "products"), "pedido": ("order", "orders"), "carrito": ("cart",),
-    "inicio": ("login", "home", "index"), "sesión": ("session", "login"), "sesion": ("session", "login"),
-    "plantilla": ("template", "templates"), "ruta": ("route", "routes"), "rutas": ("route", "routes"),
-    "ajustes": ("settings", "config"), "configuración": ("config", "settings"), "configuracion": ("config",),
-    "base": ("db", "database"), "modelo": ("model", "models"), "campo": ("field", "column"), "campos": ("field", "fields"),
-    "tabla": ("table",), "pago": ("payment", "checkout"), "precio": ("price",), "búsqueda": ("search",),
-    "busqueda": ("search",), "formulario": ("form", "forms"), "imagen": ("image", "photo"), "archivo": ("file",),
-    "correo": ("email", "mail"), "contraseña": ("password", "auth"), "categoría": ("category",),
-    "vendedor": ("seller",), "prueba": ("test",), "pruebas": ("test", "tests"), "total": ("total",),
-    "descuento": ("discount",),
-}
+# are named in English. Without this, a question in Turkish about the user
+# model found nothing that "user model" would have (live 08-28: models.py left
+# out, the answer had to ask for it). Small, deterministic, and only the words
+# a codebase is named by.
+# The glossary lives in term_glossary.json: it is data (Turkish and Spanish
+# words a developer types, mapped onto the English a codebase is named in),
+# and the shipped Python stays English.
+_GLOSSARY_PATH = os.path.join(os.path.dirname(__file__), "term_glossary.json")
+try:
+    with open(_GLOSSARY_PATH, "r", encoding="utf-8") as _fh:
+        _TERM_GLOSSARY: Dict[str, List[str]] = json.load(_fh)
+except (OSError, ValueError):  # pragma: no cover — a missing glossary is English-only, not broken
+    _TERM_GLOSSARY = {}
 
 
 def _task_terms(task: str) -> List[str]:
     """The words of the task a file might be named by or contain.
 
-    Unicode words (Turkish ı/ş/ğ, Spanish accents) count; a small glossary
+    Non-ASCII words (Turkish and Spanish letters) count; a small glossary
     maps the common Turkish/Spanish developer words onto the English a
     codebase is named in; and each word's 4-letter stem is added so
     "modeli"/"models"/"modelo" meet at "mode".
