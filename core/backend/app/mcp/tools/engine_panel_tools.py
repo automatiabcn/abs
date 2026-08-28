@@ -212,6 +212,8 @@ async def cascade_ask(
     use_cache: bool = True,
     workspace_root: str = "",
     client_id: str = "",
+    style: str = "",
+    history: str = "",
 ) -> str:
     """Ask the provider cascade and return the answer WITH its provenance:
     which provider answered, the failover trail, tokens, latency and estimated
@@ -220,7 +222,13 @@ async def cascade_ask(
 
     `workspace_root` names the project to answer about; the editor knows
     which window is asking, the server does not. Without it (older editors)
-    the answer is about the window that announced itself last."""
+    the answer is about the window that announced itself last.
+
+    `style="chat"` wraps the question in the editor chat's voice (see
+    app.chat.prompt): answer-first, cite files as path:LINE, reply in the
+    developer's language. Off by default — inline edit and external MCP
+    clients want the bare prompt. `history` is the conversation so far,
+    placed before the files rather than glued to the question."""
     await tracker.bump("cascade_ask")
     from app.cascade.orchestrator import call_with_cascade
     from app.providers.cascade import get_active_providers
@@ -283,6 +291,8 @@ async def cascade_ask(
     # gathering it at all.
     asked = prompt
     used_files: list = []
+    picked: list = []
+    root = ""
     try:
         from app.composer.runtime import relevant_files, workspace_files
         from app.mcp.tools.codegraph_tools import _key_for
@@ -301,19 +311,34 @@ async def cascade_ask(
                 root, prompt, workspace_files(root), graph_key=_key_for(tenant, root)
             )
             if picked:
-                blocks = "\n\n".join(
-                    f"--- {rel} ---\n{body}" for rel, body in picked
-                )
-                asked = (
-                    f"{prompt}\n\n"
-                    f"Files from the project the developer has open "
-                    f"({os.path.basename(root)}):\n\n{blocks}"
-                )
                 used_files = [rel for rel, _ in picked]
+                if style != "chat":
+                    blocks = "\n\n".join(
+                        f"--- {rel} ---\n{body}" for rel, body in picked
+                    )
+                    asked = (
+                        f"{prompt}\n\n"
+                        f"Files from the project the developer has open "
+                        f"({os.path.basename(root)}):\n\n{blocks}"
+                    )
     except Exception as exc:  # noqa: BLE001
         # Retrieval failing must not cost the developer their answer — it costs
         # them the context, and the response says so rather than pretending.
         logger.warning("cascade_ask_workspace_context_failed err=%s", exc)
+        picked = []
+        root = ""
+    if style == "chat":
+        # The chat's voice: instructions first, files in the middle, question
+        # last. With retrieval failed or no project open it still speaks in
+        # that voice — about nothing but the question, and says so if asked.
+        from app.chat.prompt import chat_prompt
+
+        asked = chat_prompt(
+            prompt,
+            files=picked,
+            project_name=os.path.basename(root) if root else "",
+            history=history,
+        )
 
     started = time.perf_counter()
     try:
