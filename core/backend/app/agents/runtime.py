@@ -117,6 +117,21 @@ async def _gather_evidence(
     return ev
 
 
+
+def _is_generation_failure(exc: BaseException) -> bool:
+    """A provider rejecting the model's own output, anywhere in the chain."""
+    seen = 0
+    cur: Optional[BaseException] = exc
+    while cur is not None and seen < 6:
+        t = str(cur).lower()
+        if "json_validate_failed" in t or "tool_use_failed" in t or "failed_generation" in t or "could not be parsed" in t:
+            return True
+        nxt = getattr(cur, "last_error", None) or cur.__cause__ or cur.__context__
+        cur = nxt if isinstance(nxt, BaseException) else None
+        seen += 1
+    return False
+
+
 async def _complete(
     agent: Agent,
     prompt: str,
@@ -155,21 +170,42 @@ async def _complete(
         if not active:
             return "", ""
         primary, *rest = active
-        resp = await call_with_cascade(
-            prompt,
-            primary=primary,
-            fallbacks=tuple(rest),
-            max_tokens=900,
-            # low temperature → more deterministic, more reliably-valid JSON
-            temperature=0.1,
-            # Groq honours json_object mode → reliably valid JSON; providers that
-            # don't support it ignore the kwarg (the robust parse + retry cover
-            # the fallback path). Handoff SP-4.
-            response_format={"type": "json_object"},
-            tenant_id=tenant_id,
-            project_slug=project_slug,
-            user_subject=user_subject,
-        )
+
+        async def _ask(text: str, *, json_mode: bool):
+            kwargs: Dict[str, Any] = dict(
+                primary=primary,
+                fallbacks=tuple(rest),
+                max_tokens=900,
+                # low temperature → more deterministic, more reliably-valid JSON
+                temperature=0.1,
+                tenant_id=tenant_id,
+                project_slug=project_slug,
+                user_subject=user_subject,
+            )
+            if json_mode:
+                # Groq honours json_object mode → reliably valid JSON; providers
+                # that don't support it ignore the kwarg. Handoff SP-4.
+                kwargs["response_format"] = {"type": "json_object"}
+            return await call_with_cascade(text, **kwargs)
+
+        try:
+            resp = await _ask(prompt, json_mode=True)
+        except Exception as first:  # noqa: BLE001
+            if not _is_generation_failure(first):
+                raise
+            # The provider rejected the model's own output — in JSON mode
+            # gpt-oss answered this agent's prompt with a hallucinated tool
+            # call ("Tool choice is none, but model called a tool") on every
+            # try, so a retry in the same mode rejects the same way (G1,
+            # 2026-08-28). Ask once more without the mode and with the rule
+            # spelled out; the parser reads fenced JSON fine.
+            logger.info("agent %s: generation rejected in JSON mode, retrying as plain text", agent.id)
+            resp = await _ask(
+                prompt
+                + "\n\nAnswer with ONE JSON object and nothing else. You have no tools; "
+                "do not call any tool or function.",
+                json_mode=False,
+            )
         # ProviderResponse exposes the model text as `.text` (NOT `.completion`)
         # reading the wrong field made every agent degrade silently.
         return (

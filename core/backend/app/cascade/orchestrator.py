@@ -216,7 +216,12 @@ def _looks_generation_failure(exc: BaseException) -> bool:
     """The provider rejected the MODEL's output (Groq json_validate_failed,
     'could not be parsed'), not our request or our key."""
     text = str(exc).lower()
-    return "json_validate_failed" in text or "failed_generation" in text or "could not be parsed" in text
+    return (
+        "json_validate_failed" in text
+        or "tool_use_failed" in text
+        or "failed_generation" in text
+        or "could not be parsed" in text
+    )
 
 
 def _looks_rate_limited(exc: BaseException) -> bool:
