@@ -197,6 +197,20 @@ def _prune_dead_legs(chain: List[str], tenant_id: str) -> List[str]:
 RATE_LIMIT_SECOND_PASS_S = 4.0
 
 
+#: A provider's Retry-After is honoured up to this many seconds; beyond it the
+#: caller is better served by the 503 and its own retry.
+RATE_LIMIT_HINT_CAP_S = 20.0
+
+
+def _retry_hint(exc: BaseException) -> float:
+    """What the provider asked us to wait, capped; 0 when it said nothing."""
+    wait = getattr(exc, "retry_after", None)
+    try:
+        return min(RATE_LIMIT_HINT_CAP_S, float(wait)) if wait else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def _looks_rate_limited(exc: BaseException) -> bool:
     text = str(exc).lower()
     return "429" in text or "rate limit" in text or "too many requests" in text
@@ -272,6 +286,7 @@ async def call_with_cascade(
     # key gracefully (the MCP tools) need the ProviderError itself, not a 503.
     saw_transient = False
     rate_limited = False
+    rate_limit_wait = RATE_LIMIT_SECOND_PASS_S
     tried: List[str] = []
     for name in chain:
         breaker_id = _breaker_key(tenant_id, name)
@@ -320,6 +335,7 @@ async def call_with_cascade(
             last_err = exc
             saw_transient = saw_transient or exc.transient
             rate_limited = rate_limited or _looks_rate_limited(exc)
+            rate_limit_wait = max(rate_limit_wait, _retry_hint(exc))
             await default_breaker.record_failure(breaker_id)
             # The panels read this: a PERMANENT failure (bad key, payment
             # required, retired model) is what stops "ready" from being said
@@ -387,9 +403,9 @@ async def call_with_cascade(
     if saw_transient and rate_limited and not _second_pass:
         logger.info(
             "every provider in the chain was rate-limited; one more pass after %.1fs",
-            RATE_LIMIT_SECOND_PASS_S,
+            rate_limit_wait,
         )
-        await asyncio.sleep(RATE_LIMIT_SECOND_PASS_S)
+        await asyncio.sleep(rate_limit_wait)
         return await call_with_cascade(prompt, primary=primary, model=model, models=models, fallbacks=fallbacks, use_cache=use_cache, tenant_id=tenant_id, project_slug=project_slug, user_subject=user_subject, _second_pass=True, **kwargs)
     raise CascadeUnavailable(
         "every provider in the chain failed; some may recover shortly",
@@ -457,6 +473,7 @@ async def stream_with_cascade(
     last_err: Optional[Exception] = None
     saw_transient = False
     rate_limited = False
+    rate_limit_wait = RATE_LIMIT_SECOND_PASS_S
     yielded_delta = False
     tried: List[str] = []
     for name in chain:
@@ -517,6 +534,7 @@ async def stream_with_cascade(
             transient = getattr(exc, "transient", True)
             saw_transient = saw_transient or transient
             rate_limited = rate_limited or _looks_rate_limited(exc)
+            rate_limit_wait = max(rate_limit_wait, _retry_hint(exc))
             await default_breaker.record_failure(breaker_id)
             _health.note_failure(
                 name, tenant=tenant_id, permanent=not transient,
@@ -557,9 +575,9 @@ async def stream_with_cascade(
     if saw_transient and rate_limited and not _second_pass and not yielded_delta:
         logger.info(
             "every provider in the chain was rate-limited; one more pass after %.1fs",
-            RATE_LIMIT_SECOND_PASS_S,
+            rate_limit_wait,
         )
-        await asyncio.sleep(RATE_LIMIT_SECOND_PASS_S)
+        await asyncio.sleep(rate_limit_wait)
         async for ev in stream_with_cascade(prompt, primary=primary, model=model, models=models, fallbacks=fallbacks, use_cache=use_cache, tenant_id=tenant_id, project_slug=project_slug, user_subject=user_subject, _second_pass=True, **kwargs):
             yield ev
         return

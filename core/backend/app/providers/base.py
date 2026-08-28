@@ -24,6 +24,24 @@ from .schemas import ProviderError, ProviderResponse
 _CUT_OFF = {"length", "max_tokens", "max_output_tokens"}
 
 
+
+def _retry_after_seconds(r: Any) -> "float | None":
+    """The provider's Retry-After, in seconds, when it sent one.
+
+    Groq's free tier answers a per-minute burst with a 429 and a Retry-After
+    of a few seconds; a caller that retries sooner than that only gets
+    another 429 (CI, 2026-08-28: two in four seconds, then 200 at thirty)."""
+    try:
+        raw = r.headers.get("retry-after") if getattr(r, "headers", None) is not None else None
+    except Exception:  # noqa: BLE001
+        return None
+    if not raw:
+        return None
+    try:
+        return max(0.0, float(str(raw).strip()))
+    except ValueError:
+        return None
+
 def was_cut_off(finish_reason: Any) -> bool:
     """True when a provider says its answer stopped at the token limit.
 
@@ -205,8 +223,12 @@ async def openai_compatible_chat(
             transient=True,
         )
     if r.status_code == 429:
+        wait = _retry_after_seconds(r)
         raise ProviderError(
-            f"{provider_name} rate limit", provider=provider_name, transient=True
+            f"{provider_name} rate limit" + (f" (retry after {wait:g}s)" if wait else ""),
+            provider=provider_name,
+            transient=True,
+            retry_after=wait,
         )
     if r.status_code == 413:
         # This request is too big for this provider's window (Groq's free
@@ -246,8 +268,12 @@ def _finish_stream_status(r: "httpx.Response", provider_name: str) -> None:
             f"{provider_name} 5xx: {r.status_code}", provider=provider_name, transient=True
         )
     if r.status_code == 429:
+        wait = _retry_after_seconds(r)
         raise ProviderError(
-            f"{provider_name} rate limit", provider=provider_name, transient=True
+            f"{provider_name} rate limit" + (f" (retry after {wait:g}s)" if wait else ""),
+            provider=provider_name,
+            transient=True,
+            retry_after=wait,
         )
     if r.status_code == 413:
         raise ProviderError(
