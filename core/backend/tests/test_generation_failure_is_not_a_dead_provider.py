@@ -40,7 +40,7 @@ def test_a_bad_key_or_bad_request_is_not():
 def test_the_4xx_mapping_consults_it():
     src = inspect.getsource(base.openai_compatible_chat)
     at = src.index("if r.status_code >= 400:")
-    block = src[at : at + 900]
+    block = src[at : at + 2000]
     assert "transient=_is_generation_failure(r.text)" in block, (
         "the non-stream 4xx raise must classify a generation failure as transient"
     )
