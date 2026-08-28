@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import List, Mapping, Optional, Sequence
+from typing import AsyncIterator, Dict, List, Mapping, Optional, Sequence
 
 import httpx
 
@@ -356,6 +356,149 @@ async def call_with_cascade(
     # them. `CascadeUnavailable` *is* a ProviderError, so they degrade instead of
     # dying, and the HTTP layer still answers with the same structured 503 (see
     # the handler in app/main.py).
+    raise CascadeUnavailable(
+        "every provider in the chain failed; some may recover shortly",
+        providers_tried=tried,
+        last_error=last_err,
+    )
+
+
+async def stream_with_cascade(
+    prompt: str,
+    *,
+    primary: str,
+    model: Optional[str] = None,
+    models: Optional[Mapping[str, str]] = None,
+    fallbacks: Sequence[str] = (),
+    use_cache: bool = True,
+    tenant_id: str = "_global",
+    project_slug: Optional[str] = None,
+    user_subject: Optional[str] = None,
+    **kwargs,
+) -> AsyncIterator[Dict]:
+    """`call_with_cascade`, delivered as it is produced.
+
+    Yields dicts: ``{"type": "provider", "name"}`` when a leg starts,
+    ``{"type": "delta", "text"}`` for each piece of the answer, and one
+    closing ``{"type": "done", "response": ProviderResponse}``. A leg that
+    fails before its first piece of text hands over to the next provider
+    exactly as the blocking cascade does — the caller never sees it. A leg
+    that fails after text has started cannot be retried without showing the
+    developer the same answer twice, so it ends with ``{"type": "error"}``
+    carrying what was said so far.
+
+    The books are kept the same way as the blocking call: breaker, health,
+    metering and quota at the one place every answer passes through, and the
+    finished answer goes into the same cache so a repeat is served from it.
+    """
+    if tenant_id == "_global" and project_slug is None and user_subject is None:
+        try:
+            from app.mcp.context import get_mcp_caller
+
+            _mt, _mu = get_mcp_caller()
+            if _mt != "_global" or _mu:
+                tenant_id, user_subject = _mt, _mu
+        except Exception:  # pragma: no cover — MCP context is optional
+            pass
+
+    chain: List[str] = [primary, *fallbacks]
+    owner = (
+        f"p:{project_slug}"
+        if project_slug
+        else (f"u:{user_subject}" if user_subject else "")
+    )
+    cache_key = prompt_hash(prompt, model or "", tenant_id=tenant_id, owner=owner)
+    if use_cache:
+        cached = await default_cache.get(cache_key)
+        if cached is not None:
+            cached_copy = cached.model_copy(update={"cached": True, "providers_tried": []})
+            yield {"type": "provider", "name": cached_copy.provider, "cached": True}
+            if cached_copy.text:
+                yield {"type": "delta", "text": cached_copy.text}
+            yield {"type": "done", "response": cached_copy}
+            return
+
+    last_err: Optional[Exception] = None
+    saw_transient = False
+    tried: List[str] = []
+    for name in chain:
+        breaker_id = _breaker_key(tenant_id, name)
+        if not await default_breaker.allow(breaker_id):
+            logger.info("breaker open, provider skipped: %s", breaker_id)
+            continue
+        try:
+            provider = get_provider(name)
+        except KeyError:
+            logger.warning("unknown provider: %s", name)
+            continue
+        tried.append(name)
+        call_kwargs = kwargs
+        owner_key = _resolve_owner_key(
+            name, tenant_id=tenant_id, project_slug=project_slug, user_subject=user_subject
+        )
+        if owner_key:
+            call_kwargs = {**kwargs, "api_key": owner_key}
+        leg_model = (models or {}).get(name) or model
+        spoken: List[str] = []
+        final: Optional[ProviderResponse] = None
+        try:
+            yield {"type": "provider", "name": name, "streams": bool(getattr(provider, "streams", False))}
+            async for ev in provider.stream(prompt, model=leg_model, **call_kwargs):
+                if ev.delta:
+                    spoken.append(ev.delta)
+                    yield {"type": "delta", "text": ev.delta}
+                if ev.final is not None:
+                    final = ev.final
+            if final is None:
+                raise ProviderError(
+                    f"{name} stream ended without a result", provider=name, transient=True
+                )
+            final.providers_tried = list(tried)
+            await default_breaker.record_success(breaker_id)
+            _health.note_success(name, tenant=tenant_id, model=str(final.model or leg_model or ""))
+            if use_cache:
+                await default_cache.set(cache_key, final)
+            _meter(final, provider=name, tenant_id=tenant_id)
+            _record_quota(
+                name,
+                tenant_id=tenant_id,
+                tokens=int(final.tokens_in or 0) + int(final.tokens_out or 0),
+                status_code=200,
+                model=final.model or (model or ""),
+            )
+            yield {"type": "done", "response": final}
+            return
+        except (ProviderError, *_TRANSIENT_INFRA_EXCEPTIONS) as exc:
+            last_err = exc
+            transient = getattr(exc, "transient", True)
+            saw_transient = saw_transient or transient
+            await default_breaker.record_failure(breaker_id)
+            _health.note_failure(
+                name, tenant=tenant_id, permanent=not transient,
+                detail=str(exc), model=str(leg_model or ""),
+            )
+            if isinstance(exc, ProviderError):
+                _record_quota(name, tenant_id=tenant_id, status_code=500, exc=exc)
+            if spoken:
+                # Text already reached the developer. Failing over now would
+                # show a second answer under a half one; the honest end is to
+                # say what happened and keep what was said.
+                logger.info("provider %s failed mid-answer: %s", name, exc)
+                yield {
+                    "type": "error",
+                    "detail": str(exc)[:400],
+                    "partial": "".join(spoken),
+                    "providers_tried": list(tried),
+                }
+                return
+            logger.info(
+                "provider %s failed before answering (%s), trying the next one: %s",
+                name, "transient" if transient else "permanent", exc,
+            )
+            continue
+
+    if last_err is not None and not saw_transient and isinstance(last_err, ProviderError):
+        raise last_err
     raise CascadeUnavailable(
         "every provider in the chain failed; some may recover shortly",
         providers_tried=tried,

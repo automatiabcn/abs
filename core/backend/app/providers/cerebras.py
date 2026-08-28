@@ -7,11 +7,16 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, AsyncIterator, Optional
 
 from app.config import settings
 
-from .base import BaseProvider, openai_compatible_chat
+from .base import (
+    BaseProvider,
+    StreamEvent,
+    openai_compatible_chat,
+    openai_compatible_stream,
+)
 from .schemas import ProviderResponse
 
 
@@ -35,3 +40,23 @@ class CerebrasProvider(BaseProvider):
             temperature=kwargs.get("temperature", 0.3),
             timeout=kwargs.get("timeout", 30.0),
         )
+
+    streams = True
+
+    async def stream(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[StreamEvent]:
+        async for ev in openai_compatible_stream(
+            url="https://api.cerebras.ai/v1/chat/completions",
+            api_key=kwargs.get("api_key") or settings.cerebras_api_key,
+            model=model or self.default_model,
+            prompt=prompt,
+            provider_name=self.name,
+            max_tokens=kwargs.get("max_tokens", 1024),
+            temperature=kwargs.get("temperature", 0.3),
+            timeout=kwargs.get("timeout", 30.0),
+        ):
+            yield ev
