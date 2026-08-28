@@ -168,6 +168,14 @@ async def sandbox_run(
     return json.dumps(
         {
             "ok": res.ok,
+            # Exit 0 with nothing said proves nothing: a ten-byte stub where
+            # the interpreter should be exits 0 in silence, and "passed" over
+            # it would be the kind of green that costs a customer (live,
+            # 08-28: an evicted .venv/bin/python). The panel treats this as
+            # "unverified", never as a pass.
+            "inconclusive": bool(
+                res.ok and not (res.stdout or "").strip() and not (res.stderr or "").strip()
+            ),
             "exit_code": res.exit_code,
             "stdout": res.stdout,
             "stderr": res.stderr,
