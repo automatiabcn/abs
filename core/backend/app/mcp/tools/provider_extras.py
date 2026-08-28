@@ -143,7 +143,7 @@ async def ask_or_qwen_coder(prompt: str) -> str:
         "ask_or_qwen_coder",
         prompt,
         primary="openrouter",
-        model="qwen/qwen3-coder:free",
+        model="nvidia/nemotron-3-super-120b-a12b:free",
     )
 
 
