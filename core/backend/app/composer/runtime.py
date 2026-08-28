@@ -574,6 +574,38 @@ def _clamp01(value: Any) -> Optional[float]:
 
 
 def _derive_risk(edits: List[ProposedEdit]) -> Tuple[str, bool]:
+    risk, gate, _ = derive_risk_with_reasons(edits)
+    return risk, gate
+
+
+def derive_risk_with_reasons(edits: List[ProposedEdit]) -> Tuple[str, bool, List[str]]:
+    """`_derive_risk` plus the reasons, in words a developer can act on.
+
+    The badge said "▲ high" over a one-line test addition and nothing else;
+    the developer either feared it or learned to ignore it (visual audit,
+    2026-08-28, U4). Every verdict now carries why."""
+    reasons: List[str] = []
+    for e in edits:
+        affected = int((e.blast_radius or {}).get("total_affected", 0) or 0)
+        quality = e.judge_correctness if e.judge_correctness is not None else e.judge_score
+        name = e.path.split("/")[-1] if e.path else "an edit"
+        if not e.dry_run_ok:
+            reasons.append(f"{name}: the diff does not apply to the file as it is")
+        if quality is not None and quality < _JUDGE_LOW:
+            reasons.append(f"{name}: correctness {quality:.1f} is below {_JUDGE_LOW:g}")
+        if affected >= _BLAST_HIGH:
+            reasons.append(f"{name}: {affected} places depend on what changes")
+        elif affected >= _BLAST_MEDIUM:
+            reasons.append(f"{name}: {affected} places depend on what changes")
+        if quality is None:
+            reasons.append(f"{name}: nobody graded this edit — asking rather than assuming")
+    risk, gate = _derive_risk_verdict(edits)
+    if not reasons and risk == "low":
+        reasons.append("small, graded, applies cleanly")
+    return risk, gate, reasons
+
+
+def _derive_risk_verdict(edits: List[ProposedEdit]) -> Tuple[str, bool]:
     """Deterministic risk from blast-radius, CORRECTNESS and dry-run validity.
 
     The gate exists so a dangerous change cannot reach the developer unreviewed.
@@ -802,7 +834,7 @@ async def run_composer(
             )
         )
 
-    risk, requires_approval = _derive_risk(edits)
+    risk, requires_approval, risk_reasons = derive_risk_with_reasons(edits)
     summary = str(parsed.get("summary") or "")
     if refused and not edits:
         # The model's paragraph describes the edits we just threw away.
@@ -823,6 +855,7 @@ async def run_composer(
         summary=summary,
         risk=risk,
         requires_approval=requires_approval,
+        risk_reasons=risk_reasons,
         providers_tried=tried,
         provider=str(gen_meta.get("provider") or ""),
         cost_usd=gen_meta.get("cost_usd"),
