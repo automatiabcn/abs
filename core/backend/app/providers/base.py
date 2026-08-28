@@ -26,6 +26,19 @@ _CUT_OFF = {"length", "max_tokens", "max_output_tokens"}
 
 
 
+
+def _generation_from_rejection(body: str) -> Optional[str]:
+    """The model's own output from a provider's 'your generation was rejected'
+    400, when the provider sent it back — or None."""
+    if not _is_generation_failure(body):
+        return None
+    try:
+        err = (json.loads(body) or {}).get("error") or {}
+    except (ValueError, TypeError):
+        return None
+    gen = err.get("failed_generation")
+    return gen.strip() if isinstance(gen, str) and gen.strip() else None
+
 def _is_generation_failure(body: str) -> bool:
     """The provider rejected its own model's output, not our request."""
     t = (body or "")[:400]
@@ -252,6 +265,17 @@ async def openai_compatible_chat(
             transient=True,
         )
     if r.status_code >= 400:
+        # Groq rejects a tool call the model made when no tools were offered
+        # ("Tool choice is none, but model called a tool") — and puts the
+        # model's actual output in `failed_generation`. For the agent loop,
+        # which asks for the tool call as JSON text, that output IS the
+        # answer; throwing it away made agent mode say "No provider
+        # answered" seven times in one scenario run (C10, 2026-08-28).
+        salvaged = _generation_from_rejection(r.text)
+        if salvaged:
+            return ProviderResponse(
+                text=salvaged, model=model, provider=provider_name, elapsed_ms=elapsed_ms
+            )
         raise ProviderError(
             f"{provider_name} {r.status_code}: {r.text[:200]}",
             provider=provider_name,
