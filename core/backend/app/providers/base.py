@@ -29,7 +29,12 @@ _CUT_OFF = {"length", "max_tokens", "max_output_tokens"}
 def _is_generation_failure(body: str) -> bool:
     """The provider rejected its own model's output, not our request."""
     t = (body or "")[:400]
-    return "json_validate_failed" in t or "failed_generation" in t or "could not be parsed" in t
+    return (
+        "json_validate_failed" in t
+        or "tool_use_failed" in t
+        or "failed_generation" in t
+        or "could not be parsed" in t
+    )
 
 def _retry_after_seconds(r: Any) -> "float | None":
     """The provider's Retry-After, in seconds, when it sent one.
