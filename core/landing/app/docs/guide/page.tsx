@@ -148,13 +148,43 @@ export default function GuidePage() {
           </ol>
         </nav>
 
+        <section id="keyboard" style={{ marginBottom: 28 }}>
+          <h2 style={{ color: TEXT, fontSize: 18, fontWeight: 600, marginBottom: 8 }}>Keys and commands</h2>
+          <p>
+            <strong style={{ color: TEXT }}>Tab</strong> accepts the ghost completion.{" "}
+            <strong style={{ color: TEXT }}>⌘K</strong> (Ctrl+K on Linux and Windows) with lines selected
+            opens the graded inline edit; with nothing selected it is the editor&apos;s
+            ordinary chord prefix, so select first. Everything else is in the Command
+            Palette under <em>ABS:</em>
+          </p>
+          <ul style={{ paddingLeft: 18, lineHeight: 1.7 }}>
+            {[
+              "ABS: Connect a provider — API key or a plan you already pay for",
+              "ABS: Edit this selection (graded)",
+              "ABS: Blast radius of the symbol under the cursor",
+              "ABS: Propose a graded edit for a task",
+              "ABS: Engine status — provider quota & health",
+              "ABS: Explain the selection",
+              "ABS: Review this file",
+              "ABS: Write tests for the selection",
+              "ABS: Index this workspace into the knowledge base",
+              "ABS: Ask about the selection…",
+              "ABS: Review my changes before commit",
+              "ABS: Commit what ABS wrote",
+            ].map((c) => (
+              <li key={c}><code>{c}</code></li>
+            ))}
+          </ul>
+        </section>
+
         {/* --- 01 -------------------------------------------------------- */}
-        <Step n="01" title="Give it a provider key">
+        <Step n="01" title="Connect a provider">
           <p>
             ABS routes to free tiers first, so the cheapest way to start is a
             free-tier key from Groq, Cerebras or Gemini. Open the Command
-            Palette and run <strong style={{ color: TEXT }}>ABS: Add a provider key</strong>,
-            pick the provider, and paste the key.
+            Palette and run <strong style={{ color: TEXT }}>ABS: Connect a provider — API key or a plan you already pay for</strong>,
+            pick the provider, and paste the key — or sign in with a plan you
+            already pay for.
           </p>
           <p>
             The key is checked with the provider <em>before</em> it is stored.

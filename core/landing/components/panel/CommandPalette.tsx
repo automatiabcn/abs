@@ -80,7 +80,7 @@ export function CommandPalette() {
       { id: "go-chat", label: "Chat", group: "Pages", icon: MessageSquare, onSelect: () => { router.push("/admin/chat"); close(); } },
       { id: "go-rag", label: "Company memory", hint: "RAG · knowledge base", group: "Pages", icon: Database, onSelect: () => { router.push("/admin/rag"); close(); } },
       { id: "go-meetings", label: "Meetings", group: "Pages", icon: Mic, onSelect: () => { router.push("/admin/meetings"); close(); } },
-      { id: "go-growth", label: "Growth copilot", group: "Pages", icon: LayoutDashboard, onSelect: () => { router.push("/admin/growth"); close(); } },
+      { id: "go-growth", label: "Growth", group: "Pages", icon: LayoutDashboard, onSelect: () => { router.push("/admin/growth"); close(); } },
       { id: "go-usage", label: "Usage & cost", group: "Pages", icon: BarChart3, onSelect: () => { router.push("/admin/usage"); close(); } },
       { id: "go-settings", label: "Settings", group: "Pages", icon: Settings, onSelect: () => { router.push("/admin/settings"); close(); } },
       { id: "go-approvals", label: "Approvals", group: "Pages", icon: ShieldCheck, onSelect: () => { router.push("/admin/approvals"); close(); } },
