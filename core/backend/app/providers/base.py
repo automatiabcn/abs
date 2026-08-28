@@ -208,6 +208,16 @@ async def openai_compatible_chat(
         raise ProviderError(
             f"{provider_name} rate limit", provider=provider_name, transient=True
         )
+    if r.status_code == 413:
+        # This request is too big for this provider's window (Groq's free
+        # tier: 8000 tokens a minute; a Composer prompt with whole files is
+        # more). The next provider gets it; the key is fine and must not be
+        # marked dead for ten minutes over one large prompt (live, 08-28).
+        raise ProviderError(
+            f"{provider_name} request too large for its window",
+            provider=provider_name,
+            transient=True,
+        )
     if r.status_code >= 400:
         raise ProviderError(
             f"{provider_name} {r.status_code}: {r.text[:200]}",
@@ -238,6 +248,12 @@ def _finish_stream_status(r: "httpx.Response", provider_name: str) -> None:
     if r.status_code == 429:
         raise ProviderError(
             f"{provider_name} rate limit", provider=provider_name, transient=True
+        )
+    if r.status_code == 413:
+        raise ProviderError(
+            f"{provider_name} request too large for its window",
+            provider=provider_name,
+            transient=True,
         )
     if r.status_code >= 400:
         raise ProviderError(

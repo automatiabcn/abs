@@ -112,3 +112,19 @@ def test_a_new_key_clears_the_verdict():
     health.forget("cerebras", tenant="t")
     assert health.should_skip("cerebras", "t") is False
     assert health.degraded_reason("cerebras", "t") == ""
+
+
+def test_a_request_too_large_for_one_provider_does_not_mark_it_dead():
+    """413 is about this prompt, not the key: the next provider takes the
+    request and the provider stays in the chain for the next one."""
+    from app.providers.base import _finish_stream_status
+    from app.providers.schemas import ProviderError as PE
+
+    class R:
+        status_code = 413
+        text = "Payload Too Large"
+
+    with pytest.raises(PE) as exc:
+        _finish_stream_status(R(), "groq")
+    assert exc.value.transient is True
+    assert "too large" in str(exc.value)
