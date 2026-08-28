@@ -51,11 +51,19 @@ class ProviderResponse(BaseModel):
 class ProviderError(Exception):
     """A provider call failed. The cascade catches this and tries the next one."""
 
-    def __init__(self, message: str, provider: str = "", transient: bool = True):
+    def __init__(
+        self,
+        message: str,
+        provider: str = "",
+        transient: bool = True,
+        retry_after: "float | None" = None,
+    ):
         super().__init__(message)
         self.message = message
         self.provider = provider
         self.transient = transient
+        #: Seconds the provider asked us to wait (its Retry-After), when it said.
+        self.retry_after = retry_after
 
 
 class CascadeUnavailable(ProviderError):
