@@ -177,6 +177,19 @@ def _record_quota(
         logger.debug("quota meter skipped", exc_info=True)
 
 
+def _prune_dead_legs(chain: List[str], tenant_id: str) -> List[str]:
+    """Leave out providers whose last outcome was a permanent failure and
+    recent — unless that would leave nothing, in which case they are all
+    tried: a chain of dead legs still owes the caller a real error."""
+    kept = [n for n in chain if not _health.should_skip(n, tenant=tenant_id)]
+    if kept != chain:
+        logger.info(
+            "cascade skipping providers with a standing permanent failure: %s",
+            [n for n in chain if n not in kept],
+        )
+    return kept or list(chain)
+
+
 async def call_with_cascade(
     prompt: str,
     *,
@@ -220,7 +233,7 @@ async def call_with_cascade(
         except Exception:  # pragma: no cover — MCP context is optional
             pass
 
-    chain: List[str] = [primary, *fallbacks]
+    chain: List[str] = _prune_dead_legs([primary, *fallbacks], tenant_id)
     # When a per-owner key may be used, the cache is namespaced by owner so one
     # owner's answer is never served to another inside the same tenant.
     owner = (
@@ -401,7 +414,7 @@ async def stream_with_cascade(
         except Exception:  # pragma: no cover — MCP context is optional
             pass
 
-    chain: List[str] = [primary, *fallbacks]
+    chain: List[str] = _prune_dead_legs([primary, *fallbacks], tenant_id)
     owner = (
         f"p:{project_slug}"
         if project_slug
@@ -441,9 +454,14 @@ async def stream_with_cascade(
         leg_model = (models or {}).get(name) or model
         spoken: List[str] = []
         final: Optional[ProviderResponse] = None
+        # Held by name so it can be closed by hand: `async for` does not close
+        # an async generator the consumer abandons — that waits for the
+        # garbage collector — and the HTTP stream inside it would go on
+        # reading tokens nobody will see after the developer pressed Stop.
+        leg = provider.stream(prompt, model=leg_model, **call_kwargs)
         try:
             yield {"type": "provider", "name": name, "streams": bool(getattr(provider, "streams", False))}
-            async for ev in provider.stream(prompt, model=leg_model, **call_kwargs):
+            async for ev in leg:
                 if ev.delta:
                     spoken.append(ev.delta)
                     yield {"type": "delta", "text": ev.delta}
@@ -496,6 +514,8 @@ async def stream_with_cascade(
                 name, "transient" if transient else "permanent", exc,
             )
             continue
+        finally:
+            await leg.aclose()
 
     if last_err is not None and not saw_transient and isinstance(last_err, ProviderError):
         raise last_err

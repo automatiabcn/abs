@@ -286,3 +286,59 @@ def test_every_cloud_provider_in_the_default_chain_streams():
 
     for name in ("groq", "cerebras", "gemini", "cloudflare"):
         assert get_provider(name).streams, name
+
+
+def test_an_attached_diff_is_redacted_like_a_file(client, monkeypatch):
+    """A git diff of a .env is still a .env."""
+    from app.mcp.tools import engine_panel_tools as ept
+
+    seen = {}
+
+    def fake_prepare(prompt, **kw):
+        seen.update(kw)
+        return {"error": {"ok": False, "error": "stop_here", "detail": ""}}
+
+    monkeypatch.setattr(ept, "prepare_chat_ask", fake_prepare)
+    r = client.post(
+        "/v1/editor/chat/stream",
+        json={"prompt": "hi", "attachments": "+GROQ_API_KEY=gsk_abcdefghijklmnopqrstuvwxyz123456"},
+        headers={"Authorization": f"Bearer {_token()}"},
+    )
+    assert r.status_code == 200
+    assert "gsk_abcdefghijklmnopqrstuvwxyz123456" not in seen["attachments"]
+
+
+@pytest.mark.asyncio
+async def test_stopping_the_consumer_closes_the_provider_stream(monkeypatch):
+    """Stop must reach the provider: a generator the client walked away from
+    is closed, so the HTTP stream behind it is closed too — not left reading
+    tokens nobody will see (and paying for them)."""
+    from app.cascade.orchestrator import stream_with_cascade
+
+    closed = {"provider": False}
+
+    class _Slow(BaseProvider):
+        name = "slow"
+        default_model = "m"
+        streams = True
+
+        async def call(self, prompt, model=None, **kw):  # pragma: no cover
+            raise AssertionError
+
+        async def stream(self, prompt, model=None, **kw):
+            try:
+                for i in range(1000):
+                    yield StreamEvent(delta=f"w{i} ")
+            finally:
+                closed["provider"] = True
+
+    _wire(monkeypatch, [_Slow()])
+    gen = stream_with_cascade("q", primary="slow", use_cache=False, tenant_id="t")
+    got = 0
+    async for ev in gen:
+        if ev["type"] == "delta":
+            got += 1
+        if got == 3:
+            break
+    await gen.aclose()
+    assert closed["provider"] is True
