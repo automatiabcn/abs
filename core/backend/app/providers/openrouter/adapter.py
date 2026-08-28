@@ -22,7 +22,7 @@ from ..schemas import ProviderResponse
 
 class OpenRouterProvider(BaseProvider):
     name = "openrouter"
-    default_model = "qwen/qwen3-coder:free"
+    default_model = "nvidia/nemotron-3-super-120b-a12b:free"
 
     async def call(
         self,

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 API_VERSION: str = "v1"
 SUPPORTED_MODELS: tuple[str, ...] = (
-    "qwen/qwen3-coder:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
     "deepseek/deepseek-r1:free",
     "google/gemma-3-27b-it:free",
     "minimax/minimax-m2:free",

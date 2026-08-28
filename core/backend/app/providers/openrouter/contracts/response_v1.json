@@ -2,7 +2,7 @@
   "id": "gen-xyz7890abc123def456ghi",
   "object": "chat.completion",
   "created": 1735005678,
-  "model": "qwen/qwen3-coder:free",
+  "model": "nvidia/nemotron-3-super-120b-a12b:free",
   "choices": [
     {
       "index": 0,
