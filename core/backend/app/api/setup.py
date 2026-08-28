@@ -771,9 +771,22 @@ _RATE_LIMIT_RETRY_S = 3.0
 
 
 def _is_rate_limit(exc: BaseException) -> bool:
-    """A provider saying "slow down" — the key was read and accepted."""
-    text = str(exc).lower()
-    return "429" in text or "rate limit" in text or "too many requests" in text
+    """A provider saying "slow down" — the key was read and accepted.
+
+    The cascade wraps a chain that failed in `CascadeUnavailable`, whose own
+    message says nothing about why; the reason sits on `last_error` (and the
+    exception chain). CI, 2026-08-28: two 429s four seconds apart arrived
+    here as "every provider in the chain failed" and were not recognised."""
+    seen = 0
+    cur: Optional[BaseException] = exc
+    while cur is not None and seen < 6:
+        text = str(cur).lower()
+        if "429" in text or "rate limit" in text or "too many requests" in text:
+            return True
+        nxt = getattr(cur, "last_error", None) or cur.__cause__ or cur.__context__
+        cur = nxt if isinstance(nxt, BaseException) else None
+        seen += 1
+    return False
 
 
 _FIELD_TO_PROVIDER: Dict[str, str] = {
@@ -846,7 +859,9 @@ async def _run_provider_tests() -> Dict[str, Any]:
                     call_with_cascade(
                         "ping", primary=provider, fallbacks=(), use_cache=False
                     ),
-                    timeout=8.0,
+                    # Long enough for the cascade's own rate-limit second pass
+                    # (a short pause, then one more call) to finish inside it.
+                    timeout=15.0,
                 )
 
             try:

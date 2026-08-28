@@ -66,3 +66,22 @@ async def test_a_bad_key_is_still_a_failure(_groq_only, monkeypatch):
     out = await setup_mod._run_provider_tests()
     assert out["groq_api_key"]["status"] == "fail"
     assert "401" in out["groq_api_key"]["reason"]
+
+
+async def test_a_rate_limit_wrapped_by_the_cascade_is_still_recognised(_groq_only, monkeypatch):
+    """CI, 2026-08-28: the chain's two 429s reached the wizard as
+    CascadeUnavailable('every provider in the chain failed…') and were
+    reported as 'nothing answered'. The reason is on last_error."""
+    from app.providers.schemas import CascadeUnavailable
+
+    async def _cascade(prompt, **kw):
+        raise CascadeUnavailable(
+            "every provider in the chain failed; some may recover shortly",
+            providers_tried=["groq"],
+            last_error=ProviderError("groq rate limit", provider="groq", transient=True),
+        )
+
+    monkeypatch.setattr("app.cascade.orchestrator.call_with_cascade", _cascade)
+    out = await setup_mod._run_provider_tests()
+    assert out["groq_api_key"]["status"] == "ok"
+    assert out["groq_api_key"]["rate_limited"] is True
