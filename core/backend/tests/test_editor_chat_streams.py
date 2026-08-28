@@ -151,7 +151,8 @@ async def test_a_provider_that_fails_before_speaking_is_never_seen(monkeypatch):
     )
     # The dead leg is announced (the panel shows the trail) but produces no
     # text and no error; the answer comes whole from the next provider.
-    assert [e["type"] for e in events] == ["provider", "provider", "delta", "done"]
+    assert [e["type"] for e in events] == ["provider", "leg_failed", "provider", "delta", "done"]
+    assert events[1]["name"] == "dead" and "no key" in events[1]["detail"]
     assert events[-1]["response"].providers_tried == ["dead", "streamer"]
 
 

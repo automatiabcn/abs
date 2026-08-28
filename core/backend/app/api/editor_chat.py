@@ -15,6 +15,7 @@ Server-sent events, one JSON object per ``data:`` line:
 
     meta      {used_files, chain}            — before any provider is called
     provider  {name, streams, cached?}       — a leg starts
+    leg_failed {name, detail, transient}     — a leg failed before its first word
     delta     {text}                         — a piece of the answer
     done      {provider, model, tokens_in, tokens_out, elapsed_ms, cost_usd,
                cached, truncated, providers_tried}
@@ -177,6 +178,15 @@ async def stream_chat(body: StreamChatRequest, request: Request) -> StreamingRes
                                 "name": ev.get("name", ""),
                                 "streams": bool(ev.get("streams", False)),
                                 "cached": bool(ev.get("cached", False)),
+                            }
+                        )
+                    elif kind == "leg_failed":
+                        yield _sse(
+                            {
+                                "type": "leg_failed",
+                                "name": ev.get("name", ""),
+                                "detail": ev.get("detail", ""),
+                                "transient": bool(ev.get("transient", True)),
                             }
                         )
                     elif kind == "error":
