@@ -29,7 +29,7 @@ import json
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Sequence, List, Optional
 
 from app.cascade import quota_meter
 from app.config import settings
@@ -210,6 +210,8 @@ def prepare_chat_ask(
     client_id: str = "",
     style: str = "",
     history: str = "",
+    pinned_files: Sequence[str] = (),
+    attachments: str = "",
 ) -> Dict[str, Any]:
     """Everything `cascade_ask` decides before it calls a provider, in one
     place, so the streaming route and the tool cannot drift: whose chain,
@@ -276,6 +278,8 @@ def prepare_chat_ask(
     asked = prompt
     used_files: list = []
     picked: list = []
+    refused: list = []
+    rules, rules_from = "", ""
     root = ""
     try:
         from app.composer.runtime import relevant_files, workspace_files
@@ -294,6 +298,16 @@ def prepare_chat_ask(
             picked = relevant_files(
                 root, prompt, workspace_files(root), graph_key=_key_for(tenant, root)
             )
+            if pinned_files or style == "chat":
+                from app.chat.context import pinned_files as _pinned
+                from app.chat.context import project_rules
+
+                # The developer's own picks come first and are never crowded
+                # out by retrieval; retrieval fills what is left.
+                chosen, refused = _pinned(root, pinned_files) if pinned_files else ([], [])
+                have = {rel for rel, _ in chosen}
+                picked = chosen + [(rel, body) for rel, body in picked if rel not in have]
+                rules, rules_from = project_rules(root)
             if picked:
                 used_files = [rel for rel, _ in picked]
                 if style != "chat":
@@ -322,10 +336,15 @@ def prepare_chat_ask(
             files=picked,
             project_name=os.path.basename(root) if root else "",
             history=history,
+            rules=rules,
+            rules_from=rules_from,
+            attachments=attachments,
         )
     return {
         "asked": asked,
         "used_files": used_files,
+        "refused_files": refused,
+        "rules_from": rules_from,
         "primary": primary,
         "fallbacks": fallbacks,
         "active": active,
@@ -346,6 +365,8 @@ async def cascade_ask(
     client_id: str = "",
     style: str = "",
     history: str = "",
+    pinned_files: list[str] | None = None,
+    attachments: str = "",
 ) -> str:
     """Ask the provider cascade and return the answer WITH its provenance:
     which provider answered, the failover trail, tokens, latency and estimated
@@ -371,6 +392,8 @@ async def cascade_ask(
         client_id=client_id,
         style=style,
         history=history,
+        pinned_files=tuple(pinned_files or ()),
+        attachments=attachments,
     )
     if "error" in prepared:
         return json.dumps(prepared["error"], ensure_ascii=False)

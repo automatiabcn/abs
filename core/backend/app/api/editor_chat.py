@@ -30,7 +30,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
@@ -48,6 +48,8 @@ class StreamChatRequest(BaseModel):
     prefer: str = ""
     workspace_root: str = ""
     client_id: str = ""
+    pinned_files: List[str] = Field(default_factory=list, max_length=16)
+    attachments: str = Field(default="", max_length=40_000)
     max_tokens: int = Field(default=1400, ge=16, le=8000)
     temperature: float = Field(default=0.3, ge=0.0, le=2.0)
     use_cache: bool = True
@@ -120,6 +122,8 @@ async def stream_chat(body: StreamChatRequest, request: Request) -> StreamingRes
                 client_id=body.client_id,
                 style=body.style,
                 history=body.history,
+                pinned_files=tuple(body.pinned_files),
+                attachments=body.attachments,
             )
             if "error" in prepared:
                 err = dict(prepared["error"])
@@ -130,6 +134,8 @@ async def stream_chat(body: StreamChatRequest, request: Request) -> StreamingRes
                 {
                     "type": "meta",
                     "used_files": prepared["used_files"],
+                    "refused_files": prepared.get("refused_files", []),
+                    "rules_from": prepared.get("rules_from", ""),
                     "chain": [prepared["primary"], *prepared["fallbacks"]],
                 }
             )

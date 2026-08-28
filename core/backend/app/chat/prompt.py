@@ -64,14 +64,24 @@ def chat_prompt(
     files: Sequence[Tuple[str, str]] = (),
     project_name: str = "",
     history: str = "",
+    rules: str = "",
+    rules_from: str = "",
+    attachments: str = "",
 ) -> str:
     """Assemble the string the model sees for one chat turn.
 
-    Order: instructions, conversation so far, project files, question. The
-    question is repeated at the end even when the editor already prefixed
-    history to it, because the last lines are the ones the model answers.
+    Order: instructions, project rules, conversation so far, project files,
+    attachments, question. The question is last because the last lines are
+    the ones the model answers; the rules are first because they are the
+    developer's standing instructions and outrank everything but ours.
     """
     parts = [CHAT_INSTRUCTIONS.strip()]
+    if rules.strip():
+        where = f" (from {rules_from})" if rules_from else ""
+        parts.append(
+            f"Project rules{where} — the developer's standing instructions "
+            f"for this project. Follow them:\n{rules.strip()}"
+        )
     if history.strip():
         parts.append("Conversation so far:\n" + history.strip())
     if files:
@@ -81,5 +91,7 @@ def chat_prompt(
             "Files from the project the developer has open"
             f"{where}. Cite them as path:LINE when you use them:\n\n{blocks}"
         )
+    if attachments.strip():
+        parts.append("Attached by the developer:\n" + attachments.strip())
     parts.append("The developer asks:\n" + question.strip())
     return "\n\n".join(parts)
