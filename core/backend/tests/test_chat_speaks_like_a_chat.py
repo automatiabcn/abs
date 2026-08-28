@@ -56,6 +56,10 @@ def test_the_voice_rules_are_the_ones_that_were_missing_on_screen():
     assert "path/to/file.py:LINE" in text  # was: no way to click through
     assert "Never invent an API" in text
     assert "language the developer wrote in" in text  # TR/ES/EN developers
+    # Live 08-28: "explain every function at length" was refused with "the
+    # side panel is narrow". Brevity is the default, not a ceiling.
+    assert "length follows the request" in text
+    assert "Never refuse or shorten an answer because of the panel" in text
 
 
 def test_no_files_no_history_is_still_the_voice():
