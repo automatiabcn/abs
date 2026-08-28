@@ -174,6 +174,38 @@ def _parse_judgement(text: str) -> tuple[Optional[float], str]:
     return salvaged, (note.group(1)[:400] if note else "")
 
 
+
+def is_test_path(file_path: Optional[str]) -> bool:
+    """tests/…, test_*.py, *_test.py, conftest.py — the files pytest collects."""
+    if not file_path:
+        return False
+    p = file_path.replace("\\", "/")
+    name = p.rsplit("/", 1)[-1]
+    return (
+        "/tests/" in f"/{p}"
+        or p.startswith("tests/")
+        or name.startswith("test_")
+        or name.endswith("_test.py")
+        or name == "conftest.py"
+    )
+
+
+def applicable_metrics(added_code: str, file_path: Optional[str]) -> Dict[str, float]:
+    """The AST fingerprint, minus the metrics that do not apply to this file.
+
+    Type hints are not a convention in test files — a fixture-taking test
+    is written `def test_x(client):` everywhere — so measuring a test against
+    the persona's 0.70 hint ratio scored a sound new test file 3.6 "below 5"
+    with `type_hints_ratio 0.00 vs 0.70` as the biggest delta (Review panel,
+    live, 2026-08-28). Absent means not applicable; the distance skips it."""
+    if not (file_path and file_path.endswith(".py")):
+        return {}
+    metrics = ast_metrics(added_code)
+    if is_test_path(file_path):
+        metrics.pop("type_hints_ratio", None)
+    return metrics
+
+
 async def judge_diff(
     diff_text: str,
     file_path: Optional[str] = None,
@@ -183,9 +215,7 @@ async def judge_diff(
 ) -> Dict[str, Any]:
     """Score a diff (60% AST + 40% LLM) and return the teaching notes."""
     added_code = extract_added_lines(diff_text)
-    is_python = bool(file_path and file_path.endswith(".py"))
-
-    metrics = ast_metrics(added_code) if is_python else {}
+    metrics = applicable_metrics(added_code, file_path)
     persona = load_persona()
     ast_s = _ast_score(metrics, persona) if metrics else 0.0
 
