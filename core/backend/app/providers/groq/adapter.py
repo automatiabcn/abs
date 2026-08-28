@@ -8,11 +8,16 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Optional
+from typing import Any, AsyncIterator, Dict, Optional
 
 from app.config import settings
 
-from ..base import BaseProvider, openai_compatible_chat
+from ..base import (
+    BaseProvider,
+    StreamEvent,
+    openai_compatible_chat,
+    openai_compatible_stream,
+)
 from ..schemas import ProviderResponse
 
 # Groq retired its Llama 3.x and Qwen3-32B lines on 2026-08-16 (live catalogue
@@ -71,3 +76,31 @@ class GroqProvider(BaseProvider):
             except Exception:  # noqa: BLE001 — frozen model: return as-is
                 pass
         return resp
+
+    streams = True
+
+    async def stream(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[StreamEvent]:
+        chosen = model or self.default_model
+        extra: Dict[str, Any] = {}
+        effort = kwargs.get("reasoning_effort")
+        if effort is None and chosen.startswith(_THINKING_MODELS):
+            effort = "none"
+        if effort:
+            extra["reasoning_effort"] = effort
+        async for ev in openai_compatible_stream(
+            url="https://api.groq.com/openai/v1/chat/completions",
+            api_key=kwargs.get("api_key") or settings.groq_api_key,
+            model=chosen,
+            prompt=prompt,
+            provider_name=self.name,
+            max_tokens=kwargs.get("max_tokens", 1024),
+            temperature=kwargs.get("temperature", 0.3),
+            timeout=kwargs.get("timeout", 30.0),
+            extra_body=extra or None,
+        ):
+            yield ev

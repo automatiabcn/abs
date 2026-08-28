@@ -202,35 +202,23 @@ async def workspace_set(root: str = "", client_id: str = "") -> str:
     )
 
 
-@mcp_server.tool()
-@with_hooks("cascade_ask")
-async def cascade_ask(
+def prepare_chat_ask(
     prompt: str,
+    *,
     prefer: str = "",
-    max_tokens: int = 1024,
-    temperature: float = 0.3,
-    use_cache: bool = True,
     workspace_root: str = "",
     client_id: str = "",
     style: str = "",
     history: str = "",
-) -> str:
-    """Ask the provider cascade and return the answer WITH its provenance:
-    which provider answered, the failover trail, tokens, latency and estimated
-    cost. Use this instead of ask_* when the caller shows the user where the
-    answer came from.
+) -> Dict[str, Any]:
+    """Everything `cascade_ask` decides before it calls a provider, in one
+    place, so the streaming route and the tool cannot drift: whose chain,
+    which project, which files, and in what voice.
 
-    `workspace_root` names the project to answer about; the editor knows
-    which window is asking, the server does not. Without it (older editors)
-    the answer is about the window that announced itself last.
-
-    `style="chat"` wraps the question in the editor chat's voice (see
-    app.chat.prompt): answer-first, cite files as path:LINE, reply in the
-    developer's language. Off by default — inline edit and external MCP
-    clients want the bare prompt. `history` is the conversation so far,
-    placed before the files rather than glued to the question."""
-    await tracker.bump("cascade_ask")
-    from app.cascade.orchestrator import call_with_cascade
+    Returns either ``{"error": {...}}`` — the same JSON the tool would have
+    returned — or the prepared call: ``asked``, ``used_files``, ``primary``,
+    ``fallbacks``, ``active``, ``tenant``, ``user``.
+    """
     from app.providers.cascade import get_active_providers
 
     tenant = _caller_tenant()
@@ -257,23 +245,19 @@ async def cascade_ask(
 
     active = restrict_chain(active, byok, user)
     if not active:
-        return json.dumps(
-            {
+        return {
+            "error": {
                 "ok": False,
                 "error": "no_provider_configured",
                 "detail": "No provider has a usable key on this server.",
-            },
-            ensure_ascii=False,
-        )
+            }
+        }
     wanted = prefer.strip()
     if wanted and wanted not in active:
         why = _paid_refusal(wanted, byok, user) or (
             f"{wanted} is not a provider this caller can use here."
         )
-        return json.dumps(
-            {"ok": False, "error": "provider_not_available", "detail": why},
-            ensure_ascii=False,
-        )
+        return {"error": {"ok": False, "error": "provider_not_available", "detail": why}}
     primary = wanted or active[0]
     fallbacks = tuple(p for p in active if p != primary)
 
@@ -339,6 +323,64 @@ async def cascade_ask(
             project_name=os.path.basename(root) if root else "",
             history=history,
         )
+    return {
+        "asked": asked,
+        "used_files": used_files,
+        "primary": primary,
+        "fallbacks": fallbacks,
+        "active": active,
+        "tenant": tenant,
+        "user": user,
+    }
+
+
+@mcp_server.tool()
+@with_hooks("cascade_ask")
+async def cascade_ask(
+    prompt: str,
+    prefer: str = "",
+    max_tokens: int = 1024,
+    temperature: float = 0.3,
+    use_cache: bool = True,
+    workspace_root: str = "",
+    client_id: str = "",
+    style: str = "",
+    history: str = "",
+) -> str:
+    """Ask the provider cascade and return the answer WITH its provenance:
+    which provider answered, the failover trail, tokens, latency and estimated
+    cost. Use this instead of ask_* when the caller shows the user where the
+    answer came from.
+
+    `workspace_root` names the project to answer about; the editor knows
+    which window is asking, the server does not. Without it (older editors)
+    the answer is about the window that announced itself last.
+
+    `style="chat"` wraps the question in the editor chat's voice (see
+    app.chat.prompt): answer-first, cite files as path:LINE, reply in the
+    developer's language. Off by default — inline edit and external MCP
+    clients want the bare prompt. `history` is the conversation so far,
+    placed before the files rather than glued to the question."""
+    await tracker.bump("cascade_ask")
+    from app.cascade.orchestrator import call_with_cascade
+
+    prepared = prepare_chat_ask(
+        prompt,
+        prefer=prefer,
+        workspace_root=workspace_root,
+        client_id=client_id,
+        style=style,
+        history=history,
+    )
+    if "error" in prepared:
+        return json.dumps(prepared["error"], ensure_ascii=False)
+    asked = prepared["asked"]
+    used_files = prepared["used_files"]
+    primary = prepared["primary"]
+    fallbacks = prepared["fallbacks"]
+    tenant = prepared["tenant"]
+    user = prepared["user"]
+    active = prepared["active"]
 
     started = time.perf_counter()
     try:

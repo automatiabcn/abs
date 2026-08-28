@@ -8,13 +8,13 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Optional
+from typing import Any, AsyncIterator, Dict, Optional
 
 import httpx
 
 from app.config import settings
 
-from ..base import BaseProvider
+from ..base import BaseProvider, StreamEvent, parse_openai_stream_line, was_cut_off
 from ..schemas import ProviderError, ProviderResponse
 from ._auth import gemini_headers
 
@@ -149,3 +149,98 @@ class GeminiProvider(BaseProvider):
             tokens_out=(visible + thoughts) if usage else None,
             truncated=was_cut_off(candidates[0].get("finishReason")),
         )
+
+    streams = True
+
+    async def stream(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[StreamEvent]:
+        """`streamGenerateContent?alt=sse`: the same body as `call`, the
+        answer as it is produced. Usage arrives on the last event."""
+        _key = kwargs.get("api_key") or settings.gemini_api_key
+        if not _key:
+            raise ProviderError(
+                "Gemini API key is not configured", provider=self.name, transient=False
+            )
+        model = model or self.default_model
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:streamGenerateContent?alt=sse"
+        )
+        gen_cfg: dict = {
+            "temperature": kwargs.get("temperature", 0.3),
+            "maxOutputTokens": kwargs.get("max_tokens", 1024),
+        }
+        thinking = thinking_config(model, kwargs.get("reasoning_effort"))
+        if thinking:
+            gen_cfg["thinkingConfig"] = thinking
+        body = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": gen_cfg,
+        }
+        timeout = kwargs.get("timeout", 60.0)
+        start = time.monotonic()
+        pieces: list[str] = []
+        usage: Dict[str, Any] = {}
+        finish: Any = None
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                async with client.stream(
+                    "POST", url, headers=gemini_headers(_key), json=body
+                ) as r:
+                    if r.status_code >= 400:
+                        await r.aread()
+                        if r.status_code == 429:
+                            raise ProviderError("Gemini rate limit", provider=self.name, transient=True)
+                        raise ProviderError(
+                            f"Gemini {r.status_code}",
+                            provider=self.name,
+                            transient=r.status_code >= 500,
+                        )
+                    async for line in r.aiter_lines():
+                        data = parse_openai_stream_line(line)
+                        if not data:
+                            continue
+                        text, fin = gemini_stream_piece(data)
+                        if text:
+                            pieces.append(text)
+                            yield StreamEvent(delta=text)
+                        if fin:
+                            finish = fin
+                        if data.get("usageMetadata"):
+                            usage = data["usageMetadata"] or usage
+        except httpx.TimeoutException as exc:
+            raise ProviderError(
+                f"Gemini timeout ({timeout}s)", provider=self.name, transient=True
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise ProviderError(
+                f"Gemini connection error: {exc}", provider=self.name, transient=True
+            ) from exc
+        visible = int(usage.get("candidatesTokenCount") or 0)
+        thoughts = int(usage.get("thoughtsTokenCount") or 0)
+        yield StreamEvent(
+            final=ProviderResponse(
+                text="".join(pieces),
+                model=model,
+                provider=self.name,
+                elapsed_ms=int((time.monotonic() - start) * 1000),
+                tokens_in=usage.get("promptTokenCount"),
+                tokens_out=(visible + thoughts) if usage else None,
+                truncated=was_cut_off(finish),
+            )
+        )
+
+
+def gemini_stream_piece(data: Dict[str, Any]) -> tuple[str, Any]:
+    """One streamed Gemini event → (text in it, finishReason if any). Pure."""
+    try:
+        cand = (data.get("candidates") or [{}])[0]
+    except (IndexError, TypeError):
+        return "", None
+    parts = ((cand.get("content") or {}).get("parts")) or []
+    text = "".join(p.get("text", "") for p in parts if isinstance(p, dict))
+    return text, cand.get("finishReason")
