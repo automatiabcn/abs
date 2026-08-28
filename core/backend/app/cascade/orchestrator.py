@@ -190,6 +190,18 @@ def _prune_dead_legs(chain: List[str], tenant_id: str) -> List[str]:
     return kept or list(chain)
 
 
+#: When every leg of a chain was rate-limited, the chain is tried once more
+#: after this pause. A single-provider install on a free tier (the common
+#: first install) turned a per-minute 429 into "every provider failed"; the
+#: same key answered 200 seconds later (CI scenarios, 2026-08-28).
+RATE_LIMIT_SECOND_PASS_S = 4.0
+
+
+def _looks_rate_limited(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    return "429" in text or "rate limit" in text or "too many requests" in text
+
+
 async def call_with_cascade(
     prompt: str,
     *,
@@ -207,6 +219,7 @@ async def call_with_cascade(
     tenant_id: str = "_global",
     project_slug: Optional[str] = None,
     user_subject: Optional[str] = None,
+    _second_pass: bool = False,
     **kwargs,
 ) -> ProviderResponse:
     """Call the primary provider, falling back down the chain on failure.
@@ -258,6 +271,7 @@ async def call_with_cascade(
     # caller "try again in 60 seconds" is a lie, and callers that handle a bad
     # key gracefully (the MCP tools) need the ProviderError itself, not a 503.
     saw_transient = False
+    rate_limited = False
     tried: List[str] = []
     for name in chain:
         breaker_id = _breaker_key(tenant_id, name)
@@ -305,6 +319,7 @@ async def call_with_cascade(
         except ProviderError as exc:
             last_err = exc
             saw_transient = saw_transient or exc.transient
+            rate_limited = rate_limited or _looks_rate_limited(exc)
             await default_breaker.record_failure(breaker_id)
             # The panels read this: a PERMANENT failure (bad key, payment
             # required, retired model) is what stops "ready" from being said
@@ -369,6 +384,13 @@ async def call_with_cascade(
     # them. `CascadeUnavailable` *is* a ProviderError, so they degrade instead of
     # dying, and the HTTP layer still answers with the same structured 503 (see
     # the handler in app/main.py).
+    if saw_transient and rate_limited and not _second_pass:
+        logger.info(
+            "every provider in the chain was rate-limited; one more pass after %.1fs",
+            RATE_LIMIT_SECOND_PASS_S,
+        )
+        await asyncio.sleep(RATE_LIMIT_SECOND_PASS_S)
+        return await call_with_cascade(prompt, primary=primary, model=model, models=models, fallbacks=fallbacks, use_cache=use_cache, tenant_id=tenant_id, project_slug=project_slug, user_subject=user_subject, _second_pass=True, **kwargs)
     raise CascadeUnavailable(
         "every provider in the chain failed; some may recover shortly",
         providers_tried=tried,
@@ -387,6 +409,7 @@ async def stream_with_cascade(
     tenant_id: str = "_global",
     project_slug: Optional[str] = None,
     user_subject: Optional[str] = None,
+    _second_pass: bool = False,
     **kwargs,
 ) -> AsyncIterator[Dict]:
     """`call_with_cascade`, delivered as it is produced.
@@ -433,6 +456,8 @@ async def stream_with_cascade(
 
     last_err: Optional[Exception] = None
     saw_transient = False
+    rate_limited = False
+    yielded_delta = False
     tried: List[str] = []
     for name in chain:
         breaker_id = _breaker_key(tenant_id, name)
@@ -464,6 +489,7 @@ async def stream_with_cascade(
             async for ev in leg:
                 if ev.delta:
                     spoken.append(ev.delta)
+                    yielded_delta = True
                     yield {"type": "delta", "text": ev.delta}
                 if ev.final is not None:
                     final = ev.final
@@ -490,6 +516,7 @@ async def stream_with_cascade(
             last_err = exc
             transient = getattr(exc, "transient", True)
             saw_transient = saw_transient or transient
+            rate_limited = rate_limited or _looks_rate_limited(exc)
             await default_breaker.record_failure(breaker_id)
             _health.note_failure(
                 name, tenant=tenant_id, permanent=not transient,
@@ -527,6 +554,15 @@ async def stream_with_cascade(
 
     if last_err is not None and not saw_transient and isinstance(last_err, ProviderError):
         raise last_err
+    if saw_transient and rate_limited and not _second_pass and not yielded_delta:
+        logger.info(
+            "every provider in the chain was rate-limited; one more pass after %.1fs",
+            RATE_LIMIT_SECOND_PASS_S,
+        )
+        await asyncio.sleep(RATE_LIMIT_SECOND_PASS_S)
+        async for ev in stream_with_cascade(prompt, primary=primary, model=model, models=models, fallbacks=fallbacks, use_cache=use_cache, tenant_id=tenant_id, project_slug=project_slug, user_subject=user_subject, _second_pass=True, **kwargs):
+            yield ev
+        return
     raise CascadeUnavailable(
         "every provider in the chain failed; some may recover shortly",
         providers_tried=tried,
