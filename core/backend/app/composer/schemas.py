@@ -62,6 +62,8 @@ class ComposerRun(BaseModel):
     summary: str = ""
     risk: str = "low"  # low | medium | high | ungraded (nobody graded it — ask)
     requires_approval: bool = False
+    #: Why the risk is what it is, per edit, in plain words (U4, 2026-08-28).
+    risk_reasons: List[str] = Field(default_factory=list)
     providers_tried: List[str] = Field(default_factory=list)
     provider: str = Field(default="", description="Provider that answered (winner)")
     cost_usd: Optional[float] = Field(
