@@ -25,7 +25,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 
-from app.agents.registry import Agent, get_agent
+from app.agents.registry import RISK_HIGH, Agent, get_agent
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +54,10 @@ class AgentResult:
     provider: str = ""
     elapsed_ms: int = 0
     degraded: bool = False  # no provider / unparseable model output
+    # A high-risk agent that came back degraded is HELD: nothing to approve,
+    # nothing acted on, and the result says so instead of reading like an
+    # answer that skipped its gate (issue #136, decision 2026-08-28).
+    held: bool = False
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -283,6 +287,18 @@ async def run_agent(
     # proposal: callers skip approval creation, so the Approval Center never
     # fills up with rows that say only "no usable answer".
     degraded = not bool(text) or not bool(parsed)
+    # Issue #136: a degraded HIGH-risk run used to drop its approval gate and
+    # come back looking answered. Either honest option was acceptable; this
+    # is (b): refuse outright, with the reason. Nothing is proposed, nothing
+    # fires, and the summary starts with "Held".
+    held = bool(degraded and agent.risk == RISK_HIGH)
+    if held:
+        summary = (
+            f"Held — {agent.name} produced no usable result, so nothing was proposed "
+            "and nothing will be sent. "
+            + ("No provider answered." if not text else "The reply was not the structured result this agent needs.")
+            + " Fix the provider or try again; a high-risk action is never taken on an empty answer."
+        )
     return AgentResult(
         agent_id=agent.id,
         output_kind=agent.output_kind,
@@ -292,11 +308,12 @@ async def run_agent(
         else {},
         evidence=evidence,
         confidence=confidence,
-        recommended_action=str(parsed.get("recommended_action") or "").strip(),
+        recommended_action="hold" if held else str(parsed.get("recommended_action") or "").strip(),
         risk=agent.risk,
         # a degraded result is not actionable → no approval gate
         requires_approval=agent.requires_approval and not degraded,
         provider=provider,
         elapsed_ms=int((time.perf_counter() - t0) * 1000),
         degraded=degraded,
+        held=held,
     )
