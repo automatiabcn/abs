@@ -53,7 +53,9 @@ def test_the_voice_rules_are_the_ones_that_were_missing_on_screen():
     text = CHAT_INSTRUCTIONS
     assert "Lead with the answer" in text  # was: docstring dump
     assert "Do not repeat the code" in text  # was: file echoed back
-    assert "path/to/file.py:LINE" in text  # was: no way to click through
+    assert "app/routes.py:42" in text  # was: no way to click through
+    # Live 08-28: the model copied the placeholder literally ("models.py:LINE").
+    assert "never a placeholder" in text and "path/to/file.py:LINE" not in text
     assert "Never invent an API" in text
     assert "language the developer wrote in" in text  # TR/ES/EN developers
     # Live 08-28: "explain every function at length" was refused with "the
