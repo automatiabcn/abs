@@ -513,6 +513,14 @@ async def stream_with_cascade(
                 "provider %s failed before answering (%s), trying the next one: %s",
                 name, "transient" if transient else "permanent", exc,
             )
+            # Said out loud, not only logged: a developer who chose this
+            # provider is owed the reason the answer came from another.
+            yield {
+                "type": "leg_failed",
+                "name": name,
+                "detail": str(exc)[:200],
+                "transient": bool(transient),
+            }
             continue
         finally:
             await leg.aclose()

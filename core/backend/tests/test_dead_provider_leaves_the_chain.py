@@ -91,6 +91,7 @@ async def test_the_dead_leg_is_not_called_while_its_verdict_stands(monkeypatch):
     # The stream asks the same question.
     events = [e async for e in stream_with_cascade("q3", primary="cerebras", fallbacks=("gemini",), use_cache=False, tenant_id="t")]
     assert [e["name"] for e in events if e["type"] == "provider"] == ["gemini"]
+    assert not [e for e in events if e["type"] == "leg_failed"]
     assert dead.calls == 1
 
 
