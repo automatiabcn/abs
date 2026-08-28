@@ -58,6 +58,9 @@ def fake_providers(monkeypatch):
     for mod in (qc, qtr, qa, qt):
         monkeypatch.setattr(mod, "get_provider", _get)
 
+    # A provider the test registered counts as configured — qual_code picks its
+    # verifier by that (local codellama only when Ollama is configured).
+    monkeypatch.setattr("app.providers.cascade.is_configured", lambda name: name in providers)
     return _set
 
 
