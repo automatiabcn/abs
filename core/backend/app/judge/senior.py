@@ -215,7 +215,9 @@ async def judge_diff(
     teaching_lines: List[str] = []
     if metrics:
         for k in ("docstring_ratio", "type_hints_ratio"):
-            actual = metrics.get(k, 0.0)
+            if k not in metrics:
+                continue  # the diff adds no function; the ratio does not apply
+            actual = metrics[k]
             target = persona.get(k, 0.0)
             delta = abs(actual - target)
             if delta > 0.2:
@@ -237,9 +239,9 @@ async def judge_diff(
         "llm_score": round(llm_s, 2) if llm_s is not None else None,
         "added_lines": len(added_code.splitlines()),
         "fingerprint_details": [
-            {"metric": k, "actual": metrics.get(k, 0.0), "target": persona.get(k, 0.0)}
+            {"metric": k, "actual": metrics[k], "target": persona.get(k, 0.0)}
             for k in ("docstring_ratio", "type_hints_ratio", "avg_func_lines")
-            if metrics
+            if metrics and k in metrics
         ],
         "teaching": teaching_lines,
     }
