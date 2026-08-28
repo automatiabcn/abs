@@ -766,6 +766,16 @@ async def step_providers(body: ProvidersBody, request: Request) -> Dict[str, Any
 
 # Provider key field → cascade provider name. cf_account_id is not an
 # independently pingable key (Cloudflare is validated via cf_api_token).
+#: Seconds to wait before the one retry a rate-limited ping gets.
+_RATE_LIMIT_RETRY_S = 3.0
+
+
+def _is_rate_limit(exc: BaseException) -> bool:
+    """A provider saying "slow down" — the key was read and accepted."""
+    text = str(exc).lower()
+    return "429" in text or "rate limit" in text or "too many requests" in text
+
+
 _FIELD_TO_PROVIDER: Dict[str, str] = {
     "groq_api_key": "groq",
     "gemini_api_key": "gemini",
@@ -831,12 +841,37 @@ async def _run_provider_tests() -> Dict[str, Any]:
         try:
             from app.cascade.orchestrator import call_with_cascade
 
-            resp = await asyncio.wait_for(
-                call_with_cascade(
-                    "ping", primary=provider, fallbacks=(), use_cache=False
-                ),
-                timeout=8.0,
-            )
+            async def _ping():
+                return await asyncio.wait_for(
+                    call_with_cascade(
+                        "ping", primary=provider, fallbacks=(), use_cache=False
+                    ),
+                    timeout=8.0,
+                )
+
+            try:
+                resp = await _ping()
+            except Exception as first:  # noqa: BLE001
+                # A 429 is not "nothing answered": the provider read the key,
+                # accepted it, and asked us to slow down. CI's wizard reported
+                # "No provider answered" on a per-minute burst while the same
+                # key answered 200 thirty seconds later (scenarios red since
+                # 08-20). One short retry; still busy → the key is proven.
+                if not _is_rate_limit(first):
+                    raise
+                await asyncio.sleep(_RATE_LIMIT_RETRY_S)
+                try:
+                    resp = await _ping()
+                except Exception as second:  # noqa: BLE001
+                    if not _is_rate_limit(second):
+                        raise
+                    results[field_name] = {
+                        "status": "ok",
+                        "provider": provider,
+                        "rate_limited": True,
+                        "reason": "the provider is busy right now (rate limit) — it accepted the key",
+                    }
+                    continue
             ok = bool(getattr(resp, "text", ""))
             results[field_name] = (
                 {"status": "ok", "provider": provider}
