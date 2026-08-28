@@ -223,6 +223,12 @@ async def stream_chat(body: StreamChatRequest, request: Request) -> StreamingRes
                                 "used_files": prepared["used_files"],
                             }
                         )
+            except asyncio.CancelledError:
+                # The usual way Stop arrives: the server cancels the response
+                # task when the client goes away. The generator's own finally
+                # closes the provider stream on the way out.
+                logger.info("editor chat stream cancelled — the client left")
+                raise
             except Exception as exc:  # noqa: BLE001 — report, never 500 mid-stream
                 yield _sse(
                     {
