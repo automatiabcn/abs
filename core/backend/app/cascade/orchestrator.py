@@ -211,6 +211,14 @@ def _retry_hint(exc: BaseException) -> float:
         return 0.0
 
 
+
+def _looks_generation_failure(exc: BaseException) -> bool:
+    """The provider rejected the MODEL's output (Groq json_validate_failed,
+    'could not be parsed'), not our request or our key."""
+    text = str(exc).lower()
+    return "json_validate_failed" in text or "failed_generation" in text or "could not be parsed" in text
+
+
 def _looks_rate_limited(exc: BaseException) -> bool:
     text = str(exc).lower()
     return "429" in text or "rate limit" in text or "too many requests" in text
@@ -286,6 +294,7 @@ async def call_with_cascade(
     # key gracefully (the MCP tools) need the ProviderError itself, not a 503.
     saw_transient = False
     rate_limited = False
+    generation_failed = False
     rate_limit_wait = RATE_LIMIT_SECOND_PASS_S
     tried: List[str] = []
     for name in chain:
@@ -335,6 +344,7 @@ async def call_with_cascade(
             last_err = exc
             saw_transient = saw_transient or exc.transient
             rate_limited = rate_limited or _looks_rate_limited(exc)
+            generation_failed = generation_failed or _looks_generation_failure(exc)
             rate_limit_wait = max(rate_limit_wait, _retry_hint(exc))
             await default_breaker.record_failure(breaker_id)
             # The panels read this: a PERMANENT failure (bad key, payment
@@ -400,12 +410,19 @@ async def call_with_cascade(
     # them. `CascadeUnavailable` *is* a ProviderError, so they degrade instead of
     # dying, and the HTTP layer still answers with the same structured 503 (see
     # the handler in app/main.py).
-    if saw_transient and rate_limited and not _second_pass:
+    if saw_transient and (rate_limited or generation_failed) and not _second_pass:
+        # A rejected generation (the model's JSON or tool call failed the
+        # provider's own validation) is stochastic: the same request usually
+        # succeeds on the next try, and with one provider in the chain there
+        # is no next leg — so the chain gets one more pass right away
+        # (scenarios G1/C10, 2026-08-28). A rate limit waits first.
+        wait = rate_limit_wait if rate_limited else 0.0
         logger.info(
-            "every provider in the chain was rate-limited; one more pass after %.1fs",
-            rate_limit_wait,
+            "every provider in the chain %s; one more pass after %.1fs",
+            "was rate-limited" if rate_limited else "rejected its own generation",
+            wait,
         )
-        await asyncio.sleep(rate_limit_wait)
+        await asyncio.sleep(wait)
         return await call_with_cascade(prompt, primary=primary, model=model, models=models, fallbacks=fallbacks, use_cache=use_cache, tenant_id=tenant_id, project_slug=project_slug, user_subject=user_subject, _second_pass=True, **kwargs)
     raise CascadeUnavailable(
         "every provider in the chain failed; some may recover shortly",
@@ -473,6 +490,7 @@ async def stream_with_cascade(
     last_err: Optional[Exception] = None
     saw_transient = False
     rate_limited = False
+    generation_failed = False
     rate_limit_wait = RATE_LIMIT_SECOND_PASS_S
     yielded_delta = False
     tried: List[str] = []
@@ -534,6 +552,7 @@ async def stream_with_cascade(
             transient = getattr(exc, "transient", True)
             saw_transient = saw_transient or transient
             rate_limited = rate_limited or _looks_rate_limited(exc)
+            generation_failed = generation_failed or _looks_generation_failure(exc)
             rate_limit_wait = max(rate_limit_wait, _retry_hint(exc))
             await default_breaker.record_failure(breaker_id)
             _health.note_failure(
@@ -572,12 +591,14 @@ async def stream_with_cascade(
 
     if last_err is not None and not saw_transient and isinstance(last_err, ProviderError):
         raise last_err
-    if saw_transient and rate_limited and not _second_pass and not yielded_delta:
+    if saw_transient and (rate_limited or generation_failed) and not _second_pass and not yielded_delta:
+        wait = rate_limit_wait if rate_limited else 0.0
         logger.info(
-            "every provider in the chain was rate-limited; one more pass after %.1fs",
-            rate_limit_wait,
+            "every provider in the chain %s; one more pass after %.1fs",
+            "was rate-limited" if rate_limited else "rejected its own generation",
+            wait,
         )
-        await asyncio.sleep(rate_limit_wait)
+        await asyncio.sleep(wait)
         async for ev in stream_with_cascade(prompt, primary=primary, model=model, models=models, fallbacks=fallbacks, use_cache=use_cache, tenant_id=tenant_id, project_slug=project_slug, user_subject=user_subject, _second_pass=True, **kwargs):
             yield ev
         return
