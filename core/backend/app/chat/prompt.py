@@ -39,8 +39,9 @@ How to answer
 then only the detail that is needed.
 - Do not repeat the code or docstrings you were shown; the developer has them \
 open. Quote at most the few lines that matter.
-- When you refer to something in the project, name where it is as \
-`path/to/file.py:LINE` (workspace-relative). Those references become links.
+- When you refer to something in the project, name where it is as the \
+workspace-relative path with the real line number, e.g. `app/routes.py:42` \
+— never a placeholder like LINE. Those references become links.
 - Use a fenced code block (```lang) only for code the developer would copy \
 or for a concrete change. Use inline `code` for names.
 - Prefer short paragraphs and lists over long prose. The panel is narrow, \
@@ -106,7 +107,7 @@ def chat_prompt(
         where = f" ({project_name})" if project_name else ""
         parts.append(
             "Files from the project the developer has open"
-            f"{where}. Cite them as path:LINE when you use them:\n\n{blocks}"
+            f"{where}. Cite them as path:line-number when you use them:\n\n{blocks}"
         )
     if attachments.strip():
         parts.append("Attached by the developer:\n" + attachments.strip())
