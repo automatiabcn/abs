@@ -770,6 +770,45 @@ async def step_providers(body: ProvidersBody, request: Request) -> Dict[str, Any
 _RATE_LIMIT_RETRY_S = 3.0
 
 
+#: A Retry-After longer than this is not waited for inside the wizard.
+_RATE_LIMIT_RETRY_BUDGET_S = 10.0
+
+
+def _retry_after_hint(exc: BaseException) -> float:
+    """The provider's Retry-After (seconds) from anywhere in the chain; 0 if none."""
+    # The deepest value wins: CascadeUnavailable carries a default of its own
+    # (60) that would shadow the provider's actual Retry-After on last_error.
+    found = 0.0
+    seen = 0
+    cur: Optional[BaseException] = exc
+    while cur is not None and seen < 6:
+        wait = getattr(cur, "retry_after", None)
+        if wait:
+            try:
+                found = float(wait)
+            except (TypeError, ValueError):
+                pass
+        nxt = getattr(cur, "last_error", None) or cur.__cause__ or cur.__context__
+        cur = nxt if isinstance(nxt, BaseException) else None
+        seen += 1
+    return found
+
+
+def _busy_result(provider: str, hint: float) -> Dict[str, Any]:
+    when = (
+        f"for about {int(round(hint / 60)) or 1} min"
+        if hint >= 90
+        else (f"for about {int(round(hint))} s" if hint else "right now")
+    )
+    return {
+        "status": "ok",
+        "provider": provider,
+        "rate_limited": True,
+        "retry_after": hint or None,
+        "reason": f"the provider is busy {when} (rate limit) — it accepted the key",
+    }
+
+
 def _is_rate_limit(exc: BaseException) -> bool:
     """A provider saying "slow down" — the key was read and accepted.
 
@@ -857,11 +896,18 @@ async def _run_provider_tests() -> Dict[str, Any]:
             async def _ping():
                 return await asyncio.wait_for(
                     call_with_cascade(
-                        "ping", primary=provider, fallbacks=(), use_cache=False
+                        "ping",
+                        primary=provider,
+                        fallbacks=(),
+                        use_cache=False,
+                        # The wizard paces its own single retry below and reads
+                        # the provider's Retry-After itself; the cascade's own
+                        # second pass (up to twenty seconds) ran past this
+                        # timeout and turned a proven key into "nothing
+                        # answered" (CI run 33200314981, 2026-08-28).
+                        _second_pass=True,
                     ),
-                    # Long enough for the cascade's own rate-limit second pass
-                    # (a short pause, then one more call) to finish inside it.
-                    timeout=15.0,
+                    timeout=8.0,
                 )
 
             try:
@@ -874,18 +920,20 @@ async def _run_provider_tests() -> Dict[str, Any]:
                 # 08-20). One short retry; still busy → the key is proven.
                 if not _is_rate_limit(first):
                     raise
-                await asyncio.sleep(_RATE_LIMIT_RETRY_S)
+                hint = _retry_after_hint(first)
+                if hint > _RATE_LIMIT_RETRY_BUDGET_S:
+                    # The provider named a wait longer than a wizard step
+                    # should take (a 423-second Retry-After when the day's
+                    # quota was spent). The key is proven; say when.
+                    results[field_name] = _busy_result(provider, hint)
+                    continue
+                await asyncio.sleep(max(_RATE_LIMIT_RETRY_S, hint))
                 try:
                     resp = await _ping()
                 except Exception as second:  # noqa: BLE001
                     if not _is_rate_limit(second):
                         raise
-                    results[field_name] = {
-                        "status": "ok",
-                        "provider": provider,
-                        "rate_limited": True,
-                        "reason": "the provider is busy right now (rate limit) — it accepted the key",
-                    }
+                    results[field_name] = _busy_result(provider, _retry_after_hint(second))
                     continue
             ok = bool(getattr(resp, "text", ""))
             results[field_name] = (
