@@ -45,6 +45,29 @@ jobs:
         with:
           fetch-depth: 0  # full history so release-notes can diff against the previous tag
 
+      # One version, everywhere. By 2026-08 the three in-repo stamps and the
+      # git tag held four different numbers, so /healthz, the update check and
+      # the release page disagreed about what a customer was running. A tag
+      # whose stamps were not bumped (scripts/bump_version.sh) is refused
+      # before anything is published.
+      - name: Version stamps match the tag
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          V="${REF_NAME#v}"
+          fail=0
+          grep -q "^version = \"$V\"" core/backend/pyproject.toml \
+            || { echo "core/backend/pyproject.toml stamp != $V" >&2; fail=1; }
+          grep -q "version: str = \"$V\"" core/backend/app/config.py \
+            || { echo "core/backend/app/config.py stamp != $V" >&2; fail=1; }
+          grep -q "\"version\": \"$V\"" core/landing/package.json \
+            || { echo "core/landing/package.json stamp != $V" >&2; fail=1; }
+          if [ "$fail" = "1" ]; then
+            echo "run: scripts/bump_version.sh $V — then commit and re-tag" >&2
+            exit 1
+          fi
+
       - name: Identify tag metadata
         id: tag
         env:
