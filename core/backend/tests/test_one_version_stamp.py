@@ -58,7 +58,19 @@ def test_bump_rewrites_every_stamp(tmp_path):
     assert proc.returncode == 0, proc.stderr
 
     assert 'version = "9.9.9"' in (tmp_path / STAMPS[0]).read_text()
-    assert 'version: str = "9.9.9"' in (tmp_path / STAMPS[1]).read_text()
+    config = (tmp_path / STAMPS[1]).read_text()
+    assert 'version: str = "9.9.9"' in config
+    # The first run of this script hit every `*version: str = "..."` field in
+    # config.py at once — demo_seed_version and vault_min_sops_version came out
+    # stamped "1.1.0". Only the release stamp may move.
+    assert 'demo_seed_version: str = "9.9.9"' not in config, (
+        "bump rewrote demo_seed_version — the sed is not anchored to the "
+        "release stamp"
+    )
+    assert 'vault_min_sops_version: str = "9.9.9"' not in config, (
+        "bump rewrote vault_min_sops_version — the sed is not anchored to the "
+        "release stamp"
+    )
     assert '"version": "9.9.9"' in (tmp_path / STAMPS[2]).read_text()
 
 

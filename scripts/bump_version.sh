@@ -30,7 +30,7 @@ for f in "$PYPROJECT" "$CONFIG" "$PKGJSON"; do
 done
 
 sed -i.bak -E "s|^version = \"[^\"]+\"|version = \"$V\"|" "$PYPROJECT"
-sed -i.bak -E "s|(version: str = \")[^\"]+(\")|\\1$V\\2|" "$CONFIG"
+sed -i.bak -E "s|^(    version: str = \")[^\"]+(\")|\\1$V\\2|" "$CONFIG"
 sed -i.bak -E "s|(\"version\": \")[^\"]+(\",)|\\1$V\\2|" "$PKGJSON"
 rm -f "$PYPROJECT.bak" "$CONFIG.bak" "$PKGJSON.bak"
 
