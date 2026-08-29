@@ -180,9 +180,16 @@ def test_publishing_writes_a_signed_update_manifest():
     assert "abs-manifest-signing-private.pem" in publish, (
         "the manifest is not signed with the release key"
     )
-    # The key stays where it is. Signing over ssh means the bytes travel to the
-    # key; copying the key here would put a release-signing secret on a laptop.
-    assert "ssh ai-pc" in publish, "signing does not happen where the key lives"
+    # The key's home moved when the dedicated build host was decommissioned
+    # (2026-08): signing is local to the release operator's key store now. A
+    # publish that still sshes to the dead host fails on every release while
+    # looking like a signature problem.
+    assert "ssh ai-pc" not in publish, (
+        "signing still points at the decommissioned build host"
+    )
+    assert "ABS_MANIFEST_SIGNING_KEY" in publish, (
+        "the signing key path is hard-wired; CI or a future KMS cannot supply it"
+    )
 
 
 @pytest.mark.skipif(not BUILDER.exists(), reason="archive builder not present")

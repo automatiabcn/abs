@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # 025 — One-shot Hetzner / Linux VPS deploy.
 #
+# INTERNAL: this script deploys the source-build stack onto hosts we operate.
+# A customer installs from the packaged archive on /download (see
+# scripts/build_server_archive.sh) — never from this script.
+#
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/automatiabcn/abs/main/infra/scripts/deploy_hetzner.sh | \
 #       bash -s -- --domain abs.example.com --email admin@example.com
@@ -18,6 +22,7 @@ SKIP_TLS=0
 REPO_URL="https://github.com/automatiabcn/abs.git"
 INSTALL_DIR="/opt/abs"
 BRANCH="main"
+VERSION=""
 
 usage() {
   cat <<EOF
@@ -30,6 +35,8 @@ Required:
 Optional:
   --skip-tls    Skip Let's Encrypt (use self-signed; for dev/lab)
   --branch      Git branch (default: main)
+  --version     Release tag to deploy, e.g. v1.1.0 (default: newest tag;
+                pins both the checkout and ABS_VERSION for image pulls)
   --help        Show this message
 
 Examples:
@@ -44,6 +51,7 @@ while [[ $# -gt 0 ]]; do
     --email) ADMIN_EMAIL="$2"; shift 2 ;;
     --skip-tls) SKIP_TLS=1; shift ;;
     --branch) BRANCH="$2"; shift 2 ;;
+    --version) VERSION="$2"; shift 2 ;;
     --help|-h) usage; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; usage; exit 1 ;;
   esac
@@ -88,6 +96,18 @@ else
   $SUDO git clone --branch "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
 fi
 
+# ---- Step 3b: Pin the release ----------------------------------------------
+# An install that tracks `main` runs whatever the branch held that day — two
+# servers deployed a week apart silently diverge. Default to the newest tag;
+# --branch without --version keeps the old tracking behaviour for dev boxes.
+if [[ -z "$VERSION" && "$BRANCH" == "main" ]]; then
+  VERSION="$($SUDO git -C "$INSTALL_DIR" tag --sort=-v:refname | head -1 || true)"
+fi
+if [[ -n "$VERSION" ]]; then
+  log "pinning checkout + images to $VERSION"
+  $SUDO git -C "$INSTALL_DIR" checkout --quiet "$VERSION"
+fi
+
 # ---- Step 4: .env bootstrap (idempotent) -----------------------------------
 ENV_FILE="$INSTALL_DIR/infra/.env"
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -99,6 +119,16 @@ ABS_SSL_MODE=$([ "$SKIP_TLS" = "1" ] && echo "internal" || echo "acme")
 EOF
 else
   log ".env already exists at $ENV_FILE — leaving as-is"
+fi
+
+# Record the pinned version so compose pulls the matching images instead of
+# whatever `latest` points at today.
+if [[ -n "$VERSION" ]]; then
+  if $SUDO grep -q '^ABS_VERSION=' "$ENV_FILE"; then
+    $SUDO sed -i "s|^ABS_VERSION=.*|ABS_VERSION=${VERSION#v}|" "$ENV_FILE"
+  else
+    printf 'ABS_VERSION=%s\n' "${VERSION#v}" | $SUDO tee -a "$ENV_FILE" >/dev/null
+  fi
 fi
 
 # ---- Step 5: Caddyfile (auto TLS via email) --------------------------------

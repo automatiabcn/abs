@@ -408,12 +408,17 @@ MANIFEST_JSON
 # broken for every install, which is exactly what fail-closed is supposed to
 # achieve when somebody skips the signature.
 #
-# Signed on ai-pc, where the private key lives at mode 600 and is meant to
-# stay: the bytes travel to the key, not the other way round.
+# Signed where the key lives. The key's home used to be a dedicated build
+# host reached over ssh; that machine was decommissioned in 2026-08 and the
+# key moved to the release operator's canonical key store (mode 600, offline
+# backups). ABS_MANIFEST_SIGNING_KEY overrides the path for a future KMS or
+# CI secret without editing this script.
+SIGN_KEY="${ABS_MANIFEST_SIGNING_KEY:-$HOME/keys/abs-manifest-signing-private.pem}"
 SIG="$(mktemp)"
-if ! ssh ai-pc "openssl dgst -sha256 -sign ~/keys/abs-manifest-signing-private.pem | openssl base64 -A" \
-     < "$MANIFEST" > "$SIG" 2>/dev/null || ! [ -s "$SIG" ]; then
-    echo "could not sign the update manifest on ai-pc." >&2
+if ! [ -f "$SIGN_KEY" ] \
+   || ! openssl dgst -sha256 -sign "$SIGN_KEY" < "$MANIFEST" | openssl base64 -A > "$SIG" 2>/dev/null \
+   || ! [ -s "$SIG" ]; then
+    echo "could not sign the update manifest (abs-manifest-signing-private.pem not usable at $SIGN_KEY)." >&2
     echo "Publishing it unsigned would leave every customer's update check" >&2
     echo "refusing it, so nothing is published." >&2
     rm -f "$MANIFEST" "$SIG"

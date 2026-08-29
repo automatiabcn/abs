@@ -31,6 +31,10 @@ def test_deploy_script_exists_executable_and_syntax_clean():
         "healthz",
         "--domain",
         "--email",
+        # A deploy that tracks `main` runs whatever the branch held that day;
+        # the script must be able to pin a release and record it for compose.
+        "--version",
+        "ABS_VERSION=",
     ):
         assert marker in text, f"missing marker: {marker}"
 

@@ -21,7 +21,8 @@
 #   ABS_PUBLIC_URL       — full https URL (https://${ABS_PUBLIC_HOSTNAME})
 #   ABS_ACME_EMAIL       — Let's Encrypt contact email
 #   ABS_VAULT_KEY        — 32-byte base64; generate with `openssl rand -base64 32`
-#   ABS_VERSION          — image tag (default 1.0.0-rc2)
+#   ABS_VERSION          — image tag; pin a release (the archive from
+#                          /download pins it for you — `latest` drifts)
 #   plus at least one provider key — ANTHROPIC_API_KEY recommended
 # =============================================================================
 
