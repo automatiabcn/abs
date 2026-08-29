@@ -35,6 +35,13 @@ def test_deploy_script_exists_executable_and_syntax_clean():
         # the script must be able to pin a release and record it for compose.
         "--version",
         "ABS_VERSION=",
+        # The repo tracks infra/Caddyfile, so "write only if missing" never
+        # fired — every install kept the dev config serving abs.local and the
+        # promised domain + ACME setup was silently skipped. The script must
+        # overwrite the untouched repo default and must carry an operator's
+        # edited config across the upgrade checkout.
+        "diff --quiet -- infra/Caddyfile",
+        "restored the deployed Caddyfile",
     ):
         assert marker in text, f"missing marker: {marker}"
 
