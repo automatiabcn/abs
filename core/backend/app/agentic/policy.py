@@ -78,8 +78,15 @@ def is_enabled(level: Level) -> bool:
     return False
 
 
-def check(level: Level) -> Decision:
-    """The gate. Every dispatch calls this; nothing calls a tool around it."""
+def check(level: Level, *, command: str | None = None) -> Decision:
+    """The gate. Every dispatch calls this; nothing calls a tool around it.
+
+    `command` is the shell string, when the tool is the shell. A command we can
+    *prove* is read-only (`ls`, `git status`, `cat` of a non-secret file) runs
+    without an approval — asking about it only teaches the reader to click past
+    the approval that matters. Anything not provably read-only keeps its human
+    approval; the classifier is an allowlist, so an unrecognised command is
+    gated, never waved through (see app/agentic/command_class.py)."""
     if not settings.agent_mode_enabled:
         return Decision("deny", level, "agent_mode_disabled")
 
@@ -87,6 +94,13 @@ def check(level: Level) -> Decision:
         # Reached only if a caller hands us a name the catalogue never offered —
         # a bug, or a model inventing a tool. Same answer either way.
         return Decision("deny", level, f"level_disabled:{level.name.lower()}")
+
+    if level is Level.SHELL and command is not None:
+        from app.agentic.command_class import classify_command
+
+        if classify_command(command) == "auto":
+            return Decision("allow", level, "read_only_command")
+        return Decision("approve", level, "human_approval_required")
 
     if level >= Level.WRITE:
         return Decision("approve", level, "human_approval_required")

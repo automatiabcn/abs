@@ -79,5 +79,9 @@ class ComposerRun(BaseModel):
         default_factory=list,
         description="Proposals refused before grading, and why, in customer-readable words",
     )
+    coverage_warnings: List[str] = Field(
+        default_factory=list,
+        description="Where a template edit uses a variable no route in the proposal provides — the change may be incomplete",
+    )
     tenant_slug: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

@@ -769,12 +769,25 @@ async def run_composer(
             abs_path=abs_path,
         )
         diff = patch_engine.normalize_diff(raw_diff)
-        if not diff:
+        # A real edit is often padded with a dead hunk — frequently the mangled
+        # "-X+X" join, which git apply rejects as a corrupt patch, failing the
+        # dry-run of an otherwise-good edit and showing it as high risk to
+        # approve. Drop the no-op hunks; keep the ones that change something.
+        diff = patch_engine.strip_noop_hunks(diff)
+        if not diff or patch_engine.is_noop_diff(diff):
+            # Nothing to propose. Two shapes reach here: an EMPTY diff, and a
+            # diff that removes a line and adds it back unchanged — a model
+            # answering "already correct" with a hunk instead of silence
+            # (measured on a real project 2026-08-27). Left in, the no-op
+            # reached the Judge as a 0-score edit and the panel as a phantom
+            # change with a mangled `-`/`+` line. Neither is an edit.
+            #
             # An empty diff has two very different causes and the customer is
             # owed the difference: the model said the file is already right, or
             # we threw its answer away for looking truncated. Only the second
             # gets reported — a note on the ordinary case is a note nobody
-            # reads by the time a real one arrives.
+            # reads by the time a real one arrives. A no-op is always the
+            # ordinary case, so refusal() stays silent on it.
             why = from_content.refusal(
                 raw,
                 rel_path=from_content.relative_to(workspace_root, path),
@@ -782,9 +795,6 @@ async def run_composer(
             )
             if why:
                 refused.append(why)
-                continue
-        if built_here and not diff:
-            # The model returned the file unchanged: nothing to propose.
             continue
 
         v = patch_engine.validate(abs_path, diff, workspace_root=workspace_root)
@@ -835,6 +845,18 @@ async def run_composer(
         )
 
     risk, requires_approval, risk_reasons = derive_risk_with_reasons(edits)
+    # A template edit that uses a variable no route provides applies cleanly and
+    # still breaks at render time — the diff cannot show the missing half, so
+    # say it in words rather than hand over a silently-incomplete change.
+    try:
+        from app.composer.coverage import coverage_warnings
+
+        coverage = coverage_warnings(
+            [(e.path, e.unified_diff) for e in edits], workspace_root
+        )
+    except Exception as exc:  # noqa: BLE001 — an annotation, never a failure
+        logger.debug("composer coverage check skipped: %s", exc)
+        coverage = []
     summary = str(parsed.get("summary") or "")
     if refused and not edits:
         # The model's paragraph describes the edits we just threw away.
@@ -861,6 +883,7 @@ async def run_composer(
         cost_usd=gen_meta.get("cost_usd"),
         degraded=not raw_edits,
         refused=refused,
+        coverage_warnings=coverage,
         tenant_slug=tenant_id,
         created_at=created_at or datetime.now(timezone.utc),
     )
