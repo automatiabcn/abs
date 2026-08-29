@@ -132,7 +132,7 @@ class Settings(BaseSettings):
 
     # Release version — single source of truth surfaced by /v1/status,
     # /v1/admin/status/full and the panel footer. Overridable via ABS_VERSION.
-    version: str = "1.0.6"
+    version: str = "1.1.0"
 
     # DB
     database_url: str = "sqlite:////app/data/abs.db"
