@@ -105,6 +105,18 @@ def parse_action(text: str) -> Optional[Dict[str, Any]]:
         parsed = json.loads(match.group(0))
     except (ValueError, TypeError):
         return None
+    # A provider's native tool-call shape — {"name": …, "arguments": {…}} — is
+    # what gpt-oss writes when it decides to call a tool, and what Groq hands
+    # back in `failed_generation` when it rejects that call. It is the same
+    # intent as our {"action": "tool", …}; read it as such (C10, 2026-08-28).
+    if isinstance(parsed, dict) and "action" not in parsed and isinstance(parsed.get("name"), str) and "arguments" in parsed:
+        args = parsed.get("arguments")
+        if isinstance(args, str):
+            try:
+                args = json.loads(args)
+            except ValueError:
+                args = {}
+        parsed = {"action": "tool", "name": parsed["name"], "args": args if isinstance(args, dict) else {}}
     if not isinstance(parsed, dict) or "action" not in parsed:
         return None
     return parsed

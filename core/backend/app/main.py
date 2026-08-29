@@ -617,6 +617,9 @@ app.include_router(cascade_router.router)  # /v1/cascade/*
 app.include_router(chat_router.router)  # /v1/chat/*
 app.include_router(agent_caps_router.router)  # what agent mode may do
 app.include_router(mcp_tokens_router.router)  # /v1/mcp/tokens
+from app.api import editor_chat as editor_chat_router  # noqa: E402 — /v1/editor/chat/stream
+
+app.include_router(editor_chat_router.router)
 from app.api import external_mcp as external_mcp_router  # External MCP federation
 
 app.include_router(external_mcp_router.router)  # /v1/admin/external-mcp (flag-gated)

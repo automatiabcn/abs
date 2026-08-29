@@ -24,7 +24,7 @@ import os
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple
 
 from app.codegraph import graph as codegraph
 from app.composer import from_content
@@ -143,9 +143,40 @@ _STOPWORDS = frozenset(
 )
 
 
+# Developers here write in Turkish and Spanish as often as English, and files
+# are named in English. Without this, a question in Turkish about the user
+# model found nothing that "user model" would have (live 08-28: models.py left
+# out, the answer had to ask for it). Small, deterministic, and only the words
+# a codebase is named by.
+# The glossary lives in term_glossary.json: it is data (Turkish and Spanish
+# words a developer types, mapped onto the English a codebase is named in),
+# and the shipped Python stays English.
+_GLOSSARY_PATH = os.path.join(os.path.dirname(__file__), "term_glossary.json")
+try:
+    with open(_GLOSSARY_PATH, "r", encoding="utf-8") as _fh:
+        _TERM_GLOSSARY: Dict[str, List[str]] = json.load(_fh)
+except (OSError, ValueError):  # pragma: no cover — a missing glossary is English-only, not broken
+    _TERM_GLOSSARY = {}
+
+
 def _task_terms(task: str) -> List[str]:
-    words = re.findall(r"[A-Za-z_][A-Za-z0-9_]{2,}", task.lower())
-    return [w for w in dict.fromkeys(words) if w not in _STOPWORDS]
+    """The words of the task a file might be named by or contain.
+
+    Non-ASCII words (Turkish and Spanish letters) count; a small glossary
+    maps the common Turkish/Spanish developer words onto the English a
+    codebase is named in; and each word's 4-letter stem is added so
+    "modeli"/"models"/"modelo" meet at "mode".
+    """
+    words = re.findall(r"[^\W\d_][\w]{2,}", task.lower())
+    out: List[str] = []
+    for w in words:
+        if w in _STOPWORDS:
+            continue
+        out.append(w)
+        out.extend(_TERM_GLOSSARY.get(w, ()))
+        if len(w) > 4:
+            out.append(w[:4])
+    return list(dict.fromkeys(out))
 
 
 def _graph_neighbours(root: str, seeds: List[str], key: str) -> set[str]:
@@ -543,6 +574,38 @@ def _clamp01(value: Any) -> Optional[float]:
 
 
 def _derive_risk(edits: List[ProposedEdit]) -> Tuple[str, bool]:
+    risk, gate, _ = derive_risk_with_reasons(edits)
+    return risk, gate
+
+
+def derive_risk_with_reasons(edits: List[ProposedEdit]) -> Tuple[str, bool, List[str]]:
+    """`_derive_risk` plus the reasons, in words a developer can act on.
+
+    The badge said "▲ high" over a one-line test addition and nothing else;
+    the developer either feared it or learned to ignore it (visual audit,
+    2026-08-28, U4). Every verdict now carries why."""
+    reasons: List[str] = []
+    for e in edits:
+        affected = int((e.blast_radius or {}).get("total_affected", 0) or 0)
+        quality = e.judge_correctness if e.judge_correctness is not None else e.judge_score
+        name = e.path.split("/")[-1] if e.path else "an edit"
+        if not e.dry_run_ok:
+            reasons.append(f"{name}: the diff does not apply to the file as it is")
+        if quality is not None and quality < _JUDGE_LOW:
+            reasons.append(f"{name}: correctness {quality:.1f} is below {_JUDGE_LOW:g}")
+        if affected >= _BLAST_HIGH:
+            reasons.append(f"{name}: {affected} places depend on what changes")
+        elif affected >= _BLAST_MEDIUM:
+            reasons.append(f"{name}: {affected} places depend on what changes")
+        if quality is None:
+            reasons.append(f"{name}: nobody graded this edit — asking rather than assuming")
+    risk, gate = _derive_risk_verdict(edits)
+    if not reasons and risk == "low":
+        reasons.append("small, graded, applies cleanly")
+    return risk, gate, reasons
+
+
+def _derive_risk_verdict(edits: List[ProposedEdit]) -> Tuple[str, bool]:
     """Deterministic risk from blast-radius, CORRECTNESS and dry-run validity.
 
     The gate exists so a dangerous change cannot reach the developer unreviewed.
@@ -781,7 +844,7 @@ async def run_composer(
             )
         )
 
-    risk, requires_approval = _derive_risk(edits)
+    risk, requires_approval, risk_reasons = derive_risk_with_reasons(edits)
     # A template edit that uses a variable no route provides applies cleanly and
     # still breaks at render time — the diff cannot show the missing half, so
     # say it in words rather than hand over a silently-incomplete change.
@@ -814,6 +877,7 @@ async def run_composer(
         summary=summary,
         risk=risk,
         requires_approval=requires_approval,
+        risk_reasons=risk_reasons,
         providers_tried=tried,
         provider=str(gen_meta.get("provider") or ""),
         cost_usd=gen_meta.get("cost_usd"),

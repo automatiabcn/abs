@@ -7,7 +7,7 @@
   "privacy.dataCollected.body": "Dado que ABS se ejecuta en su servidor, sus prompts de inteligencia artificial y código se procesan únicamente en su infraestructura; Automatia BCN no tiene acceso a este contenido.",
   "privacy.dataCollected.email": "Dirección de correo electrónico — durante la compra y registro en lista de espera.",
   "privacy.dataCollected.payment": "Datos de pago — la información de tarjeta se procesa mediante Stripe y no llega a los servidores de Automatia BCN. Se registran el customer_id devuelto por Stripe y la referencia de factura.",
-  "privacy.dataCollected.license": "Metadatos de activación de licencia — JTI, fecha de instalación, número de asientos.",
+  "privacy.dataCollected.license": "Metadatos de activación de licencia — JTI, fecha de instalación, número de asientos. Se envía cuando el servidor se inicia y aproximadamente una vez al día después; nunca incluye su código, documentos, indicaciones o respuestas.",
   "privacy.dataCollected.logs": "Registros de acceso al servidor — IP, user-agent, ruta de solicitud; se conservan durante 30 días por motivos de seguridad.",
   "privacy.purpose.title": "Propósito del Tratamiento y Base Legal",
   "privacy.purpose.body": "Procesamos los datos para generar licencias, preparar facturas, proporcionar soporte y garantizar la seguridad. Base legal: RGPD artículo 6(1)(b) — cumplimiento del contrato, y artículo 6(1)(f) — interés legítimo (seguridad, prevención del fraude).",

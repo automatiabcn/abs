@@ -47,7 +47,7 @@
   "privacy.dataCollected.body": "Because ABS runs on your own server, your AI prompts and code are processed only on your infrastructure; Automatia BCN cannot access them.",
   "privacy.dataCollected.email": "Email address — at purchase and waitlist signup.",
   "privacy.dataCollected.payment": "Payment data — card details are processed by Stripe and never reach Automatia BCN servers. We store the Stripe customer_id and invoice reference only.",
-  "privacy.dataCollected.license": "License activation metadata — JTI, install date, seat count.",
+  "privacy.dataCollected.license": "License activation metadata — JTI, install date, seat count. It is sent when the server starts and about once a day afterwards; it never includes your code, documents, prompts or answers.",
   "privacy.dataCollected.logs": "Server access logs — IP, user-agent, request path; retained 30 days for security purposes.",
   "privacy.purpose.title": "Processing Purpose and Legal Basis",
   "privacy.purpose.body": "We process data to issue licenses, prepare invoices, provide support, and ensure security. Legal basis: GDPR Art. 6(1)(b) — contract performance, and Art. 6(1)(f) — legitimate interest (security, fraud prevention).",

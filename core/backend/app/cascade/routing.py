@@ -64,8 +64,13 @@ _PREFERENCE: dict[str, tuple[str, ...]] = {
         "anthropic",
         "cerebras",
         "groq",
-        "openrouter",
+        # Gemini before OpenRouter: a Composer proposal is strict JSON with
+        # whole files in it, and the free OpenRouter models answered with 33k
+        # characters of prose that could not be read (live, 08-28), while
+        # Gemini 2.5 Flash returns the object. OpenRouter stays as the last
+        # cloud resort.
         "gemini",
+        "openrouter",
         "ollama",
     ),
 }

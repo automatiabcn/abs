@@ -47,7 +47,7 @@
   "privacy.dataCollected.body": "ABS sizin sunucunuzda çalıştığı için yapay zekâ promptlarınız ve kodunuz yalnızca sizin altyapınızda işlenir; Automatia BCN bu içeriğe erişmez.",
   "privacy.dataCollected.email": "Email adresi — satın alma sırasında ve waitlist kaydı için.",
   "privacy.dataCollected.payment": "Ödeme verisi — kart bilgisi Stripe tarafından işlenir, Automatia BCN sunucularına ulaşmaz. Stripe tarafından dönen customer_id ve fatura referansı kaydedilir.",
-  "privacy.dataCollected.license": "Lisans aktivasyon meta verisi — JTI, kurulum tarihi, seat sayısı.",
+  "privacy.dataCollected.license": "Lisans aktivasyon meta verisi — JTI, kurulum tarihi, seat sayısı. Sunucu başladığında ve ardından yaklaşık günde bir kez gönderilir; kodunuzu, belgelerinizi, istemleri veya yanıtlarınızı asla içermez.",
   "privacy.dataCollected.logs": "Sunucu erişim logları — IP, user-agent, istek yolu; güvenlik amaçlı, 30 gün saklanır.",
   "privacy.purpose.title": "İşleme Amacı ve Hukuki Dayanak",
   "privacy.purpose.body": "Verileri lisans üretmek, fatura hazırlamak, destek sağlamak ve güvenliği temin etmek için işleriz. Hukuki dayanak: GDPR Madde 6(1)(b) — sözleşmenin ifası, ve Madde 6(1)(f) — meşru menfaat (güvenlik, sahtecilik önleme).",

@@ -7,9 +7,10 @@
 
 from __future__ import annotations
 
+import json
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, AsyncIterator, Dict, Optional
 
 import httpx
 
@@ -22,6 +23,48 @@ from .schemas import ProviderError, ProviderResponse
 # switched off for two thirds of the chain.
 _CUT_OFF = {"length", "max_tokens", "max_output_tokens"}
 
+
+
+
+
+def _generation_from_rejection(body: str) -> Optional[str]:
+    """The model's own output from a provider's 'your generation was rejected'
+    400, when the provider sent it back — or None."""
+    if not _is_generation_failure(body):
+        return None
+    try:
+        err = (json.loads(body) or {}).get("error") or {}
+    except (ValueError, TypeError):
+        return None
+    gen = err.get("failed_generation")
+    return gen.strip() if isinstance(gen, str) and gen.strip() else None
+
+def _is_generation_failure(body: str) -> bool:
+    """The provider rejected its own model's output, not our request."""
+    t = (body or "")[:400]
+    return (
+        "json_validate_failed" in t
+        or "tool_use_failed" in t
+        or "failed_generation" in t
+        or "could not be parsed" in t
+    )
+
+def _retry_after_seconds(r: Any) -> "float | None":
+    """The provider's Retry-After, in seconds, when it sent one.
+
+    Groq's free tier answers a per-minute burst with a 429 and a Retry-After
+    of a few seconds; a caller that retries sooner than that only gets
+    another 429 (CI, 2026-08-28: two in four seconds, then 200 at thirty)."""
+    try:
+        raw = r.headers.get("retry-after") if getattr(r, "headers", None) is not None else None
+    except Exception:  # noqa: BLE001
+        return None
+    if not raw:
+        return None
+    try:
+        return max(0.0, float(str(raw).strip()))
+    except ValueError:
+        return None
 
 def was_cut_off(finish_reason: Any) -> bool:
     """True when a provider says its answer stopped at the token limit.
@@ -90,6 +133,42 @@ class BaseProvider(ABC):
         the cascade uses that flag to decide whether failing over can help.
         """
         raise NotImplementedError
+
+    #: Whether `stream()` delivers the answer as it is produced. A provider
+    #: that leaves this False still works through `stream()` — the whole
+    #: answer arrives as one piece — and the caller can say so honestly.
+    streams: bool = False
+
+    async def stream(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        **kwargs: Any,
+    ) -> AsyncIterator["StreamEvent"]:
+        """Yield the answer as it is produced: `StreamEvent(delta=...)` pieces,
+        then exactly one `StreamEvent(final=ProviderResponse)`.
+
+        The default does not stream — it calls `call()` and hands the text
+        over in one piece — so every provider can be driven through this one
+        entry point. Errors are raised the same way `call()` raises them.
+        """
+        resp = await self.call(prompt, model=model, **kwargs)
+        if resp.text:
+            yield StreamEvent(delta=resp.text)
+        yield StreamEvent(final=resp)
+
+
+class StreamEvent:
+    """One step of a streamed answer: a piece of text, or the finished
+    response with its accounting. Exactly one of the two is set."""
+
+    __slots__ = ("delta", "final")
+
+    def __init__(
+        self, delta: Optional[str] = None, final: Optional[ProviderResponse] = None
+    ) -> None:
+        self.delta = delta
+        self.final = final
 
 
 async def openai_compatible_chat(
@@ -168,14 +247,45 @@ async def openai_compatible_chat(
             transient=True,
         )
     if r.status_code == 429:
+        wait = _retry_after_seconds(r)
         raise ProviderError(
-            f"{provider_name} rate limit", provider=provider_name, transient=True
+            f"{provider_name} rate limit" + (f" (retry after {wait:g}s)" if wait else ""),
+            provider=provider_name,
+            transient=True,
+            retry_after=wait,
+        )
+    if r.status_code == 413:
+        # This request is too big for this provider's window (Groq's free
+        # tier: 8000 tokens a minute; a Composer prompt with whole files is
+        # more). The next provider gets it; the key is fine and must not be
+        # marked dead for ten minutes over one large prompt (live, 08-28).
+        raise ProviderError(
+            f"{provider_name} request too large for its window",
+            provider=provider_name,
+            transient=True,
         )
     if r.status_code >= 400:
+        # Groq rejects a tool call the model made when no tools were offered
+        # ("Tool choice is none, but model called a tool") — and puts the
+        # model's actual output in `failed_generation`. For the agent loop,
+        # which asks for the tool call as JSON text, that output IS the
+        # answer; throwing it away made agent mode say "No provider
+        # answered" seven times in one scenario run (C10, 2026-08-28).
+        salvaged = _generation_from_rejection(r.text)
+        if salvaged:
+            return ProviderResponse(
+                text=salvaged, model=model, provider=provider_name, elapsed_ms=elapsed_ms
+            )
         raise ProviderError(
             f"{provider_name} {r.status_code}: {r.text[:200]}",
             provider=provider_name,
-            transient=False,
+            # A 400 is usually the key or the request — permanent for this
+            # provider. Not when the provider says the MODEL's output failed
+            # its own JSON validation (Groq `json_validate_failed`): that is
+            # one generation gone wrong, not a dead provider, and marking it
+            # permanent parked Groq for ten minutes and turned a high-risk
+            # agent's approval gate off (scenarios G1/A1/A2, 2026-08-28).
+            transient=_is_generation_failure(r.text),
         )
 
     try:
@@ -187,4 +297,139 @@ async def openai_compatible_chat(
 
     return read_openai_payload(
         data, provider=provider_name, model=model, elapsed_ms=elapsed_ms
+    )
+
+
+def _finish_stream_status(r: "httpx.Response", provider_name: str) -> None:
+    """The same status-to-error mapping as the blocking call, applied before a
+    single byte of the body is read — so a failed leg fails over exactly as it
+    would have without streaming."""
+    if r.status_code >= 500:
+        raise ProviderError(
+            f"{provider_name} 5xx: {r.status_code}", provider=provider_name, transient=True
+        )
+    if r.status_code == 429:
+        wait = _retry_after_seconds(r)
+        raise ProviderError(
+            f"{provider_name} rate limit" + (f" (retry after {wait:g}s)" if wait else ""),
+            provider=provider_name,
+            transient=True,
+            retry_after=wait,
+        )
+    if r.status_code == 413:
+        raise ProviderError(
+            f"{provider_name} request too large for its window",
+            provider=provider_name,
+            transient=True,
+        )
+    if r.status_code >= 400:
+        raise ProviderError(
+            f"{provider_name} {r.status_code}", provider=provider_name, transient=False
+        )
+
+
+def parse_openai_stream_line(line: str) -> Optional[Dict[str, Any]]:
+    """One SSE line from an OpenAI-compatible stream → its JSON, or None for
+    keep-alives, comments and the `[DONE]` sentinel. Pure, so it is tested
+    against text rather than a live provider."""
+    if not line.startswith("data:"):
+        return None
+    payload = line[len("data:"):].strip()
+    if not payload or payload == "[DONE]":
+        return None
+    try:
+        return json.loads(payload)
+    except ValueError:
+        return None
+
+
+async def openai_compatible_stream(
+    *,
+    url: str,
+    api_key: str,
+    model: str,
+    prompt: str,
+    provider_name: str,
+    max_tokens: int = 1024,
+    temperature: float = 0.3,
+    timeout: float = 30.0,
+    extra_headers: Optional[Dict[str, str]] = None,
+    extra_body: Optional[Dict[str, Any]] = None,
+) -> AsyncIterator[StreamEvent]:
+    """The streaming twin of `openai_compatible_chat`.
+
+    Yields `StreamEvent(delta=...)` as the provider produces text and closes
+    with `StreamEvent(final=ProviderResponse)` carrying the usage the provider
+    reported (`stream_options.include_usage`) and whether the answer was cut
+    off. Everything that can go wrong before the first byte raises exactly
+    as the blocking call does, so the cascade can fail over; an error after
+    text has started is raised too, and the caller decides what to keep.
+    """
+    if not api_key:
+        raise ProviderError(
+            f"{provider_name} API key is not configured",
+            provider=provider_name,
+            transient=False,
+        )
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+        "Authorization": f"Bearer {api_key}",
+    }
+    if extra_headers:
+        headers.update(extra_headers)
+    body: Dict[str, Any] = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "stream": True,
+        "stream_options": {"include_usage": True},
+    }
+    if extra_body:
+        body.update(extra_body)
+
+    start = time.monotonic()
+    text_parts: list[str] = []
+    finish_reason: Any = None
+    usage: Dict[str, Any] = {}
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            async with client.stream("POST", url, headers=headers, json=body) as r:
+                if r.status_code >= 400:
+                    # Read the body for the message before the mapping raises.
+                    await r.aread()
+                    _finish_stream_status(r, provider_name)
+                async for line in r.aiter_lines():
+                    data = parse_openai_stream_line(line)
+                    if not data:
+                        continue
+                    if data.get("usage"):
+                        usage = data["usage"] or usage
+                    for choice in data.get("choices") or []:
+                        piece = ((choice.get("delta") or {}).get("content")) or ""
+                        if piece:
+                            text_parts.append(piece)
+                            yield StreamEvent(delta=piece)
+                        if choice.get("finish_reason"):
+                            finish_reason = choice["finish_reason"]
+    except httpx.TimeoutException as exc:
+        raise ProviderError(
+            f"{provider_name} timeout ({timeout}s)", provider=provider_name, transient=True
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise ProviderError(
+            f"{provider_name} connection error: {exc}", provider=provider_name, transient=True
+        ) from exc
+
+    yield StreamEvent(
+        final=ProviderResponse(
+            text="".join(text_parts),
+            model=model,
+            provider=provider_name,
+            elapsed_ms=int((time.monotonic() - start) * 1000),
+            tokens_in=usage.get("prompt_tokens"),
+            tokens_out=usage.get("completion_tokens"),
+            truncated=was_cut_off(finish_reason),
+        )
     )

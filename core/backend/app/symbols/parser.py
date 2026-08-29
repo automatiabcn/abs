@@ -13,11 +13,14 @@ JS/TS parser 017+'ya birakildi.
 from __future__ import annotations
 
 import ast
+import builtins as _builtins
 import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, List, Optional, Set
+
+_BUILTIN_NAMES = frozenset(dir(_builtins))
 
 from app.symbols._safe_path import safe_read_text, safe_resolve
 
@@ -61,14 +64,28 @@ def parse_python_file(path: Path, *, roots: Optional[Iterable[Path]] = None) -> 
             return ".".join(self.parent_stack + [leaf])
 
         def _extract_calls(self, fn_node: ast.AST) -> List[str]:
-            calls: List[str] = []
+            """Names this function depends on: what it calls, and what it
+            refers to without calling — a parameter that a fixture or
+            injector fills (`def test_x(test_client)`), a function passed
+            as a value (`on_done=notify`). Blast radius answered 0 for a
+            pytest fixture used by five tests because only Call nodes
+            counted (live, 2026-08-28, G13). Builtins are dropped; names
+            that resolve to no symbol are dropped later by the graph."""
+            refs: List[str] = []
+            own = getattr(fn_node, "name", None)
+            args = getattr(fn_node, "args", None)
+            if args is not None:
+                for a in list(args.posonlyargs) + list(args.args) + list(args.kwonlyargs):
+                    refs.append(a.arg)
             for n in ast.walk(fn_node):
                 if isinstance(n, ast.Call):
                     if isinstance(n.func, ast.Name):
-                        calls.append(n.func.id)
+                        refs.append(n.func.id)
                     elif isinstance(n.func, ast.Attribute):
-                        calls.append(n.func.attr)
-            return calls
+                        refs.append(n.func.attr)
+                elif isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load):
+                    refs.append(n.id)
+            return [r for r in refs if r not in _BUILTIN_NAMES and r != own and r != "self"]
 
         def _emit_function(self, node: ast.AST, name: str) -> None:
             full = self._full_name(name)

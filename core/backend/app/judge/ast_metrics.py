@@ -44,12 +44,17 @@ def ast_metrics(code: str) -> Dict[str, float]:
             if end > start:
                 func_lines.append(end - start + 1)
 
-    return {
-        "n_funcs": float(n_funcs),
-        "docstring_ratio": (n_funcs_doc / n_funcs) if n_funcs else 0.0,
-        "type_hints_ratio": (n_funcs_types / n_funcs) if n_funcs else 0.0,
-        "avg_func_lines": (sum(func_lines) / len(func_lines)) if func_lines else 0.0,
-    }
+    out: Dict[str, float] = {"n_funcs": float(n_funcs)}
+    # The two ratios describe functions. A diff that adds none — a rename,
+    # a one-line fix, a constant — has no docstring ratio, and reporting
+    # 0.0 there scored a correct one-line edit "2.6, would not ship" for
+    # lacking docstrings on functions it never touched (live, 2026-08-28,
+    # G12). Absent means not applicable; the distance skips it.
+    if n_funcs:
+        out["docstring_ratio"] = n_funcs_doc / n_funcs
+        out["type_hints_ratio"] = n_funcs_types / n_funcs
+        out["avg_func_lines"] = (sum(func_lines) / len(func_lines)) if func_lines else 0.0
+    return out
 
 
 def fingerprint_distance(metrics: Dict[str, float], persona: Dict[str, float]) -> float:
@@ -68,7 +73,9 @@ def fingerprint_distance(metrics: Dict[str, float], persona: Dict[str, float]) -
 
     parts: list[tuple[float, float]] = []  # (delta, weight)
     for k in ("docstring_ratio", "type_hints_ratio"):
-        parts.append((abs(metrics.get(k, 0.0) - persona.get(k, 0.0)), 1.0))
+        if k not in metrics:
+            continue  # not applicable to this diff — no functions were added
+        parts.append((abs(metrics[k] - persona.get(k, 0.0)), 1.0))
 
     if "avg_func_lines" in metrics and "avg_func_lines" in persona:
         target = persona.get("avg_func_lines", 0.0)
