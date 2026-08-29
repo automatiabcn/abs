@@ -19,6 +19,17 @@ def _step_payload(step: PipelineStep) -> dict:
     return {"model": step.model, "elapsed_ms": step.elapsed_ms, "ok": step.ok}
 
 
+
+def _verifier():
+    """(provider, model) for the review leg: local codellama when Ollama is
+    configured, else Groq's small model."""
+    from app.providers.cascade import is_configured
+
+    if is_configured("ollama"):
+        return get_provider("ollama"), "codellama:7b"
+    return get_provider("groq"), "openai/gpt-oss-20b"
+
+
 class QualCodePipeline(BasePipeline):
     pipeline_type = "qual-code"
 
@@ -71,16 +82,21 @@ class QualCodePipeline(BasePipeline):
             )
         _, draft = best
 
-        ollama = get_provider("ollama")
         verify_prompt = (
             "Review this code for bugs, missing imports, syntax errors. "
             "List ONLY issues found, or say 'PASS' if no issues:\n\n"
             + draft.text[:4000]
         )
+        # The verifier was a local codellama, full stop — so on any install
+        # without Ollama (every first install) the chain died at step 2 with
+        # "OLLAMA_URL is not configured" and the draft was thrown away (Activity
+        # panel, live 2026-08-28, G21). Local when it exists; otherwise the
+        # cheap Groq model that already answers the drafts.
+        verifier, verify_model = _verifier()
         verify_step, verify = await timed_step(
             "verify",
-            ollama.call(verify_prompt, model="codellama:7b"),
-            model_hint="codellama:7b",
+            verifier.call(verify_prompt, model=verify_model),
+            model_hint=verify_model,
         )
         steps.append(verify_step)
         wf.step(

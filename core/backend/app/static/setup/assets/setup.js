@@ -53,7 +53,7 @@ const I18N = {
     v_ok_tail: "Bitirmeniz için bu yeterli — ABS sonradan eklediğiniz her anahtara da düşer.",
     v_none: "Hiçbir sağlayıcı cevap vermedi.",
     v_none_tail: "Bitirebilirsiniz, ama sohbet henüz bir soruya cevap veremez. Geri dönüp bir anahtar ekleyin ya da panelde Ayarlar → Sağlayıcılar'dan ekleyin.",
-    r_ok: "Cevapladı", r_fail: "Başarısız", r_skipped: "Anahtar yok",
+    r_ok: "Cevapladı", r_busy: "Anahtarı kabul etti (meşgul)", r_fail: "Başarısız", r_skipped: "Anahtar yok",
     a_free: "Deneme", a_licensed: "Lisanslı", a_free_providers: "Sadece ücretsiz sağlayıcılar",
     e_email: "Bu bir e-posta adresine benzemiyor.",
     e_password: "Şifre en az 8 karakter olmalı.",
@@ -105,7 +105,7 @@ const I18N = {
     v_ok_tail: "Es suficiente para terminar — ABS también recurrirá a cualquier clave que añada después.",
     v_none: "Ningún proveedor respondió.",
     v_none_tail: "Puede terminar, pero el chat todavía no podrá responder. Vuelva atrás y añada una clave, o añádala en el panel en Ajustes → Proveedores.",
-    r_ok: "Respondió", r_fail: "Falló", r_skipped: "Sin clave",
+    r_ok: "Respondió", r_busy: "Aceptó la clave (ocupado)", r_fail: "Falló", r_skipped: "Sin clave",
     a_free: "Prueba", a_licensed: "Con licencia", a_free_providers: "Solo proveedores gratuitos",
     e_email: "Esto no parece una dirección de correo.",
     e_password: "La contraseña necesita al menos 8 caracteres.",
@@ -121,7 +121,7 @@ const EN_RUNTIME = {
   v_ok_tail: "That is enough to finish — ABS will also fall back to any key you add later.",
   v_none: "No provider answered.",
   v_none_tail: "You can finish, but chat will not be able to answer a question yet. Go back and add a key, or add one in the panel under Settings → Providers.",
-  r_ok: "Answered", r_fail: "Failed", r_skipped: "No key",
+  r_ok: "Answered", r_busy: "Accepted the key (busy)", r_fail: "Failed", r_skipped: "No key",
   a_free: "Trial", a_licensed: "Licensed", a_free_providers: "Free providers only",
   e_email: "That does not look like an email address.",
   e_password: "The password needs at least 8 characters.",
@@ -437,7 +437,8 @@ function renderTestResults(box, results) {
 
     const pill = document.createElement("span");
     pill.className = `setup-pill ${STATUS_PILL[status] || STATUS_PILL.skipped}`;
-    pill.textContent = t(`r_${status}`);
+    // A rate-limited ping proved the key without answering; say that, not "Answered".
+    pill.textContent = res && res.rate_limited ? t("r_busy") : t(`r_${status}`);
     li.appendChild(pill);
 
     list.appendChild(li);

@@ -110,9 +110,11 @@ done
 # laptop, a Hetzner CAX, Graviton). Docker reports that as "no matching
 # manifest for linux/arm64/v8", which tells a customer nothing.
 #
-# This used to stop and ask them to edit .env. It now picks the tag that has a
-# build for this machine and says so: being told to go and change a setting so
-# the thing can work is not a choice, it is a chore.
+# This used to switch to `latest` and say so. That paired an archive built for
+# one version with images of another — the mismatch /download names as the
+# most common reason an install does not connect (audit #34, 2026-08-28).
+# It now stops and says which versions do have a build for this machine, so
+# the customer downloads the matching archive instead of a silent mix.
 VERSION="$(grep '^ABS_VERSION=' .env | cut -d= -f2- || echo latest)"
 VERSION="${VERSION:-latest}"
 ARCH="$(uname -m)"
@@ -121,9 +123,12 @@ case "$ARCH" in aarch64|arm64) PLATFORM=arm64 ;; x86_64|amd64) PLATFORM=amd64 ;;
 if [ -n "$PLATFORM" ] && [ "$VERSION" != "latest" ]; then
     if ! docker manifest inspect "ghcr.io/automatiabcn/abs-backend:$VERSION" 2>/dev/null \
          | grep -q "\"architecture\": \"$PLATFORM\""; then
-        echo "The $VERSION images have no $PLATFORM build; using latest instead."
-        VERSION=latest
-        set_env ABS_VERSION latest
+        echo "The $VERSION images have no $PLATFORM build."
+        echo "This archive is built for $VERSION; running a different image version with it"
+        echo "is the most common reason an install does not connect, so it will not be mixed."
+        echo "Versions with a $PLATFORM build: 1.0.10 and later. Download the archive for one of"
+        echo "those from https://app.automatiabcn.com/download and run its install.sh."
+        exit 1
     fi
 fi
 

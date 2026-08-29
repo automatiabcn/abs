@@ -159,5 +159,7 @@ jobs:
         if: failure()
         with:
           name: scenario-traces
-          path: core/landing/test-results/
+          path: |
+            core/landing/test-results/
+            core/backend/e2e-backend.log
           retention-days: 7

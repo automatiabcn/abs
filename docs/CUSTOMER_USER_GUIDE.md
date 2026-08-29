@@ -282,6 +282,22 @@ A standard chat uses the `auto_direct` pipeline. The advanced pipelines are:
 
 Each pipeline appears as a card in the UI. Click it, write your prompt, then run it.
 
+### 6.3 Chat in ABS Studio (the editor)
+
+- **Starting a conversation** – Click **+ new** to open a fresh chat. The ☰ button lists the previous chats for the current project.
+- **Asking about the open project** – Type a question; the answer streams in as it is generated. Press **Stop** to end it; the text that has already arrived is kept.
+- **File references** – Answers cite files as `path/to/file:line` links. Clicking one opens that file at that line.
+- **Answer metadata** – Below each answer a collapsed line shows which files were sent, which provider answered, the time and the cost. If a file you named was withheld, a warning stays visible: `not sent: <file>: looks like a credential file`.
+- **Code-block actions** – Every code block has:
+  * **Copy** – copies the code to the clipboard.
+  * **Apply** – with a selection, the code replaces it after the judge grades the change and you confirm an inline preview; with nothing selected it is inserted at the cursor.
+  * **Save to \<file\>** – shown when the answer names a file; creates it, or shows a diff before overwriting.
+- **Turn this into a change** – under an answer that contains code, hands the answer to the Composer as a graded proposal.
+- **Providing context** – In your question you can write `@path/to/file` to send that file, use **+ file** to pick one, or **@diff** to attach the uncommitted git diff. The current editor selection is attached as a chip you can remove.
+- **Project rules** – If the project contains `.abs/rules.md` or `AGENTS.md`, its first 4 000 characters are given to the model as standing rules (for example the answer language).
+- **Follow-ups** – Under the last answer, three suggested next questions.
+- **Restricted Mode** – In a folder you have not trusted, the chat answers but will not write files.
+
 ---
 
 ## 7. RAG knowledge base

@@ -63,8 +63,10 @@ export default function InstallPage() {
           <h2 className="text-lg font-semibold">Before you start</h2>
           <ul className="ml-5 list-disc space-y-1">
             <li>
-              <strong>Docker</strong> — Desktop on macOS or Windows, Engine on
-              Linux. The server runs in containers; this is the one dependency.
+              <strong>Docker</strong> — Desktop on macOS, Engine on Linux. On
+              Windows run the server inside WSL2 (the installer is a bash
+              script; there is no PowerShell installer). Docker is the one
+              dependency.
             </li>
             <li>
               <strong>About 6 GB of free disk</strong> for the images and the
@@ -162,7 +164,7 @@ export default function InstallPage() {
           </p>
           <p>
             Then add a provider key from the Command Palette:{" "}
-            <strong>ABS: Add a provider key</strong>. ABS asks the provider
+            <strong>ABS: Connect a provider — API key or a plan you already pay for</strong>. ABS asks the provider
             whether the key authenticates before it stores it, so a key that
             was mistyped tells you immediately instead of failing later.
           </p>
@@ -182,7 +184,7 @@ export default function InstallPage() {
               <strong>Ollama</strong> — <code>ollama.com</code>, if you would
               rather nothing left the machine at all. Point the server at it and
               ABS puts it ahead of anything paid.
-            </li>
+             Point the server at it with <code>ABS_OLLAMA_URL</code> in <code>.env</code> (see <code>.env.example</code>).</li>
           </ul>
           <p>
             <strong>Already paying for ChatGPT Plus, Claude Pro or Google AI

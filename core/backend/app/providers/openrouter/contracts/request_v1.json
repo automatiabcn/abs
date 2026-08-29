@@ -1,5 +1,5 @@
 {
-  "model": "qwen/qwen3-coder:free",
+  "model": "nvidia/nemotron-3-super-120b-a12b:free",
   "messages": [
     {"role": "user", "content": "Write a Python function to reverse a string."}
   ],

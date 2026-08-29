@@ -25,7 +25,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 
-from app.agents.registry import Agent, get_agent
+from app.agents.registry import RISK_HIGH, Agent, get_agent
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +54,10 @@ class AgentResult:
     provider: str = ""
     elapsed_ms: int = 0
     degraded: bool = False  # no provider / unparseable model output
+    # A high-risk agent that came back degraded is HELD: nothing to approve,
+    # nothing acted on, and the result says so instead of reading like an
+    # answer that skipped its gate (issue #136, decision 2026-08-28).
+    held: bool = False
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -113,6 +117,21 @@ async def _gather_evidence(
     return ev
 
 
+
+def _is_generation_failure(exc: BaseException) -> bool:
+    """A provider rejecting the model's own output, anywhere in the chain."""
+    seen = 0
+    cur: Optional[BaseException] = exc
+    while cur is not None and seen < 6:
+        t = str(cur).lower()
+        if "json_validate_failed" in t or "tool_use_failed" in t or "failed_generation" in t or "could not be parsed" in t:
+            return True
+        nxt = getattr(cur, "last_error", None) or cur.__cause__ or cur.__context__
+        cur = nxt if isinstance(nxt, BaseException) else None
+        seen += 1
+    return False
+
+
 async def _complete(
     agent: Agent,
     prompt: str,
@@ -151,21 +170,42 @@ async def _complete(
         if not active:
             return "", ""
         primary, *rest = active
-        resp = await call_with_cascade(
-            prompt,
-            primary=primary,
-            fallbacks=tuple(rest),
-            max_tokens=900,
-            # low temperature → more deterministic, more reliably-valid JSON
-            temperature=0.1,
-            # Groq honours json_object mode → reliably valid JSON; providers that
-            # don't support it ignore the kwarg (the robust parse + retry cover
-            # the fallback path). Handoff SP-4.
-            response_format={"type": "json_object"},
-            tenant_id=tenant_id,
-            project_slug=project_slug,
-            user_subject=user_subject,
-        )
+
+        async def _ask(text: str, *, json_mode: bool):
+            kwargs: Dict[str, Any] = dict(
+                primary=primary,
+                fallbacks=tuple(rest),
+                max_tokens=900,
+                # low temperature → more deterministic, more reliably-valid JSON
+                temperature=0.1,
+                tenant_id=tenant_id,
+                project_slug=project_slug,
+                user_subject=user_subject,
+            )
+            if json_mode:
+                # Groq honours json_object mode → reliably valid JSON; providers
+                # that don't support it ignore the kwarg. Handoff SP-4.
+                kwargs["response_format"] = {"type": "json_object"}
+            return await call_with_cascade(text, **kwargs)
+
+        try:
+            resp = await _ask(prompt, json_mode=True)
+        except Exception as first:  # noqa: BLE001
+            if not _is_generation_failure(first):
+                raise
+            # The provider rejected the model's own output — in JSON mode
+            # gpt-oss answered this agent's prompt with a hallucinated tool
+            # call ("Tool choice is none, but model called a tool") on every
+            # try, so a retry in the same mode rejects the same way (G1,
+            # 2026-08-28). Ask once more without the mode and with the rule
+            # spelled out; the parser reads fenced JSON fine.
+            logger.info("agent %s: generation rejected in JSON mode, retrying as plain text", agent.id)
+            resp = await _ask(
+                prompt
+                + "\n\nAnswer with ONE JSON object and nothing else. You have no tools; "
+                "do not call any tool or function.",
+                json_mode=False,
+            )
         # ProviderResponse exposes the model text as `.text` (NOT `.completion`)
         # reading the wrong field made every agent degrade silently.
         return (
@@ -283,6 +323,18 @@ async def run_agent(
     # proposal: callers skip approval creation, so the Approval Center never
     # fills up with rows that say only "no usable answer".
     degraded = not bool(text) or not bool(parsed)
+    # Issue #136: a degraded HIGH-risk run used to drop its approval gate and
+    # come back looking answered. Either honest option was acceptable; this
+    # is (b): refuse outright, with the reason. Nothing is proposed, nothing
+    # fires, and the summary starts with "Held".
+    held = bool(degraded and agent.risk == RISK_HIGH)
+    if held:
+        summary = (
+            f"Held — {agent.name} produced no usable result, so nothing was proposed "
+            "and nothing will be sent. "
+            + ("No provider answered." if not text else "The reply was not the structured result this agent needs.")
+            + " Fix the provider or try again; a high-risk action is never taken on an empty answer."
+        )
     return AgentResult(
         agent_id=agent.id,
         output_kind=agent.output_kind,
@@ -292,11 +344,12 @@ async def run_agent(
         else {},
         evidence=evidence,
         confidence=confidence,
-        recommended_action=str(parsed.get("recommended_action") or "").strip(),
+        recommended_action="hold" if held else str(parsed.get("recommended_action") or "").strip(),
         risk=agent.risk,
         # a degraded result is not actionable → no approval gate
         requires_approval=agent.requires_approval and not degraded,
         provider=provider,
         elapsed_ms=int((time.perf_counter() - t0) * 1000),
         degraded=degraded,
+        held=held,
     )
