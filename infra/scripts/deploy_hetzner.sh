@@ -85,11 +85,21 @@ if ! docker compose version >/dev/null 2>&1; then
 fi
 
 # ---- Step 3: Clone or pull repo --------------------------------------------
+KEPT_CADDYFILE=""
 if [[ -d "$INSTALL_DIR/.git" ]]; then
   log "updating $INSTALL_DIR"
-  $SUDO git -C "$INSTALL_DIR" fetch --all
+  $SUDO git -C "$INSTALL_DIR" fetch --all --tags
+  # The proxy config this script writes lands on a tracked path, so a plain
+  # checkout aborts with "commit or stash your changes". Keep the deployed
+  # config aside, give git a clean tree, restore it after the checkout.
+  if [[ -f "$INSTALL_DIR/infra/Caddyfile" ]] \
+     && ! $SUDO git -C "$INSTALL_DIR" diff --quiet -- infra/Caddyfile 2>/dev/null; then
+    KEPT_CADDYFILE="$(mktemp)"
+    cp "$INSTALL_DIR/infra/Caddyfile" "$KEPT_CADDYFILE"
+    $SUDO git -C "$INSTALL_DIR" checkout -- infra/Caddyfile
+  fi
   $SUDO git -C "$INSTALL_DIR" checkout "$BRANCH"
-  $SUDO git -C "$INSTALL_DIR" pull --ff-only
+  $SUDO git -C "$INSTALL_DIR" pull --ff-only || true  # rewritten history: the tag checkout below still lands
 else
   log "cloning $REPO_URL into $INSTALL_DIR"
   $SUDO mkdir -p "$INSTALL_DIR"
@@ -106,6 +116,11 @@ fi
 if [[ -n "$VERSION" ]]; then
   log "pinning checkout + images to $VERSION"
   $SUDO git -C "$INSTALL_DIR" checkout --quiet "$VERSION"
+fi
+if [[ -n "$KEPT_CADDYFILE" && -f "$KEPT_CADDYFILE" ]]; then
+  cp "$KEPT_CADDYFILE" "$INSTALL_DIR/infra/Caddyfile"
+  rm -f "$KEPT_CADDYFILE"
+  log "restored the deployed Caddyfile over the checkout"
 fi
 
 # ---- Step 4: .env bootstrap (idempotent) -----------------------------------
@@ -133,7 +148,12 @@ fi
 
 # ---- Step 5: Caddyfile (auto TLS via email) --------------------------------
 CADDYFILE="$INSTALL_DIR/infra/Caddyfile"
-if [[ ! -f "$CADDYFILE" ]]; then
+# The repo TRACKS infra/Caddyfile (a dev default that serves abs.local), so
+# "write only if missing" never fired: every install since v1.0.x kept the
+# dev config and the promised domain + ACME setup was silently skipped.
+# Overwrite when the file is still the untouched repo default; leave it only
+# when an operator actually edited it.
+if [[ ! -f "$CADDYFILE" ]] || $SUDO git -C "$INSTALL_DIR" diff --quiet -- infra/Caddyfile 2>/dev/null; then
   log "writing Caddyfile (TLS skip=$SKIP_TLS)"
   if [[ "$SKIP_TLS" = "1" ]]; then
     $SUDO tee "$CADDYFILE" >/dev/null <<EOF
@@ -151,7 +171,7 @@ $DOMAIN {
 EOF
   fi
 else
-  log "Caddyfile present"
+  log "Caddyfile locally modified — leaving as-is"
 fi
 
 # ---- Step 6: Vault key bootstrap (idempotent) -------------------------------
