@@ -348,3 +348,78 @@ def test_the_prompt_carries_the_current_lines():
     prompt = composer._prompt("t", ["util.py"], [("util.py", "def helper():\n    return 1\n")])
     assert "def helper():" in prompt
     assert "character for character" in prompt
+
+
+def test_noop_and_empty_edits_are_dropped(workspace, monkeypatch):
+    """A model that answers "already correct" with a hunk that removes a line
+    and adds it back — or with an empty diff — must not surface as an edit.
+    Regression: on a real project (2026-08-27) Composer shipped two such no-op
+    hunks (scored 0.0, mangled `-`/`+` line) plus one empty-diff edit. Only a
+    diff that actually changes something is a proposal.
+    """
+    _stub_judge(monkeypatch, score=8.0)
+    real = "@@ -1,2 +1,2 @@\n def helper():\n-    return 1\n+    return 2\n"
+    noop = "@@ -1,2 +1,2 @@\n def helper():\n-    return 1\n+    return 1\n"
+    _stub_generation(
+        monkeypatch,
+        {"summary": "mixed bag", "edits": [
+            {"path": "util.py", "unified_diff": real, "rationale": "real change", "confidence": 0.9},
+            {"path": "app.py", "unified_diff": noop, "rationale": "already right", "confidence": 0.9},
+            {"path": "app.py", "unified_diff": "", "rationale": "nothing", "confidence": 0.9},
+        ]},
+        meta={"provider": "cerebras"},
+    )
+    run = asyncio.run(
+        composer.run_composer(
+            "touch things", workspace_root=str(workspace),
+            tenant_id="wtest", graph_key="wtest",
+        )
+    )
+    paths = [(e.path, e.unified_diff) for e in run.edits]
+    assert len(run.edits) == 1, f"expected only the real edit, got {paths}"
+    assert run.edits[0].path == "util.py"
+    assert "+    return 2" in run.edits[0].unified_diff
+
+
+def test_strip_noop_hunks_keeps_the_real_hunks():
+    from app.patches.engine import strip_noop_hunks
+
+    # A real two-hunk edit padded with a mangled "-X+X" no-op hunk — the shape
+    # that made git apply reject an otherwise-good edit as a corrupt patch.
+    padded = (
+        "@@ -4,6 +4,7 @@\n from a import b\n c = 1\n d = 2\n+e = 3\n f = 4\n g = 5\n"
+        "@@ -15,7 +16,8 @@\n def about():\n-    return x\n+    return y\n h = 1\n i = 2\n j = 3\n k = 4\n"
+        "@@ -116,4 +118,4 @@\n a\n b\n c\n-    return z+    return z\n"
+    )
+    out = strip_noop_hunks(padded)
+    headers = [ln for ln in out.splitlines() if ln.startswith("@@")]
+    assert len(headers) == 2, out  # the dead third hunk is gone, two survive
+    assert "+e = 3" in out and "+    return y" in out  # the real ones survive
+    assert "return z" not in out
+
+    # A clean single-hunk edit is returned untouched.
+    clean = "@@ -1,2 +1,2 @@\n def helper():\n-    return 1\n+    return 2\n"
+    assert strip_noop_hunks(clean) == clean
+
+    # A diff whose every hunk is a no-op collapses to empty.
+    assert strip_noop_hunks("@@ -1,1 +1,1 @@\n-    x\n+    x\n") == ""
+
+
+def test_is_noop_diff_detects_identity_and_spares_real_edits():
+    from app.patches.engine import is_noop_diff
+
+    assert is_noop_diff("@@ -1,1 +1,1 @@\n-    return 1\n+    return 1\n") is True
+    # The mangled shape: the model dropped the newline, so the '-' line and its
+    # identical '+' line arrive joined as one "-X+X" line in a balanced hunk.
+    assert is_noop_diff(
+        '@@ -54,4 +54,4 @@\n     def __repr__(self):\n'
+        '-        return x+        return x\n'
+    ) is True
+    assert is_noop_diff("@@ -1,2 +1,3 @@\n a\n+b\n c\n") is False
+    # A real edit is not a no-op, even when its context does not match the file.
+    assert is_noop_diff("@@ -1,2 +1,2 @@\n def helper():\n-    return 999\n+    return 2\n") is False
+    # A genuine deletion of a line that happens to read "a+a" shrinks the new
+    # count, so the join-repair does not fire and it is not read as a no-op.
+    assert is_noop_diff("@@ -1,2 +1,1 @@\n x\n-a+a\n") is False
+    assert is_noop_diff("") is False
+    assert is_noop_diff("not a diff at all") is False

@@ -259,6 +259,113 @@ def normalize_diff(text: str) -> str:
     return "\n".join(out) + "\n"
 
 
+def _self_join_half(text: str, sep: str) -> Optional[str]:
+    """If `text` is `X{sep}X` for a non-empty X, return X; else None.
+
+    A model that drops the newline between a `-` line and its identical `+`
+    line writes the two on one line: `-` then `X` then `+` then `X`, which
+    parses as a single removed line whose text is `X+X`. The only split that
+    makes both halves equal is the one at the joining separator.
+    """
+    for i, ch in enumerate(text):
+        if ch == sep:
+            left, right = text[:i], text[i + 1 :]
+            if left and left == right:
+                return left
+    return None
+
+
+def is_noop_diff(text: str) -> bool:
+    """True when a diff changes nothing — its removed lines equal its added
+    lines, in order.
+
+    A model asked for an edit sometimes answers with a hunk that removes a line
+    and adds the identical line back (measured on a real project 2026-08-27:
+    Composer emitted two such hunks for files it had decided were already
+    correct). Two shapes occur. The clean one is a `-` line and a `+` line with
+    the same text. The mangled one drops the newline between them, so the pair
+    arrives as a single `-` line reading `X+X`; this only reaches here inside a
+    hunk that still claims equal old/new counts (a real deletion would shrink
+    the new count), so unjoining is confined to those and cannot mistake a
+    genuine deletion of a line that happens to read `A+A`.
+
+    An empty diff is a no-op too, but callers test that separately; a diff with
+    no `+`/`-` lines at all (pure context) also changes nothing and returns
+    True only when it parses to at least one hunk.
+    """
+    hunks = parse_diff(text)
+    if not hunks:
+        return False
+    removed: List[str] = []
+    added: List[str] = []
+    for h in hunks:
+        r, a = _hunk_changes(h)
+        removed.extend(r)
+        added.extend(a)
+    return removed == added
+
+
+def _hunk_changes(hunk: Hunk) -> tuple[List[str], List[str]]:
+    """The removed and added line contents of one hunk, with the mangled
+    `-X+X` join (a newline the model dropped) unjoined into a matched pair.
+
+    Unjoining is confined to a hunk that still claims equal old/new counts: a
+    real deletion shrinks the new count, so a genuine `-A+A` line there is left
+    as a one-sided removal and never mistaken for a no-op pair."""
+    balanced = hunk.old_count == hunk.new_count
+    removed: List[str] = []
+    added: List[str] = []
+    for line in hunk.lines:
+        if line.op == "-":
+            half = _self_join_half(line.text, "+") if balanced else None
+            if half is not None:
+                removed.append(half)
+                added.append(half)
+            else:
+                removed.append(line.text)
+        elif line.op == "+":
+            half = _self_join_half(line.text, "-") if balanced else None
+            if half is not None:
+                added.append(half)
+                removed.append(half)
+            else:
+                added.append(line.text)
+    return removed, added
+
+
+def strip_noop_hunks(text: str) -> str:
+    """Drop the hunks that change nothing, keep the ones that do.
+
+    A model routinely pads a real edit with a no-op hunk — often the mangled
+    `-X+X` join, which git apply then rejects as a "corrupt patch", so a
+    perfectly good two-hunk edit fails its dry-run and is shown as high risk
+    that needs approving (measured on a real project 2026-08-28). Removing the
+    dead hunk leaves an applicable diff; the surviving hunks keep their own
+    `@@` headers, which are independent, so nothing downstream shifts. Returns
+    "" when every hunk was a no-op."""
+    hunks = parse_diff(text)
+    if not hunks:
+        return text
+
+    def _changes_something(h: Hunk) -> bool:
+        removed, added = _hunk_changes(h)
+        return bool(removed or added) and removed != added
+
+    kept = [h for h in hunks if _changes_something(h)]
+    if not kept:
+        return ""
+    if len(kept) == len(hunks):
+        return text
+    out: List[str] = []
+    for h in kept:
+        section = f" {h.section}" if h.section else ""
+        out.append(
+            f"@@ -{h.old_start},{h.old_count} +{h.new_start},{h.new_count} @@{section}"
+        )
+        out.extend(f"{line.op}{line.text}" for line in h.lines)
+    return "\n".join(out) + "\n"
+
+
 def _unshift(hunk: Hunk) -> Hunk:
     """Undo a uniform one-column shift of the whole hunk.
 
