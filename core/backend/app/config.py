@@ -436,6 +436,10 @@ class Settings(BaseSettings):
     # what it has — low enough that a confused model cannot spend a minute of
     # provider budget looping.
     agent_max_steps: int = 8
+    # The editor agent (app/editor_agent): how many tool calls one developer
+    # message may take before the editor asks whether to continue. Twelve is
+    # what a read-search-edit-verify round costs on a mid-size task.
+    editor_agent_max_steps: int = 12
 
     # SaaS integration env vars (Gmail / Recall / Deepgram / WhisperX / ElevenLabs)
     gmail_oauth_client_id: str = ""

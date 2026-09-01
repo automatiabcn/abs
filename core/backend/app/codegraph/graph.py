@@ -167,6 +167,20 @@ def build(root: str, *, key: str = "default", incremental: bool = True) -> Dict[
     }
 
 
+def tenant_key(tenant: str, root: str) -> str:
+    """The storage key for one tenant's one project — hashed, so a customer's
+    directory layout never ends up in logs or on disk. The MCP tool layer
+    (`codegraph_tools._key_for`) and the editor agent both use this one."""
+    import hashlib
+
+    try:
+        resolved = os.path.realpath(root)
+    except OSError:
+        resolved = root
+    digest = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:12]
+    return f"{tenant}:{digest}"
+
+
 def blast_radius(target: str, *, key: str = "default", max_hops: int = 3) -> Dict[str, Any]:
     """Symbols affected if ``target`` changes = its transitive CALLERS.
 
