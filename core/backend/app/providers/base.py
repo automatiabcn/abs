@@ -110,7 +110,20 @@ def read_openai_payload(
         tokens_in=usage.get("prompt_tokens"),
         tokens_out=usage.get("completion_tokens"),
         truncated=was_cut_off(choice.get("finish_reason")),
+        tool_calls=_tool_calls_of(choice.get("message") or {}),
     )
+
+
+def _tool_calls_of(message: Dict[str, Any]) -> list:
+    """`message.tool_calls` in the OpenAI shape → [{name, arguments}]."""
+    out = []
+    for tc in message.get("tool_calls") or []:
+        fn = (tc or {}).get("function") or {}
+        name = fn.get("name")
+        if isinstance(name, str) and name:
+            args = fn.get("arguments")
+            out.append({"name": name, "arguments": args if isinstance(args, str) else json.dumps(args or {})})
+    return out
 
 
 class BaseProvider(ABC):
@@ -393,6 +406,9 @@ async def openai_compatible_stream(
     text_parts: list[str] = []
     finish_reason: Any = None
     usage: Dict[str, Any] = {}
+    # Native tool calls arrive as fragments keyed by index; the name comes
+    # once, the arguments string in pieces.
+    calls: Dict[int, Dict[str, str]] = {}
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             async with client.stream("POST", url, headers=headers, json=body) as r:
@@ -404,13 +420,46 @@ async def openai_compatible_stream(
                     data = parse_openai_stream_line(line)
                     if not data:
                         continue
+                    if isinstance(data.get("error"), (dict, str)) and not data.get("choices"):
+                        # A 200 stream can still carry the provider's refusal
+                        # as its only frame (Groq's rate limit after a retry,
+                        # live 09-01). Read as "nothing came back" it became
+                        # a blank answer with no failover; it is a failed leg.
+                        #
+                        # Unless the refusal is of the model's OWN output
+                        # ("Tool choice is none, but model called a tool"):
+                        # then `failed_generation` IS the answer, exactly as
+                        # the blocking call treats it (C10).
+                        salvaged = _generation_from_rejection(json.dumps(data))
+                        if salvaged:
+                            text_parts.append(salvaged)
+                            yield StreamEvent(delta=salvaged)
+                            finish_reason = "stop"
+                            break
+                        err = data["error"]
+                        msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
+                        code = str(err.get("code", "") or err.get("type", "")) if isinstance(err, dict) else ""
+                        raise ProviderError(
+                            f"{provider_name} stream error: {msg[:200]}",
+                            provider=provider_name,
+                            transient=("rate" in msg.lower() or "429" in code or "overload" in msg.lower() or "capacity" in msg.lower()),
+                        )
                     if data.get("usage"):
                         usage = data["usage"] or usage
                     for choice in data.get("choices") or []:
-                        piece = ((choice.get("delta") or {}).get("content")) or ""
+                        delta = choice.get("delta") or {}
+                        piece = delta.get("content") or ""
                         if piece:
                             text_parts.append(piece)
                             yield StreamEvent(delta=piece)
+                        for tc in delta.get("tool_calls") or []:
+                            idx = int((tc or {}).get("index") or 0)
+                            slot = calls.setdefault(idx, {"name": "", "arguments": ""})
+                            fn = (tc or {}).get("function") or {}
+                            if fn.get("name"):
+                                slot["name"] += str(fn["name"])
+                            if fn.get("arguments"):
+                                slot["arguments"] += str(fn["arguments"])
                         if choice.get("finish_reason"):
                             finish_reason = choice["finish_reason"]
     except httpx.TimeoutException as exc:
@@ -431,5 +480,6 @@ async def openai_compatible_stream(
             tokens_in=usage.get("prompt_tokens"),
             tokens_out=usage.get("completion_tokens"),
             truncated=was_cut_off(finish_reason),
+            tool_calls=[c for _i, c in sorted(calls.items()) if c["name"]],
         )
     )
