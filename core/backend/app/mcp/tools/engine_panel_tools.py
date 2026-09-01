@@ -202,6 +202,9 @@ async def workspace_set(root: str = "", client_id: str = "") -> str:
     )
 
 
+from app.providers.chain import resolve_chain  # noqa: E402 — shared with the editor agent
+
+
 def prepare_chat_ask(
     prompt: str,
     *,
@@ -221,47 +224,14 @@ def prepare_chat_ask(
     returned — or the prepared call: ``asked``, ``used_files``, ``primary``,
     ``fallbacks``, ``active``, ``tenant``, ``user``.
     """
-    from app.providers.cascade import get_active_providers
-
     tenant = _caller_tenant()
     user = _caller_user()
-    # The chain the PANEL shows is BYOK-aware and puts the caller's own keys
-    # first; the chain this tool actually walked was not (live finding, 07-31:
-    # the panel said "1. cerebras · your key" and the answer came from groq).
-    # One chain, both places.
-    byok: frozenset = frozenset()
-    try:
-        from app.multitenant.provider_keys import tenant_configured_providers
-
-        byok = frozenset(
-            tenant_configured_providers(tenant_slug=tenant, user_subject=user)
-        )
-    except Exception:  # noqa: BLE001 — a chain without BYOK is still a chain
-        byok = frozenset()
-    active = get_active_providers(extra_configured=byok)
-    # Whose money: paid providers only on the caller's key, or the operator's
-    # when the operator asks (or shared it). `prefer` is checked against the
-    # same list — naming a provider is not a way past it.
-    from app.providers.paid_access import refusal as _paid_refusal
-    from app.providers.paid_access import restrict_chain
-
-    active = restrict_chain(active, byok, user)
-    if not active:
-        return {
-            "error": {
-                "ok": False,
-                "error": "no_provider_configured",
-                "detail": "No provider has a usable key on this server.",
-            }
-        }
-    wanted = prefer.strip()
-    if wanted and wanted not in active:
-        why = _paid_refusal(wanted, byok, user) or (
-            f"{wanted} is not a provider this caller can use here."
-        )
-        return {"error": {"ok": False, "error": "provider_not_available", "detail": why}}
-    primary = wanted or active[0]
-    fallbacks = tuple(p for p in active if p != primary)
+    chain = resolve_chain(prefer, tenant, user)
+    if "error" in chain:
+        return chain
+    primary = chain["primary"]
+    fallbacks = chain["fallbacks"]
+    active = chain["active"]
 
     # Answer about the project the developer has open, when there is one.
     #

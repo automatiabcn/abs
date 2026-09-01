@@ -31,15 +31,9 @@ def _key_for(tenant: str, root: str) -> str:
     Hashed rather than appended: a storage key made of a customer's directory
     layout ends up in logs and on disk.
     """
-    import hashlib
-    import os
+    from app.codegraph.graph import tenant_key
 
-    try:
-        resolved = os.path.realpath(root)
-    except OSError:
-        resolved = root
-    digest = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:12]
-    return f"{tenant}:{digest}"
+    return tenant_key(tenant, root)
 
 
 def _caller_key(workspace_root: str = "", client_id: str = "") -> str:
