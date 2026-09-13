@@ -54,6 +54,9 @@ class GroqProvider(BaseProvider):
             effort = "none"
         if effort:
             extra["reasoning_effort"] = effort
+        if kwargs.get("tools"):
+            extra["tools"] = kwargs["tools"]
+            extra["tool_choice"] = kwargs.get("tool_choice", "auto")
         resp = await openai_compatible_chat(
             url="https://api.groq.com/openai/v1/chat/completions",
             api_key=kwargs.get("api_key") or settings.groq_api_key,
@@ -92,6 +95,9 @@ class GroqProvider(BaseProvider):
             effort = "none"
         if effort:
             extra["reasoning_effort"] = effort
+        if kwargs.get("tools"):
+            extra["tools"] = kwargs["tools"]
+            extra["tool_choice"] = kwargs.get("tool_choice", "auto")
         async for ev in openai_compatible_stream(
             url="https://api.groq.com/openai/v1/chat/completions",
             api_key=kwargs.get("api_key") or settings.groq_api_key,

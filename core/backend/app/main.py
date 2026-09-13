@@ -620,6 +620,9 @@ app.include_router(mcp_tokens_router.router)  # /v1/mcp/tokens
 from app.api import editor_chat as editor_chat_router  # noqa: E402 — /v1/editor/chat/stream
 
 app.include_router(editor_chat_router.router)
+from app.api import editor_agent as editor_agent_router  # noqa: E402 — /v1/editor/agent/*
+
+app.include_router(editor_agent_router.router)
 from app.api import external_mcp as external_mcp_router  # External MCP federation
 
 app.include_router(external_mcp_router.router)  # /v1/admin/external-mcp (flag-gated)

@@ -31,6 +31,11 @@ class ProviderResponse(BaseModel):
         description="The failover trail — every provider attempted, winner last "
         "(empty on a cache hit, which tried nothing)",
     )
+    # Native function calls the model made (OpenAI shape: name + arguments as
+    # a JSON string), when the caller offered `tools`. Empty otherwise. The
+    # editor agent reads these first: a model that calls tools natively does
+    # it far more reliably than one asked to write JSON into its answer.
+    tool_calls: list[dict] = Field(default_factory=list)
     # Whether the provider ran out of room mid-answer.
     #
     # Every vendor reports this and nothing read it, so the truncation defects
