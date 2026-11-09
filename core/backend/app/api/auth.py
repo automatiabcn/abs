@@ -635,11 +635,18 @@ def _persist_user_pending(
             stmt = select(User).where(User.email == email)
             existing = db.execute(stmt).scalars().first()
             if existing is not None:
+                # Only a signup nobody has claimed yet may be signed up again.
+                # This branch used to run for every row: it replaced the
+                # password, moved the tenant and set the status back to
+                # `pending` for an account that was already someone's.
+                if existing.status != "pending":
+                    return
                 existing.password_hash = password_hash
                 existing.tenant_slug = tenant_slug
                 existing.magic_token = magic_token
                 existing.magic_expires_at = expires
-                existing.status = "pending"
+                # Self-signup never carries a role forward (see below).
+                existing.role = "member"
                 db.add(existing)
             else:
                 db.add(
@@ -749,6 +756,13 @@ def signup(body: SignupRequest) -> Dict:
     itself; delivery happens through the hooks/event bus when a transactional
     mailer is registered.
     """
+    if _email_already_has_an_account(body.email):
+        # The address belongs to someone who can already sign in. Answer exactly
+        # as a first signup would, and write nothing: no token, no row, no hint
+        # to the caller that the address is known here.
+        logger.info("signup_ignored_existing_account slug=%s", body.tenant_slug)
+        return _signup_response(body.tenant_slug, token=None)
+
     token = secrets.token_urlsafe(32)
     rows = _read_pending_signups()
     rows = [r for r in rows if r.get("email") != body.email]
@@ -772,6 +786,10 @@ def signup(body: SignupRequest) -> Dict:
         body.tenant_slug,
         token[:6],
     )
+    return _signup_response(body.tenant_slug, token=token)
+
+
+def _signup_response(tenant_slug: str, *, token: Optional[str]) -> Dict:
     # Self-signup does NOT dispatch its own email: there is no sender call here
     # And SMTP is unset by default on self-host. Activation is delivered by an
     # Admin invite (panel → copy link, or the invite email once SMTP is
@@ -782,7 +800,7 @@ def signup(body: SignupRequest) -> Dict:
         "magic_link_sent": False,
         "email_configured": email_configured,
         "check_email": False,
-        "tenant_slug": body.tenant_slug,
+        "tenant_slug": tenant_slug,
         "activation_note": (
             "Your signup was received and is pending. To activate your "
             "account, ask your administrator to invite you from the panel or "
@@ -791,11 +809,48 @@ def signup(body: SignupRequest) -> Dict:
     }
     # Production never echoes the magic_link in the response body: access logs
     # And APM trace storage would retain it for 24h, which is a working
-    # Credential. Dev / test (env != "prod") keep it so the harness can claim
-    # an account without capturing SMTP.
-    if settings.env != "prod":
+    # Credential. Dev / test keep it so the harness can claim an account
+    # without capturing SMTP.
+    if token and _may_echo_magic_link():
         response["magic_link"] = f"/activate?token={token}"
     return response
+
+
+def _may_echo_magic_link() -> bool:
+    """Only on a box that is plainly not serving the public.
+
+    The test used to be `env != "prod"`, and `env` defaults to "dev". A server
+    put on a real domain with ABS_ENV unset, or set to "production", handed the
+    activation link — a working sign-in — to whoever posted the signup."""
+    from app.config import looks_like_production
+
+    env = (settings.env or "").strip().lower()
+    return env not in ("prod", "production") and not looks_like_production(settings)
+
+
+def _email_already_has_an_account(email: str) -> bool:
+    """True when `email` is the bootstrap admin or a user who is past `pending`."""
+    wanted = (email or "").strip().lower()
+    if not wanted:
+        return False
+    raw = _load_admin_credentials_raw() or {}
+    if str(raw.get("email") or "").strip().lower() == wanted:
+        return True
+    try:
+        from sqlalchemy import func
+        from sqlmodel import Session, select
+
+        from app.db.models import User
+        from app.db.session import get_engine
+
+        with Session(get_engine()) as db:
+            rows = db.execute(
+                select(User.status).where(func.lower(User.email) == wanted)
+            ).all()
+        return any(status_ != "pending" for (status_,) in rows)
+    except Exception as exc:  # noqa: BLE001 — table may not be migrated yet
+        logger.debug("existing-account lookup failed (non-fatal): %s", exc)
+        return False
 
 
 def _claim_invite_by_token(token: str) -> Optional[Dict]:
