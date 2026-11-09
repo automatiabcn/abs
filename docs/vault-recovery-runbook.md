@@ -246,6 +246,7 @@ docker compose exec backend sops -d /app/data/secrets.yaml | grep stripe_webhook
 ```bash
 # Run the validators
 curl -X POST https://abs.your-domain.com/v1/smart-link/api-key \
+  -H "Authorization: Bearer $ABS_ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"provider":"stripe","api_key":"<NEW_VALUE>"}'
 

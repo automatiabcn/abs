@@ -36,6 +36,7 @@ def _mock_openai_get(monkeypatch, status: int = 200):
 def test_invalid_provider_returns_400(client):
     r = client.post(
         "/v1/smart-link/api-key",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"provider": "claude", "api_key": "x" * 20},
     )
     assert r.status_code == 400
@@ -44,6 +45,7 @@ def test_invalid_provider_returns_400(client):
 def test_short_key_returns_400(client):
     r = client.post(
         "/v1/smart-link/api-key",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"provider": "openai", "api_key": "abc"},
     )
     assert r.status_code == 400
@@ -54,6 +56,7 @@ def test_invalid_provider_validation_returns_422(client, monkeypatch):
     _mock_openai_get(monkeypatch, status=401)
     r = client.post(
         "/v1/smart-link/api-key",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"provider": "openai", "api_key": "sk-bad-key-1234"},
     )
     assert r.status_code == 422
@@ -64,6 +67,7 @@ def test_valid_key_stored_and_validated(client, monkeypatch):
     _mock_openai_get(monkeypatch, status=200)
     r = client.post(
         "/v1/smart-link/api-key",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"provider": "openai", "api_key": "sk-good-key-12345"},
     )
     assert r.status_code == 200, r.text

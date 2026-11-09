@@ -115,6 +115,7 @@ class TestSweep4SmartLinkApiKey:
         with caplog.at_level(logging.INFO, logger=LOGGER_NAME):
             r = client.post(
                 "/v1/smart-link/api-key",
+                headers={"Authorization": f"Bearer {settings.admin_token}"},
                 json={"provider": "ghost-provider-x", "api_key": "x" * 16},
             )
         assert r.status_code == 400
@@ -127,6 +128,7 @@ class TestSweep4SmartLinkApiKey:
         with caplog.at_level(logging.INFO, logger=LOGGER_NAME):
             r = client.post(
                 "/v1/smart-link/api-key",
+                headers={"Authorization": f"Bearer {settings.admin_token}"},
                 json={"provider": "openai", "api_key": "abc"},
             )
         assert r.status_code == 400

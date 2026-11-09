@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import httpx
 
+from app.config import settings
+
 
 def test_e2e_github_oauth_full_round_trip(client, monkeypatch):
     """authorize → state issued → callback with state succeeds.
@@ -97,6 +99,7 @@ def test_e2e_api_key_store_for_each_provider(client, monkeypatch):
     for provider in ("openai", "anthropic", "cohere", "smtp"):
         r = client.post(
             "/v1/smart-link/api-key",
+            headers={"Authorization": f"Bearer {settings.admin_token}"},
             json={"provider": provider, "api_key": "mock-1234567890abcdef"},
         )
         assert r.status_code == 200, f"{provider} failed: {r.text}"
