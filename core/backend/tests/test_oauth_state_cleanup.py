@@ -11,6 +11,7 @@ from sqlmodel import Session, select
 
 from app.db.models import OAuthState
 from app.db.session import get_engine
+from app.config import settings
 
 
 def _load_cleanup():
@@ -89,6 +90,7 @@ def test_state_consume_one_time(client, monkeypatch):
     """Consuming the same state twice returns 400 on the second call."""
     r1 = client.post(
         "/v1/smart-link/github/authorize",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"redirect_url": "https://x"},
     )
     state = r1.json()["state"]

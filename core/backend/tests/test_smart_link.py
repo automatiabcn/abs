@@ -23,6 +23,7 @@ def test_providers_endpoint_lists_supported_set(client):
 def test_github_authorize_returns_url_and_state(client):
     r = client.post(
         "/v1/smart-link/github/authorize",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"redirect_url": "https://abs.firmaadi.com/integrations"},
     )
     assert r.status_code == 200
@@ -55,6 +56,7 @@ def test_github_callback_consumes_state_once(client, monkeypatch):
 
     r1 = client.post(
         "/v1/smart-link/github/authorize",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"redirect_url": "https://abs.firmaadi.com/r"},
     )
     state = r1.json()["state"]

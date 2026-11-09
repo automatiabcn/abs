@@ -6,7 +6,7 @@
 """Slack OAuth + minimal channel post.
 
 Endpoints:
-  GET  /v1/smart-link/slack/authorize   — OAuth start (DB state, 10min TTL)
+  GET  /v1/smart-link/slack/authorize   — OAuth start (admin; DB state, 10min TTL)
   GET  /v1/smart-link/slack/callback    — code → bot token store
   POST /v1/smart-link/slack/post        — {channel, text} post (admin auth)
 
@@ -120,7 +120,11 @@ class SlackPostRequest(BaseModel):
 async def slack_authorize(
     redirect_url: str = "https://app.automatiabcn.com/connect",
     client_id: Optional[str] = None,
+    authorization: Optional[str] = Header(default=None),
 ) -> _AuthResp:
+    # Connecting a company's Slack is an admin's act, and the route that begins
+    # it mints the state the callback will trust. See github_authorize.
+    _check_admin(authorization)
     state = _new_state("slack", redirect_url)
     cid = client_id or "abs_slack_client_skeleton"
     scopes = "chat:write,channels:read"
