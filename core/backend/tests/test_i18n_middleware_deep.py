@@ -83,6 +83,30 @@ def i18n_client() -> TestClient:
     return client
 
 
+def _get_with_cookie(client: TestClient, value: str, **kwargs):
+    """GET /echo-lang carrying exactly one NEXT_LOCALE cookie.
+
+    Per-request `cookies=` is deprecated in the test client, and which cookie
+    wins when the client's jar already holds one depends on the HTTP library
+    backing it: with one the request's value is sent, with the other the jar's.
+    The client here is shared by the module, and an earlier test leaves `tr` in
+    its jar — so two of these tests were really asserting on that leftover.
+    Setting the jar is the one form both libraries agree on."""
+    client.cookies.clear()
+    client.cookies.set("NEXT_LOCALE", value)
+    try:
+        return client.get("/echo-lang", **kwargs)
+    finally:
+        client.cookies.clear()
+
+
+@pytest.fixture(autouse=True)
+def _no_leftover_cookies(i18n_client: TestClient):
+    i18n_client.cookies.clear()
+    yield
+    i18n_client.cookies.clear()
+
+
 # ─── set_lang_cookie tests ───────────────────────────────────────────
 
 
@@ -138,7 +162,7 @@ def test_middleware_parses_accept_language_only(i18n_client: TestClient) -> None
 
 
 def test_middleware_uses_cookie_only(i18n_client: TestClient) -> None:
-    r = i18n_client.get("/echo-lang", cookies={"NEXT_LOCALE": "es"})
+    r = _get_with_cookie(i18n_client, "es")
     assert r.status_code == 200
     assert r.json()["lang"] == "es"
 
@@ -147,9 +171,9 @@ def test_middleware_cookie_wins_over_accept_language(
     i18n_client: TestClient,
 ) -> None:
     """The user's explicit cookie choice MUST win over the OS header."""
-    r = i18n_client.get(
-        "/echo-lang",
-        cookies={"NEXT_LOCALE": "tr"},
+    r = _get_with_cookie(
+        i18n_client,
+        "tr",
         headers={"Accept-Language": "es-ES,es;q=0.9"},
     )
     assert r.status_code == 200
@@ -160,9 +184,9 @@ def test_middleware_invalid_cookie_falls_through_to_header(
     i18n_client: TestClient,
 ) -> None:
     """Garbage / unsupported cookie value → header is honoured next."""
-    r = i18n_client.get(
-        "/echo-lang",
-        cookies={"NEXT_LOCALE": "de"},  # not in SUPPORTED_LANGS
+    r = _get_with_cookie(
+        i18n_client,
+        "de",  # not in SUPPORTED_LANGS
         headers={"Accept-Language": "tr-TR,tr;q=0.9"},
     )
     assert r.status_code == 200
@@ -172,7 +196,7 @@ def test_middleware_invalid_cookie_falls_through_to_header(
 def test_middleware_invalid_cookie_no_header_uses_default(
     i18n_client: TestClient,
 ) -> None:
-    r = i18n_client.get("/echo-lang", cookies={"NEXT_LOCALE": "zh"})
+    r = _get_with_cookie(i18n_client, "zh")
     assert r.status_code == 200
     assert r.json()["lang"] == DEFAULT_LANG
 
@@ -181,7 +205,7 @@ def test_middleware_uppercase_cookie_value_is_normalized(
     i18n_client: TestClient,
 ) -> None:
     """Cookie comparison is case-insensitive (.lower() in middleware)."""
-    r = i18n_client.get("/echo-lang", cookies={"NEXT_LOCALE": "TR"})
+    r = _get_with_cookie(i18n_client, "TR")
     assert r.status_code == 200
     assert r.json()["lang"] == "tr"
 
