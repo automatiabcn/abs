@@ -114,17 +114,6 @@ _STRANGER_MAY_READ = {
     # `/connected-services`, which is behind the admin check.
     "/v1/smart-link/providers",
     "/v1/smart-link/connect",
-    # The OAuth handshake's opening move. It hands back a slack.com URL built
-    # from a client_id that is public by construction, and no company data.
-    #
-    # It is on this list rather than behind a login for a reason worth writing
-    # down: it also mints a state row, so a stranger can make this server write
-    # rows all day. The 10-minute TTL and the sweeper (test_oauth_state_cleanup)
-    # bound how many survive, which is why it is tolerable and not why it is
-    # right. Connecting a company's Slack is an admin's act and the route that
-    # begins it should say so. Left alone here deliberately: gating it touches
-    # six test files and belongs in its own change, not smuggled into this one.
-    "/v1/smart-link/slack/authorize",
 }
 
 
@@ -160,3 +149,129 @@ def test_no_route_hands_a_stranger_data_it_should_not_have():
         "login, or add the path to _STRANGER_MAY_READ with a reason it is safe "
         "for the whole internet to read:\n  " + "\n  ".join(sorted(leaking))
     )
+
+
+# --------------------------------------------------------------------------
+# Writes.
+#
+# The sweep above only asks parameter-free GETs, because that is what a URL bar
+# can do. It is also why `POST /v1/smart-link/api-key` shipped with no check at
+# all and stayed that way: nothing here ever looked at a POST. A write cannot be
+# swept by calling it — a handler that checks its token in the body answers 422
+# to an empty request before it gets as far as refusing — so this one reads the
+# route table instead, and asks a narrower question than "is it safe": does this
+# route take a credential from anywhere at all.
+#
+# A route passes if a known guard is in its dependency tree, or if it declares
+# an `Authorization` header. Everything else must be named below, with the
+# reason a caller with no account is allowed to reach it.
+# --------------------------------------------------------------------------
+
+_GUARDS = {
+    "get_auth_context",
+    "get_admin_or_bearer_auth_context",
+    "admin_required",
+    "admin_dep",
+    "current_admin",
+    "_auth_dependency",
+}
+
+_STRANGER_MAY_WRITE = {
+    # Signing in is how a stranger stops being one.
+    ("POST", "/auth/login"),
+    ("POST", "/auth/logout"),
+    ("POST", "/v1/admin/login"),
+    ("POST", "/oauth/token"),
+    ("POST", "/auth/device/start"),
+    ("POST", "/auth/device/poll"),
+    # Public by design, and must not touch an account that already exists
+    # (test_signup_cannot_take_an_existing_account.py).
+    ("POST", "/auth/signup"),
+    # Authenticated inside the handler, from the request itself: the session
+    # cookie for the first, the editor's bearer token for the second.
+    ("POST", "/auth/device/approve"),
+    ("POST", "/v1/editor/chat/stream"),
+    # Called by a machine that proves itself with a signature over the body.
+    ("POST", "/v1/integrations/github/webhook"),
+    ("POST", "/v1/integrations/slack/webhook"),
+    ("POST", "/webhooks/stripe"),
+    ("POST", "/api/inngest"),
+    ("PUT", "/api/inngest"),
+    # The setup wizard runs before any admin exists. Each step refuses once
+    # setup is complete, and step 1 refuses as soon as an admin exists.
+    ("POST", "/v1/setup/lang"),
+    ("POST", "/v1/setup/reset"),
+    ("POST", "/v1/setup/step/admin"),
+    ("POST", "/v1/setup/step/license"),
+    ("POST", "/v1/setup/step/domain"),
+    ("POST", "/v1/setup/step/anthropic"),
+    ("POST", "/v1/setup/step/providers"),
+    ("POST", "/v1/setup/step/test"),
+    ("POST", "/v1/setup/test"),
+    # The storefront: asking for a beta seat, and starting a checkout.
+    ("POST", "/v1/beta/request"),
+    ("POST", "/v1/checkout/create-session"),
+    # The licence key is the credential: it only activates if its signature
+    # verifies against the vendor key.
+    ("POST", "/v1/license/activate"),
+    # Tolerable while billing is switched off, not right. It returns a billing
+    # portal link to whoever names the customer's email; before Stripe goes
+    # live it should send that link to the address instead of handing it back.
+    ("POST", "/v1/billing/portal"),
+}
+
+
+def _takes_a_credential(route) -> bool:
+    def guards(dependant) -> bool:
+        for dep in dependant.dependencies:
+            if getattr(dep.call, "__name__", "") in _GUARDS or guards(dep):
+                return True
+        return False
+
+    headers = {p.name for p in route.dependant.header_params}
+    return "authorization" in headers or guards(route.dependant)
+
+
+def test_no_write_ships_without_a_credential_or_a_reason():
+    from fastapi.routing import APIRoute
+
+    writes = {"POST", "PUT", "PATCH", "DELETE"}
+    unguarded: list[str] = []
+    seen: set[tuple[str, str]] = set()
+
+    for route in app.routes:
+        if not isinstance(route, APIRoute):
+            continue
+        for method in sorted(route.methods & writes):
+            seen.add((method, route.path))
+            if (method, route.path) in _STRANGER_MAY_WRITE:
+                continue
+            if not _takes_a_credential(route):
+                unguarded.append(f"{method} {route.path}")
+
+    assert unguarded == [], (
+        "these routes change something and take no credential — add the guard, "
+        "or add the route to _STRANGER_MAY_WRITE with the reason a caller with "
+        "no account may reach it:\n  " + "\n  ".join(sorted(unguarded))
+    )
+
+    # An allow-list that outlives its routes is a list of doors nobody checks.
+    stale = sorted(_STRANGER_MAY_WRITE - seen)
+    assert stale == [], (
+        f"_STRANGER_MAY_WRITE names routes that no longer exist: {stale}"
+    )
+
+
+def test_the_write_sweep_would_have_caught_the_api_key_route():
+    """The check is only worth having if it fails on the bug it was written for."""
+    from fastapi import APIRouter
+    from fastapi.routing import APIRoute
+
+    probe = APIRouter()
+
+    @probe.post("/v1/smart-link/api-key-as-it-was")
+    async def store_api_key_unguarded(body: dict) -> dict:  # pragma: no cover
+        return {"stored": True}
+
+    route = next(r for r in probe.routes if isinstance(r, APIRoute))
+    assert _takes_a_credential(route) is False
