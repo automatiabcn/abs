@@ -3,7 +3,7 @@
 # Production use requires a Commercial License - see LICENSE.
 # Change Date: 2030-05-07 -> Apache License, Version 2.0
 
-"""Smart link secret vault (sops/age + 5-min cache + audit log).
+"""Smart link secret store (encrypted at rest + 5-min cache + audit log).
 
 Public API:
   - encrypt_secret(key_name, provider, value) → ConnectedSecret row
@@ -12,15 +12,14 @@ Public API:
   - list_secrets() → list of ConnectedSecret rows (no plaintext exposed)
   - delete_secret(key_name) → DB clear
 
-Encryption strategy:
-  1. If sops/age binaries exist + master key configured → real encrypt via runner.
-  2. Else → reversible base64 obfuscation (NOT secure, but enables dev/test).
-     Production must run sops; vault_status MCP tool reports binary availability.
+Encryption is the same versioned scheme the per-owner provider keys use
+(`app.multitenant.crypto`): Fernet under ABS_PROVIDER_KEY_ENCRYPTION_KEY, with a
+loudly-logged base64 fallback when no key is configured so dev and tests run.
+Rows written before this — all of them `b64:` — still read.
 """
 
 from __future__ import annotations
 
-import base64
 import logging
 import time
 from datetime import datetime, timezone
@@ -30,6 +29,7 @@ from sqlmodel import Session, select
 
 from app.db.models import ConnectedSecret
 from app.db.session import get_engine
+from app.multitenant.crypto import decrypt_secret_value, encrypt_secret_value
 
 logger = logging.getLogger(__name__)
 
@@ -38,35 +38,21 @@ _CACHE: dict[str, tuple[str, float]] = {}
 _CACHE_TTL = 300
 
 
-def _has_sops() -> bool:
-    try:
-        from app.vault.runner import master_key_exists, sops_available
-
-        return sops_available() and master_key_exists()
-    except Exception:
-        return False
-
-
 def _encrypt_value(plaintext: str) -> str:
-    """Return encrypted/obfuscated value to persist."""
-    if _has_sops():
-        try:
-            from app.vault.runner import write_secret as _vault_write
+    """The value as it is stored.
 
-            # 013 vault stores by key_name in single store; for connected secrets we
-            # use a namespaced prefix so we don't clash with provider API keys.
-            _vault_write(f"smart_link::{plaintext[:0]}", plaintext)
-        except Exception as exc:
-            logger.warning("sops encrypt fallback to obfuscation: %s", exc)
-    # Fallback: reversible base64 (clearly marked).
-    return "b64:" + base64.b64encode(plaintext.encode("utf-8")).decode("ascii")
+    This column is called `encrypted_value`, and for its whole life it held
+    base64. The old code had a sops branch: it wrote the secret into the sops
+    file under one fixed key (`smart_link::` plus an empty slice of the value,
+    so every secret overwrote the last), and then returned base64 anyway. With
+    sops or without it, an OAuth token in this table was one `b64decode` from
+    plaintext for anyone who could read the database or a backup of it.
+    """
+    return encrypt_secret_value(plaintext)
 
 
 def _decrypt_value(stored: str) -> str:
-    if stored.startswith("b64:"):
-        return base64.b64decode(stored[4:]).decode("utf-8")
-    # If sops blob format, attempt vault decrypt — TBD; for now return raw.
-    return stored
+    return decrypt_secret_value(stored)
 
 
 def encrypt_secret(*, key_name: str, provider: str, value: str) -> ConnectedSecret:
