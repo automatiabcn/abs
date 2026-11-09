@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import httpx
 
+from app.config import settings
+
 
 def test_providers_endpoint_lists_supported_set(client):
     r = client.get("/v1/smart-link/providers")
@@ -89,18 +91,21 @@ def test_api_key_store_validates_provider_and_length(client, monkeypatch):
     # Unsupported provider
     r1 = client.post(
         "/v1/smart-link/api-key",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"provider": "claude", "api_key": "sk-test-12345"},
     )
     assert r1.status_code == 400
     # Too-short key
     r2 = client.post(
         "/v1/smart-link/api-key",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"provider": "openai", "api_key": "abc"},
     )
     assert r2.status_code == 400
     # Valid path
     r3 = client.post(
         "/v1/smart-link/api-key",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"provider": "anthropic", "api_key": "sk-ant-mock-12345678"},
     )
     assert r3.status_code == 200, r3.text

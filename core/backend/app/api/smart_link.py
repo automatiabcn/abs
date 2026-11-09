@@ -11,7 +11,7 @@ Endpoints:
   GET    /v1/smart-link/github/callback    — code → token (mock httpx in tests)
   POST   /v1/smart-link/github/refresh     — refresh token rotation (admin)
   DELETE /v1/smart-link/github             — revoke + clear DB (admin)
-  POST   /v1/smart-link/api-key            — provider + api_key validate + vault store
+  POST   /v1/smart-link/api-key            — provider + api_key validate + vault store (admin)
   GET    /v1/smart-link/connected-services — DB list (admin, no plaintext)
 """
 
@@ -408,8 +408,18 @@ async def github_revoke(
 
 @router.post("/api-key", response_model=ApiKeyStoreResponse)
 async def store_api_key(
-    body: ApiKeyStoreRequest, request: Request
+    body: ApiKeyStoreRequest,
+    request: Request,
+    authorization: Optional[str] = Header(default=None),
 ) -> ApiKeyStoreResponse:
+    """Store a provider credential. Admin only.
+
+    This was the one write in this router with no gate at all: every route
+    that reads or removes a connected secret asked for the admin token, and
+    the route that creates or replaces one did not. An anonymous caller could
+    plant or overwrite rows in the store, and have the server spend its own
+    outbound requests validating keys on their behalf."""
+    _check_admin(authorization, request)
     valid_ids = {p["id"] for p in _SUPPORTED_PROVIDERS}
     if body.provider not in valid_ids:
         emit_event(
