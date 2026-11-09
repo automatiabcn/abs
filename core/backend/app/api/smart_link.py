@@ -7,7 +7,7 @@
 
 Endpoints:
   GET    /v1/smart-link/providers          — supported integrations list
-  POST   /v1/smart-link/github/authorize   — OAuth start (DB-backed state, 10min TTL)
+  POST   /v1/smart-link/github/authorize   — OAuth start (admin; DB-backed state, 10min TTL)
   GET    /v1/smart-link/github/callback    — code → token (mock httpx in tests)
   POST   /v1/smart-link/github/refresh     — refresh token rotation (admin)
   DELETE /v1/smart-link/github             — revoke + clear DB (admin)
@@ -227,7 +227,19 @@ async def list_providers() -> dict:
 
 
 @router.post("/github/authorize", response_model=GithubAuthorizeResponse)
-async def github_authorize(body: GithubAuthorizeRequest) -> GithubAuthorizeResponse:
+async def github_authorize(
+    body: GithubAuthorizeRequest,
+    request: Request,
+    authorization: Optional[str] = Header(default=None),
+) -> GithubAuthorizeResponse:
+    """Begin connecting GitHub. Admin only.
+
+    The state this mints is what the callback trusts: whoever holds it can finish
+    the handshake, and the token that comes back is stored as this server's
+    GitHub credential. Handing it to anyone who asked meant a stranger could
+    connect their own account in the operator's place — and could make the server
+    write state rows for as long as they cared to keep asking."""
+    _check_admin(authorization, request)
     state = _new_state("github", body.redirect_url)
     client_id = body.client_id or "abs_github_client_skeleton"
     scopes = "repo%20read%3Auser"

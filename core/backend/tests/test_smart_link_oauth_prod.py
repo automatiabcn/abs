@@ -48,6 +48,7 @@ def test_authorize_state_persisted_then_callback_succeeds(client, monkeypatch):
     _mock_token_post(monkeypatch, "ghs_mock_token_xyz")
     r1 = client.post(
         "/v1/smart-link/github/authorize",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"redirect_url": "https://abs.firmaadi.com/connect"},
     )
     assert r1.status_code == 200
@@ -65,6 +66,7 @@ def test_callback_state_replay_blocked(client, monkeypatch):
     _mock_token_post(monkeypatch, "ghs_mock_token_replay")
     r1 = client.post(
         "/v1/smart-link/github/authorize",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"redirect_url": "https://x"},
     )
     state = r1.json()["state"]
@@ -126,7 +128,9 @@ def _mock_oauth_post(
 
 def _connect(client) -> None:
     state = client.post(
-        "/v1/smart-link/github/authorize", json={"redirect_url": "https://x"}
+        "/v1/smart-link/github/authorize",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
+        json={"redirect_url": "https://x"},
     ).json()["state"]
     client.get(f"/v1/smart-link/github/callback?code=x&state={state}")
 
@@ -198,6 +202,7 @@ def test_revoke_clears_token(client, monkeypatch):
     _mock_token_post(monkeypatch, "ghs_to_revoke")
     r1 = client.post(
         "/v1/smart-link/github/authorize",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"redirect_url": "https://x"},
     )
     state = r1.json()["state"]

@@ -30,6 +30,7 @@ def test_e2e_github_oauth_full_round_trip(client, monkeypatch):
 
     r1 = client.post(
         "/v1/smart-link/github/authorize",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"redirect_url": "https://abs.firmaadi.com/integrations"},
     )
     assert r1.status_code == 200
@@ -51,6 +52,7 @@ def test_e2e_callback_replay_blocked(client):
     """Used state cannot be replayed (one-time)."""
     r1 = client.post(
         "/v1/smart-link/github/authorize",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
         json={"redirect_url": "https://abs.firmaadi.com/cb"},
     )
     state = r1.json()["state"]

@@ -45,7 +45,10 @@ def _patch_slack(
 
 
 def test_slack_authorize_returns_state_and_url(client):
-    r = client.get("/v1/smart-link/slack/authorize")
+    r = client.get(
+        "/v1/smart-link/slack/authorize",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["authorize_url"].startswith("https://slack.com/oauth/v2/authorize")
@@ -54,7 +57,10 @@ def test_slack_authorize_returns_state_and_url(client):
 
 def test_slack_callback_stores_bot_token(client, monkeypatch):
     _patch_slack(monkeypatch, oauth_ok=True)
-    r1 = client.get("/v1/smart-link/slack/authorize")
+    r1 = client.get(
+        "/v1/smart-link/slack/authorize",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
+    )
     state = r1.json()["state"]
     r2 = client.get(f"/v1/smart-link/slack/callback?code=mock&state={state}")
     assert r2.status_code == 200
@@ -73,7 +79,10 @@ def test_slack_post_requires_admin(client):
 
 def test_slack_post_with_admin_after_connect(client, monkeypatch):
     _patch_slack(monkeypatch, oauth_ok=True, post_ok=True)
-    r1 = client.get("/v1/smart-link/slack/authorize")
+    r1 = client.get(
+        "/v1/smart-link/slack/authorize",
+        headers={"Authorization": f"Bearer {settings.admin_token}"},
+    )
     state = r1.json()["state"]
     client.get(f"/v1/smart-link/slack/callback?code=mock&state={state}")
 
